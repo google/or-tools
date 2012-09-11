@@ -21,6 +21,7 @@
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
+#include "base/join.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
@@ -29,12 +30,20 @@
 #include "base/map-util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
-
 #include "linear_solver/linear_solver.pb.h"
+#include "util/accurate_sum.h"
 
 DEFINE_string(solver_write_model,
               "",
               "Path of the file to write the model to.");
+
+DEFINE_bool(verify_solution, false,
+            "Systematically verify the solution when calling Solve()"
+            ", and change the return value of Solve() to ABNORMAL if"
+            " an error was detected.");
+DEFINE_bool(log_verification_errors, true,
+            "If --verify_solution is set: LOG(ERROR) all errors detected"
+            " during the verification of the solution.");
 
 // To compile the open-source code, the anonymous namespace should be
 // inside the operations_research namespace (This is due to the
@@ -43,11 +52,13 @@ DEFINE_string(solver_write_model,
 namespace operations_research {
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   return FindWithDefault(coefficients_, var, 0);
 }
 
 void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (coeff == 0.0) {
     hash_map<const MPVariable*, double>::iterator it = coefficients_.find(var);
     // If setting a coefficient to 0 when this coefficient did not
@@ -123,11 +134,13 @@ bool MPConstraint::ContainsNewVariables() {
 // ----- MPObjective -----
 
 double MPObjective::GetCoefficient(const MPVariable* const var) const {
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   return FindWithDefault(coefficients_, var, 0);
 }
 
 void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (coeff == 0.0) {
     hash_map<const MPVariable*, double>::iterator it = coefficients_.find(var);
     // See the discussion on MPConstraint::SetCoefficient() for 0 coefficients,
@@ -772,7 +785,232 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters &param) {
     return interface_->result_status_;
   }
 
-  return interface_->Solve(param);
+  const MPSolver::ResultStatus status = interface_->Solve(param);
+  if (FLAGS_verify_solution) {
+    if (!VerifySolution(
+        param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
+        FLAGS_log_verification_errors,
+        NULL)) {
+      return MPSolver::ABNORMAL;
+    }
+  }
+  return status;
+}
+
+namespace {
+string PrettyPrintVar(const MPVariable& var) {
+  const string prefix = "Variable '" + var.name() + "': domain = ";
+  if (var.lb() >= MPSolver::infinity() ||
+      var.ub() <= -MPSolver::infinity() ||
+      var.lb() > var.ub()) {
+    return prefix + "∅";  // Empty set.
+  }
+  // Special case: integer variable with at most two possible values
+  // (and potentially none).
+  if (var.integer() && var.ub() - var.lb() <= 1) {
+    const int64 lb = static_cast<int64>(ceil(var.lb()));
+    const int64 ub = static_cast<int64>(floor(var.ub()));
+    if (lb > ub) {
+      return prefix + "∅";
+    } else if (lb == ub) {
+      return StrCat(prefix, "{ ", lb, " }");
+    } else {
+      return StrCat(prefix, "{ ", lb, ", ", ub, " }");
+    }
+  }
+  // Special case: single (non-infinite) real value.
+  if (var.lb() == var.ub()) {
+    return StrCat(prefix, "{ ", var.lb(), " }");
+  }
+  return StrCat(
+      prefix,
+      var.integer() ? "Integer" : "Real", " in ",
+      (var.lb() <= -MPSolver::infinity()
+       ? string("]-∞") : StrCat("[", var.lb())),
+      ", ",
+      (var.ub() >= MPSolver::infinity()
+       ? string("+∞[") : StrCat(var.ub(), "]")));
+}
+
+string PrettyPrintConstraint(const MPConstraint& constraint) {
+  string prefix = "Constraint '" + constraint.name() + "': ";
+  if (constraint.lb() >= MPSolver::infinity() ||
+      constraint.ub() <= -MPSolver::infinity() ||
+      constraint.lb() > constraint.ub()) {
+    return prefix + "ALWAYS FALSE";
+  }
+  if (constraint.lb() <= -MPSolver::infinity() &&
+      constraint.ub() >= MPSolver::infinity()) {
+    return prefix + "ALWAYS TRUE";
+  }
+  prefix += "<linear expr> ";
+  // Equality.
+  if (constraint.lb() == constraint.ub()) {
+    return StrCat(prefix, "= ", constraint.lb());
+  }
+  // Inequalities.
+  if (constraint.lb() <= -MPSolver::infinity()) {
+    return StrCat(prefix, "≤ ", constraint.ub());
+  }
+  if (constraint.ub() >= MPSolver::infinity()) {
+    return StrCat(prefix, "≥ ", constraint.lb());
+  }
+  return StrCat(prefix, "∈ [", constraint.lb(), ", ",
+                constraint.ub(), "]");
+}
+}  // namespace
+
+// TODO(user): split.
+bool MPSolver::VerifySolution(double max_absolute_error,
+                              bool log_errors,
+                              double* observed_max_absolute_error) const {
+  double max_observed_error = 0;
+  if (max_absolute_error < 0) max_absolute_error = infinity();
+  int num_errors = 0;
+
+  // Verify variables.
+  for (int i = 0; i < variables_.size(); ++i) {
+    const MPVariable& var = *variables_[i];
+    const double value = var.solution_value();
+    // Check for NaN.
+    if (isnan(value)) {
+      ++num_errors;
+      max_observed_error = infinity();
+      LOG_IF(ERROR, log_errors) << "NaN value for " << PrettyPrintVar(var);
+      continue;
+    }
+    if (var.lb() <= -infinity() && var.ub() >= infinity()) {
+      continue;
+    }
+    // Check lower bound.
+    if (var.lb() != -infinity()) {
+      if (value < var.lb() - max_absolute_error) {
+        ++num_errors;
+        max_observed_error = std::max(max_observed_error, var.lb() - value);
+        LOG_IF(ERROR, log_errors)
+            << "Value " << value << " too low for " << PrettyPrintVar(var);
+      }
+    }
+    // Check upper bound.
+    if (var.ub() != infinity()) {
+      if (value > var.ub() + max_absolute_error) {
+        ++num_errors;
+        max_observed_error = std::max(max_observed_error, value - var.ub());
+        LOG_IF(ERROR, log_errors)
+            << "Value " << value << " too high for " << PrettyPrintVar(var);
+      }
+    }
+    // Check integrality.
+    if (var.integer()) {
+      if (fabs(value - round(value)) > max_absolute_error) {
+        ++num_errors;
+        max_observed_error = std::max(max_observed_error,
+                                      fabs(value - round(value)));
+        LOG_IF(ERROR, log_errors)
+            << "Non-integer value "<< value << " for " << PrettyPrintVar(var);
+      }
+    }
+  }
+
+  // Verify constraints.
+  for (int i = 0; i < constraints_.size(); ++i) {
+    const MPConstraint& constraint = *constraints_[i];
+    // Re-compute the actual activity with a safe summing algorithm.
+    AccurateSum<double> activity_sum;
+    double inaccurate_activity = 0;
+    for (hash_map<const MPVariable*, double>::const_iterator
+         it = constraint.coefficients_.begin();
+         it != constraint.coefficients_.end(); ++it) {
+      const double term = it->first->solution_value() * it->second;
+      activity_sum.Add(term);
+      inaccurate_activity += term;
+    }
+    const double activity = activity_sum.Value();
+    // Catch NaNs.
+    if (isnan(activity) || isnan(inaccurate_activity)) {
+      ++num_errors;
+      max_observed_error = infinity();
+      LOG_IF(ERROR, log_errors)
+          << "NaN value for " << PrettyPrintConstraint(constraint);
+      continue;
+    }
+    // This shouldn't happen normally, but the client could have tweaked the
+    // model in a weird way. Who knows.
+    if (constraint.lb() <= -infinity() && constraint.ub() >= infinity()) {
+      continue;
+    }
+    // Check bounds.
+    if (constraint.lb() != -infinity()) {
+      if (activity < constraint.lb() - max_absolute_error) {
+        ++num_errors;
+        max_observed_error = std::max(max_observed_error,
+                                      constraint.lb() - activity);
+        LOG_IF(ERROR, log_errors)
+            << "Activity " << activity << " too low for "
+            << PrettyPrintConstraint(constraint);
+      } else if (inaccurate_activity < constraint.lb() - max_absolute_error) {
+        LOG_IF(WARNING, log_errors)
+            << "Activity " << activity << ", computed with the (inaccurate)"
+            << " standard sum of its terms, is too low for "
+            << PrettyPrintConstraint(constraint);
+      }
+    }
+    if (constraint.ub() != -infinity()) {
+      if (activity > constraint.ub() + max_absolute_error) {
+        ++num_errors;
+        max_observed_error = std::max(max_observed_error,
+                                      activity - constraint.ub());
+        LOG_IF(ERROR, log_errors)
+            << "Activity " << activity << " too high for "
+            << PrettyPrintConstraint(constraint);
+      } else if (inaccurate_activity > constraint.ub() + max_absolute_error) {
+        LOG_IF(WARNING, log_errors)
+            << "Activity " << activity << ", computed with the (inaccurate)"
+            << " standard sum of its terms, is too high for "
+            << PrettyPrintConstraint(constraint);
+      }
+    }
+  }
+
+  // Verify that the objective value wasn't reported incorrectly.
+  const MPObjective& objective = Objective();
+  AccurateSum<double> objective_sum;
+  double inaccurate_objective_value = objective.offset();
+  for (hash_map<const MPVariable*, double>::const_iterator
+       it = objective.coefficients_.begin();
+       it != objective.coefficients_.end(); ++it) {
+    const double term = it->first->solution_value() * it->second;
+    objective_sum.Add(term);
+    inaccurate_objective_value += term;
+  }
+  objective_sum.Add(objective.offset());
+  const double actual_objective_value = objective_sum.Value();
+  if (fabs(actual_objective_value - objective.Value()) > max_absolute_error) {
+    ++num_errors;
+    max_observed_error =
+        std::max(max_observed_error,
+                 fabs(actual_objective_value - objective.Value()));
+    LOG_IF(ERROR, log_errors)
+        << "Objective value " << objective.Value() << " isn't accurate"
+        << ", it should be " << actual_objective_value
+        << " (delta=" << actual_objective_value - objective.Value() << ").";
+  } else if (fabs(inaccurate_objective_value - objective.Value()) >
+             max_absolute_error) {
+    LOG_IF(WARNING, log_errors)
+        << "Objective value " << objective.Value() << " doesn't correspond"
+        << " to the value computed with the standard (and therefore inaccurate)"
+        << " sum of its terms.";
+  }
+  if (observed_max_absolute_error != NULL) {
+    *observed_max_absolute_error = max_observed_error;
+  }
+  if (num_errors > 0) {
+    LOG_IF(ERROR, log_errors)
+        << "There were " << num_errors << " errors above the threshold ("
+        << max_absolute_error << "), the largest was " << max_observed_error;
+    return false;
+  }
+  return true;
 }
 
 int64 MPSolver::iterations() const {
@@ -785,6 +1023,17 @@ int64 MPSolver::nodes() const {
 
 double MPSolver::ComputeExactConditionNumber() const {
   return interface_->ComputeExactConditionNumber();
+}
+
+bool MPSolver::OwnsVariable(const MPVariable* var) const {
+  if (var == NULL) return false;
+  // First, verify that a variable with the same name exists, and look up
+  // its index (names are unique, so there can be only one).
+  const int var_index =
+      FindWithDefault(variable_name_to_index_, var->name(), -1);
+  if (var_index == -1) return false;
+  // Then, verify that the variable with this index has the same address.
+  return variables_[var_index] == var;
 }
 
 // ---------- MPSolverInterface ----------
@@ -984,6 +1233,14 @@ void MPSolverParameters::SetIntegerParam(MPSolverParameters::IntegerParam param,
       presolve_value_ = value;
       break;
     }
+    case SCALING: {
+      if (value != SCALING_OFF && value != SCALING_ON) {
+        LOG(ERROR) << "Trying to set a supported parameter: " << param
+                   << " to an unknown value: " << value;
+      }
+      scaling_value_ = value;
+      break;
+    }
     case LP_ALGORITHM: {
       if (value != DUAL && value != PRIMAL && value != BARRIER) {
         LOG(ERROR) << "Trying to set a supported parameter: " << param
@@ -1089,6 +1346,9 @@ int MPSolverParameters::GetIntegerParam(
     }
     case INCREMENTALITY: {
       return incrementality_value_;
+    }
+    case SCALING: {
+      return scaling_value_;
     }
     default: {
       LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";

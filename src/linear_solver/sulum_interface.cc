@@ -167,6 +167,7 @@ class SLMInterface : public MPSolverInterface {
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
+  virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
   void ExtractOldConstraints();
@@ -1006,5 +1007,8 @@ void SLMInterface::SetLpAlgorithm(int value) {
   }
 }
 
+void SLMInterface::SetScalingMode(int value) {
+  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
+}
 }  // namespace operations_research
 #endif  //  #if defined(USE_SLM)

@@ -142,6 +142,7 @@ class SCIPInterface : public MPSolverInterface {
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
+  virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
   void CreateSCIP();
@@ -660,6 +661,10 @@ void SCIPInterface::SetPresolveMode(int value) {
       SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
     }
   }
+}
+
+void SCIPInterface::SetScalingMode(int value) {
+  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 // Only the root LP algorithm is set as setting the node LP to a

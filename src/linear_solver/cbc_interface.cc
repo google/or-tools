@@ -156,6 +156,7 @@ class CBCInterface : public MPSolverInterface {
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
+  virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
   OsiClpSolverInterface osi_;
@@ -545,6 +546,10 @@ void CBCInterface::SetPresolveMode(int value) {
       SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
     }
   }
+}
+
+void CBCInterface::SetScalingMode(int value) {
+  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 void CBCInterface::SetLpAlgorithm(int value) {

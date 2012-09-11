@@ -143,7 +143,6 @@
 #include "base/scoped_ptr.h"
 #include "base/timer.h"
 #include "base/strutil.h"
-#include "base/sparsetable.h"
 #include "base/hash.h"
 
 using std::string;
@@ -287,6 +286,23 @@ class MPSolver {
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
+  // Advanced usage:
+  // Verifies the *correctness* of solution: all variables must be within
+  // their domain, all constraints must be satisfied, and the reported
+  // objective value must be accurate.
+  // Usage:
+  // - This can only be called after Solve() was called.
+  // - If "max_absolute_error" is negative, it will be set to infinity().
+  // - If "log_errors" is true, every single violation will be logged.
+  // - The observer maximum absolute error is output if
+  //   "observed_max_absolute_error" is not NULL.
+  //
+  // Most users should just set the --verify_solution flag and not bother
+  // using this method directly.
+  bool VerifySolution(double max_absolute_error,
+                      bool log_errors,
+                      double* observed_max_absolute_error) const;
+
   // Advanced usage: resets extracted model to solve from scratch.
   void Reset();
 
@@ -425,6 +441,9 @@ class MPSolver {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
+
+  // Debugging: verify that the given MPVariable* belongs to this solver.
+  bool OwnsVariable(const MPVariable* var) const;
 
   // *** DEPRECATED ***
   // Setters and getters for the objective. Please call
@@ -760,7 +779,9 @@ class MPSolverParameters {
     // Algorithm to solve linear programs.
     LP_ALGORITHM = 1001,
     // Advanced usage: incrementality from one solve to the next.
-    INCREMENTALITY = 1002
+    INCREMENTALITY = 1002,
+    // Advanced usage: enable or disable matrix scaling.
+    SCALING = 1003
   };
 
   // For each categorical parameter, enumeration of possible values.
@@ -781,6 +802,11 @@ class MPSolverParameters {
     // Reuse results from previous solve as much as the underlying
     // solver allows.
     INCREMENTALITY_ON = 1
+  };
+
+  enum ScalingValues {
+    SCALING_OFF = 0,  // Scaling is off.
+    SCALING_ON = 1    // Scaling is on.
   };
 
   // @{
@@ -843,6 +869,7 @@ class MPSolverParameters {
   double primal_tolerance_value_;
   double dual_tolerance_value_;
   int presolve_value_;
+  int scaling_value_;
   int lp_algorithm_value_;
   int incrementality_value_;
   // @}
@@ -1017,8 +1044,8 @@ class MPSolverInterface {
 
   friend class MPSolver;
 
-  // To access the maximize_ bool. See MPObjective::SetOptimizationDirection()
-  // in the .cc.
+  // To access the maximize_ bool and the MPSolver.
+  friend class MPConstraint;
   friend class MPObjective;
 
  protected:
@@ -1091,6 +1118,9 @@ class MPSolverInterface {
   virtual void SetPrimalTolerance(double value) = 0;
   virtual void SetDualTolerance(double value) = 0;
   virtual void SetPresolveMode(int value) = 0;
+
+  // Sets the scaling mode.
+  virtual void SetScalingMode(int value) = 0;
   virtual void SetLpAlgorithm(int value) = 0;
 };
 

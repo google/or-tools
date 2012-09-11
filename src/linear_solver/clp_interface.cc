@@ -139,6 +139,7 @@ class CLPInterface : public MPSolverInterface {
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
+  virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
   // Transforms basis status from CLP enum to MPSolver::BasisStatus.
@@ -625,6 +626,10 @@ void CLPInterface::SetPresolveMode(int value) {
       SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
     }
   }
+}
+
+void CLPInterface::SetScalingMode(int value) {
+  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 void CLPInterface::SetLpAlgorithm(int value) {

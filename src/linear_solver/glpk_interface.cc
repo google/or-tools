@@ -184,6 +184,7 @@ class GLPKInterface : public MPSolverInterface {
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
+  virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
   void ExtractOldConstraints();
@@ -988,6 +989,10 @@ void GLPKInterface::SetPresolveMode(int value) {
       SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
     }
   }
+}
+
+void GLPKInterface::SetScalingMode(int value) {
+  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 void GLPKInterface::SetLpAlgorithm(int value) {
