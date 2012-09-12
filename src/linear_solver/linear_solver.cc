@@ -49,6 +49,19 @@ DEFINE_bool(log_verification_errors, true,
 // inside the operations_research namespace (This is due to the
 // open-sourced version of StringPrintf which is defined inside the
 // operations_research namespace in open_source/base).
+
+#if defined(_MSC_VER)
+#include <float.h>
+namespace std {
+int isnan(double val) {
+  return _isnan(val);
+}
+}  // namespace std
+
+double round(double val) {
+  return floor(val + 0.5);
+}
+#endif  // _MSC_VER
 namespace operations_research {
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
