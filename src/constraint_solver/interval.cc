@@ -1088,6 +1088,7 @@ class StartVarPerformedIntervalVar : public IntervalVar {
   int64 duration_;
 };
 
+// TODO(user): Take care of overflows.
 StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
     Solver* const s,
     IntVar* const var,
@@ -1428,8 +1429,8 @@ void Solver::MakeFixedDurationIntervalVarArray(
   }
 }
 
-  // This method fills the vector with interval variables built with
-  // the corresponding start variables.
+// This method fills the vector with interval variables built with
+// the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
     const std::vector<int64>& durations,

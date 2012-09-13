@@ -28,11 +28,11 @@ const int kFastToBufferSize = 32;
 // Writes output to the beginning of the given buffer. Returns a pointer to the
 // end of the string (i.e. to the NUL char). Buffer must be at least 12 bytes.
 // Not actually fast, but maybe someday!
-template <class T> char* FastNumToBuffer(T i, char* buffer) {
+template <class T> char* NumToBuffer(T i, char* buffer) {
   std::stringstream ss;
   ss << i;
   const std::string s = ss.str();
-  strcpy(buffer, s.c_str());
+  strcpy(buffer, s.c_str());  // NOLINT
   return buffer + s.size();
 }
 
@@ -44,31 +44,17 @@ struct AlphaNum {
   // A bool ctor would also convert incoming pointers (bletch).
 
   AlphaNum(int32 i32)  // NOLINT(runtime/explicit)
-      : piece(digits, FastNumToBuffer(i32, digits) - &digits[0]) {}
+      : piece(digits, NumToBuffer(i32, digits) - &digits[0]) {}
   AlphaNum(uint32 u32)  // NOLINT(runtime/explicit)
-      : piece(digits, FastNumToBuffer(u32, digits) - &digits[0]) {}
+      : piece(digits, NumToBuffer(u32, digits) - &digits[0]) {}
   AlphaNum(int64 i64)  // NOLINT(runtime/explicit)
-      : piece(digits, FastNumToBuffer(i64, digits) - &digits[0]) {}
+      : piece(digits, NumToBuffer(i64, digits) - &digits[0]) {}
   AlphaNum(uint64 u64)  // NOLINT(runtime/explicit)
-      : piece(digits, FastNumToBuffer(u64, digits) - &digits[0]) {}
-
-#ifdef _LP64
-  AlphaNum(long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastNumToBuffer(x, digits) - &digits[0]) {}
-  AlphaNum(unsigned long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastNumToBuffer(x, digits) - &digits[0]) {}
-#else
-  AlphaNum(long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastNumToBuffer(x, digits) - &digits[0]) {}
-  AlphaNum(unsigned long x)  // NOLINT(runtime/explicit)
-    : piece(digits, FastNumToBuffer(x, digits) - &digits[0]) {}
-#endif
-
+      : piece(digits, NumToBuffer(u64, digits) - &digits[0]) {}
   AlphaNum(float f)  // NOLINT(runtime/explicit)
-    : piece(digits, strlen(FastNumToBuffer(f, digits))) {}
+    : piece(digits, strlen(NumToBuffer(f, digits))) {}
   AlphaNum(double f)  // NOLINT(runtime/explicit)
-    : piece(digits, strlen(FastNumToBuffer(f, digits))) {}
-
+    : piece(digits, strlen(NumToBuffer(f, digits))) {}
   AlphaNum(const char *c_str) : piece(c_str) {}  // NOLINT(runtime/explicit)
   AlphaNum(const StringPiece &pc) : piece(pc) {}  // NOLINT(runtime/explicit)
   AlphaNum(const std::string &s) : piece(s) {}  // NOLINT(runtime/explicit)

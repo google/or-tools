@@ -21,11 +21,6 @@ namespace operations_research {
 // ACM minimal standard random number generator.  (re-entrant.)
 class ACMRandom {
  public:
-#if defined(_MSC_VER)
-  typedef __int64 difference_type;
-#else
-  typedef long long difference_type;
-#endif
   explicit ACMRandom(int32 seed) : seed_(seed) {}
   int32 Next();
   int32 Uniform(int32 max_value);
@@ -37,6 +32,15 @@ class ACMRandom {
   void Reset(int32 seed) { seed_ = seed; }
   static int32 HostnamePidTimeSeed();
   static int32 DeterministicSeed();
+
+  // RandomNumberGenerator concept. Example:
+  //   ACMRandom rand(my_seed);
+  //   random_shuffle(myvec.begin(), myvec.end(), rand);
+#if defined(_MSC_VER)
+  typedef __int64 difference_type;  // NOLINT
+#else
+  typedef long long difference_type;  // NOLINT
+#endif
   int64 operator() (int64 val_max) {
     return Next64() % val_max;
   }

@@ -776,7 +776,7 @@ class OppositeCallback : public BaseObject {
  public:
   OppositeCallback(ResultCallback1<int64, int64>* const values)
       : values_(values) {
-    CHECK_NOTNULL(values);
+    CHECK_NOTNULL(values_);
     values_->CheckIsRepeatable();
   }
 

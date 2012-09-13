@@ -96,7 +96,8 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
                    const AlphaNum &d, const AlphaNum &e, const AlphaNum &f) {
   std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size() + e.size() + f.size());
+  result.resize(a.size() + b.size() + c.size() + d.size() + e.size()
+                + f.size());
   char *const begin = &*result.begin();
   char *out = Append4(begin, a, b, c, d);
   out = Append2(out, e, f);

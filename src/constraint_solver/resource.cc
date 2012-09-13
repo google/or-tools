@@ -862,6 +862,10 @@ class RankedPropagator : public Constraint {
         last_sentinel < last_position ?
         RankedInterval(last_sentinel + 1) :
         NULL;
+    // IntVar* const last_transit =
+    //     last_sentinel < last_position ?
+    //     RankedTransit(last_sentinel + 1) :
+    //     NULL;
 
     // Nothing to do afterwards, exiting.
     if (first_interval == NULL && last_interval == NULL) {

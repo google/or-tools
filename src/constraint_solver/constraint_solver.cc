@@ -212,6 +212,8 @@ class FifoPriorityQueue {
 
 class Queue {
  public:
+  static const int64 kTestPeriod = 10000;
+
   explicit Queue(Solver* const s)
       : solver_(s),
         stamp_(1),
@@ -246,13 +248,13 @@ class Queue {
   void ProcessOneDemon(Demon* const demon) {
     demon->set_stamp(stamp_ - 1);
     if (!instruments_demons_) {
-      if (++solver_->demon_runs_[demon->priority()] % 10000 == 0) {
+      if (++solver_->demon_runs_[demon->priority()] % kTestPeriod == 0) {
         solver_->TopPeriodicCheck();
       }
       demon->Run(solver_);
     } else {
       solver_->GetPropagationMonitor()->BeginDemonRun(demon);
-      if (++solver_->demon_runs_[demon->priority()] % 10000 == 0) {
+      if (++solver_->demon_runs_[demon->priority()] % kTestPeriod == 0) {
         solver_->TopPeriodicCheck();
       }
       demon->Run(solver_);
@@ -261,7 +263,7 @@ class Queue {
   }
 
   void ProcessNormalDemon(Demon* const demon) {
-    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod == 0) {
       solver_->TopPeriodicCheck();
     }
     demon->Run(solver_);
@@ -269,7 +271,7 @@ class Queue {
 
   void ProcessInstrumentedNormalDemon(Demon* const demon) {
     solver_->GetPropagationMonitor()->BeginDemonRun(demon);
-    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod == 0) {
       solver_->TopPeriodicCheck();
     }
     demon->Run(solver_);
@@ -310,7 +312,8 @@ class Queue {
         Demon* const demon = *it;
         if (demon->stamp() < stamp_) {
           DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
-          if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+          if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod ==
+              0) {
             solver_->TopPeriodicCheck();
           }
           demon->Run(solver_);
