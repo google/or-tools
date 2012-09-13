@@ -87,8 +87,8 @@ int64 ValueEvaluator(hash_map<int64, std::pair<int64, int64> >* value_evaluator,
   CHECK_NOTNULL(value_evaluator);
   // Evaluate the choice. Smaller ranking denotes a better choice.
   int64 ranking = -1;
-  for (ConstIter<hash_map<int64, pair<int64, int64> > > it(*value_evaluator);
-       !it.at_end(); ++it) {
+  for (ConstIter<hash_map<int64, std::pair<int64, int64> > > 
+	 it(*value_evaluator); !it.at_end(); ++it) {
     if ((it->first != variable_index) && (it->second.first == value)) {
       ranking = -2;
       break;
@@ -96,11 +96,11 @@ int64 ValueEvaluator(hash_map<int64, std::pair<int64, int64> >* value_evaluator,
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  hash_map<int64, pair<int64, int64> >::iterator it;
+  hash_map<int64, std::pair<int64, int64> >::iterator it;
   int64 new_value = value;
   int64 new_ranking = ranking;
   if ((it = value_evaluator->find(variable_index)) != value_evaluator->end()) {
-    pair<int64, int64> existing_value_ranking = it->second;
+    std::pair<int64, int64> existing_value_ranking = it->second;
     // Replace only if the current choice for this variable has smaller
     // ranking or same ranking but smaller value of the existing choice.
     if (!(existing_value_ranking.second > ranking ||
@@ -323,7 +323,7 @@ void FapSolverHard(const std::map<int, FapVariable>& data_variables,
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy
   DecisionBuilder* db;
-  hash_map<int64, pair<int64, int64> > history;
+  hash_map<int64, std::pair<int64, int64> > history;
   if (FLAGS_evaluator == "evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
     db = solver.MakePhase(variables,
