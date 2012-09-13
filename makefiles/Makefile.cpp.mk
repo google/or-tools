@@ -27,6 +27,9 @@ DYNAMIC_FLATZINC_LIBS = \
 DYNAMIC_DIMACS_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 
+DYNAMIC_FAP_LIBS = \
+	$(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX)
+
 # Lib dependencies.
 DYNAMIC_BASE_DEPS = $(DYNAMIC_BASE_LIBS)
 
@@ -43,6 +46,8 @@ DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_L
 DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_BASE_LIBS)
 
 DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_ALGORITHMS_LIBS) $(DYNAMIC_BASE_LIBS)
+
+DYNAMIC_FAB_DEPS = $(DYNAMIC_FAP_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_BASE_LIBS)
 
 
 # Create link commands.
@@ -83,6 +88,11 @@ DYNAMIC_DIMACS_LNK = \
 	$(DYNAMIC_PRE_LIB)shortestpaths$(DYNAMIC_POST_LIB) \
 	$(DYNAMIC_PRE_LIB)dimacs$(DYNAMIC_POST_LIB) \
 	$(DYNAMIC_ALGORITHMS_LNK)
+
+DYNAMIC_FAP_LNK = \
+	$(DYNAMIC_PRE_LIB)fap$(DYNAMIC_POST_LIB) \
+	$(DYNAMIC_CP_LNK)
+
 
 #### STATIC link and libs ####
 
@@ -247,6 +257,8 @@ lplibs: $(DYNAMIC_LP_DEPS) $(STATIC_LP_DEPS)
 graphlibs: $(DYNAMIC_GRAPH_DEPS) $(STATIC_GRAPH_DEPS)
 
 dimacslibs: $(DYNAMIC_DIMACS_LIBS)
+
+faplibs: $(DYNAMIC_FAP_LIBS)
 
 # Constraint Solver Lib.
 
@@ -698,6 +710,33 @@ FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/parser.$O\
 	$(OBJ_DIR)/registry.$O
 
+# FAP challenge problem format library
+
+FAP_LIB_OBJS=\
+	$(OBJ_DIR)/fap_model_printer.$O\
+	$(OBJ_DIR)/fap_parser.$O\
+	$(OBJ_DIR)/fap_utilities.$O
+
+$(OBJ_DIR)/fap_model_printer.$O:$(EX_DIR)/cpp/fap_model_printer.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_model_printer.cc $(OBJ_OUT)fap_model_printer.$O
+$(OBJ_DIR)/fap_parser.$O:$(EX_DIR)/cpp/fap_parser.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_parser.cc $(OBJ_OUT)fap_parser.$O
+$(OBJ_DIR)/fap_utilities.$O:$(EX_DIR)/cpp/fap_utilities.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_utilities.cc $(OBJ_OUT)fap_utilities.$O
+
+$(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX): $(FAP_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX) $(FAP_LIB_OBJS)
+
+# Flatzinc Support
+
+FLATZINC_LIB_OBJS=\
+	$(OBJ_DIR)/flatzinc.$O\
+	$(OBJ_DIR)/fz_search.$O\
+	$(OBJ_DIR)/lexer.yy.$O\
+	$(OBJ_DIR)/parser.tab.$O\
+	$(OBJ_DIR)/parser.$O\
+	$(OBJ_DIR)/registry.$O
+
 ifeq ($(SYSTEM),win)
 $(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.win.cc $(SRC_DIR)/flatzinc/parser.tab.h
 	copy $(SRC_DIR)\\flatzinc\\lexer.win.cc $(SRC_DIR)\\flatzinc\\lexer.yy.cc
@@ -924,6 +963,14 @@ $(OBJ_DIR)/ls_api.$O:$(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/constraint_solver/constr
 
 $(BIN_DIR)/ls_api$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/ls_api.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXEOUT)ls_api$E
+
+# Frequency Assignment Problem
+
+$(OBJ_DIR)/frequency_assignment_problem.$O:$(EX_DIR)/cpp/frequency_assignment_problem.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/frequency_assignment_problem.cc $(OBJ_OUT)frequency_assignment_problem.$O
+
+$(BIN_DIR)/frequency_assignment_problem$E: $(DYNAMIC_FAP_DEPS) $(OBJ_DIR)/frequency_assignment_problem.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(DYNAMIC_FAP_LNK) $(DYNAMIC_LD_FLAGS) $(EXEOUT)frequency_assignment_problem$E
 
 # Linear Programming Examples
 
