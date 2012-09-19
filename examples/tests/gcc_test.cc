@@ -52,10 +52,14 @@ int64 TestGcc(int num_vars,
 
   std::vector<int> card_min(num_values, 0);
   std::vector<int> card_max(num_values, 0);
+  std::vector<int> values(num_values);
   for (int i = 0; i< num_vars - slack; ++i) {
     const int index = rgen.Uniform(num_values);
     card_min[index]++;
     card_max[index]++;
+  }
+  for (int i = 0; i < num_values; ++i) {
+    values[i] = offset + i;
   }
   for (int i = 0; i < 2 * slack; ++i) {
     card_max[rgen.Uniform(num_values)]++;
@@ -74,15 +78,16 @@ int64 TestGcc(int num_vars,
   solver.MakeIntVarArray(num_vars, offset, offset + num_values - 1, "v", &vars);
   switch (type) {
     case 0:
-      solver.AddConstraint(solver.MakeDistribute(vars, card_min, card_max));
+      solver.AddConstraint(
+          solver.MakeDistribute(vars, values, card_min, card_max));
       break;
     case 1:
-      solver.AddConstraint(MakeGcc(&solver, vars, 0, card_min, card_max));
+      solver.AddConstraint(MakeGcc(&solver, vars, offset, card_min, card_max));
       break;
     case 2:
       solver.AddConstraint(MakeSoftGcc(&solver,
                                        vars,
-                                       0,
+                                       offset,
                                        card_min,
                                        card_max,
                                        solver.MakeIntConst(0)));
