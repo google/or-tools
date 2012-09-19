@@ -127,7 +127,9 @@ class FzParallelSupport {
   int num_solutions_;
 };
 
-FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose);
+FzParallelSupport* MakeSequentialSupport(bool print_all,
+                                         int num_solutions,
+                                         bool verbose);
 FzParallelSupport* MakeMtSupport(bool print_all, bool verbose);
 
 /**

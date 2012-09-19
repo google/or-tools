@@ -92,9 +92,10 @@ class MtCustomLimit : public SearchLimit {
 
 class SequentialSupport : public FzParallelSupport {
  public:
-  SequentialSupport(bool print_all, bool verbose)
+  SequentialSupport(bool print_all, int num_solutions, bool verbose)
   : print_all_(print_all),
     verbose_(verbose),
+    num_solutions_(num_solutions),
     type_(UNDEF),
     best_solution_(0),
     interrupted_(false) {}
@@ -115,7 +116,7 @@ class SequentialSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     IncrementSolutions();
-    if (NumSolutions() == 1 || print_all_) {
+    if (NumSolutions() <= num_solutions_ || print_all_) {
       std::cout << solution_string;
     }
   }
@@ -174,6 +175,7 @@ class SequentialSupport : public FzParallelSupport {
  private:
   const bool print_all_;
   const bool verbose_;
+  const int num_solutions_;
   Type type_;
   string last_solution_;
   int64 best_solution_;
@@ -653,7 +655,9 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
     }
     parameters.run_all_heuristics = true;
     parameters.heuristic_period =
-        method_ != SAT || !p.all_solutions ? p.heuristic_period : -1;
+        method_ != SAT || (!p.all_solutions && p.num_solutions == 1) ?
+         p.heuristic_period :
+         -1;
     parameters.restart_log_size = p.restart_log_size;
     parameters.display_level = p.use_log ?
                                (p.verbose_impact ?
@@ -908,8 +912,10 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 }
 
-FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose) {
-  return new SequentialSupport(print_all, verbose);
+FzParallelSupport* MakeSequentialSupport(bool print_all,
+                                         int num_solutions,
+                                         bool verbose) {
+  return new SequentialSupport(print_all, num_solutions, verbose);
 }
 
 FzParallelSupport* MakeMtSupport(bool print_all, bool verbose) {

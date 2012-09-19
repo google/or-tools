@@ -189,6 +189,7 @@ int main(int argc, char** argv) {
     operations_research::scoped_ptr<operations_research::FzParallelSupport>
         parallel_support(
             operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                       parameters.num_solutions,
                                                        FLAGS_verbose_mt));
     operations_research::Run(argv[1], parameters, parallel_support.get());
   } else {
