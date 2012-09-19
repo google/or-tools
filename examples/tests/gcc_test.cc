@@ -19,10 +19,11 @@
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"
 
-DEFINE_int32(vars, 2, "Number of variables");
-DEFINE_int32(values, 3, "Number of values");
+DEFINE_int32(vars, 3, "Number of variables");
+DEFINE_int32(values, 5, "Number of values");
 DEFINE_int32(slack, 1, "Slack in cardinalities");
 DEFINE_int32(seed, 1, "Random seed");
+DEFINE_int32(offset, 0, "Min value of variables");
 
 namespace operations_research {
 extern Constraint* MakeGcc(Solver* const solver,
@@ -41,7 +42,12 @@ extern Constraint* MakeSoftGcc(Solver* const solver,
 
 static const char* kConstraintName[] = { "Distribute", "Gcc", "SoftGcc" };
 
-int64 TestGcc(int num_vars, int num_values, int slack, int seed, int type) {
+int64 TestGcc(int num_vars,
+              int num_values,
+              int slack,
+              int seed,
+              int type,
+              int offset) {
   ACMRandom rgen(seed); // defines a random generator
 
   std::vector<int> card_min(num_values, 0);
@@ -56,16 +62,16 @@ int64 TestGcc(int num_vars, int num_values, int slack, int seed, int type) {
   }
 
   LOG(INFO) << kConstraintName[type] << " constraint";
-  LOG(INFO) << "  - num variables = " << num_vars;
-  LOG(INFO) << "  - num values = " << num_values;
-  LOG(INFO) << "  - slack = " << slack;
-  LOG(INFO) << "  - seed = " << seed;
-  LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
-  LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
+  // LOG(INFO) << "  - num variables = " << num_vars;
+  // LOG(INFO) << "  - num values = " << num_values;
+  // LOG(INFO) << "  - slack = " << slack;
+  // LOG(INFO) << "  - seed = " << seed;
+  // LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
+  // LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
 
   Solver solver("TestGcc");
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(num_vars, 0, num_values - 1, &vars);
+  solver.MakeIntVarArray(num_vars, offset, offset + num_values - 1, "v", &vars);
   switch (type) {
     case 0:
       solver.AddConstraint(solver.MakeDistribute(vars, card_min, card_max));
@@ -107,22 +113,28 @@ int64 TestGcc(int num_vars, int num_values, int slack, int seed, int type) {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  // operations_research::TestGcc(FLAGS_vars,
-  //                              FLAGS_values,
-  //                              FLAGS_slack,
-  //                              FLAGS_seed,
-  //                              0);
-  // if (FLAGS_slack == 0) {
-  //   operations_research::TestGcc(FLAGS_vars,
-  //                                FLAGS_values,
-  //                                FLAGS_slack,
-  //                                FLAGS_seed,
-  //                                1);
-  // }
-  operations_research::TestGcc(FLAGS_vars,
-                               FLAGS_values,
-                               FLAGS_slack,
-                               FLAGS_seed,
-                               2);
+  const int dis = operations_research::TestGcc(FLAGS_vars,
+                                               FLAGS_values,
+                                               FLAGS_slack,
+                                               FLAGS_seed,
+                                               0,
+                                               FLAGS_offset);
+  const int gcc = operations_research::TestGcc(FLAGS_vars,
+                                               FLAGS_values,
+                                               FLAGS_slack,
+                                               FLAGS_seed,
+                                               1,
+                                               FLAGS_offset);
+  const int soft = operations_research::TestGcc(FLAGS_vars,
+                                                FLAGS_values,
+                                                FLAGS_slack,
+                                                FLAGS_seed,
+                                                2, FLAGS_offset);
+  if (gcc != dis && gcc != soft && dis == soft) {
+    LOG(INFO) << "Problem with vars = " << FLAGS_vars
+              << ", and values = " << FLAGS_values
+              << ", seed = " << FLAGS_seed
+              << ", slack = " << FLAGS_slack;
+  }
   return 0;
 }

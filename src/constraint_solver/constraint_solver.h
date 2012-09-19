@@ -3642,7 +3642,7 @@ template <class T> class NumericalRev : public Rev<T> {
 template <class T> class RevArray {
  public:
   RevArray(int size, const T& val)
-      : stamps_(new uint64[size]), values_(new T[size]) {
+      : stamps_(new uint64[size]), values_(new T[size]), size_(size) {
     for (int i = 0; i < size; ++i) {
       stamps_[i] = 0;
       values_[i] = val;
@@ -3650,6 +3650,8 @@ template <class T> class RevArray {
   }
 
   ~RevArray() {}
+
+  int size() const { return size_; }
 
   const T& Value(int index) const { return values_[index]; }
 
@@ -3670,6 +3672,7 @@ template <class T> class RevArray {
  private:
   scoped_array<uint64> stamps_;
   scoped_array<T> values_;
+  const int size_;
 };
 
 // Subclass of RevArray<T> which adds numerical operations.
