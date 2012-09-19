@@ -115,7 +115,7 @@ class SequentialSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     IncrementSolutions();
-    if (NumSolutions() == 1) {
+    if (NumSolutions() == 1 || print_all_) {
       std::cout << solution_string;
     }
   }
