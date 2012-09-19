@@ -66,12 +66,12 @@ int64 TestGcc(int num_vars,
   }
 
   LOG(INFO) << kConstraintName[type] << " constraint";
-  // LOG(INFO) << "  - num variables = " << num_vars;
-  // LOG(INFO) << "  - num values = " << num_values;
-  // LOG(INFO) << "  - slack = " << slack;
-  // LOG(INFO) << "  - seed = " << seed;
-  // LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
-  // LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
+  LOG(INFO) << "  - num variables = " << num_vars;
+  LOG(INFO) << "  - num values = " << num_values;
+  LOG(INFO) << "  - slack = " << slack;
+  LOG(INFO) << "  - seed = " << seed;
+  LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
+  LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
 
   Solver solver("TestGcc");
   std::vector<IntVar*> vars;

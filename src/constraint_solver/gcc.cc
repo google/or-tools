@@ -278,6 +278,12 @@ class GccConstraint : public Constraint {
   }
 
   virtual void InitialPropagate() {
+    // Sets the range.
+    for (Index i(0); i < size_; ++i) {
+      variables_[i]->SetRange(
+          first_domain_value_,
+          first_domain_value_ + max_occurrences_.size() - 1);
+    }
     // Removes value with max card = 0;
     std::vector<int64> to_remove;
     for (int64 i = 0; i < max_occurrences_.size(); ++i) {
