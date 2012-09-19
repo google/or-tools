@@ -187,8 +187,6 @@ class GccConstraint : public Constraint {
       : Constraint(solver),
         variables_(vars.begin(), vars.end()),
         size_(vars.size()),
-        current_level_(1),
-        last_level_(0),
         max_occurrences_(number_of_values + 1, 0),
         first_domain_value_(first_domain_value),
         tree_(2 * size_ + 2),
@@ -204,8 +202,6 @@ class GccConstraint : public Constraint {
         active_size_(0),
         lower_sum_(first_domain_value, number_of_values, min_occurrences),
         upper_sum_(first_domain_value, number_of_values, max_occurrences) {
-    last_level_ = -1;
-
     for (int64 i = 0; i < number_of_values; i++) {
       max_occurrences_.SetValue(solver, i, max_occurrences[i]);
     }
@@ -225,8 +221,6 @@ class GccConstraint : public Constraint {
       : Constraint(solver),
         variables_(vars.begin(), vars.end()),
         size_(vars.size()),
-        current_level_(1),
-        last_level_(0),
         max_occurrences_(number_of_values, 0),
         first_domain_value_(first_domain_value),
         tree_(2 * size_ + 2),
@@ -242,8 +236,6 @@ class GccConstraint : public Constraint {
         active_size_(0),
         lower_sum_(first_domain_value, number_of_values, min_occurrences),
         upper_sum_(first_domain_value, number_of_values, max_occurrences) {
-    last_level_ = -1;
-
     for(int64 i = 0; i < number_of_values; i++) {
       max_occurrences_.SetValue(solver, i, max_occurrences[i]);
     }
@@ -302,34 +294,9 @@ class GccConstraint : public Constraint {
   void PropagateRange() {
     bool has_changed = false;
 
-    current_level_.Incr(solver());
-
-    if (last_level_ != (current_level_.Value() - 1)) {
-      // not incremental
-      has_changed = true;
-      for (Index i(0); i < size_; ++i) {
-        intervals_[i].min_value = variables_[i]->Min();
-        intervals_[i].max_value = variables_[i]->Max();
-      }
-    } else {
-      // incremental
-      has_changed = false;
-      for(Index i(0); i < size_; i++) {
-        const int64 old_min = intervals_[i].min_value;
-        const int64 old_max = intervals_[i].max_value;
-        intervals_[i].min_value = variables_[i]->Min();
-        intervals_[i].max_value = variables_[i]->Max();
-        if (old_min != intervals_[i].min_value ||
-            old_max != intervals_[i].max_value) {
-          has_changed = true;
-        }
-      }
-    }
-
-    last_level_ = current_level_.Value();
-
-    if (!has_changed) {
-      return;
+    for (Index i(0); i < size_; ++i) {
+      intervals_[i].min_value = variables_[i]->Min();
+      intervals_[i].max_value = variables_[i]->Max();
     }
 
     SortIntervals();
@@ -481,10 +448,10 @@ class GccConstraint : public Constraint {
     // visit intervals in increasing max order
     for (int64 i = 0; i < size_; i++) {
       // get interval bounds_
-      int64 x = sorted_by_max_[i]->min_rank;
-      int64 y = sorted_by_max_[i]->max_rank;
+      const int64 x = sorted_by_max_[i]->min_rank;
+      const int64 y = sorted_by_max_[i]->max_rank;
       int64 z = PathMax(tree_, x + 1);
-      int64 j = tree_[z];
+      const int64 j = tree_[z];
       if (--diffs_[z] == 0) {
         tree_[z] = z + 1;
         z = PathMax(tree_, z + 1);
@@ -585,10 +552,10 @@ class GccConstraint : public Constraint {
     // visit intervals in increasing max order
     for (int64 i = 0; i < size_; i++) {
       // Get interval bounds_
-      int64 x = sorted_by_max_[i]->min_rank;
+      const int64 x = sorted_by_max_[i]->min_rank;
       int64 y = sorted_by_max_[i]->max_rank;
       int64 z = PathMax(tree_, x + 1);
-      int64 j = tree_[z];
+      const int64 j = tree_[z];
       if (z != x + 1) {
         // if bounds_[z] - 1 belongs to a stable set,
         // [bounds_[x], bounds_[z]) is a sub set of this stable set
@@ -668,8 +635,8 @@ class GccConstraint : public Constraint {
     // For all variables that are not a subset of a stable set, shrink
     // the lower bound
     for (int64 i = size_ - 1; i >= 0; i--) {
-      int64 x = sorted_by_max_[i]->min_rank;
-      int64 y = sorted_by_max_[i]->max_rank;
+      const int64 x = sorted_by_max_[i]->min_rank;
+      const int64 y = sorted_by_max_[i]->max_rank;
       if ((stable_intervals_[x] <= x) || (y > stable_intervals_[x])) {
         sorted_by_max_[i]->min_value =
             lower_sum_.SkipNonNullElementsRight(bounds_[new_min_[i]]);
@@ -712,11 +679,11 @@ class GccConstraint : public Constraint {
 
     for (int64 i = size_; --i>=0;) { // visit intervals in decreasing min order
       // Get interval bounds_
-      int64 x = sorted_by_min_[i]->max_rank;
+      const int64 x = sorted_by_min_[i]->max_rank;
       int64 y = sorted_by_min_[i]->min_rank;
       int64 z = PathMin(tree_, x - 1);
       // Solve the lower bound problem
-      int64 j = tree_[z];
+      const int64 j = tree_[z];
 
       // If the variable is not in a discovered stable set Possible
       // optimization: Use the array stable_intervals_ to perform this
@@ -749,8 +716,8 @@ class GccConstraint : public Constraint {
     // For all variables that are not subsets of a stable set, shrink
     // the lower bound
     for (int64 i = size_ - 1; i >= 0; i--) {
-      int64 x = sorted_by_min_[i]->min_rank;
-      int64 y = sorted_by_min_[i]->max_rank;
+      const int64 x = sorted_by_min_[i]->min_rank;
+      const int64 y = sorted_by_min_[i]->max_rank;
       if ((stable_intervals_[x] <= x) || (y > stable_intervals_[x]))
         sorted_by_min_[i]->max_value =
             lower_sum_.SkipNonNullElementsLeft(bounds_[new_min_[i]] - 1);
@@ -762,8 +729,8 @@ class GccConstraint : public Constraint {
 
   ITIVector<Index, IntVar*> variables_;
   const int64 size_;
-  NumericalRev<int> current_level_;
-  int last_level_;
+  // NumericalRev<int> current_level_;
+  // int last_level_;
   NumericalRevArray<int64> max_occurrences_;
   const int64 first_domain_value_;
   std::vector<int64> tree_;   // tree links
