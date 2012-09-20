@@ -12,6 +12,8 @@
 // limitations under the License.
 //
 // This file implements the table constraints.
+//
+// This file has been modified by Laurent Perron for Google Inc.
 
 #include <string.h>
 #include <algorithm>

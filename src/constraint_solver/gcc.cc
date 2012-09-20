@@ -18,6 +18,7 @@
 // Joint Conference on Artificial Intelligence (IJCAI 03), Acapulco,
 // Mexico, pages 245-250, 2003.
 
+// This file has been modified by Laurent Perron for Google Inc.
 
 #include "base/int-type.h"
 #include "base/int-type-indexed-vector.h"
