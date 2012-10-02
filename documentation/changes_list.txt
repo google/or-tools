@@ -1,4 +1,11 @@
 
+v.0.1.14: (2012-10-02 15:18:35)
+-------------------------------
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - 9.1-9.3 added.
+
+
 v.0.1.13: (2012-09-08 12:51:55)
 -------------------------------
 The manual has now more than 200 pages.

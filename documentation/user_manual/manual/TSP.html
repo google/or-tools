@@ -56,8 +56,8 @@
 <span id="chapter-tsp-with-constraints"></span><h1>9. Travelling Salesman Problems with constraints: the TSP with time windows</h1>
 <p>The third part of this manual deals with <em>Routing Problems</em>: we have a graph<a class="footnote-reference" href="#graph-or-network" id="id1">[1]</a> and seek
 to find a set of routes covering some or all nodes and/or edges/arcs while optimizing an objective function along
-the routes<a class="footnote-reference" href="#transportation-metaphor" id="id2">[2]</a> (time, goods delivered, etc.) and respecting
-certain constraints (number of vehicles, fixed depots, capacities, clients to serve, time windows, etc.).</p>
+the routes<a class="footnote-reference" href="#transportation-metaphor" id="id2">[2]</a> (time, vehicle costs, etc.) and respecting
+certain constraints (number of vehicles, goods to pickup and deliver, fixed depots, capacities, clients to serve, time windows, etc.).</p>
 <table class="docutils footnote" frame="void" id="graph-or-network" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -72,7 +72,7 @@ about a <em>network</em>.</td></tr>
 <tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The transportation metaphor is helpful to visualize the problems but the class
 of Routing Problems is much broader. The <em>Transportation Problem</em> for instance is really an <em>Assignment Problem</em>.
 Networks can be of any type: telephone networks (circuit switching), electronic data
-networks (such as the internet), etc.</td></tr>
+networks (such as the internet), VLSI (the design of chips), etc.</td></tr>
 </tbody>
 </table>
 <p>To solve these problems, the or-tools offers a dedicated Constraint Programming sub-library:
@@ -89,31 +89,12 @@ visited and served.</li>
 <p>These three categories of problems share common properties but they all have their
 own paradigms and scientific communities.</p>
 <p>In this chapter, we&#8217;ll discover the RL with what is probably the most studied problem in Operations Research:
-the <em>Travelling Salesman Problem</em> (TSP)<a class="footnote-reference" href="#tsp-two-l" id="id3">[3]</a>. The best algorithms can now routinely
-solve TSP instances with then thousands of nodes to optimality<a class="footnote-reference" href="#tsp-record" id="id4">[4]</a>.</p>
-<p>These problems are out of scope of the Constraint Programming paradigm<a class="footnote-reference" href="#tsp-difficult-for-cp" id="id5">[5]</a>. CP shines when
-you consider complicated side constraints like the addition of <em>time windows</em>: each customer (represented by a node)
-has to be visited inside a given time interval.</p>
+the <em>Travelling Salesman Problem</em> (TSP)<a class="footnote-reference" href="#tsp-two-l" id="id3">[3]</a>.</p>
 <table class="docutils footnote" frame="void" id="tsp-two-l" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>We use the Canadian (and British) spelling of the verb <em>travelling</em> but you&#8217;ll find much more
 scientific articles under the American spelling: <em>traveling</em>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="tsp-record" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>The record at the time of writing is the <tt class="docutils literal"><span class="pre">pla85900</span></tt> instance in Gerd Reinelt&#8217;s
-<a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>. This instance is a VLSI application
-with 85 900 nodes. For many other instances with <strong>millions</strong> of nodes, solutions can be found that are
-guaranteed to be within 1% of an optimal tour!</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="tsp-difficult-for-cp" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[5]</a></td><td>At least for now and if you try to solve them to optimality.</td></tr>
 </tbody>
 </table>
 <p class="rubric">Overview:</p>
@@ -132,18 +113,19 @@ solve the TSP with Time Windows.</p>
 </ul>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap9</span></tt>.</p>
-<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#epix-latex" id="id6">[6]</a> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
+<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#epix-latex" id="id4">[4]</a> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
 to visualize TSP solutions in <em>TSPLIB</em> format and TSPTW solutions in <em>López-Ibáñez-Blum</em> and <em>da Silva-Urrutia</em> formats.</p>
 <table class="docutils footnote" frame="void" id="epix-latex" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[6]</a></td><td>The ePiX library uses the <img class="math" src="../_images/math/6e706c7be892b58ea1c3ab147eaae242299cf3da.png" alt="\text{\TeX/\LaTeX}" style="vertical-align: -4px"/> engine to create beautiful graphics.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>The ePiX library uses the <img class="math" src="../_images/math/6e706c7be892b58ea1c3ab147eaae242299cf3da.png" alt="\text{\TeX/\LaTeX}" style="vertical-align: -4px"/> engine to create beautiful graphics.</td></tr>
 </tbody>
 </table>
 <p>The files inside this directory are:</p>
 <ul class="simple">
 <li><tt class="file docutils literal"><span class="pre">tsp.h</span></tt>: This file contains the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class that records the data for the TSP.
 This file is used throughout the TSP examples.</li>
+<li><tt class="file docutils literal"><span class="pre">tsplib.h</span></tt>: Declarations of TSPLIB keywords and the <tt class="docutils literal"><span class="pre">TSPLIBDistanceFunctions</span></tt> class.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp_epix.h</span></tt>: This file provide the helper functions to visualize TSPLIB solutions with the ePiX library.</li>
 <li><tt class="file docutils literal"><span class="pre">tsplib_solution_to_epix.cc</span></tt>: A simple program to visualize solutions in TSPLIB format with the ePiX library.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp.cc</span></tt>: A basic implementation of the TSP with the RL.</li>
@@ -160,22 +142,21 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tsp/zoo_routing_problems.html">9.1. A whole zoo of Routing Problems</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#node-routing-problems">9.1.1. Node Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.3. Arc Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.2. Arc Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.3. Vehicle Routing Problems</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">9.2. The Routing Library (RL) in a nutshell</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#objectives">9.2.1. Objectives</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#out-of-the-box-models">9.2.2. Out of the box models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#node-and-vehicle-oriented">9.2.4. Node and vehicle oriented</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#local-search">9.2.5. Local Search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#tuning-the-search">9.2.6. Tuning the search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.7. Limitations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#local-search">9.2.4. Local Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#tuning-the-search">9.2.5. Tuning the search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.6. Limitations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The travelling Salesman Problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#id1">9.3.1. The Travelling Salesman Problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The Travelling Salesman Problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-problem">9.3.1. The Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#benchmark-data">9.3.2. Benchmark data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>

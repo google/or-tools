@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.3. The travelling Salesman Problem" href="tsp.html" />
+    <link rel="next" title="9.3. The Travelling Salesman Problem" href="tsp.html" />
     <link rel="prev" title="9.1. A whole zoo of Routing Problems" href="zoo_routing_problems.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tsp.html" title="9.3. The travelling Salesman Problem"
+          <a href="tsp.html" title="9.3. The Travelling Salesman Problem"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
@@ -56,28 +56,100 @@
             
   <div class="section" id="the-routing-library-rl-in-a-nutshell">
 <span id="tsp-routing-solver"></span><h1>9.2. The Routing Library (RL) in a nutshell</h1>
+<p>The vehicle routing library lets one model and solve generic routing
+problems ranging from the Travelling Salesman Problem to more complex
+problems such as the Capacitated Vehicle Routing Problem with Time Windows. In this section, we present
+its main characteristics.</p>
 <div class="section" id="objectives">
 <h2>9.2.1. Objectives</h2>
+<p>The objectives of the RL are to</p>
+<blockquote>
+<div><ul class="simple">
+<li>model and solve generic routing problems out of the box;</li>
+<li>provide modelling and solving blocks that can easily be reused;</li>
+<li>make simple models simple to model;</li>
+<li>allow extensibility.</li>
+</ul>
+</div></blockquote>
+<p>In short, we provide specialized primitives that you can assemble and customize to your needs.</p>
 </div>
 <div class="section" id="out-of-the-box-models">
 <h2>9.2.2. Out of the box models</h2>
+<p>[TO BE WRITTEN]</p>
+<p>which lets you model a wide range of vehicle
+routing problems from the Traveling Salesman Problem (and its
+variants, ATSP, TSPTW, ...) to multi-vehicle problems with dimension
+constraints (capacities, time windows) and various &#8220;routing&#8221;
+constraints (optional nodes, alternate nodes,...).</p>
+<p>Node and vehicle oriented</p>
 </div>
 <div class="section" id="on-top-of-the-cp-library">
 <h2>9.2.3. On top of the CP library</h2>
+<p>The RL is a layer above the CP Solver. Most of the internal <em>cabling</em> is hidden but can be accessed anytime.
+Everything is contained is one single class: the <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class. This class internaly uses
+an object of type <tt class="docutils literal"><span class="pre">Solver</span></tt> that can be accessed and queried:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(...);</span>
+<span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">solver</span><span class="p">();</span>
+</pre></div>
 </div>
-<div class="section" id="node-and-vehicle-oriented">
-<h2>9.2.4. Node and vehicle oriented</h2>
+<p>You can thus use the full power of the CP Solver and extend your models using the numerous available constraints.</p>
+<p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class by itself only uses <tt class="docutils literal"><span class="pre">IntVar</span></tt>s to model Routing Problems.</p>
 </div>
 <div class="section" id="local-search">
-<h2>9.2.5. Local Search</h2>
+<h2>9.2.4. Local Search</h2>
+<p>We are mainly using CP-based local search and large
+neighborhood search using routing-specific neighborhoods.
+Implementations of Tabu Search and Guided Local Search are available
+too and have proven to give good results (especially GLS).</p>
 </div>
 <div class="section" id="tuning-the-search">
-<h2>9.2.6. Tuning the search</h2>
+<h2>9.2.5. Tuning the search</h2>
+<p>To tune and parametrize the search, use command-line gflags.
+For instance, you might want to use Tabu Search
+and limit the allowed solving time to 3 minutes:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --routing_no_tsp<span class="o">=</span><span class="nb">false</span>
+                                         --routing_time_limit<span class="o">=</span>180000
+</pre></div>
+</div>
+<p>To get the whole list of gflags defined in the RL:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --helpon<span class="o">=</span>routing
+</pre></div>
+</div>
+<p>gflags are not universally available in all programming languages.
+This is why the RL provides the handy <tt class="docutils literal"><span class="pre">SetCommandLineOption()</span></tt> method:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">routing</span><span class="p">.</span><span class="n">SetCommandLineOption</span><span class="p">(</span><span class="s">&quot;routing_first_solution&quot;</span><span class="p">,</span>
+                                                <span class="s">&quot;PathCheapestArc&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This is equivalent to calling the program with the gflag <tt class="docutils literal"><span class="pre">routing_first_solution</span></tt> set to
+<tt class="docutils literal"><span class="pre">PathCheapestArc</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="p">.</span><span class="o">/</span><span class="n">my_beautiful_routing_algorithm</span>
+                            <span class="o">--</span><span class="n">routing_first_solution</span><span class="o">=</span><span class="n">PathCheapestArc</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="limitations">
-<h2>9.2.7. Limitations</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<h2>9.2.6. Limitations</h2>
+<p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class has a limit on the maximum number of nodes it can handle. Indeed, its
+constructors take an regular <tt class="docutils literal"><span class="pre">int</span></tt> as the number of nodes it can model:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span><span class="p">(</span><span class="kt">int</span> <span class="n">nodes</span><span class="p">,</span> <span class="p">...);</span>
+</pre></div>
+</div>
+<p>By the <tt class="docutils literal"><span class="pre">ANSI/ISO</span></tt> standard, we are guaranteed to be able to declare at least a maximum of <tt class="docutils literal"><span class="pre">32767</span></tt> nodes.
+Remember that this is the strict minimum a maximum integer value can take. Since the problems we try to solve
+are intractable, <tt class="docutils literal"><span class="pre">32767</span></tt> nodes are most of the time enough<a class="footnote-reference" href="#stuck-with-node-limitations" id="id1">[1]</a>.</p>
+<p>Constraint Programming techniques - at the time of writing - are not competitive with state of the art techniques
+(mostly <em>Branch, Price and Cut</em> with specialized heuristics to solve Linear Mixed Integer Programs)
+that can solve TSP with thousands of nodes to optimality.
+The strength of Constraint Programming lies in its ability to handle well side constraints such as
+Time Windows for instance.</p>
+<table class="docutils footnote" frame="void" id="stuck-with-node-limitations" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If your platform retricts you too much, you can always adapt the code!</td></tr>
+</tbody>
+</table>
+</div>
 </div>
 
 
@@ -159,17 +231,16 @@ Search:
                         title="previous chapter">9.1. A whole zoo of Routing Problems</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="tsp.html"
-                        title="next chapter">9.3. The travelling Salesman Problem</a></p>
+                        title="next chapter">9.3. The Travelling Salesman Problem</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">9.2. The Routing Library (RL) in a nutshell</a><ul>
 <li><a class="reference internal" href="#objectives">9.2.1. Objectives</a></li>
 <li><a class="reference internal" href="#out-of-the-box-models">9.2.2. Out of the box models</a></li>
 <li><a class="reference internal" href="#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
-<li><a class="reference internal" href="#node-and-vehicle-oriented">9.2.4. Node and vehicle oriented</a></li>
-<li><a class="reference internal" href="#local-search">9.2.5. Local Search</a></li>
-<li><a class="reference internal" href="#tuning-the-search">9.2.6. Tuning the search</a></li>
-<li><a class="reference internal" href="#limitations">9.2.7. Limitations</a></li>
+<li><a class="reference internal" href="#local-search">9.2.4. Local Search</a></li>
+<li><a class="reference internal" href="#tuning-the-search">9.2.5. Tuning the search</a></li>
+<li><a class="reference internal" href="#limitations">9.2.6. Limitations</a></li>
 </ul>
 </li>
 </ul>
@@ -185,7 +256,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tsp.html" title="9.3. The travelling Salesman Problem"
+          <a href="tsp.html" title="9.3. The Travelling Salesman Problem"
              >next</a> |</li>
         <li class="right" >
           <a href="zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
