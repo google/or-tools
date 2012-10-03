@@ -1,4 +1,11 @@
 
+v.0.1.15: (2012-10-03 16:33:46)
+-------------------------------
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - 1.5 and 1.6 added.
+
+
 v.0.1.14: (2012-10-02 15:18:35)
 -------------------------------
 * Minor enhancements to the manual:

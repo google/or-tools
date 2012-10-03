@@ -56,14 +56,60 @@
             
   <div class="section" id="the-three-stage-method-describe-model-and-solve">
 <span id="three-stages"></span><h1>1.5. The three-stage method: describe, model and solve</h1>
+<p>We propose a recipe that belongs to the folklore. Like all recipes it is
+only a guide and should not be followed blindly. When it comes to research, everything is permitted
+and your imagination is the limit.</p>
+<p>In short, we propose to address a problem a in three stages:</p>
+<ul class="simple">
+<li>describe</li>
+<li>model</li>
+<li>solve</li>
+</ul>
+<p>The three stages are inter-mingled and are not intended to be followed one after the other rigidly
+as each stage influence the two other ones. The way you describe a problem will lead you to privilege certain types of models.
+You cannot propose a model without anticipating the way you will solve this model. A beautiful model that cannot be solved is useless.</p>
+<p>Conversely, when you are used to model some types of problems, you will probably try to cast a real problem into a problem that
+is known and well-solved. Problems do evolve with time as does your knowledge of them. Accordingly, you will change your description of the problem, the models you use
+and the way you solve these models.</p>
+<p>One of the strength of <em>constraint programming</em> is its ability to <em>describe</em> quite <em>naturally</em> problems.
+For instance, if you need to ensure
+that some variables must hold different values, simply use the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on these variables. Reification allows you
+to express some constraints that are simply unavailable in other solving paradigms. Another strength of <em>constraint programming</em> is its
+<em>malleability</em>. You can add side constraints very easily and adapt your models accordingly making <em>constraint programming</em>
+ideal to prototype new ideas.</p>
 <div class="section" id="describe">
 <h2>1.5.1. Describe</h2>
+<p>This step is often overlooked but is one of most important part of the overall solving process.
+Indeed, a real problem is often too complex to be solved in its entirety: you have to discard some constraints,
+to simplify certain hypothesizes, take into account the time to solve the problem (for instance if you have to solve the problem
+everyday, your algorithm can not take one month to provide a solution). Do you really need to solve the problem exactly? Or
+can you approximate it?</p>
+<p>This step is really critical and need to be carefully planned and executed.</p>
+<p>Is this manual, we will focus on three questions:</p>
+<ul class="simple">
+<li>What is the <strong>goal</strong> of the problem we try to solve? What kind of solutions are we exactly expected to provide?</li>
+<li>What are the <strong>decision variables</strong>? What are the variables whose values are crucial to solve the problem?</li>
+<li>What are the <strong>constraints</strong>? Are our constraints suited to solve the problem at hand?</li>
+</ul>
 </div>
 <div class="section" id="model">
 <h2>1.5.2. Model</h2>
+<p>Again a difficult stage if not the most challenging part of the solving process.
+Modelling is more of an <em>Art</em> than anything else. With experience, you will be able
+to model more easily and use known and effective tricks. If you are a novice in Operations Research/Constraint Programming,
+pay attention to the proposed models in this manual as they
+involve a lot of knowledge and subtleties. Do not be discouraged if you do not understand them at first. This is perfectly
+normal. Take the time to read them several times until you master them. Beside, it could be our fault if you do not
+understand them: maybe we did not explain them well?</p>
+<p>When confronted with a new problem, you might not know what do to. We all face this situation.
+This is what research is all about!</p>
 </div>
 <div class="section" id="solve">
 <h2>1.5.3. Solve</h2>
+<p>The reader should be aware that this stage isn&#8217;t only about pushing a solve button and
+waiting for the results to be delivered by the solver. The solve stage involves reasoning to find the best way
+to solve a given model, i.e. how to traverse the search tree in a efficient way.</p>
+<p>We discuss this stage in details in the chapter <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives: the n-queens problem</em></a>.</p>
 </div>
 </div>
 

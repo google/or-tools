@@ -57,7 +57,7 @@
   <div class="section" id="the-travelling-salesman-problem">
 <span id="tsp-tsp"></span><h1>9.3. The Travelling Salesman Problem</h1>
 <p>The Travelling Salesman Problem (TSP) is probably the most known and studied problem in Operations Research.
-In this section, we briefly present this fascinating problem and the
+In this section, we briefly<a class="footnote-reference" href="#tsp-examples-abond" id="id1">[1]</a> present this fascinating problem and the
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>
 which stands for the <em>TSP library</em>
 and is a library of sample instances for the TSP (and related problems) from various origins and of various types.
@@ -65,6 +65,13 @@ To read TSPLIB data, we have implemented our own <tt class="docutils literal"><s
 are compatible with our licence. Feel free to use it! Finally, we like to visualize what we are doing. To do so,
 we use the excellent <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
 through our <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> class.</p>
+<table class="docutils footnote" frame="void" id="tsp-examples-abond" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Google <em>TSP</em>, <em>Traveling Saleman Problem</em> or <em>Travelling Salesman Problem</em> to find <strong>lots</strong>
+of examples, explanations, applications, etc.</td></tr>
+</tbody>
+</table>
 <div class="section" id="the-problem">
 <h2>9.3.1. The Problem</h2>
 <p>Given a graph <img class="math" src="../../_images/math/b70ec1f605bd05af0f0f71e2631ec6f09d63890d.png" alt="G=(V,E)" style="vertical-align: -4px"/> and pairwise distances between nodes, the TSP consists in finding the shortest
@@ -73,15 +80,16 @@ salesman that must visit several cities and come back to his hometown, hence the
 <p>The cost we want to minimize is the sum of the distances along the path. Although there is a special vertex called
 the <em>depot</em> from which the tour starts and ends, we are really concerned with the overall cost of the tour, i.e. the
 we could start and end the tour at every node without changing the objective cost of the tour.</p>
+<p>Below you can find a picture of a solution of the TSP with 280 cities (<tt class="docutils literal"><span class="pre">a280</span></tt>) in the section <a class="reference internal" href="#section-visualization-epix-tsp"><em>Visualization with ePix</em></a>.</p>
 <p>The best algorithms can now routinely
-solve TSP instances with then thousands of nodes to optimality<a class="footnote-reference" href="#tsp-record" id="id1">[1]</a>.</p>
-<p>These instances are out of scope of the Constraint Programming paradigm<a class="footnote-reference" href="#tsp-difficult-for-cp" id="id2">[2]</a>. CP shines when
+solve TSP instances with then thousands of nodes to optimality<a class="footnote-reference" href="#tsp-record" id="id2">[2]</a>.</p>
+<p>These instances are out of scope of the Constraint Programming paradigm<a class="footnote-reference" href="#tsp-difficult-for-cp" id="id3">[3]</a>. CP shines when
 you consider complicated side constraints like the addition of <em>time windows</em>: each customer (represented by a node)
 has to be visited inside a given time interval.</p>
 <table class="docutils footnote" frame="void" id="tsp-record" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The record at the time of writing is the <tt class="docutils literal"><span class="pre">pla85900</span></tt> instance in Gerd Reinelt&#8217;s
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The record at the time of writing is the <tt class="docutils literal"><span class="pre">pla85900</span></tt> instance in Gerd Reinelt&#8217;s
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>. This instance is a VLSI application
 with 85 900 nodes. For many other instances with <strong>millions</strong> of nodes, solutions can be found that are
 guaranteed to be within 1% of an optimal tour!</td></tr>
@@ -90,12 +98,11 @@ guaranteed to be within 1% of an optimal tour!</td></tr>
 <table class="docutils footnote" frame="void" id="tsp-difficult-for-cp" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>At least for now and if you try to solve them to optimality.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>At least for now and if you try to solve them to optimality.</td></tr>
 </tbody>
 </table>
 <div class="topic">
 <p class="topic-title first">Do I really need a complete graph?</p>
-<p>Well... no!</p>
 </div>
 <div class="topic">
 <p class="topic-title first">Symmetric or Asymmetric distances?</p>
@@ -103,7 +110,7 @@ guaranteed to be within 1% of an optimal tour!</td></tr>
 <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> must be the same as the distance between <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/>. This is not
 mandatory. A distance in one direction could be larger than the distance in the other direction. For
 instance, climbing a hill might cost more than descending it. When the distances are not symmetric, i.e.
-<img class="math" src="../../_images/math/5bb88f3ab8f5de5bf528cafb1bddb4be445d6399.png" alt="\text{d}(i,j) \neq \text{d}(j,i)" style="vertical-align: -4px"/> we talk about an <em>Asymmetric</em> TSP.</p>
+<img class="math" src="../../_images/math/5bb88f3ab8f5de5bf528cafb1bddb4be445d6399.png" alt="\text{d}(i,j) \neq \text{d}(j,i)" style="vertical-align: -4px"/>, we talk about an <em>Asymmetric</em> TSP.</p>
 </div>
 <p>If you want to know more about the TSP, visit the <a class="reference external" href="http://www.tsp.gatech.edu/">TSP page</a> which is the central place
 to discover this fascinating problem and hosts the best known implementation to solve the TSP (and it&#8217;s open source!).
@@ -122,12 +129,12 @@ is the de facto standard format to encode TSP instances.</p>
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/DOC.PS">TSPLIB95</a>. Here is a small excerpt to understand the
 basics. Refer to the TSPLIB95 document for more. The complete TSPLIB collection of problems has been successfully solved
 to optimality with the <a class="reference external" href="http://www.tsp.gatech.edu/concorde/index.html">Concorde code</a> in 2005-2006.</p>
-<p>The convention in the TSPLIB is to number the nodes starting at 1. We&#8217;ll adopt this convention here<a class="footnote-reference" href="#fallback-starting-at-0" id="id4">[3]</a> too.
+<p>The convention in the TSPLIB is to number the nodes starting at 1. We&#8217;ll adopt this convention here<a class="footnote-reference" href="#fallback-starting-at-0" id="id5">[4]</a> too.
 The Routing Library (RL) on the contrary starts numbering its nodes at 0.</p>
 <table class="docutils footnote" frame="void" id="fallback-starting-at-0" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>We have defined the <tt class="docutils literal"><span class="pre">bool</span></tt> gflags <tt class="docutils literal"><span class="pre">start_counting_at_1</span></tt>. Be default, it is <tt class="docutils literal"><span class="pre">true</span></tt>.
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>We have defined the <tt class="docutils literal"><span class="pre">bool</span></tt> gflags <tt class="docutils literal"><span class="pre">start_counting_at_1</span></tt>. Be default, it is <tt class="docutils literal"><span class="pre">true</span></tt>.
 When <tt class="docutils literal"><span class="pre">false</span></tt>, we number the nodes starting from 0.</td></tr>
 </tbody>
 </table>
@@ -138,7 +145,7 @@ When <tt class="docutils literal"><span class="pre">false</span></tt>, we number
 <div class="section" id="the-instance-file">
 <h4>9.3.2.1.1. The instance file</h4>
 <p>The TSPLIB not only deals with the TSP but also with related problems. We only detail one type of TSP instance files.
-This is what the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt><a class="footnote-reference" href="#a280-fun-fact" id="id5">[4]</a> looks like:</p>
+This is what the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt><a class="footnote-reference" href="#a280-fun-fact" id="id6">[5]</a> looks like:</p>
 <div class="highlight-text"><div class="highlight"><pre>NAME : a280
 COMMENT : drilling problem (Ludwig)
 TYPE : TSP
@@ -180,7 +187,7 @@ TSP is not sensitive to the starting node: you can start a tour anywhere, the to
 <table class="docutils footnote" frame="void" id="a280-fun-fact" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>The file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt> actually contains twice the same node (node 171 and 172 have the same
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>The file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt> actually contains twice the same node (node 171 and 172 have the same
 coordinates) but the
 name and the dimension have been kept. This is the only known defect in the TSPLIB.</td></tr>
 </tbody>
@@ -232,14 +239,14 @@ For efficiency reasons, we use a 1-dimensional matrix with a smart pointer defin
 <div class="topic">
 <p class="topic-title first">What is a smart pointer?</p>
 <p>A <em>smart pointer</em> is a class that behaves like a pointer. It&#8217;s main advantage is that it
-destroys the object it points to when the smart pointer class is itself destroyed<a class="footnote-reference" href="#smart-pointer-destroyed" id="id6">[5]</a>.
+destroys the object it points to when the smart pointer class is itself destroyed<a class="footnote-reference" href="#smart-pointer-destroyed" id="id7">[6]</a>.
 This behaviour
 ensures that, no matter what happens (exceptions, wrong ownership of pointees, bad programming (yep!), etc.),
 the pointed object will be destroyed as soon as the pointer object is out of scope and destroyed.</p>
 <table class="docutils footnote" frame="void" id="smart-pointer-destroyed" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Several scenarii are possible. With reference counting, when more than one pointer
+<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Several scenarii are possible. With reference counting, when more than one pointer
 refer to an object, it is only when the last pointer
 referring to the object is destroyed that the the object itself is destroyed. If you want to know more about
 this technique, look up <em>RAII</em> (Resource Acquisition Is Initialization).</td></tr>
@@ -248,7 +255,7 @@ this technique, look up <em>RAII</em> (Resource Acquisition Is Initialization).<
 </div>
 </div>
 <div class="section" id="visualization-with-epix">
-<h2>9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
+<span id="section-visualization-epix-tsp"></span><h2>9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
 <p>To visualize the solutions, we use the
 excellent <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>. The
 file <tt class="file docutils literal"><span class="pre">tsp_epix.h</span></tt> contains the <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> class. A <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> object is related to
@@ -282,8 +289,7 @@ Its implementation is in the file <tt class="file docutils literal"><span class=
                                                         epix_file.xp
 </pre></div>
 </div>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 </div>
 
 
