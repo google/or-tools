@@ -1465,13 +1465,14 @@ class LocalSearchPhaseParameters {
 #if defined(SWIGCSHARP)
 
 %module(directors="1") operations_research;
-%feature("director") DecisionBuilder;
-%feature("director") Decision;
-%feature("director") SearchMonitor;
 %feature("director") Action;
 %feature("director") BaseLNS;
-%feature("director") IntVarLocalSearchOperator;
+%feature("director") Decision;
+%feature("director") DecisionBuilder;
 %feature("director") IntVarLocalSearchFilter;;
+%feature("director") IntVarLocalSearchOperator;
+%feature("director") SearchLimit;
+%feature("director") SearchMonitor;
 
 %include "std_vector.i"
 
