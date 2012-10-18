@@ -1,4 +1,11 @@
 
+v.0.1.16: (2012-10-18 15:57:17)
+-------------------------------
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - overview of chapter 1 added.
+
+
 v.0.1.15: (2012-10-03 16:33:46)
 -------------------------------
 * Minor enhancements to the manual:
