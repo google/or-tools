@@ -213,7 +213,7 @@ void GRBInterface::Reset() {
 
 void GRBInterface::SetOptimizationDirection(bool maximize) {
   InvalidateSolutionSynchronization();
-  if (sync_status_ = MODEL_SYNCHRONIZED) {
+  if (sync_status_ == MODEL_SYNCHRONIZED) {
     const int status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
     DCHECK_EQ(0, status);
   } else {
@@ -475,8 +475,6 @@ void GRBInterface::ExtractNewConstraints() {
       }
     }
 
-    int addrows = total_num_rows - last_constraint_index_;
-
     max_row_length = std::max(1, max_row_length);
     scoped_array<int> col_indices(new int[max_row_length]);
     scoped_array<double> coefs(new double[max_row_length]);
@@ -668,8 +666,7 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
   if (optimization_status == GRB_OPTIMAL) {
     VLOG(1) << "objective = " << objective_value_;
     solution_found = true;
-    int total_num_vars = solver_->variables_.size();
-    for (int i=0; i < solver_->variables_.size(); ++i) {
+    for (int i = 0; i < solver_->variables_.size(); ++i) {
       MPVariable* const var = solver_->variables_[i];
       var->set_solution_value(values[i]);
       VLOG(3) << var->name() << ": value =" << values[i];
