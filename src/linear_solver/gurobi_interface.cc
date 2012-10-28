@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// TODO:
+//  - fix missing methods (tolerance for instance)
+//  - support incrementality
+//  - support binary variables (code B instead of I)
 
 #include <math.h>
 #include <stddef.h>
@@ -212,8 +216,7 @@ void GRBInterface::SetOptimizationDirection(bool maximize) {
   if (sync_status_ = MODEL_SYNCHRONIZED) {
     const int status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
     DCHECK_EQ(0, status);
-  }
-  else {
+  } else {
     sync_status_ = MUST_RELOAD;
   }
 }
@@ -681,11 +684,9 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
       if (ct->lb() > -solver_->infinity() && ct->ub() < solver_->infinity()) {
 	// don't know what to use : lb or ub?
 	activity = ct->ub() - slacks[i];
-      }
-      else if (ct->lb() > -solver_->infinity()) {
+      } else if (ct->lb() > -solver_->infinity()) {
 	activity = ct->lb() + slacks[i];
-      }
-      else if (ct->ub() < solver_->infinity()) {
+      } else if (ct->ub() < solver_->infinity()) {
 	activity = ct->ub() - slacks[i];
       }
       ct->set_activity(activity);
