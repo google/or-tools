@@ -28,6 +28,7 @@ ifeq ("$(SYSTEM)","unix")
       NETPLATFORM = anycpu
       PORT = Linux64
       PTRLENGTH = 64
+      GUROBI_PLATFORM=linux64
       CANDIDATE_JDK_ROOTS = \
         /usr/local/buildtools/java/jdk-64 \
         /usr/lib/jvm/java-1.7.0-openjdk.x86_64 \
@@ -40,6 +41,7 @@ ifeq ("$(SYSTEM)","unix")
       NETPLATFORM = x86
       PORT = Linux32
       PTRLENGTH = 32
+      GUROBI_PLATFORM=linux32
       CANDIDATE_JDK_ROOTS = \
         /usr/local/buildtools/java/jdk-32 \
         /usr/lib/jvm/java-1.7.0-openjdk-i386 \
@@ -58,6 +60,7 @@ ifeq ("$(SYSTEM)","unix")
     CODEPORT = OpSys-OSX
     NETPLATFORM = anycpu
     PTRLENGTH = 64
+    GUROBI_PLATFORM=mac64
     CANDIDATE_JDK_HEADERS = \
       /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
       /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
@@ -102,4 +105,3 @@ printport:
 	@echo PYTHONVERSION = $(PYTHONVERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
 	@echo SVNVERSION = $(SVNVERSION)
-

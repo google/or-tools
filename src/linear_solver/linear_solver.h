@@ -182,6 +182,10 @@ class MPSolver {
     SULUM_LINEAR_PROGRAMMING,
     SULUM_MIXED_INTEGER_PROGRAMMING,
 #endif
+#if defined(USE_GRB)
+    GUROBI_LINEAR_PROGRAMMING,
+    GUROBI_MIXED_INTEGER_PROGRAMMING,
+#endif
   };
 
   MPSolver(const string& name, OptimizationProblemType problem_type);
@@ -440,6 +444,7 @@ class MPSolver {
   friend class CBCInterface;
   friend class SCIPInterface;
   friend class SLMInterface;
+  friend class GRBInterface;
   friend class MPSolverInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -554,6 +559,7 @@ class MPObjective {
   friend class GLPKInterface;
   friend class SCIPInterface;
   friend class SLMInterface;
+  friend class GRBInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -619,6 +625,7 @@ class MPVariable {
   friend class GLPKInterface;
   friend class SCIPInterface;
   friend class SLMInterface;
+  friend class GRBInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -696,6 +703,7 @@ class MPConstraint {
   friend class GLPKInterface;
   friend class SCIPInterface;
   friend class SLMInterface;
+  friend class GRBInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong

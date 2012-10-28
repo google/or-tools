@@ -469,6 +469,7 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/cbc_interface.$O \
 	$(OBJ_DIR)/clp_interface.$O \
 	$(OBJ_DIR)/glpk_interface.$O \
+	$(OBJ_DIR)/gurobi_interface.$O \
 	$(OBJ_DIR)/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver.pb.$O \
 	$(OBJ_DIR)/scip_interface.$O \
@@ -483,6 +484,9 @@ $(OBJ_DIR)/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
 
 $(OBJ_DIR)/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glpk_interface.cc $(OBJ_OUT)glpk_interface.$O
+
+$(OBJ_DIR)/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)gurobi_interface.$O
 
 $(OBJ_DIR)/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_solver.cc $(OBJ_OUT)linear_solver.$O

@@ -318,6 +318,9 @@ extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #if defined(USE_SLM)
 extern MPSolverInterface* BuildSLMInterface(MPSolver* const solver, bool mip);
 #endif
+#if defined(USE_GRB)
+extern MPSolverInterface* BuildGRBInterface(MPSolver* const solver, bool mip);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(
@@ -346,6 +349,12 @@ MPSolverInterface* BuildSolverInterface(
       return BuildSLMInterface(solver, false);
     case MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING:
       return BuildSLMInterface(solver, true);
+#endif
+#if defined(USE_GRB)
+    case MPSolver::GUROBI_LINEAR_PROGRAMMING:
+      return BuildGRBInterface(solver, false);
+    case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
+      return BuildGRBInterface(solver, true);
 #endif
     default:
       LOG(FATAL) << "Linear solver not recognized.";
