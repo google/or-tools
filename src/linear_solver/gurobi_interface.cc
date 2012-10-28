@@ -536,11 +536,13 @@ void GRBInterface::SetRelativeMipGap(double value) {
 }
 
 void GRBInterface::SetPrimalTolerance(double value) {
-  // FIXME
+  const int status = GRBsetdblattr (model_, GRB_DBL_PAR_FEASIBILITYTOL, value);
+  DCHECK_EQ(0, status);
 }
 
 void GRBInterface::SetDualTolerance(double value) {
-  // FIXME
+  const int status = GRBsetdblattr (model_, GRB_DBL_PAR_OPTIMALITYTOL, value);
+  DCHECK_EQ(0, status);
 }
 
 void GRBInterface::SetPresolveMode(int value) {
