@@ -139,8 +139,6 @@ class GRBInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  void ExtractOneConstraint(MPConstraint* const constraint);
-
   MPSolver::BasisStatus TransformGRBBasisStatus(int gurobi_basis_status) const;
 
  private:
@@ -511,7 +509,9 @@ void GRBInterface::ExtractNewConstraints() {
 }
 
 void GRBInterface::ExtractObjective() {
-  int status = GRBupdatemodel(model_);
+  int status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
+  DCHECK_EQ(0, status);
+  status = GRBupdatemodel(model_);
   DCHECK_EQ(status, 0);
 }
 
@@ -625,9 +625,9 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
   int total_num_rows = solver_->constraints_.size();
   int total_num_cols = solver_->variables_.size();
   scoped_array<double> values(new double[total_num_cols]);
+  scoped_array<double> reduced_costs(new double[total_num_cols]);
   scoped_array<double> dual_values(new double[total_num_rows]);
   scoped_array<double> slacks(new double[total_num_rows]);
-  scoped_array<double> reduced_costs(new double[total_num_cols]);
   int optimization_status = 0;
   status = GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optimization_status);
   if (optimization_status == GRB_OPTIMAL) {
