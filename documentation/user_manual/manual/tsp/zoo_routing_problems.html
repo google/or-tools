@@ -64,8 +64,8 @@ broad - and often overlapping - categories:</p>
 <blockquote>
 <div><ul class="simple">
 <li><strong>Node</strong> Routing Problems (NRP)</li>
-<li><strong>Arc</strong> Routing Problems (ARP)</li>
 <li><strong>Vehicle</strong> Routing Problems (VRP)</li>
+<li><strong>Arc</strong> Routing Problems (ARP)</li>
 </ul>
 </div></blockquote>
 <p>For each category, we give an informal definition, list some known mathematical problems, refer an
@@ -201,15 +201,48 @@ Princeton Series in Applied Mathematics, Princeton University Press, 606 pp., 20
 <p>[insert epix graphic]</p>
 </div>
 </div>
-<div class="section" id="arc-routing-problems">
-<h2>9.1.2. Arc Routing Problems</h2>
+<div class="section" id="vehicle-routing-problems">
+<h2>9.1.2. Vehicle Routing Problems</h2>
 <div class="section" id="id8">
 <h3>9.1.2.1. Informal definition:</h3>
-<p>In Arc Routing Problems, we visit and serve edges and/or arcs. Most of the problems consider
-1 vehicle of <img class="math" src="../../_images/math/b671f1bb7e4ee86584347d5d22f1dc8abdb5bef2.png" alt="\infty" style="vertical-align: -1px"/> capacity, i.e. we seek one tour that covers all the required edges and/or arcs.</p>
+<p>Vehicle Routing Problems (VRPs) are concerned
+with a fleet of (maybe heterogeneous) vehicles. The number of vehicles can be
+fixed in advance or be one of a variable of the problem.
+Generally, a vehicle has a certain capacity (number of people, number
+of tons of goods, etc.) and must respect some &#8220;time&#8221;-constraints (like the total duration of a route, time windows to
+serve clients, etc.). Clients are usually modelled by nodes and to solve a VRP, one seeks to find
+several routes (1 per vehicle) that visit all clients and respect all given constraints!</p>
 </div>
 <div class="section" id="id9">
 <h3>9.1.2.2. Some problems</h3>
+<ul class="simple">
+<li>The Vehicle Routing Problem</li>
+<li>The Capacitated Vehicle Routing Problem</li>
+<li>The Pickup and Delivery Problem</li>
+<li>The Vehicle Routing Problem with Time Windows</li>
+<li>...</li>
+</ul>
+</div>
+<div class="section" id="id10">
+<h3>9.1.2.3. Authoritative source:</h3>
+<p>Golden, Bruce L.; Raghavan, S.; Wasil, Edward A. (Eds.). <em>The Vehicle Routing Problem: Latest Advances and
+New Challenges</em>. Springer, Series: Operations Research/Computer Science Interfaces Series, Vol. 43, 2008, 589 p.</p>
+</div>
+<div class="section" id="the-cvrp">
+<h3>9.1.2.4. The CVRP:</h3>
+<p>The Capacitated Vehicle Routing Problem is...</p>
+<p>[insert epix graphic]</p>
+</div>
+</div>
+<div class="section" id="arc-routing-problems">
+<h2>9.1.3. Arc Routing Problems</h2>
+<div class="section" id="id11">
+<h3>9.1.3.1. Informal definition:</h3>
+<p>In Arc Routing Problems, we visit and serve edges and/or arcs. Most of the problems consider
+1 vehicle of <img class="math" src="../../_images/math/b671f1bb7e4ee86584347d5d22f1dc8abdb5bef2.png" alt="\infty" style="vertical-align: -1px"/> capacity, i.e. we seek one tour that covers all the required edges and/or arcs.</p>
+</div>
+<div class="section" id="id12">
+<h3>9.1.3.2. Some problems</h3>
 <ul class="simple">
 <li>The Chinese Postman Problem</li>
 <li>The Canadian Postman Problem</li>
@@ -222,42 +255,9 @@ Princeton Series in Applied Mathematics, Princeton University Press, 606 pp., 20
 <li>...</li>
 </ul>
 </div>
-<div class="section" id="id10">
-<h3>9.1.2.3. Authoritative source:</h3>
-<p>Dror, M. (Ed.). <em>Arc Routing: Theory, Solutions and Applications</em>. Kluwer Academic Publishers, Dordrecht, 2000.</p>
-</div>
-<div class="section" id="the-cvrp">
-<h3>9.1.2.4. The CVRP:</h3>
-<p>The Capacitated Vehicle Routing Problem is...</p>
-<p>[insert epix graphic]</p>
-</div>
-</div>
-<div class="section" id="vehicle-routing-problems">
-<h2>9.1.3. Vehicle Routing Problems</h2>
-<div class="section" id="id11">
-<h3>9.1.3.1. Informal definition:</h3>
-<p>Vehicle Routing Problems (VRPs) are concerned
-with a fleet of (maybe heterogeneous) vehicles. The number of vehicles can be
-fixed in advance or be one of a variable of the problem.
-Generally, a vehicle has a certain capacity (number of people, number
-of tons of goods, etc.) and must respect some &#8220;time&#8221;-constraints (like the total duration of a route, time windows to
-serve clients, etc.). Clients are usually modelled by nodes and to solve a VRP, one seeks to find
-several routes (1 per vehicle) that visit all clients and respect all given constraints!</p>
-</div>
-<div class="section" id="id12">
-<h3>9.1.3.2. Some problems</h3>
-<ul class="simple">
-<li>The Vehicle Routing Problem</li>
-<li>The Capacitated Vehicle Routing Problem</li>
-<li>The Pickup and Delivery Problem</li>
-<li>The Vehicle Routing Problem with Time Windows</li>
-<li>...</li>
-</ul>
-</div>
 <div class="section" id="id13">
 <h3>9.1.3.3. Authoritative source:</h3>
-<p>Golden, Bruce L.; Raghavan, S.; Wasil, Edward A. (Eds.). <em>The Vehicle Routing Problem: Latest Advances and
-New Challenges</em>. Springer, Series: Operations Research/Computer Science Interfaces Series, Vol. 43, 2008, 589 p.</p>
+<p>Dror, M. (Ed.). <em>Arc Routing: Theory, Solutions and Applications</em>. Kluwer Academic Publishers, Dordrecht, 2000.</p>
 </div>
 <div class="section" id="the-ccpp">
 <h3>9.1.3.4. The CCPP:</h3>
@@ -357,14 +357,14 @@ Search:
 <li><a class="reference internal" href="#the-tsptw">9.1.1.4. The TSPTW:</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#arc-routing-problems">9.1.2. Arc Routing Problems</a><ul>
+<li><a class="reference internal" href="#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a><ul>
 <li><a class="reference internal" href="#id8">9.1.2.1. Informal definition:</a></li>
 <li><a class="reference internal" href="#id9">9.1.2.2. Some problems</a></li>
 <li><a class="reference internal" href="#id10">9.1.2.3. Authoritative source:</a></li>
 <li><a class="reference internal" href="#the-cvrp">9.1.2.4. The CVRP:</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#vehicle-routing-problems">9.1.3. Vehicle Routing Problems</a><ul>
+<li><a class="reference internal" href="#arc-routing-problems">9.1.3. Arc Routing Problems</a><ul>
 <li><a class="reference internal" href="#id11">9.1.3.1. Informal definition:</a></li>
 <li><a class="reference internal" href="#id12">9.1.3.2. Some problems</a></li>
 <li><a class="reference internal" href="#id13">9.1.3.3. Authoritative source:</a></li>

@@ -97,6 +97,14 @@ the <em>Travelling Salesman Problem</em> (TSP)<a class="footnote-reference" href
 scientific articles under the American spelling: <em>traveling</em>.</td></tr>
 </tbody>
 </table>
+<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#epix-latex" id="id4">[4]</a> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
+to visualize TSP solutions in <em>TSPLIB</em> format and TSPTW solutions in <em>López-Ibáñez-Blum</em> and <em>da Silva-Urrutia</em> formats.</p>
+<table class="docutils footnote" frame="void" id="epix-latex" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>The ePiX library uses the <img class="math" src="../_images/math/6e706c7be892b58ea1c3ab147eaae242299cf3da.png" alt="\text{\TeX/\LaTeX}" style="vertical-align: -4px"/> engine to create beautiful graphics.</td></tr>
+</tbody>
+</table>
 <p class="rubric">Overview:</p>
 <p>We start this chapter by presenting in broad terms the different categories of Routing Problems and describe
 the Routing Library (RL) in a nutshell. Next, we introduce the Travelling Salesman Problem (TSP) and the TSPLIB instances.
@@ -113,14 +121,6 @@ solve the TSP with Time Windows.</p>
 </ul>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap9</span></tt>.</p>
-<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#epix-latex" id="id4">[4]</a> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
-to visualize TSP solutions in <em>TSPLIB</em> format and TSPTW solutions in <em>López-Ibáñez-Blum</em> and <em>da Silva-Urrutia</em> formats.</p>
-<table class="docutils footnote" frame="void" id="epix-latex" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>The ePiX library uses the <img class="math" src="../_images/math/6e706c7be892b58ea1c3ab147eaae242299cf3da.png" alt="\text{\TeX/\LaTeX}" style="vertical-align: -4px"/> engine to create beautiful graphics.</td></tr>
-</tbody>
-</table>
 <p>The files inside this directory are:</p>
 <ul class="simple">
 <li><tt class="file docutils literal"><span class="pre">tsp.h</span></tt>: This file contains the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class that records the data for the TSP.
@@ -142,8 +142,8 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tsp/zoo_routing_problems.html">9.1. A whole zoo of Routing Problems</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#node-routing-problems">9.1.1. Node Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.2. Arc Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.3. Vehicle Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.3. Arc Routing Problems</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">9.2. The Routing Library (RL) in a nutshell</a><ul>
@@ -155,7 +155,7 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.6. Limitations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The Travelling Salesman Problem</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The Travelling Salesman Problem (TSP)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-problem">9.3.1. The Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#benchmark-data">9.3.2. Benchmark data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
@@ -173,7 +173,12 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.5.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsp_implementation.html">9.6. The TSP in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsp_implementation.html">9.6. The TSP in or-tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#to-set-the-depot">9.6.1. To set the depot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#command-line-parameters-read-from-a-file">9.6.2. Command line parameters read from a file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#how-to-avoid-some-edges">9.6.3. How to avoid some edges?</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">9.7. An exact implementation of the TSP</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.8.1. The Travelling Salesman Problem with Time Windows</a></li>

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.3. The Travelling Salesman Problem &mdash; or-tools User&#39;s Manual</title>
+    <title>9.3. The Travelling Salesman Problem (TSP) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="the-travelling-salesman-problem">
-<span id="tsp-tsp"></span><h1>9.3. The Travelling Salesman Problem</h1>
+  <div class="section" id="the-travelling-salesman-problem-tsp">
+<span id="tsp-tsp"></span><h1>9.3. The Travelling Salesman Problem (TSP)</h1>
 <p>The Travelling Salesman Problem (TSP) is probably the most known and studied problem in Operations Research.
 In this section, we briefly<a class="footnote-reference" href="#tsp-examples-abond" id="id1">[1]</a> present this fascinating problem and the
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>
@@ -249,9 +249,15 @@ the pointed object will be destroyed as soon as the pointer object is out of sco
 <tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Several scenarii are possible. With reference counting, when more than one pointer
 refer to an object, it is only when the last pointer
 referring to the object is destroyed that the the object itself is destroyed. If you want to know more about
-this technique, look up <em>RAII</em> (Resource Acquisition Is Initialization).</td></tr>
+this helpful technique, look up <em>RAII</em> (Resource Acquisition Is Initialization).</td></tr>
 </tbody>
 </table>
+</div>
+<div class="section" id="to-read-tsplib-files">
+<h3>9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h3>
+</div>
+<div class="section" id="to-generate-random-tsp">
+<h3>9.3.3.2. To generate random TSP</h3>
 </div>
 </div>
 <div class="section" id="visualization-with-epix">
@@ -374,7 +380,7 @@ Search:
                         title="next chapter">9.4. The model behind the scene</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">9.3. The Travelling Salesman Problem</a><ul>
+<li><a class="reference internal" href="#">9.3. The Travelling Salesman Problem (TSP)</a><ul>
 <li><a class="reference internal" href="#the-problem">9.3.1. The Problem</a></li>
 <li><a class="reference internal" href="#benchmark-data">9.3.2. Benchmark data</a><ul>
 <li><a class="reference internal" href="#the-tsplib-format">9.3.2.1. The TSPLIB format</a><ul>
@@ -384,7 +390,11 @@ Search:
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
+<li><a class="reference internal" href="#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a><ul>
+<li><a class="reference internal" href="#to-read-tsplib-files">9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</a></li>
+<li><a class="reference internal" href="#to-generate-random-tsp">9.3.3.2. To generate random TSP</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>

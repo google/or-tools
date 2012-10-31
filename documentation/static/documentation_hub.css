@@ -144,3 +144,6 @@ dd.examples_list {
     background-color: #C0EF4A; /*#A8D141;*/
     background-image: url('earth.png');
 }
+
+.hidden { display: none; }
+.unhidden { display: block; }

@@ -133,8 +133,11 @@ the value of the objective function for this solution. An <strong>optimal soluti
 that there are no other solutions with better objective values. Note that an optimal solution doesn&#8217;t need to exist nor is it
 unique.</p>
 </div>
+<div class="section" id="problems-instances-and-solutions">
+<span id="problems-instances-solutions"></span><h2>1.3.2. Problems, instances and solutions</h2>
+</div>
 <div class="section" id="two-important-ideas-of-the-complexity-theory-for-the-hurried-reader">
-<span id="two-important-ideas-complexity-theory-hurried-reader"></span><h2>1.3.2. Two important ideas of the complexity theory for the hurried reader</h2>
+<span id="two-important-ideas-complexity-theory-hurried-reader"></span><h2>1.3.3. Two important ideas of the complexity theory for the hurried reader</h2>
 <p>If you prefer not to read the next section, we have summarized its main ideas:</p>
 <ul class="simple">
 <li>problems are divided in two categories<a class="footnote-reference" href="#more-than-one-category" id="id4">[3]</a>: <strong>easy</strong>
@@ -161,7 +164,7 @@ don&#8217;t cover all problems.</td></tr>
 <table class="docutils footnote" frame="void" id="garey-outdated" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id20">[4]</a></td><td>This book was written in 1979 and so misses the last developments of the complexity theory
+<tr><td class="label"><a class="fn-backref" href="#id21">[4]</a></td><td>This book was written in 1979 and so misses the last developments of the complexity theory
 but it clearly explains the NP-Completeness theory and
 provides a long list of NP-Complete problems.</td></tr>
 </tbody>
@@ -183,7 +186,7 @@ it is indeed an exact solution in general.</td></tr>
 </table>
 </div>
 <div class="section" id="complexity-theory-in-a-few-lines">
-<span id="complexity-in-a-few-lines"></span><h2>1.3.3. Complexity theory in a few lines</h2>
+<span id="complexity-in-a-few-lines"></span><h2>1.3.4. Complexity theory in a few lines</h2>
 <p>Some problems such as the <em>Travelling Salesman Problem</em> (see the chapter <a class="reference internal" href="../TSP.html#chapter-tsp-with-constraints"><em>Travelling Salesman Problems with constraints: the TSP with time windows</em></a>)
 are hard to solve<a class="footnote-reference" href="#difficult-to-solve" id="id7">[7]</a>:
 no one could ever come up
@@ -208,10 +211,10 @@ very interesting and ... not easy to understand. We try the <em>tour the force</
 We willingly kept certain technical details out of the way. These technical details <em>are important</em> and actually without
 them, you can not construct a complexity theory.</p>
 <div class="section" id="intractability">
-<h3>1.3.3.1. Intractability</h3>
+<span id="id8"></span><h3>1.3.4.1. Intractability</h3>
 <p>One of the main difficulties complexity experts faced in the &#8216;70s was to come up with a theoretical
 definition of the complexity
-of problems not algorithms. Indeed, it is relatively easy<a class="footnote-reference" href="#complexity-algo-difficult" id="id8">[8]</a> to define a complexity measure of
+of problems not algorithms. Indeed, it is relatively easy<a class="footnote-reference" href="#complexity-algo-difficult" id="id9">[8]</a> to define a complexity measure of
 algorithms but how would you define
 the complexity of a problem? If you have an efficient algorithm to solve a problem, you could say that the problem
 belongs to the set of easy problems but what about difficult problems?
@@ -232,20 +235,20 @@ an instance <img class="math" src="../../_images/math/02d7934c9901da21b547877d23
 problem <img class="math" src="../../_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B" style="vertical-align: 0px"/> (because if you know an efficient algorithm to solve problem <img class="math" src="../../_images/math/019e9892786e493964e145e7c5cf7b700314e53b.png" alt="A" style="vertical-align: 0px"/>, you can solve problem <img class="math" src="../../_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B" style="vertical-align: 0px"/>
 as efficiently) and we write <img class="math" src="../../_images/math/408da4b75f34fba020ef25fd2f0ce35769b11b56.png" alt="B \leqslant_{\text{T}} A" style="vertical-align: -4px"/> and say that problem <img class="math" src="../../_images/math/ff5fb3d775862e2123b007eb4373ff6cc1a34d4e.png" alt="B" style="vertical-align: 0px"/> <em>reduces efficiently</em>
 to problem <img class="math" src="../../_images/math/019e9892786e493964e145e7c5cf7b700314e53b.png" alt="A" style="vertical-align: 0px"/>
-or that <img class="math" src="../../_images/math/1dc1c0119a604b91be9142370dc3159b6a9bbcb9.png" alt="\tau" style="vertical-align: 0px"/> is an <em>efficient reduction</em><a class="footnote-reference" href="#alanturingt" id="id9">[9]</a>.
+or that <img class="math" src="../../_images/math/1dc1c0119a604b91be9142370dc3159b6a9bbcb9.png" alt="\tau" style="vertical-align: 0px"/> is an <em>efficient reduction</em><a class="footnote-reference" href="#alanturingt" id="id10">[9]</a>.
 The search for an efficient algorithm is replaced by the search for an efficient reduction between
 instances of two problems to prove complexity.</p>
 <table class="docutils footnote" frame="void" id="complexity-algo-difficult" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id8">[8]</a></td><td>Well, to a certain degree. You need to know what instances you consider, how these are
+<tr><td class="label"><a class="fn-backref" href="#id9">[8]</a></td><td>Well, to a certain degree. You need to know what instances you consider, how these are
 encoded, what type of machines you use and so on.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="alanturingt" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id9">[9]</a></td><td>The <img class="math" src="../../_images/math/512dc0768885cd763b41f840733bdfe8c31ae1e7.png" alt="\text{T}" style="vertical-align: 0px"/> in <img class="math" src="../../_images/math/60558d78ce54153ab4b7a7a88caa75475b6a8d8c.png" alt="\leqslant_{\text{T}}" style="vertical-align: -4px"/> is in honor of Alan Turing. Different types of
+<tr><td class="label"><a class="fn-backref" href="#id10">[9]</a></td><td>The <img class="math" src="../../_images/math/512dc0768885cd763b41f840733bdfe8c31ae1e7.png" alt="\text{T}" style="vertical-align: 0px"/> in <img class="math" src="../../_images/math/60558d78ce54153ab4b7a7a88caa75475b6a8d8c.png" alt="\leqslant_{\text{T}}" style="vertical-align: -4px"/> is in honor of Alan Turing. Different types of
 efficient reductions exist.</td></tr>
 </tbody>
 </table>
@@ -266,11 +269,11 @@ correspond. This also means that we
 consider an algorithm <em>efficient</em> if it is <em>polynomially time-bounded</em> (otherwise the efficiency of the
 reduction would be useless).</p>
 <p>The class of problems that can be efficiently solved is called <img class="math" src="../../_images/math/4b4cade9ca8a2c8311fafcf040bc5b15ca507f52.png" alt="P" style="vertical-align: 0px"/>, i.e. the class of problems that can be solved by
-a polynomial-time bounded algorithm<a class="footnote-reference" href="#p-technically-speaking" id="id10">[10]</a><a class="footnote-reference" href="#p-in-practice" id="id11">[11]</a>.</p>
+a polynomial-time bounded algorithm<a class="footnote-reference" href="#p-technically-speaking" id="id11">[10]</a><a class="footnote-reference" href="#p-in-practice" id="id12">[11]</a>.</p>
 <table class="docutils footnote" frame="void" id="p-technically-speaking" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id10">[10]</a></td><td>For technical reasons, we don&#8217;t compare problems but <em>languages</em> and only consider
+<tr><td class="label"><a class="fn-backref" href="#id11">[10]</a></td><td>For technical reasons, we don&#8217;t compare problems but <em>languages</em> and only consider
 <em>decision problems</em>, i.e. problems that have a <em>yes/no</em> answer. The <em>Subset Sum Problem</em> is such a problem.
 Given a finite set of integers, is there a non-empty subset whose sum is zero? The answer is yes or no. By extension,
 we say an optimization problem is in <img class="math" src="../../_images/math/4b4cade9ca8a2c8311fafcf040bc5b15ca507f52.png" alt="P" style="vertical-align: 0px"/>, if its equivalent <em>decision problem</em> is in <img class="math" src="../../_images/math/4b4cade9ca8a2c8311fafcf040bc5b15ca507f52.png" alt="P" style="vertical-align: 0px"/>. For instance,
@@ -284,7 +287,7 @@ is in <img class="math" src="../../_images/math/4b4cade9ca8a2c8311fafcf040bc5b15
 <table class="docutils footnote" frame="void" id="p-in-practice" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id11">[11]</a></td><td>This discussion is really about <em>theoretical</em> difficulties of problems. Some problems that
+<tr><td class="label"><a class="fn-backref" href="#id12">[11]</a></td><td>This discussion is really about <em>theoretical</em> difficulties of problems. Some problems that
 are theoretically easy (such as solving a Linear System or a Linear Program) are difficult in
 practice and conversely, some problems that are theoretically difficult, such as the Knapsack Problem
 are routinely solved on big instances.</td></tr>
@@ -295,7 +298,7 @@ given solution is indeed the solution of the problem. One such problem is the <e
 Given a graph, is there a path that visits each vertex exactly once? Finding such a path is difficult but verifying
 that a given path is indeed an Hamiltonian path, i.e. that passes exactly once through each vertex, can be
 easily done. Problems for which it is easy to verify their solutions, i.e. for which this verification can be done
-in polynomial time, are said to be in the class <img class="math" src="../../_images/math/35e650cafa2f70ede1a3563843e1f75c539761f8.png" alt="NP" style="vertical-align: 0px"/><a class="footnote-reference" href="#np-term" id="id12">[12]</a>. <img class="math" src="../../_images/math/0a9e39774d93f4876b7a540ea26f6fa9c6b756de.png" alt="P \subset NP" style="vertical-align: -1px"/> because if you can
+in polynomial time, are said to be in the class <img class="math" src="../../_images/math/35e650cafa2f70ede1a3563843e1f75c539761f8.png" alt="NP" style="vertical-align: 0px"/><a class="footnote-reference" href="#np-term" id="id13">[12]</a>. <img class="math" src="../../_images/math/0a9e39774d93f4876b7a540ea26f6fa9c6b756de.png" alt="P \subset NP" style="vertical-align: -1px"/> because if you can
 find a solution in polynomial time, you can also verify this solution in polynomial time (just construct it).
 Whether we have equality or not
 between these two sets is one of the major unsolved theoretical questions in Operations Research (see the box
@@ -303,7 +306,7 @@ between these two sets is one of the major unsolved theoretical questions in Ope
 <table class="docutils footnote" frame="void" id="np-term" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id12">[12]</a></td><td>The abbreviation <img class="math" src="../../_images/math/35e650cafa2f70ede1a3563843e1f75c539761f8.png" alt="NP" style="vertical-align: 0px"/> refers to <em>non-deterministic polynomial time</em>, not to <em>non-polynomial</em>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id13">[12]</a></td><td>The abbreviation <img class="math" src="../../_images/math/35e650cafa2f70ede1a3563843e1f75c539761f8.png" alt="NP" style="vertical-align: 0px"/> refers to <em>non-deterministic polynomial time</em>, not to <em>non-polynomial</em>.</td></tr>
 </tbody>
 </table>
 <p>Not all problems in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> seem to be of equal complexity. Some problems, such as the HPP are as hard as any problem
@@ -321,7 +324,7 @@ and <img class="math" src="../../_images/math/13f396961e36a17b6003f97d57f3570021
 <img class="math" src="../../_images/math/3ead47fb9fb4a4c273feee398f72ff2a09702b84.png" alt="Z" style="vertical-align: 0px"/> such that all problems <img class="math" src="../../_images/math/2744600189f7f1df31756f2022b2d5212ef1c767.png" alt="A_i" style="vertical-align: -3px"/> in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> are reducible to <img class="math" src="../../_images/math/3ead47fb9fb4a4c273feee398f72ff2a09702b84.png" alt="Z" style="vertical-align: 0px"/>, i.e.
 <img class="math" src="../../_images/math/8d96799a95dd8394032126d1e922b013ebf7d8bd.png" alt="A_i \leqslant_{\text{T}} Z" style="vertical-align: -4px"/>, then to prove that all problems <img class="math" src="../../_images/math/2744600189f7f1df31756f2022b2d5212ef1c767.png" alt="A_i" style="vertical-align: -3px"/> in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> reduce
 to a problem <img class="math" src="../../_images/math/6a47ca0fe7cb276abc022af6ac88ddae1a9d6894.png" alt="X" style="vertical-align: 0px"/>, you just need to prove that <img class="math" src="../../_images/math/3ead47fb9fb4a4c273feee398f72ff2a09702b84.png" alt="Z" style="vertical-align: 0px"/> reduces to <img class="math" src="../../_images/math/6a47ca0fe7cb276abc022af6ac88ddae1a9d6894.png" alt="X" style="vertical-align: 0px"/>. Indeed, if
-<img class="math" src="../../_images/math/03cd569166253c4b4dc478fd5c3e1422320d5eea.png" alt="Z \leqslant_{\text{T}} X" style="vertical-align: -4px"/> then <img class="math" src="../../_images/math/a6424038c88a1a647334e34763742da942f09abc.png" alt="A_i \leqslant_{\text{T}} Z \leqslant_{\text{T}} X" style="vertical-align: -4px"/><a class="footnote-reference" href="#to-prove-np-completeness" id="id13">[13]</a>.</p>
+<img class="math" src="../../_images/math/03cd569166253c4b4dc478fd5c3e1422320d5eea.png" alt="Z \leqslant_{\text{T}} X" style="vertical-align: -4px"/> then <img class="math" src="../../_images/math/a6424038c88a1a647334e34763742da942f09abc.png" alt="A_i \leqslant_{\text{T}} Z \leqslant_{\text{T}} X" style="vertical-align: -4px"/><a class="footnote-reference" href="#to-prove-np-completeness" id="id14">[13]</a>.</p>
 <p>The funny fact is that if <img class="math" src="../../_images/math/6a47ca0fe7cb276abc022af6ac88ddae1a9d6894.png" alt="X" style="vertical-align: 0px"/> is in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/>, then <img class="math" src="../../_images/math/d356cf20d4a30e4d146ccf0dfbbf19510e03e5a3.png" alt="X \leqslant_{\text{T}} Z" style="vertical-align: -4px"/> also.
 If you can solve one problem in <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/> efficiently, you can solve all the problems
 in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> efficiently!</p>
@@ -329,11 +332,8 @@ in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c
 <li><p class="first">Several researchers (like for example Cook and Levin in the early &#8216;70s,
 see <a class="reference external" href="https://en.wikipedia.org/wiki/Cook%27s_theorem">Wikipedia on the Cook-Levin Theorem</a>), were able to
 prove that
-all problems in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> are reducible in polynomial time to the <em>Boolean satisfiability problem</em> (SAT).
-The SAT problem is the problem of determining if the variables of a given Boolean formula can be assigned
-(<cite>TRUE</cite> or <cite>FALSE</cite>)
-in such a way as to make the formula evaluate to <cite>TRUE</cite>.
-Proving that the SAT problem is <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/> is a major achievement in the complexity
+all problems in <img class="math" src="../../_images/math/e12ea0577ff0b662bec381b5f35dc3dbd9c3339f.png" alt="\text{NP}" style="vertical-align: -1px"/> are reducible in polynomial time to the <em>Boolean satisfiability problem</em> (SAT).</p>
+<p>Proving that the SAT problem is <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/> is a major achievement in the complexity
 theory (the proof is highly technical).</p>
 </li>
 </ol>
@@ -341,19 +341,19 @@ theory (the proof is highly technical).</p>
 <table class="docutils footnote" frame="void" id="to-prove-np-completeness" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id13">[13]</a></td><td>If you want to prove that a problem <img class="math" src="../../_images/math/ce58e4af225c93d08606c26554caaa5ae32edeba.png" alt="Y" style="vertical-align: 0px"/> is <img class="math" src="../../_images/math/8ed27d32851b0b1fac3aa7982c862daf59f21d46.png" alt="\text{NP-Hard}" style="vertical-align: -1px"/> (see below),
+<tr><td class="label"><a class="fn-backref" href="#id14">[13]</a></td><td>If you want to prove that a problem <img class="math" src="../../_images/math/ce58e4af225c93d08606c26554caaa5ae32edeba.png" alt="Y" style="vertical-align: 0px"/> is <img class="math" src="../../_images/math/8ed27d32851b0b1fac3aa7982c862daf59f21d46.png" alt="\text{NP-Hard}" style="vertical-align: -1px"/> (see below),
 take a problem that is <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/>, like the HPP, and reduce it to your problem. This might sound easy
 but it is not!</td></tr>
 </tbody>
 </table>
 <p>Finally, if a problem is as hard as an <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/> problem, it is called an <img class="math" src="../../_images/math/8ed27d32851b0b1fac3aa7982c862daf59f21d46.png" alt="\text{NP-Hard}" style="vertical-align: -1px"/> problem.
 Optimization problems, whose decision version belong to <img class="math" src="../../_images/math/6d7719cf28def4d9e4a88d9df1d5dffec1619935.png" alt="\text{NP-Complete}" style="vertical-align: -4px"/>, fall into this category.</p>
-<p>The next figure summarizes the relations between the complexity classes<a class="footnote-reference" href="#zoo-complexity-classes" id="id14">[14]</a> we have seen as most of the experts believe they stand, i.e. <img class="math" src="../../_images/math/ed4d62c5fa27cfbba79f8b58a2c8aba71c5d6d68.png" alt="\text{P} \neq \text{NP}" style="vertical-align: -4px"/>.</p>
+<p>The next figure summarizes the relations between the complexity classes<a class="footnote-reference" href="#zoo-complexity-classes" id="id15">[14]</a> we have seen as most of the experts believe they stand, i.e. <img class="math" src="../../_images/math/ed4d62c5fa27cfbba79f8b58a2c8aba71c5d6d68.png" alt="\text{P} \neq \text{NP}" style="vertical-align: -4px"/>.</p>
 <a class="reference internal image-reference" href="../../_images/complexity_classes.png"><img alt="../../_images/complexity_classes.png" class="align-center" src="../../_images/complexity_classes.png" style="height: 250px;" /></a>
 <table class="docutils footnote" frame="void" id="zoo-complexity-classes" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id14">[14]</a></td><td>Be aware that there are many more complexity classes.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id15">[14]</a></td><td>Be aware that there are many more complexity classes.</td></tr>
 </tbody>
 </table>
 <div class="topic" id="thepvsnpquestion">
@@ -370,7 +370,7 @@ about the <img class="math" src="../../_images/math/50401cce0057136c835ebbad1f60
 <col width="22%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Outcome<a class="footnote-reference" href="#gasarch-more" id="id17">[15]</a></th>
+<tr class="row-odd"><th class="head">Outcome<a class="footnote-reference" href="#gasarch-more" id="id18">[15]</a></th>
 <th class="head">% (2002)</th>
 <th class="head">% (2012)</th>
 </tr>
@@ -391,12 +391,12 @@ about the <img class="math" src="../../_images/math/50401cce0057136c835ebbad1f60
 </tbody>
 </table>
 <p>One possible outcome - mentioned by very few - is that this question could be... undecidable, i.e. there is no
-<em>yes</em> or <em>no</em> answer<a class="footnote-reference" href="#undecidable" id="id18">[16]</a>!</p>
+<em>yes</em> or <em>no</em> answer<a class="footnote-reference" href="#undecidable" id="id19">[16]</a>!</p>
 </div>
 <br><table class="docutils citation" frame="void" id="gasarch2002" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id15">[Gasarch2002]</a></td><td><ol class="first last upperalpha simple" start="23">
+<tr><td class="label"><a class="fn-backref" href="#id16">[Gasarch2002]</a></td><td><ol class="first last upperalpha simple" start="23">
 <li><ol class="first upperroman">
 <li>Gasarch. <em>The P=?NP poll</em>, SIGACT News 33 (2), pp 34–47, 2002.</li>
 </ol>
@@ -408,7 +408,7 @@ about the <img class="math" src="../../_images/math/50401cce0057136c835ebbad1f60
 <table class="docutils citation" frame="void" id="gasarch2012" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id16">[Gasarch2012]</a></td><td><ol class="first last upperalpha simple" start="23">
+<tr><td class="label"><a class="fn-backref" href="#id17">[Gasarch2012]</a></td><td><ol class="first last upperalpha simple" start="23">
 <li><ol class="first upperroman">
 <li>Gasarch. <em>The second P =?NP poll</em>, SIGACT News 43(2), pp 53-77, 2012.</li>
 </ol>
@@ -420,7 +420,7 @@ about the <img class="math" src="../../_images/math/50401cce0057136c835ebbad1f60
 <table class="docutils footnote" frame="void" id="gasarch-more" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id17">[15]</a></td><td>We agglomerated all other answers into a category <em>No idea</em> although the poll
+<tr><td class="label"><a class="fn-backref" href="#id18">[15]</a></td><td>We agglomerated all other answers into a category <em>No idea</em> although the poll
 allowed people to fully express themselves (some answered &#8220;I don&#8217;t care&#8221; for instance). The first poll (2002)
 involved 100 researchers while the second one involved 152 researchers.</td></tr>
 </tbody>
@@ -428,22 +428,22 @@ involved 100 researchers while the second one involved 152 researchers.</td></tr
 <table class="docutils footnote" frame="void" id="undecidable" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id18">[16]</a></td><td>See <a class="reference external" href="http://en.wikipedia.org/wiki/Undecidable_problem">Undecidable problem on Wikipedia</a>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id19">[16]</a></td><td>See <a class="reference external" href="http://en.wikipedia.org/wiki/Undecidable_problem">Undecidable problem on Wikipedia</a>.</td></tr>
 </tbody>
 </table>
 <p>If you are interested in this fascinating subject, we recommend that you read the classical book
 <em>Computers and Intractability: A Guide to the Theory of NP-Completeness</em> from M. R. Garey and D. S. Johnson (see
-<a class="reference internal" href="#garey1979">[Garey1979]</a><a class="footnote-reference" href="#garey-outdated" id="id20">[4]</a>).</p>
+<a class="reference internal" href="#garey1979">[Garey1979]</a><a class="footnote-reference" href="#garey-outdated" id="id21">[4]</a>).</p>
 <table class="docutils citation" frame="void" id="garey1979" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id19">[Garey1979]</a></td><td>Garey, M. R. and Johnson D. S. <em>Computers and Intractability: A Guide to the Theory of NP-Completeness</em>,
+<tr><td class="label"><a class="fn-backref" href="#id20">[Garey1979]</a></td><td>Garey, M. R. and Johnson D. S. <em>Computers and Intractability: A Guide to the Theory of NP-Completeness</em>,
 1979, W. H. Freeman &amp; Co, New York, NY, USA, pp 338.</td></tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="the-practical-aspect-of-intractability">
-<h3>1.3.3.2. The practical aspect of intractability</h3>
+<h3>1.3.4.2. The practical aspect of intractability</h3>
 <p>If you try to solve a problem that is proven to be <img class="math" src="../../_images/math/8ed27d32851b0b1fac3aa7982c862daf59f21d46.png" alt="\text{NP-Hard}" style="vertical-align: -1px"/>, you know that it is
 probably an intractable problem (if <img class="math" src="../../_images/math/4811a569c64f4862145541b21ecdcff2798ad9bb.png" alt="P \neq NP" style="vertical-align: -4px"/>). At least, you know that no one could ever come with an efficient
 algorithm to solve it and that it is unlikely to happen soon. Thus, you can not solve big instances of your
@@ -452,27 +452,27 @@ problem. What can you do?</p>
 your instances are too big to be solved exactly, even with parallel and/or decomposition algorithms, then there is only
 one thing to do: approximate your problem and/or the solutions.</p>
 <p>You could simplify your problem and/or be satisfied with an approximation, i.e. a solution that is not exact nor optimal.
-One way to do this in CP is to relax the model by softening some constraints<a class="footnote-reference" href="#softening-constraints" id="id21">[17]</a>. In a nutshell,
+One way to do this in CP is to relax the model by softening some constraints<a class="footnote-reference" href="#softening-constraints" id="id22">[17]</a>. In a nutshell,
 you soften a constraint by allowing this constraint to be violated. In a approximate solution where the constraint is
 violated, you penalize the objective function by a certain amount corresponding to the violation. The bigger the
 violation, the bigger the penalty. The idea is to find a solution that doesn&#8217;t violate too much the soft constraints in
-the hope that such approximate solution isn&#8217;t that different from an exact or optimal solution<a class="footnote-reference" href="#different-solution-optimization" id="id22">[18]</a>.</p>
+the hope that such approximate solution isn&#8217;t that different from an exact or optimal solution<a class="footnote-reference" href="#different-solution-optimization" id="id23">[18]</a>.</p>
 <table class="docutils footnote" frame="void" id="softening-constraints" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id21">[17]</a></td><td>For MIP practitioners, this is equivalent to <em>Lagrangian Relaxation</em>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id22">[17]</a></td><td>For MIP practitioners, this is equivalent to <em>Lagrangian Relaxation</em>.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="different-solution-optimization" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id22">[18]</a></td><td>In the case of optimization, a solution that <em>isn&#8217;t that different</em> means a
+<tr><td class="label"><a class="fn-backref" href="#id23">[18]</a></td><td>In the case of optimization, a solution that <em>isn&#8217;t that different</em> means a
 solution that has a good objective value, preferably close to the optimum.</td></tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="approximation-complexity">
-<h3>1.3.3.3. Approximation complexity</h3>
+<h3>1.3.4.3. Approximation complexity</h3>
 <p>[TO BE DONE]</p>
 </div>
 </div>
@@ -562,11 +562,12 @@ Search:
   <ul>
 <li><a class="reference internal" href="#">1.3. A little bit of theory</a><ul>
 <li><a class="reference internal" href="#constraint-satisfaction-problems-csp-and-constraint-optimization-problems-cop">1.3.1. Constraint Satisfaction Problems (CSP) and Constraint Optimization Problems (COP)</a></li>
-<li><a class="reference internal" href="#two-important-ideas-of-the-complexity-theory-for-the-hurried-reader">1.3.2. Two important ideas of the complexity theory for the hurried reader</a></li>
-<li><a class="reference internal" href="#complexity-theory-in-a-few-lines">1.3.3. Complexity theory in a few lines</a><ul>
-<li><a class="reference internal" href="#intractability">1.3.3.1. Intractability</a></li>
-<li><a class="reference internal" href="#the-practical-aspect-of-intractability">1.3.3.2. The practical aspect of intractability</a></li>
-<li><a class="reference internal" href="#approximation-complexity">1.3.3.3. Approximation complexity</a></li>
+<li><a class="reference internal" href="#problems-instances-and-solutions">1.3.2. Problems, instances and solutions</a></li>
+<li><a class="reference internal" href="#two-important-ideas-of-the-complexity-theory-for-the-hurried-reader">1.3.3. Two important ideas of the complexity theory for the hurried reader</a></li>
+<li><a class="reference internal" href="#complexity-theory-in-a-few-lines">1.3.4. Complexity theory in a few lines</a><ul>
+<li><a class="reference internal" href="#intractability">1.3.4.1. Intractability</a></li>
+<li><a class="reference internal" href="#the-practical-aspect-of-intractability">1.3.4.2. The practical aspect of intractability</a></li>
+<li><a class="reference internal" href="#approximation-complexity">1.3.4.3. Approximation complexity</a></li>
 </ul>
 </li>
 </ul>

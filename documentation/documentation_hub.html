@@ -6,6 +6,25 @@
 
 	<link rel="stylesheet" href="static/documentation_hub.css">
 
+<script type="text/javascript">
+ function unhide(divID, buttonId) {
+ var item = document.getElementById(divID);
+ var item_button = document.getElementById(buttonId);
+ if (item) {
+ 
+if (item.className=='hidden') {
+  item.className= 'unhidden';
+  item_button.src = "static/icon_hide.gif";
+} else {
+item.className= 'hidden';
+item_button.src = "static/icon_show.gif";
+}
+
+
+ }
+ }
+ </script>
+
 </head>
 <body>
     <div id="wrap">
@@ -73,11 +92,14 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.1.16: (2012-10-18 15:57:17)
+<pre id="verbatim">v.0.1.17: (2012-10-31 14:42:16)
 -------------------------------
 * Minor enhancements to the manual:
   - Minor corrections.
-  - overview of chapter 1 added.
+  - half of 1.3.
+  - 1.4 added.
+* Documentation hub:
+  - +/- buttons to show/hide <div>.
 
 </pre>
 
@@ -100,16 +122,19 @@ We also recommend to use the epub version as it is currently the best available 
 <ul>
 <li>Progress at a glance: <a href="#manual_progress">Manual</a> - <a href="#documentation_progress">Documentation generation</a></li>
 <li><a href="user_manual/index.html">Online version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.16.pdf.zip">A4 pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.16.pdf.zip">Letter pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.16.epub.zip">epub version</a> (experimental)</li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.17.pdf.zip">A4 pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.17.pdf.zip">Letter pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.17.epub.zip">epub version</a> (experimental)</li>
 </ul>
 
 <h4 id="progress">Progress at a glance:</h4>
 
 The following percentages show you the completion status of the manual. Note that what we publish online might be not up to date. 
 
-<h5 id="manual_progress">Manual</h5>
+<h5 id="manual_progress">Manual <a href="javascript:unhide('manual_progress_block', 'manual_progress_button')"><img id="manual_progress_button" src="static/icon_show.gif" alt="" /></a></h5>
+ 
+<div id="manual_progress_block" class="hidden">
+
 <table width="100%">
 <tr>
 <td width="25%">Foreword</td>
@@ -289,8 +314,12 @@ The following percentages show you the completion status of the manual. Note tha
 </td>
 </tr>
 </table>
+</div>
 
-<h5 id="documentation_progress">Documentation generation</h5>
+<h5 id="documentation_progress">Documentation generation <a href="javascript:unhide('documentation_progress_block', 'documentation_progress_button')"><img id="documentation_progress_button" src="static/icon_show.gif" alt="" /></a></h5>
+ 
+<div id="documentation_progress_block" class="hidden">
+
 
 <table width="100%">
 <th>Templates</th>
@@ -478,6 +507,8 @@ The following percentages show you the completion status of the manual. Note tha
 </td>
 </tr>
 </table>
+
+</div>
 <br>
 <hr>
 <h2 id="tutorial_examples">The tutorial examples</h2>
@@ -503,14 +534,15 @@ files in some languages as the features implemented just don't have an equivalen
 <h5>Code:</h5> 
 
 <p>Everything: <a href="http://or-tools.googlecode.com/files/tutorials_all_examples.zip">tutorial_all_examples.zip</a></p>
-<p>Jump to: <a href="#tutorial_C++">C++</a> &nbsp; | &nbsp;  <a href="#tutorial_Python">Python</a> &nbsp; | &nbsp;  <a href="#tutorial_Java">Java</a> &nbsp; | &nbsp;  <a href="#tutorial_Csharp">C#</a>. </p>
+<p>Jump to: </p>
 
 <p>
+
 <div class="examples_list">
+
 <ul>
-<li class="language" id="tutorial_C++">C++</li>
-
-
+<li class="language" id="tutorial_C++">C++: <a href="javascript:unhide('tutorial_C++_block', 'tutorial_C++_button')"><img id="tutorial_C++_button" src="static/icon_show.gif" alt="" /></a></li>
+<div id="tutorial_C++_block" class="hidden">
 <dl>
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_c++_examples.zip">tutorial_c++_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/c++/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
@@ -533,8 +565,13 @@ files in some languages as the features implemented just don't have an equivalen
 	 <dt>chap12:</dt><dd>-</dd>
 	 <dt>chap13:</dt><dd>-</dd>
 </dl>
+</div>
 
-<li class="language" id="tutorial_Python">Python</li>
+
+
+
+<li class="language" id="tutorial_Python">Python:  <a href="javascript:unhide('tutorial_Python_block', 'tutorial_Python_button')"><img id="tutorial_Python_button" src="static/icon_show.gif" alt="" /></a></li>
+<div id="tutorial_Python_block" class="hidden">
 <dl>
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_python_examples.zip">tutorial_python_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/python/chap2/cp_is_fun1.py">cp_is_fun1.py</a> &nbsp; | &nbsp; <a href="tutorials/python/chap2/cp_is_fun2.py">cp_is_fun2.py</a> &nbsp; | &nbsp;
@@ -551,8 +588,12 @@ files in some languages as the features implemented just don't have an equivalen
 	 <dt>chap12:</dt><dd>-</dd>
 	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
+</div>
 
-<li class="language" id="tutorial_Java">Java</li>
+
+
+<li class="language" id="tutorial_Java">Java: <a href="javascript:unhide('tutorial_Java_block', 'tutorial_Java_button')"><img id="tutorial_Java_button" src="static/icon_show.gif" alt="" /></a></li>
+<div id="tutorial_Java_block" class="hidden">
 <dl>
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_java_examples.zip">tutorial_java_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun1.java">CpIsFun1.java</a> &nbsp; | &nbsp; <a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun2.java">CpIsFun2.java</a> &nbsp; | &nbsp;
@@ -570,7 +611,12 @@ files in some languages as the features implemented just don't have an equivalen
 	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
 
-<li class="language" id="tutorial_Csharp">C#</li>
+</div>
+
+
+
+<li class="language" id="tutorial_Csharp">C#: <a href="javascript:unhide('tutorial_Csharp_block', 'tutorial_Csharp_button')"><img id="tutorial_Csharp_button" src="static/icon_show.gif" alt="" /></a></li>
+<div id="tutorial_Csharp_block" class="hidden">
 <dl>
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_csharp_examples.zip">tutorial_csharp_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/csharp/chap2/cp_is_fun1.cs">cp_is_fun1.cs</a> &nbsp; | &nbsp; <a href="tutorials/csharp/chap2/cp_is_fun2.cs">cp_is_fun2.cs</a> &nbsp; | &nbsp;
@@ -587,7 +633,9 @@ files in some languages as the features implemented just don't have an equivalen
 	 <dt>chap12:</dt><dd>-</dd>
 	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
+</div>
 </ul>
+
 </div>
 </p>
 

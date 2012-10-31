@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="10.1. The Vehicle Routing Problem" href="vrp/vrp.html" />
+    <link rel="next" title="10.1. The Vehicle Routing Problem (VRP)" href="vrp/vrp.html" />
     <link rel="prev" title="9.10. Summary" href="tsp/tsptw_summary.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem"
+          <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem (VRP)"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="tsp/tsptw_summary.html" title="9.10. Summary"
@@ -54,12 +54,36 @@
             
   <div class="section" id="vehicule-routing-problems-with-constraints-the-capacitated-vehicle-routing-problem">
 <span id="chapter-vrp-with-constraints"></span><h1>10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="vrp/vrp.html">10.1. The Vehicle Routing Problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="vrp/vrp.html#the-vrplib-library">10.1.1. The VRPLIB library</a></li>
+<p class="rubric">Overview:</p>
+<p class="rubric">Prerequisites:</p>
+<ul class="simple">
+<li>Basic knowledge of C++.</li>
+<li>Basic knowledge of Constraint Programming (see the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see the chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
+<li>Basic knowledge of Local Search (see the chapter <a class="reference internal" href="LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a>).</li>
+<li>Basic knowledge of the Routing Library (see the chapter <a class="reference internal" href="TSP.html#chapter-tsp-with-constraints"><em>Travelling Salesman Problems with constraints: the TSP with time windows</em></a>), especially:<ul>
+<li>the section <a class="reference internal" href="tsp/routing_library.html#tsp-routing-solver"><em>The Routing Library (RL) in a nutshell</em></a>;</li>
+<li>the section <a class="reference internal" href="tsp/model_behind_scene.html#automatic-variables"><em>The model behind the scene</em></a>;</li>
+<li>the section <a class="reference internal" href="tsp/two_phases_approaches.html#tsp-two-phases-approaches"><em>The two phases approach</em></a>.</li>
 </ul>
 </li>
+</ul>
+<p class="rubric">Files:</p>
+<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap10</span></tt>.</p>
+<p>The files inside this directory are:</p>
+<p class="rubric">Content:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="vrp/vrp.html">10.1. The Vehicle Routing Problem (VRP)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vrp/vrp.html#the-problem">10.1.1. The Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vrp/vrp.html#benchmark-data">10.1.2. Benchmark data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/first_vrp_implementation.html">10.2. The VRP in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/exact_vrp_implementation.html">10.3. An exact implementation of the VRP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp.html">10.4. The Capacitated Vehicle Routing Problem (CVRP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/first_cvrp_implementation.html">10.5. The CVRP in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp_summary.html">10.6. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
@@ -183,7 +207,7 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem"
+          <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem (VRP)"
              >next</a> |</li>
         <li class="right" >
           <a href="tsp/tsptw_summary.html" title="9.10. Summary"
