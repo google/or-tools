@@ -1473,6 +1473,7 @@ class LocalSearchPhaseParameters {
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") SearchLimit;
 %feature("director") SearchMonitor;
+%feature("director") SymmetryBreaker;
 
 %include "std_vector.i"
 
@@ -1721,6 +1722,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreaker)
 
 namespace operations_research {
 %extend IntervalVar {
