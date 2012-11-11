@@ -58,6 +58,24 @@ namespace operations_research {
 class SatPropagator;
 
 struct FlatZincSearchParameters {
+  FlatZincSearchParameters()
+      : all_solutions(false),
+        free_search(false),
+        ignore_annotations(false),
+        ignore_unknown(true),
+        use_log(false),
+        verbose_impact(false),
+        restart_log_size(-1.0),
+        log_period(1000000),
+        luby_restart(0),
+        num_solutions(1),
+        random_seed(0),
+        simplex_frequency(0),
+        threads(1),
+        worker_id(-1),
+        time_limit_in_ms(0),
+        search_type(MIN_SIZE) {}
+
   enum SearchType {
     IBS,
     FIRST_UNBOUND,
