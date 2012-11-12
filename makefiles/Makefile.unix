@@ -86,8 +86,6 @@ SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG) $(GRB_S
 # Compilation flags
 DEBUG = -O3 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
-SYSCFLAGS = -fPIC
-CCC = g++
 
 # Check wether CBC/CLP need a coin subdir in library.
 ifdef UNIX_CBC_DIR
@@ -102,6 +100,7 @@ ifdef UNIX_CLP_DIR
 endif
 
 ifeq ($(PLATFORM),LINUX)
+  CCC = g++ -fPIC
   DYNAMIC_LD = g++ -shared
   STATIC_LD = ar rv
   ifeq ($(PTRLENGTH),64)
@@ -187,6 +186,7 @@ ifeq ($(PLATFORM),LINUX)
   STATIC_POST_LIB = .a
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
+  CCC = clang++ -fPIC
   DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
   JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
@@ -249,10 +249,10 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC) $(MINISAT_INC)\
+CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC) $(MINISAT_INC)\
 	-Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC) $(GRB_INC) $(SPARSEHASH_INC)
 
-JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
+JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC) $(GRB_INC)
 DYNAMIC_LD_FLAGS = $(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) $(SYS_LNK)
 DYNAMIC_LD_LP_DEPS = $(DYNAMIC_GLPK_LNK) $(DYNAMIC_CBC_LNK) $(DYNAMIC_CLP_LNK) $(DYNAMIC_SLM_LNK) $(DYNAMIC_GRB_LNK)

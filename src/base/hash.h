@@ -74,7 +74,7 @@ template<> struct hash<std::string> {
     size_t hash = 0;
     int c;
     const char* s = x.c_str();
-    while (c = *s++) {
+    while ((c = *s++)) {
       hash = ((hash << 5) + hash) ^ c;
     }
     return hash;
