@@ -974,7 +974,7 @@ $(BIN_DIR)/ls_api$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/ls_api.$O
 $(OBJ_DIR)/cpp11_test.$O:$(EX_DIR)/tests/cpp11_test.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/cpp11_test.cc $(OBJ_OUT)cpp11_test.$O
 
-$(BIN_DIR)/cpp11_test$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/cpp11_test.$O
+$(BIN_DIR)/cpp11_test$E: $(OBJ_DIR)/cpp11_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cpp11_test.$O $(EXEOUT)cpp11_test$E
 
 # Frequency Assignment Problem
