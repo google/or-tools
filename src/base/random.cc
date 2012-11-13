@@ -15,6 +15,9 @@
 # include <linux/limits.h>
 # include <unistd.h>
 #endif
+#if defined(__APPLE__) && defined(__GNUC__)
+# include <unistd.h>
+#endif
 #if defined(_MSC_VER)
 # include <windows.h>
 # define PATH_MAX 4096

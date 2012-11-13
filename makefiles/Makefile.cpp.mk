@@ -971,6 +971,12 @@ $(OBJ_DIR)/ls_api.$O:$(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/constraint_solver/constr
 $(BIN_DIR)/ls_api$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/ls_api.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXEOUT)ls_api$E
 
+$(OBJ_DIR)/cpp11_test.$O:$(EX_DIR)/tests/cpp11_test.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/cpp11_test.cc $(OBJ_OUT)cpp11_test.$O
+
+$(BIN_DIR)/cpp11_test$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/cpp11_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cpp11_test.$O $(EXEOUT)cpp11_test$E
+
 # Frequency Assignment Problem
 
 $(OBJ_DIR)/frequency_assignment_problem.$O:$(EX_DIR)/cpp/frequency_assignment_problem.cc

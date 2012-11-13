@@ -186,7 +186,7 @@ ifeq ($(PLATFORM),LINUX)
   STATIC_POST_LIB = .a
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
-  CCC = clang++ -fPIC
+  CCC = clang++ -fPIC -std=c++11
   DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
   JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
