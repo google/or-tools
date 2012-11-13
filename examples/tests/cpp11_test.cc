@@ -2,6 +2,9 @@
 #include <memory>
 #include <vector>
 
+#include "base/hash.h"
+
+namespace operations_research {
 #if defined(__linux__)
 struct Foo {
   Foo() { std::cout << "Foo::Foo\n"; }
@@ -39,15 +42,28 @@ void test_auto() {
   numbers.push_back(5);
   numbers.push_back(6);
   numbers.push_back(7);
-  for (auto xyz : numbers) {
-    std::cout << xyz << std::endl;
+  for (auto vec : numbers) {
+    std::cout << vec << std::endl;
+  }
+
+  hash_map<std::string, int> my_map;
+  my_map["toto"] = 2;
+  for (auto mm : my_map) {
+    std::cout << mm.first << " -> " << mm.second << std::endl;
   }
 }
 
+void test_chevron() {
+  std::vector<std::pair<int,int>> toto;
+  toto.push_back(std::make_pair(2, 4));
+}
+}  // namespace operations_research
+
 int main() {
 #if defined(__linux__)
-  test_unique();
+  operations_research::test_unique();
 #endif
-  test_auto();
+  operations_research::test_auto();
+  operations_research::test_chevron();
   return 0;
 }
