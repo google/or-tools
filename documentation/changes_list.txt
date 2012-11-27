@@ -1,4 +1,20 @@
 
+v.0.1.18: (2012-11-27 15:52:31)
+-------------------------------
+* Milestone:
+  Pdf manual over 250 pages.
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - 9.2 improved and completed.
+  - 9.3 improved.
+  - 9.4 completed.
+  - old 9.5 and 9.6 exchanged.
+  - new 9.5 introduced.
+  - Chapter 5 intro.
+  - 12.1 added.
+  - pending references corrected.
+  - png images: quality improved.
+
 v.0.1.19: (2012-11-27 15:49:17)
 -------------------------------
 * Milestone:
