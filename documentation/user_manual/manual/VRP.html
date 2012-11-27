@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
     <link rel="next" title="10.1. The Vehicle Routing Problem (VRP)" href="vrp/vrp.html" />
-    <link rel="prev" title="9.10. Summary" href="tsp/tsptw_summary.html" /> 
+    <link rel="prev" title="9.11. Summary" href="tsp/tsptw_summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,7 +41,7 @@
           <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem (VRP)"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tsp/tsptw_summary.html" title="9.10. Summary"
+          <a href="tsp/tsptw_summary.html" title="9.11. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -63,7 +63,7 @@
 <li>Basic knowledge of Local Search (see the chapter <a class="reference internal" href="LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a>).</li>
 <li>Basic knowledge of the Routing Library (see the chapter <a class="reference internal" href="TSP.html#chapter-tsp-with-constraints"><em>Travelling Salesman Problems with constraints: the TSP with time windows</em></a>), especially:<ul>
 <li>the section <a class="reference internal" href="tsp/routing_library.html#tsp-routing-solver"><em>The Routing Library (RL) in a nutshell</em></a>;</li>
-<li>the section <a class="reference internal" href="tsp/model_behind_scene.html#automatic-variables"><em>The model behind the scene</em></a>;</li>
+<li>the section <a class="reference internal" href="tsp/model_behind_scene.html#rl-model-behind-scene-decision-v"><em>The model behind the scene: the main decision variables</em></a>;</li>
 <li>the section <a class="reference internal" href="tsp/two_phases_approaches.html#tsp-two-phases-approaches"><em>The two phases approach</em></a>.</li>
 </ul>
 </li>
@@ -80,10 +80,14 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="vrp/first_vrp_implementation.html">10.2. The VRP in or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vrp/exact_vrp_implementation.html">10.3. An exact implementation of the VRP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp.html">10.4. The Capacitated Vehicle Routing Problem (CVRP)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vrp/first_cvrp_implementation.html">10.5. The CVRP in or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp_summary.html">10.6. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/partial_routes.html">10.3. Partial routes and Assigments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vrp/partial_routes.html#the-problem">10.3.1. The Problem</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/exact_vrp_implementation.html">10.4. An exact implementation of the VRP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp.html">10.5. The Capacitated Vehicle Routing Problem (CVRP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/first_cvrp_implementation.html">10.6. The CVRP in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vrp/cvrp_summary.html">10.7. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
@@ -151,10 +155,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    
@@ -210,7 +214,7 @@ Search:
           <a href="vrp/vrp.html" title="10.1. The Vehicle Routing Problem (VRP)"
              >next</a> |</li>
         <li class="right" >
-          <a href="tsp/tsptw_summary.html" title="9.10. Summary"
+          <a href="tsp/tsptw_summary.html" title="9.11. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

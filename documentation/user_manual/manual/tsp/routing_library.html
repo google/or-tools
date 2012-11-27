@@ -75,13 +75,18 @@ its main characteristics.</p>
 </div>
 <div class="section" id="out-of-the-box-models">
 <h2>9.2.2. Out of the box models</h2>
-<p>[TO BE WRITTEN]</p>
-<p>which lets you model a wide range of vehicle
-routing problems from the Traveling Salesman Problem (and its
-variants, ATSP, TSPTW, ...) to multi-vehicle problems with dimension
-constraints (capacities, time windows) and various &#8220;routing&#8221;
-constraints (optional nodes, alternate nodes,...).</p>
-<p>Node and vehicle oriented</p>
+<p>To be precise, the RL only uses one model to solve different Routing Problems. It&#8217;s a one fits all. This approach
+has its advantages and disadvantages. On one side, the model already exists, has been tested and fine-tuned by our
+team and you can reuse it to solve several Routing Problems (meaning the learning curve is low).
+On the other side, if you need to solve a very difficult Routing
+Problem, you probably would like to build one specialized model yourself. Our RL can then serve as an inspiration.</p>
+<p>The RL lets you model a wide range of vehicle
+routing problems from the Travelling Salesman Problem (and its
+variants, ATSP, TSPTW, ...) to multi-vehicles problems with <em>dimension</em>
+constraints (capacities, time windows, ...) and various <em>routing</em>
+constraints (optional nodes, alternate nodes, ...).</p>
+<p>Have a look at the subsections <a class="reference internal" href="#rl-dimensions-overview"><em>Dimensions</em></a> and <a class="reference internal" href="#rl-disjunctions-overview"><em>Disjunctions</em></a> below to have an idea
+of the additional constraints you can use in this model.</p>
 </div>
 <div class="section" id="on-top-of-the-cp-library">
 <h2>9.2.3. On top of the CP library</h2>
@@ -115,7 +120,7 @@ and limit the allowed solving time to 3 minutes:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --helpon<span class="o">=</span>routing
 </pre></div>
 </div>
-<p>gflags are not universally available in all programming languages.
+<span class="target" id="index-0"></span><p id="index-1">gflags are not universally available in all programming languages.
 This is why the RL provides the handy <tt class="docutils literal"><span class="pre">SetCommandLineOption()</span></tt> method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">routing</span><span class="p">.</span><span class="n">SetCommandLineOption</span><span class="p">(</span><span class="s">&quot;routing_first_solution&quot;</span><span class="p">,</span>
                                                 <span class="s">&quot;PathCheapestArc&quot;</span><span class="p">);</span>
@@ -128,27 +133,120 @@ This is why the RL provides the handy <tt class="docutils literal"><span class="
 </pre></div>
 </div>
 </div>
+<div class="section" id="dimensions">
+<span id="rl-dimensions-overview"></span><h2>9.2.6. Dimensions</h2>
+<p>Often, real problems need to take into account some accumulated quantities along (the edges and/or the nodes of)
+the routes. To model such
+quantities, the RL proposes the concept of <em>dimensions</em>. A dimension is basically a set of variables that describe some
+quantities (given by callbacks) accumulated along the routes. These variables are associated with each node of the
+graph. You can add as many dimensions as you wish in an automated and easy fashion: just call the appropriate
+<tt class="docutils literal"><span class="pre">AddDimension()</span></tt> method(s) and the RL creates and manages these variables automatically.</p>
+<p>You can add upper bounds (we develop this concept later)
+on a dimension and a capacity limits per route/vehicle on accumulated quantities for a given dimension.</p>
+<p>Examples of dimensions are weight or volume carried, distance and time.</p>
+</div>
+<div class="section" id="disjunctions">
+<span id="rl-disjunctions-overview"></span><h2>9.2.7. Disjunctions</h2>
+<p>Nodes don&#8217;t have to be visited, i.e. some nodes can be optional. For this, the RL uses the <tt class="docutils literal"><span class="pre">struct</span></tt> <tt class="docutils literal"><span class="pre">Disjunction</span></tt>
+which is basically a set of nodes. In our model, we visit at most one node in each <tt class="docutils literal"><span class="pre">Disjunction</span></tt>. If these sets are
+singletons, then you have optional nodes. You can also force to visit at least one node in each or some of the
+<tt class="docutils literal"><span class="pre">Disjunction</span></tt>s.</p>
+<p>Again, we have automated and simplified (and optimized!) the process to create these sets: just call the appropriate
+<tt class="docutils literal"><span class="pre">AddDisjunction()</span></tt> method(s).</p>
+</div>
+<div class="section" id="routes-vehicles-are-not-mandatory">
+<h2>9.2.8. Routes/Vehicles are not mandatory</h2>
+<p>The same way that nodes don&#8217;t have to be visited, vehicles/routes don&#8217;t have to be used, i.e.
+some vehicles/routes can be optional.
+You might want to minimize the number of vehicles needed as part of your problem.</p>
+</div>
+<div class="section" id="heterogeneous-fleet-of-vehicles">
+<h2>9.2.9. Heterogeneous fleet of vehicles</h2>
+<p>The RL offers the possibility to deal with different vehicles with each its own cost(s)/particularities.</p>
+</div>
+<div class="section" id="costs">
+<h2>9.2.10. Costs</h2>
+<p>Basically, costs are associated (with callbacks) to each edge/arc (i,j) and the objective function sums these costs
+along the different routes in a solution. Our goal is to minimize this sum. The RL let you easily add some penalties
+to for instance non-visited nodes, add some cost to use a particular vehicle, etc. Actually, you are completely free
+to add whatever terms to this sum.</p>
+</div>
 <div class="section" id="limitations">
-<h2>9.2.6. Limitations</h2>
-<p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class has a limit on the maximum number of nodes it can handle. Indeed, its
+<h2>9.2.11. Limitations</h2>
+<p>There are several limitations<a class="footnote-reference" href="#rl-limitations" id="id1">[1]</a> as in any code. These limitations are mainly due to
+coding choices and can often be worked around. We list
+the most important ones.</p>
+<table class="docutils footnote" frame="void" id="rl-limitations" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Or can you call them <em>features</em> of the RL?</td></tr>
+</tbody>
+</table>
+<div class="section" id="only-one-model">
+<h3>9.2.11.1. Only one model</h3>
+<p>We wrote several times that there is no universal solver<a class="footnote-reference" href="#no-universal-solver-again" id="id2">[2]</a> for all the problems.
+This is of course also true for the RL. We use a node-based model to solve quite a lot of different problems
+but not all Routing Problems can be solved with the RL. In particular, common Arc Routing Problems are probably
+best solved with a different model<a class="footnote-reference" href="#rl-not-universal-solver" id="id3">[3]</a>.</p>
+<table class="docutils footnote" frame="void" id="no-universal-solver-again" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>At least, to the best of our knowledge. See the subsection <a class="reference internal" href="../introduction/real_examples.html#cp-holy-grail"><em>Can CP be compared to the holy grail of Operations Research?</em></a> for more.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="rl-not-universal-solver" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>See the chapter on Arc Routing for a discussion about which Arc Routing Problems
+can be solved by the RL.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="number-of-nodes">
+<h3>9.2.11.2. Number of nodes</h3>
+<p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class has a limit on the maximum number of nodes it can handle<a class="footnote-reference" href="#limit-vehicles-nbr" id="id4">[4]</a>. Indeed, its
 constructors take an regular <tt class="docutils literal"><span class="pre">int</span></tt> as the number of nodes it can model:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span><span class="p">(</span><span class="kt">int</span> <span class="n">nodes</span><span class="p">,</span> <span class="p">...);</span>
 </pre></div>
 </div>
 <p>By the <tt class="docutils literal"><span class="pre">ANSI/ISO</span></tt> standard, we are guaranteed to be able to declare at least a maximum of <tt class="docutils literal"><span class="pre">32767</span></tt> nodes.
-Remember that this is the strict minimum a maximum integer value can take. Since the problems we try to solve
-are intractable, <tt class="docutils literal"><span class="pre">32767</span></tt> nodes are most of the time enough<a class="footnote-reference" href="#stuck-with-node-limitations" id="id1">[1]</a>.</p>
+Since the problems we try to solve
+are intractable, <tt class="docutils literal"><span class="pre">32767</span></tt> nodes are most of the time enough<a class="footnote-reference" href="#stuck-with-node-limitations" id="id5">[5]</a>.</p>
 <p>Constraint Programming techniques - at the time of writing - are not competitive with state of the art techniques
 (mostly <em>Branch, Price and Cut</em> with specialized heuristics to solve Linear Mixed Integer Programs)
 that can solve TSP with thousands of nodes to optimality.
-The strength of Constraint Programming lies in its ability to handle well side constraints such as
-Time Windows for instance.</p>
+The strength of Constraint Programming lies in its ability to handle side constraints well such as
+time windows for instance.</p>
+<table class="docutils footnote" frame="void" id="limit-vehicles-nbr" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>And thus the number of vehicles too!</td></tr>
+</tbody>
+</table>
 <table class="docutils footnote" frame="void" id="stuck-with-node-limitations" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If your platform retricts you too much, you can always adapt the code!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id5">[5]</a></td><td>If your platform restricts you too much, you can always adapt the code!</td></tr>
 </tbody>
 </table>
+</div>
+<div class="section" id="you-cannot-visit-a-node-twice">
+<h3>9.2.11.3. You cannot visit a node twice</h3>
+<p>The way the model is coded (see the section <a class="reference internal" href="model_behind_scene.html#rl-model-behind-scene-decision-v"><em>The model behind the scene: the main decision variables</em></a>) doesn&#8217;t allow you to visit
+a node more than once. You can have several vehicles at one depot though.</p>
+</div>
+<div class="section" id="a-depot-is-a-depot">
+<h3>9.2.11.4. A depot is a depot</h3>
+<p>This means you can only start from a depot and/or arrive to a depot, not transit through a depot.</p>
+</div>
+<div class="section" id="the-rl-returns-approximate-solutions">
+<h3>9.2.11.5. The RL returns approximate solutions</h3>
+<p>Most Routing Problems are intractable and we are mainly interested in good approximations.
+This is not really a limitation. You just need to know that by default you won&#8217;t have any guarantee
+on the quality of the returned solution(s).
+You can <em>force</em> the RL to return proven optimal solutions but the RL wasn&#8217;t coded
+with exact solutions and procedures in mind.</p>
+</div>
 </div>
 </div>
 
@@ -214,10 +312,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    
@@ -240,7 +338,19 @@ Search:
 <li><a class="reference internal" href="#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
 <li><a class="reference internal" href="#local-search">9.2.4. Local Search</a></li>
 <li><a class="reference internal" href="#tuning-the-search">9.2.5. Tuning the search</a></li>
-<li><a class="reference internal" href="#limitations">9.2.6. Limitations</a></li>
+<li><a class="reference internal" href="#dimensions">9.2.6. Dimensions</a></li>
+<li><a class="reference internal" href="#disjunctions">9.2.7. Disjunctions</a></li>
+<li><a class="reference internal" href="#routes-vehicles-are-not-mandatory">9.2.8. Routes/Vehicles are not mandatory</a></li>
+<li><a class="reference internal" href="#heterogeneous-fleet-of-vehicles">9.2.9. Heterogeneous fleet of vehicles</a></li>
+<li><a class="reference internal" href="#costs">9.2.10. Costs</a></li>
+<li><a class="reference internal" href="#limitations">9.2.11. Limitations</a><ul>
+<li><a class="reference internal" href="#only-one-model">9.2.11.1. Only one model</a></li>
+<li><a class="reference internal" href="#number-of-nodes">9.2.11.2. Number of nodes</a></li>
+<li><a class="reference internal" href="#you-cannot-visit-a-node-twice">9.2.11.3. You cannot visit a node twice</a></li>
+<li><a class="reference internal" href="#a-depot-is-a-depot">9.2.11.4. A depot is a depot</a></li>
+<li><a class="reference internal" href="#the-rl-returns-approximate-solutions">9.2.11.5. The RL returns approximate solutions</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

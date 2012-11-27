@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.4. The model behind the scene" href="model_behind_scene.html" />
+    <link rel="next" title="9.4. The model behind the scene: the main decision variables" href="model_behind_scene.html" />
     <link rel="prev" title="9.2. The Routing Library (RL) in a nutshell" href="routing_library.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene: the main decision variables"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
@@ -103,6 +103,15 @@ guaranteed to be within 1% of an optimal tour!</td></tr>
 </table>
 <div class="topic">
 <p class="topic-title first">Do I really need a complete graph?</p>
+<p>This question might come as a surprise to CP practitioners. Indeed, in CP you can use any graph as input.
+Outside the CP paradigm, most algorithms solving the TSP ask for a complete graph as input. The classical way to
+transform any (non complete) graph into a complete graph is to replace each non existing edge <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> by a well
+suited shortest path edge between <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/>.</p>
+<p>Worse, if you want to avoid certain connections between two nodes <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> in a complete graph,
+the classical way to achieve this is to set a very high cost/weight to the edge <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/>. In the RL, you just
+remove <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> from the domain of the variable <tt class="docutils literal"><span class="pre">NextVar(j)</span></tt> of <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> and vice-versa. See the subection
+<a class="reference internal" href="first_tsp_implementation.html#tsp-avoid-some-edges"><em>How to avoid some edges?</em></a> for a detailed
+example.</p>
 </div>
 <div class="topic">
 <p class="topic-title first">Symmetric or Asymmetric distances?</p>
@@ -181,7 +190,8 @@ of three numbers:</p>
 otherwise stated. The coordinates don&#8217;t have to be integers and can be any real numbers.</p>
 <p>Not all instances have node coordinates.</p>
 <p>There exist several other less obvious TSPLIB formats but we disregard them in this manual (graphs can be given
-by different types of explicit matrices or by edge lists for example).</p>
+by different types of explicit matrices or by edge lists for example). Not however that we take them into account in the
+code.</p>
 <p>You might wonder how the depot is given. It is nowhere written where to start a tour. This is normal because the
 TSP is not sensitive to the starting node: you can start a tour anywhere, the total cost of the tour remains the same.</p>
 <table class="docutils footnote" frame="void" id="a280-fun-fact" rules="none">
@@ -220,7 +230,7 @@ the end of the file.</p>
 </div>
 </div>
 <div class="section" id="the-tspdata-class">
-<h2>9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</h2>
+<span id="tspdata-class"></span><h2>9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</h2>
 <p>The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class basically encapsulates a 2-dimensional matrix containing the distances between all nodes.
 For efficiency reasons, we use a 1-dimensional matrix with a smart pointer defined in the header <tt class="file docutils literal"><span class="pre">base/scoped_ptr.h</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">private</span><span class="o">:</span>
@@ -255,9 +265,27 @@ this helpful technique, look up <em>RAII</em> (Resource Acquisition Is Initializ
 </div>
 <div class="section" id="to-read-tsplib-files">
 <h3>9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h3>
+<p>To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class offers the <tt class="docutils literal"><span class="pre">LoadTSPLIBFile(const</span> <span class="pre">std::string&amp;</span> <span class="pre">filename)</span></tt> method.
+It parses a file in <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format and loads the coordinates (if any) for further treatment.
+Note that the format is only
+partially checked: bad inputs might cause undefined behaviour.</p>
+<p>If during the parse phase an unknown keyword is encountered, the method exists and prints a <tt class="docutils literal"><span class="pre">FATAL</span> <span class="pre">LOG</span></tt> message:</p>
+<div class="highlight-bash"><div class="highlight"><pre>Unknown keyword: UNKNOWN
+</pre></div>
+</div>
+<p>This method has been tested with all the files of the <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> and should hopefully read any correct <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format
+for the TSP.</p>
 </div>
 <div class="section" id="to-generate-random-tsp">
 <h3>9.3.3.2. To generate random TSP</h3>
+<p>To generate random TSP instances, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class provides the <tt class="docutils literal"><span class="pre">RandomInitialize(const</span> <span class="pre">int</span> <span class="pre">size)</span></tt> method.
+Several <tt class="docutils literal"><span class="pre">gflags</span></tt> parameters are available:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">deterministic_random_seed</span></tt>: Use deterministic random seeds or not? <tt class="docutils literal"><span class="pre">true</span></tt> by default;</li>
+<li><tt class="docutils literal"><span class="pre">use_symmetric_distances</span></tt>: Generate a symmetric TSP instance or not? <tt class="docutils literal"><span class="pre">true</span></tt> by default;</li>
+<li><tt class="docutils literal"><span class="pre">min_distance</span></tt>: Minimum allowed distance between two nodes. 10 by default;</li>
+<li><tt class="docutils literal"><span class="pre">max_distance</span></tt>: Maximum allowed distance between two nodes. 100 by default.</li>
+</ul>
 </div>
 </div>
 <div class="section" id="visualization-with-epix">
@@ -283,7 +311,7 @@ reads the solution from a TSPLIB solution file.</p>
 <span class="n">DEFINE_int32</span><span class="p">(</span><span class="n">epix_height</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s">&quot;Height  of the pictures in cm.&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Once the ePiX file is written, you must evoke ePiX <tt class="docutils literal"><span class="pre">elaps</span></tt> script:</p>
+<p>Once the ePiX file is written, you must evoke the ePiX <tt class="docutils literal"><span class="pre">elaps</span></tt> script:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./elaps -pdf epix_file.xp
 </pre></div>
 </div>
@@ -360,10 +388,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    
@@ -377,7 +405,7 @@ Search:
                         title="previous chapter">9.2. The Routing Library (RL) in a nutshell</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="model_behind_scene.html"
-                        title="next chapter">9.4. The model behind the scene</a></p>
+                        title="next chapter">9.4. The model behind the scene: the main decision variables</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">9.3. The Travelling Salesman Problem (TSP)</a><ul>
@@ -411,7 +439,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene: the main decision variables"
              >next</a> |</li>
         <li class="right" >
           <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"

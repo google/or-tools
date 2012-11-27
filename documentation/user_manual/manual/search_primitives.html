@@ -54,6 +54,55 @@
             
   <div class="section" id="defining-search-primitives-the-n-queens-problem">
 <span id="chapter-search-primitives"></span><h1>5. Defining search primitives: the n-queens problem</h1>
+<p>This chapter is about the customization of the search. What stategy(ies) to
+use to branch, i.e. what variables to select and what value(s) to assign to them?
+How to use nested searches, i.e. searches in subtrees? And so on.</p>
+<p>The or-tools CP solver is quite flexible and comes with several tools
+(<tt class="docutils literal"><span class="pre">Decision</span></tt>s, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s, ...) that we call <em>search primitives</em>.
+Some are predefined and can be used right out of the box while others can be
+customized thanks to callbacks. You can also combine different search
+strategies.</p>
+<p>To efficiently use your tools, you need to know them a little and this
+chapter introduces you in a gentle manner to the inner working of the solver.
+The covered material is enough for you to understand how you can customize your search primitives without
+being drowned in the often tedious details of the implementation<a class="footnote-reference" href="#tedious-but-necessary-implementation-details" id="id1">[1]</a>.</p>
+<table class="docutils footnote" frame="void" id="tedious-but-necessary-implementation-details" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If you take a look at the source code, we hope you will enjoy
+the clarity (?) of our code. We believe that the most efficient code should remain
+simple and allow for more complicated but more efficient specializations when needed.</td></tr>
+</tbody>
+</table>
+<p>To illustrate the customization of the search, we try to solve the n-queen problem we have already met
+in the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>.</p>
+<p class="rubric">Overview:</p>
+<p>We start immediately with a basic model for the n-queen problem.
+To understand search strategies better, we need to know a little bit more about
+how the solver works internally and specifically how it traverses/constructs the search tree.</p>
+<p class="rubric">Prerequisites:</p>
+<ul class="simple">
+<li>Basic knowledge of C++.</li>
+<li>Basic knowledge of Constraint Programming and the n-queens problem (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
+<li>The willingness to roll up your sleeves and be prepared to look under the hood.</li>
+</ul>
+<p class="rubric">Classes under scrutiny:</p>
+<p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</p>
+<p class="rubric">Files:</p>
+<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap5</span></tt>.</p>
+<p>The files inside this directory are:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">nqueens_utilities.h</span></tt>: Contains two helper functions to test the number of solutions found and to print a solution.</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt>: A first implementation of our basic model to find all solutions.</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt> but this time to find only one solution.</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt> but this time we use a <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> to visualize the
+search with cpviz.</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen4.cc</span></tt>:</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen5.cc</span></tt>:</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen6.cc</span></tt>:</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen7.cc</span></tt>:</li>
+</ul>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
@@ -162,10 +211,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    

@@ -56,8 +56,69 @@
             
   <div class="section" id="logging">
 <h1>12.1. Logging</h1>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<p>[TO BE REREAD]</p>
+<p>We provide very basic logging tools: macros replaced by some basic logging objects. They are defined
+in the header <tt class="file docutils literal"><span class="pre">base/logging.h</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">LG</span></tt> or <tt class="docutils literal"><span class="pre">LOG(INFO)</span></tt> is always working. You can print messages to <tt class="docutils literal"><span class="pre">std:cerr</span></tt> like this</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">LG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;This is my important message with &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">var</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; pancakes.&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Of course, <tt class="docutils literal"><span class="pre">var</span></tt> must overwrite the <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt> operator. The message is automatically followed by a <tt class="docutils literal"><span class="pre">\n</span></tt>
+that adds a new line.</p>
+<p id="index-0">If you didn&#8217;t change the value of the gflags flag <tt class="docutils literal"><span class="pre">log_prefix</span></tt> to <tt class="docutils literal"><span class="pre">false</span></tt>, you&#8217;ll see the following message:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="o">[</span>20:47:47<span class="o">]</span> my_file.cc:42: This is my important message with 3 pancakes.
+</pre></div>
+</div>
+<p>Your message is prefixed by the hour, the file name and the line number of the code source where your message was defined.
+You can disable this <em>prefix</em> by setting <tt class="docutils literal"><span class="pre">log_prefix</span></tt> to <tt class="docutils literal"><span class="pre">false</span></tt>.</p>
+<p>We provide different levels of logging:</p>
+<ul>
+<li><p class="first">First, depending on the severity:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">INFO</span></tt>;</li>
+<li><tt class="docutils literal"><span class="pre">WARNING</span></tt>;</li>
+<li><tt class="docutils literal"><span class="pre">ERROR</span></tt>;</li>
+<li><tt class="docutils literal"><span class="pre">FATAL</span></tt>.</li>
+</ul>
+<p>To use them, just write <tt class="docutils literal"><span class="pre">LOG(severity)</span></tt> as in:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">LOG</span><span class="p">(</span><span class="n">FATAL</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;This message will kill you!&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>For the moment,
+<tt class="docutils literal"><span class="pre">INFO</span></tt>, <tt class="docutils literal"><span class="pre">ERROR</span></tt> and
+<tt class="docutils literal"><span class="pre">WARNING</span></tt> are treated the same way. <tt class="docutils literal"><span class="pre">FATAL</span></tt> works as expected and the program aborts (calls <tt class="docutils literal"><span class="pre">abort()</span></tt>) after printing the message.</p>
+</li>
+<li><p class="first">Second, depending on the debug or release mode. When debugging, you can use <tt class="docutils literal"><span class="pre">DLOG(severity)</span></tt> with the same
+levels (and the same results). If <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> is defined, you are in release mode and <tt class="docutils literal"><span class="pre">DLOG(severity)</span></tt> doesn&#8217;t
+do anything except for <tt class="docutils literal"><span class="pre">FATAL</span></tt> where it becomes a <tt class="docutils literal"><span class="pre">LOG(ERROR)</span></tt>.</p>
+</li>
+</ul>
+<ul id="index-1">
+<li><p class="first">Finally, you can also use <tt class="docutils literal"><span class="pre">VLOG(level)</span></tt> with different levels. The higher the level, the more detailed
+the information.
+By default, the <tt class="docutils literal"><span class="pre">level</span></tt> is set to 0. You can change this by setting the right level value to the gflags flag
+<tt class="docutils literal"><span class="pre">log_level</span></tt>.</p>
+<p>So, if <tt class="docutils literal"><span class="pre">FLAGS_log_level</span> <span class="pre">=</span> <span class="pre">1</span></tt> the following message is printed:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">VLOG</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;He, he, you can see me!&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>but not this one:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">VLOG</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;This information is too detailed for you to see with you</span>
+                                                       <span class="n">log</span> <span class="n">level</span><span class="p">...</span><span class="s">&quot;;</span>
+</pre></div>
+</div>
+<p>We rarely (understand never) go over level 4.</p>
+</li>
+</ul>
+<p>There is also a conditional logging: <tt class="docutils literal"><span class="pre">LOG_IF(severity,</span> <span class="pre">condition)</span></tt> and for debugging <tt class="docutils literal"><span class="pre">DLOG_IF(severity,</span> <span class="pre">condition)</span></tt>
+that vanishes when <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> is defined.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>A little word of advice.</p>
+<p class="last">When logging is allowed, you create each time a logging object so this can be costly.
+When logging is disallowed, you don&#8217;t pay anything.</p>
+</div>
+</div>
 
 
           </div>
@@ -121,10 +182,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    

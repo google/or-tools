@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.4. The model behind the scene &mdash; or-tools User&#39;s Manual</title>
+    <title>9.4. The model behind the scene: the main decision variables &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.5. The two phases approach" href="two_phases_approaches.html" />
+    <link rel="next" title="9.5. The model behind the scene: overview" href="model_behind_scene_overview.html" />
     <link rel="prev" title="9.3. The Travelling Salesman Problem (TSP)" href="tsp.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="two_phases_approaches.html" title="9.5. The two phases approach"
+          <a href="model_behind_scene_overview.html" title="9.5. The model behind the scene: overview"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"
@@ -54,30 +54,275 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="the-model-behind-the-scene">
-<span id="automatic-variables"></span><h1>9.4. The model behind the scene</h1>
-<div class="section" id="the-idea">
-<h2>9.4.1. The idea</h2>
+  <div class="section" id="the-model-behind-the-scene-the-main-decision-variables">
+<span id="rl-model-behind-scene-decision-v"></span><h1>9.4. The model behind the scene: the main decision variables</h1>
+<p>We describe the main decision variables of the model used in the RL.
+In the section <a class="reference internal" href="../under_the_hood/rl.html#hood-rl"><em>The Routing Library (RL)</em></a> of the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a>,
+we describe the inner mechanisms of the RL in details.</p>
+<p>A node can be:</p>
+<blockquote>
+<div><ul class="simple">
+<li>a transit node;</li>
+<li>a starting depot;</li>
+<li>an ending depot;</li>
+<li>a starting and an ending depot.</li>
+</ul>
+</div></blockquote>
+<p>A depot <strong>cannot</strong> be an transit node.
+The number of vehicles can be arbitrary (within the limit of an <tt class="docutils literal"><span class="pre">int</span></tt>).</p>
+<div class="section" id="the-main-idea-the-node-decision-variables">
+<h2>9.4.1. The main idea: the node decision variables</h2>
+<p>The model is node based: routes are paths linking nodes. For each node<a class="footnote-reference" href="#nodes-that-lead-somwhere" id="id1">[1]</a>,
+we keep an <tt class="docutils literal"><span class="pre">IntVar*</span></tt> variable
+(stored internally in a <tt class="docutils literal"><span class="pre">private</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span> <span class="pre">nexts_</span></tt>) that
+tells us where to go next (i.e. to which node). To access these variables, use the <tt class="docutils literal"><span class="pre">NextVar()</span></tt> method
+(see below). These variables are the main decision variables of our model.</p>
+<p>For a node that is uniquely visited by a vehicle<a class="footnote-reference" href="#node-only-visited-once" id="id2">[2]</a>, we only need
+one variable. For a depot where only a route finishes, it is even easier since we don&#8217;t need any variable at all because
+the route stops at this depot and there is no need to know where to go next. The situation is a little bit
+messier if for instance we have two vehicles starting from the same depot. One variable will not do. In the RL,
+we deal with this situation by <em>duplicating</em> this depot and give each node its own <tt class="docutils literal"><span class="pre">IntVar*</span></tt> variable
+in the <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span> <span class="pre">nexts_</span></tt>.</p>
+<p>Internally, we use <tt class="docutils literal"><span class="pre">int64</span></tt> indices to name the nodes and their duplicates. You don&#8217;t need to be concerned by
+the way we assign these indices but to run through the paths of a solution, you need to use these <tt class="docutils literal"><span class="pre">int64</span></tt> indices.
+We explain how in the section <a class="reference internal" href="#rl-how-to-follow-a-route"><em>How to follow a route?</em></a>.</p>
+<p>The domains of the <tt class="docutils literal"><span class="pre">IntVar</span></tt> <tt class="docutils literal"><span class="pre">nexts_</span></tt> variables consist of these <tt class="docutils literal"><span class="pre">int64</span></tt> indices.
+Let&#8217;s say we have a solution <tt class="docutils literal"><span class="pre">solution</span></tt> and a <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> object <tt class="docutils literal"><span class="pre">routing</span></tt>. In the following code:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">current_node</span> <span class="o">=</span> <span class="p">...</span>
+<span class="n">int64</span> <span class="n">next_node_index</span> <span class="o">=</span> <span class="n">solution</span><span class="p">.</span><span class="n">Value</span><span class="p">(</span><span class="n">routing</span><span class="p">.</span><span class="n">NextVar</span><span class="p">(</span><span class="n">current_node</span><span class="p">));</span>
+</pre></div>
 </div>
-<div class="section" id="the-variables">
-<h2>9.4.2. The variables</h2>
+<p><tt class="docutils literal"><span class="pre">next_node_index</span></tt> is the <tt class="docutils literal"><span class="pre">int64</span></tt> index of the node following immediately the node represented by the <tt class="docutils literal"><span class="pre">int64</span></tt>
+index <tt class="docutils literal"><span class="pre">current_node</span></tt> in the <tt class="docutils literal"><span class="pre">Assignment</span></tt> <tt class="docutils literal"><span class="pre">solution</span></tt>.</p>
+<p>Before we present the main decision variables of our model,
+we need to understand the difference between <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> node identifiers and <tt class="docutils literal"><span class="pre">int64</span></tt> indices representing
+nodes in solutions.</p>
+<table class="docutils footnote" frame="void" id="nodes-that-lead-somwhere" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Not every node, only the nodes that lead somewhere in the solution. Keep reading.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="node-only-visited-once" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Remember that we don&#8217;t allow a node to be visited more than once, i.e. only one
+vehicle can visit a node in a solution.</td></tr>
+</tbody>
+</table>
+</div>
 <div class="section" id="nodeindex-or-int64">
-<h3>9.4.2.1. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</h3>
+<span id="id3"></span><h2>9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</h2>
+<p>The RL uses both <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es<a class="footnote-reference" href="#nodeindices" id="id4">[3]</a> and <tt class="docutils literal"><span class="pre">int64</span></tt>s. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es represent
+the true unique nodes <em>Identifiers</em> (<em>Ids</em>) while <tt class="docutils literal"><span class="pre">int64</span></tt>s are used as (internal) indices corresponding to
+the nodes in the solutions<a class="footnote-reference" href="#auxiliary-graph-in-fact" id="id5">[4]</a>.
+As mentioned above, we use internally duplicate nodes to encode routes. Basically, we keep all nodes that are
+not starting or ending
+depots. For each route (and thus vehicle), we use one node for the starting depot and one node for the ending depot
+duplicating the original nodes if needed.</p>
+<p>An example will clarify our discussion.
+In the next figure, we detail the unique <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> node ids:</p>
+<a class="reference internal image-reference" href="../../_images/int64_NodeIndex.png"><img alt="../../_images/int64_NodeIndex.png" class="align-center" src="../../_images/int64_NodeIndex.png" style="width: 300px;" /></a>
+<p>We have 9 nodes each with a unique <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> identifier going from 0 to 8.</p>
+<p>Two vehicles visit all the nodes
+from the same depot 7:</p>
+<ul class="simple">
+<li>Path <img class="math" src="../../_images/math/d4e8cf09c5ced63a38ed87c9a03dd9aacf7e490a.png" alt="p_0" style="vertical-align: -4px"/> : 7 -&gt; 0 -&gt; 2 -&gt; 4 -&gt; 5 -&gt; 6 -&gt; 7</li>
+<li>Path <img class="math" src="../../_images/math/e01486dcc7cb25518b89692706b17389dc67c92b.png" alt="p_1" style="vertical-align: -4px"/> : 7 -&gt; 1 -&gt; 8 -&gt; 3 -&gt; 7</li>
+</ul>
+<p>If we look at the internal <tt class="docutils literal"><span class="pre">int64</span></tt> indices, we have:</p>
+<ul class="simple">
+<li>Path <img class="math" src="../../_images/math/d4e8cf09c5ced63a38ed87c9a03dd9aacf7e490a.png" alt="p_0" style="vertical-align: -4px"/>: 7 -&gt; 0 -&gt; 2 -&gt; 4 -&gt; 5 -&gt; 6 -&gt; 10</li>
+<li>Path <img class="math" src="../../_images/math/e01486dcc7cb25518b89692706b17389dc67c92b.png" alt="p_1" style="vertical-align: -4px"/>: 9 -&gt; 1 -&gt; 8 -&gt; 3 -&gt; 11</li>
+</ul>
+<p>As you can see, each node that is uniquely visited has the same <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> and <tt class="docutils literal"><span class="pre">int64</span></tt> index
+(this doesn&#8217;t need to be the case!) but the depot
+(<tt class="docutils literal"><span class="pre">NodeIndex</span></tt> 7) has different <tt class="docutils literal"><span class="pre">int64</span></tt> indices:</p>
+<ul class="simple">
+<li>7 and 10 for route 0;</li>
+<li>9 and 11 for route 1.</li>
+</ul>
+<p>Notice that the <tt class="docutils literal"><span class="pre">int64</span></tt> indices don&#8217;t depend on a given solution but only on the given graph/network and depots.</p>
+<table class="docutils footnote" frame="void" id="nodeindices" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>We should rather say <em>NodeIndices</em> but we pluralize the type name <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>. Note also
+that the <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> type lies inside the <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class, so we should rather use
+<tt class="docutils literal"><span class="pre">RoutingModel::NodeIndex</span></tt>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="auxiliary-graph-in-fact" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Our model is based on an <em>auxiliary graph</em> detailed in the
+subsection <a class="reference internal" href="../under_the_hood/rl.html#auxiliary-graph-detailed"><em>The auxiliary graph</em></a>. The <tt class="docutils literal"><span class="pre">int64</span></tt> indices are simply the
+node identifiers of this auxiliary graph.</td></tr>
+</tbody>
+</table>
 </div>
-<div class="section" id="path-variables">
-<h3>9.4.2.2. Path variables</h3>
+<div class="section" id="how-to-switch-from-nodeindex-to-int64-and-vice-versa">
+<h2>9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</h2>
+<p>A <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> behaves like
+a regular <tt class="docutils literal"><span class="pre">int</span></tt> but it is in fact an <tt class="docutils literal"><span class="pre">IntType</span></tt>. We use <tt class="docutils literal"><span class="pre">IntType</span></tt>s to avoid annoying automatic castings between
+different integer types and to preserve a certain type-safety. A <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> is a <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> and shouldn&#8217;t be
+compatible with anything else. A <tt class="docutils literal"><span class="pre">value()</span></tt> method allows the cast thought:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">node</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+<span class="c1">// the next statement fails to compile</span>
+<span class="n">int64</span> <span class="n">myint</span> <span class="o">=</span> <span class="n">node</span><span class="p">;</span>
+<span class="c1">// this is permitted</span>
+<span class="n">int64</span> <span class="n">myint</span> <span class="o">=</span> <span class="n">node</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Behind the scene, a <tt class="docutils literal"><span class="pre">static_cast</span></tt> is triggered. If you are following, you&#8217;ll understand that</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">node</span> <span class="o">=</span> <span class="mi">12</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>fails to compile. This is exactly the purpose of the <tt class="docutils literal"><span class="pre">IntType</span></tt> class<a class="footnote-reference" href="#more-about-inttype" id="id6">[5]</a>.</p>
+<table class="docutils footnote" frame="void" id="more-about-inttype" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Have a look at <tt class="file docutils literal"><span class="pre">base/int-type.h</span></tt> if you want to know more about the <tt class="docutils literal"><span class="pre">IntType</span></tt> class.</td></tr>
+</tbody>
+</table>
+<p>If you need to
+translate an <tt class="docutils literal"><span class="pre">int64</span></tt> index in a solution to the corresponding <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> node or vice-versa, use the
+following methods of the <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">NodeIndex</span> <span class="n">IndexToNode</span><span class="p">(</span><span class="n">int64</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+<span class="n">int64</span> <span class="n">NodeToIndex</span><span class="p">(</span><span class="n">NodeIndex</span> <span class="n">node</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>They are quicker and safer than a <tt class="docutils literal"><span class="pre">static_cast</span></tt> and ... give the correct results!</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Try to avoid <tt class="docutils literal"><span class="pre">RoutingModel::NodeIndex::value()</span></tt> unless really necessary.</p>
+</div>
+<p>How can you find the <tt class="docutils literal"><span class="pre">int64</span></tt> index of a depot? You shouldn&#8217;t use the method <tt class="docutils literal"><span class="pre">NodeToIndex()</span></tt> to
+determine the <tt class="docutils literal"><span class="pre">int64</span></tt> index
+of a starting or ending node in a route. Use instead</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">Start</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+<span class="n">int64</span> <span class="n">End</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">vehicle</span></tt> is the number of the vehicle or route considered.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Never use <tt class="docutils literal"><span class="pre">NodeToIndex()</span></tt> on starting or ending nodes of a route.</p>
+</div>
+</div>
 <div class="section" id="how-to-follow-a-route">
-<h4>9.4.2.2.1. How to follow a route?</h4>
+<span id="rl-how-to-follow-a-route"></span><h2>9.4.4. How to follow a route?</h2>
+<p>Once you have a solution, you can query it and follow its routes using the <tt class="docutils literal"><span class="pre">int64</span></tt> indices:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">78</span><span class="p">);</span> <span class="c1">// 10000 nodes, 78 vehicles/routes</span>
+                                 <span class="c1">// Don&#39;t do this at home!</span>
+<span class="p">...</span>
+<span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">solution</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">Solve</span><span class="p">();</span>
+<span class="p">...</span>
+<span class="k">const</span> <span class="kt">int</span> <span class="n">route_number</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">int64</span> <span class="n">node</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">Start</span><span class="p">(</span><span class="n">route_number</span><span class="p">);</span> <span class="o">!</span><span class="n">routing</span><span class="p">.</span><span class="n">IsEnd</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+                    <span class="n">node</span> <span class="o">=</span> <span class="n">solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">routing</span><span class="p">.</span><span class="n">NextVar</span><span class="p">(</span><span class="n">node</span><span class="p">)))</span> <span class="p">{</span>
+  <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">node_id</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">IndexToNode</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
+  <span class="c1">// Do something with node_id</span>
+  <span class="p">...</span>
+<span class="p">}</span>
+<span class="k">const</span> <span class="n">int64</span> <span class="n">last_node</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">End</span><span class="p">(</span><span class="n">route_number</span><span class="p">);</span>
+<span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">node_id</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">IndexToNode</span><span class="p">(</span><span class="n">last_node</span><span class="p">);</span>
+<span class="c1">// Do something with last node_id</span>
+<span class="p">...</span>
+</pre></div>
+</div>
+<p>We have used the <tt class="docutils literal"><span class="pre">IsEnd(int64)</span></tt> method as condition to exit the <tt class="docutils literal"><span class="pre">for</span></tt> loop.
+This method returns <tt class="docutils literal"><span class="pre">true</span></tt> if the <tt class="docutils literal"><span class="pre">int64</span></tt> index represent an end depot.
+The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class
+provides also an <tt class="docutils literal"><span class="pre">IsStart(int64)</span></tt> method to identify if an <tt class="docutils literal"><span class="pre">int64</span></tt> index corresponds to the start of a route.</p>
+<p>To access the main decision <tt class="docutils literal"><span class="pre">IntVar</span></tt> variables, we use the <tt class="docutils literal"><span class="pre">NextVar(int64)</span></tt> method.</p>
+</div>
+<div class="section" id="not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">
+<h2>9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</h2>
+<p>Only internal nodes that can lead somewhere possess a decision variable. Only the nodes that are visited and the
+starting depots have a main decision <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable. There are 9 real nodes in the next figure. They
+have a <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> ranging from 0 to 8. There are 2 starting depots (1 and 7) and 2 ending depot (5 and 8).
+Route 0 starts at 1 and ends at 5 while route 1 starts at 7 and ends at 8.</p>
+<a class="reference internal image-reference" href="../../_images/not_all_int64_have_v.png"><img alt="../../_images/not_all_int64_have_v.png" class="align-center" src="../../_images/not_all_int64_have_v.png" style="width: 300px;" /></a>
+<p>Because nodes 5 and 8 are ending nodes, there is no <tt class="docutils literal"><span class="pre">nexts_</span> <span class="pre">IntVar</span></tt> attached to them.</p>
+<p>The solution depicted is:</p>
+<ul class="simple">
+<li>Path <img class="math" src="../../_images/math/d4e8cf09c5ced63a38ed87c9a03dd9aacf7e490a.png" alt="p_0" style="vertical-align: -4px"/> : 1 -&gt; 0 -&gt; 2 -&gt; 3 -&gt; 5</li>
+<li>Path <img class="math" src="../../_images/math/e01486dcc7cb25518b89692706b17389dc67c92b.png" alt="p_1" style="vertical-align: -4px"/> : 7 -&gt; 4 -&gt; 6 -&gt; 8</li>
+</ul>
+<p>If we look at the internal <tt class="docutils literal"><span class="pre">int64</span></tt> indices, we have:</p>
+<ul class="simple">
+<li>Path <img class="math" src="../../_images/math/d4e8cf09c5ced63a38ed87c9a03dd9aacf7e490a.png" alt="p_0" style="vertical-align: -4px"/>: 1 -&gt; 0 -&gt; 2 -&gt; 3 -&gt; 7</li>
+<li>Path <img class="math" src="../../_images/math/e01486dcc7cb25518b89692706b17389dc67c92b.png" alt="p_1" style="vertical-align: -4px"/>: 6 -&gt; 4 -&gt; 5 -&gt; 8</li>
+</ul>
+<p>There are actually 9 <tt class="docutils literal"><span class="pre">int64</span></tt> indices ranging from 0 to 8 because in this case there is no need to duplicate a node.
+As you can see in the picture, there are only 7 <tt class="docutils literal"><span class="pre">nexts_</span> <span class="pre">IntVar</span></tt> variables. The following code:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">LG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Crash: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">Solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">routing</span><span class="p">.</span><span class="n">NextVar</span><span class="p">(</span><span class="n">routing</span><span class="p">.</span><span class="n">End</span><span class="p">(</span><span class="mi">0</span><span class="p">)));</span>
+</pre></div>
+</div>
+<p>compiles fine but triggers the feared</p>
+<div class="highlight-bash"><div class="highlight"><pre>Segmentation fault
+</pre></div>
+</div>
+<p>As you can see, there is no internal control on the <tt class="docutils literal"><span class="pre">int64</span></tt> index you can give to methods. If you want to know more
+about the way we internally number the indices, have a look at <a class="reference internal" href="../under_the_hood/rl.html#uth-next-variables-details"><em>nexts_ variables</em></a>.</p>
+</div>
+<div class="section" id="to-summarize">
+<h2>9.4.6. To summarize</h2>
+<p>Here is a little summary:</p>
+<p class="rubric">Types to represent nodes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="26%" />
+<col width="20%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">What</th>
+<th class="head">Types</th>
+<th class="head">Comments</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>True node <em>Ids</em></td>
+<td><tt class="docutils literal"><span class="pre">NodeIndex</span></tt></td>
+<td>Unique for each node from <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> to <img class="math" src="../../_images/math/4bdca93962a2beaffc172ca394e04fe05bd74ffd.png" alt="n-1" style="vertical-align: -1px"/>.</td>
+</tr>
+<tr class="row-odd"><td>Indices to follow routes</td>
+<td><tt class="docutils literal"><span class="pre">int64</span></tt></td>
+<td>Not unique for each node. Could be bigger than
+<img class="math" src="../../_images/math/4bdca93962a2beaffc172ca394e04fe05bd74ffd.png" alt="n-1" style="vertical-align: -1px"/> for the starting or ending node of a
+route.</td>
+</tr>
+</tbody>
+</table>
+<p>Internally, the RL uses <tt class="docutils literal"><span class="pre">int64</span></tt> indices and duplicates some nodes if needed (the depots). The main decision variables
+are <tt class="docutils literal"><span class="pre">IntVar</span></tt> only attached to nodes that lead somewhere. Each variable has the whole range of <tt class="docutils literal"><span class="pre">int64</span></tt>
+indices as domain<a class="footnote-reference" href="#domain-main-routing-vr" id="id7">[6]</a>.</p>
+<p>To follow a route, use <tt class="docutils literal"><span class="pre">int64</span></tt> indices. If you need to deal with the corresponding nodes, use the
+<tt class="docutils literal"><span class="pre">NodeIndex</span> <span class="pre">IndexToNode(int64)</span></tt> method. The <tt class="docutils literal"><span class="pre">int64</span></tt> index corresponding to the first node of route <tt class="docutils literal"><span class="pre">k</span></tt>
+is given by:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">first_node</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">Start</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>and the last node by:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">last_node</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">End</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>You can also test if an <tt class="docutils literal"><span class="pre">int64</span></tt> index is the beginning or the ending of a route with the methods <tt class="docutils literal"><span class="pre">bool</span> <span class="pre">IsStart(int64)</span></tt>
+and <tt class="docutils literal"><span class="pre">bool</span> <span class="pre">IsEnd(int64)</span></tt>.</p>
+<table class="docutils footnote" frame="void" id="domain-main-routing-vr" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>The CP solver does an initial propagation to quickly skim
+these domains.</td></tr>
+</tbody>
+</table>
+<p>In a solution, to get the next <tt class="docutils literal"><span class="pre">int64</span></tt> index <tt class="docutils literal"><span class="pre">next_node</span></tt> of a node given by an <tt class="docutils literal"><span class="pre">int64</span></tt> index <tt class="docutils literal"><span class="pre">current_node</span></tt>,
+use:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">next_node</span> <span class="o">=</span> <span class="n">solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">routing</span><span class="p">.</span><span class="n">NextVar</span><span class="p">(</span><span class="n">current_node</span><span class="p">));</span>
+</pre></div>
 </div>
 </div>
-<div class="section" id="dimension-variables">
-<h3>9.4.2.3. Dimension variables</h3>
-</div>
-</div>
-<div class="section" id="the-constraints">
-<h2>9.4.3. The constraints</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
 
 
@@ -142,10 +387,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    
@@ -158,22 +403,17 @@ Search:
   <p class="topless"><a href="tsp.html"
                         title="previous chapter">9.3. The Travelling Salesman Problem (TSP)</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="two_phases_approaches.html"
-                        title="next chapter">9.5. The two phases approach</a></p>
+  <p class="topless"><a href="model_behind_scene_overview.html"
+                        title="next chapter">9.5. The model behind the scene: overview</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">9.4. The model behind the scene</a><ul>
-<li><a class="reference internal" href="#the-idea">9.4.1. The idea</a></li>
-<li><a class="reference internal" href="#the-variables">9.4.2. The variables</a><ul>
-<li><a class="reference internal" href="#nodeindex-or-int64">9.4.2.1. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
-<li><a class="reference internal" href="#path-variables">9.4.2.2. Path variables</a><ul>
-<li><a class="reference internal" href="#how-to-follow-a-route">9.4.2.2.1. How to follow a route?</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dimension-variables">9.4.2.3. Dimension variables</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#the-constraints">9.4.3. The constraints</a></li>
+<li><a class="reference internal" href="#">9.4. The model behind the scene: the main decision variables</a><ul>
+<li><a class="reference internal" href="#the-main-idea-the-node-decision-variables">9.4.1. The main idea: the node decision variables</a></li>
+<li><a class="reference internal" href="#nodeindex-or-int64">9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li><a class="reference internal" href="#how-to-switch-from-nodeindex-to-int64-and-vice-versa">9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
+<li><a class="reference internal" href="#how-to-follow-a-route">9.4.4. How to follow a route?</a></li>
+<li><a class="reference internal" href="#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
+<li><a class="reference internal" href="#to-summarize">9.4.6. To summarize</a></li>
 </ul>
 </li>
 </ul>
@@ -189,7 +429,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="two_phases_approaches.html" title="9.5. The two phases approach"
+          <a href="model_behind_scene_overview.html" title="9.5. The model behind the scene: overview"
              >next</a> |</li>
         <li class="right" >
           <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"

@@ -62,7 +62,7 @@ command line flag library. Second, we explain how to pass parameters to the CP s
 <span id="index-0"></span><h2>2.5.1. Google&#8217;s gflags</h2>
 <p>The <a class="reference external" href="http://code.google.com/p/gflags/">Google&#8217;s flags library</a> is quite similar to other command flags libraries with the noticeable
 difference that the flag definitions may be scattered in different files.</p>
-<p>To define a flag, we use the corresponding macro. Google&#8217;s flags library supports six types:</p>
+<p id="index-1">To define a flag, we use the corresponding macro. Google&#8217;s flags library supports six types:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">DEFINE_bool</span></tt>: Boolean</li>
 <li><tt class="docutils literal"><span class="pre">DEFINE_int32</span></tt>: 32-bit integer</li>
@@ -100,7 +100,7 @@ a help string.</p>
 <div class="highlight-bash"><div class="highlight"><pre>./cp_is_fun4 --base<span class="o">=</span>12
 </pre></div>
 </div>
-<p id="index-1">If you want to know what the purpose of a flag is, just type one of the special flags on the command line:</p>
+<span class="target" id="index-2"></span><p id="index-3">If you want to know what the purpose of a flag is, just type one of the special flags on the command line:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">--help</span></tt>: prints all the flags</li>
 <li><tt class="docutils literal"><span class="pre">--helpshort</span></tt>: prints all the flags defined in the same file as <tt class="docutils literal"><span class="pre">main()</span></tt></li>
@@ -109,9 +109,9 @@ a help string.</p>
 </ul>
 <p>For other features and to learn more about this library, we refer you to the
 <a class="reference external" href="http://google-gflags.googlecode.com/svn/trunk/doc/gflags.html">gflags documentation</a>.</p>
-<span class="target" id="index-2"></span></div>
+<span class="target" id="index-4"></span></div>
 <div class="section" id="cp-solver-s-parameters">
-<span id="index-3"></span><h2>2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</h2>
+<span id="index-5"></span><h2>2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</h2>
 <p>You&#8217;ll find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun4.cc">tutorials/C++/chap2/cp_is_fun4.cc</a>.</p>
 <p>Parameters can be transferred to the solver in several ways.</p>
 <div class="section" id="the-solverparameters-struct">
@@ -226,10 +226,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    

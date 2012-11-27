@@ -128,6 +128,7 @@ This file is used throughout the TSP examples.</li>
 <li><tt class="file docutils literal"><span class="pre">tsplib.h</span></tt>: Declarations of TSPLIB keywords and the <tt class="docutils literal"><span class="pre">TSPLIBDistanceFunctions</span></tt> class.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp_epix.h</span></tt>: This file provide the helper functions to visualize TSPLIB solutions with the ePiX library.</li>
 <li><tt class="file docutils literal"><span class="pre">tsplib_solution_to_epix.cc</span></tt>: A simple program to visualize solutions in TSPLIB format with the ePiX library.</li>
+<li><tt class="file docutils literal"><span class="pre">tsp_minimal.cc</span></tt>: A minimalist implementation of the TSP with the RL.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp.cc</span></tt>: A basic implementation of the TSP with the RL.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp_forbidden_arcs.cc</span></tt>: The TSP with forbidden connexions between some nodes.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp_exact.cc</span></tt>: A basic exact implementation of the TSP with the RL.</li>
@@ -152,7 +153,12 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#local-search">9.2.4. Local Search</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#tuning-the-search">9.2.5. Tuning the search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.6. Limitations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#dimensions">9.2.6. Dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#disjunctions">9.2.7. Disjunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#routes-vehicles-are-not-mandatory">9.2.8. Routes/Vehicles are not mandatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#heterogeneous-fleet-of-vehicles">9.2.9. Heterogeneous fleet of vehicles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#costs">9.2.10. Costs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.11. Limitations</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The Travelling Salesman Problem (TSP)</a><ul>
@@ -162,33 +168,44 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene.html">9.4. The model behind the scene</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-idea">9.4.1. The idea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-variables">9.4.2. The variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-constraints">9.4.3. The constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene.html">9.4. The model behind the scene: the main decision variables</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-main-idea-the-node-decision-variables">9.4.1. The main idea: the node decision variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#nodeindex-or-int64">9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-switch-from-nodeindex-to-int64-and-vice-versa">9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-follow-a-route">9.4.4. How to follow a route?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#to-summarize">9.4.6. To summarize</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">9.5. The two phases approach</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-initial-solution">9.5.1. The initial solution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.5.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene_overview.html">9.5. The model behind the scene: overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#the-routingmodel-class">9.5.1. The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#variables">9.5.2. Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#constraints">9.5.3. Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#objective-function">9.5.4. Objective function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#miscellaneous">9.5.5. Miscellaneous</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/first_tsp_implementation.html">9.6. The TSP in or-tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#to-set-the-depot">9.6.1. To set the depot</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#command-line-parameters-read-from-a-file">9.6.2. Command line parameters read from a file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#minimal-implementation">9.6.1. Minimal implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#basic-implementation">9.6.2. Basic implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#how-to-avoid-some-edges">9.6.3. How to avoid some edges?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">9.7. An exact implementation of the TSP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.8.1. The Travelling Salesman Problem with Time Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">9.8.2. Benchmark data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">9.8.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">9.8.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">9.7. The two phases approach</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-initial-solution">9.7.1. The initial solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">9.9. The TSPTW in or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.10. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">9.8. An exact implementation of the TSP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.9. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.9.1. The Travelling Salesman Problem with Time Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">9.9.2. Benchmark data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">9.9.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">9.9.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">9.10. The TSPTW in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.11. Summary</a></li>
 </ul>
 </div>
 </div>
@@ -255,10 +272,10 @@ Search:
   <h3>Tutorial examples</h3>
   
   <ul>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
-	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_Csharp">C#</a></li>
 </ul>
   
    
