@@ -445,6 +445,7 @@ struct StateMarker {
   int rev_bools_index_;
   int rev_int_memory_index_;
   int rev_int64_memory_index_;
+  int rev_double_memory_index_;
   int rev_object_memory_index_;
   int rev_object_array_memory_index_;
   int rev_memory_index_;
@@ -463,6 +464,7 @@ StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
       rev_bools_index_(0),
       rev_int_memory_index_(0),
       rev_int64_memory_index_(0),
+      rev_double_memory_index_(0),
       rev_object_memory_index_(0),
       rev_object_array_memory_index_(0),
       info_(info) {}
@@ -702,6 +704,7 @@ struct Trail {
   std::vector<bool> rev_bool_value_;
   std::vector<int*> rev_int_memory_;
   std::vector<int64*> rev_int64_memory_;
+  std::vector<double*> rev_double_memory_;
   std::vector<BaseObject*> rev_object_memory_;
   std::vector<BaseObject**> rev_object_array_memory_;
   std::vector<void*> rev_memory_;
@@ -782,6 +785,12 @@ struct Trail {
     }
     rev_int64_memory_.resize(target);
 
+    target = m->rev_double_memory_index_;
+    for (int curr = rev_double_memory_.size() - 1; curr >= target; --curr) {
+      delete[] rev_double_memory_[curr];
+    }
+    rev_double_memory_.resize(target);
+
     target = m->rev_object_memory_index_;
     for (int curr = rev_object_memory_.size() - 1; curr >= target; --curr) {
       delete rev_object_memory_[curr];
@@ -858,6 +867,12 @@ int* Solver::SafeRevAllocArray(int* ptr) {
 int64* Solver::SafeRevAllocArray(int64* ptr) {
   check_alloc_state();
   trail_->rev_int64_memory_.push_back(ptr);
+  return ptr;
+}
+
+double* Solver::SafeRevAllocArray(double* ptr) {
+  check_alloc_state();
+  trail_->rev_double_memory_.push_back(ptr);
   return ptr;
 }
 
@@ -1615,6 +1630,7 @@ void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
     m->rev_bools_index_ = trail_->rev_bools_.size();
     m->rev_int_memory_index_ = trail_->rev_int_memory_.size();
     m->rev_int64_memory_index_ = trail_->rev_int64_memory_.size();
+    m->rev_double_memory_index_ = trail_->rev_double_memory_.size();
     m->rev_object_memory_index_ = trail_->rev_object_memory_.size();
     m->rev_object_array_memory_index_ = trail_->rev_object_array_memory_.size();
     m->rev_memory_index_ = trail_->rev_memory_.size();

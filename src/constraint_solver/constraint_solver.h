@@ -2880,6 +2880,7 @@ class Solver {
   int* SafeRevAllocArray(int* ptr);
   int64* SafeRevAllocArray(int64* ptr);
   uint64* SafeRevAllocArray(uint64* ptr);
+  double* SafeRevAllocArray(double* ptr);
   BaseObject** SafeRevAllocArray(BaseObject** ptr);
   IntVar** SafeRevAllocArray(IntVar** ptr);
   IntExpr** SafeRevAllocArray(IntExpr** ptr);
