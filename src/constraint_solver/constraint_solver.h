@@ -2868,6 +2868,7 @@ class Solver {
   void InternalSaveValue(int* valptr);
   void InternalSaveValue(int64* valptr);
   void InternalSaveValue(uint64* valptr);
+  void InternalSaveValue(double* valptr);
   void InternalSaveValue(bool* valptr);
   void InternalSaveValue(void** valptr);
   void InternalSaveValue(int64** valptr) {

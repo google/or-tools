@@ -439,6 +439,7 @@ struct StateMarker {
   int rev_int_index_;
   int rev_int64_index_;
   int rev_uint64_index_;
+  int rev_double_index_;
   int rev_ptr_index_;
   int rev_boolvar_list_index_;
   int rev_bools_index_;
@@ -456,6 +457,7 @@ StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
       rev_int_index_(0),
       rev_int64_index_(0),
       rev_uint64_index_(0),
+      rev_double_index_(0),
       rev_ptr_index_(0),
       rev_boolvar_list_index_(0),
       rev_bools_index_(0),
@@ -693,6 +695,7 @@ struct Trail {
   CompressedTrail<int> rev_ints_;
   CompressedTrail<int64> rev_int64s_;
   CompressedTrail<uint64> rev_uint64s_;
+  CompressedTrail<double> rev_doubles_;
   CompressedTrail<void*> rev_ptrs_;
   std::vector<IntVar*> rev_boolvar_list_;
   std::vector<bool*> rev_bools_;
@@ -708,6 +711,7 @@ struct Trail {
       : rev_ints_(block_size, compression_level),
         rev_int64s_(block_size, compression_level),
         rev_uint64s_(block_size, compression_level),
+        rev_doubles_(block_size, compression_level),
         rev_ptrs_(block_size, compression_level) {}
 
   void BacktrackTo(StateMarker* m) {
@@ -734,6 +738,14 @@ struct Trail {
       rev_uint64s_.PopBack();
     }
     DCHECK_EQ(rev_uint64s_.size(), target);
+    // Incorrect trail size after backtrack.
+    target = m->rev_double_index_;
+    for (int curr = rev_doubles_.size(); curr > target; --curr) {
+      const addrval<double>& cell = rev_doubles_.Back();
+      cell.restore();
+      rev_doubles_.PopBack();
+    }
+    DCHECK_EQ(rev_doubles_.size(), target);
     // Incorrect trail size after backtrack.
     target = m->rev_ptr_index_;
     for (int curr = rev_ptrs_.size(); curr > target; --curr) {
@@ -813,6 +825,10 @@ void Solver::InternalSaveValue(int64* valptr) {
 
 void Solver::InternalSaveValue(uint64* valptr) {
   trail_->rev_uint64s_.PushBack(addrval<uint64>(valptr));
+}
+
+void Solver::InternalSaveValue(double* valptr) {
+  trail_->rev_doubles_.PushBack(addrval<double>(valptr));
 }
 
 void Solver::InternalSaveValue(void** valptr) {
@@ -1593,6 +1609,7 @@ void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
     m->rev_int_index_ = trail_->rev_ints_.size();
     m->rev_int64_index_ = trail_->rev_int64s_.size();
     m->rev_uint64_index_ = trail_->rev_uint64s_.size();
+    m->rev_double_index_ = trail_->rev_doubles_.size();
     m->rev_ptr_index_ = trail_->rev_ptrs_.size();
     m->rev_boolvar_list_index_ = trail_->rev_boolvar_list_.size();
     m->rev_bools_index_ = trail_->rev_bools_.size();
