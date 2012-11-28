@@ -185,6 +185,40 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   }
 }
 
+// Add conversion rules for std::vector<double>.
+%typemap(in) const std::vector<double>& (std::vector<double> temp) {
+  if (!PyTuple_Check($input) && !PyList_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
+    SWIG_fail;
+  }
+  bool is_tuple = PyTuple_Check($input);
+  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
+  for (size_t i = 0; i < temp.size(); ++i) {
+    temp[i] = PyFloat_AsDouble(is_tuple ? PyTuple_GetItem($input, i) :
+                               PyList_GetItem($input, i));
+  }
+  $1 = &temp;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<double>& {
+  if (!PyTuple_Check($input) && !PyList_Check($input)) {
+    $1 = 0;
+  } else {
+    const bool is_tuple = PyTuple_Check($input);
+    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
+    bool failed = false;
+    for (size_t i = 0; i < size; ++i) {
+      PyObject* const obj =
+          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
+      if (!PyFloat_Check(obj)) {
+        failed = true;
+        break;
+      }
+    }
+    $1 = failed ? 0 : 1;
+  }
+}
+
 // Add conversion list(tuple(int)) -> std::vector<vector>.
 %typemap(in) const std::vector<std::vector<int64> >&
     (std::vector<std::vector<int64> > temp) {
