@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-queens problem" href="../search_primitives.html" />
-    <link rel="next" title="5.3. Basic working of the solver: part I" href="basic_working1.html" />
+    <link rel="next" title="5.3. Basic working of the solver: the search algorithm" href="basic_working_search_algorithm.html" />
     <link rel="prev" title="5.1. The n-queens problem" href="nqueens.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="basic_working1.html" title="5.3. Basic working of the solver: part I"
+          <a href="basic_working_search_algorithm.html" title="5.3. Basic working of the solver: the search algorithm"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="nqueens.html" title="5.1. The n-queens problem"
@@ -74,7 +74,7 @@ that prints the first solution of a given <tt class="docutils literal"><span cla
 the boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_print</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>.</p>
 <p>To be able to collect only
 unique solutions (up to a symmetry), we will use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s
-in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries (part II): SymmetryBreakers</em></a>.</p>
+in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>.</p>
 <p>A boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> allows or disallows the use of <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. This flag is defined
 in the header <tt class="docutils literal"><span class="pre">./nqueens_utilities.h</span></tt> and to be able to use it in our main file, we need to <em>declare</em> it:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DECLARE_bool</span><span class="p">(</span><span class="n">use_symmetry</span><span class="p">);</span>
@@ -422,8 +422,8 @@ Search:
   <p class="topless"><a href="nqueens.html"
                         title="previous chapter">5.1. The n-queens problem</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="basic_working1.html"
-                        title="next chapter">5.3. Basic working of the solver: part I</a></p>
+  <p class="topless"><a href="basic_working_search_algorithm.html"
+                        title="next chapter">5.3. Basic working of the solver: the search algorithm</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">5.2. Implementation of the basic model</a><ul>
@@ -445,7 +445,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="basic_working1.html" title="5.3. Basic working of the solver: part I"
+          <a href="basic_working_search_algorithm.html" title="5.3. Basic working of the solver: the search algorithm"
              >next</a> |</li>
         <li class="right" >
           <a href="nqueens.html" title="5.1. The n-queens problem"
@@ -455,7 +455,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

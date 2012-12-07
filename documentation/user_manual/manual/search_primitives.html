@@ -76,10 +76,6 @@ simple and allow for more complicated but more efficient specializations when ne
 </table>
 <p>To illustrate the customization of the search, we try to solve the n-queen problem we have already met
 in the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>.</p>
-<p class="rubric">Overview:</p>
-<p>We start immediately with a basic model for the n-queen problem.
-To understand search strategies better, we need to know a little bit more about
-how the solver works internally and specifically how it traverses/constructs the search tree.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
@@ -88,7 +84,7 @@ how the solver works internally and specifically how it traverses/constructs the
 <li>The willingness to roll up your sleeves and be prepared to look under the hood.</li>
 </ul>
 <p class="rubric">Classes under scrutiny:</p>
-<p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>.</p>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap5</span></tt>.</p>
 <p>The files inside this directory are:</p>
@@ -98,7 +94,8 @@ how the solver works internally and specifically how it traverses/constructs the
 <li><tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt> but this time to find only one solution.</li>
 <li><tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt> but this time we use a <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> to visualize the
 search with cpviz.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen4.cc</span></tt>:</li>
+<li><tt class="file docutils literal"><span class="pre">nqueen4.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt> but with some added statistics.</li>
+<li><tt class="file docutils literal"><span class="pre">cpviz_nqueens4_basic.txt</span></tt>: cleaned output of <tt class="docutils literal"><span class="pre">./nqueens4</span> <span class="pre">--size=4</span> <span class="pre">--cp_trace_search</span> <span class="pre">--cp_trace_propagation</span></tt>.</li>
 <li><tt class="file docutils literal"><span class="pre">nqueen5.cc</span></tt>:</li>
 <li><tt class="file docutils literal"><span class="pre">nqueen6.cc</span></tt>:</li>
 <li><tt class="file docutils literal"><span class="pre">nqueen7.cc</span></tt>:</li>
@@ -107,7 +104,8 @@ search with cpviz.</li>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="search_primitives/nqueens.html">5.1. The n-queens problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#how-to-solve-the-problem">5.1.1. How to solve the problem?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#the-n-queen-problem-in-more-details">5.1.1. The n-queen problem in more details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#how-to-solve-the-problem">5.1.2. How to solve the problem?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_model_implementation.html">5.2. Implementation of the basic model</a><ul>
@@ -116,35 +114,46 @@ search with cpviz.</li>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#first-results">5.2.3. First results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working1.html">5.3. Basic working of the solver: part I</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#basic-definitions">5.3.1. Basic definitions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-idea">5.3.2. The basic idea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-decisionbuilder-and-decisions">5.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#nested-searches">5.3.5. Nested searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working_search_algorithm.html">5.3. Basic working of the solver: the search algorithm</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_search_algorithm.html#basic-definitions">5.3.1. Basic definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_search_algorithm.html#the-basic-idea">5.3.2. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_search_algorithm.html#the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="search_primitives/cpviz.html">5.4. <strong class="program">cpviz</strong>: how to visualize the search</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#treemonitors-to-provide-the-cpviz-input">5.4.1. <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>s to provide the <strong class="program">cpviz</strong> input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#interpreting-the-graphic-results">5.4.2. Interpreting the graphic results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#interpreting-the-graphical-results">5.4.2. Interpreting the graphical results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html">5.5. Out of the box selection primitives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-variable">5.5.1. To select next variable</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-value">5.5.2. To select next value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working_phases.html">5.5. Basic working of the solver: the phases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_phases.html#decisionbuilders-and-phases">5.5.1. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and phases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_phases.html#composing-decisionbuilders">5.5.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_phases.html#nested-searches">5.5.3. Nested searches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_phases.html#decisions-and-decisionvisitor">5.5.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working_phases.html#the-makephase-method-more-in-details">5.5.5. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">5.6. Customized search primitives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#the-makephase-method-more-in-details">5.6.1. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#composing-decisionbuilders">5.6.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#nested-searches">5.6.3. Nested searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html">5.6. Out of the box variables and values selection primitives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#variableselectors-to-select-the-next-variable">5.6.1. <tt class="docutils literal"><span class="pre">VariableSelector</span></tt>s to select the next variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#valueselectors-to-select-the-next-value">5.6.2. <tt class="docutils literal"><span class="pre">ValueSelector</span></tt>s to select the next value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#use-of-indexevaluator2">5.6.3. Use of <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/default_search.html">5.7. Default search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/breaking_symmetry.html">5.8. Breaking symmetries (part II): <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul class="simple">
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">5.7. Customized search primitives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/default_search.html">5.8. Default search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/default_search.html#impact-based-search-strategies">5.8.1. Impact based search strategies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/default_search.html#luby">5.8.2. Luby</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">5.9. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/breaking_symmetry.html">5.9. Breaking symmetries with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#the-basic-idea">5.9.1. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#symmetrybreakers">5.9.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#revalloc">5.9.3. <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#the-symmetrymanager">5.9.4. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#results">5.9.5. Results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">5.10. Summary</a></li>
 </ul>
 </div>
 </div>
@@ -276,7 +285,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

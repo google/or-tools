@@ -73,8 +73,8 @@ all, modelling is an art!</td></tr>
 </tbody>
 </table>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb6.cc">tutorials/C++/chap3/golomb6.cc</a></p>
-<div class="section" id="breaking-symmetries-part-i">
-<span id="objectives-breaking-symmetries"></span><h2>3.8.1. Breaking symmetries (part I)</h2>
+<div class="section" id="breaking-symmetries-with-constraints">
+<span id="objectives-breaking-symmetries"></span><h2>3.8.1. Breaking symmetries with constraints</h2>
 <p>In the section <a class="reference internal" href="second_implementation.html#golomb-ruler-second-implementation"><em>A second model and its implementation</em></a>, when we declared the variables <tt class="docutils literal"><span class="pre">X</span></tt>
 representing the marks of a Golomb ruler, we implicitly took for granted that <tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>.</p>
 <p>That is exactly what we did when we imposed the differences to be positive:</p>
@@ -132,6 +132,10 @@ illustrates two mirror Golomb rulers of order 4.</p>
                            <span class="n">s</span><span class="p">.</span><span class="n">MakeDifference</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">()));</span>
 </pre></div>
 </div>
+<p>Later on, in the section <a class="reference internal" href="../search_primitives/breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>, we will see how to provide some rules to the solver
+(by implementing <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s)
+so that it generates itself the constraints to break symmetries.
+These constraints are generated <em>on the fly</em> during the search!</p>
 </div>
 <div class="section" id="better-bounds-helps">
 <h2>3.8.2. Better bounds helps</h2>
@@ -339,7 +343,7 @@ Search:
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">3.8. How to tighten the model?</a><ul>
-<li><a class="reference internal" href="#breaking-symmetries-part-i">3.8.1. Breaking symmetries (part I)</a></li>
+<li><a class="reference internal" href="#breaking-symmetries-with-constraints">3.8.1. Breaking symmetries with constraints</a></li>
 <li><a class="reference internal" href="#better-bounds-helps">3.8.2. Better bounds helps</a></li>
 </ul>
 </li>
@@ -366,7 +370,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

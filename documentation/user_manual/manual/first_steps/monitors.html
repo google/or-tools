@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
-<span id="monitors-solutions"></span><span id="index-0"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
+  <span class="target" id="index-0"></span><div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
+<span id="monitors-solutions"></span><span id="index-1"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
 <p>The or-tools library let you collect and store the solutions of your searches with the help of
 <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s. We use them to store the solutions of our cryptarithmetic puzzle.</p>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun2.cc">tutorials/C++/chap2/cp_is_fun2.cc</a>.</p>
@@ -93,7 +93,7 @@ results such as the number of solutions:</p>
 <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
 </pre></div>
 </div>
-<p id="index-1">Instead of using <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> repeatedly and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>, you can use
+<p id="index-2">Instead of using <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> repeatedly and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>, you can use
 the <tt class="docutils literal"><span class="pre">Solve()</span></tt> method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="n">all_solutions</span><span class="p">);</span>
 </pre></div>
@@ -337,7 +337,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

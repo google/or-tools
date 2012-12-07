@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5.5. Out of the box selection primitives &mdash; or-tools User&#39;s Manual</title>
+    <title>5.6. Out of the box variables and values selection primitives &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-queens problem" href="../search_primitives.html" />
-    <link rel="next" title="5.6. Customized search primitives" href="customized_search_primitives.html" />
-    <link rel="prev" title="5.4. cpviz: how to visualize the search" href="cpviz.html" /> 
+    <link rel="next" title="5.7. Customized search primitives" href="customized_search_primitives.html" />
+    <link rel="prev" title="5.5. Basic working of the solver: the phases" href="basic_working_phases.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.6. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="cpviz.html" title="5.4. cpviz: how to visualize the search"
+          <a href="basic_working_phases.html" title="5.5. Basic working of the solver: the phases"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" accesskey="U">5. Defining search primitives: the n-queens problem</a> &raquo;</li> 
@@ -54,19 +54,16 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="out-of-the-box-selection-primitives">
-<span id="out-of-the-box-search-primitives"></span><h1>5.5. Out of the box selection primitives</h1>
-<p>To select the next variable to branch on and the next value to give to this variable,
-several selection primitives are available.</p>
-<div class="section" id="to-select-next-variable">
-<h2>5.5.1. To select next variable</h2>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">TO BE UPDATED AND SYNC WITH THE CODE!!!</p>
+  <div class="section" id="out-of-the-box-variables-and-values-selection-primitives">
+<span id="out-of-the-box-search-primitives"></span><h1>5.6. Out of the box variables and values selection primitives</h1>
+<div class="section" id="variableselectors-to-select-the-next-variable">
+<h2>5.6.1. <tt class="docutils literal"><span class="pre">VariableSelector</span></tt>s to select the next variable</h2>
 </div>
+<div class="section" id="valueselectors-to-select-the-next-value">
+<h2>5.6.2. <tt class="docutils literal"><span class="pre">ValueSelector</span></tt>s to select the next value</h2>
 </div>
-<div class="section" id="to-select-next-value">
-<h2>5.5.2. To select next value</h2>
+<div class="section" id="use-of-indexevaluator2">
+<h2>5.6.3. Use of <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt></h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -146,16 +143,17 @@ Search:
   <p class="topless"><a href="../search_primitives.html"
                         title="previous chapter">5. Defining search primitives: the n-queens problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="cpviz.html"
-                        title="previous chapter">5.4. <strong class="program">cpviz</strong>: how to visualize the search</a></p>
+  <p class="topless"><a href="basic_working_phases.html"
+                        title="previous chapter">5.5. Basic working of the solver: the phases</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="customized_search_primitives.html"
-                        title="next chapter">5.6. Customized search primitives</a></p>
+                        title="next chapter">5.7. Customized search primitives</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">5.5. Out of the box selection primitives</a><ul>
-<li><a class="reference internal" href="#to-select-next-variable">5.5.1. To select next variable</a></li>
-<li><a class="reference internal" href="#to-select-next-value">5.5.2. To select next value</a></li>
+<li><a class="reference internal" href="#">5.6. Out of the box variables and values selection primitives</a><ul>
+<li><a class="reference internal" href="#variableselectors-to-select-the-next-variable">5.6.1. <tt class="docutils literal"><span class="pre">VariableSelector</span></tt>s to select the next variable</a></li>
+<li><a class="reference internal" href="#valueselectors-to-select-the-next-value">5.6.2. <tt class="docutils literal"><span class="pre">ValueSelector</span></tt>s to select the next value</a></li>
+<li><a class="reference internal" href="#use-of-indexevaluator2">5.6.3. Use of <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt></a></li>
 </ul>
 </li>
 </ul>
@@ -171,17 +169,17 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.6. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
              >next</a> |</li>
         <li class="right" >
-          <a href="cpviz.html" title="5.4. cpviz: how to visualize the search"
+          <a href="basic_working_phases.html" title="5.5. Basic working of the solver: the phases"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" >5. Defining search primitives: the n-queens problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

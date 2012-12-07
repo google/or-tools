@@ -55,8 +55,10 @@
           <div class="body">
             
   <div class="section" id="the-n-queens-problem">
-<span id="nqueen-problem"></span><h1>5.1. The n-queens problem</h1>
-<p>We have discussed the n-queens problem (and defined what a solution is) in chapter <a class="reference internal" href="../introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>.</p>
+<span id="nqueen-problem"></span><span id="index-0"></span><h1>5.1. The n-queens problem</h1>
+<p>We have discussed the n-queens problem (and defined what a solution is) in the chapter <a class="reference internal" href="../introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>.</p>
+<div class="section" id="the-n-queen-problem-in-more-details">
+<h2>5.1.1. The n-queen problem in more details</h2>
 <p>In the general <em>n-queens problem</em>, a set of n queens is to be placed on an n x n chessboard so that no two queens attack each other.</p>
 <p>Little is known that finding one solution for every <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> is... quite easy<a class="footnote-reference" href="#n-queens-easy" id="id1">[1]</a>.
 Indeed, there exist polynomial-time algorithms that compute a solution given a size <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>. For instance, Hoffman
@@ -212,11 +214,12 @@ finding all these solutions!</p>
 these systems, there are real problems that can be modelled and solved as n-queens problems. For instance, it has been
 used for parallel memory storage schemes, VLSI testing, traffic control and deadlock prevention (see <a class="reference internal" href="#jordan2009">[Jordan2009]</a>).</p>
 </div>
+</div>
 <div class="section" id="how-to-solve-the-problem">
-<h2>5.1.1. How to solve the problem?</h2>
+<h2>5.1.2. How to solve the problem?</h2>
 <p>We follow again the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>: describe, model and solve.</p>
 <div class="section" id="describe">
-<h3>5.1.1.1. Describe</h3>
+<h3>5.1.2.1. Describe</h3>
 <p>What is the <strong>goal</strong> of the n-queens problem? We will focus on finding one or all solutions. Given a size <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> for the
 <img class="math" src="../../_images/math/c3d38f82f48ef9e81c04d49354293305b0067afc.png" alt="n \times n" style="vertical-align: 0px"/> chessboard, place <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> queens<a class="footnote-reference" href="#queens-has-solutions" id="id6">[3]</a> so that no two queens attack each other.</p>
 <table class="docutils footnote" frame="void" id="queens-has-solutions" rules="none">
@@ -232,7 +235,7 @@ to introduce only one variable for each queen.</p>
 queens on the chessboard such that no two queens are placed on the same row, the same column or the same diagonal.</p>
 </div>
 <div class="section" id="model">
-<span id="simple-model-n-queens"></span><h3>5.1.1.2. Model</h3>
+<span id="simple-model-n-queens"></span><h3>5.1.2.2. Model</h3>
 <p>We know that no two queens can be placed on the same column and that we have as much
 queens as columns. We will use one variable to place one queen on each column. The value of the variable will denote the row of the
 corresponding queen.</p>
@@ -252,7 +255,7 @@ two queens are
 on the same diagonal. We&#8217;ll use a known trick to model this constraint in the next section.</p>
 </div>
 <div class="section" id="solve">
-<h3>5.1.1.3. Solve</h3>
+<h3>5.1.2.3. Solve</h3>
 <p>This time we will... test some search strategies. We will not devise a good search strategy because
 we don&#8217;t know yet what possibilities are implemented in the CP solver. We will test different search strategies and see what works
 and why.</p>
@@ -343,10 +346,11 @@ Search:
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">5.1. The n-queens problem</a><ul>
-<li><a class="reference internal" href="#how-to-solve-the-problem">5.1.1. How to solve the problem?</a><ul>
-<li><a class="reference internal" href="#describe">5.1.1.1. Describe</a></li>
-<li><a class="reference internal" href="#model">5.1.1.2. Model</a></li>
-<li><a class="reference internal" href="#solve">5.1.1.3. Solve</a></li>
+<li><a class="reference internal" href="#the-n-queen-problem-in-more-details">5.1.1. The n-queen problem in more details</a></li>
+<li><a class="reference internal" href="#how-to-solve-the-problem">5.1.2. How to solve the problem?</a><ul>
+<li><a class="reference internal" href="#describe">5.1.2.1. Describe</a></li>
+<li><a class="reference internal" href="#model">5.1.2.2. Model</a></li>
+<li><a class="reference internal" href="#solve">5.1.2.3. Solve</a></li>
 </ul>
 </li>
 </ul>
@@ -374,7 +378,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>

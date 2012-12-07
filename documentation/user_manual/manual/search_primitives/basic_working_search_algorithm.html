@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5.3. Basic working of the solver: part I &mdash; or-tools User&#39;s Manual</title>
+    <title>5.3. Basic working of the solver: the search algorithm &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="basic-working-of-the-solver-part-i">
-<span id="basic-workingi"></span><h1>5.3. Basic working of the solver: part I</h1>
+  <div class="section" id="basic-working-of-the-solver-the-search-algorithm">
+<span id="basic-working-search-algorithm"></span><h1>5.3. Basic working of the solver: the search algorithm</h1>
 <p>Basically, the CP solver consists of three main components:</p>
 <ul class="simple">
 <li>the <strong>main search algorithm</strong> that permits to traverse/construct the search tree and to call the callbacks at the right moments;</li>
@@ -140,7 +140,7 @@ inherit from <tt class="docutils literal"><span class="pre">SearchMonitor</span>
 <p>At the beginning of a search, the solver calls the virtual method <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> i.e.
 <em>your</em> <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> method. Don&#8217;t forget to delete your <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> after use.
 You can also use a smart pointer or even better, let the solver take ownership of the object with
-the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method (see section XXX).</p>
+the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method (see the subsection <a class="reference internal" href="breaking_symmetry.html#rev-alloc"><em>RevAlloc</em></a>).</p>
 </div>
 <div class="section" id="phases">
 <h3>5.3.1.3. Phases</h3>
@@ -154,8 +154,10 @@ are in a new <em>phase</em>. This is where the name <tt class="docutils literal"
 <div class="section" id="the-basic-idea">
 <h2>5.3.2. The basic idea</h2>
 <p>The basic idea<a class="footnote-reference" href="#basic-idea-search-algo-without-details" id="id3">[2]</a> is very simple yet effective.
-A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is responsible to return a <tt class="docutils literal"><span class="pre">Decision</span></tt> at a node. For instance, <img class="math" src="../../_images/math/dd9673e99b7dc9f400135bfffcaffadc4752d5ac.png" alt="x[4] = 3" style="vertical-align: -5px"/>. We divide the sub search
-tree at this node by applying this decision (left branch) and by refuting this decision (right branch).</p>
+A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is responsible to return a <tt class="docutils literal"><span class="pre">Decision</span></tt> at a node. A decision would be for instance, <img class="math" src="../../_images/math/dd9673e99b7dc9f400135bfffcaffadc4752d5ac.png" alt="x[4] = 3" style="vertical-align: -5px"/>.
+We divide the sub search
+tree at this node by applying this decision (left branch: <img class="math" src="../../_images/math/dd9673e99b7dc9f400135bfffcaffadc4752d5ac.png" alt="x[4] = 3" style="vertical-align: -5px"/>) and by refuting this decision (right branch:
+<img class="math" src="../../_images/math/b2e14bcc31f47e204432c15290cbf9fdbfbaa0b5.png" alt="x[4] \neq 3" style="vertical-align: -5px"/>).</p>
 <p>At the current node, the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> of the current search returns
 a <tt class="docutils literal"><span class="pre">Decision</span></tt>. The <tt class="docutils literal"><span class="pre">Decision</span></tt> class basically tells the solver what to do
 going left (<tt class="docutils literal"><span class="pre">Apply()</span></tt>) or right (<tt class="docutils literal"><span class="pre">Refute()</span></tt>) as illustrated on the next figure.</p>
@@ -226,7 +228,7 @@ behaviour by implementing the <tt class="docutils literal"><span class="pre">AtS
 search continues, otherwise the solver ends it.</p>
 </div>
 <div class="section" id="the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">
-<h2>5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
+<span id="index-0"></span><h2>5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
 <p><tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s contain a set of callbacks called on search tree events, such
 as entering/exiting search, applying/refuting decisions, failing, accepting solutions...</p>
 <p>In this section, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class<a class="footnote-reference" href="#other-callbacks-searchmonitors" id="id4">[3]</a> and show you
@@ -786,12 +788,6 @@ algorithm.</p>
 </td></tr></table></div>
 </div>
 </div>
-<div class="section" id="the-decisionbuilder-and-decisions">
-<span id="decision-toto"></span><h2>5.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</h2>
-</div>
-<div class="section" id="nested-searches">
-<h2>5.3.5. Nested searches</h2>
-</div>
 </div>
 
 
@@ -876,7 +872,7 @@ Search:
                         title="next chapter">5.4. <strong class="program">cpviz</strong>: how to visualize the search</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">5.3. Basic working of the solver: part I</a><ul>
+<li><a class="reference internal" href="#">5.3. Basic working of the solver: the search algorithm</a><ul>
 <li><a class="reference internal" href="#basic-definitions">5.3.1. Basic definitions</a><ul>
 <li><a class="reference internal" href="#search-trees">5.3.1.1. Search trees</a></li>
 <li><a class="reference internal" href="#callbacks">5.3.1.2. Callbacks</a></li>
@@ -890,8 +886,6 @@ Search:
 <li><a class="reference internal" href="#endsearch">5.3.3.3. <tt class="docutils literal"><span class="pre">EndSearch()</span></tt></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-decisionbuilder-and-decisions">5.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li><a class="reference internal" href="#nested-searches">5.3.5. Nested searches</a></li>
 </ul>
 </li>
 </ul>
@@ -917,7 +911,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Google.
+        &copy; Copyright 2012-2013, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
