@@ -56,16 +56,146 @@
             
   <div class="section" id="out-of-the-box-variables-and-values-selection-primitives">
 <span id="out-of-the-box-search-primitives"></span><h1>5.6. Out of the box variables and values selection primitives</h1>
-<div class="section" id="variableselectors-to-select-the-next-variable">
-<h2>5.6.1. <tt class="docutils literal"><span class="pre">VariableSelector</span></tt>s to select the next variable</h2>
+<p>To choose among the <tt class="docutils literal"><span class="pre">IntVar</span></tt> variables and the <tt class="docutils literal"><span class="pre">int64</span></tt> values when branching,
+several variables and values selection primitives are available. As stated before
+(see the subsection <a class="reference internal" href="basic_working_phases.html#make-phase-two-steps"><em>The 2-steps approach</em></a> in the previous section for more), the selection is done in two steps:</p>
+<ul class="simple">
+<li>First, select the variable;</li>
+<li>Second, select an available value for this variable.</li>
+</ul>
+<p>To construct the corresponding <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, use one of the <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> factory methods. For instance:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+                                          <span class="n">IntVarStrategy</span> <span class="n">var_str</span><span class="p">,</span>
+                                          <span class="n">IntValueStrategy</span> <span class="n">val_str</span><span class="p">);</span>
+</pre></div>
 </div>
-<div class="section" id="valueselectors-to-select-the-next-value">
-<h2>5.6.2. <tt class="docutils literal"><span class="pre">ValueSelector</span></tt>s to select the next value</h2>
+<div class="section" id="intvarstrategy-enums-to-select-the-next-variable">
+<h2>5.6.1. <tt class="docutils literal"><span class="pre">IntVarStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>s to select the next variable</h2>
+<p>The <tt class="docutils literal"><span class="pre">IntVarStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>
+describes the available strategies to select the next branching variable at each node during a phase search:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">INT_VAR_DEFAULT</span></tt></dt>
+<dd>The default behaviour is <tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">INT_VAR_SIMPLE</span></tt></dt>
+<dd>The simple selection is <tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt></dt>
+<dd>Selects the first unbound variable. Variables are considered in the order
+of the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_RANDOM</span></tt></dt>
+<dd>Randomly select one of the remaining unbound variables.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MIN_SIZE_LOWEST_MIN</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest size, i.e.
+the smallest number of possible values. In case of tie, the selected
+variables is the one with the lowest min value. In case of tie,
+the first one is selected, first being defined by the order in the
+vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MIN_SIZE_HIGHEST_MIN</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest size, i.e.
+the smallest number of possible values. In case of tie, the selected
+variables is the one with the highest min value. In case of tie,
+the first one is selected, first being defined by the order in the
+vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MIN_SIZE_LOWEST_MAX</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest size, i.e.
+the smallest number of possible values. In case of tie,
+the selected variables is the one with the lowest max value.
+In case of tie, the first one is selected, first being defined by
+the order in the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MIN_SIZE_HIGHEST_MAX</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest size, i.e.
+the smallest number of possible values. In case of tie, the selected
+variables is the one with the highest max value. In case of tie, the
+first one is selected, first being defined by the order in the vector
+of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_LOWEST_MIN</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest minimal
+value.
+In case of tie, the first one is selected, first being defined by the
+order in the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_HIGHEST_MAX</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the highest maximal
+value.
+In case of tie, the first one is selected, first being defined by the
+order in the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MIN_SIZE</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the smallest size.
+In case of tie, the first one is selected, first being defined by the
+order in the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MAX_SIZE</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the highest size.
+In case of tie, the first one is selected, first being defined by the
+order in the vector of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s used to create the selector.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_MAX_REGRET</span></tt></dt>
+<dd>Among unbound variables, selects the variable with the biggest
+gap between the first and the second values of the domain.</dd>
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_PATH</span></tt></dt>
+<dd>Selects the next unbound variable on a path, the path being defined
+by the variables: <tt class="docutils literal"><span class="pre">vars[i]</span></tt> corresponds to the index of the next variable
+following variable <tt class="docutils literal"><span class="pre">i</span></tt>.</dd>
+</dl>
+<p>Most of the strategies are self-explanatory except maybe for <tt class="docutils literal"><span class="pre">CHOOSE_PATH</span></tt>.
+This selection
+strategy is most convenient when you try to find simple paths (paths
+with no repeated vertices) in a solution and the variables correspond to nodes on the paths. When a
+variable <tt class="docutils literal"><span class="pre">i</span></tt> is bound (has been assigned a value), the path
+connects variable <tt class="docutils literal"><span class="pre">i</span></tt> to the next variable <tt class="docutils literal"><span class="pre">vars[i]</span></tt> as on the figure below:</p>
+<a class="reference internal image-reference" href="../../_images/path_selector.png"><img alt="../../_images/path_selector.png" class="align-center" src="../../_images/path_selector.png" style="width: 283px; height: 168px;" /></a>
+<p>We have</p>
+<div class="math">
+<p><img src="../../_images/math/ea61ff2b3d23b1417a30c4a7aa0498658d9eeb36.png" alt="\textrm{vars} = [- , 0, 3, 1, -, -]"/></p>
+</div><p>where <img class="math" src="../../_images/math/422459e2589a24cda157448d3208736a56399e36.png" alt="&quot;-&quot;" style="vertical-align: 4px"/> corresponds to a variable that wasn&#8217;t assigned a value.
+We have <img class="math" src="../../_images/math/54e7b5c78a7149828cc020b270a9c3a64f824368.png" alt="\textrm{vars}[2] = 3" style="vertical-align: -5px"/>, <img class="math" src="../../_images/math/0b581916cf07e751e48e7fc165d20ebf6454c2e1.png" alt="\textrm{vars}[3] = 1" style="vertical-align: -5px"/> and
+<img class="math" src="../../_images/math/92f9b8ed59b675bbff655f971baf3e24a212e52f.png" alt="\textrm{vars}[1] = 0" style="vertical-align: -5px"/>. The next variable to be choosen will be <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> and
+in this case <img class="math" src="../../_images/math/ffc4c8c292f8a8063659b9b7c6e392f25925ef1f.png" alt="\textrm{vars}[0] \in \{2,4,5\}" style="vertical-align: -5px"/>. What happens if <img class="math" src="../../_images/math/b3ab70878fbd7bcd64f2999d824b51f60d2f175d.png" alt="\textrm{vars}[0]" style="vertical-align: -5px"/>
+is assigned the value <img class="math" src="../../_images/math/41c544263a265ff15498ee45f7392c5f86c6d151.png" alt="2" style="vertical-align: 0px"/>?
+This strategy will pick up another unbounded variable.</p>
+<p>In general, the selection <tt class="docutils literal"><span class="pre">CHOOSE_PATH</span></tt> will happen as follow:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Try to extend an existing path: look for an unbound variable, to which
+some other variable points.</li>
+<li>If no such path is found, try to find a start node of a path: look for
+an unbound variable, to which no other variable can point.</li>
+<li>If everything else fails, pick the first unbound variable.</li>
+</ol>
+</div></blockquote>
+<p>We will encounter paths again in third part of this manual, when we&#8217;ll discuss routing.</p>
 </div>
-<div class="section" id="use-of-indexevaluator2">
-<h2>5.6.3. Use of <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt></h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<div class="section" id="intvaluestrategy-enums-to-select-the-next-value">
+<h2>5.6.2. <tt class="docutils literal"><span class="pre">IntValueStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>s to select the next value</h2>
+<p>The <tt class="docutils literal"><span class="pre">IntValueStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt> describes the strategies available to select the next value(s) for the already chosen
+variable at each node during the search:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">INT_VALUE_DEFAULT</span></tt></dt>
+<dd>The default behaviour is <tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">INT_VALUE_SIMPLE</span></tt></dt>
+<dd>The simple selection is <tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt></dt>
+<dd>Selects the minimum available value of the selected variable.</dd>
+<dt><tt class="docutils literal"><span class="pre">ASSIGN_MAX_VALUE</span></tt></dt>
+<dd>Selects the maximum available value of the selected variable.</dd>
+<dt><tt class="docutils literal"><span class="pre">ASSIGN_RANDOM_VALUE</span></tt></dt>
+<dd>Selects randomly one of the available values of the selected variable.</dd>
+<dt><tt class="docutils literal"><span class="pre">ASSIGN_CENTER_VALUE</span></tt></dt>
+<dd>Selects the first available value that is the closest to the center of the domain of the selected variable.
+The center is defined as <tt class="docutils literal"><span class="pre">(min</span> <span class="pre">+</span> <span class="pre">max)</span> <span class="pre">/</span> <span class="pre">2</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">SPLIT_LOWER_HALF</span></tt></dt>
+<dd>Splits the domain in two around the center, and forces the variable to take its value in the lower half first.</dd>
+<dt><tt class="docutils literal"><span class="pre">SPLIT_UPPER_HALF</span></tt></dt>
+<dd>Splits the domain in two around the center, and forces the variable to take its value in the upper half first.</dd>
+</dl>
+</div>
+<div class="section" id="results">
+<h2>5.6.3. Results</h2>
+<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/C++/chap5/phases1.cc">tutorials/C++/chap5/phases1.cc</a>
+and <a class="reference external" href="../../../tutorials/C++/chap5/solver_benchmark.h">tutorials/C++/chap5/solver_benchmark.h</a></p>
+<p>Just for fun, we have developed a <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to test different search strategies. Statistics
+are recorded thanks to <tt class="docutils literal"><span class="pre">SolverBenchmarkStats</span></tt>. You can find both classes in the <tt class="file docutils literal"><span class="pre">solver_benchmark.h</span></tt> header.</p>
+<p>In <tt class="file docutils literal"><span class="pre">phases1.cc</span></tt>, we test different combinations of the above strategies to find the variables and the values
+to branch on. You can try it for yourself and see that basically no predefined strategy outperforms any other.</p>
+<p>The most fun (and most efficient) way to use <em>or-tools</em> is to define your own selection strategies
+and search primitives. This is the subject of the next section.</p>
+</div>
 </div>
 
 
@@ -151,9 +281,9 @@ Search:
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">5.6. Out of the box variables and values selection primitives</a><ul>
-<li><a class="reference internal" href="#variableselectors-to-select-the-next-variable">5.6.1. <tt class="docutils literal"><span class="pre">VariableSelector</span></tt>s to select the next variable</a></li>
-<li><a class="reference internal" href="#valueselectors-to-select-the-next-value">5.6.2. <tt class="docutils literal"><span class="pre">ValueSelector</span></tt>s to select the next value</a></li>
-<li><a class="reference internal" href="#use-of-indexevaluator2">5.6.3. Use of <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt></a></li>
+<li><a class="reference internal" href="#intvarstrategy-enums-to-select-the-next-variable">5.6.1. <tt class="docutils literal"><span class="pre">IntVarStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>s to select the next variable</a></li>
+<li><a class="reference internal" href="#intvaluestrategy-enums-to-select-the-next-value">5.6.2. <tt class="docutils literal"><span class="pre">IntValueStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>s to select the next value</a></li>
+<li><a class="reference internal" href="#results">5.6.3. Results</a></li>
 </ul>
 </li>
 </ul>

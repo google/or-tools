@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.11. Guided local search &mdash; or-tools User&#39;s Manual</title>
+    <title>6.4. Scheduling in or-tools &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.12. Summary" href="ls_summary.html" />
-    <link rel="prev" title="6.10. Simulated annealing" href="simulated_annealing.html" /> 
+    <link rel="next" title="6.5. The job-shop problem, the disjunctive model and benchmark data" href="jobshop_def_data.html" />
+    <link rel="prev" title="6.3. Local Search Neighborhood (LSN) Operators" href="ls_operators.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="ls_summary.html" title="6.12. Summary"
+          <a href="jobshop_def_data.html" title="6.5. The job-shop problem, the disjunctive model and benchmark data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="simulated_annealing.html" title="6.10. Simulated annealing"
+          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -54,10 +54,31 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="guided-local-search">
-<span id="id1"></span><h1>6.11. Guided local search</h1>
+  <div class="section" id="scheduling-in-or-tools">
+<span id="scheduling-or-tools"></span><h1>6.4. Scheduling in <em>or-tools</em></h1>
+<div class="section" id="variables">
+<h2>6.4.1. Variables</h2>
+<div class="section" id="intervalvars">
+<h3>6.4.1.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+</div>
+<div class="section" id="sequencevars">
+<h3>6.4.1.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
+</div>
+</div>
+<div class="section" id="decisionbuilders-and-decisions">
+<span id="scheduling-decisionbuilders-decision"></span><h2>6.4.2. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</h2>
+<div class="section" id="decisionvisitors">
+<h3>6.4.2.1. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</h3>
+</div>
+<div class="section" id="makephase-for-intervalvars">
+<span id="makephase-interval-vars"></span><h3>6.4.2.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+</div>
+<div class="section" id="makephase-for-sequencevars">
+<span id="makephase-sequence-vars"></span><h3>6.4.2.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
+</div>
 
 
           </div>
@@ -134,11 +155,29 @@ Search:
   <p class="topless"><a href="../LS.html"
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="simulated_annealing.html"
-                        title="previous chapter">6.10. Simulated annealing</a></p>
+  <p class="topless"><a href="ls_operators.html"
+                        title="previous chapter">6.3. Local Search Neighborhood (LSN) Operators</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="ls_summary.html"
-                        title="next chapter">6.12. Summary</a></p>
+  <p class="topless"><a href="jobshop_def_data.html"
+                        title="next chapter">6.5. The job-shop problem, the disjunctive model and benchmark data</a></p>
+  <h3>Current section</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6.4. Scheduling in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#variables">6.4.1. Variables</a><ul>
+<li><a class="reference internal" href="#intervalvars">6.4.1.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#sequencevars">6.4.1.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#decisionbuilders-and-decisions">6.4.2. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a><ul>
+<li><a class="reference internal" href="#decisionvisitors">6.4.2.1. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</a></li>
+<li><a class="reference internal" href="#makephase-for-intervalvars">6.4.2.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#makephase-for-sequencevars">6.4.2.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -150,10 +189,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="ls_summary.html" title="6.12. Summary"
+          <a href="jobshop_def_data.html" title="6.5. The job-shop problem, the disjunctive model and benchmark data"
              >next</a> |</li>
         <li class="right" >
-          <a href="simulated_annealing.html" title="6.10. Simulated annealing"
+          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 

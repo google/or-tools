@@ -1,4 +1,15 @@
 
+v.0.1.20: (2012-12-11 19:04:46)
+-------------------------------
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - chapter 6 redesigned.
+  - chapter 5 redesigned.
+  - 5.5 added.
+  - 5.6 added.
+  - 5.6 corrected.
+
+
 v.0.1.19: (2012-12-06 22:09:43)
 -------------------------------
 * Minor enhancements to the manual:

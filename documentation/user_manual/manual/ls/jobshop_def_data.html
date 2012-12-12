@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.4. The job-shop problem, the disjunctive model and benchmark data &mdash; or-tools User&#39;s Manual</title>
+    <title>6.5. The job-shop problem, the disjunctive model and benchmark data &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.5. An implementation of the disjunctive model" href="jobshop_implementation.html" />
-    <link rel="prev" title="6.3. Local Search Neighborhood (LSN) Operators" href="ls_operators.html" /> 
+    <link rel="next" title="6.6. An implementation of the disjunctive model" href="jobshop_implementation.html" />
+    <link rel="prev" title="6.4. Scheduling in or-tools" href="scheduling_or_tools.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="jobshop_implementation.html" title="6.5. An implementation of the disjunctive model"
+          <a href="jobshop_implementation.html" title="6.6. An implementation of the disjunctive model"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
+          <a href="scheduling_or_tools.html" title="6.4. Scheduling in or-tools"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="the-job-shop-problem-the-disjunctive-model-and-benchmark-data">
-<span id="jobshop-def"></span><h1>6.4. The job-shop problem, the disjunctive model and benchmark data</h1>
+<span id="jobshop-def"></span><h1>6.5. The job-shop problem, the disjunctive model and benchmark data</h1>
 <p>We describe the job-shop problem, a first model and the benchmark data. The job-shop problem belongs to the
 intractable problems (<img class="math" src="../../_images/math/134004c561e4c0cca193dbf5122e5ca963dd5b7f.png" alt="\in" style="vertical-align: -1px"/> NP). Only few very special cases can be solved in
 polynomial time (see <a class="reference internal" href="#garey1976">[Garey1976]</a> and <a class="reference internal" href="#kis2002">[Kis2002]</a>).</p>
@@ -74,7 +74,7 @@ Mathematics of Operations Research, volume 1, pp 117-129, 1976.</td></tr>
 </tbody>
 </table>
 <div class="section" id="description-of-the-problem">
-<h2>6.4.1. Description of the problem</h2>
+<h2>6.5.1. Description of the problem</h2>
 <p>In the classical job-shop problem there are <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> jobs that must be processed on <img class="math" src="../../_images/math/f5047d1e0cbb50ec208923a22cd517c55100fa7b.png" alt="m" style="vertical-align: 0px"/> machines.
 Each job consists of a sequence of different tasks<a class="footnote-reference" href="#tasks-operations" id="id3">[1]</a>. Each task needs to be processed during an
 uninterrupted period of time on a given machine.</p>
@@ -178,7 +178,7 @@ allows a better understanding of the structure of the problem.</p>
 </table>
 </div>
 <div class="section" id="the-disjunctive-graph">
-<h2>6.4.2. The disjunctive graph</h2>
+<h2>6.5.2. The disjunctive graph</h2>
 <p>The Figure <a class="reference internal" href="#disjunctive-graph1"><em>A disjunctive graph.</em></a>
 represents the <em>disjunctive graph</em> of
 our example.</p>
@@ -222,7 +222,7 @@ orientation of the edges of a disjunctive graph such that the resulting directed
 from <img class="math" src="../../_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s" style="vertical-align: 0px"/> to <img class="math" src="../../_images/math/e0d2bf360290fd61d1c1557e763f2622363b3d35.png" alt="t" style="vertical-align: 0px"/> is minimized. We will use this representation of the problem to design our first model.</p>
 </div>
 <div class="section" id="the-disjunctive-model">
-<h2>6.4.3. The disjunctive model</h2>
+<h2>6.5.3. The disjunctive model</h2>
 <p>This model is a straightforward translation of the definition of a job-shop problem and
 its disjunctive graph reprensentation.</p>
 <p>We again rely on the <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method: describe, model and solve</em></a>. What are the decision <strong>variables</strong>?
@@ -293,13 +293,13 @@ be shown that it does.</td></tr>
 instances of job-shop problems.</p>
 </div>
 <div class="section" id="the-data-and-file-formats">
-<h2>6.4.4. The data and file formats</h2>
+<h2>6.5.4. The data and file formats</h2>
 <p>To collect the data, we use two different file formats: <strong>JSSP</strong> and professor <strong>Taillard&#8217;s instances format</strong>.
 In the directory <tt class="file docutils literal"><span class="pre">data/jobshop</span></tt>, you can find data files for the job-shop problem.
 The file <tt class="file docutils literal"><span class="pre">jobshop.h</span></tt> lets you read both formats and store the data into a <tt class="docutils literal"><span class="pre">JobshopData</span></tt> class we will use
 throughout this chapter.</p>
 <div class="section" id="jssp-format">
-<h3>6.4.4.1. JSSP format</h3>
+<h3>6.5.4.1. JSSP format</h3>
 <p><em>JSSP</em> stands for <em>Job Shop Scheduling Problem</em>. Let&#8217;s consider the beginning of file <tt class="file docutils literal"><span class="pre">abz9</span></tt>:</p>
 <div class="highlight-text"><div class="highlight"><pre>+++++++++++++++++++++++++++++
 
@@ -330,7 +330,7 @@ on machine 5 and so on.</p>
 there is a one to one correspondence between the tasks and the machines.</p>
 </div>
 <div class="section" id="taillard-s-instances-format">
-<h3>6.4.4.2. Taillard&#8217;s instances format</h3>
+<h3>6.5.4.2. Taillard&#8217;s instances format</h3>
 <p>Let&#8217;s consider the beginning of file <tt class="file docutils literal"><span class="pre">20_5_01_ta001.txt</span></tt>:</p>
 <div class="highlight-text"><div class="highlight"><pre>20
 5
@@ -373,7 +373,7 @@ European Journal of Operational Research, Elsevier, vol. 64(2), pages 278-285, J
 </table>
 </div>
 <div class="section" id="jobshopdata">
-<h3>6.4.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></h3>
+<h3>6.5.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></h3>
 <p>The <tt class="docutils literal"><span class="pre">JobshopData</span></tt> class is a simple container for job-shop instances. It is defined in the file <tt class="file docutils literal"><span class="pre">jobshop.h</span></tt>.
 Basically, it wraps an <tt class="docutils literal"><span class="pre">std::vector&lt;std::vector&lt;Task&gt;</span> <span class="pre">&gt;</span></tt> container where <tt class="docutils literal"><span class="pre">Task</span></tt> is a <tt class="docutils literal"><span class="pre">struct</span></tt> defined as follows:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">struct</span> <span class="n">Task</span> <span class="p">{</span>
@@ -497,21 +497,21 @@ Search:
   <p class="topless"><a href="../LS.html"
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="ls_operators.html"
-                        title="previous chapter">6.3. Local Search Neighborhood (LSN) Operators</a></p>
+  <p class="topless"><a href="scheduling_or_tools.html"
+                        title="previous chapter">6.4. Scheduling in <em>or-tools</em></a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="jobshop_implementation.html"
-                        title="next chapter">6.5. An implementation of the disjunctive model</a></p>
+                        title="next chapter">6.6. An implementation of the disjunctive model</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.4. The job-shop problem, the disjunctive model and benchmark data</a><ul>
-<li><a class="reference internal" href="#description-of-the-problem">6.4.1. Description of the problem</a></li>
-<li><a class="reference internal" href="#the-disjunctive-graph">6.4.2. The disjunctive graph</a></li>
-<li><a class="reference internal" href="#the-disjunctive-model">6.4.3. The disjunctive model</a></li>
-<li><a class="reference internal" href="#the-data-and-file-formats">6.4.4. The data and file formats</a><ul>
-<li><a class="reference internal" href="#jssp-format">6.4.4.1. JSSP format</a></li>
-<li><a class="reference internal" href="#taillard-s-instances-format">6.4.4.2. Taillard&#8217;s instances format</a></li>
-<li><a class="reference internal" href="#jobshopdata">6.4.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></a></li>
+<li><a class="reference internal" href="#">6.5. The job-shop problem, the disjunctive model and benchmark data</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">6.5.1. Description of the problem</a></li>
+<li><a class="reference internal" href="#the-disjunctive-graph">6.5.2. The disjunctive graph</a></li>
+<li><a class="reference internal" href="#the-disjunctive-model">6.5.3. The disjunctive model</a></li>
+<li><a class="reference internal" href="#the-data-and-file-formats">6.5.4. The data and file formats</a><ul>
+<li><a class="reference internal" href="#jssp-format">6.5.4.1. JSSP format</a></li>
+<li><a class="reference internal" href="#taillard-s-instances-format">6.5.4.2. Taillard&#8217;s instances format</a></li>
+<li><a class="reference internal" href="#jobshopdata">6.5.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></a></li>
 </ul>
 </li>
 </ul>
@@ -529,10 +529,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="jobshop_implementation.html" title="6.5. An implementation of the disjunctive model"
+          <a href="jobshop_implementation.html" title="6.6. An implementation of the disjunctive model"
              >next</a> |</li>
         <li class="right" >
-          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
+          <a href="scheduling_or_tools.html" title="6.4. Scheduling in or-tools"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 

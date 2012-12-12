@@ -59,25 +59,46 @@
 <div class="section" id="decisionbuilders-and-phases">
 <span id="decision-builders-and-phases"></span><h2>5.5.1. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and phases</h2>
 </div>
-<div class="section" id="composing-decisionbuilders">
-<h2>5.5.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</h2>
+<div class="section" id="decisions-and-decisionvisitors">
+<span id="decisions"></span><h2>5.5.2. <tt class="docutils literal"><span class="pre">Decision</span></tt>s and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</h2>
+<div class="section" id="id4">
+<h3>5.5.2.1. <tt class="docutils literal"><span class="pre">Decision</span></tt>s</h3>
+</div>
+<div class="section" id="assignonevariablevalue-as-an-example">
+<h3>5.5.2.2. <tt class="docutils literal"><span class="pre">AssignOneVariableValue</span></tt> as an example</h3>
+</div>
+<div class="section" id="decisionvisitors">
+<h3>5.5.2.3. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</h3>
+</div>
+</div>
+<div class="section" id="combining-decisionbuilders">
+<h2>5.5.3. Combining <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</h2>
+<div class="section" id="compose">
+<h3>5.5.3.1. <tt class="docutils literal"><span class="pre">Compose()</span></tt></h3>
+</div>
+<div class="section" id="try">
+<h3>5.5.3.2. <tt class="docutils literal"><span class="pre">Try()</span></tt></h3>
+</div>
 </div>
 <div class="section" id="nested-searches">
-<span id="id1"></span><h2>5.5.3. Nested searches</h2>
+<span id="id6"></span><h2>5.5.4. Nested searches</h2>
+<div class="section" id="solveonce">
+<h3>5.5.4.1. <tt class="docutils literal"><span class="pre">SolveOnce</span></tt></h3>
 </div>
-<div class="section" id="decisions-and-decisionvisitor">
-<span id="decisions"></span><h2>5.5.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt></h2>
+<div class="section" id="nestedoptimize">
+<h3>5.5.4.2. <tt class="docutils literal"><span class="pre">NestedOptimize</span></tt></h3>
+</div>
 </div>
 <div class="section" id="the-makephase-method-more-in-details">
-<h2>5.5.5. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</h2>
-<div class="section" id="makephase-for-intvars">
-<h3>5.5.5.1. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntVar</span></tt>s</h3>
+<span id="makephase-int-vars"></span><h2>5.5.5. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</h2>
+<div class="section" id="the-2-steps-approach">
+<span id="make-phase-two-steps"></span><h3>5.5.5.1. The 2-steps approach</h3>
 </div>
-<div class="section" id="makephase-for-intervalvars">
-<h3>5.5.5.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+<div class="section" id="callbacks-to-the-rescue">
+<h3>5.5.5.2. Callbacks to the rescue</h3>
 </div>
-<div class="section" id="makephase-for-sequencevars">
-<h3>5.5.5.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
+<div class="section" id="when-the-2-steps-approach-isn-t-enough">
+<h3>5.5.5.3. When the 2-steps approach isn&#8217;t enough</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -167,13 +188,26 @@ Search:
   <ul>
 <li><a class="reference internal" href="#">5.5. Basic working of the solver: the phases</a><ul>
 <li><a class="reference internal" href="#decisionbuilders-and-phases">5.5.1. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and phases</a></li>
-<li><a class="reference internal" href="#composing-decisionbuilders">5.5.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li><a class="reference internal" href="#nested-searches">5.5.3. Nested searches</a></li>
-<li><a class="reference internal" href="#decisions-and-decisionvisitor">5.5.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt></a></li>
+<li><a class="reference internal" href="#decisions-and-decisionvisitors">5.5.2. <tt class="docutils literal"><span class="pre">Decision</span></tt>s and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</a><ul>
+<li><a class="reference internal" href="#id4">5.5.2.1. <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
+<li><a class="reference internal" href="#assignonevariablevalue-as-an-example">5.5.2.2. <tt class="docutils literal"><span class="pre">AssignOneVariableValue</span></tt> as an example</a></li>
+<li><a class="reference internal" href="#decisionvisitors">5.5.2.3. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#combining-decisionbuilders">5.5.3. Combining <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a><ul>
+<li><a class="reference internal" href="#compose">5.5.3.1. <tt class="docutils literal"><span class="pre">Compose()</span></tt></a></li>
+<li><a class="reference internal" href="#try">5.5.3.2. <tt class="docutils literal"><span class="pre">Try()</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#nested-searches">5.5.4. Nested searches</a><ul>
+<li><a class="reference internal" href="#solveonce">5.5.4.1. <tt class="docutils literal"><span class="pre">SolveOnce</span></tt></a></li>
+<li><a class="reference internal" href="#nestedoptimize">5.5.4.2. <tt class="docutils literal"><span class="pre">NestedOptimize</span></tt></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#the-makephase-method-more-in-details">5.5.5. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</a><ul>
-<li><a class="reference internal" href="#makephase-for-intvars">5.5.5.1. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#makephase-for-intervalvars">5.5.5.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#makephase-for-sequencevars">5.5.5.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#the-2-steps-approach">5.5.5.1. The 2-steps approach</a></li>
+<li><a class="reference internal" href="#callbacks-to-the-rescue">5.5.5.2. Callbacks to the rescue</a></li>
+<li><a class="reference internal" href="#when-the-2-steps-approach-isn-t-enough">5.5.5.3. When the 2-steps approach isn&#8217;t enough</a></li>
 </ul>
 </li>
 </ul>

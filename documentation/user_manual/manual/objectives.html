@@ -85,10 +85,13 @@ adding better bounds and breaking symmetries. Finally, we say a few words about 
 In fact, you can completely skip them if you wish. The basic ideas behind these sums are simple and are easy to follow.</li>
 <li>We introduce two kinds of variables in our modelizations: the <strong>marks</strong> of the ruler and the <strong>differences</strong> between the marks.</li>
 </ul>
+<p class="rubric">Classes under scrutiny:</p>
+<p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>.</p>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap3</span></tt>.</p>
 <p>The files inside this directory are:</p>
 <ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
 <li><tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt>: A first implementation. We show how to tell the solver to optimize an objective function. We use the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}" style="vertical-align: -6px"/> differences as variables.</li>
 <li><tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt>: Same file as <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> but with some global statistics about the search added so we can see how well or bad
 a model behave.</li>

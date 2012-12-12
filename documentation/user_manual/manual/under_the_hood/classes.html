@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.9. Meta-heuristics and SearchMonitors &mdash; or-tools User&#39;s Manual</title>
+    <title>14.3. Main classes, structures and typedefs &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.10. Three implemented meta-heuristics" href="metaheuristics_examples.html" />
-    <link rel="prev" title="6.8. Filtering" href="ls_filtering.html" /> 
+    <link rel="up" title="14. Under the hood" href="../under_the_hood.html" />
+    <link rel="next" title="14.4. The Trail struct" href="trail.html" />
+    <link rel="prev" title="14.2. Naming conventions and programming idioms" href="conventions.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="metaheuristics_examples.html" title="6.10. Three implemented meta-heuristics"
+          <a href="trail.html" title="14.4. The Trail struct"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="ls_filtering.html" title="6.8. Filtering"
+          <a href="conventions.html" title="14.2. Naming conventions and programming idioms"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" accesskey="U">14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,17 +54,16 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="meta-heuristics-and-searchmonitors">
-<span id="metaheuristics"></span><h1>6.9. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h1>
-<div class="section" id="the-metaheuristic-class">
-<h2>6.9.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class</h2>
-<div class="topic" id="topic-what-about-an-initial-solution-local-search">
-<p class="topic-title first">What about an initial solution?</p>
-<p>And here I write...</p>
+  <div class="section" id="main-classes-structures-and-typedefs">
+<span id="hood-classes"></span><h1>14.3. Main classes, structures and typedefs</h1>
+<div class="section" id="baseobjects">
+<h2>14.3.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt>s</h2>
 </div>
+<div class="section" id="propagationbaseobjects">
+<h2>14.3.2. <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>s</h2>
 </div>
-<div class="section" id="callbacks-to-implement">
-<h2>6.9.2. Callbacks to implement</h2>
+<div class="section" id="callbacks">
+<h2>14.3.3. Callbacks</h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -141,19 +140,20 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+  <p class="topless"><a href="../under_the_hood.html"
+                        title="previous chapter">14. Under the hood</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="ls_filtering.html"
-                        title="previous chapter">6.8. Filtering</a></p>
+  <p class="topless"><a href="conventions.html"
+                        title="previous chapter">14.2. Naming conventions and programming idioms</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="metaheuristics_examples.html"
-                        title="next chapter">6.10. Three implemented meta-heuristics</a></p>
+  <p class="topless"><a href="trail.html"
+                        title="next chapter">14.4. The <tt class="docutils literal"><span class="pre">Trail</span></tt> struct</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.9. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
-<li><a class="reference internal" href="#the-metaheuristic-class">6.9.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class</a></li>
-<li><a class="reference internal" href="#callbacks-to-implement">6.9.2. Callbacks to implement</a></li>
+<li><a class="reference internal" href="#">14.3. Main classes, structures and typedefs</a><ul>
+<li><a class="reference internal" href="#baseobjects">14.3.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt>s</a></li>
+<li><a class="reference internal" href="#propagationbaseobjects">14.3.2. <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>s</a></li>
+<li><a class="reference internal" href="#callbacks">14.3.3. Callbacks</a></li>
 </ul>
 </li>
 </ul>
@@ -169,13 +169,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="metaheuristics_examples.html" title="6.10. Three implemented meta-heuristics"
+          <a href="trail.html" title="14.4. The Trail struct"
              >next</a> |</li>
         <li class="right" >
-          <a href="ls_filtering.html" title="6.8. Filtering"
+          <a href="conventions.html" title="14.2. Naming conventions and programming idioms"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" >14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

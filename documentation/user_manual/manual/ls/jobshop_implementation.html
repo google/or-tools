@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.5. An implementation of the disjunctive model &mdash; or-tools User&#39;s Manual</title>
+    <title>6.6. An implementation of the disjunctive model &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.6. The jobshop problem: and now with local search!" href="jobshop_ls.html" />
-    <link rel="prev" title="6.4. The job-shop problem, the disjunctive model and benchmark data" href="jobshop_def_data.html" /> 
+    <link rel="next" title="6.7. The jobshop problem: and now with local search!" href="jobshop_ls.html" />
+    <link rel="prev" title="6.5. The job-shop problem, the disjunctive model and benchmark data" href="jobshop_def_data.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="jobshop_ls.html" title="6.6. The jobshop problem: and now with local search!"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="jobshop_def_data.html" title="6.4. The job-shop problem, the disjunctive model and benchmark data"
+          <a href="jobshop_def_data.html" title="6.5. The job-shop problem, the disjunctive model and benchmark data"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="an-implementation-of-the-disjunctive-model">
-<span id="jobshop-implementation-disjunctive-model"></span><h1>6.5. An implementation of the disjunctive model</h1>
+<span id="jobshop-implementation-disjunctive-model"></span><h1>6.6. An implementation of the disjunctive model</h1>
 <p>Scheduling is one of the field where Constraint Programming is heavily used,
 therefore specialized constraints and variables have been developed. In this section,
 we will implement the disjunctive model with dedicated variables (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and
@@ -64,7 +64,7 @@ we will implement the disjunctive model with dedicated variables (<tt class="doc
 in a top-down fashion.</p>
 <p>You can find the code in the file <tt class="file docutils literal"><span class="pre">jobshop.cc</span></tt>.</p>
 <div class="section" id="the-intervalvar-variables">
-<h2>6.5.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</h2>
+<h2>6.6.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</h2>
 <p>We create one <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> for each task. An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> represents one
 integer interval and is often used in scheduling. Its main characteristics are its starting time,
 its duration and its ending time.</p>
@@ -96,7 +96,7 @@ Unperformed <tt class="docutils literal"><span class="pre">IntervalVar</span></t
 <p>We will create the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables later when we will add the disjunctive constraints.</p>
 </div>
 <div class="section" id="the-conjunctive-constraints">
-<h2>6.5.2. The conjunctive constraints</h2>
+<h2>6.6.2. The conjunctive constraints</h2>
 <p>Recall that the conjunctive constraints ensure the sequence order of tasks inside a job
 is respected. If <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> <tt class="docutils literal"><span class="pre">t1</span></tt> is the task right before <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> <tt class="docutils literal"><span class="pre">t2</span></tt>
 in a job, we can add an <tt class="docutils literal"><span class="pre">IntervalBinaryRelation</span></tt> constraint with the right relation between the two
@@ -141,7 +141,7 @@ in a job, we can add an <tt class="docutils literal"><span class="pre">IntervalB
 </div>
 </div>
 <div class="section" id="the-disjunctive-constraints-and-sequencevars">
-<h2>6.5.3. The disjunctive constraints and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h2>
+<h2>6.6.3. The disjunctive constraints and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h2>
 <p>The constraints ensure that the tasks are correctly processed on each machine, i.e.
 a task is processed entirely before or after another task on a single machine. The CP solver provides
 <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>s and a corresponding factory method:</p>
@@ -172,7 +172,7 @@ for each machine with the factory method <tt class="docutils literal"><span clas
 </div>
 </div>
 <div class="section" id="the-objective-function">
-<h2>6.5.4. The objective function</h2>
+<h2>6.6.4. The objective function</h2>
 <p>To create the makespan variable, we simply collect the last tasks of all the jobs
 and store the maximum of their end times:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Creates array of end_times of jobs.</span>
@@ -200,7 +200,7 @@ You can also query the start time and duration:</p>
 </div></blockquote>
 </div>
 <div class="section" id="the-decisionbuilders">
-<h2>6.5.5. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</h2>
+<span id="jobshop-decision-builders-compose"></span><h2>6.6.5. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</h2>
 <p>The solving process is done in two phases: first we rank the tasks for each machine, then
 we schedule each task at its earliest start time. This is done with <em>two</em> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 that are combined in a top-down fashion, i.e. one <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is applied and then when we reach
@@ -225,7 +225,7 @@ by fixing the objective variable to its minimum value:</p>
 </div>
 </div>
 <div class="section" id="the-search-and-first-results">
-<h2>6.5.6. The search and first results</h2>
+<h2>6.6.6. The search and first results</h2>
 <p>We use the usual <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Search log.</span>
 <span class="k">const</span> <span class="kt">int</span> <span class="n">kLogFrequency</span> <span class="o">=</span> <span class="mi">1000000</span><span class="p">;</span>
@@ -398,19 +398,19 @@ Search:
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="jobshop_def_data.html"
-                        title="previous chapter">6.4. The job-shop problem, the disjunctive model and benchmark data</a></p>
+                        title="previous chapter">6.5. The job-shop problem, the disjunctive model and benchmark data</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="jobshop_ls.html"
-                        title="next chapter">6.6. The jobshop problem: and now with local search!</a></p>
+                        title="next chapter">6.7. The jobshop problem: and now with local search!</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.5. An implementation of the disjunctive model</a><ul>
-<li><a class="reference internal" href="#the-intervalvar-variables">6.5.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</a></li>
-<li><a class="reference internal" href="#the-conjunctive-constraints">6.5.2. The conjunctive constraints</a></li>
-<li><a class="reference internal" href="#the-disjunctive-constraints-and-sequencevars">6.5.3. The disjunctive constraints and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#the-objective-function">6.5.4. The objective function</a></li>
-<li><a class="reference internal" href="#the-decisionbuilders">6.5.5. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li><a class="reference internal" href="#the-search-and-first-results">6.5.6. The search and first results</a></li>
+<li><a class="reference internal" href="#">6.6. An implementation of the disjunctive model</a><ul>
+<li><a class="reference internal" href="#the-intervalvar-variables">6.6.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</a></li>
+<li><a class="reference internal" href="#the-conjunctive-constraints">6.6.2. The conjunctive constraints</a></li>
+<li><a class="reference internal" href="#the-disjunctive-constraints-and-sequencevars">6.6.3. The disjunctive constraints and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#the-objective-function">6.6.4. The objective function</a></li>
+<li><a class="reference internal" href="#the-decisionbuilders">6.6.5. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
+<li><a class="reference internal" href="#the-search-and-first-results">6.6.6. The search and first results</a></li>
 </ul>
 </li>
 </ul>
@@ -426,10 +426,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="jobshop_ls.html" title="6.6. The jobshop problem: and now with local search!"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              >next</a> |</li>
         <li class="right" >
-          <a href="jobshop_def_data.html" title="6.4. The job-shop problem, the disjunctive model and benchmark data"
+          <a href="jobshop_def_data.html" title="6.5. The job-shop problem, the disjunctive model and benchmark data"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 

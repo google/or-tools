@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.9. Tabu search &mdash; or-tools User&#39;s Manual</title>
+    <title>14.2. Naming conventions and programming idioms &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.10. Simulated annealing" href="simulated_annealing.html" />
-    <link rel="prev" title="6.8. Meta-heuristics and SearchMonitors" href="metaheuristics.html" /> 
+    <link rel="up" title="14. Under the hood" href="../under_the_hood.html" />
+    <link rel="next" title="14.3. Main classes, structures and typedefs" href="classes.html" />
+    <link rel="prev" title="14.1. Main files and directories" href="files.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="simulated_annealing.html" title="6.10. Simulated annealing"
+          <a href="classes.html" title="14.3. Main classes, structures and typedefs"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="6.8. Meta-heuristics and SearchMonitors"
+          <a href="files.html" title="14.1. Main files and directories"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" accesskey="U">14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,12 +54,33 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="tabu-search">
-<h1>6.9. Tabu search</h1>
-<div class="section" id="the-basic-idea">
-<h2>6.9.1. The basic idea</h2>
+  <div class="section" id="naming-conventions-and-programming-idioms">
+<span id="hood-conventions"></span><h1>14.2. Naming conventions and programming idioms</h1>
+<div class="section" id="naming-conventions">
+<h2>14.2.1. Naming conventions</h2>
+<div class="section" id="general-naming-conventions">
+<h3>14.2.1.1. General naming conventions</h3>
+</div>
+<div class="section" id="methods">
+<h3>14.2.1.2. Methods</h3>
+</div>
+</div>
+<div class="section" id="programming-idioms">
+<h2>14.2.2. Programming idioms</h2>
+<div class="section" id="factories">
+<h3>14.2.2.1. Factories</h3>
+</div>
+<div class="section" id="caches">
+<h3>14.2.2.2. Caches</h3>
+</div>
+<div class="section" id="callbacks">
+<span id="idiom-callbacks"></span><h3>14.2.2.3. Callbacks</h3>
+</div>
+<div class="section" id="visitors">
+<span id="idiom-visitors"></span><h3>14.2.2.4. Visitors</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 </div>
 
 
@@ -134,18 +155,29 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+  <p class="topless"><a href="../under_the_hood.html"
+                        title="previous chapter">14. Under the hood</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="metaheuristics.html"
-                        title="previous chapter">6.8. Meta-heuristics and <tt class="docutils literal docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
+  <p class="topless"><a href="files.html"
+                        title="previous chapter">14.1. Main files and directories</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="simulated_annealing.html"
-                        title="next chapter">6.10. Simulated annealing</a></p>
+  <p class="topless"><a href="classes.html"
+                        title="next chapter">14.3. Main classes, structures and typedefs</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.9. Tabu search</a><ul>
-<li><a class="reference internal" href="#the-basic-idea">6.9.1. The basic idea</a></li>
+<li><a class="reference internal" href="#">14.2. Naming conventions and programming idioms</a><ul>
+<li><a class="reference internal" href="#naming-conventions">14.2.1. Naming conventions</a><ul>
+<li><a class="reference internal" href="#general-naming-conventions">14.2.1.1. General naming conventions</a></li>
+<li><a class="reference internal" href="#methods">14.2.1.2. Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#programming-idioms">14.2.2. Programming idioms</a><ul>
+<li><a class="reference internal" href="#factories">14.2.2.1. Factories</a></li>
+<li><a class="reference internal" href="#caches">14.2.2.2. Caches</a></li>
+<li><a class="reference internal" href="#callbacks">14.2.2.3. Callbacks</a></li>
+<li><a class="reference internal" href="#visitors">14.2.2.4. Visitors</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -161,13 +193,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="simulated_annealing.html" title="6.10. Simulated annealing"
+          <a href="classes.html" title="14.3. Main classes, structures and typedefs"
              >next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="6.8. Meta-heuristics and SearchMonitors"
+          <a href="files.html" title="14.1. Main files and directories"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" >14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
