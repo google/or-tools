@@ -27,6 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="Frequently Asked Questions" href="../index.html" />
+    <link rel="next" title="General questions about Local Search" href="LS.html" />
     <link rel="prev" title="General questions about the CP solver" href="CPsolver.html" /> 
   </head>
   <body>
@@ -36,6 +37,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="LS.html" title="General questions about Local Search"
+             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="CPsolver.html" title="General questions about the CP solver"
              accesskey="P">previous</a> |</li>
@@ -50,7 +54,87 @@
             
   <div class="section" id="general-questions-about-the-cp-routing-solver">
 <span id="faq-routing-questions"></span><h1>General questions about the CP Routing Solver</h1>
-<p>THIS IS WORK IN PROGRESS.</p>
+<ul class="simple">
+<li><a class="reference internal" href="#faq-routing-flags"><em>What are the available flags for the RL?</em></a></li>
+</ul>
+<div class="section" id="what-are-the-available-flags-for-the-rl">
+<span id="faq-routing-flags"></span><h2>What are the available flags for the RL?</h2>
+<p>If you include the header <tt class="file docutils literal"><span class="pre">constraint_solver/routing.h</span></tt> in your program and run
+your program with the <strong class="program">gflags</strong> parameter <tt class="docutils literal"><span class="pre">helpon</span></tt> on the <tt class="file docutils literal"><span class="pre">routing.*</span></tt> files:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./your_program --helpon<span class="o">=</span>routing
+</pre></div>
+</div>
+<p>You will get the list of all available <strong class="program">gflags</strong> flags in the RL.</p>
+<p>We detail here the most used ones.</p>
+<p>TO BE DONE.</p>
+<div class="highlight-text"><div class="highlight"><pre>Flags from src/constraint_solver/routing.cc:
+  -routing_cache_callbacks (Cache callback calls.) type: bool default: false
+  -routing_check_compact_assignment (Routing::CompactAssignment calls
+    Solver::CheckAssignment on the compact assignment.) type: bool
+    default: true
+  -routing_dfs (Routing: use a complete deoth-first search.) type: bool
+    default: false
+  -routing_first_solution (Routing: first solution heuristic; possible values
+    include Default, GlobalCheapestArc, LocalCheapestArc, PathCheapestArc.
+    See ParseRoutingStrategy() in the code to get a full list.) type: string
+    default: &quot;&quot;
+  -routing_guided_local_search (Routing: use GLS.) type: bool default: false
+  -routing_guided_local_search_lamda_coefficient (Lamda coefficient in GLS.)
+    type: double default: 0.10000000000000001
+  -routing_lns_time_limit (Routing: time limit in ms for LNS
+    sub-decisionbuilder.) type: int64 default: 100
+  -routing_max_cache_size (Maximum cache size when callback caching is on.)
+    type: int64 default: 1000
+  -routing_no_2opt (Routing: forbids use of 2Opt neighborhood.) type: bool
+    default: false
+  -routing_no_cross (Routing: forbids use of Cross neighborhood.) type: bool
+    default: false
+  -routing_no_exchange (Routing: forbids use of Exchange neighborhood.)
+    type: bool default: false
+  -routing_no_lkh (Routing: forbids use of LKH neighborhood.) type: bool
+    default: false
+  -routing_no_lns (Routing: forbids use of Large Neighborhood Search.)
+    type: bool default: false
+  -routing_no_make_active (Routing: forbids use of
+    MakeActive/SwapActive/MakeInactive neighborhoods.) type: bool
+    default: false
+  -routing_no_oropt (Routing: forbids use of OrOpt neighborhood.) type: bool
+    default: false
+  -routing_no_relocate (Routing: forbids use of Relocate neighborhood.)
+    type: bool default: false
+  -routing_no_tsp (Routing: forbids use of TSPOpt neighborhood.) type: bool
+    default: true
+  -routing_no_tsplns (Routing: forbids use of TSPLNS neighborhood.)
+    type: bool default: true
+  -routing_optimization_step (Optimization step.) type: int64 default: 1
+  -routing_search_trace (Routing: use SearchTrace for monitoring search.)
+    type: bool default: false
+  -routing_simulated_annealing (Routing: use simulated annealing.) type: bool
+    default: false
+  -routing_solution_limit (Routing: number of solutions limit.) type: int64
+    default: 9223372036854775807
+  -routing_tabu_search (Routing: use tabu search.) type: bool default: false
+  -routing_time_limit (Routing: time limit in ms.) type: int64
+    default: 9223372036854775807
+  -routing_trace (Routing: trace search.) type: bool default: false
+  -routing_use_disjunction_filter (Use filter which filters node disjunction
+    constraints.) type: bool default: true
+  -routing_use_extended_swap_active (Routing: use extended version of
+    SwapActive neighborhood.) type: bool default: false
+  -routing_use_first_solution_dive (Dive (left-branch) for first solution.)
+    type: bool default: false
+  -routing_use_homogeneous_costs (Routing: use homogeneous cost model when
+    possible.) type: bool default: true
+  -routing_use_light_propagation (Use constraints with light propagation in
+    routing model.) type: bool default: false
+  -routing_use_objective_filter (Use objective filter to speed up local
+    search.) type: bool default: true
+  -routing_use_path_cumul_filter (Use PathCumul constraint filter to speed up
+    local search.) type: bool default: true
+  -routing_use_pickup_and_delivery_filter (Use filter which filters
+    precedence and same route constraints.) type: bool default: true
+</pre></div>
+</div>
 <br>
 <br>
 <br>
@@ -87,6 +171,7 @@
 <br>
 <br>
 <br></div>
+</div>
 
 
           </div>
@@ -165,6 +250,7 @@ Search:
 <li class="toctree-l1"><a class="reference internal" href="library.html">the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="CPsolver.html">the CP Solver</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">the CP Routing Solver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LS.html">the Local Search algorithm</a></li>
 </ul>
 
         </div>
@@ -177,6 +263,9 @@ Search:
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="LS.html" title="General questions about Local Search"
+             >next</a> |</li>
         <li class="right" >
           <a href="CPsolver.html" title="General questions about the CP solver"
              >previous</a> |</li>
