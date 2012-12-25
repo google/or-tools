@@ -228,8 +228,9 @@ to check the number of known solutions, unique up to a symmetry when we use
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">kNumUniqueSolutions[]</span></tt> and <tt class="docutils literal"><span class="pre">kNumSolutions[]</span></tt> are static arrays
-with the right number of solutions. We restrict ourselves to testing the number of all distinct solutions
-up to <tt class="docutils literal"><span class="pre">kKnownSolutions</span> <span class="pre">=</span> <span class="pre">15</span></tt> and unique solutions up to <tt class="docutils literal"><span class="pre">kKnownUniqueSolutions</span> <span class="pre">=</span> <span class="pre">19</span></tt>.</p>
+with the proven number of solutions. We restrict ourselves to testing the number of all distinct solutions
+up to <tt class="docutils literal"><span class="pre">kKnownSolutions</span> <span class="pre">=</span> <span class="pre">18</span></tt> and unique solutions up to <tt class="docutils literal"><span class="pre">kKnownUniqueSolutions</span> <span class="pre">=</span> <span class="pre">19</span></tt>. By <em>unique solution</em> we mean
+a unique solution up to a symmetry (see the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a> for more).</p>
 <p>The print helper functions are all based on <tt class="docutils literal"><span class="pre">PrintSolution()</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">PrintSolution</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">size</span><span class="p">,</span>
                    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">queens</span><span class="p">,</span>

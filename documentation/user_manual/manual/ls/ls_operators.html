@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.3. Local Search Neighborhood (LSN) Operators &mdash; or-tools User&#39;s Manual</title>
+    <title>6.6. Local Search Neighborhood (LSN) Operators &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.4. Scheduling in or-tools" href="scheduling_or_tools.html" />
-    <link rel="prev" title="6.2. Basic working of the solver: local search" href="basic_working_local_search.html" /> 
+    <link rel="next" title="6.7. The jobshop problem: and now with local search!" href="jobshop_ls.html" />
+    <link rel="prev" title="6.5. Basic working of the solver: local search" href="basic_working_local_search.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="scheduling_or_tools.html" title="6.4. Scheduling in or-tools"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="basic_working_local_search.html" title="6.2. Basic working of the solver: local search"
+          <a href="basic_working_local_search.html" title="6.5. Basic working of the solver: local search"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -55,14 +55,32 @@
           <div class="body">
             
   <div class="section" id="local-search-neighborhood-lsn-operators">
-<h1>6.3. Local Search Neighborhood (LSN) Operators</h1>
+<span id="local-search-neighborhood-operators"></span><h1>6.6. Local Search Neighborhood (LSN) Operators</h1>
+<div class="section" id="localsearchoperators">
+<h2>6.6.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</h2>
+</div>
 <div class="section" id="defining-a-custom-lsn-operator">
-<h2>6.3.1. Defining a custom LSN operator</h2>
+<h2>6.6.2. Defining a custom LSN operator</h2>
 </div>
 <div class="section" id="combining-lsn-operators">
-<h2>6.3.2. Combining LSN operators</h2>
+<h2>6.6.3. Combining LSN operators</h2>
+</div>
+<div class="section" id="interesting-lsn-operators">
+<h2>6.6.4. Interesting LSN operators</h2>
+<div class="section" id="neighborhoodlimit">
+<h3>6.6.4.1. <tt class="docutils literal"><span class="pre">NeighborhoodLimit</span></tt></h3>
+</div>
+<div class="section" id="movetowardtargetls">
+<h3>6.6.4.2. <tt class="docutils literal"><span class="pre">MoveTowardTargetLS</span></tt></h3>
+</div>
+<div class="section" id="decrementvalue-and-incrementvalue">
+<h3>6.6.4.3. <tt class="docutils literal"><span class="pre">DecrementValue</span></tt> and <tt class="docutils literal"><span class="pre">IncrementValue</span></tt></h3>
+</div>
+<div class="section" id="large-neighborhood-search">
+<h3>6.6.4.4. Large Neighborhood Search</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 </div>
 
 
@@ -141,15 +159,23 @@ Search:
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="basic_working_local_search.html"
-                        title="previous chapter">6.2. Basic working of the solver: local search</a></p>
+                        title="previous chapter">6.5. Basic working of the solver: local search</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="scheduling_or_tools.html"
-                        title="next chapter">6.4. Scheduling in <em>or-tools</em></a></p>
+  <p class="topless"><a href="jobshop_ls.html"
+                        title="next chapter">6.7. The jobshop problem: and now with local search!</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.3. Local Search Neighborhood (LSN) Operators</a><ul>
-<li><a class="reference internal" href="#defining-a-custom-lsn-operator">6.3.1. Defining a custom LSN operator</a></li>
-<li><a class="reference internal" href="#combining-lsn-operators">6.3.2. Combining LSN operators</a></li>
+<li><a class="reference internal" href="#">6.6. Local Search Neighborhood (LSN) Operators</a><ul>
+<li><a class="reference internal" href="#localsearchoperators">6.6.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</a></li>
+<li><a class="reference internal" href="#defining-a-custom-lsn-operator">6.6.2. Defining a custom LSN operator</a></li>
+<li><a class="reference internal" href="#combining-lsn-operators">6.6.3. Combining LSN operators</a></li>
+<li><a class="reference internal" href="#interesting-lsn-operators">6.6.4. Interesting LSN operators</a><ul>
+<li><a class="reference internal" href="#neighborhoodlimit">6.6.4.1. <tt class="docutils literal"><span class="pre">NeighborhoodLimit</span></tt></a></li>
+<li><a class="reference internal" href="#movetowardtargetls">6.6.4.2. <tt class="docutils literal"><span class="pre">MoveTowardTargetLS</span></tt></a></li>
+<li><a class="reference internal" href="#decrementvalue-and-incrementvalue">6.6.4.3. <tt class="docutils literal"><span class="pre">DecrementValue</span></tt> and <tt class="docutils literal"><span class="pre">IncrementValue</span></tt></a></li>
+<li><a class="reference internal" href="#large-neighborhood-search">6.6.4.4. Large Neighborhood Search</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -165,10 +191,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="scheduling_or_tools.html" title="6.4. Scheduling in or-tools"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              >next</a> |</li>
         <li class="right" >
-          <a href="basic_working_local_search.html" title="6.2. Basic working of the solver: local search"
+          <a href="basic_working_local_search.html" title="6.5. Basic working of the solver: local search"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 

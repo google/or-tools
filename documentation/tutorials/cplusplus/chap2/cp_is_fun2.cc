@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,16 +20,11 @@
 //
 // Use of SolutionCollectors.
 // Use of Solve().
-// Use of gflags to choose the base.
 
 #include <vector>
 
-#include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "constraint_solver/constraint_solver.h"
-
-DEFINE_int64(base, 10, "Base used to solve the problem.");
-DEFINE_bool(print_all_solutions, false, "Print all solutions?");
 
 namespace operations_research {
 
@@ -82,7 +77,7 @@ void CPIsFun() {
   // Constraint programming engine
   Solver solver("CP is fun!");
 
-  const int64 kBase = FLAGS_base;
+  const int64 kBase = 10;
 
   // Decision variables
   IntVar* const c = solver.MakeIntVar(1, kBase - 1, "C");
@@ -131,7 +126,12 @@ void CPIsFun() {
 
   SolutionCollector* const all_solutions = solver.MakeAllSolutionCollector();
   //  Add the interesting variables to the SolutionCollector
-  all_solutions->Add(letters);
+  all_solutions->Add(c);
+  all_solutions->Add(p);
+  //  Create the variable kBase * c + p
+  IntVar* v1 = solver.MakeSum(solver.MakeProd(c, kBase), p)->Var();
+  //  Add it to the SolutionCollector
+  all_solutions->Add(v1);
 
   DecisionBuilder* const db = solver.MakePhase(letters,
                                                Solver::CHOOSE_FIRST_UNBOUND,
@@ -143,19 +143,10 @@ void CPIsFun() {
   const int numberSolutions = all_solutions->solution_count();
   LOG(INFO) << "Number of solutions: " << numberSolutions << std::endl;
 
-  if (FLAGS_print_all_solutions) {
-    for (int index = 0; index < numberSolutions; ++index) {
-      LOG(INFO) << "C=" << all_solutions->Value(index, c) << " "
-      << "P=" << all_solutions->Value(index, p) << " "
-      << "I=" << all_solutions->Value(index, i) << " "
-      << "S=" << all_solutions->Value(index, s) << " "
-      << "F=" << all_solutions->Value(index, f) << " "
-      << "U=" << all_solutions->Value(index, u) << " "
-      << "N=" << all_solutions->Value(index, n) << " "
-      << "T=" << all_solutions->Value(index, t) << " "
-      << "R=" << all_solutions->Value(index, r) << " "
-      << "E=" << all_solutions->Value(index, e);
-    }
+  for (int index = 0; index < numberSolutions; ++index) {
+    Assignment* const solution = all_solutions->solution(index);
+    LOG(INFO) << "Solution found:";
+    LOG(INFO) << "v1=" << solution->Value(v1);
   }
 }
 
@@ -163,7 +154,6 @@ void CPIsFun() {
 
 // ----- MAIN -----
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::CPIsFun();
   return 0;
 }

@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,19 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// A second implementation.
-// This time, we only use the marks as variables and introduce the
-// quaternary inequality constraints.
+// A third implementation.
+// Same as second implementation but we replace the inequality constraints
+// by the more powerful globlal AllDifferent constraint.
 #include <vector>
 #include <sstream>
 
 #include "base/commandlineflags.h"
 #include "base/logging.h"
-#include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 
-DEFINE_bool(print, false, "If true, print the minimal solution.");
 DEFINE_int32(n, 0, "Number of marks. If 0 will test different values of n.");
+DEFINE_bool(print, false, "Print solution or not?");
 
 // kG[n] = G(n).
 static const int kG[] = {
@@ -35,32 +34,7 @@ static const int kKnownSolutions = 19;
 
 namespace operations_research {
 
-bool next_interval(const int n,
-                   const int i,
-                   const int j,
-                   int* next_i,
-                   int* next_j) {
-  CHECK_LT(i, n);
-  CHECK_LE(j, n);
-  CHECK_GE(i, 1);
-  CHECK_GT(j, 1);
-
-  if (j == n) {
-    if (i == n - 1) {
-      return false;
-    } else {
-      *next_i = i + 1;
-      *next_j = i + 2;
-    }
-  } else {
-    *next_i = i;
-    *next_j = j + 1;
-  }
-
-  return true;
-}
-
-void GolombRuler(const int n) {
+void GolombRuler(int n) {
   CHECK_GE(n, 1);
 
   Solver s("golomb");
@@ -69,33 +43,25 @@ void GolombRuler(const int n) {
   CHECK_LT(n, 65000);
   const int64 max = n * n - 1;
 
-  // variables
+  // Variables
   std::vector<IntVar*> X(n + 1);
   X[0] = s.MakeIntConst(-1);  // The solver doesn't allow NULL pointers
-  X[1] = s.MakeIntConst(0);      // X(1) = 0
+  X[1] = s.MakeIntConst(0);   // X(1) = 0
 
   for (int i = 2; i <= n; ++i) {
     X[i] = s.MakeIntVar(1, max, StringPrintf("X%03d", i));
   }
 
-  IntVar* diff1;
-  IntVar* diff2;
-  int k, l, next_k, next_l;
-  for (int i = 1; i < n - 1; ++i) {
+  std::vector<IntVar*> Y;
+  for (int i = 1; i <= n; ++i) {
     for (int j = i + 1; j <= n; ++j) {
-      k = i;
-      l = j;
-      diff1 = s.MakeDifference(X[j], X[i])->Var();
-      diff1->SetMin(1);
-      while (next_interval(n, k, l, &next_k, &next_l)) {
-        diff2 = s.MakeDifference(X[next_l], X[next_k])->Var();
-        diff2->SetMin(1);
-        s.AddConstraint(s.MakeNonEquality(diff1, diff2));
-        k = next_k;
-        l = next_l;
-      }
+      IntVar* const diff = s.MakeDifference(X[j], X[i])->Var();
+      Y.push_back(diff);
+      diff->SetMin(1);
     }
   }
+
+  s.AddConstraint(s.MakeAllDifferent(Y));
 
   OptimizeVar* const length = s.MakeMinimize(X[n], 1);
 
@@ -104,6 +70,7 @@ void GolombRuler(const int n) {
   DecisionBuilder* const db = s.MakePhase(X,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
+
   s.Solve(db, collector, length);  // go!
 
   CHECK_EQ(collector->solution_count(), 1);
@@ -119,6 +86,7 @@ void GolombRuler(const int n) {
     }
     LOG(INFO) << solution_str.str();
   }
+
   if (n < kKnownSolutions) {
     CHECK_EQ(result, kG[n]);
   }

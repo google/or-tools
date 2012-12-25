@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>8.1. Basic working of the solver: part III &mdash; or-tools User&#39;s Manual</title>
+    <title>14.9. Local Search (LS) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="8. Custom constraints: the alldifferent_except_0 constraint" href="../custom_constraints.html" />
-    <link rel="next" title="8.2. Consistency" href="consistency.html" />
-    <link rel="prev" title="8. Custom constraints: the alldifferent_except_0 constraint" href="../custom_constraints.html" /> 
+    <link rel="up" title="14. Under the hood" href="../under_the_hood.html" />
+    <link rel="next" title="14.10. Meta-heuristics and SearchMonitors" href="metaheuristics.html" />
+    <link rel="prev" title="14.8. SearchMonitors" href="search_monitors.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="consistency.html" title="8.2. Consistency"
+          <a href="metaheuristics.html" title="14.10. Meta-heuristics and SearchMonitors"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../custom_constraints.html" title="8. Custom constraints: the alldifferent_except_0 constraint"
+          <a href="search_monitors.html" title="14.8. SearchMonitors"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../custom_constraints.html" accesskey="U">8. Custom constraints: the <em>alldifferent_except_0</em> constraint</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" accesskey="U">14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,12 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="basic-working-of-the-solver-part-iii">
-<span id="basic-workingiii"></span><h1>8.1. Basic working of the solver: part III</h1>
-<div class="section" id="description">
-<h2>8.1.1. Description</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+  <div class="section" id="local-search-ls">
+<span id="hood-ls"></span><h1>14.9. Local Search (LS)</h1>
 </div>
 
 
@@ -134,22 +130,14 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../custom_constraints.html"
-                        title="previous chapter">8. Custom constraints: the alldifferent_except_0 constraint</a></p>
+  <p class="topless"><a href="../under_the_hood.html"
+                        title="previous chapter">14. Under the hood</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="../custom_constraints.html"
-                        title="previous chapter">8. Custom constraints: the <em>alldifferent_except_0</em> constraint</a></p>
+  <p class="topless"><a href="search_monitors.html"
+                        title="previous chapter">14.8. <tt class="docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="consistency.html"
-                        title="next chapter">8.2. Consistency</a></p>
-  <h3>Current section</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">8.1. Basic working of the solver: part III</a><ul>
-<li><a class="reference internal" href="#description">8.1.1. Description</a></li>
-</ul>
-</li>
-</ul>
-
+  <p class="topless"><a href="metaheuristics.html"
+                        title="next chapter">14.10. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -161,13 +149,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="consistency.html" title="8.2. Consistency"
+          <a href="metaheuristics.html" title="14.10. Meta-heuristics and SearchMonitors"
              >next</a> |</li>
         <li class="right" >
-          <a href="../custom_constraints.html" title="8. Custom constraints: the alldifferent_except_0 constraint"
+          <a href="search_monitors.html" title="14.8. SearchMonitors"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../custom_constraints.html" >8. Custom constraints: the <em>alldifferent_except_0</em> constraint</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" >14. Under the hood</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

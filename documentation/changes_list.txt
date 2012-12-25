@@ -1,4 +1,27 @@
 
+v.0.1.21: (2012-12-24 21:12:04)
+-------------------------------
+* Minor enhancements to the manual:
+  - Minor corrections.
+  - 6.4 corrected.
+* scripts:
+  - in file_module.py:
+    * find_files_in_dirs modified and corrected.
+    * flush_content_in_list added.
+    * is_cplusplus_file added.
+    * insert_front_file added.
+    * append_file added.
+    * file_starts_with added.
+    * find_dirs_and_apply_command added.
+    * find_dirs_and_apply_method added.
+    * find_files_and_apply_method added.
+  - deploy_tutorial.py changed.
+  - include_licence.py added.
+  - clean_tutorials.py, make_tutorials.py added.
+* tutorials:
+  - automatic "testing".
+
+
 v.0.1.20: (2012-12-11 19:04:46)
 -------------------------------
 * Minor enhancements to the manual:

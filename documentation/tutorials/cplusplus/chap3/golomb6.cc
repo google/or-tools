@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// A third implementation.
-// Same as second implementation but we replace the inequality constraints
-// by the more powerful globlal AllDifferent constraint.
+// Tightening of the third model. We add better upper and lower bounds
+// and break a symmetry in the search tree.
 #include <vector>
 #include <sstream>
 
@@ -30,18 +29,30 @@ static const int kG[] = {
   106, 127, 151, 177, 199, 216, 246
 };
 
-static const int kKnownSolutions = 19;
+static const int kKnowSolutions = 19;
 
 namespace operations_research {
 
-void GolombRuler(int n) {
+Constraint * AllDifferent(Solver* s,
+                          const std::vector<std::vector<IntVar *> > & vars) {
+  std::vector<IntVar*> vars_flat;
+  for (int i = 0; i < vars.size(); ++i) {
+    for (int j = 0; j < vars[i].size(); ++j) {
+      if (vars[i][j] != NULL) {
+        vars_flat.push_back(vars[i][j]);
+      }
+    }
+  }
+  return s->MakeAllDifferent(vars_flat);
+}
+
+void GolombRuler(const int n) {
   CHECK_GE(n, 1);
 
   Solver s("golomb");
 
-  // Upper bound on G(n), only valid for n < 65 000
-  CHECK_LT(n, 65000);
-  const int64 max = n * n - 1;
+  CHECK_LE(n, 25);
+  const int64 max = kG[n];
 
   // Variables
   std::vector<IntVar*> X(n + 1);
@@ -52,21 +63,36 @@ void GolombRuler(int n) {
     X[i] = s.MakeIntVar(1, max, StringPrintf("X%03d", i));
   }
 
-  std::vector<IntVar*> Y;
-  for (int i = 1; i <= n; ++i) {
+  std::vector<std::vector<IntVar *> > Y(n + 1, std::vector<IntVar *>(n + 1));
+  for (int i = 1; i < n; ++i) {
     for (int j = i + 1; j <= n; ++j) {
-      IntVar* const diff = s.MakeDifference(X[j], X[i])->Var();
-      Y.push_back(diff);
-      diff->SetMin(1);
+      Y[i][j] = s.MakeDifference(X[j], X[i])->Var();
+      if ((i > 1) || (j < n)) {
+        Y[i][j]->SetMin(kG[j-i +1]);
+      } else {
+        Y[i][j]->SetMin(kG[j-i] + 1);
+      }
     }
   }
 
-  s.AddConstraint(s.MakeAllDifferent(Y));
+  // Constraints
+  s.AddConstraint(s.MakeLess(s.MakeDifference(X[2], X[1])->Var(),
+                             s.MakeDifference(X[n], X[n-1])->Var()));
+
+  s.AddConstraint(AllDifferent(&s, Y));
+
+  for (int i = 1; i < n; ++i) {
+    for (int j = i + 1; j <= n; ++j) {
+      s.AddConstraint(s.MakeLessOrEqual(s.MakeDifference(Y[i][j], X[n])->Var(),
+                                        -(n - 1 - j + i)*(n - j + i)/2));
+    }
+  }
 
   OptimizeVar* const length = s.MakeMinimize(X[n], 1);
 
   SolutionCollector* const collector = s.MakeLastSolutionCollector();
   collector->Add(X);
+
   DecisionBuilder* const db = s.MakePhase(X,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
@@ -87,7 +113,7 @@ void GolombRuler(int n) {
     LOG(INFO) << solution_str.str();
   }
 
-  if (n < kKnownSolutions) {
+  if (n < kKnowSolutions) {
     CHECK_EQ(result, kG[n]);
   }
 }

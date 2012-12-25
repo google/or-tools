@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,11 @@
 //
 // First implementation of the Golomb Ruler Problem.
 //
-// Same as golomb1.cc with some global indicators about the search and
-// use of DebugString().
+// Variables are the differences Y between the marks.
+//
+// Constraints: AllDifferent on Y and inner structure of a Golomb ruler.
+//
+// Use of OptimizeVar and MakeEquality().
 #include <vector>
 #include <sstream>
 
@@ -54,17 +57,14 @@ namespace operations_research {
 
     int index = n - 2;
     IntVar* v2 = NULL;
-    Constraint* c = NULL;
     for (int i = 2; i <= n - 1; ++i) {
        for (int j = 0; j < n-i; ++j) {
          ++index;
          v2 = Y[j];
-         for (int l = j + 1; l <=  j + i - 1 ; ++l) {
-           v2 = s.MakeSum(Y[l], v2)->Var();
+         for (int p = j + 1; p <=  j + i - 1 ; ++p) {
+           v2 = s.MakeSum(Y[p], v2)->Var();
          }
-         c = s.MakeEquality(Y[index], v2);
-         LOG(INFO) << c->DebugString();
-         s.AddConstraint(c);
+         s.AddConstraint(s.MakeEquality(Y[index], v2));
        }
     }
     CHECK_EQ(index, num_vars - 1);

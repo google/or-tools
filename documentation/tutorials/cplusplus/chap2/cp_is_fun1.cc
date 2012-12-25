@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -122,7 +122,7 @@ void CPIsFun() {
 
   solver.AddConstraint(solver.MakeEquality(sum_terms, sum));
 
-  //  Decision Builder: hot to scour the search tree
+  //  Decision Builder: how to scour the search tree
   DecisionBuilder* const db = solver.MakePhase(letters,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);

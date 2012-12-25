@@ -1,4 +1,4 @@
-// Copyright 2012 Google
+// Copyright 2011-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,8 +21,6 @@
 // Use of SolutionCollectors.
 // Use of Solve().
 // Use of gflags to choose the base.
-// Change the time limit of the solver.
-// Use of ExportProfilingOverview().
 
 #include <vector>
 
@@ -32,7 +30,6 @@
 
 DEFINE_int64(base, 10, "Base used to solve the problem.");
 DEFINE_bool(print_all_solutions, false, "Print all solutions?");
-DEFINE_int64(time_limit, 10000, "Time limit in milliseconds");
 
 namespace operations_research {
 
@@ -82,13 +79,8 @@ IntVar* const MakeBaseLine4(Solver* s,
 }
 
 void CPIsFun() {
-  // Use some profiling and change the default parameters of the solver
-  SolverParameters solver_params = SolverParameters();
-  // Change the profile level
-  solver_params.profile_level = SolverParameters::NORMAL_PROFILING;
-
   // Constraint programming engine
-  Solver solver("CP is fun!", solver_params);
+  Solver solver("CP is fun!");
 
   const int64 kBase = FLAGS_base;
 
@@ -145,10 +137,7 @@ void CPIsFun() {
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
 
-  // Add some time limit
-  SearchLimit* const time_limit = solver.MakeTimeLimit(FLAGS_time_limit);
-  
-  solver.Solve(db, all_solutions,time_limit);
+  solver.Solve(db, all_solutions);
 
   //  Retrieve the solutions
   const int numberSolutions = all_solutions->solution_count();
@@ -166,20 +155,8 @@ void CPIsFun() {
       << "T=" << all_solutions->Value(index, t) << " "
       << "R=" << all_solutions->Value(index, r) << " "
       << "E=" << all_solutions->Value(index, e);
-
-      // Is CP + IS + FUN = TRUE?
-      CHECK_EQ(all_solutions->Value(index, p) + all_solutions->Value(index, s) + all_solutions->Value(index, n) +
-        kBase * (all_solutions->Value(index, c) + all_solutions->Value(index, i) + all_solutions->Value(index, u)) +
-        kBase * kBase * all_solutions->Value(index, f),
-                 all_solutions->Value(index, e) +
-                 kBase * all_solutions->Value(index, u) +
-                 kBase * kBase * all_solutions->Value(index, r) +
-                 kBase * kBase * kBase * all_solutions->Value(index, t));
     }
   }
-
-  // Save profile in file
-  solver.ExportProfilingOverview("profile.txt");
 }
 
 }   // namespace operations_research

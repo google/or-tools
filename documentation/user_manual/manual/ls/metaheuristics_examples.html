@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.10. Three implemented meta-heuristics &mdash; or-tools User&#39;s Manual</title>
+    <title>6.9. Three efficient meta-heuristics &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.11. Summary" href="ls_summary.html" />
-    <link rel="prev" title="6.9. Meta-heuristics and SearchMonitors" href="metaheuristics.html" /> 
+    <link rel="next" title="6.10. Summary" href="ls_summary.html" />
+    <link rel="prev" title="6.8. Filtering" href="ls_filtering.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="ls_summary.html" title="6.11. Summary"
+          <a href="ls_summary.html" title="6.10. Summary"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="6.9. Meta-heuristics and SearchMonitors"
+          <a href="ls_filtering.html" title="6.8. Filtering"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -54,21 +54,45 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="three-implemented-meta-heuristics">
-<span id="metaheuristics-examples"></span><h1>6.10. Three implemented meta-heuristics</h1>
-<div class="section" id="tabu-search">
-<h2>6.10.1. Tabu search</h2>
+  <div class="section" id="three-efficient-meta-heuristics">
+<span id="metaheuristics-examples"></span><h1>6.9. Three efficient meta-heuristics</h1>
+<div class="section" id="tabu-search-ts">
+<span id="tabu"></span><h2>6.9.1. Tabu search (TS)</h2>
 <div class="section" id="the-basic-idea">
-<h3>6.10.1.1. The basic idea</h3>
+<h3>6.9.1.1. The basic idea</h3>
+</div>
+<div class="section" id="the-implementation">
+<h3>6.9.1.2. The implementation</h3>
+</div>
+<div class="section" id="first-results">
+<h3>6.9.1.3. First results</h3>
 </div>
 </div>
 <div class="section" id="simulated-annealing">
-<span id="id1"></span><h2>6.10.2. Simulated annealing</h2>
+<span id="id3"></span><h2>6.9.2. Simulated annealing</h2>
+<div class="section" id="id4">
+<h3>6.9.2.1. The basic idea</h3>
+</div>
+<div class="section" id="id5">
+<h3>6.9.2.2. The implementation</h3>
+</div>
+<div class="section" id="id6">
+<h3>6.9.2.3. First results</h3>
+</div>
 </div>
 <div class="section" id="guided-local-search">
-<span id="id2"></span><h2>6.10.3. Guided local search</h2>
+<span id="id7"></span><h2>6.9.3. Guided local search</h2>
+<div class="section" id="id8">
+<h3>6.9.3.1. The basic idea</h3>
+</div>
+<div class="section" id="id9">
+<h3>6.9.3.2. The implementation</h3>
+</div>
+<div class="section" id="id10">
+<h3>6.9.3.3. First results</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 </div>
 
 
@@ -146,20 +170,32 @@ Search:
   <p class="topless"><a href="../LS.html"
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="metaheuristics.html"
-                        title="previous chapter">6.9. Meta-heuristics and <tt class="docutils literal docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
+  <p class="topless"><a href="ls_filtering.html"
+                        title="previous chapter">6.8. Filtering</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="ls_summary.html"
-                        title="next chapter">6.11. Summary</a></p>
+                        title="next chapter">6.10. Summary</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.10. Three implemented meta-heuristics</a><ul>
-<li><a class="reference internal" href="#tabu-search">6.10.1. Tabu search</a><ul>
-<li><a class="reference internal" href="#the-basic-idea">6.10.1.1. The basic idea</a></li>
+<li><a class="reference internal" href="#">6.9. Three efficient meta-heuristics</a><ul>
+<li><a class="reference internal" href="#tabu-search-ts">6.9.1. Tabu search (TS)</a><ul>
+<li><a class="reference internal" href="#the-basic-idea">6.9.1.1. The basic idea</a></li>
+<li><a class="reference internal" href="#the-implementation">6.9.1.2. The implementation</a></li>
+<li><a class="reference internal" href="#first-results">6.9.1.3. First results</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#simulated-annealing">6.10.2. Simulated annealing</a></li>
-<li><a class="reference internal" href="#guided-local-search">6.10.3. Guided local search</a></li>
+<li><a class="reference internal" href="#simulated-annealing">6.9.2. Simulated annealing</a><ul>
+<li><a class="reference internal" href="#id4">6.9.2.1. The basic idea</a></li>
+<li><a class="reference internal" href="#id5">6.9.2.2. The implementation</a></li>
+<li><a class="reference internal" href="#id6">6.9.2.3. First results</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#guided-local-search">6.9.3. Guided local search</a><ul>
+<li><a class="reference internal" href="#id8">6.9.3.1. The basic idea</a></li>
+<li><a class="reference internal" href="#id9">6.9.3.2. The implementation</a></li>
+<li><a class="reference internal" href="#id10">6.9.3.3. First results</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -175,10 +211,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="ls_summary.html" title="6.11. Summary"
+          <a href="ls_summary.html" title="6.10. Summary"
              >next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="6.9. Meta-heuristics and SearchMonitors"
+          <a href="ls_filtering.html" title="6.8. Filtering"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 

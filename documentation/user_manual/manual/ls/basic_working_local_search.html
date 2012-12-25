@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.2. Basic working of the solver: local search &mdash; or-tools User&#39;s Manual</title>
+    <title>6.5. Basic working of the solver: local search &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.3. Local Search Neighborhood (LSN) Operators" href="ls_operators.html" />
-    <link rel="prev" title="6.1. What is local search?" href="local_search.html" /> 
+    <link rel="next" title="6.6. Local Search Neighborhood (LSN) Operators" href="ls_operators.html" />
+    <link rel="prev" title="6.4. What is local search?" href="local_search.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
+          <a href="ls_operators.html" title="6.6. Local Search Neighborhood (LSN) Operators"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="local_search.html" title="6.1. What is local search?"
+          <a href="local_search.html" title="6.4. What is local search?"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -55,18 +55,18 @@
           <div class="body">
             
   <div class="section" id="basic-working-of-the-solver-local-search">
-<span id="basic-working-local-search"></span><h1>6.2. Basic working of the solver: local search</h1>
-<div class="section" id="local-search-mechanism-in-or-tools">
-<span id="local-search-mechanism"></span><h2>6.2.1. Local Search Mechanism in <em>or-tools</em></h2>
-<div class="section" id="the-basic-idea">
-<h3>6.2.1.1. The basic idea</h3>
+<span id="basic-working-local-search"></span><h1>6.5. Basic working of the solver: local search</h1>
+<div class="section" id="overview-of-the-local-search-mechanism-in-or-tools">
+<span id="local-search-mechanism"></span><h2>6.5.1. Overview of the Local Search Mechanism in <em>or-tools</em></h2>
 </div>
-<div class="section" id="first-solution">
-<h3>6.2.1.2. First solution</h3>
-</div>
+<div class="section" id="initial-solution">
+<h2>6.5.2. Initial solution</h2>
 </div>
 <div class="section" id="localsearchphaseparameters">
-<h2>6.2.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></h2>
+<span id="local-search-parameters"></span><h2>6.5.3. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></h2>
+</div>
+<div class="section" id="searchlimits-in-local-search">
+<span id="search-limits-in-local-search"></span><span id="index-0"></span><h2>6.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s in Local Search</h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -147,19 +147,17 @@ Search:
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="local_search.html"
-                        title="previous chapter">6.1. What is local search?</a></p>
+                        title="previous chapter">6.4. What is local search?</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="ls_operators.html"
-                        title="next chapter">6.3. Local Search Neighborhood (LSN) Operators</a></p>
+                        title="next chapter">6.6. Local Search Neighborhood (LSN) Operators</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.2. Basic working of the solver: local search</a><ul>
-<li><a class="reference internal" href="#local-search-mechanism-in-or-tools">6.2.1. Local Search Mechanism in <em>or-tools</em></a><ul>
-<li><a class="reference internal" href="#the-basic-idea">6.2.1.1. The basic idea</a></li>
-<li><a class="reference internal" href="#first-solution">6.2.1.2. First solution</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#localsearchphaseparameters">6.2.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
+<li><a class="reference internal" href="#">6.5. Basic working of the solver: local search</a><ul>
+<li><a class="reference internal" href="#overview-of-the-local-search-mechanism-in-or-tools">6.5.1. Overview of the Local Search Mechanism in <em>or-tools</em></a></li>
+<li><a class="reference internal" href="#initial-solution">6.5.2. Initial solution</a></li>
+<li><a class="reference internal" href="#localsearchphaseparameters">6.5.3. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
+<li><a class="reference internal" href="#searchlimits-in-local-search">6.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s in Local Search</a></li>
 </ul>
 </li>
 </ul>
@@ -175,10 +173,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
+          <a href="ls_operators.html" title="6.6. Local Search Neighborhood (LSN) Operators"
              >next</a> |</li>
         <li class="right" >
-          <a href="local_search.html" title="6.1. What is local search?"
+          <a href="local_search.html" title="6.4. What is local search?"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
