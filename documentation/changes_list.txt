@@ -1,4 +1,10 @@
 
+v.0.1.22: (2012-12-25 14:31:40)
+-------------------------------
+* Minor enhancements to the manual:
+  - 6.6 corrected.
+
+
 v.0.1.22: (2012-12-25 14:17:06)
 -------------------------------
 * Minor enhancements to the manual:
