@@ -54,6 +54,9 @@ item_button.src = "static/icon_show.gif";
 
 <h1>Welcome to the <a href="https://code.google.com/p/or-tools/">or-tools library</a> main documentation hub</h1>
 
+<div align="center">
+<img src="happy-holidays-from-google.jpg"  width="50%"width  alt="" />
+</div>
 
 <div class="note">This is work in progress. Pages will be modified, moved or even removed but at least we are in sync with the code!</div>
 
@@ -92,27 +95,10 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.1.21: (2012-12-24 21:12:04)
+<pre id="verbatim">v.0.1.22: (2012-12-25 14:17:06)
 -------------------------------
 * Minor enhancements to the manual:
-  - Minor corrections.
-  - 6.4 corrected.
-* scripts:
-  - in file_module.py:
-    * find_files_in_dirs modified and corrected.
-    * flush_content_in_list added.
-    * is_cplusplus_file added.
-    * insert_front_file added.
-    * append_file added.
-    * file_starts_with added.
-    * find_dirs_and_apply_command added.
-    * find_dirs_and_apply_method added.
-    * find_files_and_apply_method added.
-  - deploy_tutorial.py changed.
-  - include_licence.py added.
-  - clean_tutorials.py, make_tutorials.py added.
-* tutorials:
-  - automatic "testing".
+  - 6.6 corrected.
 
 </pre>
 
@@ -135,9 +121,9 @@ We also recommend to use the epub version as it is currently the best available 
 <ul>
 <li>Progress at a glance: <a href="#manual_progress">Manual</a> - <a href="#documentation_progress">Documentation generation</a></li>
 <li><a href="user_manual/index.html">Online version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.21.pdf.zip">A4 pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.21.pdf.zip">Letter pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.21.epub.zip">epub version</a> (experimental)</li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.22.pdf.zip">A4 pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.22.pdf.zip">Letter pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.22.epub.zip">epub version</a> (experimental)</li>
 </ul>
 
 <h4 id="progress">Progress at a glance:</h4>
@@ -526,9 +512,30 @@ The following percentages show you the completion status of the manual. Note tha
 <hr>
 <h2 id="tutorial_examples">The tutorial examples</h2>
 <hr>
-<p>You can download all the code at once or pick a single file in the list below. All files are encoded in UTF-8 and we use LF (Unix) newlines (the code is cross-platform though).</p>
-<p>The code is not well documented inside the source files as we explain it in great details in the <a href="#user_manual">user's manual</a>. Some files don't have corresponding
-files in some languages as the features implemented just don't have an equivalent in that languages (for instance, the Google gflags library is missing in Java and C#).</p>
+<p>You can download all the code at once or pick a single file in the list below. All files are encoded in UTF-8 and we use LF (Unix) newlines. The code is cross-platform though.</p>
+<p>The code is not well documented inside the source files as we explain it in great details in the <a href="#user_manual">user's manual</a>. Some files only exist 
+in some languages since some features do not have equivalents in all languages (for instance, the Google gflags library is missing in Java and C#).</p>
+
+<p>Don't be surprised if the code in the manual is slightly different from the code in the tutorials. In the manual, we focus on the essential while the tutorials might
+be more functional. 
+</p>
+
+<h5>Note for the C++ tutorials</h5>
+<p>
+We've filled the code with <code>VLOG(x)</code>s which allow to follow in real time what the programs do. <code>x</code> varies between <code>1</code>
+and <code>4</code>. The higher the value of <code>x</code>, the more detailed informations on screen. You can trigger these logs with the <code>log_level</code>
+gflag:</p>
+
+<div align="center"> <code>./my_wonderful_program -log_level=2</code> </div>
+
+<p>We'll find a similar mechanism for the other languages soon.</p>
+
+<p>Makefiles are (finally) provided. We favour the use of dynamic libraries. 
+See <a href="http://code.google.com/p/or-tools/wiki/AGettingStarted#Compiling_libraries_and_running_examples" >Compiling libraries and running the examples</a> on how
+to use these makefiles.</p>
+
+<p>Last but not least, you might wonder why we don't use (or rather minimize the use of) <code>streams</code> in our examples. This is an internal requirement.</p>
+
 <h5>Coding styles we follow:</h5> 
 <p>
 <dl>
@@ -558,17 +565,17 @@ files in some languages as the features implemented just don't have an equivalen
 <div id="tutorial_C++_block" class="hidden">
 <dl>
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_c++_examples.zip">tutorial_c++_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/c++/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/c++/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a> </dd>
-	<dt>chap3:</dt><dd><a href="tutorials/c++/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/c++/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb5.cc">golomb5.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb6.cc">golomb6.cc</a></dd>
+	<dt>chap2:</dt><dd><a href="tutorials/cplusplus/chap2/Makefile">Makefile</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
+	 <a href="tutorials/cplusplus/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a> </dd>
+	<dt>chap3:</dt><dd><a href="tutorials/cplusplus/chap3/Makefile">Makefile</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
+	 <a href="tutorials/cplusplus/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb5.cc">golomb5.cc</a>
+	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb6.cc">golomb6.cc</a></dd>
 	 <dt>chap4:</dt><dd>-</dd>
 	 <dt>chap5:</dt><dd>-</dd>
 	 <dt>chap6:</dt><dd>-</dd>
 	 <dt>chap7:</dt><dd>-</dd>
 	 <dt>chap8:</dt><dd>-</dd>
-	 <dt>chap9:</dt><dd><a href="tutorials/c++/chap9/tsp.h">tsp.h</a> &nbsp; |  &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsp_epix.h</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsplib.h</a> &nbsp; | &nbsp;
+	 <dt>chap9:</dt><dd>[NOT READY YET]<a href="tutorials/c++/chap9/tsp.h">tsp.h</a> &nbsp; |  &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsp_epix.h</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsplib.h</a> &nbsp; | &nbsp;
 	 <a href="tutorials/c++/chap9/tsplib_solution_to_epix.cc">tsplib_solution_to_epix.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp_minimal.cc">tsp_minimal.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp.cc">tsp.cc</a> &nbsp; 
 	  | &nbsp;	<a href="tutorials/c++/chap9/tsp_forbidden_arcs.cc">tsp_forbidden_arcs.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp_exact.cc">tsp_exact.cc</a>
 	  &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw.h">tsptw.h</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw_epix.h">tsptw_epix.h</a> 
