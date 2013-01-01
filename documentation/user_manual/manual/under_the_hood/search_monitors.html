@@ -56,8 +56,80 @@
             
   <div class="section" id="searchmonitors">
 <span id="hood-search-monitors"></span><h1>14.8. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h1>
+<div class="section" id="list-of-callbacks">
+<h2>14.8.1. List of callbacks</h2>
+<div class="section" id="for-one-phase">
+<h3>14.8.1.1. For one phase</h3>
+</div>
+<div class="section" id="for-local-search">
+<h3>14.8.1.2. For local search</h3>
+</div>
+</div>
+<div class="section" id="ending-or-restarting-the-current-search">
+<h2>14.8.2. Ending or restarting the current <tt class="docutils literal"><span class="pre">Search</span></tt></h2>
+<p>XXXXXXXXXXXXXXXXxxxx</p>
+<blockquote>
+<div><p>// Beginning of the search.
+virtual void EnterSearch();</p>
+<p>// Restart the search.
+virtual void RestartSearch();</p>
+<p>// End of the search.
+virtual void ExitSearch();</p>
+<p>// Before calling DecisionBuilder::Next
+virtual void BeginNextDecision(DecisionBuilder* const b);</p>
+<p>// After calling DecisionBuilder::Next, along with the returned decision.
+virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d);</p>
+<p>// Before applying the decision
+virtual void ApplyDecision(Decision* const d);</p>
+<p>// Before refuting the Decision
+virtual void RefuteDecision(Decision* const d);</p>
+<p>// Just after refuting or applying the decision, apply is true after Apply.
+// This is called only if the Apply() or Refute() methods have not failed.
+virtual void AfterDecision(Decision* const d, bool apply);</p>
+<p>// Just when the failure occurs.
+virtual void BeginFail();</p>
+<p>// After completing the backtrack.
+virtual void EndFail();</p>
+<p>// Before the initial propagation.
+virtual void BeginInitialPropagation();</p>
+<p>// After the initial propagation.
+virtual void EndInitialPropagation();</p>
+<p>// This method is called when a solution is found. It asserts of the
+// solution is valid. A value of false indicate that the solution
+// should be discarded.
+virtual bool AcceptSolution();</p>
+<p>// This method is called when a valid solution is found. If the
+// return value is true, then search will resume after. If the result
+// is false, then search will stop there.
+virtual bool AtSolution();</p>
+<p>// When the search tree is finished.
+virtual void NoMoreSolutions();</p>
+<p>// When a local optimum is reached. If &#8216;true&#8217; is returned, the last solution
+// is discarded and the search proceeds with the next one.
+virtual bool LocalOptimum();</p>
+<p>//
+virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);</p>
+<p>// After accepting a neighbor during local search.
+virtual void AcceptNeighbor();</p>
+<p>Solver* solver() const</p>
+<p>// Tells the solver to kill the current search.
+void FinishCurrentSearch();</p>
+<p>// Tells the solver to restart the current search.
+void RestartCurrentSearch();</p>
+<p>// Periodic call to check limits in long running methods.
+virtual void PeriodicCheck();</p>
+<p>// Returns a percentage representing the propress of the search before
+// reaching limits.
+virtual int ProgressPercent() { return kNoProgress; }</p>
+<p>// Accepts the given model visitor.
+virtual void Accept(ModelVisitor* const visitor) const;</p>
+<p>// Registers itself on the solver such that it gets notified of the search
+// and propagation events.
+virtual void Install();</p>
+</div></blockquote>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 
 
           </div>
@@ -139,6 +211,19 @@ Search:
   <h3>Next section</h3>
   <p class="topless"><a href="ls.html"
                         title="next chapter">14.9. Local Search (LS)</a></p>
+  <h3>Current section</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">14.8. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
+<li><a class="reference internal" href="#list-of-callbacks">14.8.1. List of callbacks</a><ul>
+<li><a class="reference internal" href="#for-one-phase">14.8.1.1. For one phase</a></li>
+<li><a class="reference internal" href="#for-local-search">14.8.1.2. For local search</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ending-or-restarting-the-current-search">14.8.2. Ending or restarting the current <tt class="docutils literal"><span class="pre">Search</span></tt></a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>

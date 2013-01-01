@@ -57,7 +57,7 @@
   <div class="section" id="anatomy-of-a-basic-c-code">
 <span id="anatomy-c"></span><h1>2.3. Anatomy of a basic C++ code</h1>
 <p>In this section, we code the model developed in <a class="reference internal" href="cryptarithmetic.html#cryptarithmetic-problem"><em>The problem and a first model</em></a>.</p>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun1.cc">tutorials/C++/chap2/cp_is_fun1.cc</a></p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap2/cp_is_fun1.cc">tutorials/cplusplus/chap2/cp_is_fun1.cc</a></p>
 <p>We quickly scan through the code and describe the basic constituents needed to solve
 the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of them
 in more details.</p>
@@ -336,7 +336,7 @@ a solution was found and <tt class="docutils literal"><span class="pre">false</s
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>We print out the found solution and check if it is valid:</p>
+<p>We print out the found solution and check if it is valid<a class="footnote-reference" href="#solution-not-necessarily-feasible" id="id5">[4]</a>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">NextSolution</span><span class="p">())</span> <span class="p">{</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;C=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;P=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">p</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span>
@@ -365,6 +365,16 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
 </div>
 <p>We check the validity of the solution <em>after</em> printing: if the solution is not valid, we can see what
 was found by the solver.</p>
+<table class="docutils footnote" frame="void" id="solution-not-necessarily-feasible" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Actually and contrary to the intuition, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt>
+doesn&#8217;t return a feasible solution per se. It all depends of the involved <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. The solver
+considers any leaf of the search tree as a solution if it doesn&#8217;t fail (i.e.
+if it is accepted by several control mechanisms). See the section <a class="reference internal" href="../search_primitives/basic_working_search_algorithm.html#basic-working-search-algorithm"><em>Basic working of the solver: the search algorithm</em></a> for more
+details.</td></tr>
+</tbody>
+</table>
 <p>To obtain all the solutions, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> can be called repeatedly:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">while</span> <span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">NextSolution</span><span class="p">())</span> <span class="p">{</span>
   <span class="c1">// Do something with the current solution</span>

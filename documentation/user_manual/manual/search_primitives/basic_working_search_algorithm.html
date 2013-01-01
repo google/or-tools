@@ -305,6 +305,16 @@ We find this so important that we reuse our warning box:</p>
 </div>
 <p>We use exceptions in our simplified version while the actual implementation uses
 the more efficient (and cryptic) <tt class="docutils literal"><span class="pre">setjmp</span> <span class="pre">-</span> <span class="pre">longjmp</span></tt> mechanism.</p>
+<p>We describe briefly what <em>nested searches</em> are in the section <a class="reference internal" href="basic_working_phases.html#nested-searches"><em>Nested searches</em></a> but you will have to wait until
+the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a> and the section <a class="reference internal" href="../under_the_hood/search.html#under-the-hood-nested-search"><em>Nested searches</em></a> to learn the juicy details<a class="footnote-reference" href="#wait-to-read-under-the-hood-nested-search" id="id5">[4]</a>.</p>
+<table class="docutils footnote" frame="void" id="wait-to-read-under-the-hood-nested-search" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Of course, you can have a peak right now but some more background
+will probably help you understand this mechanism better. Beside, you don&#8217;t need to understand the inner mechanism to
+be able to use nested search!</td></tr>
+</tbody>
+</table>
 <p>To follow the main search algorithm, it is best to know in what states the solver
 can be. The <tt class="docutils literal"><span class="pre">enum</span></tt> <tt class="docutils literal"><span class="pre">SolverState</span></tt> enumerates the possibilities in the following table:</p>
 <table border="1" class="docutils">
@@ -344,14 +354,7 @@ can be. The <tt class="docutils literal"><span class="pre">enum</span></tt> <tt 
 version of the main search algorithm. The <tt class="docutils literal"><span class="pre">Search</span></tt> class is used
 internally to monitor the search. Because the CP solver allows nested
 searches, we take a pointer to the current search object each time we
-call the <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> methods.
-We do not show this nested search mechanism here<a class="footnote-reference" href="#more-about-nested-searches" id="id5">[4]</a>.</p>
-<table class="docutils footnote" frame="void" id="more-about-nested-searches" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>More about the nested mechanism in section XXX.</td></tr>
-</tbody>
-</table>
+call the <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> methods.</p>
 <div class="highlight-c++"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -756,6 +759,18 @@ called by <tt class="docutils literal"><span class="pre">NextSolution()</span></
 <p>Finally, the current state of the solver is set and the method <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> returns if a solution has been found
 and accepted by <strong>all</strong> <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s or there is no solution anymore. It then returns <tt class="docutils literal"><span class="pre">true</span></tt> if the <tt class="docutils literal"><span class="pre">test</span></tt> above
 is <tt class="docutils literal"><span class="pre">true</span></tt>, <tt class="docutils literal"><span class="pre">false</span></tt> otherwise.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">A solution is defined as a leaf of the search tree with respect to the given <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+for which there is no failure. What this means is that, contrary to
+intuition, a solution may not have all variables of the model bound. It is
+the responsibility of the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to keep returning decisions
+until all variables are indeed bound. The most extreme counterexample is
+calling <tt class="docutils literal"><span class="pre">Solve()</span></tt> with a trivial <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> whose <tt class="docutils literal"><span class="pre">Next()</span></tt> method always
+returns <tt class="docutils literal"><span class="pre">NULL</span></tt>. In this case, <tt class="docutils literal"><span class="pre">Solve()</span></tt> immediately returns <tt class="docutils literal"><span class="pre">true</span></tt>, since not
+assigning any variable to any value is a solution, unless the root node
+propagation discovers that the model is infeasible.</p>
+</div>
 </div>
 <div class="section" id="endsearch">
 <h3>5.3.3.3. <tt class="docutils literal"><span class="pre">EndSearch()</span></tt></h3>

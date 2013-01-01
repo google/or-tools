@@ -56,13 +56,13 @@
             
   <div class="section" id="an-implementation-of-the-disjunctive-model">
 <span id="jobshop-implementation-disjunctive-model"></span><h1>6.2. An implementation of the disjunctive model</h1>
+<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap6/jobshop.h">tutorials/cplusplus/chap6/jobshop.h</a> and <a class="reference external" href="../../../tutorials/cplusplus/chap6/jobshop.cc">tutorials/cplusplus/chap6/jobshop.cc</a>.</p>
 <p>Scheduling is one of the field where Constraint Programming is heavily used,
 therefore specialized constraints and variables have been developed. In this section,
 we will implement the disjunctive model with dedicated variables (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and
 <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>) and constraints (<tt class="docutils literal"><span class="pre">IntervalBinaryRelation</span></tt> and <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>).</p>
 <p>Last but not least, we will see our first real example of combining two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 in a top-down fashion.</p>
-<p>You can find the code in the file <tt class="file docutils literal"><span class="pre">jobshop.cc</span></tt>.</p>
 <div class="section" id="the-intervalvar-variables">
 <h2>6.2.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</h2>
 <p>We create one <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> for each task. An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> represents one
