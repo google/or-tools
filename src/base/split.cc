@@ -40,7 +40,7 @@ void SplitStringToIteratorUsing(const std::string& full,
         ++p;
       } else {
         const char* start = p;
-        while (++p != end && *p != c);
+        while (++p != end && *p != c) { }
         *result++ = std::string(start, p - start);
       }
     }

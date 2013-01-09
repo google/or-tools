@@ -81,6 +81,13 @@ ifdef UNIX_GRB_DIR
   GRB_SWIG = $(GRB_INC)
 endif
 
+ifeq ($(UNIX_SCIP_TAG),3.0.0)
+  SCIP_30 = TRUE
+endif
+ifeq ($(UNIX_SCIP_TAG),3.0.1)
+  SCIP_30 = TRUE
+endif
+
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG) $(GRB_SWIG)
 
 # Compilation flags
@@ -142,7 +149,7 @@ ifeq ($(PLATFORM),LINUX)
     else
       SCIP_ARCH = linux.x86.gnu.opt
     endif
-    ifeq ($(UNIX_SCIP_TAG),3.0.0)
+    ifeq ($(SCIP_30),TRUE)
       STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     else
       STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
@@ -236,7 +243,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
-    ifeq ($(UNIX_SCIP_TAG),3.0.0)
+    ifeq ($(SCIP_30),TRUE)
       STATIC_SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     else
       STATIC_SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a

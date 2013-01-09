@@ -140,6 +140,11 @@ void CycleTimer::Start() {
   time_in_us_ = WallTimer::GetTimeInMicroSeconds();
 }
 
+void CycleTimer::Restart() {
+  Reset();
+  Start();
+}
+
 void CycleTimer::Stop() {
   DCHECK_EQ(STARTED, state_);
   state_ = STOPPED;
@@ -149,6 +154,10 @@ void CycleTimer::Stop() {
 void CycleTimer::Reset() {
   state_ = INIT;
   time_in_us_ = 0;
+}
+
+inline int64 CycleTimer::GetCycles() const {
+  return CycleTimerBase::UsecToCycles(GetInUsec());
 }
 
 int64 CycleTimer::GetInUsec() const {

@@ -19,7 +19,7 @@
 #include <ext/hash_map>
 #include <ext/hash_set>
 namespace operations_research {
-  using namespace __gnu_cxx;
+  using namespace __gnu_cxx;  // NOLINT
 }  // namespace operations_research
 #else
 #include <hash_map>
@@ -31,31 +31,33 @@ namespace operations_research {
 #include "base/basictypes.h"
 
 namespace operations_research {
-static inline void mix(uint32& a, uint32& b, uint32& c) {     // 32bit version
-  a -= b; a -= c; a ^= (c>>13);
-  b -= c; b -= a; b ^= (a<<8);
-  c -= a; c -= b; c ^= (b>>13);
-  a -= b; a -= c; a ^= (c>>12);
-  b -= c; b -= a; b ^= (a<<16);
-  c -= a; c -= b; c ^= (b>>5);
-  a -= b; a -= c; a ^= (c>>3);
-  b -= c; b -= a; b ^= (a<<10);
-  c -= a; c -= b; c ^= (b>>15);
+// 32 bit version.
+static inline void mix(uint32& a, uint32& b, uint32& c) {  // NOLINT
+  a -= b; a -= c; a ^= (c >> 13);
+  b -= c; b -= a; b ^= (a << 8);
+  c -= a; c -= b; c ^= (b >> 13);
+  a -= b; a -= c; a ^= (c >> 12);
+  b -= c; b -= a; b ^= (a << 16);
+  c -= a; c -= b; c ^= (b >> 5);
+  a -= b; a -= c; a ^= (c >> 3);
+  b -= c; b -= a; b ^= (a << 10);
+  c -= a; c -= b; c ^= (b >> 15);
 }
 
-static inline void mix(uint64& a, uint64& b, uint64& c) {     // 64bit version
-  a -= b; a -= c; a ^= (c>>43);
-  b -= c; b -= a; b ^= (a<<9);
-  c -= a; c -= b; c ^= (b>>8);
-  a -= b; a -= c; a ^= (c>>38);
-  b -= c; b -= a; b ^= (a<<23);
-  c -= a; c -= b; c ^= (b>>5);
-  a -= b; a -= c; a ^= (c>>35);
-  b -= c; b -= a; b ^= (a<<49);
-  c -= a; c -= b; c ^= (b>>11);
-  a -= b; a -= c; a ^= (c>>12);
-  b -= c; b -= a; b ^= (a<<18);
-  c -= a; c -= b; c ^= (b>>22);
+// 64 bit version.
+static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
+  a -= b; a -= c; a ^= (c >> 43);
+  b -= c; b -= a; b ^= (a << 9);
+  c -= a; c -= b; c ^= (b >> 8);
+  a -= b; a -= c; a ^= (c >> 38);
+  b -= c; b -= a; b ^= (a << 23);
+  c -= a; c -= b; c ^= (b >> 5);
+  a -= b; a -= c; a ^= (c >> 35);
+  b -= c; b -= a; b ^= (a << 49);
+  c -= a; c -= b; c ^= (b >> 11);
+  a -= b; a -= c; a ^= (c >> 12);
+  b -= c; b -= a; b ^= (a << 18);
+  c -= a; c -= b; c ^= (b >> 22);
 }
 }  // namespace operations_research
 #if !defined(SWIG)
@@ -74,7 +76,7 @@ template<> struct hash<std::string> {
     size_t hash = 0;
     int c;
     const char* s = x.c_str();
-    while ((c = *s++)) {
+    while (c = *s++) {
       hash = ((hash << 5) + hash) ^ c;
     }
     return hash;
@@ -99,7 +101,7 @@ struct hash<std::pair<First, Second> > {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
-    return (sizeof(h1) <= sizeof(uint32)) ?
+    return (sizeof(h1) <= sizeof(uint32)) ?  // NOLINT
         Hash32NumWithSeed(h1, h2)
         : Hash64NumWithSeed(h1, h2);
   }

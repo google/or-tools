@@ -520,6 +520,7 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/cached_log.$O \
 	$(OBJ_DIR)/const_int_array.$O \
 	$(OBJ_DIR)/graph_export.$O \
+	$(OBJ_DIR)/stats.$O \
 	$(OBJ_DIR)/xml_helper.$O
 
 $(OBJ_DIR)/bitset.$O:$(SRC_DIR)/util/bitset.cc
@@ -533,6 +534,9 @@ $(OBJ_DIR)/const_int_array.$O:$(SRC_DIR)/util/const_int_array.cc
 
 $(OBJ_DIR)/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/graph_export.cc $(OBJ_OUT)graph_export.$O
+
+$(OBJ_DIR)/stats.$O:$(SRC_DIR)/util/stats.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)stats.$O
 
 $(OBJ_DIR)/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)xml_helper.$O
@@ -563,7 +567,7 @@ $(OBJ_DIR)/cliques.$O:$(SRC_DIR)/graph/cliques.cc
 $(OBJ_DIR)/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)connectivity.$O
 
-$(OBJ_DIR)/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc
+$(OBJ_DIR)/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/max_flow.cc $(OBJ_OUT)max_flow.$O
 
 $(OBJ_DIR)/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
@@ -698,13 +702,10 @@ endif
 # DIMACS challenge problem format library
 
 DIMACS_LIB_OBJS=\
-	$(OBJ_DIR)/parse_dimacs_assignment.$O\
-	$(OBJ_DIR)/print_dimacs_assignment.$O
+	$(OBJ_DIR)/parse_dimacs_assignment.$O
 
 $(OBJ_DIR)/parse_dimacs_assignment.$O:$(EX_DIR)/cpp/parse_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)parse_dimacs_assignment.$O
-$(OBJ_DIR)/print_dimacs_assignment.$O:$(EX_DIR)/cpp/print_dimacs_assignment.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/print_dimacs_assignment.cc $(OBJ_OUT)print_dimacs_assignment.$O
 
 $(LIB_DIR)/$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX): $(DIMACS_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX) $(DIMACS_LIB_OBJS)

@@ -39,14 +39,17 @@ class WallTimer {
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
 };
 
-// This class of timer is very precise and potentially more expensive than
-// the WallTimer class.
+// This class is currently using the same counter as the WallTimer class, but
+// is supposed to use the cpu cycle counter.
+// TODO(user): Implement it properly.
 class CycleTimer {
  public:
   CycleTimer();
   void Reset();
   void Start();
+  void Restart();
   void Stop();
+  int64 GetCycles() const;
   int64 GetInUsec() const;
   int64 GetInMs() const;
  private:
@@ -58,5 +61,19 @@ class CycleTimer {
   int64 time_in_us_;
   State state_;
 };
+
+// As for the CycleTimer, this is not using the real cycle unit, and just
+// assumes one usec per cycle.
+class CycleTimerBase {
+ public:
+  static double CyclesToSeconds(int64 cycles) {
+    return static_cast<double>(cycles) / 1000000.0;
+  }
+
+  static int64 UsecToCycles(int64 usec) {
+    return usec;
+  }
+};
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_TIMER_H_

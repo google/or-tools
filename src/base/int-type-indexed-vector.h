@@ -66,7 +66,7 @@
 
 // STL vector ------------------------------------------------------------------
 template<typename IntType, typename T, typename Alloc = std::allocator<T> >
-  class ITIVector : protected std::vector<T, Alloc> {
+class ITIVector : protected std::vector<T, Alloc> {
  public:
   typedef std::vector<T, Alloc> ParentType;
   typedef typename ParentType::size_type size_type;
