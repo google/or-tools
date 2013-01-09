@@ -530,6 +530,12 @@ template <typename GraphType> class LinearSumAssignment {
   // The number of nodes on the left side of the graph we are given.
   NodeIndex num_left_nodes_;
 
+  // A flag indicating, after FinalizeSetup() has run, whether the
+  // arc-incidence precondition required by BestArcAndGap() is
+  // satisfied by every left-side node. If not, the problem is
+  // infeasible.
+  bool incidence_precondition_satisfied_;
+
   // A flag indicating that an optimal perfect matching has been computed.
   bool success_;
 
@@ -875,7 +881,7 @@ template <typename GraphType> class LinearSumAssignment {
     // price_lower_bound_ and slack_relabeling_price_, and have a
     // pencil handy. :-)
     const double result =
-        static_cast<double>(std::max<CostValue>(0, n / 2 - 1)) *
+        static_cast<double>(std::max<CostValue>(1, n / 2 - 1)) *
         static_cast<double>(old_epsilon + new_epsilon);
     const double limit =
         static_cast<double>(std::numeric_limits<CostValue>::max());
@@ -1241,10 +1247,12 @@ bool LinearSumAssignment<GraphType>::Refine() {
 // cost of best_arc must be increased to make it equal in reduced cost
 // to another residual arc incident to left_node.
 //
-// Precondition: left_node is unmatched. This allows us to simplify
-// the code. The debug-only counterpart to this routine is
-// LinearSumAssignment::ImplicitPrice() and it does not assume this
-// precondition.
+// Precondition: left_node is unmatched and has at least one incident
+// arc. This allows us to simplify the code. The debug-only
+// counterpart to this routine is LinearSumAssignment::ImplicitPrice()
+// and it assumes there is an incident arc but does not assume the
+// node is unmatched. The condition that each left node has at least
+// one incident arc is explicitly computed during FinalizeSetup().
 //
 // This function is large enough that our suggestion that the compiler
 // inline it might be pointless.
@@ -1283,14 +1291,15 @@ LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
 }
 
 // Only for debugging.
+//
+// Requires the precondition, explicitly computed in FinalizeSetup(),
+// that every left-side node has at least one incident arc.
 template <typename GraphType> inline CostValue
 LinearSumAssignment<GraphType>::ImplicitPrice(NodeIndex left_node) const {
   DCHECK_GT(num_left_nodes_, left_node);
   DCHECK_GT(epsilon_, 0);
   typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
-  // If the input problem is feasible, it is always the case that
-  // arc_it.Ok(), i.e., that there is at least one arc incident to
-  // left_node.
+  // We must not execute this method if left_node has no incident arc.
   DCHECK(arc_it.Ok());
   ArcIndex best_arc = arc_it.Index();
   if (best_arc == matched_arc_[left_node]) {
@@ -1373,6 +1382,7 @@ bool LinearSumAssignment<GraphType>::EpsilonOptimal() const {
 
 template <typename GraphType>
 bool LinearSumAssignment<GraphType>::FinalizeSetup() {
+  incidence_precondition_satisfied_ = true;
   // epsilon_ must be greater than kMinEpsilon so that in the case
   // where the largest arc cost is zero, we still do a Refine()
   // iteration.
@@ -1380,7 +1390,8 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
                       kMinEpsilon + 1);
   VLOG(2) << "Largest given cost magnitude: " <<
       largest_scaled_cost_magnitude_ / cost_scaling_factor_;
-  // Initialize left-side node-indexed arrays.
+  // Initialize left-side node-indexed arrays and check incidence
+  // precondition.
   typename GraphType::NodeIterator node_it(*graph_);
   for (; node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
@@ -1388,6 +1399,10 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
       break;
     }
     matched_arc_.Set(node, GraphType::kNilArc);
+    typename GraphType::OutgoingArcIterator arc_it(*graph_, node);
+    if (!arc_it.Ok()) {
+      incidence_precondition_satisfied_ = false;
+    }
   }
   // Initialize right-side node-indexed arrays. Example: prices are
   // stored only for right-side nodes.
@@ -1443,10 +1458,11 @@ bool LinearSumAssignment<GraphType>::ComputeAssignment() {
   // is idempotent and reasonably fast, so we call it unconditionally
   // here.
   FinalizeSetup();
+  ok = ok && incidence_precondition_satisfied_;
   DCHECK(!ok || EpsilonOptimal());
   while (ok && epsilon_ > kMinEpsilon) {
-    ok &= UpdateEpsilon();
-    ok &= Refine();
+    ok = ok && UpdateEpsilon();
+    ok = ok && Refine();
     ReportAndAccumulateStats();
     DCHECK(!ok || EpsilonOptimal());
     DCHECK(!ok || AllMatched());

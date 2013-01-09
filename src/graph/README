@@ -53,5 +53,4 @@ graph directory.
 Python examples are available in the python directory alongside the
 graph library.
 
-Java examples are available in the
-/java/com/google/wrappers/util/operationsresearch directory.
+Java examples are available in the examples/com/google/ortools directory.

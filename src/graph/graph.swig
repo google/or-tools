@@ -32,26 +32,42 @@
 %rename(addArc) operations_research::EbertGraphBase::AddArc;
 
 // Rename rules on MaxFlow.
-%rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
-%rename (getSinkNodeIndex) operations_research::MaxFlow::GetSinkNodeIndex;
-%rename (setArcCapacity) operations_research::MaxFlow::SetArcCapacity;
-%rename (setArcFlow) operations_research::MaxFlow::SetArcFlow;
-%rename (solve) operations_research::MaxFlow::Solve;
-%rename (getOptimalFlow) operations_research::MaxFlow::GetOptimalFlow;
-%rename (flow) operations_research::MaxFlow::Flow;
-%rename (capacity) operations_research::MaxFlow::Capacity;
+%rename (getSourceNodeIndex) operations_research::GenericMaxFlow::GetSourceNodeIndex;
+%rename (getSinkNodeIndex) operations_research::GenericMaxFlow::GetSinkNodeIndex;
+%rename (setArcCapacity) operations_research::GenericMaxFlow::SetArcCapacity;
+%rename (setArcFlow) operations_research::GenericMaxFlow::SetArcFlow;
+%rename (solve) operations_research::GenericMaxFlow::Solve;
+%rename (getOptimalFlow) operations_research::GenericMaxFlow::GetOptimalFlow;
+%rename (flow) operations_research::GenericMaxFlow::Flow;
+%rename (capacity) operations_research::GenericMaxFlow::Capacity;
 
 // Rename rules on MinCostFlow.
-%rename(setNodeSupply) operations_research::MinCostFlow::SetNodeSupply;
-%rename(setArcUnitCost) operations_research::MinCostFlow::SetArcUnitCost;
-%rename(setArcCapacity) operations_research::MinCostFlow::SetArcCapacity;
-%rename(setArcFlow) operations_research::MinCostFlow::SetArcFlow;
-%rename(solve) operations_research::MinCostFlow::Solve;
-%rename(getOptimalCost) operations_research::MinCostFlow::GetOptimalCost;
-%rename(flow) operations_research::MinCostFlow::Flow;
-%rename(capacity) operations_research::MinCostFlow::Capacity;
-%rename(cost) operations_research::MinCostFlow::Cost;
-%rename(supply) operations_research::MinCostFlow::Supply;
+%rename(setNodeSupply) operations_research::GenericMinCostFlow::SetNodeSupply;
+%rename(setArcUnitCost) operations_research::GenericMinCostFlow::SetArcUnitCost;
+%rename(setArcCapacity) operations_research::GenericMinCostFlow::SetArcCapacity;
+%rename(setArcFlow) operations_research::GenericMinCostFlow::SetArcFlow;
+%rename(solve) operations_research::GenericMinCostFlow::Solve;
+%rename(getOptimalCost) operations_research::GenericMinCostFlow::GetOptimalCost;
+%rename(flow) operations_research::GenericMinCostFlow::Flow;
+%rename(capacity) operations_research::GenericMinCostFlow::Capacity;
+%rename(cost) operations_research::GenericMinCostFlow::Cost;
+%rename(supply) operations_research::GenericMinCostFlow::Supply;
+
+// Rename rules on SimpleMinCostFlow.
+%rename(addArc) operations_research::SimpleMinCostFlow::AddArc;
+%rename(setNodeSupply) operations_research::SimpleMinCostFlow::SetNodeSupply;
+%rename(setArcUnitCost) operations_research::SimpleMinCostFlow::SetArcUnitCost;
+%rename(setArcCapacity) operations_research::SimpleMinCostFlow::SetArcCapacity;
+%rename(setArcFlow) operations_research::SimpleMinCostFlow::SetArcFlow;
+%rename(solve) operations_research::SimpleMinCostFlow::Solve;
+%rename(getOptimalCost) operations_research::SimpleMinCostFlow::GetOptimalCost;
+%rename(getArcFlow) operations_research::SimpleMinCostFlow::Flow;
+%rename(getNumNodes) operations_research::SimpleMinCostFlow::NumNodes;
+%rename(getNumArcs) operations_research::SimpleMinCostFlow::NumArcs;
+%rename(getArcTail) operations_research::SimpleMinCostFlow::Tail;
+%rename(getArcHead) operations_research::SimpleMinCostFlow::Head;
+%rename(getArcUnitCost) operations_research::SimpleMinCostFlow::UnitCost;
+%rename(getNodeSupply) operations_research::SimpleMinCostFlow::Supply;
 
 // Rename rules on LinearSumAssignment.
 %rename(setCostScalingDivisor) operations_research::LinearSumAssignment::SetCostScalingDivisor;
@@ -111,3 +127,5 @@
 %template(ForwardStarStaticGraph) operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
 %template(ForwardEbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(EbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(MaxFlow) operations_research::GenericMaxFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(MinCostFlow) operations_research::GenericMinCostFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
