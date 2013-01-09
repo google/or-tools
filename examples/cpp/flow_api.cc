@@ -64,7 +64,7 @@ void MaxFeasibleFlow() {
   const NodeIndex kTail[kNumArcs] = { 0, 0, 0, 0, 1, 2, 3, 3, 4 };
   const NodeIndex kHead[kNumArcs] = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };
   const FlowQuantity kCapacity[kNumArcs] = { 5, 8, 5, 3, 4, 5, 6, 6, 4 };
-  const FlowQuantity kExpectedFlow[kNumArcs] = { 4, 4, 2, 0, 4, 4, 0, 6, 4 };
+  const FlowQuantity kExpectedFlow[kNumArcs] = { 1, 1, 5, 3, 1, 1, 0, 6, 4 };
   const FlowQuantity kExpectedTotalFlow = 10;
   StarGraph graph(kNumNodes, kNumArcs);
   MaxFlow max_flow(&graph, 0, kNumNodes - 1);
@@ -88,4 +88,3 @@ int main(int argc, char **argv) {
   operations_research::MaxFeasibleFlow();
   return 0;
 }
-
