@@ -327,12 +327,6 @@ class RoutingModel {
   // Note: passing a vector with a single node will model an optional node
   // with a penalty cost if it is not visited.
   void AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty);
-#if defined(SWIGPYTHON)
-  void AddDisjunctionWithPenalty(const std::vector<NodeIndex>& nodes,
-                                 int64 penalty) {
-    AddDisjunction(nodes, penalty);
-  }
-#endif  // SWIGPYTHON
   // Returns the index of the disjunction to which a node belongs; if it doesn't
   // belong to a disjunction, the function returns false, true otherwise.
   bool GetDisjunctionIndexFromNode(NodeIndex node,

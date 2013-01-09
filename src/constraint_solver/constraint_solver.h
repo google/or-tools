@@ -356,6 +356,7 @@ class Solver {
   typedef ResultCallback1<int64, int64> IndexEvaluator1;
   typedef ResultCallback2<int64, int64, int64> IndexEvaluator2;
   typedef ResultCallback3<int64, int64, int64, int64> IndexEvaluator3;
+#ifndef SWIG
   typedef ResultCallback2<IntExpr*,
                           CPModelLoader*,
                           const CPIntegerExpressionProto&>
@@ -371,6 +372,7 @@ class Solver {
                           CPModelLoader*,
                           const CPSequenceVariableProto&>
       SequenceVariableBuilder;
+#endif  // SWIG
 
   // Holds semantic information stating that the 'expression' has been
   // cast into 'variable' using the Var() method, and that
@@ -1098,7 +1100,6 @@ class Solver {
       std::vector<IntVar*>* const secondary_integer_variables,
       std::vector<SequenceVar*>* const sequence_variables,
       std::vector<IntervalVar*>* const interval_variables);
-#endif  // SWIG
 
   // Registers a constraint builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
@@ -1118,7 +1119,7 @@ class Solver {
       const string& tag) const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const string& tag) const;
   SequenceVariableBuilder* GetSequenceVariableBuilder(const string& tag) const;
-
+#endif  // SWIG
 
   // When SaveValue() is not the best way to go, one can create a reversible
   // action that will be called upon backtrack. The "fast" parameter
