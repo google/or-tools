@@ -99,10 +99,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Linear programming example with Sulum ----";
   RunLinearProgrammingExample(MPSolver::SULUM_LINEAR_PROGRAMMING);
 #endif  // USE_SLM
-#if defined(USE_GRB)
+#if defined(USE_GUROBI)
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
-#endif  // USE_GRB
+#endif  // USE_GUROBI
 }
 }  // namespace operations_research
 

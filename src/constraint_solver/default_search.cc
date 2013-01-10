@@ -116,10 +116,10 @@ class FindVar : public DecisionVisitor {
     valid_ = false;
   }
 
-  // Indicates whether name and value can be called.
+  // Indicates whether var() and value() can be called.
   bool valid() { return valid_; }
 
-  // Returns the name of the current variable.
+  // Returns the current variable.
   IntVar* const var() const {
     CHECK(valid_);
     return var_;
@@ -157,7 +157,7 @@ class InitVarImpacts : public DecisionBuilder {
         update_impact_closure_(
             NewPermanentCallback(this, &InitVarImpacts::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_.get());
+    CHECK_NOTNULL(update_impact_closure_);
   }
 
   virtual ~InitVarImpacts() {}
@@ -288,7 +288,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
         update_impact_closure_(NewPermanentCallback(
             this, &InitVarImpactsWithSplits::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_.get());
+    CHECK_NOTNULL(update_impact_closure_);
   }
 
   virtual ~InitVarImpactsWithSplits() {}
@@ -700,10 +700,10 @@ class RestartMonitor : public SearchMonitor {
  public:
   RestartMonitor(Solver* const solver,
                  DefaultPhaseParameters parameters,
-                 DomainWatcher* const domain_watcher_)
+                 DomainWatcher* const domain_watcher)
       : SearchMonitor(solver),
         parameters_(parameters),
-        domain_watcher_(domain_watcher_),
+        domain_watcher_(domain_watcher),
         min_log_search_space_(std::numeric_limits<double>::infinity()),
         no_good_manager_(parameters_.restart_log_size >= 0 &&
                          parameters_.use_no_goods ?
@@ -894,7 +894,7 @@ class RestartMonitor : public SearchMonitor {
       // completely explored. The choice list contains the refute
       // branch. This one should be reverted.
       //
-      // It can also happens that we are failing in the apply
+      // It can also happen that we are failing in the apply
       // branch. In that case, we do not need to revert it.
       DCHECK(!choices_.Last()->left());
       const bool last_left = choices_.Last()->left();
@@ -1094,8 +1094,8 @@ class RunHeuristicsAsDives : public Decision {
   }
 
  private:
-  // This class wrap one heuristics with extra information: name and
-  // number of repetitions when it is run.
+  // This class wraps one heuristic with extra information: name and
+  // number of runs.
   struct HeuristicWrapper {
     HeuristicWrapper(Solver* const solver,
                      const std::vector<IntVar*>& vars,
@@ -1131,6 +1131,8 @@ class RunHeuristicsAsDives : public Decision {
 // Default phase decision builder.
 class DefaultIntegerSearch : public DecisionBuilder {
  public:
+  static const double kSmallSearchSpaceLimit;
+
   DefaultIntegerSearch(Solver* const solver,
                        const std::vector<IntVar*>& vars,
                        const DefaultPhaseParameters& parameters)
@@ -1225,7 +1227,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         }
       }
       // No if the search space is too small.
-      if (domain_watcher_.LogSearchSpaceSize() < 10) {
+      if (domain_watcher_.LogSearchSpaceSize() < kSmallSearchSpaceLimit) {
         if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
@@ -1245,8 +1247,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                   << parameters_.run_all_heuristics
                   << ", restart_log_size = " << parameters_.restart_log_size;
       }
-      // We need to reset the impacts because FirstRun calls RemoveValues
-      // which can result in a Fail() therefore calling this method again.
+      // Init the impacts.
       impact_recorder_.FirstRun(parameters_.initialization_splits);
     }
     if (parameters_.persistent_impact) {
@@ -1259,15 +1260,15 @@ class DefaultIntegerSearch : public DecisionBuilder {
   bool FindVarValue(IntVar** const var, int64* const value) {
     switch (parameters_.search_strategy) {
       case DefaultPhaseParameters::IMPACT_BASED_SEARCH:
-        return FindVarValueWithImpact(var, value);
+        return FindUnboundVarValueWithImpact(var, value);
       case DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN:
-        return FindVarValueNoImpact(var, value);
+        return FindUnboundVarValueNoImpact(var, value);
       case DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN:
-        return FindVarValueMinSize(var, value);
+        return FindUnboundVarValueMinSize(var, value);
       case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN:
-        return FindVarValueRandom(var, value, true);
+        return FindUnboundVarValueRandom(var, value, true);
       case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX:
-        return FindVarValueRandom(var, value, false);
+        return FindUnboundVarValueRandom(var, value, false);
     }
     return false;
   }
@@ -1276,7 +1277,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
   // minimal impact.
-  bool FindVarValueWithImpact(IntVar** const var, int64* const value) {
+  bool FindUnboundVarValueWithImpact(IntVar** const var, int64* const value) {
     CHECK_NOTNULL(var);
     CHECK_NOTNULL(value);
     *var = NULL;
@@ -1301,7 +1302,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     return (*var != NULL);
   }
 
-  bool FindVarValueNoImpact(IntVar** const var, int64* const value) {
+  bool FindUnboundVarValueNoImpact(IntVar** const var, int64* const value) {
     CHECK_NOTNULL(var);
     CHECK_NOTNULL(value);
     *var = NULL;
@@ -1316,7 +1317,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     return false;
   }
 
-  bool FindVarValueMinSize(IntVar** const found_var, int64* const value) {
+  bool FindUnboundVarValueMinSize(IntVar** const found_var,
+                                  int64* const value) {
     CHECK_NOTNULL(found_var);
     CHECK_NOTNULL(value);
     *found_var = NULL;
@@ -1329,6 +1331,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         if (var->Size() < best_size ||
             (var->Size() == best_size && var->Min() < best_min)) {
           best_size = var->Size();
+          best_min = var->Min();
           *value = var->Min();
           *found_var = var;
         }
@@ -1337,9 +1340,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
     return *found_var != NULL;
   }
 
-  bool FindVarValueRandom(IntVar** const found_var,
-                          int64* const value,
-                          bool assign_min) {
+  bool FindUnboundVarValueRandom(IntVar** const found_var,
+                                 int64* const value,
+                                 bool assign_min) {
     CHECK_NOTNULL(found_var);
     CHECK_NOTNULL(value);
     *found_var = NULL;
@@ -1347,7 +1350,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     const int size = vars_.size();
     const int shift = heuristics_.Rand32(size);
     for (int i = 0; i < size; ++i) {
-      const int index = (i + shift) % size;
+      const int index = (i + shift) < size ? i + shift : i + shift - size;
       IntVar* const var = vars_[index];
       if (!var->Bound()) {
         *found_var = var;
@@ -1368,6 +1371,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
   RestartMonitor restart_monitor_;
   bool init_done_;
 };
+
+const double DefaultIntegerSearch::kSmallSearchSpaceLimit = 10.0;
 }  // namespace
 
 // ---------- API ----------

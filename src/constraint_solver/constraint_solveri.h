@@ -66,6 +66,7 @@
 #include "base/timer.h"
 #include "base/join.h"
 #include "base/bitmap.h"
+#include "base/sparse_hash.h"
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -635,6 +636,60 @@ Demon* MakeConstraintDemon2(Solver* const s,
                                               param1,
                                               param2));
 }
+// Demon proxy to a method on the constraint with three arguments.
+template <class T, class P, class Q, class R> class CallMethod3 : public Demon {
+ public:
+  CallMethod3(T* const ct,
+              void (T::*method)(P, Q, R),
+              const string& name,
+              P param1,
+              Q param2,
+              R param3)
+      : constraint_(ct),
+        method_(method),
+        name_(name),
+        param1_(param1),
+        param2_(param2),
+        param3_(param3) {}
+
+  virtual ~CallMethod3() {}
+
+  virtual void Run(Solver* const s) {
+    (constraint_->*method_)(param1_, param2_, param3_);
+  }
+
+  virtual string DebugString() const {
+    return StrCat(StrCat("CallMethod_", name_),
+                  StrCat("(", constraint_->DebugString()),
+                  StrCat(", ", param1_),
+                  StrCat(", ", param2_),
+                  StrCat(", ", param3_, ")"));
+  }
+
+ private:
+  T* const constraint_;
+  void (T::* const method_)(P, Q, R);
+  const string name_;
+  P param1_;
+  Q param2_;
+  R param3_;
+};
+
+template <class T, class P, class Q, class R>
+Demon* MakeConstraintDemon3(Solver* const s,
+                            T* const ct,
+                            void (T::*method)(P, Q, R),
+                            const string& name,
+                            P param1,
+                            Q param2,
+                            R param3) {
+  return s->RevAlloc(new CallMethod3<T, P, Q, R>(ct,
+                                                 method,
+                                                 name,
+                                                 param1,
+                                                 param2,
+                                                 param3));
+}
 // @}
 
 // @{
@@ -812,7 +867,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
   IntVarLocalSearchOperator();
   IntVarLocalSearchOperator(const IntVar* const* vars, int size);
-  IntVarLocalSearchOperator(const std::vector<IntVar*>& vars);
+  explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars);
   virtual ~IntVarLocalSearchOperator();
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
@@ -843,6 +898,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   void Deactivate(int64 index);
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
+  void AddVars(const IntVar* const* vars, int size);
 
  protected:
   // Creates a new neighbor. It returns false when the neighborhood is
@@ -851,13 +907,11 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   // MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
   virtual bool MakeOneNeighbor();
 
-  void AddVars(const IntVar* const* vars, int size);
+ private:
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // IntVarLocalSearchOperator::Start explicitly.
   virtual void OnStart() {}
-
- private:
   void MarkChange(int64 index);
 
   scoped_array<IntVar*> vars_;
@@ -962,7 +1016,7 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
 class BaseLNS : public IntVarLocalSearchOperator {
  public:
   BaseLNS(const IntVar* const* vars, int size);
-  BaseLNS(const std::vector<IntVar*>& vars);
+  explicit BaseLNS(const std::vector<IntVar*>& vars);
   virtual ~BaseLNS();
   virtual void InitFragments();
   virtual bool NextFragment(std::vector<int>* fragment) = 0;
@@ -1180,7 +1234,7 @@ class LocalSearchFilter : public BaseObject {
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   IntVarLocalSearchFilter(const IntVar* const* vars, int size);
-  IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
+  explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter();
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
@@ -1204,7 +1258,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   scoped_array<IntVar*> vars_;
   scoped_array<int64> values_;
   int size_;
-  hash_map<const IntVar*, int64> var_to_index_;
+  dense_hash_map<const IntVar*, int64> var_to_index_;
 };
 
 // ---------- PropagationMonitor ----------
@@ -1314,6 +1368,7 @@ inline int64 CapSub(int64 left, int64 right) {
 }
 
 inline int64 CapOpp(int64 v) {
+  // Note: -kint64min != kint64max.
   return v == kint64min ? kint64max : -v;
 }
 
@@ -1497,6 +1552,8 @@ class ModelCache {
   explicit ModelCache(Solver* const solver);
   virtual ~ModelCache();
 
+  virtual void Clear() = 0;
+
   // Void constraints.
 
   virtual Constraint* FindVoidConstraint(VoidConstraintType type) const = 0;
@@ -1531,7 +1588,7 @@ class ModelCache {
       int64 value2,
       VarConstantConstantConstraintType type) = 0;
 
-  // Var Var Constraints.
+  // Expr Expr Constraints.
 
   virtual Constraint* FindExprExprConstraint(
       IntExpr* const expr1,
@@ -1543,7 +1600,7 @@ class ModelCache {
                                       IntExpr* const expr2,
                                       ExprExprConstraintType type) = 0;
 
-  // Var Expressions.
+  // Expr Expressions.
 
   virtual IntExpr* FindExprExpression(
       IntExpr* const expr,
@@ -1553,7 +1610,7 @@ class ModelCache {
                                     IntExpr* const expr,
                                     ExprExpressionType type) = 0;
 
-   // Expr Constant Expressions.
+  // Expr Constant Expressions.
 
   virtual IntExpr* FindExprConstantExpression(
       IntExpr* const expr,
@@ -1840,9 +1897,16 @@ class ModelParser : public ModelVisitor {
 };
 #endif  // SWIG
 
+// This class is a reversible growing array. In can grow in both
+// directions, and even accept negative indices.  The objects stored
+// have a type T. As it relies on the solver for reversibility, these
+// objects can be up-casted to 'C' when using Solver::SaveValue().
 template <class T, class C> class RevGrowingArray {
  public:
-RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
+  explicit RevGrowingArray(int64 block_size)
+      : block_size_(block_size), block_offset_(0) {
+    CHECK_GT(block_size, 0);
+  }
 
   ~RevGrowingArray() {
     for (int i = 0; i < elements_.size(); ++i) {
@@ -1852,12 +1916,12 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
 
   T At(int64 index) const {
     const int64 block_index = ComputeBlockIndex(index);
-    if (block_index < block_offset_ ||
-        block_index - block_offset_ >= elements_.size()) {
-      return 0;
+    const int64 relative_index = block_index - block_offset_;
+    if (relative_index < 0 || relative_index >= elements_.size()) {
+      return T();
     }
-    const T* block = elements_[block_index - block_offset_];
-    return block != NULL ? block[index - block_index * block_size_] : 0;
+    const T* block = elements_[relative_index];
+    return block != NULL ? block[index - block_index * block_size_] : T();
   }
 
   void RevInsert(Solver* const solver, int64 index, T value) {
@@ -1872,7 +1936,7 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
   T* NewBlock() const {
     T* const result = new T[block_size_];
     for (int i = 0; i < block_size_; ++i) {
-      result[i] = 0;
+      result[i] = T();
     }
     return result;
   }
@@ -1906,16 +1970,9 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
 
   void GrowDown(int64 block_index) {
     const int64 delta = block_offset_ - block_index;
-    const int old_size = elements_.size();
     block_offset_ = block_index;
     DCHECK_GT(delta, 0);
-    elements_.resize(old_size + delta);
-    for (int i = old_size - 1; i >=0; --i) {
-      elements_[i + delta] = elements_[i];
-    }
-    for (int i = 0; i < delta; ++i) {
-      elements_[i] = NULL;
-    }
+    elements_.insert(elements_.begin(), delta, NULL);
   }
 
   const int64 block_size_;
@@ -1923,26 +1980,42 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
   int block_offset_;
 };
 
-// ----- RevIntMap -----
+// ----- RevIntSet -----
 
-template <class T> class RevIntMap {
+// This is a special class to represent a 'residual' set of T. T must
+// be an integer type.  You fill it at first, and then during search,
+// you can efficiently remove an element, and query the removed
+// elements.
+template <class T> class RevIntSet {
  public:
-  RevIntMap(const int capacity)
+  static const int kNoInserted = -1;
+
+  // Capacity is the fixed size of the set (it cannot grow).
+  explicit RevIntSet(int capacity)
   : elements_(new T[capacity]),
     num_elements_(0),
     capacity_(capacity),
     position_(new int[capacity]),
-    delete_position_(true) {}
+    delete_position_(true) {
+    for (int i = 0; i < capacity; ++i) {
+      position_[i] = kNoInserted;
+    }
+  }
 
-  RevIntMap(const int capacity, int* shared_positions)
+  // Capacity is the fixed size of the set (it cannot grow).
+  RevIntSet(int capacity, int* shared_positions)
   : elements_(new T[capacity]),
     num_elements_(0),
     capacity_(capacity),
     position_(shared_positions),
-    delete_position_(false) {}
+    delete_position_(false) {
+    for (int i = 0; i < capacity; ++i) {
+      position_[i] = kNoInserted;
+    }
+  }
 
 
-  ~RevIntMap() {
+  ~RevIntSet() {
     if (delete_position_) {
       delete [] position_;
     }
@@ -1964,20 +2037,21 @@ template <class T> class RevIntMap {
     return elements_[i + num_elements_.Value()];
   }
 
-  void Insert(Solver* const solver, T elt) {
+  void Insert(Solver* const solver, const T& elt) {
     const int position = num_elements_.Value();
-    DCHECK_LT(position, capacity_);
+    DCHECK_LT(position, capacity_);  // Valid.
+    DCHECK_EQ(position_[elt], kNoInserted);  // Not already added.
     elements_[position] = elt;
     position_[elt] = position;
     num_elements_.Incr(solver);
   }
 
-  void Remove(Solver* const solver, T value_index) {
+  void Remove(Solver* const solver, const T& value_index) {
     num_elements_.Decr(solver);
     SwapTo(value_index, num_elements_.Value());
   }
 
-  void Restore(Solver* const solver, T value_index) {
+  void Restore(Solver* const solver, const T& value_index) {
     SwapTo(value_index, num_elements_.Value());
     num_elements_.Incr(solver);
   }
@@ -1998,10 +2072,15 @@ template <class T> class RevIntMap {
     }
   }
 
-  scoped_array<T> elements_; // set of elements.
-  NumericalRev<int> num_elements_; // number of elements in the set.
+  // Set of elements.
+  scoped_array<T> elements_;
+  // Number of elements in the set.
+  NumericalRev<int> num_elements_;
+  // Number of elements in the set.
   const int capacity_;
-  int* position_;  // Reverse mapping.
+  // Reverse mapping.
+  int* position_;
+  // Does the set owns the position array.
   const bool delete_position_;
 };
 
@@ -2009,21 +2088,22 @@ template <class T> class RevIntMap {
 
 class RevPartialSequence {
  public:
-  RevPartialSequence(const std::vector<int>& items)
+  explicit RevPartialSequence(const std::vector<int>& items)
       : elements_(items),
         first_ranked_(0),
-        last_ranked_(0),
+        last_ranked_(items.size() - 1),
         size_(items.size()),
         position_(new int[size_]) {
     for (int i = 0; i < size_; ++i) {
+      elements_[i] = items[i];
       position_[i] = i;
     }
   }
 
-  RevPartialSequence(int size)
+  explicit RevPartialSequence(int size)
       : elements_(size),
         first_ranked_(0),
-        last_ranked_(0),
+        last_ranked_(size - 1),
         size_(size),
         position_(new int[size_]) {
     for (int i = 0; i < size_; ++i) {
@@ -2034,9 +2114,9 @@ class RevPartialSequence {
 
   ~RevPartialSequence() {}
 
-  int FirstRanked() const { return first_ranked_.Value(); }
+  int NumFirstRanked() const { return first_ranked_.Value(); }
 
-  int LastRanked() const { return last_ranked_.Value(); }
+  int NumLastRanked() const { return size_ - 1 - last_ranked_.Value(); }
 
   int Size() const { return size_; }
 
@@ -2049,21 +2129,21 @@ class RevPartialSequence {
 #endif
 
   void RankFirst(Solver* const solver, int elt) {
-    DCHECK_LE(first_ranked_.Value() + last_ranked_.Value(), size_);
+    DCHECK_LE(first_ranked_.Value(), last_ranked_.Value());
     SwapTo(elt, first_ranked_.Value());
     first_ranked_.Incr(solver);
   }
 
   void RankLast(Solver* const solver, int elt) {
-    DCHECK_LE(first_ranked_.Value() + last_ranked_.Value(), size_);
-    SwapTo(elt, size_ - 1 - last_ranked_.Value());
-    last_ranked_.Incr(solver);
+    DCHECK_LE(first_ranked_.Value(), last_ranked_.Value());
+    SwapTo(elt, last_ranked_.Value());
+    last_ranked_.Decr(solver);
   }
 
   bool IsRanked(int elt) const {
     const int position = position_[elt];
     return (position < first_ranked_.Value() ||
-            position > size_ - 1 - last_ranked_.Value());
+            position > last_ranked_.Value());
   }
 
   string DebugString() const {
@@ -2075,16 +2155,14 @@ class RevPartialSequence {
       }
     }
     result.append("|");
-    for (int i = first_ranked_.Value();
-         i <= size_ - 1 - last_ranked_.Value();
-         ++i) {
+    for (int i = first_ranked_.Value(); i <= last_ranked_.Value(); ++i) {
       result.append(StringPrintf("%d", elements_[i]));
-      if (i != size_ - 1 - last_ranked_.Value()) {
+      if (i != last_ranked_.Value()) {
         result.append("-");
       }
     }
     result.append("|");
-    for (int i = size_ - last_ranked_.Value(); i < size_; ++i) {
+    for (int i = last_ranked_.Value() + 1; i < size_; ++i) {
       result.append(StringPrintf("%d", elements_[i]));
       if (i != size_ - 1) {
         result.append("-");
@@ -2106,22 +2184,56 @@ class RevPartialSequence {
     }
   }
 
-  std::vector<int> elements_; // set of elements.
-  NumericalRev<int> first_ranked_; // number of elements in the set.
-  NumericalRev<int> last_ranked_; // number of elements in the set.
+  // Set of elements.
+  std::vector<int> elements_;
+  // Position of the element after the last element ranked from the start.
+  NumericalRev<int> first_ranked_;
+  // Position of the element before the last element ranked from the end.
+  NumericalRev<int> last_ranked_;
+  // Number of elements in the sequence.
   const int size_;
-  scoped_array<int> position_;  // Reverse mapping.
+  // Reverse mapping.
+  scoped_array<int> position_;
 };
 
 // ---------- Helpers ----------
 
-template<class T> bool AreAllOnes(const std::vector<T> values) {
+// ----- On integer vectors -----
+
+template <class T> bool IsArrayConstant(const std::vector<T>& values,
+                                        const T& value) {
   for (int i = 0; i < values.size(); ++i) {
-    if (values[i] != 1) {
+    if (values[i] != value) {
       return false;
     }
   }
   return true;
+}
+
+template<class T> bool AreAllOnes(const std::vector<T>& values) {
+  return IsArrayConstant(values, T(1));
+}
+
+template<class T> bool AreAllNull(const std::vector<T>& values) {
+  return IsArrayConstant(values, T(0));
+}
+
+template<class T> bool AreAllGreaterOrEqual(const std::vector<T>& values,
+                                            const T& value) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] < value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template<class T> bool AreAllPositive(const std::vector<T>& values) {
+  return AreAllGreaterOrEqual(values, T(0));
+}
+
+template<class T> bool AreAllStrictlyPositive(const std::vector<T>& values) {
+  return AreAllGreaterOrEqual(values, T(1));
 }
 
 template <class T> bool IsIncreasingContiguous(const std::vector<T>& values) {
@@ -2132,6 +2244,8 @@ template <class T> bool IsIncreasingContiguous(const std::vector<T>& values) {
   }
   return true;
 }
+
+// ----- On integer variable vector -----
 
 template <class T> bool IsArrayInRange(const std::vector<IntVar*>& vars,
                                        T range_min, T range_max) {
@@ -2153,42 +2267,8 @@ inline bool AreAllBound(const std::vector<IntVar*>& vars) {
 }
 
 inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
-  for (int i = 0; i < vars.size(); ++i) {
-    const IntVar* var = vars[i];
-    if (var->Min() < 0 || var->Max() > 1) {
-      return false;
-    }
-  }
-  return true;
+  return IsArrayInRange(vars, 0, 1);
 }
-
-template<class T> bool AreAllNull(const std::vector<T>& values) {
-  for (int i = 0; i < values.size(); ++i) {
-    if (values[i] != 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<class T> bool AreAllPositive(const std::vector<T>& values) {
-  for (int i = 0; i < values.size(); ++i) {
-    if (values[i] < 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<class T> bool AreAllStrictlyPositive(const std::vector<T>& values) {
-  for (int i = 0; i < values.size(); ++i) {
-    if (values[i] <= 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
 
 template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
                                           const std::vector<T>& values) {
@@ -2200,6 +2280,8 @@ template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
   return true;
 }
 
+// ----- Arithmetic operations -----
+
 inline int64 PosIntDivUp(int64 e, int64 v) {
   if (e >= 0) {
     return (e + v - 1) / v;
@@ -2207,12 +2289,9 @@ inline int64 PosIntDivUp(int64 e, int64 v) {
     return -(-e / v);
   }
 }
+
 inline int64 PosIntDivDown(int64 e, int64 v) {
-  if (e >= 0) {
-    return e / v;
-  } else {
-    return (e - v + 1) / v;
-  }
+  return -PosIntDivUp(-e, v);
 }
 }  // namespace operations_research
 

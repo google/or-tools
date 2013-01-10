@@ -1503,38 +1503,69 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    int64 card_min,
                                    int64 card_max,
                                    int64 card_size) {
-  CHECK_NE(vars.size(), 0);
-  std::vector<int64> mins(card_size, card_min);
-  std::vector<int64> maxes(card_size, card_max);
+  const int vsize = vars.size();
+  CHECK_NE(vsize, 0);
   for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
-  return RevAlloc(
-      new BoundedFastDistribute(this, vars.data(), vars.size(), mins, maxes));
+  if (card_min == 0 && card_max >= vsize) {
+    return MakeTrueConstraint();
+  } else if (card_min > vsize || card_max < 0 || card_max < card_min) {
+    return MakeFalseConstraint();
+  } else {
+    std::vector<int64> mins(card_size, card_min);
+    std::vector<int64> maxes(card_size, card_max);
+    return RevAlloc(
+        new BoundedFastDistribute(this, vars.data(), vars.size(), mins, maxes));
+  }
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& card_min,
                                    const std::vector<int64>& card_max) {
-  CHECK_NE(vars.size(), 0);
-  CHECK_EQ(card_min.size(), card_max.size());
-  return RevAlloc(new BoundedFastDistribute(this,
-                                            vars.data(),
-                                            vars.size(),
-                                            card_min,
-                                            card_max));
+  const int vsize = vars.size();
+  CHECK_NE(vsize, 0);
+  int64 cmax = kint64max;
+  int64 cmin = kint64min;
+  for (int i = 0; i < card_max.size(); ++i) {
+    cmax = std::min(cmax, card_max[i]);
+    cmin = std::max(cmin, card_min[i]);
+  }
+  if (cmax < 0 || cmin > vsize) {
+    return MakeFalseConstraint();
+  } else if (cmax >= vsize && cmin == 0) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new BoundedFastDistribute(this,
+                                              vars.data(),
+					      vars.size(),
+                                              card_min,
+                                              card_max));
+  }
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& card_min,
                                    const std::vector<int>& card_max) {
-  CHECK_NE(vars.size(), 0);
-  CHECK_EQ(card_min.size(), card_max.size());
-  return RevAlloc(new BoundedFastDistribute(this,
-                                            vars.data(),
-                                            vars.size(),
-                                            card_min,
-                                            card_max));
+  const int vsize = vars.size();
+  CHECK_NE(vsize, 0);
+  int cmax = kint32max;
+  int cmin = kint32min;
+  for (int i = 0; i < card_max.size(); ++i) {
+    cmax = std::min(cmax, card_max[i]);
+    cmin = std::max(cmin, card_min[i]);
+  }
+  if (cmax < 0 || cmin > vsize) {
+    return MakeFalseConstraint();
+  } else if (cmax >= vsize && cmin == 0) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new BoundedFastDistribute(this,
+                                              vars.data(),
+                                              vars.size(),
+                                              card_min,
+                                              card_max));
+  }
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,

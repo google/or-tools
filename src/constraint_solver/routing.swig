@@ -266,28 +266,29 @@ class NodeEvaluator2 {
     int64 capacity,
     const string& name);
 
+%ignore operations_research::RoutingModel::SetSweepArranger;
+
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
+                          bool fix_start_cumul_to_zero,
                           const string& name) {
     DCHECK_EQ(values.size(), self->nodes());
-    self->AddVectorDimension(values.data(), capacity, name);
+    self->AddVectorDimension(values.data(), capacity,
+                             fix_start_cumul_to_zero, name);
+  }
+
+  void SetSweepArrangerPoints(const std::vector<int>& points) {
+    self->SetSweepArranger(new operations_research::SweepArranger(points));
   }
 }
-
-#ifdef SWIGPYTHON
-// Disambiguate AddDisjunction.
-%ignore operations_research::RoutingModel::AddDisjunction(
-    const std::vector<NodeIndex>& nodes,
-    int64 penalty);
-#endif
 
 %ignore operations_research::RoutingModel::WrapIndexEvaluator(
     Solver::IndexEvaluator2* evaluator);
 
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
-    const std::vector<pair<NodeIndex, NodeIndex> >& start_end);
+    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 #ifdef SWIGJAVA
 %rename (solve) Solve;

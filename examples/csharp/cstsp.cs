@@ -74,7 +74,11 @@ class Tsp
     }
 
     // Add dummy dimension to test API.
-    routing.AddDimension(new ConstantCallback(), size + 1, size + 1, "dummy");
+    routing.AddDimension(new ConstantCallback(),
+                         size + 1,
+                         size + 1,
+                         true,
+                         "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     Assignment solution = routing.Solve();

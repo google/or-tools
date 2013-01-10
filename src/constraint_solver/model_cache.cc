@@ -134,6 +134,18 @@ template <class C, class A1> class Cache1 {
     delete [] array_;
   }
 
+  void Clear() {
+    for (int i = 0; i < size_; ++i) {
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
+      array_[i] = NULL;
+    }
+  }
+
   C* Find(const A1& a1) const {
     uint64 code = Hash1(a1) % size_;
     Cell* tmp = array_[code];
@@ -209,6 +221,18 @@ template <class C, class A1, class A2> class Cache2 {
       }
     }
     delete [] array_;
+  }
+
+  void Clear() {
+    for (int i = 0; i < size_; ++i) {
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
+      array_[i] = NULL;
+    }
   }
 
   C* Find(const A1& a1, const A2& a2) const {
@@ -289,6 +313,18 @@ template <class C, class A1, class A2, class A3> class Cache3 {
     delete [] array_;
   }
 
+  void Clear() {
+    for (int i = 0; i < size_; ++i) {
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
+      array_[i] = NULL;
+    }
+  }
+
   C* Find(const A1& a1, const A2& a2, const A3& a3) const {
     uint64 code = Hash3(a1, a2, a3) % size_;
     Cell* tmp = array_[code];
@@ -362,7 +398,8 @@ class NonReversibleCache : public ModelCache {
   typedef Cache2<IntExpr, IntExpr*, int64> ExprConstantIntExprCache;
   typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
   typedef Cache2<IntExpr, IntVar*, ConstIntArray*> VarConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar*>, ConstIntArray*> VarArrayConstantArrayIntExprCache;
+  typedef Cache2<IntExpr, std::vector<IntVar*>, ConstIntArray*>
+      VarArrayConstantArrayIntExprCache;
   typedef Cache2<IntExpr, std::vector<IntVar*>, int64> VarArrayConstantIntExprCache;
 
   typedef Cache3<IntExpr, IntVar*, int64, int64>
@@ -425,6 +462,42 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&var_array_expressions_);
     STLDeleteElements(&var_array_constant_array_expressions_);
     STLDeleteElements(&var_array_constant_expressions_);
+  }
+
+  virtual void Clear() {
+    for (int i = 0; i < VAR_CONSTANT_CONSTRAINT_MAX; ++i) {
+      var_constant_constraints_[i]->Clear();
+    }
+    for (int i = 0; i < EXPR_EXPR_CONSTRAINT_MAX; ++i) {
+      expr_expr_constraints_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX; ++i) {
+      var_constant_constant_constraints_[i]->Clear();
+    }
+    for (int i = 0; i < EXPR_EXPRESSION_MAX; ++i) {
+      expr_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < EXPR_CONSTANT_EXPRESSION_MAX; ++i) {
+      expr_constant_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < EXPR_EXPR_EXPRESSION_MAX; ++i) {
+      expr_expr_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_CONSTANT_CONSTANT_EXPRESSION_MAX; ++i) {
+      var_constant_constant_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_CONSTANT_ARRAY_EXPRESSION_MAX; ++i) {
+      var_constant_array_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_ARRAY_EXPRESSION_MAX; ++i) {
+      var_array_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX; ++i) {
+      var_array_constant_array_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < VAR_ARRAY_CONSTANT_EXPRESSION_MAX; ++i) {
+      var_array_constant_expressions_[i]->Clear();
+    }
   }
 
   // Void Constraint.-
@@ -557,7 +630,7 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
-   // Expr Constant Expressions.
+  // Expr Constant Expressions.
 
   virtual IntExpr* FindExprConstantExpression(
       IntExpr* const expr,
@@ -765,7 +838,8 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarConstantConstantIntExprCache*> var_constant_constant_expressions_;
   std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
   std::vector<VarArrayIntExprCache*> var_array_expressions_;
-  std::vector<VarArrayConstantArrayIntExprCache*> var_array_constant_array_expressions_;
+  std::vector<VarArrayConstantArrayIntExprCache*>
+      var_array_constant_array_expressions_;
   std::vector<VarArrayConstantIntExprCache*> var_array_constant_expressions_;
 };
 }  // namespace

@@ -70,10 +70,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Integer programming example with SCIP ----";
   RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
   #endif
-  #if defined(USE_GRB)
+  #if defined(USE_GUROBI)
   LOG(INFO) << "---- Integer programming example with Gurobi ----";
   RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_GRB
+  #endif  // USE_GUROBI
 }
 }  // namespace operations_research
 

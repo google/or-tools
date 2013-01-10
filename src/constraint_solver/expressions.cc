@@ -236,6 +236,8 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const var_;
   };
 
+  // This class monitors the domain of the variable and updates the
+  // IsEqual/IsDifferent boolean variables accordingly.
   class ValueWatcher : public Constraint {
    public:
     class WatchDemon : public Demon {
@@ -255,7 +257,8 @@ class DomainIntVar : public IntVar {
 
     class VarDemon : public Demon {
      public:
-      VarDemon(ValueWatcher* const watcher) : value_watcher_(watcher) {}
+      explicit VarDemon(ValueWatcher* const watcher)
+          : value_watcher_(watcher) {}
       virtual ~VarDemon() {}
 
       virtual void Run(Solver* const solver) {
@@ -294,7 +297,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    ~ValueWatcher() {}
+    virtual ~ValueWatcher() {}
 
     IntVar* GetOrMakeValueWatcher(int64 value) {
       IntVar* const watcher = watchers_.At(value);
@@ -484,6 +487,9 @@ class DomainIntVar : public IntVar {
     NumericalRev<int> active_watchers_;
   };
 
+  // This class watches the bounds of the variable and updates the
+  // IsGreater/IsGreaterOrEqual/IsLess/IsLessOrEqual demons
+  // accordingly.
   class BoundWatcher : public Constraint {
    public:
     class WatchDemon : public Demon {
@@ -503,7 +509,8 @@ class DomainIntVar : public IntVar {
 
     class VarDemon : public Demon {
      public:
-      VarDemon(BoundWatcher* const watcher) : value_watcher_(watcher) {}
+      explicit VarDemon(BoundWatcher* const watcher)
+          : value_watcher_(watcher) {}
       virtual ~VarDemon() {}
 
       virtual void Run(Solver* const solver) {
@@ -542,7 +549,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    ~BoundWatcher() {}
+    virtual ~BoundWatcher() {}
 
     IntVar* GetOrMakeBoundWatcher(int64 value) {
       IntVar* const watcher = watchers_.At(value);
@@ -891,8 +898,8 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint*  SetIsGreaterOrEqual(const std::vector<int64>& values,
-                                   const std::vector<IntVar*>& vars) {
+  Constraint* SetIsGreaterOrEqual(const std::vector<int64>& values,
+                                  const std::vector<IntVar*>& vars) {
     if (bound_watcher_ == NULL) {
       solver()->SaveAndSetValue(
           reinterpret_cast<void**>(&bound_watcher_),
@@ -1987,7 +1994,7 @@ class BooleanVar : public IntVar {
     }
     if (constant == 1) {
       return this;
-    } else { // constant == 0.
+    } else {  // constant == 0.
       return solver()->MakeDifference(1, this)->Var();
     }
   }
@@ -1998,7 +2005,7 @@ class BooleanVar : public IntVar {
     }
     if (constant == 1) {
       return solver()->MakeDifference(1, this)->Var();
-    } else { // constant == 0.
+    } else {  // constant == 0.
       return this;
     }
   }
@@ -3532,6 +3539,7 @@ class SubIntExpr : public BaseIntExpr {
 
   IntExpr* left() const { return left_; }
   IntExpr* right() const { return right_; }
+
  protected:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -3632,8 +3640,8 @@ class SubIntCstExpr : public BaseIntExpr {
 };
 
 IntVar* SubIntCstExpr::CastToVar() {
-  if (SubOverflows(value_, -expr_->Min())
-      || SubUnderflows(value_, -expr_->Max())) {
+  if (SubOverflows(value_, expr_->Min())
+      || SubUnderflows(value_, expr_->Max())) {
     return BaseIntExpr::CastToVar();
   }
   Solver* const s = solver();
@@ -3747,7 +3755,7 @@ class TimesPosIntCstExpr : public TimesIntCstExpr {
     CHECK_GT(v, 0);
   }
 
-  virtual ~TimesPosIntCstExpr(){}
+  virtual ~TimesPosIntCstExpr() {}
 
   virtual int64 Min() const {
     return expr_->Min() * value_;
@@ -3782,6 +3790,8 @@ class TimesPosIntCstExpr : public TimesIntCstExpr {
   }
 };
 
+// This expressions adds safe arithmetic (w.r.t. overflows) compared
+// to the previous one.
 class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
  public:
   SafeTimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
@@ -3789,7 +3799,7 @@ class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
     CHECK_GT(v, 0);
   }
 
-  virtual ~SafeTimesPosIntCstExpr(){}
+  virtual ~SafeTimesPosIntCstExpr() {}
 
   virtual int64 Min() const {
     return CapProd(expr_->Min(), value_);
@@ -3862,16 +3872,8 @@ class TimesIntNegCstExpr : public TimesIntCstExpr {
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
     IntVar* var = NULL;
-    // if (expr_->IsVar() &&
-    //     reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
-    //   var = s->RegisterIntVar(s->RevAlloc(
-    //       new TimesPosCstBoolVar(s,
-    //                              reinterpret_cast<BooleanVar*>(expr_),
-    //                              value_)));
-    // } else {
-      var = s->RegisterIntVar(
-          s->RevAlloc(new TimesNegCstIntVar(s, expr_->Var(), value_)));
-    // }
+    var = s->RegisterIntVar(
+        s->RevAlloc(new TimesNegCstIntVar(s, expr_->Var(), value_)));
     return var;
   }
 };
@@ -4844,6 +4846,7 @@ class IntAbs : public BaseIntExpr {
 };
 
 // ----- Square -----
+
 
 // TODO(user): shouldn't we compare to kint32max^2 instead of kint64max?
 class IntSquare : public BaseIntExpr {
@@ -5928,7 +5931,7 @@ Action* NewDomainIntVarCleaner() {
 Constraint* SetIsEqual(IntVar* const var,
                        const std::vector<int64>& values,
                        const std::vector<IntVar*>& vars) {
-  DomainIntVar* const dvar = dynamic_cast<DomainIntVar*>(var);
+  DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK_NOTNULL(dvar);
   return dvar->SetIsEqual(values, vars);
 }
@@ -5936,7 +5939,7 @@ Constraint* SetIsEqual(IntVar* const var,
 Constraint* SetIsGreaterOrEqual(IntVar* const var,
                                 const std::vector<int64>& values,
                                 const std::vector<IntVar*>& vars) {
-  DomainIntVar* const dvar = dynamic_cast<DomainIntVar*>(var);
+  DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK_NOTNULL(dvar);
   return dvar->SetIsGreaterOrEqual(values, vars);
 }
@@ -6737,6 +6740,7 @@ void IntVar::RemoveValues(const int64* const values, int size) {
   if (size == 0) {
     return;
   }
+  // TODO(user) : Sort values!
   int start_index = 0;
   int64 new_min = Min();
   if (values[start_index] <= new_min) {
@@ -6887,12 +6891,13 @@ IntVar* BaseIntExpr::CastToVar() {
 bool Solver::IsADifference(IntExpr* expr,
                            IntExpr** const left,
                            IntExpr** const right) {
-
   if (expr->IsVar()) {
     IntVar* const expr_var = expr->Var();
     expr = CastExpression(expr_var);
   }
-  SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);
+  // This is a dynamic cast to check the type of expr.
+  // It returns NULL is expr is not a subclass of SubIntExpr.
+  SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);  // NOLINT
   if (sub_expr != NULL) {
     *left = sub_expr->left();
     *right = sub_expr->right();

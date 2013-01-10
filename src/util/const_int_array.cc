@@ -165,6 +165,13 @@ void ConstIntArray::Scan() {
     AndProperty(IS_NEGATIVE, current < 0);
     AndProperty(IS_NEGATIVE_OR_NULL, current <= 0);
     AndProperty(IS_POSITIVE_OR_NULL, current >= 0);
+    if (IsBitSet64(&status_, IS_STRICTLY_INCREASING)) {
+      AndProperty(IS_CONTIGUOUS, current - previous == 1);
+    } else if (IsBitSet64(&status_, IS_STRICTLY_DECREASING)) {
+      AndProperty(IS_CONTIGUOUS, current - previous == -1);
+    } else {
+      ClearBit64(&status_, IS_CONTIGUOUS);
+    }
     if (!status_) {
       break;
     }

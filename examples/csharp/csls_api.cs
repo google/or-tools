@@ -68,8 +68,6 @@ class MoveOneVar : IntVarLocalSearchOperator {
     return true;
   }
 
-  protected override void OnStart() {}
-
   // Index of the next variable to try to restore
   private long variable_index_;
   // Direction of the modification.

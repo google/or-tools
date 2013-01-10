@@ -241,7 +241,8 @@ int main(int argc, char **argv) {
   RandomDemand demand(routing.nodes(), kDepot);
   demand.Initialize();
   routing.AddDimension(NewPermanentCallback(&demand, &RandomDemand::Demand),
-                       kNullCapacitySlack, kVehicleCapacity, kCapacity);
+                       kNullCapacitySlack, kVehicleCapacity,
+                       /*fix_start_cumul_to_zero=*/ true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
@@ -253,7 +254,7 @@ int main(int argc, char **argv) {
   routing.AddDimension(
       NewPermanentCallback(&time,
                            &ServiceTimePlusTransition::Compute),
-      kHorizon, kHorizon, kTime);
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ true, kTime);
   // Adding time windows.
   ACMRandom randomizer(GetSeed());
   const int64 kTWDuration = 5 * 3600;

@@ -33,7 +33,7 @@
 // http://http://en.wikipedia.org/wiki/Vehicle_routing_problem
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.123.9965&rep=rep1&type=pdf.
 // Reads data in the format defined by Li & Lim
-// (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).
+// (http://www.sintef.no/Projectweb/TOP/PDPTW/Li--Lim-benchmark/Documentation/).
 
 #include <vector>
 
@@ -259,13 +259,14 @@ bool LoadAndSolve(const string& pdp_file) {
       Travel, const_cast<const Coordinates*>(&coords)));
   routing.AddDimension(
       NewPermanentCallback(&Demand, const_cast<const std::vector<int64>*>(&demands)),
-      0, capacity, "demand");
+      0, capacity, /*fix_start_cumul_to_zero=*/ true, "demand");
   routing.AddDimension(
       NewPermanentCallback(&TravelPlusServiceTime,
                            const_cast<const Coordinates*>(&coords),
                            const_cast<const std::vector<int64>*>(&service_times)),
       kScalingFactor * horizon,
       kScalingFactor * horizon,
+      /*fix_start_cumul_to_zero=*/ true,
       "time");
   Solver* const solver = routing.solver();
   for (RoutingModel::NodeIndex i(0); i < num_nodes; ++i) {

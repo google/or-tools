@@ -318,6 +318,9 @@ string DiffVar::DebugString() const {
 }
 
 // --------------------- Reified API -------------------
+// A reified API transforms an constraint into a status variables.
+// For example x == y is transformed into IsEqual(x, y, b) where
+// b is a boolean variable which is true if and only if x is equal to b.
 
 // IsEqualCt
 

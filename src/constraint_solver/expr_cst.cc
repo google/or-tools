@@ -924,22 +924,24 @@ class MemberCt : public Constraint {
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int64>& values) {
-  if (IsIncreasingContiguous(values)) {
-    return MakeBetweenCt(var, values.front(), values.back());
+  ConstIntArray ar1(values);
+  ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
+  if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
+    return MakeBetweenCt(var, ar2[0], ar2[ar2.size() - 1]);
   } else {
-    ConstIntArray local_values(values);
-    return RevAlloc(
-        new MemberCt(this,
-                     var,
-                     local_values.SortedCopyWithoutDuplicates(true)));
+    return RevAlloc(new MemberCt(this, var, ar2.Release()));
   }
 }
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int>& values) {
-  ConstIntArray local_values(values);
-  return RevAlloc(
-      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
+  ConstIntArray ar1(values);
+  ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
+  if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
+    return MakeBetweenCt(var, ar2[0], ar2[ar2.size() - 1]);
+  } else {
+    return RevAlloc(new MemberCt(this, var, ar2.Release()));
+  }
 }
 
 // ----- IsMemberCt -----
@@ -1037,12 +1039,13 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
   if (values.size() == 0) {
     return MakeFalseConstraint();
   } else {
-    ConstIntArray local_values(values);
-    return RevAlloc(
-        new IsMemberCt(this,
-                       var,
-                       local_values.SortedCopyWithoutDuplicates(true),
-                       boolvar));
+    ConstIntArray ar1(values);
+    ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
+    if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
+      return MakeIsBetweenCt(var, ar2[0], ar2[ar2.size() - 1], boolvar);
+    } else {
+      return RevAlloc(new IsMemberCt(this, var, ar2.Release(), boolvar));
+    }
   }
 }
 
@@ -1052,12 +1055,13 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
   if (values.size() == 0) {
     return MakeFalseConstraint();
   } else {
-    ConstIntArray local_values(values);
-    return RevAlloc(
-        new IsMemberCt(this,
-                       var,
-                       local_values.SortedCopyWithoutDuplicates(true),
-                       boolvar));
+    ConstIntArray ar1(values);
+    ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
+    if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
+      return MakeIsBetweenCt(var, ar2[0], ar2[ar2.size() - 1], boolvar);
+    } else {
+      return RevAlloc(new IsMemberCt(this, var, ar2.Release(), boolvar));
+    }
   }
 }
 

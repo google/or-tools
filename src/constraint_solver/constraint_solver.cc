@@ -2727,6 +2727,7 @@ const char ModelVisitor::kMinEqual[] = "MinEqual";
 const char ModelVisitor::kModuloConstraint[] = "ModuloConstraint";
 const char ModelVisitor::kNoCycle[] = "NoCycle";
 const char ModelVisitor::kNonEqual[] = "NonEqual";
+const char ModelVisitor::kNullIntersect[] = "NullIntersect";
 const char ModelVisitor::kOpposite[] = "Opposite";
 const char ModelVisitor::kPack[] = "Pack";
 const char ModelVisitor::kPathCumul[] = "PathCumul";
@@ -3368,7 +3369,7 @@ void Constraint::PostAndPropagate() {
 
 void Constraint::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint("unknown", this);
-  VLOG(1) << "Unknown constraint " << DebugString();
+  VLOG(3) << "Unknown constraint " << DebugString();
   visitor->EndVisitConstraint("unknown", this);
 }
 
@@ -3384,7 +3385,7 @@ IntVar* Constraint::Var() {
 
 void IntExpr::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitIntegerExpression("unknown", this);
-  VLOG(1) << "Unknown expression " << DebugString();
+  VLOG(3) << "Unknown expression " << DebugString();
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 

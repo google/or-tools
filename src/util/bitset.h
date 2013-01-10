@@ -381,6 +381,150 @@ int64 UnsafeMostSignificantBitPosition64(const uint64* const bitset,
 int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
                                          uint32 start, uint32 end);
 
+// This class is like an ITIVector<IndexType, bool> except that it provides a
+// more efficient way to iterate over the positions set to true. It achieves
+// this by caching the current uint64 bucket in the Iterator and using
+// LeastSignificantBitPosition64() to iterate over the positions at 1 in this
+// bucket.
+template <typename IndexType>
+class Bitset64 {
+ public:
+  Bitset64() : size_(), data_() {}
+  explicit Bitset64(IndexType size)
+      : size_(size > 0 ? size : IndexType(0)),
+        data_(BitLength64(size_.value())) {}
+
+  // Returns how many bits this Bitset64 can hold.
+  IndexType size() const { return size_; }
+
+  // Changes the number of bits the Bitset64 can hold and set all of them to 0.
+  void ClearAndResize(IndexType size) {
+    DCHECK_GE(size.value(), 0);
+    size_ = size > 0 ? size : IndexType(0);
+    data_.assign(BitLength64(size_.value()), 0);
+  }
+
+  // Sets the bit at position i to 0.
+  void Clear(IndexType i) {
+    DCHECK_GE(i.value(), 0);
+    DCHECK_LT(i.value(), size_);
+    data_[BitOffset64(i.value())] &= ~OneBit64(BitPos64(i.value()));
+  }
+
+  // Returns true if the bit at position i is set.
+  bool IsSet(IndexType i) const {
+    DCHECK_GE(i.value(), 0);
+    DCHECK_LT(i.value(), size_);
+    return data_[BitOffset64(i.value())] & OneBit64(BitPos64(i.value()));
+  }
+
+  // Sets the bit at position i to 1.
+  void Set(IndexType i) {
+    DCHECK_GE(i.value(), 0);
+    DCHECK_LT(i.value(), size_);
+    data_[BitOffset64(i.value())] |= OneBit64(BitPos64(i.value()));
+  }
+
+  // If value is true, sets the bit at position i to 1, sets it to 0 otherwise.
+  void Set(IndexType i, bool value) {
+    if (value) {
+      Set(i);
+    } else {
+      Clear(i);
+    }
+  }
+
+  // Sets "this" to be the intersection of "this" and "other". The
+  // bitsets do not have to be the same size. If other is smaller, all
+  // the higher order bits are assumed to be 0.
+  void Intersection(const Bitset64<IndexType>& other) {
+    const int min_size = std::min(data_.size(), other.data_.size());
+    for (int i = 0; i < min_size; ++i) {
+      data_[i] &= other.data_[i];
+    }
+    for (int i = min_size; i < data_.size(); ++i) {
+      data_[i] = 0;
+    }
+  }
+
+  // Class to iterate over the bit positions at 1 of a Bitset64.
+  class Iterator {
+   public:
+    explicit Iterator(const Bitset64 &data_)
+        : bitset_(data_), index_(0), base_index_(0), current_(0) {
+      if (bitset_.data_.empty()) {
+        index_ = -1;
+      } else {
+        current_ = bitset_.data_[0];
+        Next();
+      }
+    }
+
+    // Returns true if the Iterator is at a valid position.
+    bool Ok() const { return index_ != -1; }
+
+    // Returns the current position of the iterator.
+    IndexType Index() const {
+      DCHECK(Ok());
+      return IndexType(index_);
+    }
+
+    // Moves the iterator the the next position at 1 of the Bitset64.
+    void Next() {
+      DCHECK(Ok());
+      if (current_ == 0) {
+        int bucket = BitOffset64(base_index_);
+        const int size = bitset_.data_.size();
+        do {
+          bucket++;
+        } while (bucket < size && bitset_.data_[bucket] == 0);
+        if (bucket == size) {
+          index_ = -1;
+          return;
+        }
+        current_ = bitset_.data_[bucket];
+        base_index_ = BitShift64(bucket);
+      }
+
+      // Computes the index and clear the least significant bit of current_.
+      index_ = base_index_ + LeastSignificantBitPosition64(current_);
+      current_ &= current_ - 1;
+    }
+
+   private:
+    const Bitset64& bitset_;
+    int index_;
+    int base_index_;
+    uint64 current_;
+
+    DISALLOW_COPY_AND_ASSIGN(Iterator);
+  };
+
+  // Cryptic function!
+  // This is just an optimized version of a given piece of code and has probably
+  // little general use. Sets the bit at position i to the result of
+  // (other1[i] && use1) XOR (other2[i] && use2).
+  void SetBitFromOtherBitSets(IndexType i,
+                              const Bitset64<IndexType>& other1, uint64 use1,
+                              const Bitset64<IndexType>& other2, uint64 use2) {
+    DCHECK_EQ(data_.size(), other1.data_.size());
+    DCHECK_EQ(data_.size(), other2.data_.size());
+    DCHECK(use1 == 0 || use1 == 1);
+    DCHECK(use2 == 0 || use2 == 1);
+    const int bucket = BitOffset64(i.value());
+    const int pos = BitPos64(i.value());
+    data_[bucket] ^= ((1ull << pos) & data_[bucket])
+                   ^ ((use1 << pos) & other1.data_[bucket])
+                   ^ ((use2 << pos) & other2.data_[bucket]);
+  }
+
+ private:
+  IndexType size_;
+  std::vector<uint64> data_;
+
+  DISALLOW_COPY_AND_ASSIGN(Bitset64);
+};
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_BITSET_H_

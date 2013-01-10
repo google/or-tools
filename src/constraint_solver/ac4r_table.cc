@@ -135,7 +135,7 @@ class TableVar {
          value_index < tuples_per_value_.size();
          value_index++) {
       tuples_per_value_[value_index] =
-          new RevIntMap<int>(column.NumTuplesContainingValueIndex(value_index),
+          new RevIntSet<int>(column.NumTuplesContainingValueIndex(value_index),
                              shared_positions_.get());
       active_values_.Insert(solver_, value_index);
     }
@@ -244,7 +244,7 @@ class TableVar {
     tuples_to_remove->clear();
     const int delta_size = delta.size();
     for (int k = 0; k < delta_size; k++) {
-      RevIntMap<int>* const active_tuples = tuples_per_value_[delta[k]];
+      RevIntSet<int>* const active_tuples = tuples_per_value_[delta[k]];
       const int num_tuples_to_erase = active_tuples->Size();
       for (int index = 0; index < num_tuples_to_erase; index++) {
         tuples_to_remove->push_back(active_tuples->Element(index));
@@ -258,7 +258,7 @@ class TableVar {
          domain_iterator_->Ok();
          domain_iterator_->Next()) {
       const int value_index = column_.IndexFromValue(domain_iterator_->Value());
-      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
+      RevIntSet<int>* const active_tuples = tuples_per_value_[value_index];
       const int num_tuples = active_tuples->Size();
       for (int j = 0; j < num_tuples; j++) {
         tuples_to_keep->push_back(active_tuples->Element(j));
@@ -270,7 +270,7 @@ class TableVar {
     for (int i = 0; i < tuples.size(); ++i) {
       const int erased_tuple_index = tuples[i];
       const int value_index = column_.ValueIndex(erased_tuple_index);
-      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
+      RevIntSet<int>* const active_tuples = tuples_per_value_[value_index];
       active_tuples->Remove(solver_, erased_tuple_index);
       if (active_tuples->Size() == 0) {
         var_->RemoveValue(column_.ValueFromIndex(value_index));
@@ -309,9 +309,9 @@ class TableVar {
   Solver* const solver_;
   const IndexedTable::Column& column_;
   // one LAA per value of the variable
-  std::vector<RevIntMap<int>*> tuples_per_value_;
+  std::vector<RevIntSet<int>*> tuples_per_value_;
   // list of values: having a non empty tuple list
-  RevIntMap<int> active_values_;
+  RevIntSet<int> active_values_;
   IntVar* const var_;
   IntVarIterator* const domain_iterator_;
   IntVarIterator* const delta_domain_iterator_;

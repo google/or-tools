@@ -17,6 +17,8 @@
 
 // Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON
+
+#pragma SWIG nowarn=473 // about Decision* return from Next()
 %{
 #include <setjmp.h>
 
@@ -1235,7 +1237,7 @@ static void SetPythonFlags(bool trace_propagation,
 %feature("director") Action;
 %feature("director") LocalSearchOperator;
 %feature("director") PathOperator;
-%feature("director") BaseLNS;
+%feature("director") BaseLns;
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchFilter;
 
@@ -1256,6 +1258,7 @@ class LocalSearchPhaseParameters {
   ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
+
 
 struct FailureProtect {
   jmp_buf exception_buffer;

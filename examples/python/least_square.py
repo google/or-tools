@@ -17,10 +17,10 @@
   Least square optimization problem in Google or-tools.
 
   Solving a fourth grade least square equation.
-  
+
   From the Swedish book 'Optimeringslara' [Optimization Theory],
   page 286f.
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -29,7 +29,7 @@ import sys
 from linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -43,7 +43,7 @@ def main(sol = 'GLPK'):
 
 
   # data
-  # number of points 
+  # number of points
   num = 14
 
   # temperature
@@ -68,7 +68,7 @@ def main(sol = 'GLPK'):
   # constraints
   #
   solver.Add(solver.Sum([20**i*a[i] for i in range(p+1)]) == 0)
-  
+
   solver.Add( (a[0] + sum([700.0**j*a[j]
                            for j in range(1,p+1)])) == 100.0)
 
@@ -86,7 +86,7 @@ def main(sol = 'GLPK'):
     print a[i].SolutionValue(),
   print
 
- 
+
 if __name__ == '__main__':
 
   sol = 'GLPK'
@@ -95,5 +95,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

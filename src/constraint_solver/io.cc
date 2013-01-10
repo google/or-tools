@@ -115,9 +115,8 @@ class CPModelLoader {
 
   void AddTag(const string& tag) { tags_.Add(tag); }
 
-  void SetSequenceVariable(int index, SequenceVar* const var) {
-
-  }
+  // TODO(user): Use.
+  void SetSequenceVariable(int index, SequenceVar* const var) {}
 
  private:
   Solver* const solver_;
@@ -1086,9 +1085,14 @@ Constraint* BuildAllDifferent(CPModelLoader* const builder,
                               const CPConstraintProto& proto) {
   std::vector<IntVar*> vars;
   VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
-  int64 range = 0;
-  VERIFY(builder->ScanArguments(ModelVisitor::kRangeArgument, proto, &range));
-  return builder->solver()->MakeAllDifferent(vars, range);
+  int64 escape = 0;
+  if (builder->ScanArguments(ModelVisitor::kValueArgument, proto, &escape)) {
+    return builder->solver()->MakeAllDifferentExcept(vars, escape);
+  } else {
+    int64 range = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRangeArgument, proto, &range));
+    return builder->solver()->MakeAllDifferent(vars, range);
+  }
 }
 
 // ----- kAllowedAssignments -----
@@ -1964,6 +1968,22 @@ Constraint* BuildNonEqual(CPModelLoader* const builder,
   return NULL;
 }
 
+// ----- kNullIntersect -----
+
+Constraint* BuildNullIntersect(CPModelLoader* const builder,
+                               const CPConstraintProto& proto) {
+  std::vector<IntVar*> left;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
+  std::vector<IntVar*> right;
+  VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+  int64 escape = 0;
+  if (builder->ScanArguments(ModelVisitor::kValueArgument, proto, &escape)) {
+    return builder->solver()->MakeNullIntersectExcept(left, right, escape);
+  } else {
+    return builder->solver()->MakeNullIntersect(left, right);
+  }
+}
+
 // ----- kOpposite -----
 
 IntExpr* BuildOpposite(CPModelLoader* const builder,
@@ -2218,17 +2238,6 @@ IntExpr* BuildSemiContinuous(CPModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kStepArgument, proto, &step));
   return builder->solver()->MakeSemiContinuousExpr(expr, fixed_charge, step);
 }
-
-// ----- kSequenceVariable -----
-
-// SequenceVar* BuildSequenceVariable(CPModelLoader* const builder,
-//                                    const CPSequenceVariableProto& proto) {
-//   std::vector<IntervalVar*> vars;
-//   VERIFY(builder->ScanArguments(ModelVisitor::kIntervalsArgument,
-//                                 proto,
-//                                 &vars));
-//   return builder->solver()->MakeSequenceVar(vars, proto.name());
-// }
 
 // ----- kSortingConstraint -----
 
@@ -2805,6 +2814,7 @@ void Solver::InitBuilders() {
   REGISTER(kModuloConstraint, BuildModuloConstraint);
   REGISTER(kNoCycle, BuildNoCycle);
   REGISTER(kNonEqual, BuildNonEqual);
+  REGISTER(kNullIntersect, BuildNullIntersect);
   REGISTER(kOpposite, BuildOpposite);
   REGISTER(kPack, BuildPack);
   REGISTER(kPathCumul, BuildPathCumul);
@@ -2816,7 +2826,6 @@ void Solver::InitBuilders() {
   REGISTER(kScalProdGreaterOrEqual, BuildScalProdGreaterOrEqual);
   REGISTER(kScalProdLessOrEqual, BuildScalProdLessOrEqual);
   REGISTER(kSemiContinuous, BuildSemiContinuous);
-  //  REGISTER(kSequenceVariable, BuildSequenceVariable);
   REGISTER(kSortingConstraint, BuildSortingConstraint);
   REGISTER(kSquare, BuildSquare);
   REGISTER(kStartExpr, BuildStartExpr);

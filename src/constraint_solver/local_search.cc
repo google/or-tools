@@ -2424,6 +2424,7 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(const IntVar* const* vars,
                                                  int size)
     : vars_(NULL), values_(NULL), size_(0) {
+  var_to_index_.set_empty_key(NULL);
   AddVars(vars, size);
   CHECK_GE(size_, 0);
 }

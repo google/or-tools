@@ -3,7 +3,7 @@
 # Assembly Signing
 # ----------------
 # All C# assemblies can optionally be signed. This includes the
-# DLLs and the test case EXEs. Signing is presently supported only
+# DLLs and the test case EXEs. Signing is currently supported only
 # on Windows with the .NET framework.
 #
 # To get signed assemblies, use for example:

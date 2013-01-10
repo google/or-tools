@@ -513,7 +513,7 @@ void NoCycle::ComputeSupports() {
     }
   }
   if (size_ != support_count) {
-    supported.reset(NULL);
+    supported.reset();
     for (int i = 0; i < size_; ++i) {
       if (outbound_supports_[i] < 0) {
         active_[i]->SetMax(0);
@@ -560,12 +560,159 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
   return MakeNoCycle(nexts, active, sink_handler, true);
 }
 
-// ----- Path cumul constraint -----
+// ----- Path cumul constraints -----
+
+namespace {
+class BasePathCumul : public Constraint {
+ public:
+  BasePathCumul(Solver* const s,
+                const IntVar* const* nexts, int size,
+                const IntVar* const* active,
+                const IntVar* const* cumuls, int cumul_size);
+  virtual ~BasePathCumul() {}
+  virtual void Post();
+  virtual void InitialPropagate();
+  void ActiveBound(int index);
+  virtual void NextBound(int index) = 0;
+  virtual bool AcceptLink(int i, int j) const = 0;
+  void UpdateSupport(int index);
+  void CumulRange(int index);
+  virtual string DebugString() const;
+
+ protected:
+  scoped_array<IntVar*> nexts_;
+  int size_;
+  scoped_array<IntVar*> active_;
+  scoped_array<IntVar*> cumuls_;
+  int cumul_size_;
+  RevArray<int> prevs_;
+  scoped_array<int> supports_;
+};
+
+BasePathCumul::BasePathCumul(Solver* const s,
+                             const IntVar* const* nexts, int size,
+                             const IntVar* const* active,
+                             const IntVar* const* cumuls, int cumul_size)
+    : Constraint(s),
+      nexts_(NULL),
+      size_(size),
+      active_(NULL),
+      cumuls_(NULL),
+      cumul_size_(cumul_size),
+      prevs_(cumul_size, -1),
+      supports_(new int[size]) {
+  CHECK_GE(size_, 0);
+  if (size_ > 0) {
+    nexts_.reset(new IntVar*[size_]);
+    memcpy(nexts_.get(), nexts, size_ * sizeof(*nexts));
+    active_.reset(new IntVar*[size_]);
+    memcpy(active_.get(), active, size_ * sizeof(*active));
+  }
+  CHECK_GE(cumul_size_, 0);
+  CHECK_GE(cumul_size_, size_);
+  if (cumul_size_ > 0) {
+    cumuls_.reset(new IntVar*[cumul_size_]);
+    memcpy(cumuls_.get(), cumuls, cumul_size_ * sizeof(*cumuls));
+  }
+  for (int i = 0; i < size_; ++i) {
+    supports_[i] = -1;
+  }
+}
+
+void BasePathCumul::InitialPropagate() {
+  for (int i = 0; i < size_; ++i) {
+    if (nexts_[i]->Bound()) {
+      NextBound(i);
+    } else {
+      UpdateSupport(i);
+    }
+  }
+}
+
+void BasePathCumul::Post() {
+  for (int i = 0; i < size_; ++i) {
+    IntVar* var = nexts_[i];
+    Demon* d = MakeConstraintDemon1(solver(),
+                                    this,
+                                    &BasePathCumul::NextBound,
+                                    "NextBound",
+                                    i);
+    var->WhenBound(d);
+    Demon* ds = MakeConstraintDemon1(solver(),
+                                     this,
+                                     &BasePathCumul::UpdateSupport,
+                                     "UpdateSupport",
+                                     i);
+    var->WhenDomain(ds);
+    Demon* active_demon = MakeConstraintDemon1(solver(),
+                                               this,
+                                               &BasePathCumul::ActiveBound,
+                                               "ActiveBound",
+                                               i);
+    active_[i]->WhenBound(active_demon);
+  }
+  for (int i = 0; i < cumul_size_; ++i) {
+    IntVar* cumul = cumuls_[i];
+    Demon* d = MakeConstraintDemon1(solver(),
+                                    this,
+                                    &BasePathCumul::CumulRange,
+                                    "CumulRange",
+                                    i);
+    cumul->WhenRange(d);
+  }
+}
+
+void BasePathCumul::ActiveBound(int index) {
+  if (nexts_[index]->Bound()) {
+    NextBound(index);
+  }
+}
+
+void BasePathCumul::CumulRange(int index) {
+  if (index < size_) {
+    if (nexts_[index]->Bound()) {
+      NextBound(index);
+    } else {
+      UpdateSupport(index);
+    }
+  }
+  if (prevs_[index] >= 0) {
+    NextBound(prevs_[index]);
+  } else {
+    for (int i = 0; i < size_; ++i) {
+      if (index == supports_[i]) {
+        UpdateSupport(i);
+      }
+    }
+  }
+}
+
+void BasePathCumul::UpdateSupport(int index) {
+  int support = supports_[index];
+  if (support < 0 || !AcceptLink(index, support)) {
+    IntVar* var = nexts_[index];
+    for (int i = var->Min(); i <= var->Max(); ++i) {
+      if (i != support && AcceptLink(index, i)) {
+        supports_[index] = i;
+        return;
+      }
+    }
+    active_[index]->SetMax(0);
+  }
+}
+
+string BasePathCumul::DebugString() const {
+  string out = "PathCumul(";
+  for (int i = 0; i < size_; ++i) {
+    out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
+  }
+  out += ")";
+  return out;
+}
 
 // cumuls[next[i]] = cumuls[i] + transits[i]
 
-namespace {
-class PathCumul : public Constraint {
+class PathCumul : public BasePathCumul {
  public:
   PathCumul(Solver* const s,
             const IntVar* const* nexts, int size,
@@ -574,16 +721,9 @@ class PathCumul : public Constraint {
             const IntVar* const* transits);
   virtual ~PathCumul() {}
   virtual void Post();
-  virtual void InitialPropagate();
-  void ActiveBound(int index);
-  void NextBound(int index);
-  bool AcceptLink(int i, int j) const;
-  void UpdateSupport(int index);
-  void CumulRange(int index);
+  virtual void NextBound(int index);
+  virtual bool AcceptLink(int i, int j) const;
   void TransitRange(int index);
-  void FilterNext(int index);
-
-  virtual string DebugString() const;
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
@@ -603,14 +743,7 @@ class PathCumul : public Constraint {
   }
 
  private:
-  scoped_array<IntVar*> nexts_;
-  int size_;
-  scoped_array<IntVar*> active_;
-  scoped_array<IntVar*> cumuls_;
-  int cumul_size_;
   scoped_array<IntVar*> transits_;
-  RevArray<int> prevs_;
-  scoped_array<int> supports_;
 };
 
 PathCumul::PathCumul(Solver* const s,
@@ -618,86 +751,23 @@ PathCumul::PathCumul(Solver* const s,
                      const IntVar* const* active,
                      const IntVar* const* cumuls, int cumul_size,
                      const IntVar* const* transits)
-    : Constraint(s),
-      nexts_(NULL),
-      size_(size),
-      active_(NULL),
-      cumuls_(NULL),
-      cumul_size_(cumul_size),
-      prevs_(cumul_size, -1),
-      supports_(new int[size]) {
+    : BasePathCumul(s, nexts, size, active, cumuls, cumul_size) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
-    nexts_.reset(new IntVar*[size_]);
-    memcpy(nexts_.get(), nexts, size_ * sizeof(*nexts));
-    active_.reset(new IntVar*[size_]);
-    memcpy(active_.get(), active, size_ * sizeof(*active));
     transits_.reset(new IntVar*[size_]);
     memcpy(transits_.get(), transits, size_ * sizeof(*transits));
-  }
-  CHECK_GE(cumul_size_, 0);
-  CHECK_GE(cumul_size_, size_);
-  if (cumul_size_ > 0) {
-    cumuls_.reset(new IntVar*[cumul_size_]);
-    memcpy(cumuls_.get(), cumuls, cumul_size_ * sizeof(*cumuls));
-  }
-  for (int i = 0; i < size_; ++i) {
-    supports_[i] = -1;
-  }
-}
-
-void PathCumul::InitialPropagate() {
-  for (int i = 0; i < size_; ++i) {
-    if (nexts_[i]->Bound()) {
-      NextBound(i);
-    } else {
-      UpdateSupport(i);
-    }
   }
 }
 
 void PathCumul::Post() {
+  BasePathCumul::Post();
   for (int i = 0; i < size_; ++i) {
-    IntVar* var = nexts_[i];
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &PathCumul::NextBound,
-                                    "NextBound",
-                                    i);
-    var->WhenBound(d);
-    Demon* ds = MakeConstraintDemon1(solver(),
-                                     this,
-                                     &PathCumul::UpdateSupport,
-                                     "UpdateSupport",
-                                     i);
-    var->WhenDomain(ds);
-    Demon* active_demon = MakeConstraintDemon1(solver(),
-                                               this,
-                                               &PathCumul::ActiveBound,
-                                               "ActiveBound",
-                                               i);
-    active_[i]->WhenBound(active_demon);
     Demon* transit_demon = MakeConstraintDemon1(solver(),
                                                 this,
                                                 &PathCumul::TransitRange,
                                                 "TransitRange",
                                                 i);
     transits_[i]->WhenRange(transit_demon);
-  }
-  for (int i = 0; i < cumul_size_; ++i) {
-    IntVar* cumul = cumuls_[i];
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &PathCumul::CumulRange,
-                                    "CumulRange",
-                                    i);
-    cumul->WhenRange(d);
-  }
-}
-
-void PathCumul::ActiveBound(int index) {
-  if (nexts_[index]->Bound()) {
-    NextBound(index);
   }
 }
 
@@ -707,41 +777,14 @@ void PathCumul::NextBound(int index) {
   IntVar* cumul = cumuls_[index];
   IntVar* cumul_next = cumuls_[next];
   IntVar* transit = transits_[index];
-  cumul_next->SetRange(cumul->Min() + transit->Min(),
-                       CapAdd(cumul->Max(), transit->Max()));
-  cumul->SetRange(CapSub(cumul_next->Min(), transit->Max()),
-                  CapSub(cumul_next->Max(), transit->Min()));
-  transit->SetRange(CapSub(cumul_next->Min(), cumul->Max()),
-                    CapSub(cumul_next->Max(), cumul->Min()));
+  cumul_next->SetMin(cumul->Min() + transit->Min());
+  cumul_next->SetMax(CapAdd(cumul->Max(), transit->Max()));
+  cumul->SetMin(CapSub(cumul_next->Min(), transit->Max()));
+  cumul->SetMax(CapSub(cumul_next->Max(), transit->Min()));
+  transit->SetMin(CapSub(cumul_next->Min(), cumul->Max()));
+  transit->SetMax(CapSub(cumul_next->Max(), cumul->Min()));
   if (prevs_[next] < 0) {
     prevs_.SetValue(solver(), next, index);
-  }
-}
-
-void PathCumul::CumulRange(int index) {
-  if (index < size_) {
-    if (nexts_[index]->Bound()) {
-      NextBound(index);
-    } else {
-#if 0
-      FilterNext(index);
-#else
-      UpdateSupport(index);
-#endif
-    }
-  }
-  if (prevs_[index] >= 0) {
-    NextBound(prevs_[index]);
-  } else {
-#if 0
-    FilterNext(index);
-#else
-    for (int i = 0; i < size_; ++i) {
-      if (index == supports_[i]) {
-        UpdateSupport(i);
-      }
-    }
-#endif
   }
 }
 
@@ -749,24 +792,16 @@ void PathCumul::TransitRange(int index) {
   if (nexts_[index]->Bound()) {
     NextBound(index);
   } else {
-#if 0
-    FilterNext(index);
-#else
     UpdateSupport(index);
-#endif
   }
   if (prevs_[index] >= 0) {
     NextBound(prevs_[index]);
   } else {
-#if 0
-    FilterNext(index);
-#else
     for (int i = 0; i < size_; ++i) {
       if (index == supports_[i]) {
         UpdateSupport(i);
       }
     }
-#endif
   }
 }
 
@@ -778,50 +813,73 @@ bool PathCumul::AcceptLink(int i, int j) const {
       && CapSub(cumul_j->Min(), cumul_i->Max()) <= transit_i->Max();
 }
 
-void PathCumul::FilterNext(int index) {
-  IntVar* var = nexts_[index];
-  bool found = false;
-  scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
-  std::vector<int64> to_remove;
-  for (it->Init(); it->Ok(); it->Next()) {
-    const int value = it->Value();
-    if (AcceptLink(index, value)) {
-      if (!found) {
-        found = true;
-        supports_[index] = value;
-      }
-    } else {
-      to_remove.push_back(value);
-    }
+// cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i])
+
+class ResultCallback2PathCumul : public BasePathCumul {
+ public:
+  ResultCallback2PathCumul(Solver* const s,
+                           const IntVar* const* nexts, int size,
+                           const IntVar* const* active,
+                           const IntVar* const* cumuls, int cumul_size,
+                           Solver::IndexEvaluator2* transit_evaluator);
+  virtual ~ResultCallback2PathCumul() {}
+  virtual void NextBound(int index);
+  virtual bool AcceptLink(int i, int j) const;
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
+                                               nexts_.get(),
+                                               size_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,
+                                               active_.get(),
+                                               size_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCumulsArgument,
+                                               cumuls_.get(),
+                                               cumul_size_);
+    // TODO(user): Visit transit correctly.
+    // visitor->VisitIntegerVariableArrayArgument(
+    //     ModelVisitor::kTransitsArgument,
+    //     transit_evaluator);
+    visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);
   }
-  if (!found) {
-    active_[index]->SetMax(0);
-  } else {
-    var->RemoveValues(to_remove);
+
+ private:
+  scoped_ptr<Solver::IndexEvaluator2> transits_evaluator_;
+};
+
+ResultCallback2PathCumul::ResultCallback2PathCumul(
+    Solver* const s,
+    const IntVar* const* nexts, int size,
+    const IntVar* const* active,
+    const IntVar* const* cumuls, int cumul_size,
+    Solver::IndexEvaluator2* transit_evaluator)
+    : BasePathCumul(s, nexts, size, active, cumuls, cumul_size),
+      transits_evaluator_(transit_evaluator) {
+  transits_evaluator_->CheckIsRepeatable();
+}
+
+void ResultCallback2PathCumul::NextBound(int index) {
+  if (active_[index]->Min() == 0) return;
+  const int64 next = nexts_[index]->Value();
+  IntVar* cumul = cumuls_[index];
+  IntVar* cumul_next = cumuls_[next];
+  const int64 transit = transits_evaluator_->Run(index, next);
+  cumul_next->SetMin(cumul->Min() + transit);
+  cumul_next->SetMax(CapAdd(cumul->Max(), transit));
+  cumul->SetMin(CapSub(cumul_next->Min(), transit));
+  cumul->SetMax(CapSub(cumul_next->Max(), transit));
+  if (prevs_[next] < 0) {
+    prevs_.SetValue(solver(), next, index);
   }
 }
 
-void PathCumul::UpdateSupport(int index) {
-  int support = supports_[index];
-  if (support < 0 || !AcceptLink(index, support)) {
-    IntVar* var = nexts_[index];
-    for (int i = var->Min(); i <= var->Max(); ++i) {
-      if (i != support && AcceptLink(index, i)) {
-        supports_[index] = i;
-        return;
-      }
-    }
-    active_[index]->SetMax(0);
-  }
-}
-
-string PathCumul::DebugString() const {
-  string out = "PathCumul(";
-  for (int i = 0; i < size_; ++i) {
-    out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
-  }
-  out += ")";
-  return out;
+bool ResultCallback2PathCumul::AcceptLink(int i, int j) const {
+  const IntVar* const cumul_i = cumuls_[i];
+  const IntVar* const cumul_j = cumuls_[j];
+  const int64 transit = transits_evaluator_->Run(i, j);
+  return transit <= CapSub(cumul_j->Max(), cumul_i->Min())
+      && CapSub(cumul_j->Min(), cumul_i->Max()) <= transit;
 }
 }  // namespace
 
@@ -836,6 +894,19 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                 active.data(),
                                 cumuls.data(), cumuls.size(),
                                 transits.data()));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  Solver::IndexEvaluator2* transit_evaluator) {
+  CHECK_EQ(nexts.size(), active.size());
+  return RevAlloc(new ResultCallback2PathCumul(
+      this,
+      nexts.data(), nexts.size(),
+      active.data(),
+      cumuls.data(), cumuls.size(),
+      transit_evaluator));
 }
 
 namespace {

@@ -72,8 +72,9 @@ class ConstIntArray {
     IS_POSITIVE = 6,          // > 0
     IS_NEGATIVE = 7,          // < 0
     IS_POSITIVE_OR_NULL = 8,  // >= 0
-    IS_NEGATIVE_OR_NULL = 9,  // <= 0
-    NUM_PROPERTY = 10         // Sentinel.
+    IS_NEGATIVE_OR_NULL = 9,  // <= 0'
+    IS_CONTIGUOUS = 10,
+    NUM_PROPERTY = 11         // Sentinel.
   };
 
   // Build from a vector. Copy the data internally.
@@ -84,6 +85,10 @@ class ConstIntArray {
   ConstIntArray(const int64* const data, int size);
   // Build from a C array. Copy the data internally.
   ConstIntArray(const int* const data, int size);
+  // Build from a vector. Copy the data internally, and sort the data.
+  explicit ConstIntArray(const std::vector<int64>& data, bool increasing);
+  // Build from a vector. Copy the data internally, and sort the data.
+  explicit ConstIntArray(const std::vector<int>& data, bool increasing);
   // Build from a pointer to a vector (usually created by the
   // Release(), or SortedCopy() method).  This call will take ownership of
   // the data and not make a copy.

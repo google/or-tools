@@ -143,7 +143,7 @@ bool ValueAllDifferent::AllMoves() {
   std::sort(values.get(), values.get() + size_);
   for (int i = 0; i < size_ - 1; ++i) {
     if (values[i] == values[i + 1]) {
-      values.reset(NULL);   // prevent leaks (solver()->Fail() won't return)
+      values.reset();   // prevent leaks (solver()->Fail() won't return)
       solver()->Fail();
     }
   }
@@ -576,6 +576,179 @@ class SortConstraint : public Constraint {
   const int size_;
   RangeBipartiteMatching matching_;
 };
+
+// All variables are pairwise different, unless they are assigned to
+// the escape value.
+class AllDifferentExcept : public Constraint {
+ public:
+  AllDifferentExcept(Solver* const s,
+                     std::vector<IntVar*> vars,
+                     int64 escape_value)
+      : Constraint(s),
+        vars_(vars),
+        escape_value_(escape_value) {}
+
+  virtual ~AllDifferentExcept() {}
+
+  virtual void Post() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntVar* const var = vars_[i];
+      Demon* const d = MakeConstraintDemon1(solver(),
+                                            this,
+                                            &AllDifferentExcept::Propagate,
+                                            "Propagate",
+                                            i);
+      var->WhenBound(d);
+    }
+  }
+
+  virtual void InitialPropagate() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      if (vars_[i]->Bound()) {
+        Propagate(i);
+      }
+    }
+  }
+
+  void Propagate(int index) {
+    const int64 val = vars_[index]->Value();
+    if (val != escape_value_) {
+      for (int j = 0; j < vars_.size(); ++j) {
+        if (index != j) {
+          vars_[j]->RemoveValue(val);
+        }
+      }
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
+                        DebugStringVector(vars_, ", ").c_str(),
+                        escape_value_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.data(),
+                                               vars_.size());
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, escape_value_);
+    visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
+  }
+
+ private:
+  std::vector<IntVar*> vars_;
+  const int64 escape_value_;
+};
+
+// Creates a constraint that states that all variables in the first
+// vector are different from all variables from the second group,
+// unless they are assigned to the escape value if it is defined. Thus
+// the set of values in the first vector minus the escape value does
+// not intersect the set of values in the second vector.
+class NullIntersectArrayExcept : public Constraint {
+ public:
+  NullIntersectArrayExcept(Solver* const s,
+                           std::vector<IntVar*> first_vars,
+                           std::vector<IntVar*> second_vars,
+                           int64 escape_value)
+      : Constraint(s),
+        first_vars_(first_vars),
+        second_vars_(second_vars),
+        escape_value_(escape_value),
+        has_escape_value_(true) {}
+
+  NullIntersectArrayExcept(Solver* const s,
+                           std::vector<IntVar*> first_vars,
+                           std::vector<IntVar*> second_vars)
+      : Constraint(s),
+        first_vars_(first_vars),
+        second_vars_(second_vars),
+        escape_value_(0),
+        has_escape_value_(false) {}
+
+  virtual ~NullIntersectArrayExcept() {}
+
+  virtual void Post() {
+    for (int i = 0; i < first_vars_.size(); ++i) {
+      IntVar* const var = first_vars_[i];
+      Demon* const d =
+          MakeConstraintDemon1(solver(),
+                               this,
+                               &NullIntersectArrayExcept::PropagateFirst,
+                               "PropagateFirst",
+                               i);
+      var->WhenBound(d);
+    }
+    for (int i = 0; i < second_vars_.size(); ++i) {
+      IntVar* const var = second_vars_[i];
+      Demon* const d =
+          MakeConstraintDemon1(solver(),
+                               this,
+                               &NullIntersectArrayExcept::PropagateSecond,
+                               "PropagateSecond",
+                               i);
+      var->WhenBound(d);
+    }
+  }
+
+  virtual void InitialPropagate() {
+    for (int i = 0; i < first_vars_.size(); ++i) {
+      if (first_vars_[i]->Bound()) {
+        PropagateFirst(i);
+      }
+    }
+    for (int i = 0; i < second_vars_.size(); ++i) {
+      if (second_vars_[i]->Bound()) {
+        PropagateSecond(i);
+      }
+    }
+  }
+
+  void PropagateFirst(int index) {
+    const int64 val = first_vars_[index]->Value();
+    if (!has_escape_value_ || val != escape_value_) {
+      for (int j = 0; j < second_vars_.size(); ++j) {
+        second_vars_[j]->RemoveValue(val);
+      }
+    }
+  }
+
+  void PropagateSecond(int index) {
+    const int64 val = second_vars_[index]->Value();
+    if (!has_escape_value_ || val != escape_value_) {
+      for (int j = 0; j < first_vars_.size(); ++j) {
+        first_vars_[j]->RemoveValue(val);
+      }
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("NullIntersectArray([%s], [%s], escape = %"
+                        GG_LL_FORMAT "d",
+                        DebugStringVector(first_vars_, ", ").c_str(),
+                        DebugStringVector(second_vars_, ", ").c_str(),
+                        escape_value_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kNullIntersect, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
+                                               first_vars_.data(),
+                                               first_vars_.size());
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kRightArgument,
+                                               second_vars_.data(),
+                                               second_vars_.size());
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, escape_value_);
+    visitor->EndVisitConstraint(ModelVisitor::kNullIntersect, this);
+  }
+
+ private:
+  std::vector<IntVar*> first_vars_;
+  std::vector<IntVar*> second_vars_;
+  const int64 escape_value_;
+  const bool has_escape_value_;
+};
 }  // namespace
 
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
@@ -606,5 +779,46 @@ Constraint* Solver::MakeSortingConstraint(const std::vector<IntVar*>& vars,
                                           const std::vector<IntVar*>& sorted) {
   CHECK_EQ(vars.size(), sorted.size());
   return RevAlloc(new SortConstraint(this, vars, sorted));
+}
+
+Constraint* Solver::MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
+                                           int64 escape_value) {
+  int escape_candidates = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    escape_candidates += (vars[i]->Contains(escape_value));
+  }
+  if (escape_candidates <= 1) {
+    return MakeAllDifferent(vars);
+  } else {
+    return RevAlloc(new AllDifferentExcept(this, vars, escape_value));
+  }
+}
+
+Constraint* Solver::MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                      const std::vector<IntVar*>& second_vars) {
+  return RevAlloc(new NullIntersectArrayExcept(this, first_vars, second_vars));
+}
+
+Constraint* Solver::MakeNullIntersectExcept(const std::vector<IntVar*>& first_vars,
+                                            const std::vector<IntVar*>& second_vars,
+                                            int64 escape_value) {
+  int first_escape_candidates = 0;
+  for (int i = 0; i < first_vars.size(); ++i) {
+    first_escape_candidates += (first_vars[i]->Contains(escape_value));
+  }
+  int second_escape_candidates = 0;
+  for (int i = 0; i < second_vars.size(); ++i) {
+    second_escape_candidates += (second_vars[i]->Contains(escape_value));
+  }
+  if (first_escape_candidates == 0 || second_escape_candidates == 0) {
+    return RevAlloc(new NullIntersectArrayExcept(this,
+                                                 first_vars,
+                                                 second_vars));
+  } else {
+    return RevAlloc(new NullIntersectArrayExcept(this,
+                                                 first_vars,
+                                                 second_vars,
+                                                 escape_value));
+  }
 }
 }  // namespace operations_research

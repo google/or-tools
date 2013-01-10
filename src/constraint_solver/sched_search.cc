@@ -24,6 +24,15 @@
 #include "util/string_array.h"
 
 namespace operations_research {
+namespace {
+int64 ValueToIndex(int64 value) {
+  return value - 1;
+}
+
+int64 IndexToValue(int64 index) {
+  return index + 1;
+}
+}  // namespace
 
 // ----- SequenceVar -----
 
@@ -125,7 +134,7 @@ void SequenceVar::ActiveHorizonRange(int64* const hmin,
   while (nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
     if (first < next_size_) {
-      decided.insert(first - 1);
+      decided.insert(ValueToIndex(first));
     } else {
       break;
     }
@@ -135,7 +144,7 @@ void SequenceVar::ActiveHorizonRange(int64* const hmin,
     int last = next_size_;
     while (previous_[last] != -1) {
       last = previous_[last];
-      decided.insert(last - 1);
+      decided.insert(ValueToIndex(last));
     }
   }
   int64 hor_min = kint64max;
@@ -179,11 +188,8 @@ void SequenceVar::ComputeStatistics(int* const ranked,
 
 int SequenceVar::ComputeForwardFrontier() {
   int first = 0;
-  while (nexts_[first]->Bound()) {
+  while (nexts_[first]->Bound() && first != next_size_) {
     first = nexts_[first]->Min();
-    if (first == next_size_) {
-      return first;
-    }
   }
   return first;
 }
@@ -209,7 +215,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int first = 0;
   while (nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
-    to_check.erase(first - 1);
+    to_check.erase(ValueToIndex(first));
     if (first == next_size_) {
       return;
     }
@@ -222,10 +228,10 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
     // TODO(user): use domain iterator.
     if (i != 0 &&
-        i < size_ + 1 &&
-        intervals_[i - 1]->MayBePerformed() &&
+        i < IndexToValue(size_) &&
+        intervals_[ValueToIndex(i)]->MayBePerformed() &&
         forward_var->Contains(i)) {
-      const int candidate = i - 1;
+      const int candidate = ValueToIndex(i);
       candidates.push_back(candidate);
       if (intervals_[candidate]->MustBePerformed()) {
         if (smallest_start_max > intervals_[candidate]->StartMax()) {
@@ -247,7 +253,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int last = next_size_;
   while (previous_[last] != -1) {
     last = previous_[last];
-    to_check.erase(last - 1);
+    to_check.erase(ValueToIndex(last));
   }
 
   candidates.clear();
@@ -255,7 +261,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int bem_support = -1;
   for (ConstIter<hash_set<int> > it(to_check); !it.at_end(); ++it) {
     const int candidate = *it;
-    if (nexts_[candidate + 1]->Contains(last)) {
+    if (nexts_[IndexToValue(candidate)]->Contains(last)) {
       candidates.push_back(candidate);
       if (intervals_[candidate]->MustBePerformed()) {
         if (biggest_end_min < intervals_[candidate]->EndMin()) {
@@ -294,7 +300,7 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
     forward = next;
   }
   // Backward.
-  int backward = size_ + 1;
+  int backward = IndexToValue(size_);
   for (int i = 0; i < rank_last.size(); ++i) {
     const int next = 1 + rank_last[i];
     nexts_[next]->SetValue(backward);
@@ -306,14 +312,14 @@ void SequenceVar::RankFirst(int index) {
   solver()->GetPropagationMonitor()->RankFirst(this, index);
   intervals_[index]->SetPerformed(true);
   const int forward_frontier = ComputeForwardFrontier();
-  nexts_[forward_frontier]->SetValue(index + 1);
+  nexts_[forward_frontier]->SetValue(IndexToValue(index));
 }
 
 void SequenceVar::RankNotFirst(int index) {
   solver()->GetPropagationMonitor()->RankNotFirst(this, index);
   const int forward_frontier = ComputeForwardFrontier();
   if (forward_frontier < next_size_) {
-    nexts_[forward_frontier]->RemoveValue(index + 1);
+    nexts_[forward_frontier]->RemoveValue(IndexToValue(index));
   } else {
     solver()->Fail();
   }
@@ -323,13 +329,13 @@ void SequenceVar::RankLast(int index) {
   solver()->GetPropagationMonitor()->RankLast(this, index);
   intervals_[index]->SetPerformed(true);
   const int backward_frontier = ComputeBackwardFrontier();
-  nexts_[index + 1]->SetValue(backward_frontier);
+  nexts_[IndexToValue(index)]->SetValue(backward_frontier);
 }
 
 void SequenceVar::RankNotLast(int index) {
   solver()->GetPropagationMonitor()->RankNotLast(this, index);
   const int backward_frontier = ComputeBackwardFrontier();
-  nexts_[index + 1]->RemoveValue(backward_frontier);
+  nexts_[IndexToValue(index)]->RemoveValue(backward_frontier);
 }
 
 void SequenceVar::UpdatePrevious() const {
@@ -361,7 +367,7 @@ void SequenceVar::FillSequence(std::vector<int>* const rank_first,
   while (nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
     if (first < next_size_) {
-      rank_first->push_back(first - 1);
+      rank_first->push_back(ValueToIndex(first));
     } else {
       break;
     }
@@ -371,7 +377,7 @@ void SequenceVar::FillSequence(std::vector<int>* const rank_first,
     int last = next_size_;
     while (previous_[last] != -1) {
       last = previous_[last];
-      rank_last->push_back(last - 1);
+      rank_last->push_back(ValueToIndex(last));
     }
   }
 }
@@ -636,7 +642,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   // Selects the sequence var to start ranking.
   bool FindSequenceVarOnSlack(Solver* const s,
-                              SequenceVar** const best_sequence) const {
+                              SequenceVar** const best_sequence) {
     int64 best_slack = kint64max;
     int64 best_ahmin = kint64max;
     *best_sequence = NULL;
@@ -686,7 +692,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   }
 
   bool FindSequenceVarRandomly(Solver* const s,
-                               SequenceVar** const best_sequence) const {
+                               SequenceVar** const best_sequence) {
     std::vector<int> all_candidates;
     std::vector<std::vector<int> > all_possible_firsts;
     for (int i = 0; i < size_; ++i) {
@@ -728,7 +734,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   }
 
   bool FindSequenceVar(Solver* const s,
-                       SequenceVar** const best_sequence) const {
+                       SequenceVar** const best_sequence) {
     switch (strategy_) {
       case Solver::SEQUENCE_DEFAULT:
       case Solver::SEQUENCE_SIMPLE:
@@ -744,7 +750,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   scoped_array<SequenceVar*> sequences_;
   const int size_;
   const Solver::SequenceStrategy strategy_;
-  mutable std::vector<int> best_possible_firsts_;
+  std::vector<int> best_possible_firsts_;
 };
 }  // namespace
 

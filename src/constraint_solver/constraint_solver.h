@@ -292,7 +292,7 @@ struct DefaultPhaseParameters {
   bool run_all_heuristics;
 
   // The distance in nodes between each run of the heuristics. A
-  // negative or null value will means that we will not run heuristics
+  // negative or null value will mean that we will not run heuristics
   // at all.
   int heuristic_period;
 
@@ -1606,7 +1606,14 @@ class Solver {
   Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars,
                                bool stronger_propagation);
 
-  // Create a constraint binding the arrays of variables "vars" and
+  // All variables are pairwise different, unless they are assigned to
+  // the escape value.
+  Constraint* MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
+                                     int64 escape_value);
+  // TODO(user): Do we need a version with an array of escape
+  // values.
+
+  // Creates a constraint binding the arrays of variables "vars" and
   // "sorted_vars": sorted_vars[0] must be equal to the minimum of all
   // variables in vars, and so on: the value of sorted_vars[i] must be
   // equal to the i-th value of variables invars.
@@ -1626,6 +1633,25 @@ class Solver {
   // TODO(user): Add void MakeSortedArray(const std::vector<IntVar*>& vars,
   //                                         std::vector<IntVar*>* const sorted);
 
+  // Creates a constraint that states that all variables in the first
+  // vector are different from all variables from the second
+  // group. Thus the set of values in the first vector does not
+  // intersect the set of values in the second vector.
+  Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                const std::vector<IntVar*>& second_vars);
+
+  // Creates a constraint that states that all variables in the first
+  // vector are different from all variables from the second group,
+  // unless they are assigned to the escape value. Thus the set of
+  // values in the first vector minus the escape value does not
+  // intersect the set of values in the second vector.
+  Constraint* MakeNullIntersectExcept(const std::vector<IntVar*>& first_vars,
+                                      const std::vector<IntVar*>& second_vars,
+                                      int64 escape_value);
+
+  // TODO(user): Implement MakeAllNullIntersect taking an array of
+  // variable vectors.
+
   // Prevent cycles, nexts variables representing the next in the chain.
   // Active variables indicate if the corresponding next variable is active;
   // this could be useful to model unperformed nodes in a routing problem.
@@ -1643,7 +1669,7 @@ class Solver {
                           ResultCallback1<bool, int64>* sink_handler,
                           bool assume_paths);
 
-  // Accumulate values along a path such that:
+  // Creates a constraint which accumulates values along a path such that:
   // cumuls[next[i]] = cumuls[i] + transits[i].
   // Active variables indicate if the corresponding next variable is active;
   // this could be useful to model unperformed nodes in a routing problem.
@@ -1651,6 +1677,17 @@ class Solver {
                             const std::vector<IntVar*>& active,
                             const std::vector<IntVar*>& cumuls,
                             const std::vector<IntVar*>& transits);
+  // Creates a constraint which accumulates values along a path such that:
+  // cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i]).
+  // Active variables indicate if the corresponding next variable is active;
+  // this could be useful to model unperformed nodes in a routing problem.
+  // Ownership of transit_evaluator is taken and it must be a repeatable
+  // callback.
+  // TODO(user): Add a version taking slack variables.
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
+                            IndexEvaluator2* transit_evaluator);
 
   // This constraint maps the domain of 'var' onto the array of
   // variables 'vars'. That is
@@ -2840,6 +2877,10 @@ class Solver {
   template<class> friend class SimpleRevFIFO;
   template<class K, class V> friend class RevImmutableMultiMap;
 #endif
+  // Returns true if expr represents either boolean_var or 1 -
+  // boolean_var.  In that case, it fills sub_var and is_negated to be
+  // true if the expression is 1 - boolean_var -- equivalent to
+  // not(boolean_var).
   bool IsBooleanVar(IntExpr* const expr,
                     IntVar** sub_var,
                     bool* is_negated) const;
@@ -3253,6 +3294,7 @@ class ModelVisitor : public BaseObject {
   static const char kModuloConstraint[];
   static const char kNoCycle[];
   static const char kNonEqual[];
+  static const char kNullIntersect[];
   static const char kOpposite[];
   static const char kPack[];
   static const char kPathCumul[];
@@ -3937,14 +3979,16 @@ class SolutionCollector : public SearchMonitor {
 
 #if !defined(SWIG)
   // This is a short-cut to get the ForwardSequence of 'var' in the
-  // nth solution.
-  const std::vector<int>& ForwardSequence(int n, SequenceVar* const v) const;
+  // nth solution. The forward sequence is the list of ranked interval
+  // variables starting from the start of the sequence.
+  const std::vector<int>& ForwardSequence(int n, SequenceVar* const var) const;
   // This is a short-cut to get the BackwardSequence of 'var' in the
-  // nth solution.
-  const std::vector<int>& BackwardSequence(int n, SequenceVar* const v) const;
+  // nth solution. The backward sequence is the list of ranked interval
+  // variables starting from the end of the sequence.
+  const std::vector<int>& BackwardSequence(int n, SequenceVar* const var) const;
   // This is a short-cut to get the list of unperformed of 'var' in the
   // nth solution.
-  const std::vector<int>& Unperformed(int n, SequenceVar* const v) const;
+  const std::vector<int>& Unperformed(int n, SequenceVar* const var) const;
 #endif
 
 
@@ -4266,10 +4310,6 @@ class SequenceVar : public PropagationBaseObject {
   // of all currently unranked interval vars.
   void RankNotLast(int index);
 
-  // // Adds a precedence relation (STARTS_AFTER_END) between two
-  // // activities of the sequence var.
-  // void AddPrecedence(int before, int after);
-
   // Computes the set of indices of interval variables that can be
   // ranked first in the set of unranked activities.
   void ComputePossibleFirstsAndLasts(std::vector<int>* const possible_firsts,
@@ -4299,7 +4339,7 @@ class SequenceVar : public PropagationBaseObject {
   // Returns the index_th interval of the sequence.
   IntervalVar* Interval(int index) const;
 
-  // Returns the index_th next of the sequence.
+  // Returns the next of the index_th interval of the sequence.
   IntVar* Next(int index) const;
 
   // Returns the number of interval vars in the sequence.
@@ -4896,10 +4936,13 @@ std::ostream& operator<<(std::ostream& out, const Assignment& assignment);  // N
 
 class Pack : public Constraint {
  public:
+  typedef ResultCallback1<int64, int> ItemUsageEvaluator;
+  typedef ResultCallback2<int64, int, int> ItemUsagePerBinEvaluator;
+
   Pack(Solver* const s,
        const IntVar* const * vars,
        int vsize,
-       int64 number_of_bins);
+       int number_of_bins);
 
   virtual ~Pack();
 
@@ -4918,9 +4961,32 @@ class Pack : public Constraint {
                                                   const std::vector<int64>& bounds);
 
   // This dimension imposes that for all bins b, the weighted sum
+  // (weights->Run(i)) of all objects i assigned to 'b' is less or
+  // equal to 'bounds[b]'. Ownership of the callback is transfered to
+  // the pack constraint.
+  void AddWeightedSumLessOrEqualConstantDimension(ItemUsageEvaluator* weights,
+                                                  const std::vector<int64>& bounds);
+
+  // This dimension imposes that for all bins b, the weighted sum
+  // (weights->Run(i, b) of all objects i assigned to 'b' is less or
+  // equal to 'bounds[b]'. Ownership of the callback is transfered to
+  // the pack constraint.
+  void AddWeightedSumLessOrEqualConstantDimension(
+      ItemUsagePerBinEvaluator* weights,
+      const std::vector<int64>& bounds);
+
+
+  // This dimension imposes that for all bins b, the weighted sum
   // (weights[i]) of all objects i assigned to 'b' is equal to loads[b].
   void AddWeightedSumEqualVarDimension(const std::vector<int64>& weights,
                                        const std::vector<IntVar*>& loads);
+
+
+  // This dimension imposes that for all bins b, the weighted sum
+  // (weights->Run(i, b)) of all objects i assigned to 'b' is equal to loads[b].
+  void AddWeightedSumEqualVarDimension(ItemUsagePerBinEvaluator* weights,
+                                       const std::vector<IntVar*>& loads);
+
 
   // This dimension imposes:
   // forall b in bins,
@@ -4956,17 +5022,17 @@ class Pack : public Constraint {
   void Propagate();
   void OneDomain(int var_index);
   virtual string DebugString() const;
-  bool IsUndecided(int64 var_index, int64 bin_index) const;
-  void SetImpossible(int64 var_index, int64 bin_index);
-  void Assign(int64 var_index, int64 bin_index);
-  bool IsAssignedStatusKnown(int64 var_index) const;
-  bool IsPossible(int64 var_index, int64 bin_index) const;
-  IntVar* AssignVar(int64 var_index, int64 bin_index) const;
-  void SetAssigned(int64 var_index);
-  void SetUnassigned(int64 var_index);
-  void RemoveAllPossibleFromBin(int64 bin_index);
-  void AssignAllPossibleToBin(int64 bin_index);
-  void AssignFirstPossibleToBin(int64 bin_index);
+  bool IsUndecided(int var_index, int bin_index) const;
+  void SetImpossible(int var_index, int bin_index);
+  void Assign(int var_index, int bin_index);
+  bool IsAssignedStatusKnown(int var_index) const;
+  bool IsPossible(int var_index, int bin_index) const;
+  IntVar* AssignVar(int var_index, int bin_index) const;
+  void SetAssigned(int var_index);
+  void SetUnassigned(int var_index);
+  void RemoveAllPossibleFromBin(int bin_index);
+  void AssignAllPossibleToBin(int bin_index);
+  void AssignFirstPossibleToBin(int bin_index);
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
   // Accepts the given visitor.
@@ -4976,16 +5042,16 @@ class Pack : public Constraint {
   bool IsInProcess() const;
   scoped_array<IntVar*> vars_;
   const int vsize_;
-  const int64 bins_;
+  const int bins_;
   std::vector<Dimension*> dims_;
   scoped_ptr<RevBitMatrix> unprocessed_;
-  std::vector<std::vector<int64> > forced_;
-  std::vector<std::vector<int64> > removed_;
+  std::vector<std::vector<int> > forced_;
+  std::vector<std::vector<int> > removed_;
   scoped_array<IntVarIterator*> holes_;
   uint64 stamp_;
   Demon* demon_;
-  std::vector<std::pair<int64, int64> > to_set_;
-  std::vector<std::pair<int64, int64> > to_unset_;
+  std::vector<std::pair<int, int> > to_set_;
+  std::vector<std::pair<int, int> > to_unset_;
   bool in_process_;
 };
 
@@ -5005,6 +5071,8 @@ class DisjunctiveConstraint : public Constraint {
  protected:
   scoped_array<IntervalVar*> intervals_;
   const int size_;
+
+ private:
   DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
 };
 
