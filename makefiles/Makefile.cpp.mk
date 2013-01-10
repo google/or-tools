@@ -2,7 +2,7 @@
 
 # List libraries by module.
 DYNAMIC_BASE_LIBS = \
-	$(LIB_DIR)/$(LIBPREFIX)util.$(DYNAMIC_LIB_SUFFIX)          \
+	$(LIB_DIR)/$(LIBPREFIX)util.$(DYNAMIC_LIB_SUFFIX) \
 	$(LIB_DIR)/$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX)
 
 DYNAMIC_LP_LIBS = \
@@ -19,7 +19,7 @@ DYNAMIC_GRAPH_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX)
 
 DYNAMIC_ROUTING_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 
 DYNAMIC_FLATZINC_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
@@ -101,7 +101,7 @@ DYNAMIC_FAP_LNK = \
 
 # List libraries by module.
 STATIC_BASE_LIBS = \
-	$(LIB_DIR)/$(LIBPREFIX)util.$(STATIC_LIB_SUFFIX)          \
+	$(LIB_DIR)/$(LIBPREFIX)util.$(STATIC_LIB_SUFFIX) \
 	$(LIB_DIR)/$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX)
 
 STATIC_LP_LIBS = \
@@ -118,7 +118,7 @@ STATIC_GRAPH_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(STATIC_LIB_SUFFIX)
 
 STATIC_ROUTING_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 
 STATIC_FLATZINC_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
@@ -779,7 +779,7 @@ $(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatz
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)flatzinc.$O
 $(OBJ_DIR)/fz_search.$O:$(SRC_DIR)/flatzinc/fz_search.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz_search.cc $(OBJ_OUT)fz_search.$O
- $(OBJ_DIR)/lexer.yy.$O:$(SRC_DIR)/flatzinc/lexer.yy.cc
+$(OBJ_DIR)/lexer.yy.$O:$(SRC_DIR)/flatzinc/lexer.yy.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Slexer.yy.cc $(OBJ_OUT)lexer.yy.$O
 $(OBJ_DIR)/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)parser.$O
