@@ -162,16 +162,10 @@ dependencies\sources\google-apputils\README:
 install_sparsehash: dependencies\install\include\google\dense_hash_map
 
 dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash\Makefile
-	cd dependencies\sources\sparsehash && make install
-
-dependencies\sources\sparsehash\Makefile: dependencies\sources\sparsehash\configure
-	cd dependencies\sources\sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies\sources\sparsehash\configure: dependencies\sources\sparsehash\autogen.sh
-	cd dependencies\sources\sparsehash && ./autogen.sh
+	copy dep						   
 
 dependencies\sources\sparsehash\autogen.sh:
-	svn co http://google-sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
+	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
 
 # Install google code support.
 install_support: dependencies/sources/googlecode-support/scripts/googlecode_upload.py
