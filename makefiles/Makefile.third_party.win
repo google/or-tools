@@ -162,7 +162,14 @@ dependencies\sources\google-apputils\README:
 install_sparsehash: dependencies\install\include\google\dense_hash_map
 
 dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash\Makefile
-	copy dep						   
+	-md dependencies\install\include\sparsehash
+	-md dependencies\install\include\sparsehash\internal
+	-md dependencies\install\include\google
+	-md dependencies\install\include\google\sparsehash
+	-copy dependencies\sources\sparsehash\src\sparsehash\* dependencies\install\include\sparsehash
+	-copy dependencies\sources\sparsehash\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
+	-copy dependencies\sources\sparsehash\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
 dependencies\sources\sparsehash\autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
@@ -265,5 +272,3 @@ Makefile.local:
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local
 	@echo WINDOWS_PYTHON_PATH = \# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default)>> Makefile.local
-
-
