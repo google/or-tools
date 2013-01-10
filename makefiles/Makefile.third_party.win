@@ -47,11 +47,11 @@ build_third_party: \
 	install_gflags \
 	install_google_apputils \
 	install_protobuf \
+	install_sparsehash \
 	install_swig \
 	install_support \
 	install_coin_cbc \
 	install_glpk
-#	install_sparsehash \
 #	install_scip
 
 download_third_party: \
@@ -161,13 +161,15 @@ dependencies\sources\google-apputils\README:
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
 
-dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash\Makefile
+dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash\autogen.sh
 	-md dependencies\install\include\sparsehash
 	-md dependencies\install\include\sparsehash\internal
 	-md dependencies\install\include\google
 	-md dependencies\install\include\google\sparsehash
 	-copy dependencies\sources\sparsehash\src\sparsehash\* dependencies\install\include\sparsehash
 	-copy dependencies\sources\sparsehash\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash\src\google\* dependencies\install\include\google
+	-copy dependencies\sources\sparsehash\src\windows\google\* dependencies\install\include\google
 	-copy dependencies\sources\sparsehash\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
 	-copy dependencies\sources\sparsehash\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 

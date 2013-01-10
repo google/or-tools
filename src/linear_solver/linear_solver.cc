@@ -18,6 +18,14 @@
 #include <cmath>
 #include <cstddef>
 #include <utility>
+#if defined(_MSC_VER)
+#define isnan(x) _isnan(x)
+static inline double round(double val) {
+  return floor(val + 0.5);
+}
+#elif defined(__APPLE__)
+using std::isnan;
+#endif
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -978,7 +986,7 @@ bool MPSolver::VerifySolution(double max_absolute_error,
     const MPVariable& var = *variables_[i];
     const double value = var.solution_value();
     // Check for NaN.
-    if (std::isnan(value)) {
+    if (isnan(value)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors) << "NaN value for " << PrettyPrintVar(var);
@@ -1032,7 +1040,7 @@ bool MPSolver::VerifySolution(double max_absolute_error,
     }
     const double activity = activity_sum.Value();
     // Catch NaNs.
-    if (std::isnan(activity) || std::isnan(inaccurate_activity)) {
+    if (isnan(activity) || isnan(inaccurate_activity)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors)

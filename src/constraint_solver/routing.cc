@@ -1526,13 +1526,13 @@ void RoutingModel::CloseModel() {
 }
 
 struct Link {
-  Link(pair<int, int> link, double value, int vehicle_class,
+  Link(std::pair<int, int> link, double value, int vehicle_class,
           int64 start_depot, int64 end_depot)
     : link(link), value(value), vehicle_class(vehicle_class),
       start_depot(start_depot), end_depot(end_depot) { }
   ~Link() { }
 
-  pair<int, int> link;
+  std::pair<int, int> link;
   int64 value;
   int vehicle_class;
   int64 start_depot;
@@ -1638,7 +1638,7 @@ class RouteConstructor {
       node_to_vehicle_class_index_(nodes_number, -1) {
         model_->GetAllDimensions(&dimensions_);
         cumuls_.resize(dimensions_.size());
-        for (MutableIter<std::vector<vector <int64> > > it(cumuls_);
+        for (MutableIter<std::vector<std::vector<int64> > > it(cumuls_);
              !it.at_end(); ++it) {
           it->resize(nodes_number_);
         }
@@ -2072,9 +2072,9 @@ class RouteConstructor {
   bool no_more_feasible_routes_;
   std::vector<IntVar*> nexts_;
   std::vector<string> dimensions_;
-  std::vector<vector <int64> > cumuls_;
+  std::vector<std::vector <int64> > cumuls_;
   std::vector<hash_map<int, int64> > new_possible_cumuls_;
-  std::vector<vector <int> > routes_;
+  std::vector<std::vector <int> > routes_;
   std::vector<int> in_route_;
   hash_set<int> deleted_routes_;
   std::vector<std::vector<int> > final_routes_;
