@@ -139,11 +139,6 @@ class CBCInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(&osi_);
   }
 
-  virtual double ComputeExactConditionNumber() const {
-    LOG(FATAL) << "Condition number only available for continuous problems";
-    return 0.0;
-  }
-
  private:
   // Reset best objective bound to +/- infinity depending on the
   // optimization direction.
@@ -481,25 +476,22 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
-  return new CBCInterface(solver);
-}
-
 // ------ Query statistics on the solution and the solve ------
 
 int64 CBCInterface::iterations() const {
-  CheckSolutionIsSynchronized();
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
   return iterations_;
 }
 
 int64 CBCInterface::nodes() const {
-  CheckSolutionIsSynchronized();
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return nodes_;
 }
 
 double CBCInterface::best_objective_bound() const {
-  CheckSolutionIsSynchronized();
-  CheckBestObjectiveBoundExists();
+  if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
+    return trivial_worst_objective_bound();
+  }
   return best_objective_bound_;
 }
 
@@ -555,6 +547,11 @@ void CBCInterface::SetScalingMode(int value) {
 void CBCInterface::SetLpAlgorithm(int value) {
   SetUnsupportedIntegerParam(MPSolverParameters::LP_ALGORITHM);
 }
+
+MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
+  return new CBCInterface(solver);
+}
+
 
 }  // namespace operations_research
 #endif  // #if defined(USE_CBC)

@@ -118,12 +118,6 @@ class CLPInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(clp_.get());
   }
 
-  virtual double ComputeExactConditionNumber() const {
-    // CLP does not provide the necessary API to access the inverse basis.
-    LOG(FATAL) << "ComputeExactConditionNumber is not implemented in CLP.";
-    return 0.0;
-  }
-
  private:
   // Create dummy variable to be able to create empty constraints.
   void CreateDummyVariableForEmptyConstraints();
@@ -550,25 +544,21 @@ MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(
   }
 }
 
-MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
-  return new CLPInterface(solver);
-}
-
 // ------ Query statistics on the solution and the solve ------
 
 int64 CLPInterface::iterations() const {
-  CheckSolutionIsSynchronized();
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return clp_->getIterationCount();
 }
 
 int64 CLPInterface::nodes() const {
-  LOG(FATAL) << "Number of nodes only available for discrete problems";
+  LOG(DFATAL) << "Number of nodes only available for discrete problems";
   return kUnknownNumberOfNodes;
 }
 
 double CLPInterface::best_objective_bound() const {
-  LOG(FATAL) << "Best objective bound only available for discrete problems";
-  return 0.0;
+  LOG(DFATAL) << "Best objective bound only available for discrete problems";
+  return trivial_worst_objective_bound();
 }
 
 MPSolver::BasisStatus CLPInterface::row_status(int constraint_index) const {
@@ -652,6 +642,11 @@ void CLPInterface::SetLpAlgorithm(int value) {
     }
   }
 }
+
+MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
+  return new CLPInterface(solver);
+}
+
 
 }  // namespace operations_research
 #endif  // #if defined(USE_CBC) || defined(USE_CLP)

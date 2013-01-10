@@ -72,11 +72,27 @@ namespace operations_research {
 # python API very intuitive. See RunLinearExampleNaturalLanguageAPI() in
 # ../python/linear_programming.py for an example.
 class LinearExpr(object):
-  def DoVisit(self, coeffs, multiplier):
-    raise NotImplementedError
+  """Holds linear expressions.
+
+  A linear expression is essentially an offset (floating-point value), and a
+  dictionary mapping MPVariable objects to their coefficient (which is also a
+  floating-point value).
+  """
 
   def Visit(self, coeffs):
+    """Fills the coefficient dictionary, and returns the offset."""
     return self.DoVisit(coeffs, 1.0)
+
+  def DoVisit(self, coeffs, multiplier):
+    """Like Visit, but do that with a global floating-point multiplier."""
+    raise NotImplementedError
+
+  def solution_value(self):
+    """Value of this linear expr, using the solution_value of its vars."""
+    coeffs = {}
+    constant = self.Visit(coeffs)
+    return constant + sum(
+        [var.solution_value() * coeff for var, coeff in coeffs.iteritems()])
 
   def __add__(self, expr):
     if isinstance(expr, (int, long, float)):
@@ -234,7 +250,7 @@ class LinearConstraint(object):
     elif self.__ub < 1e308:
       return str(self.__expr) + ' <= ' + str(self.__ub)
     else:
-      return 'true inequality'
+      return 'Trivial inequality (always true)'
 
   def Extract(self, solver, name=''):
     coeffs = {}

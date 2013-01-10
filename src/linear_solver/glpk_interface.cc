@@ -30,6 +30,7 @@
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
+
 #if defined(USE_GLPK)
 
 extern "C" {
@@ -146,9 +147,9 @@ class GLPKInterface : public MPSolverInterface {
   virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
   // Checks whether a feasible solution exists.
-  virtual void CheckSolutionExists() const;
+  virtual bool CheckSolutionExists() const;
   // Checks whether information on the best objective bound exists.
-  virtual void CheckBestObjectiveBoundExists() const;
+  virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
   // Write model
@@ -695,10 +696,6 @@ GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
   }
 }
 
-MPSolverInterface* BuildGLPKInterface(MPSolver* const solver, bool mip) {
-  return new GLPKInterface(solver, mip);
-}
-
 // ------ Query statistics on the solution and the solve ------
 
 int64 GLPKInterface::iterations() const {
@@ -706,25 +703,26 @@ int64 GLPKInterface::iterations() const {
     LOG(WARNING) << "Total number of iterations is not available";
     return kUnknownNumberOfIterations;
   } else {
-    CheckSolutionIsSynchronized();
+    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
   }
 }
 
 int64 GLPKInterface::nodes() const {
   if (mip_) {
-    CheckSolutionIsSynchronized();
+    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     return mip_callback_info_->num_all_nodes_;
   } else {
-    LOG(FATAL) << "Number of nodes only available for discrete problems";
+    LOG(DFATAL) << "Number of nodes only available for discrete problems";
     return kUnknownNumberOfNodes;
   }
 }
 
 double GLPKInterface::best_objective_bound() const {
   if (mip_) {
-    CheckSolutionIsSynchronized();
-    CheckBestObjectiveBoundExists();
+    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
+      return trivial_worst_objective_bound();
+    }
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
       return solver_->Objective().offset();
@@ -732,8 +730,8 @@ double GLPKInterface::best_objective_bound() const {
       return mip_callback_info_->best_objective_bound_;
     }
   } else {
-    LOG(FATAL) << "Best objective bound only available for discrete problems";
-    return 0.0;
+    LOG(DFATAL) << "Best objective bound only available for discrete problems";
+    return trivial_worst_objective_bound();
   }
 }
 
@@ -754,31 +752,38 @@ MPSolver::BasisStatus GLPKInterface::column_status(int variable_index) const {
 }
 
 
-void GLPKInterface::CheckSolutionExists() const {
+bool GLPKInterface::CheckSolutionExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {
     LOG(WARNING) << "Ignoring ABNORMAL status from GLPK: This status may or may"
                  << " not indicate that a solution exists.";
+    return true;
   } else {
     // Call default implementation
-    MPSolverInterface::CheckSolutionExists();
+    return MPSolverInterface::CheckSolutionExists();
   }
 }
 
-void GLPKInterface::CheckBestObjectiveBoundExists() const {
+bool GLPKInterface::CheckBestObjectiveBoundExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {
     LOG(WARNING) << "Ignoring ABNORMAL status from GLPK: This status may or may"
                  << " not indicate that information is available on the best"
                  << " objective bound.";
+    return true;
   } else {
     // Call default implementation
-    MPSolverInterface::CheckBestObjectiveBoundExists();
+    return MPSolverInterface::CheckBestObjectiveBoundExists();
   }
 }
 
 double GLPKInterface::ComputeExactConditionNumber() const {
-  CHECK(IsContinuous()) <<
-      "Condition number only available for continuous problems";
-  CheckSolutionIsSynchronized();
+  if (!IsContinuous()) {
+    // TODO(user): support MIP.
+    LOG(DFATAL)
+        << "ComputeExactConditionNumber not implemented for"
+        << " GLPK_MIXED_INTEGER_PROGRAMMING";
+    return 0.0;
+  }
+  if (!CheckSolutionIsSynchronized()) return 0.0;
   // Simplex is the only LP algorithm supported in the wrapper for
   // GLPK, so when a solution exists, a basis exists.
   CheckSolutionExists();
@@ -1013,6 +1018,11 @@ void GLPKInterface::SetLpAlgorithm(int value) {
     }
   }
 }
+
+MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver) {
+  return new GLPKInterface(solver, mip);
+}
+
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_GLPK)

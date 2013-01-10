@@ -10,12 +10,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// TODO:
-//  - fix missing methods (tolerance for instance)
-//  - support incrementality
-//  - support binary variables (code B instead of I)
-
 #include <math.h>
 #include <stddef.h>
 #include "base/hash.h"
@@ -31,60 +25,62 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/concise_iterator.h"
-#include "base/hash.h"
 #include "base/map-util.h"
 #include "linear_solver/linear_solver.h"
 
-#if defined(USE_GRB)
+
+#if defined(USE_GUROBI)
 extern "C" {
-#include "gurobi_c.h"
+  #include "gurobi_c.h"
 }
+
+#define CHECKED_GUROBI_CALL(x) CHECK_EQ(0, x)
 
 namespace operations_research {
 
-class GRBInterface : public MPSolverInterface {
+class GurobiInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying GRB solver.
-  explicit GRBInterface(MPSolver* const solver, bool mip);
-  ~GRBInterface();
+  explicit GurobiInterface(MPSolver* const solver, bool mip);
+  ~GurobiInterface();
 
   // Sets the optimization direction (min/max).
   virtual void SetOptimizationDirection(bool maximize);
 
   // ----- Solve -----
-  // Solve the problem using the parameter values specified.
+  // Solves the problem using the parameter values specified.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
   virtual void Reset();
 
-  // Modify bounds.
+  // Modifies bounds.
   virtual void SetVariableBounds(int var_index, double lb, double ub);
   virtual void SetVariableInteger(int var_index, bool integer);
   virtual void SetConstraintBounds(int row_index, double lb, double ub);
 
-  // Add Constraint incrementally.
+  // Adds Constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct);
-  // Add variable incrementally.
+  // Adds variable incrementally.
   void AddVariable(MPVariable* const var);
-  // Change a coefficient in a constraint.
+  // Changes a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
                               double new_value,
                               double old_value);
-  // Clear a constraint from all its terms.
+  // Clears a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
-  // Change a coefficient in the linear objective
+  // Changes a coefficient in the linear objective
   virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient);
-  // Change the constant term in the linear objective.
+  // Changes the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
-  // Clear the objective from all its terms.
+  // Clears the objective from all its terms.
   virtual void ClearObjective();
 
   // ------ Query statistics on the solution and the solve ------
-  // Number of simplex iterations
+  // Number of simplex or interior-point iterations
   virtual int64 iterations() const;
   // Number of branch-and-bound nodes. Only available for discrete problems.
   virtual int64 nodes() const;
@@ -97,10 +93,10 @@ class GRBInterface : public MPSolverInterface {
   virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
   // ----- Misc -----
-  // Write model
+  // Writes model
   virtual void WriteModel(const string& filename);
 
-  // Query problem type.
+  // Queries problem type.
   virtual bool IsContinuous() const { return IsLP(); }
   virtual bool IsLP() const { return !mip_; }
   virtual bool IsMIP() const { return mip_; }
@@ -123,15 +119,34 @@ class GRBInterface : public MPSolverInterface {
   }
 
   virtual double ComputeExactConditionNumber() const {
-    // TODO(user): Implement me.
-    LOG(FATAL) << "Condition number only available for continuous problems";
-    return 0.0;
+    if (!IsContinuous()) {
+      LOG(DFATAL)
+          << "ComputeExactConditionNumber not implemented for"
+          << " GUROBI_MIXED_INTEGER_PROGRAMMING";
+      return 0.0;
+    }
+
+    // TODO(user,user): Not yet working.
+      LOG(DFATAL)
+          << "ComputeExactConditionNumber not implemented for"
+          << " GUROBI_LINEAR_PROGRAMMING";
+      return 0.0;
+
+    // double cond = 0.0;
+    // const int status = GRBgetdblattr(model_, GRB_DBL_ATTR_KAPPA, &cond);
+    // if (0 == status) {
+    //   return cond;
+    // } else {
+    //   LOG(DFATAL) << "Condition number only available for "
+    //               << "continuous problems";
+    //   return 0.0;
+    // }
   }
 
  private:
-  // Set all parameters in the underlying solver.
+  // Sets all parameters in the underlying solver.
   virtual void SetParameters(const MPSolverParameters& param);
-  // Set each parameter in the underlying solver.
+  // Sets each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
   virtual void SetPrimalTolerance(double value);
   virtual void SetDualTolerance(double value);
@@ -139,335 +154,353 @@ class GRBInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  MPSolver::BasisStatus TransformGRBBasisStatus(int gurobi_basis_status) const;
+  MPSolver::BasisStatus
+  TransformGRBVarBasisStatus(int gurobi_basis_status) const;
+  MPSolver::BasisStatus
+  TransformGRBConstraintBasisStatus(int gurobi_basis_status,
+                                    int constraint_index) const;
 
  private:
   GRBmodel* model_;
   GRBenv* env_;
   bool mip_;
-  int _nbVars;
-  int _nbCnts;
 };
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
-GRBInterface::GRBInterface(MPSolver* const solver, bool mip)
-    : MPSolverInterface(solver)
-    , env_(0)
-    , model_(0)
-    , _nbVars(0)
-    , _nbCnts(0)
-    , mip_(mip) {
-  int status = GRBloadenv(&env_, "model_interface.log");;
-  if (status ||  env_ == NULL) {
-    fprintf(stderr, "Error: could not create environment\n");
-    exit(1);
+GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
+    : MPSolverInterface(solver),
+      model_(0),
+      env_(0),
+      mip_(mip) {
+  if (GRBloadenv(&env_, NULL) != 0 ||  env_ == NULL) {
+    LOG(FATAL) << "Error: could not create environment";
   }
-  status = GRBnewmodel(env_,
-                       &model_,
-                       solver_->name_.c_str(),
-                       0,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL);
-  CHECK_EQ(status, 0);
-  status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
-  DCHECK_EQ(0, status);
+
+  CHECKED_GUROBI_CALL(GRBnewmodel(env_,
+                                  &model_,
+                                  solver_->name_.c_str(),
+                                  0,      // numvars
+                                  NULL,   // obj
+                                  NULL,   // lb
+                                  NULL,   // ub
+                                  NULL,   // vtype
+                                  NULL));  // varnanes
+  CHECKED_GUROBI_CALL(GRBsetintattr(model_,
+                                    GRB_INT_ATTR_MODELSENSE,
+                                    maximize_ ? -1 : 1));
 }
 
-GRBInterface::~GRBInterface() {
-  int status;
-  status = GRBfreemodel(model_);
-  DCHECK_EQ(0, status);
+GurobiInterface::~GurobiInterface() {
+  CHECKED_GUROBI_CALL(GRBfreemodel(model_));
   GRBfreeenv(env_);
 }
 
-void GRBInterface::WriteModel(const string& filename) {
-  const int status = GRBwrite(model_, filename.c_str());
-  DCHECK_EQ(0, status);
+void GurobiInterface::WriteModel(const string& filename) {
+  CHECKED_GUROBI_CALL(GRBwrite(model_, filename.c_str()));
 }
 
 // ------ Model modifications and extraction -----
 
-void GRBInterface::Reset() {
-  int status;
-  status = GRBfreemodel(model_);
-  DCHECK_EQ(status, 0);
-  status = GRBnewmodel(env_,
-                      &model_,
-                      solver_->name_.c_str(),
-                      0,
-                      NULL,
-                      NULL,
-                      NULL,
-                      NULL,
-                      NULL);
-  CHECK_EQ(status, 0);
-  status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
-  DCHECK_EQ(0, status);
+void GurobiInterface::Reset() {
+  CHECKED_GUROBI_CALL(GRBfreemodel(model_));
+  CHECKED_GUROBI_CALL(GRBnewmodel(env_,
+                                  &model_,
+                                  solver_->name_.c_str(),
+                                  0,      // numvars
+                                  NULL,   // obj
+                                  NULL,   // lb
+                                  NULL,   // ub
+                                  NULL,   // vtype
+                                  NULL));  // varnames
   ResetExtractionInformation();
 }
 
-void GRBInterface::SetOptimizationDirection(bool maximize) {
-  InvalidateSolutionSynchronization();
-  if (sync_status_ == MODEL_SYNCHRONIZED) {
-    const int status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
-    DCHECK_EQ(0, status);
-  } else {
-    sync_status_ = MUST_RELOAD;
-  }
+void GurobiInterface::SetOptimizationDirection(bool maximize) {
+  sync_status_ = MUST_RELOAD;
+  // TODO(user,user): Fix, not yet working.
+  // InvalidateSolutionSynchronization();
+  // CHECKED_GUROBI_CALL(GRBsetintattr(model_,
+  //                                   GRB_INT_ATTR_MODELSENSE,
+  //                                   maximize_ ? -1 : 1));
 }
 
-void GRBInterface::SetVariableBounds(int var_index, double lb, double ub) {
-  InvalidateSolutionSynchronization();
-  int status;
-  if (sync_status_ == MODEL_SYNCHRONIZED) {
-    if (lb > -solver_->infinity()) {
-      status = GRBsetdblattrelement(model_, GRB_DBL_ATTR_LB, var_index, lb);
-      DCHECK_EQ(0, status);
-    }
-    if (ub < solver_->infinity()) {
-      status = GRBsetdblattrelement(model_, GRB_DBL_ATTR_UB, var_index, ub);
-      DCHECK_EQ(0, status);
-    }
-  } else {
-    sync_status_ = MUST_RELOAD;
-  }
+void GurobiInterface::SetVariableBounds(int var_index, double lb, double ub) {
+  sync_status_ = MUST_RELOAD;
 }
 
 // Modifies integrality of an extracted variable.
-void GRBInterface::SetVariableInteger(int index, bool integer) {
-  int status;
+void GurobiInterface::SetVariableInteger(int index, bool integer) {
   char current_type;
-  status = GRBgetcharattrelement(model_,
-                                 GRB_CHAR_ATTR_VTYPE,
-                                 index,
-                                 &current_type);
-  DCHECK_EQ(0, status);
+  CHECKED_GUROBI_CALL(GRBgetcharattrelement(model_,
+                                            GRB_CHAR_ATTR_VTYPE,
+                                            index,
+                                            &current_type));
 
-  if ((integer && current_type == 'I')
-      || (!integer && current_type == 'C'))
+  if ((integer && (current_type == GRB_INTEGER ||
+                   current_type == GRB_BINARY))
+      || (!integer && current_type == GRB_CONTINUOUS))
     return;
 
   InvalidateSolutionSynchronization();
   if (sync_status_ == MODEL_SYNCHRONIZED) {
     char type_var;
     if (integer) {
-      type_var = 'I';
+      type_var = GRB_INTEGER;
     } else {
-      type_var = 'C';
+      type_var = GRB_CONTINUOUS;
     }
-    status = GRBsetcharattrelement(model_,
-                                   GRB_CHAR_ATTR_VTYPE,
-                                   index,
-                                   type_var);
-    DCHECK_EQ(0, status);
+    CHECKED_GUROBI_CALL(GRBsetcharattrelement(model_,
+                                              GRB_CHAR_ATTR_VTYPE,
+                                              index,
+                                              type_var));
   } else {
     sync_status_ = MUST_RELOAD;
   }
 }
 
-void GRBInterface::SetConstraintBounds(int index, double lb, double ub) {
+void GurobiInterface::SetConstraintBounds(int index, double lb, double ub) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::AddRowConstraint(MPConstraint* const ct) {
+void GurobiInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::AddVariable(MPVariable* const ct) {
+void GurobiInterface::AddVariable(MPVariable* const ct) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::SetCoefficient(MPConstraint* const constraint,
-                                  const MPVariable* const variable,
-                                  double new_value,
-                                  double old_value) {
+void GurobiInterface::SetCoefficient(MPConstraint* const constraint,
+                                     const MPVariable* const variable,
+                                     double new_value,
+                                     double old_value) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::ClearConstraint(MPConstraint* const constraint) {
+void GurobiInterface::ClearConstraint(MPConstraint* const constraint) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::SetObjectiveCoefficient(const MPVariable* const variable,
-                                           double coefficient) {
+void GurobiInterface::SetObjectiveCoefficient(const MPVariable* const variable,
+                                              double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
 
-void GRBInterface::SetObjectiveOffset(double value) {
+void GurobiInterface::SetObjectiveOffset(double value) {
   sync_status_ = MUST_RELOAD;
+  // TODO(user,user): make it work.
+  // InvalidateSolutionSynchronization();
+  // CHECKED_GUROBI_CALL(GRBsetdblattr(model_,
+  //                                   GRB_DBL_ATTR_OBJCON,
+  //                                   solver_->Objective().offset()));
+  // CHECKED_GUROBI_CALL(GRBupdatemodel(model_));
 }
 
-void GRBInterface::ClearObjective() {
+void GurobiInterface::ClearObjective() {
   sync_status_ = MUST_RELOAD;
-}
-
-MPSolverInterface* BuildGRBInterface(MPSolver* const solver, bool mip) {
-  return new GRBInterface(solver, mip);
 }
 
 // ------ Query statistics on the solution and the solve ------
 
-int64 GRBInterface::iterations() const {
+int64 GurobiInterface::iterations() const {
   double iter;
-  CheckSolutionIsSynchronized();
-  const int status = GRBgetdblattr(model_, GRB_DBL_ATTR_ITERCOUNT, &iter);
-  DCHECK_EQ(0, status);
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
+  CHECKED_GUROBI_CALL(GRBgetdblattr(model_, GRB_DBL_ATTR_ITERCOUNT, &iter));
   return static_cast<int64>(iter);
 }
 
-int64 GRBInterface::nodes() const {
+int64 GurobiInterface::nodes() const {
   if (mip_) {
-    CheckSolutionIsSynchronized();
+    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     double nodes = 0;
-    const int status = GRBgetdblattr(model_, GRB_DBL_ATTR_NODECOUNT, &nodes);
-    DCHECK_EQ(0, status);
+    CHECKED_GUROBI_CALL(GRBgetdblattr(model_, GRB_DBL_ATTR_NODECOUNT, &nodes));
     return static_cast<int64>(nodes);
   } else {
-    LOG(FATAL) << "Number of nodes only available for discrete problems";
+    LOG(DFATAL) << "Number of nodes only available for discrete problems.";
     return kUnknownNumberOfNodes;
   }
 }
 
 // Returns the best objective bound. Only available for discrete problems.
-double GRBInterface::best_objective_bound() const {
+double GurobiInterface::best_objective_bound() const {
   if (mip_) {
-    CheckSolutionIsSynchronized();
-    CheckBestObjectiveBoundExists();
+    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
+      return trivial_worst_objective_bound();
+    }
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
       return solver_->Objective().offset();
     } else {
-      int status;
       double value;
-      status = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value);
-      DCHECK_EQ(0, status);
+      CHECKED_GUROBI_CALL(GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value));
       return value;
     }
   } else {
-    LOG(FATAL) << "Best objective bound only available for discrete problems";
-    return 0.0;
+    LOG(DFATAL) << "Best objective bound only available for discrete problems.";
+    return trivial_worst_objective_bound();
   }
-
 }
 
 MPSolver::BasisStatus
-GRBInterface::TransformGRBBasisStatus(int gurobi_basis_status) const {
+GurobiInterface::TransformGRBVarBasisStatus(int gurobi_basis_status) const {
   switch (gurobi_basis_status) {
-    case GRB_NONBASIC_LOWER:
-      return MPSolver::AT_LOWER_BOUND;
     case GRB_BASIC:
       return MPSolver::BASIC;
+    case GRB_NONBASIC_LOWER:
+      return MPSolver::AT_LOWER_BOUND;
     case GRB_NONBASIC_UPPER:
       return MPSolver::AT_UPPER_BOUND;
     case GRB_SUPERBASIC:
       return MPSolver::FREE;
     default:
-      LOG(FATAL) << "Unknown GRB basis status";
+      LOG(DFATAL) << "Unknown GRB basis status.";
       return MPSolver::FREE;
   }
 }
 
+MPSolver::BasisStatus GurobiInterface::TransformGRBConstraintBasisStatus(
+    int gurobi_basis_status,
+    int constraint_index) const {
+  switch (gurobi_basis_status) {
+    case GRB_BASIC:
+      return MPSolver::BASIC;
+    default:  {
+      // Non basic.
+      double slack = 0.0;
+      double tolerance = 0.0;
+      CHECKED_GUROBI_CALL(GRBgetdblparam(GRBgetenv(model_),
+                                         GRB_DBL_PAR_FEASIBILITYTOL,
+                                         &tolerance));
+      CHECKED_GUROBI_CALL(GRBgetdblattrelement(model_,
+                                               GRB_DBL_ATTR_SLACK,
+                                               constraint_index,
+                                               &slack));
+      char sense;
+      CHECKED_GUROBI_CALL(GRBgetcharattrelement(model_,
+                                                GRB_CHAR_ATTR_SENSE,
+                                                constraint_index,
+                                                &sense));
+      VLOG(4) << "constraint " << constraint_index
+              << " , slack = " << slack
+              << " , sense = " << sense;
+      if (fabs(slack) <= tolerance) {
+        switch (sense) {
+          case GRB_EQUAL:
+          case GRB_LESS_EQUAL:
+            return MPSolver::AT_UPPER_BOUND;
+          case GRB_GREATER_EQUAL:
+            return MPSolver::AT_LOWER_BOUND;
+          default:
+            return MPSolver::FREE;
+        }
+      } else {
+        return MPSolver::FREE;
+      }
+    }
+  }
+}
+
 // Returns the basis status of a row.
-MPSolver::BasisStatus GRBInterface::row_status(int constraint_index) const {
+MPSolver::BasisStatus GurobiInterface::row_status(int constraint_index) const {
   int optim_status = 0;
-  int status = GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optim_status);
-  if (optim_status == GRB_LOADED ||
-      optim_status == GRB_INFEASIBLE ||
-      optim_status == GRB_INF_OR_UNBD ||
-      optim_status == GRB_UNBOUNDED ||
-      mip_) {
-    // FIXME: Are these the only cases?
-    LOG(FATAL) << "Basis status only available for continuous problems";
+  CHECKED_GUROBI_CALL(
+      GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optim_status));
+  if (optim_status != GRB_OPTIMAL && optim_status != GRB_SUBOPTIMAL) {
+    LOG(DFATAL) << "Basis status only available after a solution has "
+                << "been found.";
+    return MPSolver::FREE;
+  }
+  if (mip_) {
+    LOG(DFATAL) << "Basis status only available for continuous problems.";
     return MPSolver::FREE;
   }
   int gurobi_basis_status = 0;
-  status = GRBgetintattrelement(model_,
-                                GRB_INT_ATTR_CBASIS,
-                                constraint_index,
-                                &gurobi_basis_status);
-  DCHECK_EQ(0, status);
-  return TransformGRBBasisStatus(gurobi_basis_status);
+  CHECKED_GUROBI_CALL(GRBgetintattrelement(model_,
+                                           GRB_INT_ATTR_CBASIS,
+                                           constraint_index,
+                                           &gurobi_basis_status));
+  return TransformGRBConstraintBasisStatus(gurobi_basis_status,
+                                           constraint_index);
 }
 
 // Returns the basis status of a column.
-MPSolver::BasisStatus GRBInterface::column_status(int variable_index) const {
+MPSolver::BasisStatus GurobiInterface::column_status(int variable_index) const {
   int optim_status = 0;
-  int status = GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optim_status);
-  if (optim_status == GRB_LOADED ||
-      optim_status == GRB_INFEASIBLE ||
-      optim_status == GRB_INF_OR_UNBD ||
-      optim_status == GRB_UNBOUNDED ||
-      mip_) {
-    // FIXME: Are these the only cases?
-    LOG(FATAL) << "Basis status only available for continuous problems";
+  CHECKED_GUROBI_CALL(
+      GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optim_status));
+  if (optim_status != GRB_OPTIMAL && optim_status != GRB_SUBOPTIMAL) {
+    LOG(DFATAL) << "Basis status only available after a solution has "
+                << "been found.";
+    return MPSolver::FREE;
+  }
+  if (mip_) {
+    LOG(DFATAL) << "Basis status only available for continuous problems.";
     return MPSolver::FREE;
   }
   int gurobi_basis_status = 0;
-  status = GRBgetintattrelement(model_,
-                                GRB_INT_ATTR_VBASIS,
-                                variable_index,
-                                &gurobi_basis_status);
-  DCHECK_EQ(0, status);
-  return TransformGRBBasisStatus(gurobi_basis_status);
+  CHECKED_GUROBI_CALL(GRBgetintattrelement(model_,
+                                           GRB_INT_ATTR_VBASIS,
+                                           variable_index,
+                                           &gurobi_basis_status));
+  return TransformGRBVarBasisStatus(gurobi_basis_status);
 }
 
-// status the variables that have not been extracted yet
-void GRBInterface::ExtractNewVariables() {
-  CHECK_EQ(0, last_variable_index_);
-  int status = 0;
+// Extracts new variables.
+void GurobiInterface::ExtractNewVariables() {
+  CHECK(last_variable_index_ == 0 ||
+        last_variable_index_ == solver_->variables_.size());
+  CHECK(last_constraint_index_ == 0 ||
+        last_constraint_index_ == solver_->constraints_.size());
   int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
-    int nb_new_variables = total_num_vars - last_variable_index_;
-    scoped_array<double> obj_coefs(new double[nb_new_variables]);
-    scoped_array<double> lb(new double[nb_new_variables]);
-    scoped_array<double> ub(new double[nb_new_variables]);
-    scoped_array<char> ctype(new char[nb_new_variables]);
-    scoped_array<const char*> colname(new const char*[nb_new_variables]);
+    int num_new_variables = total_num_vars - last_variable_index_;
+    scoped_array<double> obj_coefs(new double[num_new_variables]);
+    scoped_array<double> lb(new double[num_new_variables]);
+    scoped_array<double> ub(new double[num_new_variables]);
+    scoped_array<char> ctype(new char[num_new_variables]);
+    scoped_array<const char*> colname(new const char*[num_new_variables]);
 
-    for (int j = 0; j < nb_new_variables; ++j) {
+    for (int j = 0; j < num_new_variables; ++j) {
       MPVariable* const var = solver_->variables_[last_variable_index_+j];
       var->set_index(last_variable_index_ + j);
       lb[j] = var->lb();
       ub[j] = var->ub();
-      ctype.get()[j] = var->integer() && mip_ ? 'I' : 'C';
+      ctype.get()[j] = var->integer() && mip_ ? GRB_INTEGER : GRB_CONTINUOUS;
       if (!var->name().empty()) {
-	colname[j] = var->name().c_str();
+        colname[j] = var->name().c_str();
       }
-      obj_coefs[j] = FindWithDefault(solver_->objective_->coefficients_,
-                                     var,
-                                     0.0);
+      obj_coefs[j] =
+          FindWithDefault(solver_->objective_->coefficients_, var, 0.0);
     }
 
-    status = GRBaddvars(model_,
-                        nb_new_variables,
-                        0,
-                        NULL,
-                        NULL,
-                        NULL,
-                        obj_coefs.get(),
-                        lb.get(),
-                        ub.get(),
-                        ctype.get(),
-                        const_cast<char**>(colname.get()));
-    DCHECK_EQ(0, status);
+    CHECKED_GUROBI_CALL(GRBaddvars(model_,
+                                   num_new_variables,
+                                   0,
+                                   NULL,
+                                   NULL,
+                                   NULL,
+                                   obj_coefs.get(),
+                                   lb.get(),
+                                   ub.get(),
+                                   ctype.get(),
+                                   const_cast<char**>(colname.get())));
   }
-  GRBupdatemodel(model_);
+  CHECKED_GUROBI_CALL(GRBupdatemodel(model_));
 }
 
-void GRBInterface::ExtractNewConstraints() {
-  int status = 0;
+void GurobiInterface::ExtractNewConstraints() {
+  CHECK(last_variable_index_ == 0 ||
+        last_variable_index_ == solver_->variables_.size());
+  CHECK(last_constraint_index_ == 0 ||
+        last_constraint_index_ == solver_->constraints_.size());
   int total_num_rows = solver_->constraints_.size();
-  CHECK_EQ(last_variable_index_, 0);  // always from scratch.
   if (last_constraint_index_ < total_num_rows) {
     // Find the length of the longest row.
     int max_row_length = 0;
-    for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_EQ(kNoIndex, ct->index());
-      ct->set_index(i);
+    for (int row = last_constraint_index_; row < total_num_rows; ++row) {
+      MPConstraint* const ct = solver_->constraints_[row];
+      CHECK_EQ(kNoIndex, ct->index());
+      ct->set_index(row);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
@@ -478,96 +511,134 @@ void GRBInterface::ExtractNewConstraints() {
     scoped_array<double> coefs(new double[max_row_length]);
 
     // Add each new constraint.
-    for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
+    for (int row = last_constraint_index_; row < total_num_rows; ++row) {
+      MPConstraint* const ct = solver_->constraints_[row];
       DCHECK_NE(kNoIndex, ct->index());
       const int size = ct->coefficients_.size();
-      int j = 0;
+      int col = 0;
       for (ConstIter<hash_map<const MPVariable*, double> > it(
                ct->coefficients_);
            !it.at_end(); ++it) {
         const int index = it->first->index();
         DCHECK_NE(kNoIndex, index);
-        col_indices[j] = index;
-        coefs[j] = it->second;
-        j++;
+        col_indices[col] = index;
+        coefs[col] = it->second;
+        col++;
       }
       char* const name =
           ct->name().empty() ? NULL : const_cast<char*>(ct->name().c_str());
-      status = GRBaddrangeconstr(model_,
-                                 size,
-                                 col_indices.get(),
-                                 coefs.get(),
-                                 ct->lb(),
-                                 ct->ub(),
-                                 name);
-      CHECK_EQ(0, status) << GRBgeterrormsg(env_);
+      CHECKED_GUROBI_CALL(GRBaddrangeconstr(model_,
+                                            size,
+                                            col_indices.get(),
+                                            coefs.get(),
+                                            ct->lb(),
+                                            ct->ub(),
+                                            name));
     }
   }
-  status = GRBupdatemodel(model_);
-  DCHECK_EQ(status, 0);
+  CHECKED_GUROBI_CALL(GRBupdatemodel(model_));
 }
 
-void GRBInterface::ExtractObjective() {
-  int status = GRBsetintattr(model_, "ModelSense", maximize_ ? -1 : 1);
-  DCHECK_EQ(0, status);
-  status = GRBupdatemodel(model_);
-  DCHECK_EQ(status, 0);
+void GurobiInterface::ExtractObjective() {
+  CHECKED_GUROBI_CALL(GRBsetintattr(model_,
+                                    GRB_INT_ATTR_MODELSENSE,
+                                    maximize_ ? -1 : 1));
+  CHECKED_GUROBI_CALL(GRBsetdblattr(model_,
+                                    GRB_DBL_ATTR_OBJCON,
+                                    solver_->Objective().offset()));
 }
 
 // ------ Parameters  -----
 
-void GRBInterface::SetParameters(const MPSolverParameters& param) {
+void GurobiInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
   if (mip_) {
     SetMIPParameters(param);
   }
 }
 
-void GRBInterface::SetRelativeMipGap(double value) {
+void GurobiInterface::SetRelativeMipGap(double value) {
   if (mip_) {
-    int status;
-    status = GRBsetdblattr (model_, GRB_DBL_PAR_MIPGAP, value);
-    DCHECK_EQ(0, status);
+    CHECKED_GUROBI_CALL(GRBsetdblparam(GRBgetenv(model_),
+                                       GRB_DBL_PAR_MIPGAP,
+                                       value));
   } else {
     LOG(WARNING) << "The relative MIP gap is only available "
                  << "for discrete problems.";
   }
 }
 
-void GRBInterface::SetPrimalTolerance(double value) {
-  const int status = GRBsetdblattr (model_, GRB_DBL_PAR_FEASIBILITYTOL, value);
-  DCHECK_EQ(0, status);
+void GurobiInterface::SetPrimalTolerance(double value) {
+  CHECKED_GUROBI_CALL(GRBsetdblparam(GRBgetenv(model_),
+                                     GRB_DBL_PAR_FEASIBILITYTOL,
+                                     value));
 }
 
-void GRBInterface::SetDualTolerance(double value) {
-  const int status = GRBsetdblattr (model_, GRB_DBL_PAR_OPTIMALITYTOL, value);
-  DCHECK_EQ(0, status);
+void GurobiInterface::SetDualTolerance(double value) {
+  CHECKED_GUROBI_CALL(
+      GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_OPTIMALITYTOL, value));
 }
 
-void GRBInterface::SetPresolveMode(int value) {
-  // FIXME
-  SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+void GurobiInterface::SetPresolveMode(int value) {
+  switch (value) {
+    case MPSolverParameters::PRESOLVE_OFF: {
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_PRESOLVE,
+                                         false));
+      break;
+    }
+    case MPSolverParameters::PRESOLVE_ON: {
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_PRESOLVE,
+                                         true));
+      break;
+    }
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+    }
+  }
 }
 
 // Sets the scaling mode.
-void GRBInterface::SetScalingMode(int value) {
-  // FIXME
-  SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
+void GurobiInterface::SetScalingMode(int value) {
+  switch (value) {
+    case MPSolverParameters::SCALING_OFF:
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_SCALEFLAG,
+                                         false));
+      break;
+    case MPSolverParameters::SCALING_ON:
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_SCALEFLAG,
+                                         true));
+      CHECKED_GUROBI_CALL(GRBsetdblparam(GRBgetenv(model_),
+                                         GRB_DBL_PAR_OBJSCALE,
+                                         0.0));
+      break;
+    default:
+      // Leave the parameters untouched.
+      break;
+  }
 }
 
-// Sets the LP algorithm : primal, dual or barrier. Note that GRB offers other LP algorithm (e.g. network) and automatic selection
-void GRBInterface::SetLpAlgorithm(int value) {
-  int status;
+// Sets the LP algorithm : primal, dual or barrier. Note that GRB
+// offers automatic selection
+void GurobiInterface::SetLpAlgorithm(int value) {
   switch (value) {
     case MPSolverParameters::DUAL:
-      status = GRBsetintparam(env_, GRB_INT_PAR_METHOD, GRB_METHOD_DUAL);
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_METHOD,
+                                         GRB_METHOD_DUAL));
       break;
     case MPSolverParameters::PRIMAL:
-      status = GRBsetintparam(env_, GRB_INT_PAR_METHOD, GRB_METHOD_PRIMAL);
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_METHOD,
+                                         GRB_METHOD_PRIMAL));
       break;
     case MPSolverParameters::BARRIER:
-      status = GRBsetintparam(env_, GRB_INT_PAR_METHOD, GRB_METHOD_BARRIER);
+      CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                         GRB_INT_PAR_METHOD,
+                                         GRB_METHOD_BARRIER));
       break;
     default:
       SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
@@ -576,9 +647,7 @@ void GRBInterface::SetLpAlgorithm(int value) {
 }
 
 
-MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
-  int status = 0;
-
+MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
 
@@ -587,35 +656,38 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
     Reset();
   }
 
-  // Set log level.
-  if (quiet_) {
-    status = GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_OUTPUTFLAG, 0);
-    DCHECK_EQ(0, status);
-  } else {
-    status = GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_OUTPUTFLAG, 1);
-    DCHECK_EQ(0, status);
+  // TODO(user,user): Support incrementality.
+  if (sync_status_ == MUST_RELOAD) {
+    Reset();
   }
 
+  // Set log level.
+  CHECKED_GUROBI_CALL(GRBsetintparam(GRBgetenv(model_),
+                                     GRB_INT_PAR_OUTPUTFLAG,
+                                     !quiet_));
+
   ExtractModel();
+  // Sync solver.
+  CHECKED_GUROBI_CALL(GRBupdatemodel(model_));
+
   VLOG(1) << StringPrintf("Model build in %.3f seconds.", timer.Get());
 
   WriteModelToPredefinedFiles();
 
-  status = GRBwrite(model_, "test.lp");
-  DCHECK_EQ(0, status);
-
   // Time limit.
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    status = GRBsetdblparam (env_,
-                             GRB_DBL_PAR_TIMELIMIT,
-                             solver_->time_limit() / 1000.0);
-    DCHECK_EQ(0, status);
+    CHECKED_GUROBI_CALL(GRBsetdblparam(GRBgetenv(model_),
+                                       GRB_DBL_PAR_TIMELIMIT,
+                                       solver_->time_limit() / 1000.0));
   }
+
+
+  SetParameters(param);
 
   // Solve
   timer.Restart();
-  status = GRBoptimize(model_);
+  const int status = GRBoptimize(model_);
 
   if (status) {
     VLOG(1) << "Failed to optimize MIP." << GRBgeterrormsg(env_);
@@ -627,76 +699,76 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
   int total_num_rows = solver_->constraints_.size();
   int total_num_cols = solver_->variables_.size();
   scoped_array<double> values(new double[total_num_cols]);
-  scoped_array<double> reduced_costs(new double[total_num_cols]);
   scoped_array<double> dual_values(new double[total_num_rows]);
   scoped_array<double> slacks(new double[total_num_rows]);
+  scoped_array<double> rhs(new double[total_num_rows]);
+  scoped_array<double> reduced_costs(new double[total_num_cols]);
   int optimization_status = 0;
-  status = GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optimization_status);
-  if (optimization_status == GRB_OPTIMAL) {
-    // TODO(user): Improve me, get feasible solution.
-    status = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJVAL, &objective_value_);
-    DCHECK_EQ(0, status);
-    status = GRBgetdblattrarray(model_,
-                                GRB_DBL_ATTR_X,
-                                0,
-                                total_num_cols,
-                                values.get());
-    DCHECK_EQ(0, status);
-    status = GRBgetdblattrarray(model_,
-                                GRB_DBL_ATTR_SLACK,
-                                0,
-                                total_num_rows,
-                                slacks.get());
-    DCHECK_EQ(0, status);
+  CHECKED_GUROBI_CALL(GRBgetintattr(model_,
+                                    GRB_INT_ATTR_STATUS,
+                                    &optimization_status));
+  if (optimization_status == GRB_OPTIMAL ||
+      optimization_status == GRB_SUBOPTIMAL) {
+    CHECKED_GUROBI_CALL(GRBgetdblattr(model_,
+                                      GRB_DBL_ATTR_OBJVAL,
+                                      &objective_value_));
+    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_,
+                                           GRB_DBL_ATTR_X,
+                                           0,
+                                           total_num_cols,
+                                           values.get()));
+    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_,
+                                           GRB_DBL_ATTR_SLACK,
+                                           0,
+                                           total_num_rows,
+                                           slacks.get()));
+    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_,
+                                           GRB_DBL_ATTR_RHS,
+                                           0,
+                                           total_num_rows,
+                                           rhs.get()));
     if (!mip_) {
-      status = GRBgetdblattrarray(model_,
-                                  GRB_DBL_ATTR_RC,
-                                  0,
-                                  total_num_cols,
-                                  reduced_costs.get());
-      DCHECK_EQ(0, status);
-      status = GRBgetdblattrarray(model_,
-                                  GRB_DBL_ATTR_PI,
-                                  0,
-                                  total_num_rows,
-                                  dual_values.get());
-      DCHECK_EQ(0, status);
+      CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_,
+                                             GRB_DBL_ATTR_RC,
+                                             0,
+                                             total_num_cols,
+                                             reduced_costs.get()));
+      CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_,
+                                             GRB_DBL_ATTR_PI,
+                                             0,
+                                             total_num_rows,
+                                             dual_values.get()));
     }
   }
 
-  bool solution_found = false;
-  if (optimization_status == GRB_OPTIMAL) {
+  int solution_count = 0;
+  CHECKED_GUROBI_CALL(GRBgetintattr(model_,
+                                    GRB_INT_ATTR_SOLCOUNT,
+                                    &solution_count));
+  if (solution_count > 0) {
     VLOG(1) << "objective = " << objective_value_;
-    solution_found = true;
     for (int i = 0; i < solver_->variables_.size(); ++i) {
       MPVariable* const var = solver_->variables_[i];
       var->set_solution_value(values[i]);
-      VLOG(3) << var->name() << ": value =" << values[i];
+      VLOG(3) << var->name() << ", value = " << values[i];
       if (!mip_) {
-	var->set_reduced_cost(reduced_costs[i]);
-	VLOG(4) << var->name() << ": reduced cost = " << reduced_costs[i];
+        var->set_reduced_cost(reduced_costs[i]);
+        VLOG(4) << var->name() << ", reduced cost = " << reduced_costs[i];
       }
     }
     for (int i = 0; i < solver_->constraints_.size(); ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      double activity = 0;
-      if (ct->lb() > -solver_->infinity() && ct->ub() < solver_->infinity()) {
-	// don't know what to use : lb or ub?
-	activity = ct->ub() - slacks[i];
-      } else if (ct->lb() > -solver_->infinity()) {
-	activity = ct->lb() + slacks[i];
-      } else if (ct->ub() < solver_->infinity()) {
-	activity = ct->ub() - slacks[i];
-      }
-      ct->set_activity(activity);
+      ct->set_activity(rhs[i] - slacks[i]);
       if (mip_) {
-	VLOG(4) << "row " << ct->index()
-		<< ": activity = " << slacks[i];
+        VLOG(4) << "row " << ct->index()
+                << ", slack = " << slacks[i]
+                << ", rhs = " << rhs[i];
       } else {
-	ct->set_dual_value(dual_values[i]);
-	VLOG(4) << "row " << ct->index()
-		<< ": activity = " << slacks[i]
-		<< ": dual value = " << dual_values[i];
+        ct->set_dual_value(dual_values[i]);
+        VLOG(4) << "row " << ct->index()
+                << ", slack = " << slacks[i]
+                << ", rhs = " << rhs[i]
+                << ", dual value = " << dual_values[i];
       }
     }
   }
@@ -714,15 +786,15 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
       result_status_ = MPSolver::UNBOUNDED;
       break;
     case GRB_INF_OR_UNBD:
-      // TODO(user): We could introduce our own "infeasible or
+      // TODO(user,user): We could introduce our own "infeasible or
       // unbounded" status.
       result_status_ = MPSolver::INFEASIBLE;
       break;
     default: {
-      if (solution_found) {
+      if (solution_count > 0) {
         result_status_ = MPSolver::FEASIBLE;
       } else {
-        // TODO(user): We could introduce additional values for the
+        // TODO(user,user): We could introduce additional values for the
         // status: for example, stopped because of time limit.
         result_status_ = MPSolver::ABNORMAL;
       }
@@ -731,7 +803,14 @@ MPSolver::ResultStatus GRBInterface::Solve(const MPSolverParameters& param) {
   }
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
+  GRBresetparams(GRBgetenv(model_));
   return result_status_;
 }
+
+MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
+  return new GurobiInterface(solver, mip);
+}
+
+
 }  // namespace operations_research
-#endif  //  #if defined(USE_GRB)
+#endif  //  #if defined(USE_GUROBI)

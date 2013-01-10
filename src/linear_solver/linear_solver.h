@@ -133,19 +133,24 @@
 #include "base/hash.h"
 #include "base/hash.h"
 #include <limits>
+#include <map>
 #include <string>
 #include <vector>
 
+#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/mutex.h"
 #include "base/scoped_ptr.h"
 #include "base/timer.h"
 #include "base/strutil.h"
 #include "base/hash.h"
 
+
 using std::string;
+
 
 namespace operations_research {
 
@@ -164,28 +169,39 @@ class MPSolver {
  public:
   // The type of problems (LP or MIP) that will be solved and the
   // underlying solver (GLPK, CLP, CBC or SCIP) that will solve them.
+  // This must remain consistent with MPModelRequest::OptimizationProblemType
+  // (take particular care of the open-source version).
   enum OptimizationProblemType {
-#if defined(USE_GLPK)
-    GLPK_LINEAR_PROGRAMMING,
-    GLPK_MIXED_INTEGER_PROGRAMMING,
-#endif
-#if defined(USE_CLP)
-    CLP_LINEAR_PROGRAMMING,
-#endif
-#if defined(USE_CBC)
-    CBC_MIXED_INTEGER_PROGRAMMING,
-#endif
-#if defined(USE_SCIP)
-    SCIP_MIXED_INTEGER_PROGRAMMING,
-#endif
-#if defined(USE_SLM)
-    SULUM_LINEAR_PROGRAMMING,
-    SULUM_MIXED_INTEGER_PROGRAMMING,
-#endif
-#if defined(USE_GRB)
-    GUROBI_LINEAR_PROGRAMMING,
-    GUROBI_MIXED_INTEGER_PROGRAMMING,
-#endif
+    // Linear programming problems.
+    #ifdef USE_CLP
+    CLP_LINEAR_PROGRAMMING = 0,  // Recommended default value.
+    #endif
+    #ifdef USE_GLPK
+    GLPK_LINEAR_PROGRAMMING = 1,
+    #endif
+    #if defined(USE_SLM)
+    SULUM_LINEAR_PROGRAMMING = 8,
+    #endif
+    #ifdef USE_GUROBI
+    GUROBI_LINEAR_PROGRAMMING = 6,
+    #endif
+
+    // Integer programming problems.
+    #ifdef USE_SCIP
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
+    #endif
+    #ifdef USE_GLPK
+    GLPK_MIXED_INTEGER_PROGRAMMING = 4,
+    #endif
+    #ifdef USE_CBC
+    CBC_MIXED_INTEGER_PROGRAMMING = 5,
+    #endif
+    #if defined(USE_SLM)
+    SULUM_MIXED_INTEGER_PROGRAMMING = 9,
+    #endif
+    #if defined(USE_GUROBI)
+    GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
+    #endif
   };
 
   MPSolver(const string& name, OptimizationProblemType problem_type);
@@ -193,6 +209,10 @@ class MPSolver {
 
   string Name() const {
     return name_;  // Set at construction.
+  }
+
+  virtual OptimizationProblemType ProblemType() const {
+    return problem_type_;  // Set at construction.
   }
 
   // Clears the objective (including the optimization direction), all
@@ -203,6 +223,9 @@ class MPSolver {
   // ----- Variables ------
   // Returns the number of variables.
   int NumVariables() const { return variables_.size(); }
+  // Returns the array of variables handled by the MPSolver.
+  // (They are listed in the order in which they were created.)
+  const std::vector<MPVariable*>& variables() const { return variables_; }
   // Look up a variable by name, and return NULL if it does not exist.
   MPVariable* LookupVariableOrNull(const string& var_name) const;
 
@@ -220,7 +243,8 @@ class MPSolver {
   MPVariable* MakeBoolVar(const string& name);
 
   // Creates an array of variables. All variables created have the
-  // same bounds and integrality requirement.
+  // same bounds and integrality requirement. If nb <= 0, no variables are
+  // created, the function crashes in non-opt mode.
   // @param name the prefix of the variable names. Variables are named
   // name0, name1, ...
   void MakeVarArray(int nb,
@@ -249,6 +273,9 @@ class MPSolver {
   // ----- Constraints -----
   // Returns the number of constraints.
   int NumConstraints() const { return constraints_.size(); }
+  // Returns the array of constraints handled by the MPSolver.
+  // (They are listed in the order in which they were created.)
+  const std::vector<MPConstraint*>& constraints() const { return constraints_; }
   // Look up a constraint by name, and return NULL if it does not exist.
   MPConstraint* LookupConstraintOrNull(const string& constraint_name) const;
 
@@ -272,7 +299,10 @@ class MPSolver {
 
   // ----- Solve -----
 
-  // The status of solving the problem.
+  // The status of solving the problem. The straightfowrad translation to
+  // homonym enum values of MPSolutionResponse::ResultStatus
+  // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
+  // you may rely on it.
   // TODO(user): Figure out once and for all what the status of
   // underlying solvers exactly mean, especially for feasible and
   // infeasible.
@@ -323,9 +353,6 @@ class MPSolver {
   // Loads model from protocol buffer.
   LoadStatus LoadModel(const MPModelProto& input_model);
 
-  // Exports model to protocol buffer.
-  void ExportModel(MPModelProto* output_model) const;
-
   // Encodes the current solution in a solution response protocol buffer.
   // Only nonzero variable values are stored in order to reduce the
   // size of the MPSolutionResponse protocol buffer.
@@ -339,6 +366,39 @@ class MPSolver {
   // that creates the MPSolver object on the heap and returns it.
   static void SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                        MPSolutionResponse* response);
+
+  // Exports model to protocol buffer.
+  void ExportModel(MPModelProto* output_model) const;
+
+  // Load a solution encoded in a protocol buffer onto this solver.
+  //
+  // IMPORTANT: This may only be used in conjunction with ExportModel(),
+  // following this example:
+  //   MPSolver my_solver;
+  //   ... add variables and constraints ...
+  //   MPModelProto model_proto;
+  //   my_solver.ExportModel(&model_proto);
+  //   MPSolutionResponse solver_response;
+  //   // This can be replaced by a stubby call to the linear solver server.
+  //   MPSolver::SolveWithProtocolBuffers(model_proto, &solver_response);
+  //   if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+  //     CHECK(my_solver.LoadSolutionFromProto(solver_response));
+  //     ... inspect the solution using the usual API: solution_value(), etc...
+  //   }
+  //
+  // This allows users of the pythonic API to conveniently communicate with
+  // a linear solver stubby server, via the MPSolver object as a proxy.
+  // See /.linear_solver_server_integration_test.py.
+  //
+  // The response must be in OPTIMAL or FEASIBLE status.
+  // Returns false if a problem arised (typically, if it wasn't used like
+  // it should be):
+  // - loading a solution whose variables don't correspond to the solver's
+  //   current variables
+  // - loading a solution with a status other than OPTIMAL / FEASIBLE.
+  // Note: the variable and objective values aren't checked. You can use
+  // VerifySolution() for that.
+  bool LoadSolutionFromProto(const MPSolutionResponse& response);
 
   // ----- Misc -----
 
@@ -374,11 +434,12 @@ class MPSolver {
     return write_model_filename_;
   }
 
-  void set_time_limit(int64 time_limit) {
-    DCHECK_GE(time_limit, 0);
-    time_limit_ = time_limit;
+  void set_time_limit(int64 time_limit_milliseconds) {
+    DCHECK_GE(time_limit_milliseconds, 0);
+    time_limit_ = time_limit_milliseconds;
   }
 
+  // In milliseconds.
   int64 time_limit() const {
     return time_limit_;
   }
@@ -443,8 +504,7 @@ class MPSolver {
   friend class CLPInterface;
   friend class CBCInterface;
   friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GRBInterface;
+  friend class GurobiInterface;
   friend class MPSolverInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -478,6 +538,9 @@ class MPSolver {
 
   // The name of the linear programming problem.
   const string name_;
+
+  // The type of the linear programming problem.
+  const OptimizationProblemType problem_type_;
 
   // The solver interface.
   scoped_ptr<MPSolverInterface> interface_;
@@ -514,7 +577,9 @@ class MPObjective {
   // direction.
   void Clear();
 
-  // Sets the coefficient of the variable in the objective.
+  // Sets the coefficient of the variable in the objective. If the variable
+  // does not belong to the solver, the function just returns, or crashes in
+  // non-opt mode.
   void SetCoefficient(const MPVariable* const var, double coeff);
   // Gets the coefficient of a given variable in the objective (which
   // is 0 if the variable does not appear in the objective).
@@ -526,7 +591,7 @@ class MPObjective {
   double offset() const { return offset_; }
 
   // Adds a constant term to the objective.
-  // Note: please use the less ambiguous SetOffest() if possible!
+  // Note: please use the less ambiguous SetOffset() if possible!
   // TODO(user): remove this.
   void AddOffset(double value) { SetOffset(offset() + value); }
 
@@ -558,8 +623,7 @@ class MPObjective {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GRBInterface;
+  friend class GurobiInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -567,7 +631,7 @@ class MPObjective {
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
   explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), offset_(0.0), value_(0.0) {}
+      : interface_(interface), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
@@ -575,8 +639,6 @@ class MPObjective {
   hash_map<const MPVariable*, double> coefficients_;
   // Constant term.
   double offset_;
-  // The value of the objective function.
-  double value_;
 
   DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
@@ -624,8 +686,7 @@ class MPVariable {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GRBInterface;
+  friend class GurobiInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -661,7 +722,9 @@ class MPConstraint {
   // Clears all variables and coefficients. Does not clear the bounds.
   void Clear();
 
-  // Sets the coefficient of the variable on the constraint.
+  // Sets the coefficient of the variable on the constraint. If the variable
+  // does not belong to the solver, the function just returns, or crashes in
+  // non-opt mode.
   void SetCoefficient(const MPVariable* const var, double coeff);
   // Gets the coefficient of a given variable on the constraint (which
   // is 0 if the variable does not appear in the constraint).
@@ -702,8 +765,7 @@ class MPConstraint {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GRBInterface;
+  friend class GurobiInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
@@ -868,6 +930,7 @@ class MPSolverParameters {
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
   // @}
 
+
  private:
   // @{
   // Parameter value for each parameter.
@@ -886,6 +949,7 @@ class MPSolverParameters {
   // solver's default value. Only parameters for which the wrapper
   // does not define a default value need such an indicator.
   bool lp_algorithm_is_default_;
+
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
@@ -976,12 +1040,18 @@ class MPSolverInterface {
   virtual void ClearObjective() = 0;
 
   // ------ Query statistics on the solution and the solve ------
-  // Returns the number of simplex iterations.
+  // Returns the number of simplex iterations. The problem must be discrete,
+  // otherwise it crashes, or returns kUnknownNumberOfIterations in NDEBUG mode.
   virtual int64 iterations() const = 0;
-  // Returns the number of branch-and-bound nodes
+  // Returns the number of branch-and-bound nodes. The problem must be discrete,
+  // otherwise it crashes, or returns kUnknownNumberOfNodes in NDEBUG mode.
   virtual int64 nodes() const = 0;
-  // Returns the best objective bound. Only available for discrete problems.
+  // Returns the best objective bound. The problem must be discrete, otherwise
+  // it crashes, or returns trivial_worst_objective_bound() in NDEBUG mode.
   virtual double best_objective_bound() const = 0;
+  // A trivial objective bound: the worst possible value of the objective,
+  // which will be +infinity if minimizing and -infinity if maximing.
+  double trivial_worst_objective_bound() const;
   // Returns the objective value of the best solution found so far.
   double objective_value() const;
 
@@ -990,19 +1060,20 @@ class MPSolverInterface {
   // Returns the basis status of a constraint.
   virtual MPSolver::BasisStatus column_status(int variable_index) const = 0;
 
-  // Checks whether the solution is synchronized with the model,
-  // i.e. whether the model has changed since the solution was
-  // computed last.
-  void CheckSolutionIsSynchronized() const;
-  // Checks whether a feasible solution exists.
-  virtual void CheckSolutionExists() const;
+  // Checks whether the solution is synchronized with the model, i.e. whether
+  // the model has changed since the solution was computed last.
+  // If it isn't, it crashes in NDEBUG, and returns false othwerwise.
+  bool CheckSolutionIsSynchronized() const;
+  // Checks whether a feasible solution exists. The behavior is similar to
+  // CheckSolutionIsSynchronized() above.
+  virtual bool CheckSolutionExists() const;
   // Handy shortcut to do both checks above (it is often used).
-  void CheckSolutionIsSynchronizedAndExists() const {
-    CheckSolutionIsSynchronized();
-    CheckSolutionExists();
+  bool CheckSolutionIsSynchronizedAndExists() const {
+    return CheckSolutionIsSynchronized() && CheckSolutionExists();
   }
-  // Checks whether information on the best objective bound exists.
-  virtual void CheckBestObjectiveBoundExists() const;
+  // Checks whether information on the best objective bound exists. The behavior
+  // is similar to CheckSolutionIsSynchronized() above.
+  virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
   // Writes model to a file.
@@ -1048,7 +1119,7 @@ class MPSolverInterface {
 
   // Computes exact condition number. Only available for continuous
   // problems and only implemented in GLPK.
-  virtual double ComputeExactConditionNumber() const = 0;
+  virtual double ComputeExactConditionNumber() const;
 
   friend class MPSolver;
 
@@ -1131,6 +1202,7 @@ class MPSolverInterface {
   virtual void SetScalingMode(int value) = 0;
   virtual void SetLpAlgorithm(int value) = 0;
 };
+
 
 }  // namespace operations_research
 

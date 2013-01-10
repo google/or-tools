@@ -55,14 +55,14 @@ message MPModelProto {
 
 message MPModelRequest {
   required MPModelProto model = 1;
+  // This must remain consistent with MPSolver::OptimizationProblemType.
   enum OptimizationProblemType {
-    GLPK_LINEAR_PROGRAMMING = 0;
-    GLPK_MIXED_INTEGER_PROGRAMMING = 1;
-    CLP_LINEAR_PROGRAMMING = 2;
-    CBC_MIXED_INTEGER_PROGRAMMING = 3;
-    SCIP_MIXED_INTEGER_PROGRAMMING = 4;
-    SULUM_LINEAR_PROGRAMMING = 5;
-    SULUM_MIXED_INTEGER_PROGRAMMING = 6;
+    CLP_LINEAR_PROGRAMMING = 0;  // Recommended default for LP problems.
+    GLPK_LINEAR_PROGRAMMING = 1;
+
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for IP problems.
+    GLPK_MIXED_INTEGER_PROGRAMMING = 4;
+    CBC_MIXED_INTEGER_PROGRAMMING = 5;
   }
   required OptimizationProblemType problem_type = 2;
   optional int32 time_limit_ms = 3;
