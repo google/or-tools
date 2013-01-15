@@ -1467,7 +1467,7 @@ class LocalSearchPhaseParameters {
 
 #if defined(SWIGCSHARP)
 
-%module(directors="1") operations_research;
+%module(directors="1", allprotected="1") operations_research;
 %feature("director") Action;
 %feature("director") BaseLNS;
 %feature("director") Decision;
@@ -1531,6 +1531,10 @@ struct FailureProtect {
 
 // Keep the .solver() API.
 %rename (solver) *::solver;
+
+// Rename NewSearch and EndSearch to add pinning.
+%rename (NewSearchAux) operations_research::Solver::NewSearch;
+%rename (EndSearchAux) operations_research::Solver::EndSearch;
 
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 %typemap(cscode) operations_research::Constraint %{
@@ -2094,6 +2098,72 @@ namespace operations_research {
     return array;
   }
 
+  public void NewSearch(DecisionBuilder db) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    NewSearchAux(db);
+  }
+
+  public void NewSearch(DecisionBuilder db, SearchMonitor sm1) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    pinned_search_monitors_.Add(sm1);
+    NewSearchAux(db, sm1);
+  }
+
+
+  public void NewSearch(DecisionBuilder db,
+                        SearchMonitor sm1,
+                        SearchMonitor sm2) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    pinned_search_monitors_.Add(sm1);
+    pinned_search_monitors_.Add(sm2);
+    NewSearchAux(db, sm1, sm2);
+  }
+
+  public void NewSearch(DecisionBuilder db,
+                        SearchMonitor sm1,
+                        SearchMonitor sm2,
+                        SearchMonitor sm3) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    pinned_search_monitors_.Add(sm1);
+    pinned_search_monitors_.Add(sm2);
+    pinned_search_monitors_.Add(sm3);
+    NewSearchAux(db, sm1, sm2, sm3);
+  }
+
+  public void NewSearch(DecisionBuilder db,
+                        SearchMonitor sm1,
+                        SearchMonitor sm2,
+                        SearchMonitor sm3,
+                        SearchMonitor sm4) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    pinned_search_monitors_.Add(sm1);
+    pinned_search_monitors_.Add(sm2);
+    pinned_search_monitors_.Add(sm3);
+    pinned_search_monitors_.Add(sm4);
+    NewSearchAux(db, sm1, sm2, sm3, sm4);
+  }
+
+  public void NewSearch(DecisionBuilder db, SearchMonitor[] monitors) {
+    pinned_decision_builder_ = db;
+    pinned_search_monitors_.Clear();
+    pinned_search_monitors_.AddRange(monitors);
+    NewSearchAux(db, monitors);
+  }
+
+  public void EndSearch() {
+    pinned_decision_builder_ = null;
+    pinned_search_monitors_.Clear();
+    EndSearchAux();
+  }
+
+  private System.Collections.Generic.List<SearchMonitor> pinned_search_monitors_
+      = new System.Collections.Generic.List<SearchMonitor>();
+  private DecisionBuilder pinned_decision_builder_;
 %}
 
 %extend IntVarLocalSearchFilter {
