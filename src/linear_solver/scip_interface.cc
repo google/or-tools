@@ -202,7 +202,18 @@ void SCIPInterface::DeleteSCIP() {
 }
 
 void SCIPInterface::WriteModel(const string& filename) {
+#if (SCIP_VERSION < 300)
+  // The message handler also controls how the model is written to a file.
+  // If it is NULL, then nothing is written to the file.
+  ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
+#endif
   ORTOOLS_SCIP_CALL(SCIPwriteOrigProblem(scip_, filename.c_str(), NULL, false));
+  // Restore mesage handler to its original value.
+#if (SCIP_VERSION < 300)
+  if (quiet_) {
+    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
+  }
+#endif
 }
 
 // ------ Model modifications and extraction -----
@@ -421,13 +432,21 @@ void SCIPInterface::ExtractNewConstraints() {
         j++;
       }
       SCIP_CONS* scip_constraint = NULL;
+#if (SCIP_VERSION < 300)
+      ORTOOLS_SCIP_CALL(SCIPcreateConsLinear(
+          scip_, &scip_constraint,
+          ct->name().empty() ? "" : ct->name().c_str(),
+          size, vars.get(), coefs.get(),
+          ct->lb(), ct->ub(),
+          true, true, true, true, true, false, false, false, false, false));
+#else
       ORTOOLS_SCIP_CALL(SCIPcreateConsBasicLinear(
           scip_, &scip_constraint,
-          // TODO(user)
           ct->name().empty() ? "" : ct->name().c_str(),
           size, vars.get(), coefs.get(),
           ct->lb(), ct->ub()));
       ORTOOLS_SCIP_CALL(SCIPaddCons(scip_, scip_constraint));
+#endif
       scip_constraints_.push_back(scip_constraint);
     }
   }
@@ -463,7 +482,16 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Set log level.
+#if (SCIP_VERSION >= 300)
   SCIPsetMessagehdlrQuiet(scip_, quiet_);
+#else
+  if (quiet_) {
+    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
+  } else {
+    ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
+  }
+#endif
+
 
   // Special case if the model is empty since SCIP expects a non-empty model
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
