@@ -61,24 +61,51 @@
 <div class="section" id="intervalvars">
 <h3>6.3.1.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
 </div>
+<div class="section" id="variables-that-perform-or-not">
+<h3>6.3.1.2. Variables that perform... or not</h3>
+</div>
 <div class="section" id="sequencevars">
-<h3>6.3.1.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
+<h3>6.3.1.3. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
+</div>
+<div class="section" id="ranked-intervalvars">
+<h3>6.3.1.4. Ranked <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+</div>
+<div class="section" id="public-methods">
+<h3>6.3.1.5. Public methods</h3>
 </div>
 </div>
-<div class="section" id="decisionbuilders-and-decisions">
-<span id="scheduling-decisionbuilders-decision"></span><h2>6.3.2. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</h2>
-<div class="section" id="decisionvisitors">
-<h3>6.3.2.1. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</h3>
+<div class="section" id="constraints-on-intervalvars">
+<span id="scheduling-constraints"></span><h2>6.3.2. Constraints on <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h2>
+<div class="section" id="intervalunaryrelation-constraints">
+<h3>6.3.2.1. <tt class="docutils literal"><span class="pre">IntervalUnaryRelation</span></tt> constraints</h3>
 </div>
-<div class="section" id="makephase-for-intervalvars">
-<span id="makephase-interval-vars"></span><h3>6.3.2.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+<div class="section" id="binaryintervalrelation-constraints">
+<h3>6.3.2.2. <tt class="docutils literal"><span class="pre">BinaryIntervalRelation</span></tt> constraints</h3>
 </div>
-<div class="section" id="makephase-for-sequencevars">
-<span id="makephase-sequence-vars"></span><h3>6.3.2.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
+<div class="section" id="temporaldisjunction-constraints">
+<h3>6.3.2.3. <tt class="docutils literal"><span class="pre">TemporalDisjunction</span></tt> constraints</h3>
+</div>
+<div class="section" id="disjunctiveconstraint-constraints">
+<h3>6.3.2.4. <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt> constraints</h3>
+</div>
+<div class="section" id="cumulativeconstraint-constraints">
+<h3>6.3.2.5. <tt class="docutils literal"><span class="pre">CumulativeConstraint</span></tt> constraints</h3>
+</div>
+</div>
+<div class="section" id="constraints-on-sequencevars">
+<h2>6.3.3. Constraints on <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h2>
+</div>
+<div class="section" id="decisionbuilders-and-decisions-for-scheduling">
+<span id="scheduling-decisionbuilders-decision"></span><h2>6.3.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling</h2>
+<div class="section" id="id6">
+<h3>6.3.4.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
+</div>
+<div class="section" id="id7">
+<h3>6.3.4.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
 </div>
 </div>
 <div class="section" id="dependencygraph">
-<h2>6.3.3. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></h2>
+<h2>6.3.5. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -168,16 +195,27 @@ Search:
 <li><a class="reference internal" href="#">6.3. Scheduling in <em>or-tools</em></a><ul>
 <li><a class="reference internal" href="#variables">6.3.1. Variables</a><ul>
 <li><a class="reference internal" href="#intervalvars">6.3.1.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#sequencevars">6.3.1.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#variables-that-perform-or-not">6.3.1.2. Variables that perform... or not</a></li>
+<li><a class="reference internal" href="#sequencevars">6.3.1.3. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#ranked-intervalvars">6.3.1.4. Ranked <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#public-methods">6.3.1.5. Public methods</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#decisionbuilders-and-decisions">6.3.2. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a><ul>
-<li><a class="reference internal" href="#decisionvisitors">6.3.2.1. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</a></li>
-<li><a class="reference internal" href="#makephase-for-intervalvars">6.3.2.2. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#makephase-for-sequencevars">6.3.2.3. <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#constraints-on-intervalvars">6.3.2. Constraints on <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a><ul>
+<li><a class="reference internal" href="#intervalunaryrelation-constraints">6.3.2.1. <tt class="docutils literal"><span class="pre">IntervalUnaryRelation</span></tt> constraints</a></li>
+<li><a class="reference internal" href="#binaryintervalrelation-constraints">6.3.2.2. <tt class="docutils literal"><span class="pre">BinaryIntervalRelation</span></tt> constraints</a></li>
+<li><a class="reference internal" href="#temporaldisjunction-constraints">6.3.2.3. <tt class="docutils literal"><span class="pre">TemporalDisjunction</span></tt> constraints</a></li>
+<li><a class="reference internal" href="#disjunctiveconstraint-constraints">6.3.2.4. <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt> constraints</a></li>
+<li><a class="reference internal" href="#cumulativeconstraint-constraints">6.3.2.5. <tt class="docutils literal"><span class="pre">CumulativeConstraint</span></tt> constraints</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependencygraph">6.3.3. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></a></li>
+<li><a class="reference internal" href="#constraints-on-sequencevars">6.3.3. Constraints on <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#decisionbuilders-and-decisions-for-scheduling">6.3.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling</a><ul>
+<li><a class="reference internal" href="#id6">6.3.4.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#id7">6.3.4.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependencygraph">6.3.5. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></a></li>
 </ul>
 </li>
 </ul>

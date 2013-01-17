@@ -66,25 +66,11 @@
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap6</span></tt>.</p>
 <p>The files inside this directory are:</p>
-<ul class="simple">
-<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
-<li><tt class="file docutils literal"><span class="pre">dummy_ls.cc</span></tt>: A very basic example to understand the API of Local Search in or-tools.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop.h</span></tt>: This file contents the <tt class="docutils literal"><span class="pre">JobShopData</span></tt> class that records the data for job-shop problems. This file is used
-throughout all the examples.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop.cc</span></tt>: A basic implementation of the disjunctive model with <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_ls.cc</span></tt>: A basic implementation of Local Search with an 2-opt operator.</li>
-<li><tt class="file docutils literal"><span class="pre">dummy_ls_filtering.cc</span></tt>: The example <tt class="file docutils literal"><span class="pre">dummy_ls.cc</span></tt> extended with filtering.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_ls_filtering.cc</span></tt>: The example <tt class="file docutils literal"><span class="pre">jobshop_ls.cc</span></tt> extended with filtering.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_tabu.cc</span></tt>: The job-shop problem solved by Tabu Search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_SA.cc</span></tt>: The job-shop problem solved by Simulated Annealing.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_GLS.cc</span></tt>: The job-shop problem solved by Guided Local Search.</li>
-</ul>
-<p>The files of this chapter are <strong>NOT</strong> the same as the ones in the <tt class="file docutils literal"><span class="pre">example</span></tt> directory even if there were inspired by them.</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="ls/jobshop_def_data.html">6.1. The job-shop problem, the disjunctive model and benchmark data</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_def_data.html#description-of-the-problem">6.1.1. Description of the problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_def_data.html#description-of-the-problem-difficulty">6.1.1. Description of the problem </a></li>
 <li class="toctree-l2"><a class="reference internal" href="ls/jobshop_def_data.html#the-disjunctive-graph">6.1.2. The disjunctive graph</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ls/jobshop_def_data.html#the-disjunctive-model">6.1.3. The disjunctive model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ls/jobshop_def_data.html#the-data-and-file-formats">6.1.4. The data and file formats</a></li>
@@ -101,8 +87,10 @@ throughout all the examples.</li>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/scheduling_or_tools.html">6.3. Scheduling in <em>or-tools</em></a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#variables">6.3.1. Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#decisionbuilders-and-decisions">6.3.2. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#dependencygraph">6.3.3. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#constraints-on-intervalvars">6.3.2. Constraints on <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#constraints-on-sequencevars">6.3.3. Constraints on <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#decisionbuilders-and-decisions-for-scheduling">6.3.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/scheduling_or_tools.html#dependencygraph">6.3.5. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/local_search.html">6.4. What is local search?</a><ul>
@@ -113,11 +101,9 @@ throughout all the examples.</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/basic_working_local_search.html">6.5. Basic working of the solver: local search</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#overview-of-the-local-search-mechanism-in-or-tools">6.5.1. Overview of the Local Search Mechanism in <em>or-tools</em></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#initial-solution">6.5.2. Initial solution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#localsearchphaseparameters">6.5.3. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#searchlimits-in-local-search">6.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s in Local Search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">6.5.5. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s  </a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#basic-definitions">6.5.1. Basic definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#the-basic-idea">6.5.2. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/basic_working_local_search.html#the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s  </a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/ls_operators.html">6.6. Local Search Neighborhood (LSN) Operators</a><ul>
@@ -134,10 +120,10 @@ throughout all the examples.</li>
 <li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#interesting-localsearchfilters">6.8.3. Interesting <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics_examples.html">6.9. Three efficient meta-heuristics</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics_examples.html">6.9. Meta-heuristics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#tabu-search-ts">6.9.1. Tabu search (TS)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#simulated-annealing">6.9.2. Simulated annealing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#guided-local-search">6.9.3. Guided local search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#simulated-annealing-sa">6.9.2. Simulated annealing (SA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#guided-local-search-gls">6.9.3. Guided local search (GLS)</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.10. Summary</a><ul>

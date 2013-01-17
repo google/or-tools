@@ -56,19 +56,50 @@
             
   <div class="section" id="an-implementation-of-the-disjunctive-model">
 <span id="jobshop-implementation-disjunctive-model"></span><h1>6.2. An implementation of the disjunctive model</h1>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap6/jobshop.h">tutorials/cplusplus/chap6/jobshop.h</a> and <a class="reference external" href="../../../tutorials/cplusplus/chap6/jobshop.cc">tutorials/cplusplus/chap6/jobshop.cc</a>.</p>
-<p>Scheduling is one of the field where Constraint Programming is heavily used,
-therefore specialized constraints and variables have been developed. In this section,
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap6/jobshop.cc">jobshop.cc</a></li>
+    </ol>
+  </li>
+  <li>Data file:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap6/abz9">abz9</a></li>
+    </ol>
+  </li>
+
+</ol></div>
+<p>Scheduling is one of the fields where Constraint Programming is heavily used and where
+specialized constraints and variables have been developed<a class="footnote-reference" href="#scheduling-or-tools-explained-in-details-next-section" id="id1">[1]</a>.
+In this section,
 we will implement the disjunctive model with dedicated variables (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and
 <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>) and constraints (<tt class="docutils literal"><span class="pre">IntervalBinaryRelation</span></tt> and <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>).</p>
 <p>Last but not least, we will see our first real example of combining two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 in a top-down fashion.</p>
+<table class="docutils footnote" frame="void" id="scheduling-or-tools-explained-in-details-next-section" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The next section is entirely dedicated to scheduling in <em>or-tools</em>.</td></tr>
+</tbody>
+</table>
 <div class="section" id="the-intervalvar-variables">
 <h2>6.2.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</h2>
-<p>We create one <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> for each task. An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> represents one
+<p>We create one <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> for each task.
+Remember the <tt class="docutils literal"><span class="pre">Task</span></tt> <tt class="docutils literal"><span class="pre">struct</span></tt> we use in the <tt class="docutils literal"><span class="pre">JobShopData</span></tt> <tt class="docutils literal"><span class="pre">class</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">struct</span> <span class="n">Task</span> <span class="p">{</span>
+  <span class="n">Task</span><span class="p">(</span><span class="kt">int</span> <span class="n">j</span><span class="p">,</span> <span class="kt">int</span> <span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="n">d</span><span class="p">)</span> <span class="o">:</span> <span class="n">job_id</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">machine_id</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">duration</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="kt">int</span> <span class="n">job_id</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">machine_id</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">duration</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> represents one
 integer interval and is often used in scheduling. Its main characteristics are its starting time,
 its duration and its ending time.</p>
-<p>The CP solver has a factory method for fixed duration intervals:</p>
+<p>The CP solver has the factory method <tt class="docutils literal"><span class="pre">MakeFixedDurationIntervalVar()</span></tt> for fixed duration intervals:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="n">StringPrintf</span><span class="p">(</span><span class="s">&quot;J%dM%dI%dD%d&quot;</span><span class="p">,</span>
                                       <span class="n">task</span><span class="p">.</span><span class="n">job_id</span><span class="p">,</span>
                                       <span class="n">task</span><span class="p">.</span><span class="n">machine_id</span><span class="p">,</span>
@@ -82,7 +113,7 @@ its duration and its ending time.</p>
                                                       <span class="n">name</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>The first two arguments of <tt class="docutils literal"><span class="pre">MakeFixedDurationIntervalVar</span></tt> are
+<p>The first two arguments of <tt class="docutils literal"><span class="pre">MakeFixedDurationIntervalVar()</span></tt> are
 a lower and an upper bound on the starting time of the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>.
 The fourth argument is a <tt class="docutils literal"><span class="pre">bool</span></tt> that indicates if the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can be unperformed or not.
 Unperformed <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s simply don&#8217;t exist anymore. This can happen when the
@@ -91,6 +122,21 @@ Unperformed <tt class="docutils literal"><span class="pre">IntervalVar</span></t
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="n">jobs_to_tasks</span><span class="p">(</span><span class="n">job_count</span><span class="p">);</span>
 <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;</span> <span class="o">&gt;</span>
                                    <span class="n">machines_to_tasks</span><span class="p">(</span><span class="n">machine_count</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>and populate them:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Creates all individual interval variables.</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">job_id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">job_id</span> <span class="o">&lt;</span> <span class="n">job_count</span><span class="p">;</span> <span class="o">++</span><span class="n">job_id</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">JobShopData</span><span class="o">::</span><span class="n">Task</span><span class="o">&gt;&amp;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">TasksOfJob</span><span class="p">(</span><span class="n">job_id</span><span class="p">);</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">task_index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">task_index</span> <span class="o">&lt;</span> <span class="n">tasks</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">task_index</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="n">JobShopData</span><span class="o">::</span><span class="n">Task</span><span class="o">&amp;</span> <span class="n">task</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="n">task_index</span><span class="p">];</span>
+    <span class="n">CHECK_EQ</span><span class="p">(</span><span class="n">job_id</span><span class="p">,</span> <span class="n">task</span><span class="p">.</span><span class="n">job_id</span><span class="p">);</span>
+    <span class="k">const</span> <span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="p">...</span>
+    <span class="n">IntervalVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">one_task</span> <span class="o">=</span> <span class="p">...</span>
+    <span class="n">jobs_to_tasks</span><span class="p">[</span><span class="n">task</span><span class="p">.</span><span class="n">job_id</span><span class="p">].</span><span class="n">push_back</span><span class="p">(</span><span class="n">one_task</span><span class="p">);</span>
+    <span class="n">machines_to_tasks</span><span class="p">[</span><span class="n">task</span><span class="p">.</span><span class="n">machine_id</span><span class="p">].</span><span class="n">push_back</span><span class="p">(</span><span class="n">one_task</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>We will create the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables later when we will add the disjunctive constraints.</p>
@@ -105,44 +151,12 @@ in a job, we can add an <tt class="docutils literal"><span class="pre">IntervalB
    <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntervalVarRelation</span><span class="p">(</span><span class="n">t2</span><span class="p">,</span> <span class="n">Solver</span><span class="o">::</span><span class="n">STARTS_AFTER_END</span><span class="p">,</span> <span class="n">t1</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Other possibilities include:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">ENDS_AFTER_END</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> ends after <tt class="docutils literal"><span class="pre">t2</span></tt> ends, i.e. <tt class="docutils literal"><span class="pre">End(t1)</span> <span class="pre">&gt;=</span> <span class="pre">End(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">ENDS_AFTER_START</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> ends after t2 starts, i.e. <tt class="docutils literal"><span class="pre">End(t1)</span> <span class="pre">&gt;=</span> <span class="pre">Start(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">ENDS_AT_END</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> ends at the end of <tt class="docutils literal"><span class="pre">t2</span></tt>, i.e. <tt class="docutils literal"><span class="pre">End(t1)</span> <span class="pre">==</span> <span class="pre">End(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">ENDS_AT_START</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> ends at <tt class="docutils literal"><span class="pre">t2</span></tt>&#8216;s start, i.e. <tt class="docutils literal"><span class="pre">End(t1)</span> <span class="pre">==</span> <span class="pre">Start(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_AFTER_START</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> starts after <tt class="docutils literal"><span class="pre">t2</span></tt> starts, i.e. <tt class="docutils literal"><span class="pre">Start(t1)</span> <span class="pre">&gt;=</span> <span class="pre">Start(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_AT_END</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> starts at <tt class="docutils literal"><span class="pre">t2</span></tt>&#8216;s end, i.e. <tt class="docutils literal"><span class="pre">Start(t1)</span> <span class="pre">==</span> <span class="pre">End(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_AT_START</span></tt>: <tt class="docutils literal"><span class="pre">t1</span></tt> starts when <tt class="docutils literal"><span class="pre">t2</span></tt> starts, i.e. <tt class="docutils literal"><span class="pre">Start(t1)</span> <span class="pre">==</span> <span class="pre">Start(t2)</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STAYS_IN_SYNC</span></tt>: <tt class="docutils literal"><span class="pre">STARTS_AT_START</span></tt> and <tt class="docutils literal"><span class="pre">ENDS_AT_END</span></tt> at the same time.</li>
-</ul>
-</div></blockquote>
-<p>These possibilities are enclosed in the <tt class="docutils literal"><span class="pre">BinaryIntervalRelation</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>.</p>
-<p>While we are at it, you can also specify a temporal relation between an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> <tt class="docutils literal"><span class="pre">t</span></tt> and an integer <tt class="docutils literal"><span class="pre">d</span></tt>:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">ENDS_AFTER</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> ends after <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">End(t)</span> <span class="pre">&gt;=</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">ENDS_AT</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> ends at <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">End(t)</span> <span class="pre">==</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">ENDS_BEFORE</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> ends before <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">End(t)</span> <span class="pre">&lt;=</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_AFTER</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> starts after <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">Start(t)</span> <span class="pre">&gt;=</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_AT</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> starts at <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">Start(t)</span> <span class="pre">==</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">STARTS_BEFORE</span></tt>: <tt class="docutils literal"><span class="pre">t</span></tt> starts before <tt class="docutils literal"><span class="pre">d</span></tt>, i.e. <tt class="docutils literal"><span class="pre">Start(t)</span> <span class="pre">&lt;=</span> <span class="pre">d</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">CROSS_DATE</span></tt>: <tt class="docutils literal"><span class="pre">STARTS_BEFORE</span></tt> and <tt class="docutils literal"><span class="pre">ENDS_AFTER</span></tt> at the same time, i.e. <tt class="docutils literal"><span class="pre">d</span></tt> is in <tt class="docutils literal"><span class="pre">t</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">AVOID_DATE</span></tt>: <tt class="docutils literal"><span class="pre">STARTS_AFTER</span></tt> or <tt class="docutils literal"><span class="pre">ENDS_BEFORE</span></tt>, i.e. <tt class="docutils literal"><span class="pre">d</span></tt> is not in <tt class="docutils literal"><span class="pre">t</span></tt>.</li>
-</ul>
-</div></blockquote>
-<p>The possibilities are enclosed in the <tt class="docutils literal"><span class="pre">UnaryIntervalRelation</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>. The corresponding constraints are
-<tt class="docutils literal"><span class="pre">IntervalUnaryRelation</span></tt> constraints and the factory method is:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeIntervalVarRelation</span><span class="p">(</span><span class="n">IntervalVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">t</span><span class="p">,</span>
-                                    <span class="n">Solver</span><span class="o">::</span><span class="n">UnaryIntervalRelation</span> <span class="n">r</span><span class="p">,</span>
-                                    <span class="n">int64</span> <span class="n">d</span><span class="p">)</span>
-</pre></div>
-</div>
+<p>In the next section, we will examine other possibilities and also temporal relations
+between an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> <tt class="docutils literal"><span class="pre">t</span></tt> and an integer <tt class="docutils literal"><span class="pre">d</span></tt> representing time.</p>
 </div>
 <div class="section" id="the-disjunctive-constraints-and-sequencevars">
 <h2>6.2.3. The disjunctive constraints and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h2>
-<p>The constraints ensure that the tasks are correctly processed on each machine, i.e.
+<p>The disjunctive constraints ensure that the tasks are correctly processed on each machine, i.e.
 a task is processed entirely before or after another task on a single machine. The CP solver provides
 <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>s and a corresponding factory method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="n">StringPrintf</span><span class="p">(</span><span class="s">&quot;Machine_%d&quot;</span><span class="p">,</span> <span class="n">machine_id</span><span class="p">);</span>
@@ -152,14 +166,9 @@ a task is processed entirely before or after another task on a single machine. T
 </pre></div>
 </div>
 <p>A <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable is a variable whose domain is a set of possible
-orderings of the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s. It allows ordering tasks. We could create one <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>
-for each machine with the factory method <tt class="docutils literal"><span class="pre">MakeSequenceVar</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">MakeSequenceVar</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">IntervalVar</span> <span class="o">*&gt;</span> <span class="o">&amp;</span> <span class="n">intervals</span><span class="p">,</span>
-                <span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>but creating <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s with <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>s is so common that the CP solver offers the
-<tt class="docutils literal"><span class="pre">MakeSequenceVar()</span></tt> shortcut:</p>
+orderings of the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s. It allows ordering tasks.</p>
+<p>You can only create<a class="footnote-reference" href="#one-way-to-create-sequence-vars" id="id2">[2]</a> <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s with the <tt class="docutils literal"><span class="pre">MakeSequenceVar()</span></tt> method of the <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>
+class:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SequenceVar</span><span class="o">*&gt;</span> <span class="n">all_sequences</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">machine_id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">machine_id</span> <span class="o">&lt;</span> <span class="n">machine_count</span><span class="p">;</span> <span class="o">++</span><span class="n">machine_id</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">const</span> <span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="n">StringPrintf</span><span class="p">(</span><span class="s">&quot;Machine_%d&quot;</span><span class="p">,</span> <span class="n">machine_id</span><span class="p">);</span>
@@ -170,6 +179,13 @@ for each machine with the factory method <tt class="docutils literal"><span clas
 <span class="p">}</span>
 </pre></div>
 </div>
+<table class="docutils footnote" frame="void" id="one-way-to-create-sequence-vars" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The factory method <tt class="docutils literal"><span class="pre">Solver::MakeSequenceVar(...)</span></tt>
+has been removed from the API.</td></tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="the-objective-function">
 <h2>6.2.4. The objective function</h2>
@@ -201,10 +217,10 @@ You can also query the start time and duration:</p>
 </div>
 <div class="section" id="the-decisionbuilders">
 <span id="jobshop-decision-builders-compose"></span><h2>6.2.5. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</h2>
-<p>The solving process is done in two phases: first we rank the tasks for each machine, then
+<p>The solving process is done in two sequential phases: first we rank the tasks for each machine, then
 we schedule each task at its earliest start time. This is done with <em>two</em> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 that are combined in a top-down fashion, i.e. one <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is applied and then when we reach
-a leaf in the search tree, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> kicks in. Since this chapter is about Local Search,
+a leaf in the search tree, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> kicks in. Since this chapter is about local search,
 we will use default search strategies for both phases.</p>
 <p>First, we define the phase to rank the tasks on all machines:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">sequence_phase</span> <span class="o">=</span>
@@ -218,7 +234,7 @@ by fixing the objective variable to its minimum value:</p>
                                    <span class="n">Solver</span><span class="o">::</span><span class="n">ASSIGN_MIN_VALUE</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Third, we combine both phases one after the other in the search tree:</p>
+<p>Third, we combine both phases one after the other in the search tree with the <tt class="docutils literal"><span class="pre">Compose()</span></tt> method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">main_phase</span> <span class="o">=</span>
                          <span class="n">solver</span><span class="p">.</span><span class="n">Compose</span><span class="p">(</span><span class="n">sequence_phase</span><span class="p">,</span> <span class="n">obj_phase</span><span class="p">);</span>
 </pre></div>
@@ -261,8 +277,9 @@ by fixing the objective variable to its minimum value:</p>
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">collector-&gt;ForwardSequence(0,</span> <span class="pre">seq)</span></tt> is a shortcut to return the <tt class="docutils literal"><span class="pre">std::vector&lt;int&gt;</span></tt>
-containing the order in which the tasks are processed on each machine for solution 0.</p>
-<p>This order corresponds exactly to the job ids because the way the tasks are ordered on each machine (by job ids).
+containing the order in which the tasks are processed on each machine for solution 0 (which is the last and thus optimal
+solution).</p>
+<p>This order corresponds exactly to the job ids because the tasks are sorted by job id on each machine.
 The result for our instance is:</p>
 <div class="highlight-text"><div class="highlight"><pre>[09:21:44] jobshop.cc:150: Machine_0: 0, 1
 [09:21:44] jobshop.cc:150: Machine_1: 2, 0, 1
@@ -271,8 +288,7 @@ The result for our instance is:</p>
 </div>
 <p>which is exactly the optimal solution depicted in the previous section.</p>
 <p>What about getting the start and end times for all tasks?</p>
-<p>You have to declare what variables you want to collect in the
-<tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>:</p>
+<p>Declare the corresponding variables in the <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">collector</span> <span class="o">=</span>
                                 <span class="n">solver</span><span class="p">.</span><span class="n">MakeLastSolutionCollector</span><span class="p">();</span>
 <span class="n">collector</span><span class="o">-&gt;</span><span class="n">Add</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">);</span>
@@ -316,9 +332,47 @@ The result for our instance is:</p>
 <span class="p">...</span><span class="o">:</span> <span class="nl">Machine_2:</span> <span class="n">Job</span> <span class="mi">1</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>  <span class="n">Job</span> <span class="mi">0</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>  <span class="n">Job</span> <span class="mi">2</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">11</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>RESULTS HERE</p>
-<p>This is why we use local search to find a good solution in the
-next section.</p>
+<p>Let&#8217;s try the <tt class="file docutils literal"><span class="pre">abz9</span></tt> instance:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="23%" />
+<col width="26%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Sol. nbr.</th>
+<th class="head">Obj. val.</th>
+<th class="head">Branches</th>
+<th class="head">Time (s)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>87</td>
+<td>1015</td>
+<td>131 733</td>
+<td>26,756</td>
+</tr>
+<tr class="row-odd"><td>107</td>
+<td>986</td>
+<td>6 242 194</td>
+<td>1088,487</td>
+</tr>
+</tbody>
+</table>
+<p>After a little bit more than 18 minutes (1088,487 seconds), the CP solver
+finds its 107 <sup>th</sup> solution with an objective value of 986. This is quite far from the optimal
+value of... 679 <a class="reference internal" href="#adams1988">[Adams1988]</a>.
+An exact procedure to solve the job-shop problem is possible but only for small instances and with specialized algorithms.</p>
+<p>We prefer to quickly find (hopefully) good solutions (see the section <a class="reference internal" href="jobshop_ls.html#jobshop-ls"><em>The jobshop problem: and now with local search!</em></a>).</p>
+<p>We will discover next what specialized tools are available in our library to handle scheduling problems.</p>
+<table class="docutils citation" frame="void" id="adams1988" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Adams1988]</a></td><td>J. Adams, E. Balas, D. Zawack, <em>The shifting bottleneck
+procedure for job shop scheduling</em>. Management Science, 34, pp 391-401, 1988.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 

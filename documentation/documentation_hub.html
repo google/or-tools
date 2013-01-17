@@ -54,10 +54,6 @@ item_button.src = "static/icon_show.gif";
 
 <h1>Welcome to the <a href="https://code.google.com/p/or-tools/">or-tools library</a> main documentation hub</h1>
 
-<div align="center">
-<img src="happy-holidays-from-google.jpg"  width="50%"width  alt="" />
-</div>
-
 <div class="note">This is work in progress. Pages will be modified, moved or even removed but at least we are in sync with the code!</div>
 
 <div class="safe_trees">Please, think twice before printing. Be green, read on the screen! (Don't do like <a href="http://mail.google.com/mail/help/paper/more.html">those guys</a>!)<br />
@@ -95,12 +91,15 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.1.23: (2012-12-31 19:23:26)
+<pre id="verbatim">v.0.1.24: (2013-01-17 11:26:42)
 -------------------------------
+* Milestone: 300 pages!
 * Minor enhancements to the manual:
-  - no more warnings when compiling.
-  - difficulty levels indicated with icons.
-  - 5.5 corrected.
+  - minor corrections in chapters 5, 6 and 9.
+  - html: new presentation of the code files.
+  - 6.1, 6.2 partly rewritten and corrected.
+  - 6.3 added.
+
 </pre>
 
 <p>This is the <a href="changes_list.txt">list of changes</a>.</p>
@@ -122,9 +121,9 @@ We also recommend to use the epub version as it is currently the best available 
 <ul>
 <li>Progress at a glance: <a href="#manual_progress">Manual</a> - <a href="#documentation_progress">Documentation generation</a></li>
 <li><a href="user_manual/index.html">Online version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.23.pdf.zip">A4 pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.23.pdf.zip">Letter pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.23.epub.zip">epub version</a> (experimental)</li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.24.pdf.zip">A4 pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.24.pdf.zip">Letter pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.24.epub.zip">epub version</a> (experimental)</li>
 </ul>
 
 <h4 id="progress">Progress at a glance:</h4>
@@ -203,8 +202,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td>Chap6: Local Search operators</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_green" style="width:66%;">
-    <span>66%</span>
+  <div class="progress_foreground_green" style="width:73%;">
+    <span>73%</span>
   </div>
 </div>
 </td>
@@ -543,7 +542,7 @@ to use these makefiles.</p>
 You can also overwrite this variable when invoking make:
 <div align="center"> <code>make OR_TOOLS_TOP=/home/username/or-tools-read-only</code></div>
 </li>
-<li>If you want to complie all examples:
+<li>If you want to compile all examples:
 <div align="center"> <code>make all</code></div>
 </li>
 <li>If you want to compile a specific example:

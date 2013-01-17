@@ -1,4 +1,14 @@
 
+v.0.1.24: (2013-01-17 11:26:42)
+-------------------------------
+* Milestone: 300 pages!
+* Minor enhancements to the manual:
+  - minor corrections in chapters 5, 6 and 9.
+  - html: new presentation of the code files.
+  - 6.1, 6.2 partly rewritten and corrected.
+  - 6.3 added.
+
+
 v.0.1.23: (2012-12-31 19:23:26)
 -------------------------------
 * Minor enhancements to the manual:

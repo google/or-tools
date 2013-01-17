@@ -277,6 +277,47 @@ p.sidebar-title {
     
 }
 
+/* -- files-sidebar----------------------------------------------------- */
+
+/* -- files-sidebar----------------------------------------------------- */
+
+div.files-sidebar {
+    margin: 0 0 0.5em 1em;
+    border: 1px solid #ddb;
+    padding: 0px 0px 0px 7px;
+    background-color: #FFFFFF;
+    width: 200px;
+    float: right;
+   
+}
+
+div.files-sidebar p {
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 18px;
+  
+}
+
+
+
+
+div.files-sidebar { color:#eee; }
+div.files-sidebar ol {
+  font-size:16px;
+  color: #20435C;
+  padding:0;
+  margin:0;
+  }
+div.files-sidebar ol li {
+  list-style-type: none;
+  
+  padding:0;
+  margin:0;
+ }
+div.files-sidebar ol li ol { list-style-image: url("nested.png"); padding:5px 0 5px 18px; font-size:15px; text-decoration: none; }
+div.files-sidebar ol li ol li { color:#D80000; height:15px; margin-left:10px; color: #9A0303; text-decoration: none; }
+div.files-sidebar ol li ol li a { color:#D80000; height:15px; color: #9A0303; text-decoration: none;}
+div.files-sidebar ol li ol li a:hover { color: #D80000; height:15px; color: #9A0303; text-decoration: underline;}
+
 
 /* -- topics ---------------------------------------------------------------- */
 
