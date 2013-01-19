@@ -56,7 +56,6 @@
             
   <div class="section" id="what-is-local-search">
 <span id="local-search-def"></span><h1>6.4. What is local search?</h1>
-<p>[TO BE REREAD]</p>
 <p>In the toolbox of Operations Research practitioners, <em>local search</em> is very important as it is often
 the best (and sometimes only) method to solve difficult problems. We start this section by describing what local search
 is and what local search methods have in common. Then we discuss their efficiency and compare them with <em>global</em> methods.</p>
@@ -376,7 +375,7 @@ proven to have no possible guarantee on their solution at all! (or only if <img 
 </div>
 <div class="section" id="global-optimization-methods-and-local-search">
 <span id="global-optimization-methods"></span><h2>6.4.4. Global optimization methods and local search</h2>
-<p>Meta-heuristics and heuristics can also work globally.
+<p>Meta-heuristics and heuristics can also work globally<a class="footnote-reference" href="#local-global-heuristics" id="id15">[14]</a>.
 The challenge with global methods is that very often the global search space for real industrial instances
 is huge and contains lots of dimensions
 (sometimes millions or even more!). More often than not, global exact optimization algorithms take prohibitive times
@@ -385,14 +384,22 @@ to solve such instances. Global (meta-)heuristics cannot dredge the search space
 (very) efficient local methods that (hopefully) lead to local optima. Could we have the best of these two worlds?</p>
 <p>You&#8217;ve guessed it: we use global methods to find portions of the search space that might contain good or even optimal
 solutions and we try to find those with local search methods. As always, there is a tradeoff between the two.</p>
-<p>To take again an analogy<a class="footnote-reference" href="#analogy-limits" id="id15">[14]</a>, looking for a good solution this way is a bit like trying to find
+<p>To take again an analogy<a class="footnote-reference" href="#analogy-limits" id="id16">[15]</a>, looking for a good solution this way is a bit like trying to find
 crude oil (or nowadays tar sands and the like): you send engineers, geologists, etc. to some places on earth to prospect
 (global method).
 If they find a promising spot, you send a team to drill and find out (local method).</p>
+<table class="docutils footnote" frame="void" id="local-global-heuristics" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id15">[14]</a></td><td>Tabu search, simulated annealing, guided local search and the like
+were designed to overcome some shortcomings of local search methods. Depending on the problem and how they are
+implemented, these methods can also be seen as global search methods.</td></tr>
+</tbody>
+</table>
 <table class="docutils footnote" frame="void" id="analogy-limits" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id15">[14]</a></td><td>As all analogies, this one has certainly its limits!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id16">[15]</a></td><td>As all analogies, this one has certainly its limits!</td></tr>
 </tbody>
 </table>
 </div>
