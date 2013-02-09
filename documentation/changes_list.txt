@@ -1,4 +1,14 @@
 
+v.0.1.26: (2013-02-09 16:57:53)
+-------------------------------
+* Milestone: chapter 6 written (except for the summary).
+* Minor enhancements to the manual:
+  - 6.5 added (but it needs to be rewritten...).
+  - 6.5 rewritten.
+  - 6.7 added. 
+  - 6.8 added.
+  - Intro LS corrected and published.
+
 v.0.1.25: (2013-01-19 14:10:15)
 -------------------------------
 * Minor enhancements to the manual:

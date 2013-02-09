@@ -70,17 +70,17 @@
 <div class="section" id="the-localsearchphaseparameters-parameter">
 <span id="local-search-parameters"></span><h3>6.5.2.2. The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter</h3>
 </div>
-<div class="section" id="the-searchlimit-in-local-search">
-<span id="search-limits-in-local-search"></span><span id="index-0"></span><h3>6.5.2.3. The <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> in Local Search</h3>
-</div>
 </div>
 <div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">
-<h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a> <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a></h2>
-<div class="section" id="initialization">
-<h3>6.5.3.1. Initialization</h3>
+<span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a> <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a></h2>
+<div class="section" id="the-findoneneighbor-decisionbuilder">
+<h3>6.5.3.1. The <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
 </div>
-<div class="section" id="the-callbacks-of-the-searchmonitors-in-the-local-search">
-<h3>6.5.3.2. The callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s in the local search</h3>
+<div class="section" id="the-nestedsolvedecision-decision">
+<h3>6.5.3.2. The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt></h3>
+</div>
+<div class="section" id="the-localsearch-decisionbuilder">
+<h3>6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -176,12 +176,12 @@ Search:
 <li><a class="reference internal" href="#overview-of-the-local-search-mechanism-in-or-tools">6.5.2. Overview of the Local Search Mechanism in <em>or-tools</em></a><ul>
 <li><a class="reference internal" href="#the-initial-solution">6.5.2.1. The initial solution</a></li>
 <li><a class="reference internal" href="#the-localsearchphaseparameters-parameter">6.5.2.2. The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter</a></li>
-<li><a class="reference internal" href="#the-searchlimit-in-local-search">6.5.2.3. The <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> in Local Search</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s  </a><ul>
-<li><a class="reference internal" href="#initialization">6.5.3.1. Initialization</a></li>
-<li><a class="reference internal" href="#the-callbacks-of-the-searchmonitors-in-the-local-search">6.5.3.2. The callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s in the local search</a></li>
+<li><a class="reference internal" href="#the-findoneneighbor-decisionbuilder">6.5.3.1. The <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></a></li>
+<li><a class="reference internal" href="#the-nestedsolvedecision-decision">6.5.3.2. The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt></a></li>
+<li><a class="reference internal" href="#the-localsearch-decisionbuilder">6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></a></li>
 </ul>
 </li>
 </ul>

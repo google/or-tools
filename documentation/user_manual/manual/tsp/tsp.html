@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.3. The Travelling Salesman Problem (TSP) &mdash; or-tools User&#39;s Manual</title>
+    <title>10.3. The Travelling Salesman Problem (TSP) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.4. The model behind the scene: the main decision variables" href="model_behind_scene.html" />
-    <link rel="prev" title="9.2. The Routing Library (RL) in a nutshell" href="routing_library.html" /> 
+    <link rel="up" title="10. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
+    <link rel="next" title="10.4. The model behind the scene: the main decision variables" href="model_behind_scene.html" />
+    <link rel="prev" title="10.2. The Routing Library (RL) in a nutshell" href="routing_library.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="model_behind_scene.html" title="9.4. The model behind the scene: the main decision variables"
+          <a href="model_behind_scene.html" title="10.4. The model behind the scene: the main decision variables"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
+          <a href="routing_library.html" title="10.2. The Routing Library (RL) in a nutshell"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" accesskey="U">10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="the-travelling-salesman-problem-tsp">
-<span id="tsp-tsp"></span><h1>9.3. The Travelling Salesman Problem (TSP)</h1>
+<span id="tsp-tsp"></span><h1>10.3. The Travelling Salesman Problem (TSP)</h1>
 <p>The Travelling Salesman Problem (TSP) is probably the most known and studied problem in Operations Research.
 In this section, we briefly<a class="footnote-reference" href="#tsp-examples-abond" id="id1">[1]</a> present this fascinating problem and the
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>
@@ -73,7 +73,7 @@ of examples, explanations, applications, etc.</td></tr>
 </tbody>
 </table>
 <div class="section" id="the-problem">
-<h2>9.3.1. The Problem</h2>
+<h2>10.3.1. The Problem</h2>
 <p>Given a graph <img class="math" src="../../_images/math/b70ec1f605bd05af0f0f71e2631ec6f09d63890d.png" alt="G=(V,E)" style="vertical-align: -4px"/> and pairwise distances between nodes, the TSP consists in finding the shortest
 possible path that visits each node exactly once and returns to the starting node. You can think about a
 salesman that must visit several cities and come back to his hometown, hence the name the problem.</p>
@@ -126,14 +126,14 @@ to discover this fascinating problem and hosts the best known implementation to 
 You also might be interested in the <a class="reference external" href="http://www2.research.att.com/~dsj/chtsp/about.html">8th DIMACS Implementation Challenge</a> held in 2001 about the TSP.</p>
 </div>
 <div class="section" id="benchmark-data">
-<h2>9.3.2. Benchmark data</h2>
+<h2>10.3.2. Benchmark data</h2>
 <p>Several known benchmark data sources are available
 on the internet. One of the most known is
 the <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/index.html">TSPLIB page</a>.
 It&#8217;s a little bit outdated but it contains a lot of instances and their proven optimal solutions. Their TSPLIB format
 is the de facto standard format to encode TSP instances.</p>
 <div class="section" id="the-tsplib-format">
-<h3>9.3.2.1. The TSPLIB format</h3>
+<h3>10.3.2.1. The TSPLIB format</h3>
 <p>The TSPLIB format is explained in great details in the document
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/DOC.PS">TSPLIB95</a>. Here is a small excerpt to understand the
 basics. Refer to the TSPLIB95 document for more. The complete TSPLIB collection of problems has been successfully solved
@@ -152,7 +152,7 @@ When <tt class="docutils literal"><span class="pre">false</span></tt>, we number
 <p class="last">Nodes are numbered from 1 to n in the TSPLIB.</p>
 </div>
 <div class="section" id="the-instance-file">
-<h4>9.3.2.1.1. The instance file</h4>
+<h4>10.3.2.1.1. The instance file</h4>
 <p>The TSPLIB not only deals with the TSP but also with related problems. We only detail one type of TSP instance files.
 This is what the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt><a class="footnote-reference" href="#a280-fun-fact" id="id6">[5]</a> looks like:</p>
 <div class="highlight-text"><div class="highlight"><pre>NAME : a280
@@ -204,7 +204,7 @@ name and the dimension have been kept. This is the only known defect in the TSPL
 </table>
 </div>
 <div class="section" id="the-solution-file">
-<h4>9.3.2.1.2. The solution file</h4>
+<h4>10.3.2.1.2. The solution file</h4>
 <p>Solution files are easier to deal with as they only contain tours. Every tour, called a <em>sub-tour</em>,
 is a list of <em>integers</em>
 corresponding to the Node ids ended by <tt class="docutils literal"><span class="pre">-1</span></tt>.</p>
@@ -230,7 +230,7 @@ the end of the file.</p>
 </div>
 </div>
 <div class="section" id="the-tspdata-class">
-<span id="tspdata-class"></span><h2>9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</h2>
+<span id="tspdata-class"></span><h2>10.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</h2>
 <p>The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class basically encapsulates a 2-dimensional matrix containing the distances between all nodes.
 For efficiency reasons, we use a 1-dimensional matrix with a smart pointer defined in the header <tt class="file docutils literal"><span class="pre">base/scoped_ptr.h</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">private</span><span class="o">:</span>
@@ -264,7 +264,7 @@ this helpful technique, look up <em>RAII</em> (Resource Acquisition Is Initializ
 </table>
 </div>
 <div class="section" id="to-read-tsplib-files">
-<h3>9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h3>
+<h3>10.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h3>
 <p>To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class offers the <tt class="docutils literal"><span class="pre">LoadTSPLIBFile(const</span> <span class="pre">std::string&amp;</span> <span class="pre">filename)</span></tt> method.
 It parses a file in <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format and loads the coordinates (if any) for further treatment.
 Note that the format is only
@@ -277,7 +277,7 @@ partially checked: bad inputs might cause undefined behaviour.</p>
 for the TSP.</p>
 </div>
 <div class="section" id="to-generate-random-tsp">
-<h3>9.3.3.2. To generate random TSP</h3>
+<h3>10.3.3.2. To generate random TSP</h3>
 <p>To generate random TSP instances, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class provides the <tt class="docutils literal"><span class="pre">RandomInitialize(const</span> <span class="pre">int</span> <span class="pre">size)</span></tt> method.
 Several <tt class="docutils literal"><span class="pre">gflags</span></tt> parameters are available:</p>
 <ul class="simple">
@@ -289,7 +289,7 @@ Several <tt class="docutils literal"><span class="pre">gflags</span></tt> parame
 </div>
 </div>
 <div class="section" id="visualization-with-epix">
-<span id="section-visualization-epix-tsp"></span><h2>9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
+<span id="section-visualization-epix-tsp"></span><h2>10.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
 <p>To visualize the solutions, we use the
 excellent <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>. The
 file <tt class="file docutils literal"><span class="pre">tsp_epix.h</span></tt> contains the <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> class. A <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> object is related to
@@ -399,31 +399,31 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../TSP.html"
-                        title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
+                        title="previous chapter">10. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="routing_library.html"
-                        title="previous chapter">9.2. The Routing Library (RL) in a nutshell</a></p>
+                        title="previous chapter">10.2. The Routing Library (RL) in a nutshell</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="model_behind_scene.html"
-                        title="next chapter">9.4. The model behind the scene: the main decision variables</a></p>
+                        title="next chapter">10.4. The model behind the scene: the main decision variables</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">9.3. The Travelling Salesman Problem (TSP)</a><ul>
-<li><a class="reference internal" href="#the-problem">9.3.1. The Problem</a></li>
-<li><a class="reference internal" href="#benchmark-data">9.3.2. Benchmark data</a><ul>
-<li><a class="reference internal" href="#the-tsplib-format">9.3.2.1. The TSPLIB format</a><ul>
-<li><a class="reference internal" href="#the-instance-file">9.3.2.1.1. The instance file</a></li>
-<li><a class="reference internal" href="#the-solution-file">9.3.2.1.2. The solution file</a></li>
+<li><a class="reference internal" href="#">10.3. The Travelling Salesman Problem (TSP)</a><ul>
+<li><a class="reference internal" href="#the-problem">10.3.1. The Problem</a></li>
+<li><a class="reference internal" href="#benchmark-data">10.3.2. Benchmark data</a><ul>
+<li><a class="reference internal" href="#the-tsplib-format">10.3.2.1. The TSPLIB format</a><ul>
+<li><a class="reference internal" href="#the-instance-file">10.3.2.1.1. The instance file</a></li>
+<li><a class="reference internal" href="#the-solution-file">10.3.2.1.2. The solution file</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a><ul>
-<li><a class="reference internal" href="#to-read-tsplib-files">9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</a></li>
-<li><a class="reference internal" href="#to-generate-random-tsp">9.3.3.2. To generate random TSP</a></li>
+<li><a class="reference internal" href="#the-tspdata-class">10.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a><ul>
+<li><a class="reference internal" href="#to-read-tsplib-files">10.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</a></li>
+<li><a class="reference internal" href="#to-generate-random-tsp">10.3.3.2. To generate random TSP</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+<li><a class="reference internal" href="#visualization-with-epix">10.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
 </ul>
@@ -439,13 +439,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="model_behind_scene.html" title="9.4. The model behind the scene: the main decision variables"
+          <a href="model_behind_scene.html" title="10.4. The model behind the scene: the main decision variables"
              >next</a> |</li>
         <li class="right" >
-          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
+          <a href="routing_library.html" title="10.2. The Routing Library (RL) in a nutshell"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" >10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

@@ -60,6 +60,33 @@
 <span id="local-search-operators-the-real-thing"></span><h2>6.7.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: the real thing!</h2>
 <div class="section" id="deltas-and-deltadeltas">
 <h3>6.7.1.1. <tt class="docutils literal"><span class="pre">Delta</span></tt>s and <tt class="docutils literal"><span class="pre">DeltaDelta</span></tt>s</h3>
+</div>
+<div class="section" id="makenextneighbor">
+<h3>6.7.1.2. <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt></h3>
+</div>
+<div class="section" id="incrementality">
+<h3>6.7.1.3. Incrementality</h3>
+</div>
+</div>
+<div class="section" id="the-initial-solution">
+<h2>6.7.2. The initial solution</h2>
+</div>
+<div class="section" id="exchanging-two-intervalvars-on-a-sequencevar">
+<h2>6.7.3. Exchanging two <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></h2>
+</div>
+<div class="section" id="exchanging-an-arbitrary-number-of-contiguous-intervalvars-on-a-sequencevar">
+<h2>6.7.4. Exchanging an arbitrary number of contiguous <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></h2>
+</div>
+<div class="section" id="can-we-do-better">
+<span id="jobshop-ls-can-we-do-better"></span><h2>6.7.5. Can we do better?</h2>
+<div class="section" id="id2">
+<h3>6.7.5.1. The initial solution</h3>
+</div>
+<div class="section" id="combining-the-two-localsearchoperators">
+<h3>6.7.5.2. Combining the two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</h3>
+</div>
+<div class="section" id="results">
+<h3>6.7.5.3. Results</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -150,6 +177,17 @@ Search:
 <li><a class="reference internal" href="#">6.7. The jobshop problem: and now with local search!</a><ul>
 <li><a class="reference internal" href="#localsearchoperators-the-real-thing">6.7.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: the real thing!</a><ul>
 <li><a class="reference internal" href="#deltas-and-deltadeltas">6.7.1.1. <tt class="docutils literal"><span class="pre">Delta</span></tt>s and <tt class="docutils literal"><span class="pre">DeltaDelta</span></tt>s</a></li>
+<li><a class="reference internal" href="#makenextneighbor">6.7.1.2. <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt></a></li>
+<li><a class="reference internal" href="#incrementality">6.7.1.3. Incrementality</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-initial-solution">6.7.2. The initial solution</a></li>
+<li><a class="reference internal" href="#exchanging-two-intervalvars-on-a-sequencevar">6.7.3. Exchanging two <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
+<li><a class="reference internal" href="#exchanging-an-arbitrary-number-of-contiguous-intervalvars-on-a-sequencevar">6.7.4. Exchanging an arbitrary number of contiguous <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
+<li><a class="reference internal" href="#can-we-do-better">6.7.5. Can we do better?</a><ul>
+<li><a class="reference internal" href="#id2">6.7.5.1. The initial solution</a></li>
+<li><a class="reference internal" href="#combining-the-two-localsearchoperators">6.7.5.2. Combining the two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</a></li>
+<li><a class="reference internal" href="#results">6.7.5.3. Results</a></li>
 </ul>
 </li>
 </ul>

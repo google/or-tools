@@ -54,7 +54,46 @@
             
   <div class="section" id="local-search-the-job-shop-problem">
 <span id="chapter-local-search"></span><h1>6. Local search: the job-shop problem</h1>
+<p>We enter here in a new world where we don&#8217;t try to solve a problem to optimality but
+seek a good solution. Remember from the sub-section <a class="reference internal" href="introduction/theory.html#complexity-in-a-few-lines"><em>Complexity theory in a few lines</em></a> that some problems<a class="footnote-reference" href="#actually-most-problems-are-hard" id="id1">[1]</a> are hard to solve. No matter how powerful our computers are<a class="footnote-reference" href="#watch-out-for-quantic-computers" id="id2">[2]</a>, we quickly hit a wall if we try to solve these problems to optimality.
+Do we give up? Of course not! If it is not possible to compute the best solutions,
+we can try to find very good solutions. Enter the fascinating world of (meta-)heuristics and local search.</p>
+<p>Throughout this chapter, we will use the job-shop problem as an illustrative example.
+The job-shop problem is a typical difficult <em>scheduling</em> problem.
+Don&#8217;t worry if you don&#8217;t know anything about scheduling or the job-shop problem, we explain this problem in details.
+Scheduling is one of the fields where
+constraint programming has been applied with great success. It is thus not surprising that the CP community has
+developed specific tools to solve scheduling problems. In this chapter, we introduce the ones that have been
+implemented in <em>or-tools</em></p>
+<table class="docutils footnote" frame="void" id="actually-most-problems-are-hard" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Actually, <em>most interesting</em> problems!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="watch-out-for-quantic-computers" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>But watch out for the next generations
+of computers: molecular computers (<a class="reference external" href="http://en.wikipedia.org/wiki/Molecular_computer">http://en.wikipedia.org/wiki/Molecular_computer</a>)
+and computers based on quantum
+mechanics (<a class="reference external" href="http://en.wikipedia.org/wiki/Quantum_computer">http://en.wikipedia.org/wiki/Quantum_computer</a>)!</td></tr>
+</tbody>
+</table>
 <p class="rubric">Overview:</p>
+<p>We start by describing the job-problem, the <em>disjunctive model</em> to represent it, two formats to encode
+job-shop problem instances (JSSP and Taillard) and our first exact results.
+We next make a short stop to describe the specific primitives implemented in <em>or-tools</em> to solve scheduling problems.
+For instance, instead of using <tt class="docutils literal"><span class="pre">IntVar</span></tt> variables, we use the dedicated <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s.</p>
+<p>After these preliminaries, we present local search and how it is implemented in the <em>or-tools</em> library.
+Beside the job-shop problem, we use a dummy problem to <em>watch</em> the inner mechanisms
+of local search in <em>or-tools</em> in action:</p>
+<blockquote>
+<div>We minimize <img class="math" src="../_images/math/bf0759ecbdcc07530a9dc9a27403a4a767ef1abd.png" alt="x_0 + x_1 + \ldots + x_{n-1}" style="vertical-align: -4px"/> where each
+variable has the same domain <img class="math" src="../_images/math/e55f3a8911705d97dfdf206cf64f95525d956a53.png" alt="[0, n-1]" style="vertical-align: -5px"/>. To complicate things a little bit, we add the constraint
+<img class="math" src="../_images/math/3998581fe70d99938ee529064f9a325d816b0584.png" alt="x_0 \geqslant 1" style="vertical-align: -3px"/>.</div></blockquote>
+<p>Once we understand how to use local search in <em>or-tools</em>, we use <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s to solve the job-shop problem
+and compare the exact and approximate results. Finally, to speed up the local search algorithm, we use <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s for the dummy problem.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
@@ -66,6 +105,22 @@
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap6</span></tt>.</p>
 <p>The files inside this directory are:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop.h</span></tt>: This file contains the <tt class="docutils literal"><span class="pre">JobShopData</span></tt> class that records the data for job-shop problem instances. This file is used
+throughout all the job-shop examples.</li>
+<li><tt class="file docutils literal"><span class="pre">report_jobshopdata.cc</span></tt>: a simple program to report the content of job-shop problem instances in JSSP or Taillard&#8217;s formats.</li>
+<li><tt class="file docutils literal"><span class="pre">abz9</span></tt>: a job-shop problem instance in JSSP format.</li>
+<li><tt class="file docutils literal"><span class="pre">20_5_01_ta001.txt</span></tt>: a job-shop problem instance in Taillard&#8217;s format.</li>
+<li><tt class="file docutils literal"><span class="pre">first_example_jssp.txt</span></tt>: our first example in JSSP format.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop.cc</span></tt>: A basic exact implementation of the disjunctive model with <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables.</li>
+<li><tt class="file docutils literal"><span class="pre">dummy_ls.cc</span></tt>: A very basic example to understand the API of Local Search in <em>or-tools</em>.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_ls.h</span></tt>: two basic <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s for the job-shop problem.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_ls.cc</span></tt>: A basic implementation of Local Search the two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s defined in the corresponding header file.</li>
+<li><tt class="file docutils literal"><span class="pre">dummy_ls_filtering.cc</span></tt>: The example <tt class="file docutils literal"><span class="pre">dummy_ls.cc</span></tt> extended with filtering.</li>
+</ul>
+<p>The files of this chapter are <strong>NOT</strong> the same as the ones in the <tt class="file docutils literal"><span class="pre">example</span></tt> directory even if they were inspired
+by them. In particular, job-shop instances with only one task per job are accepted (not that this is extremely useful but...).</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
@@ -109,12 +164,16 @@
 <li class="toctree-l1"><a class="reference internal" href="ls/ls_operators.html">6.6. Local Search Neighborhood (LSN) Operators</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ls/ls_operators.html#localsearchoperators">6.6.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ls/ls_operators.html#defining-a-custom-lsn-operator">6.6.2. Defining a custom LSN operator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_operators.html#combining-lsn-operators">6.6.3. Combining LSN operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_operators.html#combining-ls-operators">6.6.3. Combining LS operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ls/ls_operators.html#interesting-lsn-operators">6.6.4. Interesting LSN operators</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/jobshop_ls.html">6.7. The jobshop problem: and now with local search!</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#localsearchoperators-the-real-thing">6.7.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: the real thing!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#the-initial-solution">6.7.2. The initial solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#exchanging-two-intervalvars-on-a-sequencevar">6.7.3. Exchanging two <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#exchanging-an-arbitrary-number-of-contiguous-intervalvars-on-a-sequencevar">6.7.4. Exchanging an arbitrary number of contiguous <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#can-we-do-better">6.7.5. Can we do better?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">6.8. Filtering</a><ul>
@@ -123,20 +182,14 @@
 <li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#interesting-localsearchfilters">6.8.3. Interesting <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics_examples.html">6.9. Meta-heuristics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#tabu-search-ts">6.9.1. Tabu search (TS)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#simulated-annealing-sa">6.9.2. Simulated annealing (SA)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics_examples.html#guided-local-search-gls">6.9.3. Guided local search (GLS)</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.10. Summary</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#to-go-further">6.10.1. To go further:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.9. Summary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#what-is-missing">6.9.1. What is missing?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#to-go-further">6.9.2. To go further:</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 
 
           </div>
@@ -224,21 +277,22 @@ Search:
 <li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
 <li><a class="reference internal" href="#">6. Local Search</a></li>
 <li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
+<li><a class="reference internal" href="metaheuristics.html">8. Meta-heuristics</a></li>
+<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">11. ARP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
+<li><a class="reference internal" href="arc_routing.html">12. ARP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">13. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">14. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">15. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>

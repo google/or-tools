@@ -264,7 +264,7 @@ exactly when they are called in the main search algorithm:</p>
 <td>Before refuting the <tt class="docutils literal"><span class="pre">Decision</span></tt>.</td>
 </tr>
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">AfterDecision(Decision*</span> <span class="pre">const</span> <span class="pre">d,</span> <span class="pre">bool</span> <span class="pre">apply)</span></tt></td>
-<td>Just after refuting or applying the <tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">apply</span></tt> is true after <tt class="docutils literal"><span class="pre">Apply()</span></tt>. This is called only if the <tt class="docutils literal"><span class="pre">Apply()</span></tt> or <tt class="docutils literal"><span class="pre">Refute()</span></tt> methods have not failed.</td>
+<td>Just after refuting or applying the <tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">apply</span></tt> is true after <tt class="docutils literal"><span class="pre">Apply()</span></tt>. This is called only if the <tt class="docutils literal"><span class="pre">Apply()</span></tt> or <tt class="docutils literal"><span class="pre">Refute()</span></tt> methods have <strong>not</strong> failed.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">BeginFail()</span></tt></td>
 <td>Just when the failure occurs.</td>

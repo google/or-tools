@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.2. The Routing Library (RL) in a nutshell &mdash; or-tools User&#39;s Manual</title>
+    <title>10.2. The Routing Library (RL) in a nutshell &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.3. The Travelling Salesman Problem (TSP)" href="tsp.html" />
-    <link rel="prev" title="9.1. A whole zoo of Routing Problems" href="zoo_routing_problems.html" /> 
+    <link rel="up" title="10. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
+    <link rel="next" title="10.3. The Travelling Salesman Problem (TSP)" href="tsp.html" />
+    <link rel="prev" title="10.1. A whole zoo of Routing Problems" href="zoo_routing_problems.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"
+          <a href="tsp.html" title="10.3. The Travelling Salesman Problem (TSP)"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
+          <a href="zoo_routing_problems.html" title="10.1. A whole zoo of Routing Problems"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" accesskey="U">10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,13 +55,13 @@
           <div class="body">
             
   <div class="section" id="the-routing-library-rl-in-a-nutshell">
-<span id="tsp-routing-solver"></span><h1>9.2. The Routing Library (RL) in a nutshell</h1>
+<span id="tsp-routing-solver"></span><h1>10.2. The Routing Library (RL) in a nutshell</h1>
 <p>The vehicle routing library lets one model and solve generic routing
 problems ranging from the Travelling Salesman Problem to more complex
 problems such as the Capacitated Vehicle Routing Problem with Time Windows. In this section, we present
 its main characteristics.</p>
 <div class="section" id="objectives">
-<h2>9.2.1. Objectives</h2>
+<h2>10.2.1. Objectives</h2>
 <p>The objectives of the RL are to</p>
 <blockquote>
 <div><ul class="simple">
@@ -74,7 +74,7 @@ its main characteristics.</p>
 <p>In short, we provide specialized primitives that you can assemble and customize to your needs.</p>
 </div>
 <div class="section" id="out-of-the-box-models">
-<h2>9.2.2. Out of the box models</h2>
+<h2>10.2.2. Out of the box models</h2>
 <p>To be precise, the RL only uses one model to solve different Routing Problems. It&#8217;s a one fits all. This approach
 has its advantages and disadvantages. On one side, the model already exists, has been tested and fine-tuned by our
 team and you can reuse it to solve several Routing Problems (meaning the learning curve is low).
@@ -89,7 +89,7 @@ constraints (optional nodes, alternate nodes, ...).</p>
 of the additional constraints you can use in this model.</p>
 </div>
 <div class="section" id="on-top-of-the-cp-library">
-<h2>9.2.3. On top of the CP library</h2>
+<h2>10.2.3. On top of the CP library</h2>
 <p>The RL is a layer above the CP Solver. Most of the internal <em>cabling</em> is hidden but can be accessed anytime.
 Everything is contained is one single class: the <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class. This class internaly uses
 an object of type <tt class="docutils literal"><span class="pre">Solver</span></tt> that can be accessed and queried:</p>
@@ -101,14 +101,14 @@ an object of type <tt class="docutils literal"><span class="pre">Solver</span></
 <p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class by itself only uses <tt class="docutils literal"><span class="pre">IntVar</span></tt>s to model Routing Problems.</p>
 </div>
 <div class="section" id="local-search">
-<h2>9.2.4. Local Search</h2>
+<h2>10.2.4. Local Search</h2>
 <p>We are mainly using CP-based local search and large
 neighborhood search using routing-specific neighborhoods.
 Implementations of Tabu Search and Guided Local Search are available
 too and have proven to give good results (especially GLS).</p>
 </div>
 <div class="section" id="tuning-the-search">
-<h2>9.2.5. Tuning the search</h2>
+<h2>10.2.5. Tuning the search</h2>
 <p>To tune and parametrize the search, use command-line gflags.
 For instance, you might want to use Tabu Search
 and limit the allowed solving time to 3 minutes:</p>
@@ -134,7 +134,7 @@ This is why the RL provides the handy <tt class="docutils literal"><span class="
 </div>
 </div>
 <div class="section" id="dimensions">
-<span id="rl-dimensions-overview"></span><h2>9.2.6. Dimensions</h2>
+<span id="rl-dimensions-overview"></span><h2>10.2.6. Dimensions</h2>
 <p>Often, real problems need to take into account some accumulated quantities along (the edges and/or the nodes of)
 the routes. To model such
 quantities, the RL proposes the concept of <em>dimensions</em>. A dimension is basically a set of variables that describe some
@@ -146,7 +146,7 @@ on a dimension and a capacity limits per route/vehicle on accumulated quantities
 <p>Examples of dimensions are weight or volume carried, distance and time.</p>
 </div>
 <div class="section" id="disjunctions">
-<span id="rl-disjunctions-overview"></span><h2>9.2.7. Disjunctions</h2>
+<span id="rl-disjunctions-overview"></span><h2>10.2.7. Disjunctions</h2>
 <p>Nodes don&#8217;t have to be visited, i.e. some nodes can be optional. For this, the RL uses the <tt class="docutils literal"><span class="pre">struct</span></tt> <tt class="docutils literal"><span class="pre">Disjunction</span></tt>
 which is basically a set of nodes. In our model, we visit at most one node in each <tt class="docutils literal"><span class="pre">Disjunction</span></tt>. If these sets are
 singletons, then you have optional nodes. You can also force to visit at least one node in each or some of the
@@ -155,24 +155,24 @@ singletons, then you have optional nodes. You can also force to visit at least o
 <tt class="docutils literal"><span class="pre">AddDisjunction()</span></tt> method(s).</p>
 </div>
 <div class="section" id="routes-vehicles-are-not-mandatory">
-<h2>9.2.8. Routes/Vehicles are not mandatory</h2>
+<h2>10.2.8. Routes/Vehicles are not mandatory</h2>
 <p>The same way that nodes don&#8217;t have to be visited, vehicles/routes don&#8217;t have to be used, i.e.
 some vehicles/routes can be optional.
 You might want to minimize the number of vehicles needed as part of your problem.</p>
 </div>
 <div class="section" id="heterogeneous-fleet-of-vehicles">
-<h2>9.2.9. Heterogeneous fleet of vehicles</h2>
+<h2>10.2.9. Heterogeneous fleet of vehicles</h2>
 <p>The RL offers the possibility to deal with different vehicles with each its own cost(s)/particularities.</p>
 </div>
 <div class="section" id="costs">
-<h2>9.2.10. Costs</h2>
+<h2>10.2.10. Costs</h2>
 <p>Basically, costs are associated (with callbacks) to each edge/arc (i,j) and the objective function sums these costs
 along the different routes in a solution. Our goal is to minimize this sum. The RL let you easily add some penalties
 to for instance non-visited nodes, add some cost to use a particular vehicle, etc. Actually, you are completely free
 to add whatever terms to this sum.</p>
 </div>
 <div class="section" id="limitations">
-<h2>9.2.11. Limitations</h2>
+<h2>10.2.11. Limitations</h2>
 <p>There are several limitations<a class="footnote-reference" href="#rl-limitations" id="id1">[1]</a> as in any code. These limitations are mainly due to
 coding choices and can often be worked around. We list
 the most important ones.</p>
@@ -183,7 +183,7 @@ the most important ones.</p>
 </tbody>
 </table>
 <div class="section" id="only-one-model">
-<h3>9.2.11.1. Only one model</h3>
+<h3>10.2.11.1. Only one model</h3>
 <p>We wrote several times that there is no universal solver<a class="footnote-reference" href="#no-universal-solver-again" id="id2">[2]</a> for all the problems.
 This is of course also true for the RL. We use a node-based model to solve quite a lot of different problems
 but not all Routing Problems can be solved with the RL. In particular, common Arc Routing Problems are probably
@@ -203,7 +203,7 @@ can be solved by the RL.</td></tr>
 </table>
 </div>
 <div class="section" id="number-of-nodes">
-<h3>9.2.11.2. Number of nodes</h3>
+<h3>10.2.11.2. Number of nodes</h3>
 <p>The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class has a limit on the maximum number of nodes it can handle<a class="footnote-reference" href="#limit-vehicles-nbr" id="id4">[4]</a>. Indeed, its
 constructors take an regular <tt class="docutils literal"><span class="pre">int</span></tt> as the number of nodes it can model:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span><span class="p">(</span><span class="kt">int</span> <span class="n">nodes</span><span class="p">,</span> <span class="p">...);</span>
@@ -231,16 +231,16 @@ time windows for instance.</p>
 </table>
 </div>
 <div class="section" id="you-cannot-visit-a-node-twice">
-<h3>9.2.11.3. You cannot visit a node twice</h3>
+<h3>10.2.11.3. You cannot visit a node twice</h3>
 <p>The way the model is coded (see the section <a class="reference internal" href="model_behind_scene.html#rl-model-behind-scene-decision-v"><em>The model behind the scene: the main decision variables</em></a>) doesn&#8217;t allow you to visit
 a node more than once. You can have several vehicles at one depot though.</p>
 </div>
 <div class="section" id="a-depot-is-a-depot">
-<h3>9.2.11.4. A depot is a depot</h3>
+<h3>10.2.11.4. A depot is a depot</h3>
 <p>This means you can only start from a depot and/or arrive to a depot, not transit through a depot.</p>
 </div>
 <div class="section" id="the-rl-returns-approximate-solutions">
-<h3>9.2.11.5. The RL returns approximate solutions</h3>
+<h3>10.2.11.5. The RL returns approximate solutions</h3>
 <p>Most Routing Problems are intractable and we are mainly interested in good approximations.
 This is not really a limitation. You just need to know that by default you won&#8217;t have any guarantee
 on the quality of the returned solution(s).
@@ -323,32 +323,32 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../TSP.html"
-                        title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
+                        title="previous chapter">10. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="zoo_routing_problems.html"
-                        title="previous chapter">9.1. A whole zoo of Routing Problems</a></p>
+                        title="previous chapter">10.1. A whole zoo of Routing Problems</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="tsp.html"
-                        title="next chapter">9.3. The Travelling Salesman Problem (TSP)</a></p>
+                        title="next chapter">10.3. The Travelling Salesman Problem (TSP)</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">9.2. The Routing Library (RL) in a nutshell</a><ul>
-<li><a class="reference internal" href="#objectives">9.2.1. Objectives</a></li>
-<li><a class="reference internal" href="#out-of-the-box-models">9.2.2. Out of the box models</a></li>
-<li><a class="reference internal" href="#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
-<li><a class="reference internal" href="#local-search">9.2.4. Local Search</a></li>
-<li><a class="reference internal" href="#tuning-the-search">9.2.5. Tuning the search</a></li>
-<li><a class="reference internal" href="#dimensions">9.2.6. Dimensions</a></li>
-<li><a class="reference internal" href="#disjunctions">9.2.7. Disjunctions</a></li>
-<li><a class="reference internal" href="#routes-vehicles-are-not-mandatory">9.2.8. Routes/Vehicles are not mandatory</a></li>
-<li><a class="reference internal" href="#heterogeneous-fleet-of-vehicles">9.2.9. Heterogeneous fleet of vehicles</a></li>
-<li><a class="reference internal" href="#costs">9.2.10. Costs</a></li>
-<li><a class="reference internal" href="#limitations">9.2.11. Limitations</a><ul>
-<li><a class="reference internal" href="#only-one-model">9.2.11.1. Only one model</a></li>
-<li><a class="reference internal" href="#number-of-nodes">9.2.11.2. Number of nodes</a></li>
-<li><a class="reference internal" href="#you-cannot-visit-a-node-twice">9.2.11.3. You cannot visit a node twice</a></li>
-<li><a class="reference internal" href="#a-depot-is-a-depot">9.2.11.4. A depot is a depot</a></li>
-<li><a class="reference internal" href="#the-rl-returns-approximate-solutions">9.2.11.5. The RL returns approximate solutions</a></li>
+<li><a class="reference internal" href="#">10.2. The Routing Library (RL) in a nutshell</a><ul>
+<li><a class="reference internal" href="#objectives">10.2.1. Objectives</a></li>
+<li><a class="reference internal" href="#out-of-the-box-models">10.2.2. Out of the box models</a></li>
+<li><a class="reference internal" href="#on-top-of-the-cp-library">10.2.3. On top of the CP library</a></li>
+<li><a class="reference internal" href="#local-search">10.2.4. Local Search</a></li>
+<li><a class="reference internal" href="#tuning-the-search">10.2.5. Tuning the search</a></li>
+<li><a class="reference internal" href="#dimensions">10.2.6. Dimensions</a></li>
+<li><a class="reference internal" href="#disjunctions">10.2.7. Disjunctions</a></li>
+<li><a class="reference internal" href="#routes-vehicles-are-not-mandatory">10.2.8. Routes/Vehicles are not mandatory</a></li>
+<li><a class="reference internal" href="#heterogeneous-fleet-of-vehicles">10.2.9. Heterogeneous fleet of vehicles</a></li>
+<li><a class="reference internal" href="#costs">10.2.10. Costs</a></li>
+<li><a class="reference internal" href="#limitations">10.2.11. Limitations</a><ul>
+<li><a class="reference internal" href="#only-one-model">10.2.11.1. Only one model</a></li>
+<li><a class="reference internal" href="#number-of-nodes">10.2.11.2. Number of nodes</a></li>
+<li><a class="reference internal" href="#you-cannot-visit-a-node-twice">10.2.11.3. You cannot visit a node twice</a></li>
+<li><a class="reference internal" href="#a-depot-is-a-depot">10.2.11.4. A depot is a depot</a></li>
+<li><a class="reference internal" href="#the-rl-returns-approximate-solutions">10.2.11.5. The RL returns approximate solutions</a></li>
 </ul>
 </li>
 </ul>
@@ -366,13 +366,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"
+          <a href="tsp.html" title="10.3. The Travelling Salesman Problem (TSP)"
              >next</a> |</li>
         <li class="right" >
-          <a href="zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
+          <a href="zoo_routing_problems.html" title="10.1. A whole zoo of Routing Problems"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" >10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

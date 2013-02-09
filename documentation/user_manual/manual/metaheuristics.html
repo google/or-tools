@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>14. Modeling tricks &mdash; or-tools User&#39;s Manual</title>
+    <title>8. Meta-heuristics: &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="14.1. Efficiency" href="modeling_tricks/efficiency.html" />
-    <link rel="prev" title="13.7. Visualizing" href="utilities/visualizing.html" /> 
+    <link rel="next" title="8.1. Meta-heuristics in or-tools" href="metaheuristics/metaheuristics.html" />
+    <link rel="prev" title="7.2. Restarting the search" href="lns/restart.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modeling_tricks/efficiency.html" title="14.1. Efficiency"
+          <a href="metaheuristics/metaheuristics.html" title="8.1. Meta-heuristics in or-tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="utilities/visualizing.html" title="13.7. Visualizing"
+          <a href="lns/restart.html" title="7.2. Restarting the search"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -52,33 +52,43 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="modeling-tricks">
-<h1>14. Modeling tricks</h1>
+  <div class="section" id="meta-heuristics">
+<span id="chapter-metaheuristics"></span><h1>8. Meta-heuristics:</h1>
 <p class="rubric">Overview:</p>
 <p class="rubric">Prerequisites:</p>
-<p class="rubric">Classes under scrutiny:</p>
+<ul class="simple">
+<li>Basic knowledge of C++.</li>
+<li>Basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
+<li>Basic knowledge about how to define an objective function (see section <a class="reference internal" href="objectives/first_implementation.html#golomb-ruler-first-implementation"><em>An implementation of the first model</em></a>).</li>
+<li>Section <a class="reference internal" href="search_primitives/basic_working_search_algorithm.html#basic-working-search-algorithm"><em>Basic working of the solver: the search algorithm</em></a> helps but is not mandatory.</li>
+</ul>
 <p class="rubric">Files:</p>
-<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap13</span></tt>.</p>
+<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap7</span></tt>.</p>
 <p>The files inside this directory are:</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/efficiency.html">14.1. Efficiency</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/false_friends.html">14.2. False friends and counter-intuitive ideas</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#accepted-solutions-vs-feasible-solutions">14.2.1. <em>Accepted</em> solutions vs <em>feasible</em> solutions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-solveandcommit">14.2.2. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#localoptimumreached-vs-localoptimum">14.2.3. <tt class="docutils literal"><span class="pre">LocalOptimumReached()</span></tt> vs <tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-the-startsearch-nextsolution-endsearch-mechanism">14.2.4. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs the <tt class="docutils literal"><span class="pre">StartSearch()</span></tt> - <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> - <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics.html">8.1. Meta-heuristics in <em>or-tools</em></a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/tabu.html">8.2. Tabu search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#the-basic-idea">8.2.1. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#the-implementation">8.2.2. The implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#first-results">8.2.3. First results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/solving_options.html">14.3. What are my solving options?</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#the-search-mechanism">14.3.1. The search mechanism</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#global-methods">14.3.2. Global methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisionbuilders">14.3.3. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisions">14.3.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#summary">14.3.5. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/SA.html">8.3. Simulated annealing (SA)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/SA.html#the-basic-idea">8.3.1. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/SA.html#the-implementation">8.3.2. The implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/SA.html#first-results">8.3.3. First results</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/GLS.html">8.4. Guided local search (GLS)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/GLS.html#the-basic-idea">8.4.1. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/GLS.html#the-implementation">8.4.2. The implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/GLS.html#first-results">8.4.3. First results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics_summary.html">8.5. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
@@ -155,43 +165,12 @@ Search:
    
 	
 
-<h3>Chapters</h3>
-
-<h5>Part I: Basics</h5>
-<ul>
-<li><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
-<li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
-<li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
-<li><a class="reference internal" href="reification.html">4. Reification</a></li>
-</ul>
-
-<h5>Part II: Customization</h5>
-<ul>
-<li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
-<li><a class="reference internal" href="LS.html">6. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="metaheuristics.html">8. Meta-heuristics</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
-</ul>
-
-<h5>Part III: Routing</h5>
-<ul>
-<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">12. ARP with constraints</a></li>
-</ul>
-
-<h5>Part IV: Technicalities</h5>
-<ul>
-<li><a class="reference internal" href="utilities.html">13. Utilities</a></li>
-<li><a class="reference internal" href="#">14. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">15. Under the hood</a></li>
-</ul>
-
-<h5>Appendices</h5>
-<ul>
-<li><a class="reference internal" href="../genindex.html">Index</a></li>
-</ul>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="lns/restart.html"
+                        title="previous chapter">7.2. Restarting the search</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="metaheuristics/metaheuristics.html"
+                        title="next chapter">8.1. Meta-heuristics in <em>or-tools</em></a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -203,10 +182,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modeling_tricks/efficiency.html" title="14.1. Efficiency"
+          <a href="metaheuristics/metaheuristics.html" title="8.1. Meta-heuristics in or-tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="utilities/visualizing.html" title="13.7. Visualizing"
+          <a href="lns/restart.html" title="7.2. Restarting the search"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
