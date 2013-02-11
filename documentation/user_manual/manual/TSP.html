@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>10. Travelling Salesman Problems with constraints: the TSP with time windows &mdash; or-tools User&#39;s Manual</title>
+    <title>9. Travelling Salesman Problems with constraints: the TSP with time windows &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="10.1. A whole zoo of Routing Problems" href="tsp/zoo_routing_problems.html" />
-    <link rel="prev" title="9.5. Summary" href="custom_constraints/summary.html" /> 
+    <link rel="next" title="9.1. A whole zoo of Routing Problems" href="tsp/zoo_routing_problems.html" />
+    <link rel="prev" title="8.5. Summary" href="custom_constraints/summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tsp/zoo_routing_problems.html" title="10.1. A whole zoo of Routing Problems"
+          <a href="tsp/zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="custom_constraints/summary.html" title="9.5. Summary"
+          <a href="custom_constraints/summary.html" title="8.5. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -53,7 +53,7 @@
           <div class="body">
             
   <div class="section" id="travelling-salesman-problems-with-constraints-the-tsp-with-time-windows">
-<span id="chapter-tsp-with-constraints"></span><h1>10. Travelling Salesman Problems with constraints: the TSP with time windows</h1>
+<span id="chapter-tsp-with-constraints"></span><h1>9. Travelling Salesman Problems with constraints: the TSP with time windows</h1>
 <p>The third part of this manual deals with <em>Routing Problems</em>: we have a graph<a class="footnote-reference" href="#graph-or-network" id="id1">[1]</a> and seek
 to find a set of routes covering some or all nodes and/or edges/arcs while optimizing an objective function along
 the routes<a class="footnote-reference" href="#transportation-metaphor" id="id2">[2]</a> (time, vehicle costs, etc.) and respecting
@@ -93,7 +93,7 @@ the <em>Travelling Salesman Problem</em> (TSP)<a class="footnote-reference" href
 <table class="docutils footnote" frame="void" id="tsp-two-l" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>We use the Canadian (and British) spelling of the verb <em>travelling</em> but you&#8217;ll find much more
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>We use the Canadian (and British, and South African, and...) spelling of the verb <em>travelling</em> but you&#8217;ll find much more
 scientific articles under the American spelling: <em>traveling</em>.</td></tr>
 </tbody>
 </table>
@@ -141,71 +141,71 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tsp/zoo_routing_problems.html">10.1. A whole zoo of Routing Problems</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#node-routing-problems">10.1.1. Node Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">10.1.2. Vehicle Routing Problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">10.1.3. Arc Routing Problems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/zoo_routing_problems.html">9.1. A whole zoo of Routing Problems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#node-routing-problems">9.1.1. Node Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.3. Arc Routing Problems</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">10.2. The Routing Library (RL) in a nutshell</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#objectives">10.2.1. Objectives</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#out-of-the-box-models">10.2.2. Out of the box models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#on-top-of-the-cp-library">10.2.3. On top of the CP library</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#local-search">10.2.4. Local Search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#tuning-the-search">10.2.5. Tuning the search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#dimensions">10.2.6. Dimensions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#disjunctions">10.2.7. Disjunctions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#routes-vehicles-are-not-mandatory">10.2.8. Routes/Vehicles are not mandatory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#heterogeneous-fleet-of-vehicles">10.2.9. Heterogeneous fleet of vehicles</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#costs">10.2.10. Costs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">10.2.11. Limitations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">9.2. The Routing Library (RL) in a nutshell</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#objectives">9.2.1. Objectives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#out-of-the-box-models">9.2.2. Out of the box models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#on-top-of-the-cp-library">9.2.3. On top of the CP library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#local-search">9.2.4. Local Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#tuning-the-search">9.2.5. Tuning the search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#dimensions">9.2.6. Dimensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#disjunctions">9.2.7. Disjunctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#routes-vehicles-are-not-mandatory">9.2.8. Routes/Vehicles are not mandatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#heterogeneous-fleet-of-vehicles">9.2.9. Heterogeneous fleet of vehicles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#costs">9.2.10. Costs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/routing_library.html#limitations">9.2.11. Limitations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">10.3. The Travelling Salesman Problem (TSP)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-problem">10.3.1. The Problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#benchmark-data">10.3.2. Benchmark data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-tspdata-class">10.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#visualization-with-epix">10.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The Travelling Salesman Problem (TSP)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-problem">9.3.1. The Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#benchmark-data">9.3.2. Benchmark data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene.html">10.4. The model behind the scene: the main decision variables</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-main-idea-the-node-decision-variables">10.4.1. The main idea: the node decision variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#nodeindex-or-int64">10.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-switch-from-nodeindex-to-int64-and-vice-versa">10.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-follow-a-route">10.4.4. How to follow a route?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">10.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#to-summarize">10.4.6. To summarize</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene.html">9.4. The model behind the scene: the main decision variables</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-main-idea-the-node-decision-variables">9.4.1. The main idea: the node decision variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#nodeindex-or-int64">9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-switch-from-nodeindex-to-int64-and-vice-versa">9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-follow-a-route">9.4.4. How to follow a route?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#to-summarize">9.4.6. To summarize</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene_overview.html">10.5. The model behind the scene: overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#the-routingmodel-class">10.5.1. The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#variables">10.5.2. Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#constraints">10.5.3. Constraints</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#objective-function">10.5.4. Objective function</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#miscellaneous">10.5.5. Miscellaneous</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene_overview.html">9.5. The model behind the scene: overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#the-routingmodel-class">9.5.1. The <tt class="docutils literal"><span class="pre">RoutingModel</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#variables">9.5.2. Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#constraints">9.5.3. Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#objective-function">9.5.4. Objective function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene_overview.html#miscellaneous">9.5.5. Miscellaneous</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsp_implementation.html">10.6. The TSP in or-tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#minimalistic-implementation">10.6.1. Minimalistic implementation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#basic-implementation">10.6.2. Basic implementation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#how-to-avoid-some-edges">10.6.3. How to avoid some edges?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsp_implementation.html">9.6. The TSP in or-tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#minimalistic-implementation">9.6.1. Minimalistic implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#basic-implementation">9.6.2. Basic implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/first_tsp_implementation.html#how-to-avoid-some-edges">9.6.3. How to avoid some edges?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">10.7. The two phases approach</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-initial-solution">10.7.1. The initial solution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">10.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">9.7. The two phases approach</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-initial-solution">9.7.1. The initial solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">10.8. An exact implementation of the TSP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">10.9. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">10.9.1. The Travelling Salesman Problem with Time Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">10.9.2. Benchmark data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">10.9.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">10.9.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">9.8. An exact implementation of the TSP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.9. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.9.1. The Travelling Salesman Problem with Time Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">9.9.2. Benchmark data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">9.9.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">9.9.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">10.10. The TSPTW in or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">10.11. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">9.10. The TSPTW in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.11. Summary</a></li>
 </ul>
 </div>
 </div>
@@ -295,23 +295,22 @@ Search:
 <ul>
 <li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
 <li><a class="reference internal" href="LS.html">6. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="metaheuristics.html">8. Meta-heuristics</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+<li><a class="reference internal" href="metaheuristics.html">7. Meta-heuristics</a></li>
+<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="#">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">12. ARP with constraints</a></li>
+<li><a class="reference internal" href="#">9. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
+<li><a class="reference internal" href="arc_routing.html">11. ARP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">13. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">14. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">15. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -329,10 +328,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tsp/zoo_routing_problems.html" title="10.1. A whole zoo of Routing Problems"
+          <a href="tsp/zoo_routing_problems.html" title="9.1. A whole zoo of Routing Problems"
              >next</a> |</li>
         <li class="right" >
-          <a href="custom_constraints/summary.html" title="9.5. Summary"
+          <a href="custom_constraints/summary.html" title="8.5. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

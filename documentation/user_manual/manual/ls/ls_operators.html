@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.6. Local Search Neighborhood (LSN) Operators &mdash; or-tools User&#39;s Manual</title>
+    <title>6.6. Local Search Operators &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="local-search-neighborhood-lsn-operators">
-<span id="local-search-neighborhood-operators"></span><h1>6.6. Local Search Neighborhood (LSN) Operators</h1>
+  <div class="section" id="local-search-operators">
+<span id="local-search-neighborhood-operators"></span><h1>6.6. Local Search Operators</h1>
 <div class="files-sidebar container">
 <ol>
   <li>C++ code:
@@ -98,11 +98,11 @@ last candidate solution defined by the local search operator (an <tt class="docu
 </tbody>
 </table>
 <p>The next figure shows the
-LSN Operators hierarchy.</p>
+LS Operators hierarchy.</p>
 <a class="reference internal image-reference" href="../../_images/lsn_hierarchy.png"><img alt="../../_images/lsn_hierarchy.png" class="align-center" src="../../_images/lsn_hierarchy.png" style="width: 400pt;" /></a>
 <p>These classes are declared in the header <tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solveri.h</span></tt>.</p>
 <p>The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class is itself the base class of several other path specialized
-LSN Operators. We will review them in the subsection <a class="reference internal" href="../tsp/two_phases_approaches.html#local-search-pathoperators"><em>Local Search PathOperators</em></a>.</p>
+LS Operators. We will review them in the subsection <a class="reference internal" href="../tsp/two_phases_approaches.html#local-search-pathoperators"><em>Local Search PathOperators</em></a>.</p>
 <p><tt class="docutils literal"><span class="pre">IntVarLocalSearchOperator</span></tt> is a specialization of <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> built for an array of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s while
 <tt class="docutils literal"><span class="pre">SequenceVarLocalSearchOperator</span></tt> is a specialization of <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> built for an array
 of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s<a class="footnote-reference" href="#no-ls-operators-for-interval-vars" id="id2">[2]</a>.</p>
@@ -114,9 +114,9 @@ of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s<a cla
 </tbody>
 </table>
 </div>
-<div class="section" id="defining-a-custom-lsn-operator">
-<h2>6.6.2. Defining a custom LSN operator</h2>
-<p>We will construct an LSN Operator for an array of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s but the API for an array of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s is similar<a class="footnote-reference" href="#similar-api-intvar-localsearch-operator" id="id3">[3]</a>.</p>
+<div class="section" id="defining-a-custom-ls-operator">
+<h2>6.6.2. Defining a custom LS operator</h2>
+<p>We will construct an LS Operator for an array of <tt class="docutils literal"><span class="pre">IntVar</span></tt>s but the API for an array of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s is similar<a class="footnote-reference" href="#similar-api-intvar-localsearch-operator" id="id3">[3]</a>.</p>
 <p>There are two methods to overwrite:</p>
 <blockquote>
 <div><ul class="simple">
@@ -193,7 +193,7 @@ remaining variables to decrease, <tt class="docutils literal"><span class="pre">
 is then equal to <tt class="docutils literal"><span class="pre">Size()</span></tt>), it returns <tt class="docutils literal"><span class="pre">false</span></tt>.</p>
 <p>The <tt class="docutils literal"><span class="pre">private</span></tt> method <tt class="docutils literal"><span class="pre">OnStart()</span></tt> that is used whenever we start again with a new feasible solution, simply resets
 the variable index to <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> to be able to decrease the first variable <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> by <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>.</p>
-<p>We use the LSN Operator <tt class="docutils literal"><span class="pre">DecreaseOneVar</span></tt> in the function <tt class="docutils literal"><span class="pre">SimpleLS()</span></tt> that starts as follow:</p>
+<p>We use the LS Operator <tt class="docutils literal"><span class="pre">DecreaseOneVar</span></tt> in the function <tt class="docutils literal"><span class="pre">SimpleLS()</span></tt> that starts as follow:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SimpleLS</span><span class="p">(</span><span class="k">const</span> <span class="n">int64</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">init_phase</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">CHECK_GE</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;size of problem (n) must be &gt;= 2&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Simple LS &quot;</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">init_phase</span> <span class="o">?</span> <span class="s">&quot;with initial phase&quot;</span> <span class="o">:</span>
@@ -257,7 +257,7 @@ If  <img class="math" src="../../_images/math/ad21c2a70404673bca763879d05445a151
 then <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> is even, otherwise it is odd. In <tt class="docutils literal"><span class="pre">C++</span></tt>, the <img class="math" src="../../_images/math/ae1b3ca6a1430f398f07d78477c28f056e1f0bd0.png" alt="\textrm{mod}" style="vertical-align: -1px"/> operator is <tt class="docutils literal"><span class="pre">%</span></tt>.</td></tr>
 </tbody>
 </table>
-<p>The search phase using the LSN Operator is given by a... <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+<p>The search phase using the LS Operator is given by a... <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
 which shouldn&#8217;t surprise you by now:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  IntVarLocalSearchOperator</span>
 <span class="n">DecreaseOneVar</span> <span class="n">one_var_ls</span><span class="p">(</span><span class="n">vars</span><span class="p">);</span>
@@ -274,7 +274,7 @@ which shouldn&#8217;t surprise you by now:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Notice how the LSN Operator is passed to the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> by means of the
+<p>Notice how the LS Operator is passed to the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> by means of the
 <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt>.</p>
 <p>We collect the best and last solution:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">collector</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLastSolutionCollector</span><span class="p">();</span>
@@ -413,8 +413,8 @@ You can provide the seed that is used to initialize the random number generator:
 </pre></div>
 </div>
 </div>
-<div class="section" id="interesting-lsn-operators">
-<h2>6.6.4. Interesting LSN operators</h2>
+<div class="section" id="interesting-ls-operators">
+<h2>6.6.4. Interesting LS operators</h2>
 <p>Several existing <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s can be of great help. Combine these operators with your own customized
 operators.</p>
 <p><tt class="docutils literal"><span class="pre">PathOperator</span></tt>s will be reviewed in the subsection <a class="reference internal" href="../tsp/two_phases_approaches.html#local-search-pathoperators"><em>Local Search PathOperators</em></a>.</p>
@@ -471,10 +471,10 @@ are respectively <tt class="docutils literal"><span class="pre">Solver::DECREMEN
 <p>The variables are changed in the order given by the <tt class="docutils literal"><span class="pre">std::vector</span></tt>. Whenever we start to explore a new neighborhood,
 the variables are changed from the beginning of the vector anew.</p>
 </div>
-<div class="section" id="large-neighborhood-search">
-<h3>6.6.4.4. Large Neighborhood Search</h3>
+<div class="section" id="large-neighborhood-search-lns">
+<h3>6.6.4.4. Large Neighborhood Search (LNS)</h3>
 <p>And last but not least, in <em>or-tools</em>, Large Neighborhood Search is implemented with <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s but
-this is the topic of the next chapter.</p>
+this is the topic of the section <a class="reference internal" href="jobshop_lns.html#large-neighborhood-search"><em>Large neighborhood search (LNS)</em></a>.</p>
 </div>
 </div>
 </div>
@@ -561,15 +561,15 @@ Search:
                         title="next chapter">6.7. The jobshop problem: and now with local search!</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.6. Local Search Neighborhood (LSN) Operators</a><ul>
+<li><a class="reference internal" href="#">6.6. Local Search Operators</a><ul>
 <li><a class="reference internal" href="#localsearchoperators">6.6.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</a></li>
-<li><a class="reference internal" href="#defining-a-custom-lsn-operator">6.6.2. Defining a custom LSN operator</a></li>
+<li><a class="reference internal" href="#defining-a-custom-ls-operator">6.6.2. Defining a custom LS operator</a></li>
 <li><a class="reference internal" href="#combining-ls-operators">6.6.3. Combining LS operators</a></li>
-<li><a class="reference internal" href="#interesting-lsn-operators">6.6.4. Interesting LSN operators</a><ul>
+<li><a class="reference internal" href="#interesting-ls-operators">6.6.4. Interesting LS operators</a><ul>
 <li><a class="reference internal" href="#neighborhoodlimit">6.6.4.1. <tt class="docutils literal"><span class="pre">NeighborhoodLimit</span></tt></a></li>
 <li><a class="reference internal" href="#movetowardtargetls">6.6.4.2. <tt class="docutils literal"><span class="pre">MoveTowardTargetLS</span></tt></a></li>
 <li><a class="reference internal" href="#decrementvalue-and-incrementvalue">6.6.4.3. <tt class="docutils literal"><span class="pre">DecrementValue</span></tt> and <tt class="docutils literal"><span class="pre">IncrementValue</span></tt></a></li>
-<li><a class="reference internal" href="#large-neighborhood-search">6.6.4.4. Large Neighborhood Search</a></li>
+<li><a class="reference internal" href="#large-neighborhood-search-lns">6.6.4.4. Large Neighborhood Search (LNS)</a></li>
 </ul>
 </li>
 </ul>

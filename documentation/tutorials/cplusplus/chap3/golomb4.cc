@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+//
 // An improved second implementation.
 // We reintroduce the n(n-1)/2 differences variables.
 #include <vector>

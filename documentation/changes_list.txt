@@ -1,4 +1,12 @@
 
+v.0.1.27: (2013-02-11 15:39:47)
+-------------------------------
+No need to download this new version. Only the chapter structure has been modified.
+* Minor enhancements to the manual:
+  - tutorials (except for new section 6.8) for chapter 6 added.
+* Major enhancements to the manual:
+  - chapter 7 (LNS) becomes a section of chapter 6.
+
 v.0.1.26: (2013-02-09 16:57:53)
 -------------------------------
 * Milestone: chapter 6 written (except for the summary).

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>14. Modeling tricks &mdash; or-tools User&#39;s Manual</title>
+    <title>13. Modeling tricks &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="14.1. Efficiency" href="modeling_tricks/efficiency.html" />
-    <link rel="prev" title="13.7. Visualizing" href="utilities/visualizing.html" /> 
+    <link rel="next" title="13.1. Efficiency" href="modeling_tricks/efficiency.html" />
+    <link rel="prev" title="12.7. Visualizing" href="utilities/visualizing.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modeling_tricks/efficiency.html" title="14.1. Efficiency"
+          <a href="modeling_tricks/efficiency.html" title="13.1. Efficiency"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="utilities/visualizing.html" title="13.7. Visualizing"
+          <a href="utilities/visualizing.html" title="12.7. Visualizing"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -53,7 +53,7 @@
           <div class="body">
             
   <div class="section" id="modeling-tricks">
-<h1>14. Modeling tricks</h1>
+<h1>13. Modeling tricks</h1>
 <p class="rubric">Overview:</p>
 <p class="rubric">Prerequisites:</p>
 <p class="rubric">Classes under scrutiny:</p>
@@ -63,20 +63,20 @@
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/efficiency.html">14.1. Efficiency</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/false_friends.html">14.2. False friends and counter-intuitive ideas</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#accepted-solutions-vs-feasible-solutions">14.2.1. <em>Accepted</em> solutions vs <em>feasible</em> solutions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-solveandcommit">14.2.2. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#localoptimumreached-vs-localoptimum">14.2.3. <tt class="docutils literal"><span class="pre">LocalOptimumReached()</span></tt> vs <tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-the-startsearch-nextsolution-endsearch-mechanism">14.2.4. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs the <tt class="docutils literal"><span class="pre">StartSearch()</span></tt> - <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> - <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> mechanism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/efficiency.html">13.1. Efficiency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/false_friends.html">13.2. False friends and counter-intuitive ideas</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#accepted-solutions-vs-feasible-solutions">13.2.1. <em>Accepted</em> solutions vs <em>feasible</em> solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-solveandcommit">13.2.2. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#localoptimumreached-vs-localoptimum">13.2.3. <tt class="docutils literal"><span class="pre">LocalOptimumReached()</span></tt> vs <tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/false_friends.html#solve-vs-the-startsearch-nextsolution-endsearch-mechanism">13.2.4. <tt class="docutils literal"><span class="pre">Solve()</span></tt> vs the <tt class="docutils literal"><span class="pre">StartSearch()</span></tt> - <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> - <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> mechanism</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/solving_options.html">14.3. What are my solving options?</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#the-search-mechanism">14.3.1. The search mechanism</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#global-methods">14.3.2. Global methods</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisionbuilders">14.3.3. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisions">14.3.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#summary">14.3.5. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_tricks/solving_options.html">13.3. What are my solving options?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#the-search-mechanism">13.3.1. The search mechanism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#global-methods">13.3.2. Global methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisionbuilders">13.3.3. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#decisions">13.3.4. <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling_tricks/solving_options.html#summary">13.3.5. Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -169,23 +169,22 @@ Search:
 <ul>
 <li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
 <li><a class="reference internal" href="LS.html">6. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="metaheuristics.html">8. Meta-heuristics</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+<li><a class="reference internal" href="metaheuristics.html">7. Meta-heuristics</a></li>
+<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">12. ARP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
+<li><a class="reference internal" href="arc_routing.html">11. ARP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">13. Utilities</a></li>
-<li><a class="reference internal" href="#">14. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">15. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="#">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -203,10 +202,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modeling_tricks/efficiency.html" title="14.1. Efficiency"
+          <a href="modeling_tricks/efficiency.html" title="13.1. Efficiency"
              >next</a> |</li>
         <li class="right" >
-          <a href="utilities/visualizing.html" title="13.7. Visualizing"
+          <a href="utilities/visualizing.html" title="12.7. Visualizing"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

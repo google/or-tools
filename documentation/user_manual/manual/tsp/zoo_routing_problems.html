@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>10.1. A whole zoo of Routing Problems &mdash; or-tools User&#39;s Manual</title>
+    <title>9.1. A whole zoo of Routing Problems &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="10. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="10.2. The Routing Library (RL) in a nutshell" href="routing_library.html" />
-    <link rel="prev" title="10. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" /> 
+    <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
+    <link rel="next" title="9.2. The Routing Library (RL) in a nutshell" href="routing_library.html" />
+    <link rel="prev" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="routing_library.html" title="10.2. The Routing Library (RL) in a nutshell"
+          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../TSP.html" title="10. Travelling Salesman Problems with constraints: the TSP with time windows"
+          <a href="../TSP.html" title="9. Travelling Salesman Problems with constraints: the TSP with time windows"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" accesskey="U">10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="a-whole-zoo-of-routing-problems">
-<span id="whole-zoo-routing-problems"></span><h1>10.1. A whole zoo of Routing Problems</h1>
+<span id="whole-zoo-routing-problems"></span><h1>9.1. A whole zoo of Routing Problems</h1>
 <p>This section is meant to make you aware that the classification
 of <em>Routing Problems</em> is intricate<a class="footnote-reference" href="#daunting-section-zoo-routing-problems" id="id1">[1]</a>. Actually, there is no real and
 widely adopted classification<a class="footnote-reference" href="#taxonomy-rp" id="id2">[2]</a><a class="footnote-reference" href="#routing-problems-not-universally-accepted" id="id3">[3]</a>.</p>
@@ -161,9 +161,9 @@ ARPs are intrinsically more difficult than NRPs.</p>
 <p>VRPs are often used to model real transportation problems where goods/services/people are moved from one point to another
 and as such must respect lots of side constraints (capacities, delivery times, etc.).</p>
 <div class="section" id="node-routing-problems">
-<h2>10.1.1. Node Routing Problems</h2>
+<h2>9.1.1. Node Routing Problems</h2>
 <div class="section" id="informal-definition">
-<h3>10.1.1.1. Informal definition:</h3>
+<h3>9.1.1.1. Informal definition:</h3>
 <p>The term <em>Node Routing Problem</em> (NRP) is seldom used<a class="footnote-reference" href="#node-routing-problem-not-a-good-term" id="id7">[5]</a> and mainly
 refers to <em>Travelling Salesman Problems</em> (TSP)-like problems. In this manual, when we refer to <em>NRP</em>, we mean <em>TSP</em>-like
 problems, i.e. routing problems where nodes must be visited and served. We use it to refer to <em>node-related</em> Routing
@@ -178,7 +178,7 @@ Routing Problems in the scientific literature!</td></tr>
 </table>
 </div>
 <div class="section" id="some-problems">
-<h3>10.1.1.2. Some problems</h3>
+<h3>9.1.1.2. Some problems</h3>
 <ul class="simple">
 <li>The Travelling Salesman Problem</li>
 <li>The General Travelling Salesman Problem</li>
@@ -191,20 +191,20 @@ Routing Problems in the scientific literature!</td></tr>
 </ul>
 </div>
 <div class="section" id="authoritative-source">
-<h3>10.1.1.3. Authoritative source:</h3>
+<h3>9.1.1.3. Authoritative source:</h3>
 <p>D. L. Applegate, R. E. Bixby, V. Chvatal, and W. J. Cook. <em>The Traveling Salesman Problem: A Computational Study</em>,
 Princeton Series in Applied Mathematics, Princeton University Press, 606 pp., 2007.</p>
 </div>
 <div class="section" id="the-tsptw">
-<h3>10.1.1.4. The TSPTW:</h3>
+<h3>9.1.1.4. The TSPTW:</h3>
 <p>The Travelling Salesman Problem with Time Windows is...</p>
 <p>[insert epix graphic]</p>
 </div>
 </div>
 <div class="section" id="vehicle-routing-problems">
-<h2>10.1.2. Vehicle Routing Problems</h2>
+<h2>9.1.2. Vehicle Routing Problems</h2>
 <div class="section" id="id8">
-<h3>10.1.2.1. Informal definition:</h3>
+<h3>9.1.2.1. Informal definition:</h3>
 <p>Vehicle Routing Problems (VRPs) are concerned
 with a fleet of (maybe heterogeneous) vehicles. The number of vehicles can be
 fixed in advance or be one of a variable of the problem.
@@ -214,7 +214,7 @@ serve clients, etc.). Clients are usually modelled by nodes and to solve a VRP, 
 several routes (1 per vehicle) that visit all clients and respect all given constraints!</p>
 </div>
 <div class="section" id="id9">
-<h3>10.1.2.2. Some problems</h3>
+<h3>9.1.2.2. Some problems</h3>
 <ul class="simple">
 <li>The Vehicle Routing Problem</li>
 <li>The Capacitated Vehicle Routing Problem</li>
@@ -224,25 +224,25 @@ several routes (1 per vehicle) that visit all clients and respect all given cons
 </ul>
 </div>
 <div class="section" id="id10">
-<h3>10.1.2.3. Authoritative source:</h3>
+<h3>9.1.2.3. Authoritative source:</h3>
 <p>Golden, Bruce L.; Raghavan, S.; Wasil, Edward A. (Eds.). <em>The Vehicle Routing Problem: Latest Advances and
 New Challenges</em>. Springer, Series: Operations Research/Computer Science Interfaces Series, Vol. 43, 2008, 589 p.</p>
 </div>
 <div class="section" id="the-cvrp">
-<h3>10.1.2.4. The CVRP:</h3>
+<h3>9.1.2.4. The CVRP:</h3>
 <p>The Capacitated Vehicle Routing Problem is...</p>
 <p>[insert epix graphic]</p>
 </div>
 </div>
 <div class="section" id="arc-routing-problems">
-<h2>10.1.3. Arc Routing Problems</h2>
+<h2>9.1.3. Arc Routing Problems</h2>
 <div class="section" id="id11">
-<h3>10.1.3.1. Informal definition:</h3>
+<h3>9.1.3.1. Informal definition:</h3>
 <p>In Arc Routing Problems, we visit and serve edges and/or arcs. Most of the problems consider
 1 vehicle of <img class="math" src="../../_images/math/b671f1bb7e4ee86584347d5d22f1dc8abdb5bef2.png" alt="\infty" style="vertical-align: -1px"/> capacity, i.e. we seek one tour that covers all the required edges and/or arcs.</p>
 </div>
 <div class="section" id="id12">
-<h3>10.1.3.2. Some problems</h3>
+<h3>9.1.3.2. Some problems</h3>
 <ul class="simple">
 <li>The Chinese Postman Problem</li>
 <li>The Canadian Postman Problem</li>
@@ -256,11 +256,11 @@ New Challenges</em>. Springer, Series: Operations Research/Computer Science Inte
 </ul>
 </div>
 <div class="section" id="id13">
-<h3>10.1.3.3. Authoritative source:</h3>
+<h3>9.1.3.3. Authoritative source:</h3>
 <p>Dror, M. (Ed.). <em>Arc Routing: Theory, Solutions and Applications</em>. Kluwer Academic Publishers, Dordrecht, 2000.</p>
 </div>
 <div class="section" id="the-ccpp">
-<h3>10.1.3.4. The CCPP:</h3>
+<h3>9.1.3.4. The CCPP:</h3>
 <p>The Cumulative Chinese Postman Problem is ...</p>
 <p>[insert epix graphic]</p>
 </div>
@@ -340,35 +340,35 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../TSP.html"
-                        title="previous chapter">10. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
+                        title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="../TSP.html"
-                        title="previous chapter">10. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
+                        title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="routing_library.html"
-                        title="next chapter">10.2. The Routing Library (RL) in a nutshell</a></p>
+                        title="next chapter">9.2. The Routing Library (RL) in a nutshell</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">10.1. A whole zoo of Routing Problems</a><ul>
-<li><a class="reference internal" href="#node-routing-problems">10.1.1. Node Routing Problems</a><ul>
-<li><a class="reference internal" href="#informal-definition">10.1.1.1. Informal definition:</a></li>
-<li><a class="reference internal" href="#some-problems">10.1.1.2. Some problems</a></li>
-<li><a class="reference internal" href="#authoritative-source">10.1.1.3. Authoritative source:</a></li>
-<li><a class="reference internal" href="#the-tsptw">10.1.1.4. The TSPTW:</a></li>
+<li><a class="reference internal" href="#">9.1. A whole zoo of Routing Problems</a><ul>
+<li><a class="reference internal" href="#node-routing-problems">9.1.1. Node Routing Problems</a><ul>
+<li><a class="reference internal" href="#informal-definition">9.1.1.1. Informal definition:</a></li>
+<li><a class="reference internal" href="#some-problems">9.1.1.2. Some problems</a></li>
+<li><a class="reference internal" href="#authoritative-source">9.1.1.3. Authoritative source:</a></li>
+<li><a class="reference internal" href="#the-tsptw">9.1.1.4. The TSPTW:</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#vehicle-routing-problems">10.1.2. Vehicle Routing Problems</a><ul>
-<li><a class="reference internal" href="#id8">10.1.2.1. Informal definition:</a></li>
-<li><a class="reference internal" href="#id9">10.1.2.2. Some problems</a></li>
-<li><a class="reference internal" href="#id10">10.1.2.3. Authoritative source:</a></li>
-<li><a class="reference internal" href="#the-cvrp">10.1.2.4. The CVRP:</a></li>
+<li><a class="reference internal" href="#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a><ul>
+<li><a class="reference internal" href="#id8">9.1.2.1. Informal definition:</a></li>
+<li><a class="reference internal" href="#id9">9.1.2.2. Some problems</a></li>
+<li><a class="reference internal" href="#id10">9.1.2.3. Authoritative source:</a></li>
+<li><a class="reference internal" href="#the-cvrp">9.1.2.4. The CVRP:</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#arc-routing-problems">10.1.3. Arc Routing Problems</a><ul>
-<li><a class="reference internal" href="#id11">10.1.3.1. Informal definition:</a></li>
-<li><a class="reference internal" href="#id12">10.1.3.2. Some problems</a></li>
-<li><a class="reference internal" href="#id13">10.1.3.3. Authoritative source:</a></li>
-<li><a class="reference internal" href="#the-ccpp">10.1.3.4. The CCPP:</a></li>
+<li><a class="reference internal" href="#arc-routing-problems">9.1.3. Arc Routing Problems</a><ul>
+<li><a class="reference internal" href="#id11">9.1.3.1. Informal definition:</a></li>
+<li><a class="reference internal" href="#id12">9.1.3.2. Some problems</a></li>
+<li><a class="reference internal" href="#id13">9.1.3.3. Authoritative source:</a></li>
+<li><a class="reference internal" href="#the-ccpp">9.1.3.4. The CCPP:</a></li>
 </ul>
 </li>
 </ul>
@@ -386,13 +386,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="routing_library.html" title="10.2. The Routing Library (RL) in a nutshell"
+          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
              >next</a> |</li>
         <li class="right" >
-          <a href="../TSP.html" title="10. Travelling Salesman Problems with constraints: the TSP with time windows"
+          <a href="../TSP.html" title="9. Travelling Salesman Problems with constraints: the TSP with time windows"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" >10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

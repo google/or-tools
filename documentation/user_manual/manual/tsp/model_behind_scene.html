@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>10.4. The model behind the scene: the main decision variables &mdash; or-tools User&#39;s Manual</title>
+    <title>9.4. The model behind the scene: the main decision variables &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="10. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="10.5. The model behind the scene: overview" href="model_behind_scene_overview.html" />
-    <link rel="prev" title="10.3. The Travelling Salesman Problem (TSP)" href="tsp.html" /> 
+    <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
+    <link rel="next" title="9.5. The model behind the scene: overview" href="model_behind_scene_overview.html" />
+    <link rel="prev" title="9.3. The Travelling Salesman Problem (TSP)" href="tsp.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="model_behind_scene_overview.html" title="10.5. The model behind the scene: overview"
+          <a href="model_behind_scene_overview.html" title="9.5. The model behind the scene: overview"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tsp.html" title="10.3. The Travelling Salesman Problem (TSP)"
+          <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" accesskey="U">10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="the-model-behind-the-scene-the-main-decision-variables">
-<span id="rl-model-behind-scene-decision-v"></span><h1>10.4. The model behind the scene: the main decision variables</h1>
+<span id="rl-model-behind-scene-decision-v"></span><h1>9.4. The model behind the scene: the main decision variables</h1>
 <p>We describe the main decision variables of the model used in the RL.
 In the section <a class="reference internal" href="../under_the_hood/rl.html#hood-rl"><em>The Routing Library (RL)</em></a> of the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a>,
 we describe the inner mechanisms of the RL in details.</p>
@@ -71,7 +71,7 @@ we describe the inner mechanisms of the RL in details.</p>
 <p>A depot <strong>cannot</strong> be an transit node.
 The number of vehicles can be arbitrary (within the limit of an <tt class="docutils literal"><span class="pre">int</span></tt>).</p>
 <div class="section" id="the-main-idea-the-node-decision-variables">
-<h2>10.4.1. The main idea: the node decision variables</h2>
+<h2>9.4.1. The main idea: the node decision variables</h2>
 <p>The model is node based: routes are paths linking nodes. For each node<a class="footnote-reference" href="#nodes-that-lead-somwhere" id="id1">[1]</a>,
 we keep an <tt class="docutils literal"><span class="pre">IntVar*</span></tt> variable
 (stored internally in a <tt class="docutils literal"><span class="pre">private</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span> <span class="pre">nexts_</span></tt>) that
@@ -112,7 +112,7 @@ vehicle can visit a node in a solution.</td></tr>
 </table>
 </div>
 <div class="section" id="nodeindex-or-int64">
-<span id="id3"></span><h2>10.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</h2>
+<span id="id3"></span><h2>9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</h2>
 <p>The RL uses both <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es<a class="footnote-reference" href="#nodeindices" id="id4">[3]</a> and <tt class="docutils literal"><span class="pre">int64</span></tt>s. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es represent
 the true unique nodes <em>Identifiers</em> (<em>Ids</em>) while <tt class="docutils literal"><span class="pre">int64</span></tt>s are used as (internal) indices corresponding to
 the nodes in the solutions<a class="footnote-reference" href="#auxiliary-graph-in-fact" id="id5">[4]</a>.
@@ -161,7 +161,7 @@ node identifiers of this auxiliary graph.</td></tr>
 </table>
 </div>
 <div class="section" id="how-to-switch-from-nodeindex-to-int64-and-vice-versa">
-<h2>10.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</h2>
+<h2>9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</h2>
 <p>A <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> behaves like
 a regular <tt class="docutils literal"><span class="pre">int</span></tt> but it is in fact an <tt class="docutils literal"><span class="pre">IntType</span></tt>. We use <tt class="docutils literal"><span class="pre">IntType</span></tt>s to avoid annoying automatic castings between
 different integer types and to preserve a certain type-safety. A <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> is a <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> and shouldn&#8217;t be
@@ -210,7 +210,7 @@ of a starting or ending node in a route. Use instead</p>
 </div>
 </div>
 <div class="section" id="how-to-follow-a-route">
-<span id="rl-how-to-follow-a-route"></span><h2>10.4.4. How to follow a route?</h2>
+<span id="rl-how-to-follow-a-route"></span><h2>9.4.4. How to follow a route?</h2>
 <p>Once you have a solution, you can query it and follow its routes using the <tt class="docutils literal"><span class="pre">int64</span></tt> indices:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">78</span><span class="p">);</span> <span class="c1">// 10000 nodes, 78 vehicles/routes</span>
                                  <span class="c1">// Don&#39;t do this at home!</span>
@@ -237,7 +237,7 @@ provides also an <tt class="docutils literal"><span class="pre">IsStart(int64)</
 <p>To access the main decision <tt class="docutils literal"><span class="pre">IntVar</span></tt> variables, we use the <tt class="docutils literal"><span class="pre">NextVar(int64)</span></tt> method.</p>
 </div>
 <div class="section" id="not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">
-<h2>10.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</h2>
+<h2>9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</h2>
 <p>Only internal nodes that can lead somewhere possess a decision variable. Only the nodes that are visited and the
 starting depots have a main decision <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable. There are 9 real nodes in the next figure. They
 have a <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> ranging from 0 to 8. There are 2 starting depots (1 and 7) and 2 ending depot (5 and 8).
@@ -267,7 +267,7 @@ As you can see in the picture, there are only 7 <tt class="docutils literal"><sp
 about the way we internally number the indices, have a look at <a class="reference internal" href="../under_the_hood/rl.html#uth-next-variables-details"><em>nexts_ variables</em></a>.</p>
 </div>
 <div class="section" id="to-summarize">
-<h2>10.4.6. To summarize</h2>
+<h2>9.4.6. To summarize</h2>
 <p>Here is a little summary:</p>
 <p class="rubric">Types to represent nodes</p>
 <table border="1" class="docutils">
@@ -398,22 +398,22 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../TSP.html"
-                        title="previous chapter">10. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
+                        title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="tsp.html"
-                        title="previous chapter">10.3. The Travelling Salesman Problem (TSP)</a></p>
+                        title="previous chapter">9.3. The Travelling Salesman Problem (TSP)</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="model_behind_scene_overview.html"
-                        title="next chapter">10.5. The model behind the scene: overview</a></p>
+                        title="next chapter">9.5. The model behind the scene: overview</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">10.4. The model behind the scene: the main decision variables</a><ul>
-<li><a class="reference internal" href="#the-main-idea-the-node-decision-variables">10.4.1. The main idea: the node decision variables</a></li>
-<li><a class="reference internal" href="#nodeindex-or-int64">10.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
-<li><a class="reference internal" href="#how-to-switch-from-nodeindex-to-int64-and-vice-versa">10.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
-<li><a class="reference internal" href="#how-to-follow-a-route">10.4.4. How to follow a route?</a></li>
-<li><a class="reference internal" href="#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">10.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
-<li><a class="reference internal" href="#to-summarize">10.4.6. To summarize</a></li>
+<li><a class="reference internal" href="#">9.4. The model behind the scene: the main decision variables</a><ul>
+<li><a class="reference internal" href="#the-main-idea-the-node-decision-variables">9.4.1. The main idea: the node decision variables</a></li>
+<li><a class="reference internal" href="#nodeindex-or-int64">9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li><a class="reference internal" href="#how-to-switch-from-nodeindex-to-int64-and-vice-versa">9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
+<li><a class="reference internal" href="#how-to-follow-a-route">9.4.4. How to follow a route?</a></li>
+<li><a class="reference internal" href="#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
+<li><a class="reference internal" href="#to-summarize">9.4.6. To summarize</a></li>
 </ul>
 </li>
 </ul>
@@ -429,13 +429,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="model_behind_scene_overview.html" title="10.5. The model behind the scene: overview"
+          <a href="model_behind_scene_overview.html" title="9.5. The model behind the scene: overview"
              >next</a> |</li>
         <li class="right" >
-          <a href="tsp.html" title="10.3. The Travelling Salesman Problem (TSP)"
+          <a href="tsp.html" title="9.3. The Travelling Salesman Problem (TSP)"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../TSP.html" >10. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
+          <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

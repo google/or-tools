@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+//
 // First implementation of the Golomb Ruler Problem.
 //
 // Same as golomb1.cc with some global indicators about the search and

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7.2. Restarting the search &mdash; or-tools User&#39;s Manual</title>
+    <title>6.8. Large neighborhood search (LNS) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="7. Large neighbourhood search: the car sequencing problem" href="../LNS.html" />
-    <link rel="next" title="8. Meta-heuristics:" href="../metaheuristics.html" />
-    <link rel="prev" title="7.1. What is large neighbourhood search?" href="large_neighborhood_search.html" /> 
+    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="next" title="6.9. Filtering" href="ls_filtering.html" />
+    <link rel="prev" title="6.7. The jobshop problem: and now with local search!" href="jobshop_ls.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="../metaheuristics.html" title="8. Meta-heuristics:"
+          <a href="ls_filtering.html" title="6.9. Filtering"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="large_neighborhood_search.html" title="7.1. What is large neighbourhood search?"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LNS.html" accesskey="U">7. Large neighbourhood search: the car sequencing problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,12 +54,20 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="restarting-the-search">
-<span id="local-search-restart-search"></span><h1>7.2. Restarting the search</h1>
-<div class="section" id="luby">
-<h2>7.2.1. Luby</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+  <div class="section" id="large-neighborhood-search-lns">
+<span id="large-neighborhood-search"></span><h1>6.8. Large neighborhood search (LNS)</h1>
+<div class="section" id="what-is-large-neighborhood-search">
+<h2>6.8.1. What is large neighborhood search?</h2>
+</div>
+<div class="section" id="large-neighborhood-search-in-or-tools">
+<h2>6.8.2. Large neighborhood search in <em>or-tools</em></h2>
+</div>
+<div class="section" id="interesting-lns-operators">
+<h2>6.8.3. Interesting LNS operators</h2>
+</div>
+<div class="section" id="an-heuristic-to-solve-the-job-shop-problem">
+<h2>6.8.4. An heuristic to solve the job-shop problem</h2>
+</div>
 </div>
 
 
@@ -134,18 +142,21 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../LNS.html"
-                        title="previous chapter">7. Large neighbourhood search: the car sequencing problem</a></p>
+  <p class="topless"><a href="../LS.html"
+                        title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="large_neighborhood_search.html"
-                        title="previous chapter">7.1. What is large neighbourhood search?</a></p>
+  <p class="topless"><a href="jobshop_ls.html"
+                        title="previous chapter">6.7. The jobshop problem: and now with local search!</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="../metaheuristics.html"
-                        title="next chapter">8. Meta-heuristics:</a></p>
+  <p class="topless"><a href="ls_filtering.html"
+                        title="next chapter">6.9. Filtering</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">7.2. Restarting the search</a><ul>
-<li><a class="reference internal" href="#luby">7.2.1. Luby</a></li>
+<li><a class="reference internal" href="#">6.8. Large neighborhood search (LNS)</a><ul>
+<li><a class="reference internal" href="#what-is-large-neighborhood-search">6.8.1. What is large neighborhood search?</a></li>
+<li><a class="reference internal" href="#large-neighborhood-search-in-or-tools">6.8.2. Large neighborhood search in <em>or-tools</em></a></li>
+<li><a class="reference internal" href="#interesting-lns-operators">6.8.3. Interesting LNS operators</a></li>
+<li><a class="reference internal" href="#an-heuristic-to-solve-the-job-shop-problem">6.8.4. An heuristic to solve the job-shop problem</a></li>
 </ul>
 </li>
 </ul>
@@ -161,13 +172,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="../metaheuristics.html" title="8. Meta-heuristics:"
+          <a href="ls_filtering.html" title="6.9. Filtering"
              >next</a> |</li>
         <li class="right" >
-          <a href="large_neighborhood_search.html" title="7.1. What is large neighbourhood search?"
+          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LNS.html" >7. Large neighbourhood search: the car sequencing problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
