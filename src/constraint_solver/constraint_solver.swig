@@ -1472,8 +1472,9 @@ class LocalSearchPhaseParameters {
 %feature("director") BaseLNS;
 %feature("director") Decision;
 %feature("director") DecisionBuilder;
-%feature("director") IntVarLocalSearchFilter;;
+%feature("director") IntVarLocalSearchFilter;
 %feature("director") IntVarLocalSearchOperator;
+%feature("director") OptimizeVar;
 %feature("director") SearchLimit;
 %feature("director") SearchMonitor;
 %feature("director") SymmetryBreaker;
