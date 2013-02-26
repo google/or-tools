@@ -56,6 +56,23 @@
             
   <div class="section" id="the-travelling-salesman-problem-tsp">
 <span id="tsp-tsp"></span><h1>9.3. The Travelling Salesman Problem (TSP)</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap9/tsp.h">tsp.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap9/tsp_epix.h">tsp_epix.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap9/tsplib_solution_to_epix.cc">tsplib_solution_to_epix.cc</a></li>
+    </ol>
+  </li>
+  <li>Data files:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap9/a280.tsp">a280.tsp</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap9/a280.opt.tour">a280.opt.tour</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <p>The Travelling Salesman Problem (TSP) is probably the most known and studied problem in Operations Research.
 In this section, we briefly<a class="footnote-reference" href="#tsp-examples-abond" id="id1">[1]</a> present this fascinating problem and the
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/">TSPLIB</a>
@@ -107,9 +124,10 @@ guaranteed to be within 1% of an optimal tour!</td></tr>
 Outside the CP paradigm, most algorithms solving the TSP ask for a complete graph as input. The classical way to
 transform any (non complete) graph into a complete graph is to replace each non existing edge <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> by a well
 suited shortest path edge between <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/>.</p>
-<p>Worse, if you want to avoid certain connections between two nodes <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> in a complete graph,
-the classical way to achieve this is to set a very high cost/weight to the edge <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/>. In the RL, you just
-remove <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> from the domain of the variable <tt class="docutils literal"><span class="pre">NextVar(j)</span></tt> of <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> and vice-versa. See the subection
+<p>Worse, if you want to avoid certain arcs between nodes in a complete graph,
+the classical way to achieve this is to set a very high cost/weight to the arcs to avoid. In the RL,
+if you want to avoid arc <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/>,  you just
+remove <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> from the domain of the variable <tt class="docutils literal"><span class="pre">NextVar(i)</span></tt> of <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/>. See the subection
 <a class="reference internal" href="first_tsp_implementation.html#tsp-avoid-some-edges"><em>How to avoid some edges?</em></a> for a detailed
 example.</p>
 </div>
@@ -138,23 +156,17 @@ is the de facto standard format to encode TSP instances.</p>
 <a class="reference external" href="http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/DOC.PS">TSPLIB95</a>. Here is a small excerpt to understand the
 basics. Refer to the TSPLIB95 document for more. The complete TSPLIB collection of problems has been successfully solved
 to optimality with the <a class="reference external" href="http://www.tsp.gatech.edu/concorde/index.html">Concorde code</a> in 2005-2006.</p>
-<p>The convention in the TSPLIB is to number the nodes starting at 1. We&#8217;ll adopt this convention here<a class="footnote-reference" href="#fallback-starting-at-0" id="id5">[4]</a> too.
+<p>The convention in the TSPLIB is to number the nodes starting at 1. We&#8217;ll adopt this convention here
+too.
 The Routing Library (RL) on the contrary starts numbering its nodes at 0.</p>
-<table class="docutils footnote" frame="void" id="fallback-starting-at-0" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>We have defined the <tt class="docutils literal"><span class="pre">bool</span></tt> gflags <tt class="docutils literal"><span class="pre">start_counting_at_1</span></tt>. Be default, it is <tt class="docutils literal"><span class="pre">true</span></tt>.
-When <tt class="docutils literal"><span class="pre">false</span></tt>, we number the nodes starting from 0.</td></tr>
-</tbody>
-</table>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Nodes are numbered from 1 to n in the TSPLIB.</p>
+<p class="last">Nodes are numbered from 1 to n in the TSPLIB and we keep this convention in this chapter.</p>
 </div>
 <div class="section" id="the-instance-file">
 <h4>9.3.2.1.1. The instance file</h4>
 <p>The TSPLIB not only deals with the TSP but also with related problems. We only detail one type of TSP instance files.
-This is what the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt><a class="footnote-reference" href="#a280-fun-fact" id="id6">[5]</a> looks like:</p>
+This is what the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt><a class="footnote-reference" href="#a280-fun-fact" id="id5">[4]</a> looks like:</p>
 <div class="highlight-text"><div class="highlight"><pre>NAME : a280
 COMMENT : drilling problem (Ludwig)
 TYPE : TSP
@@ -186,18 +198,18 @@ distances are considered. The <tt class="docutils literal"><span class="pre">NOD
 of three numbers:</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">Node_id</span></tt>   <tt class="docutils literal"><span class="pre">x</span></tt>   <tt class="docutils literal"><span class="pre">y</span></tt></div></blockquote>
-<p><tt class="docutils literal"><span class="pre">Node_id</span></tt> is a unique <em>integer</em> node identifier and <tt class="docutils literal"><span class="pre">(x,y)</span></tt> are Cartesian coordinates unless
+<p><tt class="docutils literal"><span class="pre">Node_id</span></tt> is a unique <em>integer</em> (<img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1" style="vertical-align: -3px"/>) node identifier and <tt class="docutils literal"><span class="pre">(x,y)</span></tt> are Cartesian coordinates unless
 otherwise stated. The coordinates don&#8217;t have to be integers and can be any real numbers.</p>
 <p>Not all instances have node coordinates.</p>
 <p>There exist several other less obvious TSPLIB formats but we disregard them in this manual (graphs can be given
-by different types of explicit matrices or by edge lists for example). Not however that we take them into account in the
+by different types of explicit matrices or by edge lists for example). Note however that we take them into account in the
 code.</p>
 <p>You might wonder how the depot is given. It is nowhere written where to start a tour. This is normal because the
 TSP is not sensitive to the starting node: you can start a tour anywhere, the total cost of the tour remains the same.</p>
 <table class="docutils footnote" frame="void" id="a280-fun-fact" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>The file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt> actually contains twice the same node (node 171 and 172 have the same
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>The file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt> actually contains twice the same node (node 171 and 172 have the same
 coordinates) but the
 name and the dimension have been kept. This is the only known defect in the TSPLIB.</td></tr>
 </tbody>
@@ -209,7 +221,7 @@ name and the dimension have been kept. This is the only known defect in the TSPL
 is a list of <em>integers</em>
 corresponding to the Node ids ended by <tt class="docutils literal"><span class="pre">-1</span></tt>.</p>
 <p>This is what the file <tt class="file docutils literal"><span class="pre">a280.opt.tour</span></tt> containing an optimal tour looks like:</p>
-<div class="highlight-text"><div class="highlight"><pre>NAME : ./TSPLIB/a280.tsp.optbc.tour
+<div class="highlight-text"><div class="highlight"><pre>NAME : ./TSPLIB/a280.tsp.opt.tour
 TYPE : TOUR
 DIMENSION : 280
 TOUR_SECTION
@@ -249,14 +261,14 @@ For efficiency reasons, we use a 1-dimensional matrix with a smart pointer defin
 <div class="topic">
 <p class="topic-title first">What is a smart pointer?</p>
 <p>A <em>smart pointer</em> is a class that behaves like a pointer. It&#8217;s main advantage is that it
-destroys the object it points to when the smart pointer class is itself destroyed<a class="footnote-reference" href="#smart-pointer-destroyed" id="id7">[6]</a>.
+destroys the object it points to when the smart pointer class is itself destroyed<a class="footnote-reference" href="#smart-pointer-destroyed" id="id6">[5]</a>.
 This behaviour
 ensures that, no matter what happens (exceptions, wrong ownership of pointees, bad programming (yep!), etc.),
 the pointed object will be destroyed as soon as the pointer object is out of scope and destroyed.</p>
 <table class="docutils footnote" frame="void" id="smart-pointer-destroyed" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Several scenarii are possible. With reference counting, when more than one pointer
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Several scenarii are possible. With reference counting, when more than one pointer
 refer to an object, it is only when the last pointer
 referring to the object is destroyed that the the object itself is destroyed. If you want to know more about
 this helpful technique, look up <em>RAII</em> (Resource Acquisition Is Initialization).</td></tr>
@@ -273,7 +285,7 @@ partially checked: bad inputs might cause undefined behaviour.</p>
 <div class="highlight-bash"><div class="highlight"><pre>Unknown keyword: UNKNOWN
 </pre></div>
 </div>
-<p>This method has been tested with all the files of the <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> and should hopefully read any correct <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format
+<p>This method has been tested with almost all the files of the <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> and should hopefully read any correct <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format
 for the TSP.</p>
 </div>
 <div class="section" id="to-generate-random-tsp">
@@ -317,6 +329,10 @@ reads the solution from a TSPLIB solution file.</p>
 </div>
 <p>Here is an example of a solution for the file <tt class="file docutils literal"><span class="pre">a280.tsp</span></tt>:</p>
 <a class="reference internal image-reference" href="../../_images/a280.png"><img alt="../../_images/a280.png" class="align-center" src="../../_images/a280.png" style="width: 250pt;" /></a>
+<p>You can also print the node labels with the flag:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">tsp_epix_labels</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&quot;Print labels or not?&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
 <p>For your (and our!) convenience, we wrote the small program <strong class="program">tsplib_solution_to_epix</strong>.
 Its implementation is in the file <tt class="file docutils literal"><span class="pre">tsplib_solution_to_epix.cc</span></tt>. To use it, invoke:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./tsplib_solution_to_epix TSPLIB_data_file TSPLIB_solution_file &gt;

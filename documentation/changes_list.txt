@@ -1,4 +1,14 @@
 
+v.0.1.28: (2013-02-26 12:24:50)
+-------------------------------
+* Minor enhancements to the manual:
+  - 7.2 added.
+  - 9.4 rewritten and corrected.
+  - 9 Intro, 9.1, 9.2, 9.2 and 9.4 reviewed.
+* Major enhancements to the manual:
+  - chapter structure frozen.
+  
+
 v.0.1.27: (2013-02-11 15:39:47)
 -------------------------------
 No need to download this new version. Only the chapter structure has been modified.

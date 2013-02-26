@@ -102,9 +102,9 @@ an object of type <tt class="docutils literal"><span class="pre">Solver</span></
 </div>
 <div class="section" id="local-search">
 <h2>9.2.4. Local Search</h2>
-<p>We are mainly using CP-based local search and large
-neighborhood search using routing-specific neighborhoods.
-Implementations of Tabu Search and Guided Local Search are available
+<p>We are mainly using CP-based Local Search and Large
+Neighborhood Search using routing-specific neighborhoods.
+Implementations of Tabu Search (TS), Simulated Annealing (SA) and Guided Local Search (GLS) are available
 too and have proven to give good results (especially GLS).</p>
 </div>
 <div class="section" id="tuning-the-search">
@@ -112,7 +112,7 @@ too and have proven to give good results (especially GLS).</p>
 <p>To tune and parametrize the search, use command-line gflags.
 For instance, you might want to use Tabu Search
 and limit the allowed solving time to 3 minutes:</p>
-<div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --routing_no_tsp<span class="o">=</span><span class="nb">false</span>
+<div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --routing_tabu_search<span class="o">=</span><span class="nb">true</span>
                                          --routing_time_limit<span class="o">=</span>180000
 </pre></div>
 </div>
@@ -120,8 +120,7 @@ and limit the allowed solving time to 3 minutes:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_routing_algorithm --helpon<span class="o">=</span>routing
 </pre></div>
 </div>
-<span class="target" id="index-0"></span><p id="index-1">gflags are not universally available in all programming languages.
-This is why the RL provides the handy <tt class="docutils literal"><span class="pre">SetCommandLineOption()</span></tt> method:</p>
+<span class="target" id="index-0"></span><p id="index-1">The RL provides the handy <tt class="docutils literal"><span class="pre">SetCommandLineOption()</span></tt> method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">routing</span><span class="p">.</span><span class="n">SetCommandLineOption</span><span class="p">(</span><span class="s">&quot;routing_first_solution&quot;</span><span class="p">,</span>
                                                 <span class="s">&quot;PathCheapestArc&quot;</span><span class="p">);</span>
 </pre></div>

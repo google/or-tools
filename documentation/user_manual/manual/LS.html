@@ -93,7 +93,7 @@ of local search in <em>or-tools</em> in action:</p>
 variable has the same domain <img class="math" src="../_images/math/e55f3a8911705d97dfdf206cf64f95525d956a53.png" alt="[0, n-1]" style="vertical-align: -5px"/>. To complicate things a little bit, we add the constraint
 <img class="math" src="../_images/math/3998581fe70d99938ee529064f9a325d816b0584.png" alt="x_0 \geqslant 1" style="vertical-align: -3px"/>.</div></blockquote>
 <p>Once we understand how to use local search in <em>or-tools</em>, we use basic <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s
-(including <em>large neighborhood search</em> (LNS)) to solve the job-shop problem
+to solve the job-shop problem
 and compare the exact and approximate results.
 Finally, to speed up the local search algorithm, we use <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s for the dummy problem.</p>
 <p class="rubric">Prerequisites:</p>
@@ -122,10 +122,6 @@ throughout all the job-shop examples.</li>
 <li><tt class="file docutils literal"><span class="pre">jobshop_ls2.cc</span></tt>: A basic implementation of Local Search with the <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>.</li>
 <li><tt class="file docutils literal"><span class="pre">jobshop_ls3.cc</span></tt>: A basic implementation of Local Search with both the <tt class="docutils literal"><span class="pre">SwapIntervals</span></tt> and <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt>
 <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. We use also local search to find an initial solution.</li>
-<li><tt class="file docutils literal"><span class="pre">dummy_lns.cc</span></tt>: The basic example solved with large neighborhood search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_lns.h</span></tt>: a basic <tt class="docutils literal"><span class="pre">SequenceLns</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> to solve the job-shop problem with local neighborhood search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_lns.cc</span></tt>: A basic implementation of Large Neighborhood Search with the <tt class="docutils literal"><span class="pre">SequenceLns</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> to solve the job-shop problem.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_heuristic.cc</span></tt>: We use all the previous ingredients to solve approximately the job-shop problem.</li>
 <li><tt class="file docutils literal"><span class="pre">dummy_ls_filtering.cc</span></tt>: The basic example extended with filtering.</li>
 </ul>
 <p>The files of this chapter are <strong>NOT</strong> the same as the ones in the <tt class="file docutils literal"><span class="pre">example</span></tt> directory even if they were inspired
@@ -185,22 +181,15 @@ by them. In particular, job-shop instances with only one task per job are accept
 <li class="toctree-l2"><a class="reference internal" href="ls/jobshop_ls.html#can-we-do-better">6.7.5. Can we do better?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/jobshop_lns.html">6.8. Large neighborhood search (LNS)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_lns.html#what-is-large-neighborhood-search">6.8.1. What is large neighborhood search?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_lns.html#large-neighborhood-search-in-or-tools">6.8.2. Large neighborhood search in <em>or-tools</em></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_lns.html#interesting-lns-operators">6.8.3. Interesting LNS operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/jobshop_lns.html#an-heuristic-to-solve-the-job-shop-problem">6.8.4. An heuristic to solve the job-shop problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">6.8. Filtering</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#localsearchfilters">6.8.1. <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#defining-a-custom-localsearchfilter">6.8.2. Defining a custom <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#interesting-localsearchfilters">6.8.3. Interesting <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">6.9. Filtering</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#localsearchfilters">6.9.1. <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#defining-a-custom-localsearchfilter">6.9.2. Defining a custom <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_filtering.html#interesting-localsearchfilters">6.9.3. Interesting <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.10. Summary</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#what-is-missing">6.10.1. What is missing?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#to-go-further">6.10.2. To go further:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.9. Summary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#what-is-missing">6.9.1. What is missing?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_summary.html#to-go-further">6.9.2. To go further:</a></li>
 </ul>
 </li>
 </ul>

@@ -97,7 +97,7 @@ the <em>Travelling Salesman Problem</em> (TSP)<a class="footnote-reference" href
 scientific articles under the American spelling: <em>traveling</em>.</td></tr>
 </tbody>
 </table>
-<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#epix-latex" id="id4">[4]</a> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>
+<p>We use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a><a class="footnote-reference" href="#epix-latex" id="id4">[4]</a>
 to visualize TSP solutions in <em>TSPLIB</em> format and TSPTW solutions in <em>López-Ibáñez-Blum</em> and <em>da Silva-Urrutia</em> formats.</p>
 <table class="docutils footnote" frame="void" id="epix-latex" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
@@ -110,14 +110,14 @@ to visualize TSP solutions in <em>TSPLIB</em> format and TSPTW solutions in <em>
 the Routing Library (RL) in a nutshell. Next, we introduce the Travelling Salesman Problem (TSP) and the TSPLIB instances.
 To better understand the RL, we say a few words about its inner working and the CP model we use. Because most of the
 Routing Problems are intractable, we use Local Search. We explain our two phases approach in details and show how
-to model the TSP in a few lines. We also show how to solve the TSP to optimality with the RL. Finally, we model and
+to model the TSP in a few lines. Finally, we model and
 solve the TSP with Time Windows.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
-<li>Basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
-<li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
-<li>Basic knowledge of Local Search (see chapter <a class="reference internal" href="LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a>).</li>
+<li>Basic knowledge of Constraint Programming (see the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see the chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
+<li>Basic knowledge of Local Search (see the chapter <a class="reference internal" href="LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a>).</li>
 </ul>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap9</span></tt>.</p>
@@ -130,8 +130,7 @@ This file is used throughout the TSP examples.</li>
 <li><tt class="file docutils literal"><span class="pre">tsplib_solution_to_epix.cc</span></tt>: A simple program to visualize solutions in TSPLIB format with the ePiX library.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp_minimal.cc</span></tt>: A minimalist implementation of the TSP with the RL.</li>
 <li><tt class="file docutils literal"><span class="pre">tsp.cc</span></tt>: A basic implementation of the TSP with the RL.</li>
-<li><tt class="file docutils literal"><span class="pre">tsp_forbidden_arcs.cc</span></tt>: The TSP with forbidden connexions between some nodes.</li>
-<li><tt class="file docutils literal"><span class="pre">tsp_exact.cc</span></tt>: A basic exact implementation of the TSP with the RL.</li>
+<li><tt class="file docutils literal"><span class="pre">tsp_forbidden_arcs.cc</span></tt>: The TSP with forbidden arcs between some nodes.</li>
 <li><tt class="file docutils literal"><span class="pre">tsptw.h</span></tt>: This file contains the <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class that records the data for the Travelling Salesman Problem with
 Time Windows. This file is used throughout the TSPTW examples.</li>
 <li><tt class="file docutils literal"><span class="pre">tsptw_epix.h</span></tt>: This file provide the helper functions to visualize TSPTW solutions with the ePiX library.</li>
@@ -170,7 +169,7 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/model_behind_scene.html">9.4. The model behind the scene: the main decision variables</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-main-idea-the-node-decision-variables">9.4.1. The main idea: the node decision variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#nodeindex-or-int64">9.4.2. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#the-auxiliary-graph">9.4.2. The auxiliary graph</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-switch-from-nodeindex-to-int64-and-vice-versa">9.4.3. How to switch from <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> to <tt class="docutils literal"><span class="pre">int64</span></tt> and vice-versa?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#how-to-follow-a-route">9.4.4. How to follow a route?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tsp/model_behind_scene.html#not-all-int64-indices-have-a-corresponding-intvar-nexts-variable">9.4.5. Not all <tt class="docutils literal"><span class="pre">int64</span></tt> indices have a corresponding <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">nexts_</span></tt> variable</a></li>
@@ -193,19 +192,20 @@ Time Windows. This file is used throughout the TSPTW examples.</li>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">9.7. The two phases approach</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-initial-solution">9.7.1. The initial solution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#the-pathoperator-class">9.7.2. The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-search-pathoperators">9.7.3. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#a-local-search-heuristic-for-the-tsp">9.7.4. A Local Search heuristic for the TSP</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/exact_tsp_implementation.html">9.8. An exact implementation of the TSP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.9. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.9.1. The Travelling Salesman Problem with Time Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">9.9.2. Benchmark data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">9.9.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">9.9.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw.html">9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-travelling-salesman-problem-with-time-windows">9.8.1. The Travelling Salesman Problem with Time Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#benchmark-data">9.8.2. Benchmark data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#the-tsptwdata-class">9.8.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsptw.html#visualization-with-epix">9.8.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">9.10. The TSPTW in or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.11. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_tsptw_implementation.html">9.9. The TSPTW in or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.10. Summary</a></li>
 </ul>
 </div>
 </div>

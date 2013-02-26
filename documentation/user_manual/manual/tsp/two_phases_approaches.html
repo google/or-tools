@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.8. An exact implementation of the TSP" href="exact_tsp_implementation.html" />
+    <link rel="next" title="9.8. The Travelling Salesman Problem with Time Windows (TSPTW)" href="tsptw.html" />
     <link rel="prev" title="9.6. The TSP in or-tools" href="first_tsp_implementation.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="exact_tsp_implementation.html" title="9.8. An exact implementation of the TSP"
+          <a href="tsptw.html" title="9.8. The Travelling Salesman Problem with Time Windows (TSPTW)"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="first_tsp_implementation.html" title="9.6. The TSP in or-tools"
@@ -56,40 +56,67 @@
             
   <div class="section" id="the-two-phases-approach">
 <span id="tsp-two-phases-approaches"></span><h1>9.7. The two phases approach</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap9/tsp_initial_solutions.cc">tsp_initial_solutions.cc</a></li>
+    </ol>
+  </li>
+  <li>Data files:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap6/abz9">abz9</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <div class="section" id="the-initial-solution">
 <h2>9.7.1. The initial solution</h2>
 </div>
+<div class="section" id="the-pathoperator-class">
+<h2>9.7.2. The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class</h2>
+<div class="section" id="the-twoopt-pathoperator">
+<h3>9.7.2.1. The <tt class="docutils literal"><span class="pre">TwoOpt</span></tt> <tt class="docutils literal"><span class="pre">PathOperator</span></tt></h3>
+</div>
+</div>
 <div class="section" id="local-search-pathoperators">
-<span id="id1"></span><h2>9.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</h2>
+<span id="id1"></span><h2>9.7.3. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</h2>
 <div class="section" id="twoopt">
-<h3>9.7.2.1. <tt class="docutils literal"><span class="pre">TwoOpt</span></tt></h3>
+<h3>9.7.3.1. <tt class="docutils literal"><span class="pre">TwoOpt</span></tt></h3>
 </div>
 <div class="section" id="relocate">
-<h3>9.7.2.2. <tt class="docutils literal"><span class="pre">Relocate</span></tt></h3>
+<h3>9.7.3.2. <tt class="docutils literal"><span class="pre">Relocate</span></tt></h3>
 </div>
 <div class="section" id="oropt">
-<h3>9.7.2.3. <tt class="docutils literal"><span class="pre">OrOpt</span></tt></h3>
+<h3>9.7.3.3. <tt class="docutils literal"><span class="pre">OrOpt</span></tt></h3>
 </div>
 <div class="section" id="exchange">
-<h3>9.7.2.4. <tt class="docutils literal"><span class="pre">Exchange</span></tt></h3>
+<h3>9.7.3.4. <tt class="docutils literal"><span class="pre">Exchange</span></tt></h3>
 </div>
 <div class="section" id="cross">
-<h3>9.7.2.5. <tt class="docutils literal"><span class="pre">Cross</span></tt></h3>
+<h3>9.7.3.5. <tt class="docutils literal"><span class="pre">Cross</span></tt></h3>
 </div>
 <div class="section" id="inactive">
-<h3>9.7.2.6. <tt class="docutils literal"><span class="pre">Inactive</span></tt></h3>
+<h3>9.7.3.6. <tt class="docutils literal"><span class="pre">Inactive</span></tt></h3>
 </div>
 <div class="section" id="swapactive">
-<h3>9.7.2.7. <tt class="docutils literal"><span class="pre">SwapActive</span></tt></h3>
+<h3>9.7.3.7. <tt class="docutils literal"><span class="pre">SwapActive</span></tt></h3>
 </div>
 <div class="section" id="extendedswapactive">
-<h3>9.7.2.8. <tt class="docutils literal"><span class="pre">ExtendedSwapActive</span></tt></h3>
+<h3>9.7.3.8. <tt class="docutils literal"><span class="pre">ExtendedSwapActive</span></tt></h3>
 </div>
 <div class="section" id="pathlns">
-<h3>9.7.2.9. <tt class="docutils literal"><span class="pre">PathLNS</span></tt></h3>
+<h3>9.7.3.9. <tt class="docutils literal"><span class="pre">PathLNS</span></tt></h3>
 </div>
 <div class="section" id="unactivelns">
-<h3>9.7.2.10. <tt class="docutils literal"><span class="pre">UnActiveLNS</span></tt></h3>
+<h3>9.7.3.10. <tt class="docutils literal"><span class="pre">UnActiveLNS</span></tt></h3>
+</div>
+</div>
+<div class="section" id="a-local-search-heuristic-for-the-tsp">
+<h2>9.7.4. A Local Search heuristic for the TSP</h2>
+<div class="section" id="how-can-i-change-the-order-of-the-localsearchoperators">
+<h3>9.7.4.1. How can I change the order of the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s?</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -173,23 +200,31 @@ Search:
   <p class="topless"><a href="first_tsp_implementation.html"
                         title="previous chapter">9.6. The TSP in or-tools</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="exact_tsp_implementation.html"
-                        title="next chapter">9.8. An exact implementation of the TSP</a></p>
+  <p class="topless"><a href="tsptw.html"
+                        title="next chapter">9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">9.7. The two phases approach</a><ul>
 <li><a class="reference internal" href="#the-initial-solution">9.7.1. The initial solution</a></li>
-<li><a class="reference internal" href="#local-search-pathoperators">9.7.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a><ul>
-<li><a class="reference internal" href="#twoopt">9.7.2.1. <tt class="docutils literal"><span class="pre">TwoOpt</span></tt></a></li>
-<li><a class="reference internal" href="#relocate">9.7.2.2. <tt class="docutils literal"><span class="pre">Relocate</span></tt></a></li>
-<li><a class="reference internal" href="#oropt">9.7.2.3. <tt class="docutils literal"><span class="pre">OrOpt</span></tt></a></li>
-<li><a class="reference internal" href="#exchange">9.7.2.4. <tt class="docutils literal"><span class="pre">Exchange</span></tt></a></li>
-<li><a class="reference internal" href="#cross">9.7.2.5. <tt class="docutils literal"><span class="pre">Cross</span></tt></a></li>
-<li><a class="reference internal" href="#inactive">9.7.2.6. <tt class="docutils literal"><span class="pre">Inactive</span></tt></a></li>
-<li><a class="reference internal" href="#swapactive">9.7.2.7. <tt class="docutils literal"><span class="pre">SwapActive</span></tt></a></li>
-<li><a class="reference internal" href="#extendedswapactive">9.7.2.8. <tt class="docutils literal"><span class="pre">ExtendedSwapActive</span></tt></a></li>
-<li><a class="reference internal" href="#pathlns">9.7.2.9. <tt class="docutils literal"><span class="pre">PathLNS</span></tt></a></li>
-<li><a class="reference internal" href="#unactivelns">9.7.2.10. <tt class="docutils literal"><span class="pre">UnActiveLNS</span></tt></a></li>
+<li><a class="reference internal" href="#the-pathoperator-class">9.7.2. The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class</a><ul>
+<li><a class="reference internal" href="#the-twoopt-pathoperator">9.7.2.1. The <tt class="docutils literal"><span class="pre">TwoOpt</span></tt> <tt class="docutils literal"><span class="pre">PathOperator</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#local-search-pathoperators">9.7.3. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a><ul>
+<li><a class="reference internal" href="#twoopt">9.7.3.1. <tt class="docutils literal"><span class="pre">TwoOpt</span></tt></a></li>
+<li><a class="reference internal" href="#relocate">9.7.3.2. <tt class="docutils literal"><span class="pre">Relocate</span></tt></a></li>
+<li><a class="reference internal" href="#oropt">9.7.3.3. <tt class="docutils literal"><span class="pre">OrOpt</span></tt></a></li>
+<li><a class="reference internal" href="#exchange">9.7.3.4. <tt class="docutils literal"><span class="pre">Exchange</span></tt></a></li>
+<li><a class="reference internal" href="#cross">9.7.3.5. <tt class="docutils literal"><span class="pre">Cross</span></tt></a></li>
+<li><a class="reference internal" href="#inactive">9.7.3.6. <tt class="docutils literal"><span class="pre">Inactive</span></tt></a></li>
+<li><a class="reference internal" href="#swapactive">9.7.3.7. <tt class="docutils literal"><span class="pre">SwapActive</span></tt></a></li>
+<li><a class="reference internal" href="#extendedswapactive">9.7.3.8. <tt class="docutils literal"><span class="pre">ExtendedSwapActive</span></tt></a></li>
+<li><a class="reference internal" href="#pathlns">9.7.3.9. <tt class="docutils literal"><span class="pre">PathLNS</span></tt></a></li>
+<li><a class="reference internal" href="#unactivelns">9.7.3.10. <tt class="docutils literal"><span class="pre">UnActiveLNS</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#a-local-search-heuristic-for-the-tsp">9.7.4. A Local Search heuristic for the TSP</a><ul>
+<li><a class="reference internal" href="#how-can-i-change-the-order-of-the-localsearchoperators">9.7.4.1. How can I change the order of the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s?</a></li>
 </ul>
 </li>
 </ul>
@@ -207,7 +242,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="exact_tsp_implementation.html" title="9.8. An exact implementation of the TSP"
+          <a href="tsptw.html" title="9.8. The Travelling Salesman Problem with Time Windows (TSPTW)"
              >next</a> |</li>
         <li class="right" >
           <a href="first_tsp_implementation.html" title="9.6. The TSP in or-tools"
