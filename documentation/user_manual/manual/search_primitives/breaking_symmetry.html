@@ -56,22 +56,223 @@
             
   <div class="section" id="breaking-symmetries-with-symmetrybreakers">
 <span id="search-primitives-breaking-symmetry"></span><h1>5.8. Breaking symmetries with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</h1>
+<p>Now that we have seen the <tt class="docutils literal"><span class="pre">Decision</span></tt> and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt> classes in details
+and that we are trying to solve the n-queens problem, how could we resist to introduce
+<tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s?</p>
+<p>Breaking symmetries of a model or a problem is a very effective technique to reduce the
+size of the search tree and, most of the time, it also permits to reduce - sometimes spectacularly - the
+search time.</p>
+<p>We have already seen this effectiveness when we introduced a constraint to avoid
+mirror Golomb rulers in section <a class="reference internal" href="../objectives/tighten_model.html#objectives-breaking-symmetries"><em>Breaking symmetries with constraints</em></a>.</p>
+<p>This time, we will use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. As their name implies, their role is
+to break symmetries. In contrast to explicitly adding symmetry breaking constraints in the model before the solving
+process,
+<tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s add them automatically when required <em>during the search</em>, i.e. on the fly.</p>
 <div class="section" id="the-basic-idea">
 <h2>5.8.1. The basic idea</h2>
+<div align="center"><p>The basic idea is quite simple. Consider again the 4-queens problem. The following figures represent
+two symmetric solutions.</p>
+<a class="reference internal image-reference" href="../../_images/sol_4x4_a.png"><img alt="../../_images/sol_4x4_a.png" src="../../_images/sol_4x4_a.png" style="width: 159pt;" /></a>
+<a class="reference internal image-reference" href="../../_images/sol_4x4_b1.png"><img alt="../../_images/sol_4x4_b1.png" src="../../_images/sol_4x4_b1.png" style="width: 159pt;" /></a>
+</div><p>These two solutions are symmetric along a vertical axis dividing the square in two equal parts.
+If we have <img class="math" src="../../_images/math/2dd241834905de5246fcbb2444ed65f963fccbce.png" alt="x_1 = 1" style="vertical-align: -4px"/> (or <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>) during the search, we know that we don&#8217;t have to test a
+solution with <img class="math" src="../../_images/math/58fb02244e2f372fd19355336d29c446a295b43d.png" alt="x_2 = 1" style="vertical-align: -3px"/> (or <img class="math" src="../../_images/math/05828ed4feb79128b2e290b0ec46e6fa8f16a5ab.png" alt="x_2 = 0" style="vertical-align: -3px"/>)
+as every solution with <img class="math" src="../../_images/math/2dd241834905de5246fcbb2444ed65f963fccbce.png" alt="x_1 = 1" style="vertical-align: -4px"/> (<img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>) has an equivalent symmetric solution
+with <img class="math" src="../../_images/math/58fb02244e2f372fd19355336d29c446a295b43d.png" alt="x_2 = 1" style="vertical-align: -3px"/> (<img class="math" src="../../_images/math/05828ed4feb79128b2e290b0ec46e6fa8f16a5ab.png" alt="x_2 = 0" style="vertical-align: -3px"/>).</p>
+<p>You can tell the CP solver not to visit the branch <img class="math" src="../../_images/math/d13e6913ec7230eec4893036d81a5cbbd8d59aa2.png" alt="x_2 = c" style="vertical-align: -3px"/> if during the search we already have tried
+to set <img class="math" src="../../_images/math/7431b10123606c953ebfdabc1b0c11f1e669df1c.png" alt="x_1 = c" style="vertical-align: -4px"/>. To do this, we use a <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> and a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>.
+The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> collects <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s
+for a given problem. During the search, each <tt class="docutils literal"><span class="pre">Decision</span></tt> is visited by all the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. If there is a match between
+the <tt class="docutils literal"><span class="pre">Decision</span></tt> and a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>, the <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> will,
+upon refutation of that <tt class="docutils literal"><span class="pre">Decision</span></tt> issue a <tt class="docutils literal"><span class="pre">Constraint</span></tt> to
+forbid the symmetrical exploration of the search tree. As you might have guessed, <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt>s are <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
+and <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s are <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s.</p>
 </div>
 <div class="section" id="symmetrybreakers">
 <h2>5.8.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</h2>
+<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/nqueens7.cc">tutorials/cplusplus/chap5/nqueens7.cc</a></p>
+<p>Let&#8217;s create a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the vertical axial symmetry. Because the square has lots of symmetries,
+we introduce a helper
+method to find the symmetric indices of the variables and the symmetric values for a given variable:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">symmetric</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">size_</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">index</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">size_</span></tt> denotes the number of variables and the range of possible values (<img class="math" src="../../_images/math/3d39a957d390cfe4fa0ba4407a8650f33cd13d72.png" alt="[0,\mathtt{size\_} - 1]" style="vertical-align: -5px"/>) in our model.</p>
+<p>The next figure illustrates the returned indices by the <tt class="docutils literal"><span class="pre">symmetric()</span></tt> method.</p>
+<div class="align-center figure align-center">
+<a class="reference internal image-reference" href="../../_images/symmetry_helper_function.png"><img alt="../../_images/symmetry_helper_function.png" src="../../_images/symmetry_helper_function.png" style="width: 500pt;" /></a>
+<p class="caption">The indices returned by the <tt class="docutils literal"><span class="pre">symmetric()</span></tt> method.</p>
+<div class="legend">
+</div>
+</div>
+<p>We also use two methods to do the translation between the indices and the variables. Given an <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span> <span class="pre">var</span></tt>, <tt class="docutils literal"><span class="pre">Index(var)</span></tt>
+returns the index of the variable corresponding to <tt class="docutils literal"><span class="pre">var</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">Index</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">FindWithDefault</span><span class="p">(</span><span class="n">indices_</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">FindWithDefault()</span></tt> is defined in the header <tt class="file docutils literal"><span class="pre">base/map-util.h</span></tt>. Given an <tt class="docutils literal"><span class="pre">std::map&lt;IntVar*,</span> <span class="pre">int&gt;</span></tt>
+like <tt class="docutils literal"><span class="pre">indices_</span></tt>, it returns the corresponding <tt class="docutils literal"><span class="pre">int</span></tt> if it finds the <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span></tt>. If it doesn&#8217;t find the <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span></tt>,
+it returns the default argument given, <img class="math" src="../../_images/math/bae5aba07d37ff6ff813107e76260fb31ad5794e.png" alt="-1" style="vertical-align: -1px"/> in this case.</p>
+<p>To do the converse translation, we use the <tt class="docutils literal"><span class="pre">Var()</span></tt> method:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="n">Var</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">vars_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">vars_</span></tt> is the <tt class="docutils literal"><span class="pre">private</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span></tt> with the variables of our model.</p>
+<p>We create a base <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the n-queens problem:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NQueenSymmetry</span> <span class="o">:</span> <span class="k">public</span> <span class="n">SymmetryBreaker</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">NQueenSymmetry</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">solver_</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">vars_</span><span class="p">(</span><span class="n">vars</span><span class="p">),</span> <span class="n">size_</span><span class="p">(</span><span class="n">vars</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">size_</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">indices_</span><span class="p">[</span><span class="n">vars</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">NQueenSymmetry</span><span class="p">()</span> <span class="p">{}</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="kt">int</span> <span class="n">Index</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">FindWithDefault</span><span class="p">(</span><span class="n">indices_</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="n">IntVar</span><span class="o">*</span> <span class="n">Var</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">vars_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+  <span class="p">}</span>
+  <span class="kt">int</span> <span class="n">size</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">size_</span><span class="p">;</span> <span class="p">}</span>
+  <span class="kt">int</span> <span class="n">symmetric</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">size_</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">index</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">solver_</span><span class="p">;</span> <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver_</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">vars_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">indices_</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">int</span> <span class="n">size_</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Now, we can specialize it for each symmetry we want to break.</p>
+<p>How do we tell a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> to notify the <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> to add a corresponding constraint upon refutation of
+a given <tt class="docutils literal"><span class="pre">Decision</span></tt>? For the n-queens problem, we can use the <tt class="docutils literal"><span class="pre">AddIntegerVariableEqualValueClause()</span></tt>
+method of the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> class.
+Given the assignation of a value to an <tt class="docutils literal"><span class="pre">IntVar</span></tt>, give this method the corresponding symmetric assignation. We call this
+corresponding assignment a <em>clause</em>.
+This clause only makes sense
+if the <tt class="docutils literal"><span class="pre">Decision</span></tt> assigns a value to an <tt class="docutils literal"><span class="pre">IntVar</span></tt> and this is why we declare the corresponding clause only in
+the <tt class="docutils literal"><span class="pre">VisitSetVariableValue()</span></tt> method of the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>. All this might sound complicated but it is not:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  Vertical axis symmetry</span>
+<span class="k">class</span> <span class="nc">SY</span> <span class="o">:</span> <span class="k">public</span> <span class="n">NQueenSymmetry</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">SY</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">)</span> <span class="o">:</span>
+                                          <span class="n">NQueenSymmetry</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">vars</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">SY</span><span class="p">()</span> <span class="p">{}</span>
+
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="n">VisitSetVariableValue</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">,</span> <span class="n">int64</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">var</span><span class="p">);</span>
+    <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">other_var</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">symmetric</span><span class="p">(</span><span class="n">index</span><span class="p">));</span>
+    <span class="n">AddIntegerVariableEqualValueClause</span><span class="p">(</span><span class="n">other_var</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Given an <tt class="docutils literal"><span class="pre">IntVar*</span> <span class="pre">var</span></tt> that will be given the value <tt class="docutils literal"><span class="pre">value</span></tt> by a <tt class="docutils literal"><span class="pre">Decision</span></tt> during the search,
+we ask the <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> to avoid the possibility that the variable <tt class="docutils literal"><span class="pre">other_var</span></tt> could be assigned the same value <tt class="docutils literal"><span class="pre">value</span></tt> upon
+refutation of this <tt class="docutils literal"><span class="pre">Decision</span></tt>. This means that the <tt class="docutils literal"><span class="pre">other_var</span></tt> variable will never
+be equal to <tt class="docutils literal"><span class="pre">value</span></tt> in the opposite branch of the search tree where <tt class="docutils literal"><span class="pre">var</span></tt> is different than <tt class="docutils literal"><span class="pre">value</span></tt>.
+In this manner, we avoid
+searching a symmetrical part of the search tree we have &#8220;already&#8221; explored.</p>
+<p>What happens if another type of <tt class="docutils literal"><span class="pre">Decision</span></tt>s are returned by the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> during the search? Nothing.
+The refutation of the clause will only
+be applied if a <tt class="docutils literal"><span class="pre">Decision</span></tt> triggers a <tt class="docutils literal"><span class="pre">VisitSetVariableValue()</span></tt> callback.</p>
+<p>The <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> class defines two other clauses:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">AddIntegerVariableGreaterOrEqualValueClause(IntVar*</span> <span class="pre">const</span> <span class="pre">var,</span> <span class="pre">int64</span> <span class="pre">value)</span></tt> and</li>
+<li><tt class="docutils literal"><span class="pre">AddIntegerVariableLessOrEqualValueClause(IntVar*</span> <span class="pre">const</span> <span class="pre">var,</span> <span class="pre">int64</span> <span class="pre">value)</span></tt>.</li>
+</ul>
+<p>Their names are quite explicit and tell you what their purpose is. These methods would fit perfectly
+within a <tt class="docutils literal"><span class="pre">VisitSplitVariableDomain()</span></tt>
+call for instance.</p>
 </div>
 <div class="section" id="revalloc">
 <span id="rev-alloc"></span><h2>5.8.3. <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></h2>
+<p>Whenever you define your own subclass of <tt class="docutils literal"><span class="pre">BaseObject</span></tt> (and a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> is a <tt class="docutils literal"><span class="pre">BaseObject</span></tt>),
+it is good practice
+to register the given object as being reversible to the solver. That is, the solver will take ownership
+of the object and delete it
+when it backtracks out of the current state. To register an object as reversible, you invoke the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method
+of the solver:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">s</span><span class="p">(</span><span class="s">&quot;nqueens&quot;</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sy</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SY</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> returns a pointer to the newly created and registered object. You can thus invoke this method with
+arguments
+in the constructor of the constructed object without having to keep a pointer to this object.</p>
+<p>The solver will now take care of your object. If you have an array of objects that are
+subclasses of <tt class="docutils literal"><span class="pre">BaseObject</span></tt>, <tt class="docutils literal"><span class="pre">IntVar</span></tt>,
+<tt class="docutils literal"><span class="pre">IntExpr</span></tt> and <tt class="docutils literal"><span class="pre">Constraint</span></tt>, you can register your array with <tt class="docutils literal"><span class="pre">RevAllocArray()</span></tt>. This method is also
+valid for arrays of <tt class="docutils literal"><span class="pre">int</span></tt>s,
+<tt class="docutils literal"><span class="pre">int64</span></tt>, <tt class="docutils literal"><span class="pre">uint64</span></tt> and <tt class="docutils literal"><span class="pre">bool</span></tt>. The array must have been allocated with the <tt class="docutils literal"><span class="pre">new[]</span></tt>
+operator.</p>
+<p>If you take a look at the source code, you will see that the factories
+methods call <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> to
+pass ownership of their objects to the solver.</p>
 </div>
 <div class="section" id="the-symmetrymanager">
 <h2>5.8.4. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></h2>
+<p>Because the n-queens problem is defined on a square, we have a lots of symmetries we can avoid:</p>
+<ul class="simple">
+<li>Vertical axis symmetry: we already defined the <tt class="docutils literal"><span class="pre">SY</span></tt> class;</li>
+<li>Horizontal axis symmetry: class <tt class="docutils literal"><span class="pre">SX</span></tt>;</li>
+<li>First diagonal symmetry: class <tt class="docutils literal"><span class="pre">SD1</span></tt>;</li>
+<li>Second diagonal symmetry: class <tt class="docutils literal"><span class="pre">SD2</span></tt>;</li>
+<li>1/4 turn rotation symmetry: class <tt class="docutils literal"><span class="pre">R90</span></tt>;</li>
+<li>1/2 turn rotation symmetry: class <tt class="docutils literal"><span class="pre">R180</span></tt>;</li>
+<li>3/4 turn rotation symmetry: class <tt class="docutils literal"><span class="pre">R270</span></tt>.</li>
+</ul>
+<p>We store the corresponding <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> objects in an
+<tt class="docutils literal"><span class="pre">std::vector&lt;SymmetryBreaker*&gt;</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SymmetryBreaker</span><span class="o">*&gt;</span> <span class="n">breakers</span><span class="p">;</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sy</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SY</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">sy</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sx</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SX</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">sx</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sd1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SD1</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">sd1</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sd2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SD2</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">sd2</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">r90</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">R90</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">r90</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">r180</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">R180</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">r180</span><span class="p">);</span>
+<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">r270</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">R270</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
+<span class="n">breakers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">r270</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>We then create a <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchMonitor</span><span class="o">*</span> <span class="k">const</span> <span class="n">symmetry_manager</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeSymmetryManager</span><span class="p">(</span><span class="n">breakers</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>and add this <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> to the other <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SearchMonitor</span><span class="o">*&gt;</span> <span class="n">monitors</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="n">monitors</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">symmetry_manager</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakePhase</span><span class="p">(...);</span>
+<span class="p">...</span>
+<span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">monitors</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>These seven <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s are enough to avoid duplicate solutions in the search, i.e.
+they force the solver to find only unique solutions up to a symmetry.</p>
 </div>
 <div class="section" id="results">
 <h2>5.8.5. Results</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<p>Let&#8217;s compare the time and the search trees again.</p>
+<p>[TO BE DONE]</p>
+</div>
 </div>
 
 

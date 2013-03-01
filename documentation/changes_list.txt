@@ -1,4 +1,16 @@
 
+v.0.1.29: (2013-03-01 13:52:01)
+-------------------------------
+Milestone:
+* More than 350 pages...
+* Minor enhancements to the manual:
+  - 5.8 added, corrected and published except the most (?) interesting part:
+    the results!
+  - 9.6 added (without the results).
+  - 6.5.1 corrected.
+  - 11.1 added.  
+  - 6.5.2 corrected.
+
 v.0.1.28: (2013-02-26 12:24:50)
 -------------------------------
 * Minor enhancements to the manual:
