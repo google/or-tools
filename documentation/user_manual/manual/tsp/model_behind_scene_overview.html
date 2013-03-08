@@ -82,12 +82,45 @@
 <div class="section" id="no-cycle-constraint">
 <h3>9.5.3.1. No cycle constraint</h3>
 </div>
+<div class="section" id="disjunction-constraints">
+<h3>9.5.3.2. <tt class="docutils literal"><span class="pre">Disjunction</span></tt> constraints</h3>
 </div>
-<div class="section" id="objective-function">
-<h2>9.5.4. Objective function</h2>
+<div class="section" id="pick-up-and-delivery-constraints">
+<h3>9.5.3.3. Pick-up and delivery constraints</h3>
+</div>
+<div class="section" id="the-closemodel-method">
+<h3>9.5.3.4. The <tt class="docutils literal"><span class="pre">CloseModel()</span></tt> method</h3>
+</div>
+</div>
+<div class="section" id="the-objective-function">
+<h2>9.5.4. The objective function</h2>
+<div class="section" id="the-costs-of-the-arcs">
+<h3>9.5.4.1. The costs of the arcs</h3>
+</div>
+<div class="section" id="a-fixed-cost-for-each-of-the-existing-routes">
+<h3>9.5.4.2. A fixed cost for each of the existing routes</h3>
+</div>
+<div class="section" id="a-penalty-cost-for-missed-disjunctions">
+<h3>9.5.4.3. A penalty cost for missed <tt class="docutils literal"><span class="pre">Disjunction</span></tt>s</h3>
+</div>
+<div class="section" id="different-types-of-vehicles">
+<h3>9.5.4.4. Different types of vehicles</h3>
+</div>
+<div class="section" id="lower-bounds">
+<h3>9.5.4.5. Lower bounds</h3>
+</div>
 </div>
 <div class="section" id="miscellaneous">
 <h2>9.5.5. Miscellaneous</h2>
+<div class="section" id="cache">
+<h3>9.5.5.1. Cache</h3>
+</div>
+<div class="section" id="light-constraints">
+<h3>9.5.5.2. Light constraints</h3>
+</div>
+<div class="section" id="locks">
+<h3>9.5.5.3. Locks</h3>
+</div>
 </div>
 </div>
 
@@ -187,10 +220,25 @@ Search:
 </li>
 <li><a class="reference internal" href="#constraints">9.5.3. Constraints</a><ul>
 <li><a class="reference internal" href="#no-cycle-constraint">9.5.3.1. No cycle constraint</a></li>
+<li><a class="reference internal" href="#disjunction-constraints">9.5.3.2. <tt class="docutils literal"><span class="pre">Disjunction</span></tt> constraints</a></li>
+<li><a class="reference internal" href="#pick-up-and-delivery-constraints">9.5.3.3. Pick-up and delivery constraints</a></li>
+<li><a class="reference internal" href="#the-closemodel-method">9.5.3.4. The <tt class="docutils literal"><span class="pre">CloseModel()</span></tt> method</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#objective-function">9.5.4. Objective function</a></li>
-<li><a class="reference internal" href="#miscellaneous">9.5.5. Miscellaneous</a></li>
+<li><a class="reference internal" href="#the-objective-function">9.5.4. The objective function</a><ul>
+<li><a class="reference internal" href="#the-costs-of-the-arcs">9.5.4.1. The costs of the arcs</a></li>
+<li><a class="reference internal" href="#a-fixed-cost-for-each-of-the-existing-routes">9.5.4.2. A fixed cost for each of the existing routes</a></li>
+<li><a class="reference internal" href="#a-penalty-cost-for-missed-disjunctions">9.5.4.3. A penalty cost for missed <tt class="docutils literal"><span class="pre">Disjunction</span></tt>s</a></li>
+<li><a class="reference internal" href="#different-types-of-vehicles">9.5.4.4. Different types of vehicles</a></li>
+<li><a class="reference internal" href="#lower-bounds">9.5.4.5. Lower bounds</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#miscellaneous">9.5.5. Miscellaneous</a><ul>
+<li><a class="reference internal" href="#cache">9.5.5.1. Cache</a></li>
+<li><a class="reference internal" href="#light-constraints">9.5.5.2. Light constraints</a></li>
+<li><a class="reference internal" href="#locks">9.5.5.3. Locks</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

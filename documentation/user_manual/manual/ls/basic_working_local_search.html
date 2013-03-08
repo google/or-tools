@@ -59,7 +59,7 @@
 <p>In this section, we present the implementation of Local Search in <em>or-tools</em>. First, we sketch the main basic idea
 and then we list the main actors (aka classes) that participate in the Local Search. It&#8217;s good to keep them in memory
 for the rest of this section. We then overview the implementation
-and describe some of its main components. Finally, we detail the inner working of the Local Search algorithm and
+and describe some of its main components. Finally, we detail the inner workings of the Local Search algorithm and
 indicate where the callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s are called.</p>
 <p>We present a simplified version of the local search algorithm. Yes, this is well worth a warning box!</p>
 <div class="admonition warning">
@@ -316,16 +316,546 @@ for the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></t
 </div>
 <div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">
 <span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a> <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a></h2>
+<p>We feel compelled to use our warning box again:</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">We describe a simplified version of the Local Search algorithm.</p>
+</div>
+<p>If you want to know more, have a look at the section
+<a class="reference internal" href="../under_the_hood/ls.html#hood-ls"><em>Local Search (LS)</em></a> in the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a>.</p>
+<p>In this subsection, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class and show you
+exactly when they are called in the Local Search algorithm:</p>
+<table border="1" class="docutils">
+<caption>Local Search algorithm callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class.</caption>
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Methods</th>
+<th class="head">Descriptions</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt></td>
+<td>When a local optimum is reached. If <tt class="docutils literal"><span class="pre">true</span></tt> is returned, the last solution is discarded and the search proceeds to find the next local optimum. Handy when you implement a meta-heuristic with a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">AcceptDelta(Assignment</span> <span class="pre">*delta,</span> <span class="pre">Assignment</span> <span class="pre">*deltadelta)</span></tt></td>
+<td>When the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> has produced the next candidate solution given in the form of <tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt>. You can accept or reject this new candidate solution.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">AcceptNeighbor()</span></tt></td>
+<td>After accepting a candidate solution during local search.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">PeriodicCheck()</span></tt></td>
+<td>Periodic call to check limits in long running procedures, like Local Search.</td>
+</tr>
+</tbody>
+</table>
+<br><p>To ensure the communication between the local search and the global search, three utility functions are defined.
+These functions simply call their <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>&#8216;s counterparts, i.e. they call the corresponding methods of the
+involved <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">LocalOptimumReached()</span></tt>: <tt class="docutils literal"><span class="pre">FalseExceptIfOneTrue</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">AcceptDelta()</span></tt>: <tt class="docutils literal"><span class="pre">TrueExceptIfOneFalse</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">AcceptNeighbor()</span></tt>: Notification.</li>
+</ul>
+<p>Before we delve into the core of the local search algorithm and the implementation of the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>&#8216;s
+<tt class="docutils literal"><span class="pre">Next()</span></tt> method, we first discuss the inner workings of the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> whose job is to find
+the next filtered and accepted candidate solution. This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is used inside a <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> that we study next.
+This <tt class="docutils literal"><span class="pre">Decision</span></tt> is returned by the <tt class="docutils literal"><span class="pre">Next()</span></tt> method of
+the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> in the main loop of the local search algorithm. Finally, we address the
+<tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class. In particular, we study its initializing phase and its <tt class="docutils literal"><span class="pre">Next()</span></tt> method.
+We consider the case where an initial <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> constructs the initial solution.</p>
+<p>SearchMonitor‘s callbacks are indicated in the code by the comment:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// SEARCHMONITOR CALLBACK</span>
+</pre></div>
+</div>
 <div class="section" id="the-findoneneighbor-decisionbuilder">
 <h3>6.5.3.1. The <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
+<p>This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> tries to find the next filtered and accepted candidate solution.
+It tests (and sometimes completes) the candidate solutions given by the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>.</p>
+<p>We present its <tt class="docutils literal"><span class="pre">Next()</span></tt> method and discuss it after:</p>
+<div class="highlight-c++"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">Decision</span><span class="o">*</span> <span class="n">FindOneNeighbor</span><span class="o">::</span><span class="n">Next</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="c1">//  No neighbor (candidate solution) found</span>
+  <span class="c1">//  only on the first call to Next().</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">neighbor_found_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//  SYNCHRONIZE ALL</span>
+    <span class="p">...</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Another assignment is needed to apply the delta</span>
+  <span class="n">Assignment</span><span class="o">*</span> <span class="n">assignment_copy</span> <span class="o">=</span>
+               <span class="n">solver</span><span class="o">-&gt;</span><span class="n">MakeAssignment</span><span class="p">(</span><span class="n">reference_assignment_</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+  <span class="kt">int</span> <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">restore</span> <span class="o">=</span>
+                    <span class="n">solver</span><span class="o">-&gt;</span><span class="n">MakeRestoreAssignment</span><span class="p">(</span><span class="n">assignment_copy</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">sub_decision_builder_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">restore</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">Compose</span><span class="p">(</span><span class="n">restore</span><span class="p">,</span> <span class="n">sub_decision_builder_</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">MakeAssignment</span><span class="p">();</span>
+  <span class="n">Assignment</span><span class="o">*</span> <span class="n">deltadelta</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">MakeAssignment</span><span class="p">();</span>
+
+  <span class="c1">//  MAIN LOOP</span>
+  <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">delta</span><span class="o">-&gt;</span><span class="n">Clear</span><span class="p">();</span>
+    <span class="n">deltadelta</span><span class="o">-&gt;</span><span class="n">Clear</span><span class="p">();</span>
+                                          <span class="c1">//  SEARCHMONITOR CALLBACK</span>
+    <span class="n">solver</span><span class="o">-&gt;</span><span class="n">TopPeriodicCheck</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">++</span><span class="n">counter</span> <span class="o">&gt;=</span> <span class="n">FLAGS_cp_local_search_sync_frequency</span> <span class="o">&amp;&amp;</span>
+      <span class="n">pool_</span><span class="o">-&gt;</span><span class="n">SyncNeeded</span><span class="p">(</span><span class="n">reference_assignment_</span><span class="p">.</span><span class="n">get</span><span class="p">()))</span> <span class="p">{</span>
+      <span class="c1">//  SYNCHRONIZE ALL</span>
+      <span class="p">...</span>
+      <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">limit_</span><span class="o">-&gt;</span><span class="n">Check</span><span class="p">()</span>
+      <span class="o">&amp;&amp;</span> <span class="n">ls_operator_</span><span class="o">-&gt;</span><span class="n">MakeNextNeighbor</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">deltadelta</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">solver</span><span class="o">-&gt;</span><span class="n">neighbors_</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+                                          <span class="c1">//  SEARCHMONITOR CALLBACK</span>
+      <span class="k">const</span> <span class="kt">bool</span> <span class="n">meta_heuristics_filter</span> <span class="o">=</span>
+             <span class="n">AcceptDelta</span><span class="p">(</span><span class="n">solver</span><span class="o">-&gt;</span><span class="n">ParentSearch</span><span class="p">(),</span> <span class="n">delta</span><span class="p">,</span> <span class="n">deltadelta</span><span class="p">);</span>
+      <span class="k">const</span> <span class="kt">bool</span> <span class="n">move_filter</span> <span class="o">=</span> <span class="n">FilterAccept</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">deltadelta</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">meta_heuristics_filter</span> <span class="o">&amp;&amp;</span> <span class="n">move_filter</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">solver</span><span class="o">-&gt;</span><span class="n">filtered_neighbors_</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">assignment_copy</span><span class="o">-&gt;</span><span class="n">Copy</span><span class="p">(</span><span class="n">reference_assignment_</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+        <span class="n">assignment_copy</span><span class="o">-&gt;</span><span class="n">Copy</span><span class="p">(</span><span class="n">delta</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">solver</span><span class="o">-&gt;</span><span class="n">SolveAndCommit</span><span class="p">(</span><span class="n">restore</span><span class="p">))</span> <span class="p">{</span>
+          <span class="n">solver</span><span class="o">-&gt;</span><span class="n">accepted_neighbors_</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+          <span class="n">assignment_</span><span class="o">-&gt;</span><span class="n">Store</span><span class="p">();</span>
+          <span class="n">neighbor_found_</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+          <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">neighbor_found_</span><span class="p">)</span> <span class="p">{</span>
+                                          <span class="c1">//  SEARCHMONITOR CALLBACK</span>
+        <span class="n">AcceptNeighbor</span><span class="p">(</span><span class="n">solver</span><span class="o">-&gt;</span><span class="n">ParentSearch</span><span class="p">());</span>
+        <span class="n">pool_</span><span class="o">-&gt;</span><span class="n">RegisterNewSolution</span><span class="p">(</span><span class="n">assignment_</span><span class="p">);</span>
+        <span class="c1">//  SYNCHRONIZE ALL</span>
+        <span class="p">...</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="n">solver</span><span class="o">-&gt;</span><span class="n">Fail</span><span class="p">();</span>
+  <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>You might wonder why there are so many lines of code but there
+are a some subtleties to consider.</p>
+<p>The code of lines 5 to 8 is only called the first time the <tt class="docutils literal"><span class="pre">Next()</span></tt> method is invoked
+and allow to synchronize the Local Search machinery with the initial solution. In general,
+the words <tt class="docutils literal"><span class="pre">SYNCHRONIZE</span> <span class="pre">ALL</span></tt> in the comments mean that we synchronize the <em>Local Search Operators</em> <strong>and</strong> the
+<em>Local Search Filters</em> with
+a solution.</p>
+<p><tt class="docutils literal"><span class="pre">reference_assignment_</span></tt> is an <tt class="docutils literal"><span class="pre">Assignment</span></tt> with the initial solution while <tt class="docutils literal"><span class="pre">assignment_</span></tt> is an
+<tt class="docutils literal"><span class="pre">Assignment</span></tt> with the current solution.
+On line 10, we copy <tt class="docutils literal"><span class="pre">reference_assignment_</span></tt> to the local <tt class="docutils literal"><span class="pre">assignment_copy</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>
+to be able to define the <tt class="docutils literal"><span class="pre">delta</span></tt>s. <tt class="docutils literal"><span class="pre">counter</span></tt> counts the number candidate solutions.
+This counter is used on line 29 to test if we shouldn&#8217;t start again the Local Search with another solution.</p>
+<p>On lines 15-19, we define the <tt class="docutils literal"><span class="pre">restore</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that will allow us to
+keep the newly found candidate solution.</p>
+<p>We construct the <tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt> on lines 20 and 21 and are
+now ready to enter the main loop to find the
+next solution.</p>
+<p>On lines 25 and 26 we clear our <tt class="docutils literal"><span class="pre">delta</span></tt>s and on line 28 we allow for a periodic check: for searches that last long,
+we allow the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s to interfere and test if the search needs to continue or not and/or must be adapted.</p>
+<p>Lines 29-34 allow to change the starting solution and ask the solution pool <tt class="docutils literal"><span class="pre">pool_</span></tt> for a new solution via its
+<tt class="docutils literal"><span class="pre">GetNextSolution()</span></tt>. The <tt class="docutils literal"><span class="pre">FLAGS_cp_local_search_sync_frequency</span></tt> value corresponds to the number of attempts
+before the CP solver tries to synchronize the Local Search with a new solution.</p>
+<p>On line 36 and 37, the <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s applied to the search of one neighborhood are tested.
+If the limits are not reached and if the
+<tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> succeeds to find a new candidate solution, we enter the <tt class="docutils literal"><span class="pre">if</span></tt> statement
+on line 38. The <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> method is
+called to create the next candidate solution in <tt class="docutils literal"><span class="pre">delta</span></tt>s format.</p>
+<p>If you overwrite the <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> method, you need to manage the <tt class="docutils literal"><span class="pre">delta</span></tt>s:
+you must take care of <em>applying</em> and <em>reverting</em> the <tt class="docutils literal"><span class="pre">delta</span></tt>s yourself if needed. You can use the
+<tt class="docutils literal"><span class="pre">ApplyChanges()</span></tt> and <tt class="docutils literal"><span class="pre">RevertChanges()</span></tt> helper functions to do so. For instance, here is the implementation of the
+<tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> method of the <tt class="docutils literal"><span class="pre">IntVarLocalSearchOperator</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">IntVarLocalSearchOperator</span><span class="o">::</span><span class="n">MakeNextNeighbor</span><span class="p">(</span><span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
+                                         <span class="n">Assignment</span><span class="o">*</span> <span class="n">deltadelta</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">CHECK_NOTNULL</span><span class="p">(</span><span class="n">delta</span><span class="p">);</span>
+  <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">RevertChanges</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">MakeOneNeighbor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ApplyChanges</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">deltadelta</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">ApplyChanges()</span></tt> actually fills the <tt class="docutils literal"><span class="pre">delta</span></tt>s after you use the helper methods
+<tt class="docutils literal"><span class="pre">SetValue()</span></tt>, <tt class="docutils literal"><span class="pre">Activate()</span></tt> and the like to change the current candidate solution.</p>
+<p>Once we enter the <tt class="docutils literal"><span class="pre">if</span></tt> statement on line 38, we have a new candidate solution and we update the candidate
+solution counter accordingly.
+It is now time to test this new candidate solution. The <strong>first test</strong> comes from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s in their
+<tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt> methods. If only one <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> rejects this solution, it is rejected. In <em>or-tools</em>, we
+implement (meta-)heuristics with <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. See the chapter <a class="reference internal" href="../metaheuristics.html#chapter-metaheuristics"><em>Meta-heuristics: several previous problems</em></a> for more.</p>
+<p>The <tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt> function is the global utility function we mentioned above.
+We&#8217;ll meet <tt class="docutils literal"><span class="pre">LocalOptimumReached()</span></tt> and <tt class="docutils literal"><span class="pre">AcceptNeighbor()</span></tt> a few lines below.</p>
+<p>The <strong>second test</strong> is the <em>filtering</em> test on line 42. <tt class="docutils literal"><span class="pre">FilterAccept()</span></tt> returns a <tt class="docutils literal"><span class="pre">TrueExceptIfOneFalse</span></tt>.
+If both tests are successful, we enter the <tt class="docutils literal"><span class="pre">if</span></tt> statement on line 44. If not, we simply generate another
+candidate solution. On lines 44 and 46, we update the
+counter of <tt class="docutils literal"><span class="pre">filtered_neighbors_</span></tt> and store the candidate solution in the <tt class="docutils literal"><span class="pre">assignment_copy</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>.</p>
+<p>On line 47, we try (and if needed complete) the candidate. If we succeed, the current solution
+and the counter <tt class="docutils literal"><span class="pre">accepted_neighbors_</span></tt> are updated.
+The <tt class="docutils literal"><span class="pre">Next()</span></tt> method returns <tt class="docutils literal"><span class="pre">NULL</span></tt> because the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt>
+<tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> has finished its job at this node of the search tree. If we don&#8217;t succeed, the solver fails on
+line 66.</p>
+<p>The <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> method is similar to the <tt class="docutils literal"><span class="pre">Solve()</span></tt> method <strong>except</strong> that
+<tt class="docutils literal"><span class="pre">SolveAndCommit</span></tt> will not backtrack all modifications at the end of the search and this is why you should:</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Use the <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> method <strong>only</strong> in the <tt class="docutils literal"><span class="pre">Next()</span></tt> method of a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>!</p>
+</div>
+<p>If the <tt class="docutils literal"><span class="pre">if</span></tt> test on line 36 and 37 fails, we enter the <tt class="docutils literal"><span class="pre">else</span></tt> part of the statement on line 55. This means that
+either one <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> was reached or that the neighborhood is exhausted. If a solution (stored in <tt class="docutils literal"><span class="pre">assignment_</span></tt>)
+was found during the local search, we register it and synchronize the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s and <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s
+with a new solution provided by the solution pool <tt class="docutils literal"><span class="pre">pool_</span></tt> on lines 58-60. We also notify the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
+on line 57. If no solution was found, we simply <tt class="docutils literal"><span class="pre">break</span></tt> out of the
+<tt class="docutils literal"><span class="pre">while()</span></tt> loop on line 62 and make the CP solver fail on line 66.</p>
 </div>
 <div class="section" id="the-nestedsolvedecision-decision">
 <h3>6.5.3.2. The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt></h3>
+<p>The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> is the <tt class="docutils literal"><span class="pre">Decision</span></tt> that the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">Next()</span></tt> method returns
+to find the next solution.
+This <tt class="docutils literal"><span class="pre">Decision</span></tt> is basically a <tt class="docutils literal"><span class="pre">Decision</span></tt> wrapper around a nested solve with a given <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. It doesn&#8217;t do anything in its right
+branch (in its <tt class="docutils literal"><span class="pre">Refute()</span></tt> method) and calls <tt class="docutils literal"><span class="pre">Solve()</span></tt> or <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> depending on a <tt class="docutils literal"><span class="pre">restore</span></tt> <tt class="docutils literal"><span class="pre">bool</span></tt>
+in its left branch (in its <tt class="docutils literal"><span class="pre">Apply()</span></tt> method).</p>
+<p>The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt> can be in three states that are also the three states of the Local Search:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="29%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Value</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">DECISION_FAILED</span></tt></td>
+<td>The nested search phase failed, i.e. <tt class="docutils literal"><span class="pre">Solve()</span></tt> or <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt>
+failed.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">DECISION_PENDING</span></tt></td>
+<td>The nested search hasn&#8217;t been called yet. The local search is in this
+state when it balances the search tree.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">DECISION_FOUND</span></tt></td>
+<td>The nested search phase succeeded and found a solution, i.e. <tt class="docutils literal"><span class="pre">Solve()</span></tt>
+or <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> succeeded and returned <tt class="docutils literal"><span class="pre">true</span></tt>.</td>
+</tr>
+</tbody>
+</table>
+<p>The three states are defined in the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">StateType</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>.</p>
+<p>We are now ready to assemble all the pieces of the puzzle together to understand the (simplified)
+local search algorithm in <em>or-tools</em>.</p>
 </div>
 <div class="section" id="the-localsearch-decisionbuilder">
 <h3>6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<p>We first consider the initialization phase and then we discuss in details its <tt class="docutils literal"><span class="pre">Next()</span></tt> method.</p>
+<p class="rubric">Initialization</p>
+<p>Consider the situation where we already have a <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter set up and we let the CP solver
+construct the initial solution:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">s</span><span class="p">(</span><span class="s">&quot;Dummy LS&quot;</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">vars</span> <span class="o">=</span> <span class="p">...</span>
+<span class="p">...</span>
+<span class="n">LocalSearchOperator</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ls_operator</span> <span class="o">=</span> <span class="p">...</span>
+<span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">complementary_decision_builder</span> <span class="o">=</span> <span class="p">...</span>
+<span class="p">...</span>
+<span class="n">LocalSearchPhaseParameters</span> <span class="n">params</span> <span class="o">=</span>
+   <span class="n">s</span><span class="p">.</span><span class="n">MakeLocalSearchPhaseParameters</span><span class="p">(</span><span class="n">ls_operator</span><span class="p">,</span>
+                                    <span class="n">complementary_decision_builder</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">complementary_decision_builder</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> will help us complete
+the candidate solutions found by the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> <tt class="docutils literal"><span class="pre">ls_operator</span></tt>. Our initial solution will be constructed
+by the <tt class="docutils literal"><span class="pre">initial_solution</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> (and completed by the <tt class="docutils literal"><span class="pre">complementary_decision_builder</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+if needed). Remember, that the solution chosen by the CP solver is the <strong>first</strong>
+solution found by this <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. We are now ready to create the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> for the local search:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">initial_solution</span> <span class="o">=</span> <span class="p">...</span>
+<span class="p">...</span>
+<span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ls</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLocalSearchPhase</span><span class="p">(</span><span class="n">vars</span><span class="p">,</span>
+                                                    <span class="n">initial_solution</span><span class="p">,</span>
+                                                    <span class="n">params</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>We can now add as many monitors as we want and launch the solving process:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SearchMonitor</span> <span class="o">*&gt;</span> <span class="n">monitors</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">monitors</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>It&#8217;s interesting to see how this initial solution is constructed in the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> class.
+First, we create an <tt class="docutils literal"><span class="pre">Assignment</span></tt> to store this
+initial solution:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Assignment</span> <span class="o">*</span> <span class="k">const</span> <span class="n">initial_sol</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeAssignment</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>To store an <tt class="docutils literal"><span class="pre">Assignment</span></tt> found by the CP solver, we use the <tt class="docutils literal"><span class="pre">StoreAssignment</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="n">store</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">MakeStoreAssignment</span><span class="p">(</span><span class="n">initial_sol</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> simply stores the current solution in the <tt class="docutils literal"><span class="pre">initial_sol</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="n">initial_solution_and_store</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">Compose</span><span class="p">(</span>
+                                     <span class="n">initial_solution</span><span class="p">,</span>
+                                     <span class="n">complementary_decision_builder</span><span class="p">,</span>
+                                     <span class="n">store</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">initial_solution_and_store</span></tt> constructs this initial solution. This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+is used in a nested search:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SearchMonitor</span> <span class="o">*&gt;</span> <span class="n">monitors</span><span class="p">;</span>
+<span class="n">monitors</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">limit</span><span class="p">);</span>
+<span class="n">NestedSolveDecision</span> <span class="o">*</span> <span class="n">initial_solution_decision</span> <span class="o">=</span>
+                  <span class="k">new</span> <span class="n">NestedSolveDecision</span><span class="p">(</span><span class="n">initial_solution_and_store</span><span class="p">,</span>
+                                          <span class="kc">false</span><span class="p">,</span>
+                                          <span class="n">monitors</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">limit</span></tt> is the <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> given to the local search algorithm;</li>
+<li>the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> constructor&#8217;s arguments are respectively:<ul>
+<li>a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to construct the next solution;</li>
+<li>a <tt class="docutils literal"><span class="pre">bool</span></tt> to indicate if we restore the last solution in case we cannot
+find a solution;</li>
+<li>an <tt class="docutils literal"><span class="pre">std::vector&lt;SearchMonitor</span> <span class="pre">*&gt;</span></tt>.</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">Apply()</span></tt> method of a <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> calls <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="o">-&gt;</span><span class="n">SolveAndCommit</span><span class="p">(</span><span class="n">initial_solution_and_store</span><span class="p">,</span> <span class="n">monitors</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>where the arguments respectively are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>;</li>
+<li>an <tt class="docutils literal"><span class="pre">std::vector&lt;SearchMonitor</span> <span class="pre">*&gt;</span></tt>.</li>
+</ul>
+</div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> companion to <tt class="docutils literal"><span class="pre">StoreAssignment</span></tt> is <tt class="docutils literal"><span class="pre">RestoreAssignment</span></tt> that
+<em>installs</em> an <tt class="docutils literal"><span class="pre">Assignment</span></tt> as the current solution:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Assignment</span> <span class="o">*</span> <span class="n">solution</span> <span class="o">=</span> <span class="p">...</span>
+<span class="p">...</span>
+<span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="n">current_sol</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeRestoreAssignment</span><span class="p">(</span><span class="n">solution</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="c1">//  do something fancy starting with current_sol</span>
+<span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="n">fancy_db</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">Compose</span><span class="p">(</span><span class="n">current_sol</span><span class="p">,</span> <span class="p">...);</span>
+<span class="p">...</span>
+<span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">fancy_db</span><span class="p">,...);</span>
+</pre></div>
+</div>
+<p>This is exactly the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> used when you give an initial solution to the CP solver.
+The <tt class="docutils literal"><span class="pre">initial_solution</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is simply replaced with a <tt class="docutils literal"><span class="pre">RestoreAssignment</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
+taking your initial <tt class="docutils literal"><span class="pre">Assignment</span></tt>.</p>
+<p>Now that we have developed the machinery to find and test the initial solution, we are ready to wrap the nested solve process
+into a <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  Main DecisionBuilder to find candidate solutions one by one</span>
+<span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">find_neighbors</span> <span class="o">=</span>
+  <span class="n">solver</span><span class="o">-&gt;</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">FindOneNeighbor</span><span class="p">(</span><span class="n">assignment_</span><span class="p">,</span>
+                                       <span class="n">pool_</span><span class="p">,</span>
+                                       <span class="n">ls_operator_</span><span class="p">,</span>
+                                       <span class="n">sub_decision_builder_</span><span class="p">,</span>
+                                       <span class="n">limit_</span><span class="p">,</span>
+                                       <span class="n">filters_</span><span class="p">));</span>
+<span class="n">NestedSolveDecision</span><span class="o">*</span> <span class="n">decision</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">RevAlloc</span><span class="p">(</span>
+                            <span class="k">new</span> <span class="n">NestedSolveDecision</span><span class="p">(</span><span class="n">find_neighbors</span><span class="p">,</span>
+                                                    <span class="kc">false</span><span class="p">)));</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">boolean</span></tt> argument in the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt>&#8216;s constructor indicates that we don&#8217;t want to backtrack.
+The <tt class="docutils literal"><span class="pre">decision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt> will thus call <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> in its left branch.</p>
+<p class="rubric">The <tt class="docutils literal"><span class="pre">Next()</span></tt> method</p>
+<p>The <tt class="docutils literal"><span class="pre">Next()</span></tt> method of the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is in charge of controling the Local Search. We present it
+first and discuss it next:</p>
+<div class="highlight-c++"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">Decision</span> <span class="o">*</span> <span class="n">Next</span><span class="p">(</span><span class="n">Solver</span> <span class="o">*</span> <span class="n">solver</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">...</span>
+  <span class="k">const</span> <span class="kt">int</span> <span class="n">state</span> <span class="o">=</span> <span class="n">decision</span><span class="o">-&gt;</span><span class="n">state</span><span class="p">();</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">NestedSolveDecision</span><span class="o">::</span><span class="nl">DECISION_FAILED:</span> <span class="p">{</span>
+                                          <span class="c1">// SEARCHMONITOR CALLBACK</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">LocalOptimumReached</span><span class="p">(</span><span class="n">solver</span><span class="o">-&gt;</span><span class="n">ActiveSearch</span><span class="p">()))</span> <span class="p">{</span>
+        <span class="c1">// Stop the current search</span>
+        <span class="p">...</span>
+      <span class="p">}</span>
+      <span class="n">solver</span><span class="o">-&gt;</span><span class="n">Fail</span><span class="p">();</span>
+      <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">case</span> <span class="n">NestedSolveDecision</span><span class="o">::</span><span class="nl">DECISION_PENDING:</span> <span class="p">{</span>
+      <span class="c1">//  Stabilize search tree by balancing the current search tree.</span>
+      <span class="c1">//  Statistics are updated even if this is not relevant to the</span>
+      <span class="c1">//  global search</span>
+      <span class="p">...</span>
+      <span class="k">const</span> <span class="kt">int</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">SearchDepth</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;</span> <span class="n">kLocalSearchBalancedTreeDepth</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">solver</span><span class="o">-&gt;</span><span class="n">balancing_decision</span><span class="p">();</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&gt;</span> <span class="n">kLocalSearchBalancedTreeDepth</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">solver</span><span class="o">-&gt;</span><span class="n">Fail</span><span class="p">();</span>
+      <span class="p">}</span>
+      <span class="p">...</span>
+      <span class="k">return</span> <span class="n">decision</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">case</span> <span class="n">NestedSolveDecision</span><span class="o">::</span><span class="nl">DECISION_FOUND:</span> <span class="p">{</span>
+      <span class="c1">// Nothing important for us in this simplified version</span>
+      <span class="p">...</span>
+      <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">default</span><span class="o">:</span> <span class="p">{</span>
+      <span class="n">LOG</span><span class="p">(</span><span class="n">ERROR</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Unknown local search state&quot;</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>The <tt class="docutils literal"><span class="pre">decision</span></tt> variable on line 3 is the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> created with
+the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>.
+We <tt class="docutils literal"><span class="pre">switch</span></tt> between three cases depending on the state of the nested search initiated by this <tt class="docutils literal"><span class="pre">Decision</span></tt>.</p>
+<ul class="simple">
+<li>Line 5: case <strong>DECISION_FAILED</strong>:
+The nested solving process failed, meaning that there are no solution left. We let the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
+decide if a local optimum has been reached and cannot be improved. <tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt> returns
+a <tt class="docutils literal"><span class="pre">FalseExceptIfOneTrue</span></tt>.</li>
+<li>Line 14: case <strong>DECISION_PENDING</strong>:
+This is the most interesting case: we try to keep the search tree balanced and force its height to be bounded.
+<tt class="docutils literal"><span class="pre">kLocalSearchBalancedTreeDepth</span></tt> is set to 32. So as long as the tree height is smaller than 32, the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt>
+<tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> returns the <strong>same</strong> <tt class="docutils literal"><span class="pre">BalancingDecision</span></tt> on line 21. <tt class="docutils literal"><span class="pre">BalancingDecision</span></tt>s don&#8217;t do anything
+by default. Once the search tree height is over 32, the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt>
+<tt class="docutils literal"><span class="pre">Decision</span></tt> enters in action and when the height of the three gets higher than 32, we make the CP solver <tt class="docutils literal"><span class="pre">Fail()</span></tt>
+to backtrack on line 23 thus keeping the height of the tree bounded.</li>
+<li>Line 28: case <strong>DECISION_FOUND</strong>:
+The nested search found a solution that is the current solution. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">Next()</span></tt> method has done its job
+at the current node and nothing needs to be done.</li>
+</ul>
+<div class="topic">
+<p class="topic-title first"><tt class="docutils literal"><span class="pre">Solve()</span></tt>, <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt>, <tt class="docutils literal"><span class="pre">SolveOnce()</span></tt>, etc...: what are the differences?</p>
+<p>This topic is so important that the whole section <a class="reference internal" href="../modeling_tricks/solving_options.html#solving-options"><em>What are my solving options?</em></a> is devoted to it.
+You already can jump and read this section if you&#8217;re curious.</p>
+</div>
+</div>
 </div>
 </div>
 
