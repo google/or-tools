@@ -1038,6 +1038,12 @@ static void SetPythonFlags(bool trace_propagation,
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
+  IntVar* IsMember(const std::vector<int64>& values) {
+    return self->solver()->MakeIsMemberVar(self->Var(), values);
+  }
+  Constraint* Member(const std::vector<int64>& values) {
+    return self->solver()->MakeMemberCt(self->Var(), values);
+  }
 }
 
 // Add arithmetic operators to integer expressions.
