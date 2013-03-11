@@ -1,3 +1,4 @@
+
 from constraint_solver import pywrapcp
 
 def test_member():
@@ -7,8 +8,15 @@ def test_member():
   print ct
 
 
+def test_sparse_var():
+  solver = pywrapcp.Solver('test sparse')
+  x = solver.IntVar([1, 3, 5], 'x')
+  print x
+
+
 def main():
   test_member()
+  test_sparse_var()
 
 
 if __name__ == '__main__':
