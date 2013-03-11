@@ -13,7 +13,7 @@ setup(
     dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
     data_files=[('constraint_solver',
                  [pjoin('constraint_solver', '_pywrapcp.dll'),
-                  pjoin('constraint_solver', '_pywraprouting.dll']),
+                  pjoin('constraint_solver', '_pywraprouting.dll')]),
                 ('linear_solver',
                  [pjoin('linear_solver', '_pywraplp.dll'), ]),
                 ('graph',
