@@ -74,28 +74,34 @@ finding one solution is straightforward and easy and shouldn&#8217;t take too lo
 <br><table class="docutils citation" frame="void" id="hoffman1969" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[Hoffman1969]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id8">2</a>)</em> Hoffman, Loessi and Moore. <em>Constructions for the Solution of the m Queens Problem</em>, Mathematics
+<tr><td class="label">[Hoffman1969]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id9">2</a>)</em> Hoffman, Loessi and Moore. <em>Constructions for the Solution of the m Queens Problem</em>, Mathematics
 Magazine, p. 66-72, 1969.</td></tr>
 </tbody>
 </table>
 <p>So we have to be careful when we talk about the n-queens problem. There are at least three different problems that people refer to
 when talking about the n-queens problem:</p>
 <ul class="simple">
-<li>finding one solution,</li>
+<li>finding one solution<a class="footnote-reference" href="#solutions-we-mean-feasible-solutions" id="id3">[2]</a>,</li>
 <li>counting the number of solutions and</li>
 <li>finding (explicitly) all these solutions.</li>
 </ul>
-<p>While the first problem is easy, the two others are difficult<a class="footnote-reference" href="#n-queens-hard" id="id3">[2]</a>.</p>
+<p>While the first problem is easy, the two others are difficult<a class="footnote-reference" href="#n-queens-hard" id="id4">[3]</a>.</p>
+<table class="docutils footnote" frame="void" id="solutions-we-mean-feasible-solutions" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>By <em>solution</em>, we mean <em>feasible solution</em>.</td></tr>
+</tbody>
+</table>
 <table class="docutils footnote" frame="void" id="n-queens-hard" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>These two problems are NP-Hard. See <a class="reference internal" href="#jordan2009">[Jordan2009]</a>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>These two problems are NP-Hard. See <a class="reference internal" href="#jordan2009">[Jordan2009]</a>.</td></tr>
 </tbody>
 </table>
 <br><table class="docutils citation" frame="void" id="jordan2009" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[Jordan2009]</td><td><em>(<a class="fn-backref" href="#id4">1</a>, <a class="fn-backref" href="#id6">2</a>)</em> Jordan and Brett. <em>A survey of known results and research areas for n-queens</em>, Discrete Mathematics,
+<tr><td class="label">[Jordan2009]</td><td><em>(<a class="fn-backref" href="#id5">1</a>, <a class="fn-backref" href="#id7">2</a>)</em> Jordan and Brett. <em>A survey of known results and research areas for n-queens</em>, Discrete Mathematics,
 Volume 309, Issue 1, 2009, pp 1-31.</td></tr>
 </tbody>
 </table>
@@ -221,11 +227,11 @@ used for parallel memory storage schemes, VLSI testing, traffic control and dead
 <div class="section" id="describe">
 <h3>5.1.2.1. Describe</h3>
 <p>What is the <strong>goal</strong> of the n-queens problem? We will focus on finding one or all solutions. Given a size <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> for the
-<img class="math" src="../../_images/math/c3d38f82f48ef9e81c04d49354293305b0067afc.png" alt="n \times n" style="vertical-align: 0px"/> chessboard, place <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> queens<a class="footnote-reference" href="#queens-has-solutions" id="id7">[4]</a> so that no two queens attack each other.</p>
+<img class="math" src="../../_images/math/c3d38f82f48ef9e81c04d49354293305b0067afc.png" alt="n \times n" style="vertical-align: 0px"/> chessboard, place <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> queens<a class="footnote-reference" href="#queens-has-solutions" id="id8">[5]</a> so that no two queens attack each other.</p>
 <table class="docutils footnote" frame="void" id="queens-has-solutions" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[4]</a></td><td>It is not obvious that for every <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>, there exist at least a solution. In fact, for <img class="math" src="../../_images/math/6cb7ae00764b56ee2adf59e78a1ffde9685b80db.png" alt="n=2" style="vertical-align: 0px"/> and
+<tr><td class="label"><a class="fn-backref" href="#id8">[5]</a></td><td>It is not obvious that for every <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>, there exist at least a solution. In fact, for <img class="math" src="../../_images/math/6cb7ae00764b56ee2adf59e78a1ffde9685b80db.png" alt="n=2" style="vertical-align: 0px"/> and
 <img class="math" src="../../_images/math/5635737307f5f0651cced8ee2e6558a426fd27b5.png" alt="n=3" style="vertical-align: 0px"/> there are no solution. Hoffman et al. proved that there are solutions for every <img class="math" src="../../_images/math/1f973f155c155041b160cacf14cabf207566696e.png" alt="n \geqslant 4" style="vertical-align: -3px"/> in <a class="reference internal" href="#hoffman1969">[Hoffman1969]</a>.</td></tr>
 </tbody>
 </table>
