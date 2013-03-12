@@ -1,4 +1,10 @@
 
+v.0.2.0: (2013-03-11 21:37:28)
+------------------------------
+* Minor enhancements to the manual:
+  - 6.8 corrected and published which means that chapter 6 is almost published
+    and that we switch to version 0.2.0!
+
 v.0.1.31: (2013-03-11 17:11:22)
 -------------------------------
 * Minor enhancements to the manual:
