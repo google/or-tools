@@ -1,4 +1,9 @@
 
+v.0.2.1: (2013-03-13 22:03:31)
+------------------------------
+* Minor enhancements to the manual:
+  - 9.5 corrected and published.
+
 v.0.2.0: (2013-03-11 21:37:28)
 ------------------------------
 * Minor enhancements to the manual:
