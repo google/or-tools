@@ -879,6 +879,13 @@ Constraint* Solver::MakeIsBetweenCt(IntVar* const v,
   return RevAlloc(new IsBetweenCt(this, v, l, u, b));
 }
 
+IntVar* Solver::MakeIsBetweenVar(IntVar* const v, int64 l, int64 u) {
+  CHECK_EQ(this, v->solver());
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsBetweenCt(v, l, u, b));
+  return b;
+}
+
 // ---------- Member ----------
 
 // ----- Member(IntVar, IntSet) -----

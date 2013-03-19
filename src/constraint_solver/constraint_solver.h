@@ -1524,6 +1524,7 @@ class Solver {
   // b == (l <= v <= u)
   Constraint* MakeIsBetweenCt(IntVar* const v,  int64 l, int64 u,
                               IntVar* const b);
+  IntVar* MakeIsBetweenVar(IntVar* const v,  int64 l, int64 u);
 
   // b == (v in set)
   Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int64>& values,
