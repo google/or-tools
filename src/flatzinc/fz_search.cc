@@ -99,6 +99,7 @@ class SequentialSupport : public FzParallelSupport {
     type_(UNDEF),
     best_solution_(0),
     interrupted_(false) {}
+
   virtual ~SequentialSupport() {}
 
   virtual void Init(int worker_id, const string& init_string) {
@@ -115,8 +116,8 @@ class SequentialSupport : public FzParallelSupport {
   }
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
-    IncrementSolutions();
-    if (NumSolutions() <= num_solutions_ || print_all_) {
+    if (NumSolutions() == 0) {
+      IncrementSolutions();
       std::cout << solution_string;
     }
   }
@@ -739,11 +740,13 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   switch (method_) {
     case MIN:
     case MAX: {
-      objective_ = parallel_support->Objective(solver_.get(),
-                                               method_ == MAX,
-                                               integer_variables_[objective_variable_]->Var(),
-                                               1,
-                                               p.worker_id);
+      objective_ =
+          parallel_support->Objective(
+              solver_.get(),
+              method_ == MAX,
+              integer_variables_[objective_variable_]->Var(),
+              1,
+              p.worker_id);
       SearchMonitor* const log = p.use_log ?
           solver_->MakeSearchLog(p.log_period, objective_) :
           NULL;
