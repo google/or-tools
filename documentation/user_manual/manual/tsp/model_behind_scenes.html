@@ -120,6 +120,13 @@ vehicle can visit a node in a solution.</td></tr>
 a TSP with one vehicle. We&#8217;ll use a VRP with four vehicles/routes.</p>
 <p>Let&#8217;s take the original graph of the next figure:</p>
 <a class="reference internal image-reference" href="../../_images/rl_original_graph.png"><img alt="../../_images/rl_original_graph.png" class="align-center" src="../../_images/rl_original_graph.png" style="width: 200pt;" /></a>
+<p>You can of course number (or name) the nodes of the original graph any way you like. For instance, in the <tt class="docutils literal"><span class="pre">TSPLIB</span></tt>,
+nodes are numbered from <tt class="docutils literal"><span class="pre">1</span></tt> to <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>. In the RL, you <strong>must</strong> number your original nodes from <tt class="docutils literal"><span class="pre">0</span></tt> to <img class="math" src="../../_images/math/4bdca93962a2beaffc172ca394e04fe05bd74ffd.png" alt="n-1" style="vertical-align: -1px"/>.
+If you don&#8217;t follow this advice, you might get some surprises!</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Always use <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es from <tt class="docutils literal"><span class="pre">0</span></tt> to <img class="math" src="../../_images/math/4bdca93962a2beaffc172ca394e04fe05bd74ffd.png" alt="n-1" style="vertical-align: -1px"/> for your original graph!</p>
+</div>
 <p>There are nine nodes of which two are starting depots (1 and 3), one is an ending
 depot (7) and one is a starting and ending depot (4). The <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es<a class="footnote-reference" href="#nodeindices" id="id4">[4]</a> range from 0 to 8.</p>
 <p>In this example, we take four vehicles/routes:</p>

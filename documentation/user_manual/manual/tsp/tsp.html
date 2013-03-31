@@ -277,7 +277,11 @@ this helpful technique, look up <em>RAII</em> (Resource Acquisition Is Initializ
 </div>
 <div class="section" id="to-read-tsplib-files">
 <h3>9.3.3.1. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h3>
-<p>To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class offers the <tt class="docutils literal"><span class="pre">LoadTSPLIBFile(const</span> <span class="pre">std::string&amp;</span> <span class="pre">filename)</span></tt> method.
+<p>To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class offers the</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">LoadTSPLIBFile</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>method.
 It parses a file in <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> format and loads the coordinates (if any) for further treatment.
 Note that the format is only
 partially checked: bad inputs might cause undefined behaviour.</p>
@@ -290,7 +294,11 @@ for the TSP.</p>
 </div>
 <div class="section" id="to-generate-random-tsp">
 <h3>9.3.3.2. To generate random TSP</h3>
-<p>To generate random TSP instances, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class provides the <tt class="docutils literal"><span class="pre">RandomInitialize(const</span> <span class="pre">int</span> <span class="pre">size)</span></tt> method.
+<p>To generate random TSP instances, the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class provides the</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RandomInitialize</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">size</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>method.
 Several <tt class="docutils literal"><span class="pre">gflags</span></tt> parameters are available:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">deterministic_random_seed</span></tt>: Use deterministic random seeds or not? <tt class="docutils literal"><span class="pre">true</span></tt> by default;</li>

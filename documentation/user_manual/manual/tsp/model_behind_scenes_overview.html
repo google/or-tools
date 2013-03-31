@@ -121,7 +121,7 @@ of type <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>. Th
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">For the rest of this section, we only use the internal <tt class="docutils literal"><span class="pre">int64</span></tt> indices except if the indices are explicitly
-of type <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>.</p>
+of type <tt class="docutils literal"><span class="pre">RoutingModel::NodeIndex</span></tt>.</p>
 </div>
 <div class="section" id="path-variables">
 <h3>9.5.2.1. Path variables</h3>
@@ -402,7 +402,8 @@ pairs of <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es,
 </div>
 <p><tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></tt> is a (set of) function(s) that returns the appropriate callback class made from its arguments.
 Some template magic might be involved too. <tt class="docutils literal"><span class="pre">ResultCallback2</span></tt> and <tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></tt> are defined in the
-header <tt class="file docutils literal"><span class="pre">base/callback.h</span></tt>.</p>
+header <tt class="file docutils literal"><span class="pre">base/callback.h</span></tt>. If you are curious about the callback mechanism and the use of <tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></tt>,
+read the sub-section <a class="reference internal" href="../under_the_hood/classes.html#under-the-hood-callbacks"><em>Callbacks</em></a>.</p>
 <table class="docutils footnote" frame="void" id="nodeevaluator2-cplusplus-jargon" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">

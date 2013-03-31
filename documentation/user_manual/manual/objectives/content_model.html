@@ -97,27 +97,31 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
 <div class="highlight-bash"><div class="highlight"><pre>./golomb1 --help
 </pre></div>
 </div>
-<p>in the terminal, you get all possible command line flags. For the CP solver, these are:</p>
-<div class="highlight-bash"><div class="highlight"><pre>Flags from constraint_solver/constraint_solver.cc:
-  -cp_export_file <span class="o">(</span>Export model to file using CPModelProto.<span class="o">)</span> <span class="nb">type</span>:
-                                                                  string
-    default: <span class="s2">&quot;&quot;</span>
-  -cp_model_stats <span class="o">(</span>use StatisticsModelVisitor on model before solving.<span class="o">)</span>
-    <span class="nb">type</span>: bool default: <span class="nb">false</span>
-  -cp_no_solve <span class="o">(</span>Force failure at the beginning of a search.<span class="o">)</span> <span class="nb">type</span>: bool
-    default: <span class="nb">false</span>
-  -cp_print_model <span class="o">(</span>use PrintModelVisitor on model before solving.<span class="o">)</span> <span class="nb">type</span>:
-                                                                    bool
-    default: <span class="nb">false</span>
-  -cp_profile_file <span class="o">(</span>Export profiling overview to file.<span class="o">)</span> <span class="nb">type</span>: string
-    default: <span class="s2">&quot;&quot;</span>
-  -cp_show_constraints <span class="o">(</span>show all constraints added to the solver.<span class="o">)</span> <span class="nb">type</span>:
-                                                                    bool
-    default: <span class="nb">false</span>
-  -cp_trace_demons <span class="o">(</span>trace all demon executions.<span class="o">)</span> <span class="nb">type</span>: bool default:
-                                                                   <span class="nb">false</span>
-  -cp_verbose_fail <span class="o">(</span>Verbose output when failing<span class="o">)</span> <span class="nb">type</span>: bool default:
-                                                                   <span class="nb">false</span>
+<p>in the terminal, you get all possible command line flags. For the file <tt class="file docutils literal"><span class="pre">constraint_solver.cc</span></tt>, these are:</p>
+<div class="highlight-bash"><div class="highlight"><pre>Flags from src/constraint_solver/constraint_solver.cc:
+    -cp_export_file <span class="o">(</span>Export model to file using CPModelProto.<span class="o">)</span>
+      <span class="nb">type</span>: string default: <span class="s2">&quot;&quot;</span>
+    -cp_model_stats <span class="o">(</span>use StatisticsModelVisitor on model before solving.<span class="o">)</span>
+      <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_name_cast_variables <span class="o">(</span>Name variables casted from expressions<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_name_variables <span class="o">(</span>Force all variables to have names.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_no_solve <span class="o">(</span>Force failure at the beginning of a search.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_print_model <span class="o">(</span>use PrintModelVisitor on model before solving.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_profile_file <span class="o">(</span>Export profiling overview to file.<span class="o">)</span>
+     <span class="nb">type</span>: string default: <span class="s2">&quot;&quot;</span>
+    -cp_show_constraints <span class="o">(</span>show all constraints added to the solver.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_trace_propagation <span class="o">(</span>Trace propagation events <span class="o">(</span>constraint and demon
+     executions, variable modifications<span class="o">)</span>.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_trace_search <span class="o">(</span>Trace search events<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
+    -cp_verbose_fail <span class="o">(</span>Verbose output when failing.<span class="o">)</span>
+     <span class="nb">type</span>: bool default: <span class="nb">false</span>
 </pre></div>
 </div>
 <p>We are interested in the constraints. Invoking</p>
