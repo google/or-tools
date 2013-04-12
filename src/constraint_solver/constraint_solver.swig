@@ -26,6 +26,7 @@
 #include "constraint_solver/constraint_solveri.h"
 
 DECLARE_bool(cp_trace_propagation);
+DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_print_model);
 DECLARE_bool(cp_model_stats);
 DECLARE_string(cp_export_file);
@@ -230,6 +231,8 @@ import gflags
 FLAGS=gflags.FLAGS
 gflags.DEFINE_boolean('cp_trace_propagation', False,
                       'trace all propagation events.')
+gflags.DEFINE_boolean('cp_trace_search', False,
+                      'trace all search events.')
 gflags.DEFINE_boolean('cp_print_model', False,
                       'prints the model before solving it.')
 gflags.DEFINE_boolean('cp_model_stats', False,
@@ -745,6 +748,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 // python code.
 %feature("pythonappend") Solver::Solver %{
         Solver.SetPythonFlags(FLAGS.cp_trace_propagation,
+                              FLAGS.cp_trace_search,
                               FLAGS.cp_print_model,
                               FLAGS.cp_model_stats,
                               FLAGS.cp_export_file,
@@ -755,12 +759,14 @@ CONVERT_VECTOR(LocalSearchFilter);
 
 %extend Solver {
 static void SetPythonFlags(bool trace_propagation,
+                             bool trace_search,
                              bool print_model,
                              bool model_stats,
                              const string& export_file,
                              bool no_solve,
                              const string& profile_file) {
     FLAGS_cp_trace_propagation = trace_propagation;
+    FLAGS_cp_trace_search = trace_search;
     FLAGS_cp_print_model = print_model;
     FLAGS_cp_model_stats = model_stats;
     FLAGS_cp_export_file = export_file;
