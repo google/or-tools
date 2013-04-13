@@ -56,15 +56,58 @@
             
   <div class="section" id="the-vehicle-routing-problem-vrp">
 <span id="vrp-vrp"></span><h1>10.1. The Vehicle Routing Problem (VRP)</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/routing_common/tsplib_reader.h">tsplib_reader.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_data_generator.h">cvrp_data_generator.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_data_generator.cc">cvrp_data_generator.cc</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_data.h">cvrp_data.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_solution.h">cvrp_solution.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_epix_data.h">cvrp_epix_data.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_solution_to_epix.cc">cvrp_solution_to_epix.cc</a></li>
+    </ol>
+  </li>
+  <li>Data files:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap10/A-n32-k5.vrp">A-n32-k5.vrp</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/opt-A-n32-k5">opt-A-n32-k5</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <div class="section" id="the-problem">
 <h2>10.1.1. The Problem</h2>
 </div>
 <div class="section" id="benchmark-data">
 <h2>10.1.2. Benchmark data</h2>
-<div class="section" id="the-vrplib-library">
-<h3>10.1.2.1. The VRPLIB library</h3>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<div class="section" id="the-tsplib-format-for-the-cvrp">
+<h3>10.1.2.1. The TSPLIB format for the CVRP</h3>
+<div class="section" id="the-instance-file">
+<h4>10.1.2.1.1. The instance file</h4>
+</div>
+<div class="section" id="the-solution-file">
+<h4>10.1.2.1.2. The solution file</h4>
+</div>
+</div>
+</div>
+<div class="section" id="to-read-tsplib-files">
+<h2>10.1.3. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</h2>
+</div>
+<div class="section" id="to-generate-a-random-cvrp-the-cvrpdatagenerator-class">
+<h2>10.1.4. To generate a random CVRP: the <tt class="docutils literal"><span class="pre">CVRPDataGenerator</span></tt> class</h2>
+</div>
+<div class="section" id="to-hold-and-check-a-c-vrp-solution-the-cvrpsolution-class">
+<h2>10.1.5. To hold and check a (C)VRP solution: the <tt class="docutils literal"><span class="pre">CVRPSolution</span></tt> class</h2>
+</div>
+<div class="section" id="the-cvrpdata-class-part-i">
+<span id="vrpdata-class"></span><h2>10.1.6. The <tt class="docutils literal"><span class="pre">CVRPData</span></tt> class: part I</h2>
+</div>
+<div class="section" id="visualization-with-epix">
+<span id="section-visualization-epix-vrp"></span><h2>10.1.7. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
+<p>&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;</p>
 </div>
 </div>
 
@@ -153,9 +196,18 @@ Search:
 <li><a class="reference internal" href="#">10.1. The Vehicle Routing Problem (VRP)</a><ul>
 <li><a class="reference internal" href="#the-problem">10.1.1. The Problem</a></li>
 <li><a class="reference internal" href="#benchmark-data">10.1.2. Benchmark data</a><ul>
-<li><a class="reference internal" href="#the-vrplib-library">10.1.2.1. The VRPLIB library</a></li>
+<li><a class="reference internal" href="#the-tsplib-format-for-the-cvrp">10.1.2.1. The TSPLIB format for the CVRP</a><ul>
+<li><a class="reference internal" href="#the-instance-file">10.1.2.1.1. The instance file</a></li>
+<li><a class="reference internal" href="#the-solution-file">10.1.2.1.2. The solution file</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#to-read-tsplib-files">10.1.3. To read <tt class="docutils literal"><span class="pre">TSPLIB</span></tt> files</a></li>
+<li><a class="reference internal" href="#to-generate-a-random-cvrp-the-cvrpdatagenerator-class">10.1.4. To generate a random CVRP: the <tt class="docutils literal"><span class="pre">CVRPDataGenerator</span></tt> class</a></li>
+<li><a class="reference internal" href="#to-hold-and-check-a-c-vrp-solution-the-cvrpsolution-class">10.1.5. To hold and check a (C)VRP solution: the <tt class="docutils literal"><span class="pre">CVRPSolution</span></tt> class</a></li>
+<li><a class="reference internal" href="#the-cvrpdata-class-part-i">10.1.6. The <tt class="docutils literal"><span class="pre">CVRPData</span></tt> class: part I</a></li>
+<li><a class="reference internal" href="#visualization-with-epix">10.1.7. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
 </ul>

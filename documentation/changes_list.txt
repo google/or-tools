@@ -1,4 +1,13 @@
 
+v.0.2.3: (2013-04-13 17:19:30)
+------------------------------
+* Minor enhancements to the manual:
+  - 10.1 and 10.2 written.
+  - 10.3 written.
+  - 10.4 written (one sub-section missing).
+  - 9.8 corrected and published.
+
+
 v.0.2.2: (2013-03-31 14:15:55)
 ------------------------------
 * Minor enhancements to the manual:

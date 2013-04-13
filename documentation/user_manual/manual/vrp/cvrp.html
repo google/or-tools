@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>10.5. The Capacitated Vehicle Routing Problem (CVRP) &mdash; or-tools User&#39;s Manual</title>
+    <title>10.3. The Capacitated Vehicle Routing Problem (CVRP) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem" href="../VRP.html" />
-    <link rel="next" title="10.6. The CVRP in or-tools" href="first_cvrp_implementation.html" />
-    <link rel="prev" title="10.4. An exact implementation of the VRP" href="exact_vrp_implementation.html" /> 
+    <link rel="next" title="10.4. The CVRP in or-tools" href="first_cvrp_implementation.html" />
+    <link rel="prev" title="10.2. The VRP in or-tools" href="first_vrp_implementation.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="first_cvrp_implementation.html" title="10.6. The CVRP in or-tools"
+          <a href="first_cvrp_implementation.html" title="10.4. The CVRP in or-tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="exact_vrp_implementation.html" title="10.4. An exact implementation of the VRP"
+          <a href="first_vrp_implementation.html" title="10.2. The VRP in or-tools"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../VRP.html" accesskey="U">10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</a> &raquo;</li> 
@@ -55,9 +55,31 @@
           <div class="body">
             
   <div class="section" id="the-capacitated-vehicle-routing-problem-cvrp">
-<span id="cvrp"></span><h1>10.5. The Capacitated Vehicle Routing Problem (CVRP)</h1>
+<span id="cvrp"></span><h1>10.3. The Capacitated Vehicle Routing Problem (CVRP)</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap10/cvrp_data.h">cvrp_data.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/check_cvrp_solution.cc">check_cvrp_solution.cc</a></li>
+    </ol>
+  </li>
+  <li>Data files:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap10/A-n32-k5.vrp">A-n32-k5.vrp</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap10/opt-A-n32-k5">opt-A-n32-k5</a></li>
+    </ol>
+  </li>
+
+</ol></div>
+<div class="section" id="the-problem">
+<h2>10.3.1. The problem</h2>
+</div>
+<div class="section" id="the-cvrpdata-class-part-ii">
+<h2>10.3.2. The <tt class="docutils literal"><span class="pre">CVRPData</span></tt> class: part II</h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 
 
           </div>
@@ -134,11 +156,20 @@ Search:
   <p class="topless"><a href="../VRP.html"
                         title="previous chapter">10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="exact_vrp_implementation.html"
-                        title="previous chapter">10.4. An exact implementation of the VRP</a></p>
+  <p class="topless"><a href="first_vrp_implementation.html"
+                        title="previous chapter">10.2. The VRP in or-tools</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="first_cvrp_implementation.html"
-                        title="next chapter">10.6. The CVRP in or-tools</a></p>
+                        title="next chapter">10.4. The CVRP in or-tools</a></p>
+  <h3>Current section</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">10.3. The Capacitated Vehicle Routing Problem (CVRP)</a><ul>
+<li><a class="reference internal" href="#the-problem">10.3.1. The problem</a></li>
+<li><a class="reference internal" href="#the-cvrpdata-class-part-ii">10.3.2. The <tt class="docutils literal"><span class="pre">CVRPData</span></tt> class: part II</a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -150,10 +181,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="first_cvrp_implementation.html" title="10.6. The CVRP in or-tools"
+          <a href="first_cvrp_implementation.html" title="10.4. The CVRP in or-tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="exact_vrp_implementation.html" title="10.4. An exact implementation of the VRP"
+          <a href="first_vrp_implementation.html" title="10.2. The VRP in or-tools"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../VRP.html" >10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</a> &raquo;</li> 
