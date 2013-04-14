@@ -970,6 +970,21 @@ static void SetPythonFlags(bool trace_propagation,
   IntExpr* __floordiv__(int64 v) {
     return self->solver()->MakeDiv(self, v);
   }
+  IntExpr* __mod__(int64 v) {
+    operations_research::IntVar* const modulo =
+        self->solver()->MakeIntVar(-v, v);
+    self->solver()->AddConstraint(
+        self->solver()->MakeModuloConstraint(self->Var(), v, modulo));
+    return modulo;
+  }
+  IntExpr* __mod__(IntExpr* e) {
+    const int64 v = std::max(abs(e->Min()), abs(e->Max()));
+    operations_research::IntVar* const modulo =
+        self->solver()->MakeIntVar(-v, v);
+    self->solver()->AddConstraint(
+        self->solver()->MakeModuloConstraint(self->Var(), e->Var(), modulo));
+    return modulo;
+  }
 
   IntExpr* __neg__() {
     return self->solver()->MakeOpposite(self);
