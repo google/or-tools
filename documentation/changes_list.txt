@@ -1,4 +1,11 @@
 
+v.0.2.5: (2013-04-16 12:51:32)
+------------------------------
+* Minor enhancements to the manual:
+- 10.5 written.
+- 14.11.2 corrected and published: This sub-section will hopefully 
+  lift the veil on the mystery of the RL auxiliary graph.
+
 v.0.2.4: (2013-04-15 00:18:46)
 ------------------------------
 - more than 400 pages...
