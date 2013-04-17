@@ -17,6 +17,7 @@ test_python: python
 	PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/python/linear_programming.py
 	PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/python/integer_programming.py
 	PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/tests/test_cp_api.py
+	PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/tests/test_lp_api.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_Tsp run_LinearProgramming run_IntegerProgramming run_Knapsack
 

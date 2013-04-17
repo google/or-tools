@@ -67,6 +67,8 @@
 namespace operations_research {
 %pythoncode {
 
+import types;
+
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See RunLinearExampleNaturalLanguageAPI() in
@@ -204,7 +206,10 @@ class Sum(LinearExpr):
 
 class SumArray(LinearExpr):
   def __init__(self, array):
-    self.__array = array
+    if type(array) is types.GeneratorType:
+      self.__array = [x for x in array]
+    else:
+      self.__array = array
 
   def __str__(self):
     return 'Sum(' + str(self.__array) + ')'
