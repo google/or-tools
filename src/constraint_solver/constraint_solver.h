@@ -4050,6 +4050,7 @@ class OptimizeVar : public SearchMonitor {
   bool maximize_;
   bool found_initial_solution_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(OptimizeVar);
 };
 

@@ -5,7 +5,7 @@
 #include "base/hash.h"
 
 namespace operations_research {
-#if defined(__linux__)
+#if defined(__linux__) || defined(_MSC_VER)
 struct Foo {
   Foo() { std::cout << "Foo::Foo\n"; }
   ~Foo() { std::cout << "Foo::~Foo\n"; }
@@ -48,7 +48,7 @@ void test_auto() {
   numbers.push_back(5);
   numbers.push_back(6);
   numbers.push_back(7);
-  for (auto vec : numbers) {
+  for (int vec : numbers) {
     std::cout << vec << std::endl;
   }
 
