@@ -140,7 +140,7 @@ dependencies\sources\gflags\autogen.sh:
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
-	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release
+	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
 	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
