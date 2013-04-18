@@ -10,7 +10,7 @@ MONO_TAG = 2.10.9
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
-GLPK_TAG = 4.47
+GLPK_TAG = 4.49
 # The archive should be scipoptsuite-3.0.1.tgz
 SCIP_TAG = 3.0.1
 
