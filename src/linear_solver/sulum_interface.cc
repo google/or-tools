@@ -125,9 +125,9 @@ class SLMInterface : public MPSolverInterface {
   virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
   // Checks whether a feasible solution exists.
-  virtual void CheckSolutionExists() const;
+  virtual bool CheckSolutionExists() const;
   // Checks whether information on the best objective bound exists.
-  virtual void CheckBestObjectiveBoundExists() const;
+  virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
   // Write model
@@ -759,25 +759,26 @@ MPSolver::BasisStatus SLMInterface::column_status(int variable_index) const {
   return TransformSLMBasisStatus(slm_basis_status);
 }
 
-
-void SLMInterface::CheckSolutionExists() const {
+bool SLMInterface::CheckSolutionExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {
     LOG(WARNING) << "Ignoring ABNORMAL status from SLM: This status may or may"
                  << " not indicate that a solution exists.";
+    return false;
   } else {
     // Call default implementation
-    MPSolverInterface::CheckSolutionExists();
+    return MPSolverInterface::CheckSolutionExists();
   }
 }
 
-void SLMInterface::CheckBestObjectiveBoundExists() const {
+bool SLMInterface::CheckBestObjectiveBoundExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {
     LOG(WARNING) << "Ignoring ABNORMAL status from SLM: This status may or may"
                  << " not indicate that information is available on the best"
                  << " objective bound.";
+    return false;
   } else {
     // Call default implementation
-    MPSolverInterface::CheckBestObjectiveBoundExists();
+    return MPSolverInterface::CheckBestObjectiveBoundExists();
   }
 }
 

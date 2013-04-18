@@ -505,6 +505,7 @@ class MPSolver {
   friend class CBCInterface;
   friend class SCIPInterface;
   friend class GurobiInterface;
+  friend class SLMInterface;
   friend class MPSolverInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -623,6 +624,7 @@ class MPObjective {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
   friend class GurobiInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
@@ -686,6 +688,7 @@ class MPVariable {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
   friend class GurobiInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
@@ -765,6 +768,7 @@ class MPConstraint {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
   friend class GurobiInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
