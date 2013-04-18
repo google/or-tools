@@ -102,6 +102,7 @@ src/glpnpp05.obj \
 src/glpnpp06.obj \
 src/glpqmd.obj \
 src/glprgr.obj \
+src/glprlx.obj \
 src/glprng01.obj \
 src/glprng02.obj \
 src/glpscf.obj \
