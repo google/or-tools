@@ -120,6 +120,9 @@ dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
 install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\include\gflags\gflags.h
 
 dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
+ifeq ("$(VisualStudioVersion)", "11.0")
+	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\solutions\libgflags.sln
+endif
 	cd dependencies\solutions && msbuild libgflags.sln /target:Build
 
 dependencies\install\include\gflags\gflags.h: dependencies\install\include\gflags dependencies\sources\gflags\src\windows\gflags\gflags.h
@@ -140,6 +143,9 @@ dependencies\sources\gflags\autogen.sh:
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
+ifeq ("$(VisualStudioVersion)", "11.0")
+	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\solutions\protobuf.sln
+endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
@@ -201,6 +207,9 @@ dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStud
 	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe dependencies\install\bin
 
 dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe: dependencies\sources\coin-cbc\configure
+ifeq ("$(VisualStudioVersion)", "11.0")
+	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\Cbc.sln
+endif
 	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:Build /p:Configuration=Release
 
 dependencies\sources\coin-cbc\configure:
