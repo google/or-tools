@@ -75,16 +75,26 @@ ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = \# SCIP not compiled
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
   CODEPORT = OpSys-Windows
+  ifeq ("$(VisualStudioVersion)", "11.0")
+    VISUAL_STUDIO=2012
+  else
+    VISUAL_STUDIO=2010
+  endif
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
-    PORT = Windows64
+  endif
+  ifeq ("$(Platform)", "x64")
+    PLATFORM = x64
+  endif
+  ifeq ("$(PLATFORM)", "x64")
+    PORT = VisualStudio$(VISUAL_STUDIO)-64b
     CBC_PLATFORM = x64
     PTRLENGTH = 64
     NETPLATFORM = x64
   else
     PTRLENGTH = 32
     PLATFORM = Win32
-    PORT = Windows32
+    PORT = VisualStudio$(VISUAL_STUDIO)-32b
     CBC_PLATFORM = Win32
     NETPLATFORM = x86
   endif
@@ -105,3 +115,4 @@ printport:
 	@echo PYTHONVERSION = $(PYTHONVERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
 	@echo SVNVERSION = $(SVNVERSION)
+	@echo PORT = $(PORT)
