@@ -78,6 +78,7 @@
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_helpers.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_options.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_primitive_field.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_service.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_string_field.h" />
@@ -93,9 +94,11 @@
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_primitive_field.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_service.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_string_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_doc_comment.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\python\python_generator.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_doc_comment.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\code_generator.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\command_line_interface.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\subprocess.cc" />

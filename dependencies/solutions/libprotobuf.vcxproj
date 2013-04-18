@@ -80,13 +80,19 @@
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\map-util.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\message.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\message_lite.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\atomicops.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\atomicops_internals_x86_msvc.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\platform_macros.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\once.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\parser.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\printer.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\reflection_ops.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\repeated_field.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\service.h" />
-    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\stl_util-inl.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\stl_util.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\stringprintf.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\template_util.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\type_traits.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\strutil.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\substitute.h" />
     <ClInclude Include="..\sources\protobuf\src\google\protobuf\text_format.h" />
@@ -115,6 +121,7 @@
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\message.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\message_lite.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\once.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\atomicops_internals_x86_msvc.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\parser.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\printer.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\reflection_ops.cc" />
@@ -131,6 +138,7 @@
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl.cc" />
     <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl_lite.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\stringprintf.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
