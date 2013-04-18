@@ -704,7 +704,8 @@ int64 GLPKInterface::iterations() const {
     return kUnknownNumberOfIterations;
   } else {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
-    return lpx_get_int_parm(lp_, LPX_K_ITCNT);
+    //    return lpx_get_int_parm(lp_, LPX_K_ITCNT);  // FIXME
+    return kUnknownNumberOfIterations;
   }
 }
 
@@ -948,7 +949,7 @@ void GLPKInterface::ConfigureGLPKParameters(const MPSolverParameters& param) {
   glp_scale_prob(lp_, GLP_SF_AUTO);
 
   // Use advanced initial basis (options: standard / advanced / Bixby's).
-  glp_adv_basis(lp_, NULL);
+  glp_adv_basis(lp_, 0);
 
   // Set parameters specified by the user.
   SetParameters(param);
