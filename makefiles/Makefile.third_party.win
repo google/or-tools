@@ -121,9 +121,13 @@ install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\incl
 
 dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
 ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\solutions\libgflags.sln
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libgflags.vcxproj
 endif
 	cd dependencies\solutions && msbuild libgflags.sln /target:Build
+ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies\solutions\libgflags.vcxproj
+endif
+
 
 dependencies\install\include\gflags\gflags.h: dependencies\install\include\gflags dependencies\sources\gflags\src\windows\gflags\gflags.h
 	copy dependencies\sources\gflags\src\windows\gflags\*.h dependencies\install\include\gflags
@@ -144,9 +148,19 @@ install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\incl
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
 ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\solutions\protobuf.sln
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotobuf.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotobuf-lite.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotoc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\protoc.vcxproj
 endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
+ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies\solutions\libprotobuf.vcxproj
+	svn revert dependencies\solutions\libprotobuf-lite.vcxproj
+	svn revert dependencies\solutions\libprotoc.vcxproj
+	svn revert dependencies\solutions\protoc.vcxproj
+endif
+
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
 	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
@@ -208,9 +222,17 @@ dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStud
 
 dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe: dependencies\sources\coin-cbc\configure
 ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\sed.exe -i -e "s/Version 11.00/Version 12.00/g" dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\Cbc.sln
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
 endif
-	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:Build /p:Configuration=Release
+	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
 dependencies\sources\coin-cbc\configure:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
