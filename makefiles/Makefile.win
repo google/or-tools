@@ -71,8 +71,8 @@ endif
 ifdef WINDOWS_CBC_DIR
 CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /DUSE_CBC
 CBC_SWIG = -DUSE_CBC
-DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
-STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
 endif
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
