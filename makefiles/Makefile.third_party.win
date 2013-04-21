@@ -11,22 +11,17 @@ SWIG_TAG = 2.0.9
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
 GLPK_TAG = 4.49
-# The archive should be ziboptsuite-2.1.0.tgz
-SCIP_TAG = 2.1.0
+# The archive should be scipoptsuite-3.0.1.tgz
+SCIP_TAG = 3.0.1
+SOPLEX_TAG = 1.7.1
 
 # Detect if scip archive is there.
-ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
+ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
     SCIP_MAKEFILE = \# WINDOWS_SCIP_DIR support not included.
 else
-    SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
-    ifeq ($(PLATFORM), LINUX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
-    endif
-    ifeq ($(PLATFORM), MACOSX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false ARCH=x86_64
-    endif
+    SCIP_TARGET = dependencies/install/lib/scip.lib
+    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)\\dependencies\\install\\scipoptsuite-$(SCIP_TAG)\\scip-$(SCIP_TAG)
 endif
 
 # Detect if GLPK archive is there.
@@ -51,8 +46,8 @@ build_third_party: \
 	install_swig \
 	install_support \
 	install_coin_cbc \
-	install_glpk
-#	install_scip
+	install_glpk \
+	install_scip
 
 download_third_party: \
         dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
@@ -264,10 +259,24 @@ dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GL
 	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar.exe xvmf -
 
 # Install scip if needed.
-install_scip: $(SCIP_TARGET)
+install_scip: $(SCIP_TARGET)/
 
-dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
-	cd dependencies/install && tar.exe xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
+dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
+	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
+	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc soplex-$(SOPLEX_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc gcg-$(GCG_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc ug-$(UG_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+ifeq ("$(VisualStudioVersion)", "11.0")
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
+endif
+	cd dependencies\solution\Scip && msbuild /t:soplex
+	cd dependencies\solution\Scip && msbuild /t:scip
+ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
+	svn revert dependencies\\solutions\\Scip\\scip\\scip.vcxproj
+endif
 
 # Clean everything.
 clean_third_party:
@@ -280,7 +289,8 @@ clean_third_party:
 	-$(DELREC) dependencies\sources\pcre*
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\sparsehash*
-	-$(DELREC) dependencies\sources\swig*
+	-$(DELREC) dependencies\install\swig*
+	-$(DELREC) dependencies\install\scip*
 	-$(DEL) Makefile.local
 
 # Create Makefile.local

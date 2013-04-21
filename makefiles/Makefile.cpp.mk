@@ -236,7 +236,8 @@ clean_cc:
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
-	-$(DEL) $(OR_ROOT)*.exp
+	-$(DEL) $(BIN_DIR)$S*.exp
+	-$(DEL) $(BIN_DIR)$S*.lib
 
 clean_compat:
 	-$(DELREC) $(OR_ROOT)constraint_solver
