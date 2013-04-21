@@ -261,18 +261,16 @@ dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GL
 # Install scip if needed.
 install_scip: $(SCIP_TARGET)/
 
-dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
+dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
 	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc soplex-$(SOPLEX_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc gcg-$(GCG_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc ug-$(UG_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
 endif
-	cd dependencies\solution\Scip && msbuild /t:soplex
-	cd dependencies\solution\Scip && msbuild /t:scip
+	cd dependencies\solutions\Scip && msbuild /t:soplex
+	cd dependencies\solutions\Scip && msbuild /t:scip
 ifeq ("$(VisualStudioVersion)", "11.0")
 	svn revert dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
 	svn revert dependencies\\solutions\\Scip\\scip\\scip.vcxproj
