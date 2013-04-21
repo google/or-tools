@@ -84,7 +84,7 @@ endif
 # This is needed to find SCIP include files and libraries.
 ifdef WINDOWS_SCIP_DIR
   SCIP_LNK_DIR = $(OR_ROOT)dependencies\\install
-  SCIP_INC = /I$(WINDOWS_SCIP_DIR)\\src -DUSE_SCIP
+  SCIP_INC = /I$(WINDOWS_SCIP_DIR)\\src /DUSE_SCIP
   SCIP_SWIG = -DUSE_SCIP
   STATIC_SCIP_LNK = $(SCIP_LNK_DIR)\\lib\\scip.lib $(SCIP_LNK_DIR)\\lib\\soplex.lib
   DYNAMIC_SCIP_LNK = $(SCIP_LNK_DIR)\\lib\\scip.lib $(SCIP_LNK_DIR)\\lib\\soplex.lib
