@@ -120,7 +120,7 @@ ifeq ("$(VisualStudioVersion)", "11.0")
 endif
 	cd dependencies\solutions && msbuild libgflags.sln /target:Build
 ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies\solutions\libgflags.vcxproj
+	svn revert dependencies/solutions/libgflags.vcxproj
 endif
 
 
@@ -150,10 +150,10 @@ ifeq ("$(VisualStudioVersion)", "11.0")
 endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies\solutions\libprotobuf.vcxproj
-	svn revert dependencies\solutions\libprotobuf-lite.vcxproj
-	svn revert dependencies\solutions\libprotoc.vcxproj
-	svn revert dependencies\solutions\protoc.vcxproj
+	svn revert dependencies/solutions/libprotobuf.vcxproj
+	svn revert dependencies/solutions/libprotobuf-lite.vcxproj
+	svn revert dependencies/solutions/libprotoc.vcxproj
+	svn revert dependencies/solutions/protoc.vcxproj
 endif
 
 
@@ -272,8 +272,8 @@ endif
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
 ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
-	svn revert dependencies\\solutions\\Scip\\scip\\scip.vcxproj
+	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
+	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
 endif
 
 # Clean everything.
