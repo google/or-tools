@@ -165,7 +165,7 @@ See <a class="reference external" href="http://www.research.ibm.com/people/s/she
 </div>
 <p>where <tt class="docutils literal"><span class="pre">kG[n]</span></tt> is <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>.</p>
 <p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint doesn&#8217;t take a 2-dimensional array as parameter but it is easy to create one by flattening the array:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span> <span class="n">AllDifferent</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="n">s</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span> <span class="nf">AllDifferent</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="n">s</span><span class="p">,</span>
                      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span> <span class="n">vars</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">vars_flat</span><span class="p">;</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">vars</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -371,7 +371,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

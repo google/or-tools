@@ -69,7 +69,7 @@ recommend that you do so before reading this section.</p>
 <tt class="file docutils literal"><span class="pre">constraint_solver/routing.h</span></tt>.</p>
 <p>As already mentionned, the RL is a layer above the CP Solver and the <em>internal cabling</em> is accessible through
 the underlying solver:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(...);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(...);</span>
 <span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span> <span class="o">=</span> <span class="n">routing</span><span class="p">.</span><span class="n">solver</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -81,7 +81,7 @@ to know that, as a last resort, you have a complete access (read <em>control</em
 <ul>
 <li><p class="first">if there is only one depot:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  42 nodes and 7 routes/vehicles</span>
-<span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">7</span><span class="p">);</span>
+<span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">7</span><span class="p">);</span>
 <span class="c1">//  depot is node with NodeIndex 5</span>
 <span class="n">routing</span><span class="p">.</span><span class="n">SetDepot</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
 </pre></div>
@@ -94,7 +94,7 @@ to know that, as a last resort, you have a complete access (read <em>control</em
 <span class="n">depots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_pair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">);</span>
 <span class="n">depots</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_pair</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
 
-<span class="n">RoutingModel</span> <span class="n">VRP</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">depots</span><span class="p">);</span>
+<span class="n">RoutingModel</span> <span class="nf">VRP</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">depots</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Note that the space between the two ending <cite>&#8220;&gt;&#8221;</cite> in:</p>
@@ -226,7 +226,7 @@ constraints to model the <tt class="docutils literal"><span class="pre">Disjunct
 <p>One of the most difficult constraint to model is a constraint to
 avoid cycles in the solutions. For one tour, we don&#8217;t want to revisit some nodes.
 Often, we get partial solutions like the one depicted on figure (a):</p>
-<a class="reference internal image-reference" href="../../_images/cycles.png"><img alt="../../_images/cycles.png" class="align-center" src="../../_images/cycles.png" style="width: 400px;" /></a>
+<img alt="../../_images/cycles.png" class="align-center" src="../../_images/cycles.png" style="width: 400px;" />
 <p>It is often easy to obtain optimal solutions when we allow cycles (like in figure (a)) but difficult to obtain
 a real solution (like in figure (b)), i.e. without cycles. Several constraints have been proposed in the scientific literature,
 each with its cons and pros. Sometimes, we can avoid this constraint by modelling the problem in such a way that only
@@ -270,7 +270,7 @@ a detailed description of our internal <tt class="docutils literal"><span class=
 <h3>9.5.3.2. <tt class="docutils literal"><span class="pre">Disjunction</span></tt> constraints</h3>
 <p><tt class="docutils literal"><span class="pre">Disjunction</span></tt>s on a group of nodes allow to visit at most one of the nodes in this group. If you want to visit
 <strong>exactly one</strong> node in a <tt class="docutils literal"><span class="pre">Disjunction</span></tt>, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">AddDisjunction</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">NodeIndex</span><span class="o">&gt;&amp;</span> <span class="n">nodes</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">AddDisjunction</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">NodeIndex</span><span class="o">&gt;&amp;</span> <span class="n">nodes</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>where <tt class="docutils literal"><span class="pre">nodes</span></tt> represents the group of nodes. This constraint is equivalent to:</p>
@@ -280,7 +280,7 @@ a detailed description of our internal <tt class="docutils literal"><span class=
 out of which <strong>at most one</strong> node
 can be visited.
 This time, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">AddDisjunction</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">NodeIndex</span><span class="o">&gt;&amp;</span> <span class="n">nodes</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">AddDisjunction</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">NodeIndex</span><span class="o">&gt;&amp;</span> <span class="n">nodes</span><span class="p">,</span>
                     <span class="n">int64</span> <span class="n">penalty</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -300,7 +300,7 @@ node in the <tt class="docutils literal"><span class="pre">Disjunction</span></t
 <p>These constraints ensure that two nodes belong
 to the same route.
 For instance, if nodes <tt class="docutils literal"><span class="pre">i</span></tt> and <tt class="docutils literal"><span class="pre">j</span></tt> must be visited/delivered by the same vehicle, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">AddPickupAndDelivery</span><span class="p">(</span><span class="n">NodeIndex</span> <span class="n">i</span><span class="p">,</span> <span class="n">NodeIndex</span> <span class="n">j</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">AddPickupAndDelivery</span><span class="p">(</span><span class="n">NodeIndex</span> <span class="n">i</span><span class="p">,</span> <span class="n">NodeIndex</span> <span class="n">j</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Whenever you have an equality constraint linking
@@ -364,7 +364,7 @@ you cannot visit a node twice.</td></tr>
 <div class="section" id="the-costs-of-the-arcs">
 <h3>9.5.4.1. The costs of the arcs</h3>
 <p>To set the cost of each arc, use a <tt class="docutils literal"><span class="pre">NodeEvaluator2</span></tt> callback to return the cost of each <tt class="docutils literal"><span class="pre">(i,j)</span></tt> arc:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SetCost</span><span class="p">(</span><span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">SetCost</span><span class="p">(</span><span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">);</span>
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">NodeEvaluator2</span></tt> is simply<a class="footnote-reference" href="#nodeevaluator2-cplusplus-jargon" id="id4">[4]</a> a <tt class="docutils literal"><span class="pre">typedef</span></tt> for a
@@ -383,14 +383,14 @@ pairs of <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es,
 </pre></div>
 </div>
 <p>Then, the use of a <tt class="docutils literal"><span class="pre">NodeEvaluator2</span></tt> callback with <tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(....);</span>
-<span class="n">ComputeDistances</span> <span class="n">my_distances_class</span><span class="p">(...);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(....);</span>
+<span class="n">ComputeDistances</span> <span class="nf">my_distances_class</span><span class="p">(...);</span>
 <span class="n">routing</span><span class="p">.</span><span class="n">SetCost</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="o">&amp;</span><span class="n">my_distances_class</span><span class="p">,</span>
                                      <span class="o">&amp;</span><span class="n">ComputeDistances</span><span class="o">::</span><span class="n">Distance</span><span class="p">));</span>
 </pre></div>
 </div>
 <p>You can also use a function:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">distance</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">i</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="nf">distance</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">i</span><span class="p">,</span>
                <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">j</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">return</span> <span class="p">...;</span>
 <span class="p">}</span>
@@ -417,7 +417,7 @@ a <tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></
 <h3>9.5.4.2. A fixed cost for each of the existing routes</h3>
 <p>Routes/Vehicles don&#8217;t all have to be used. It might cost less not to use a route/vehicle. To add a fixed cost
 for each route/vehicle, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SetRouteFixedCost</span><span class="p">(</span><span class="n">int64</span> <span class="n">cost</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">SetRouteFixedCost</span><span class="p">(</span><span class="n">int64</span> <span class="n">cost</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>This <tt class="docutils literal"><span class="pre">int64</span></tt> cost will only be added for each route that contains at least one visited node, i.e. a different node
@@ -436,12 +436,12 @@ each <tt class="docutils literal"><span class="pre">Disjunction</span></tt>.</p>
 <h3>9.5.4.4. Different types of vehicles</h3>
 <p>The cost for the arcs and the used routes/vehicles can be customized for each route/vehicle.</p>
 <p>To customize the costs of the arcs, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SetVehicleCost</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">,</span> <span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">SetVehicleCost</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">,</span> <span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>where <tt class="docutils literal"><span class="pre">vehicle</span></tt> is the number of the route/vehicle.</p>
 <p>To customize the fixed costs of the routes/vehicles, use:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SetVehicleFixedCost</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">,</span> <span class="n">int64</span> <span class="n">cost</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">SetVehicleFixedCost</span><span class="p">(</span><span class="kt">int</span> <span class="n">vehicle</span><span class="p">,</span> <span class="n">int64</span> <span class="n">cost</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -458,7 +458,7 @@ arc between a left node <tt class="docutils literal"><span class="pre">l</span><
 node following <tt class="docutils literal"><span class="pre">l</span></tt> in a route (<tt class="docutils literal"><span class="pre">NextVar(l)</span> <span class="pre">=</span> <span class="pre">r</span></tt>). The cost of the arc is the transit
 cost between <tt class="docutils literal"><span class="pre">l</span></tt> and <tt class="docutils literal"><span class="pre">r</span></tt> in the routing problem. Solving a <em>Linear Assignment Problem</em>
 (minimum-cost perfect bipartite matching) returns a lower bound. Did you get it? Let&#8217;s draw a figure.</p>
-<a class="reference internal image-reference" href="../../_images/lb_assignment_problem.png"><img alt="../../_images/lb_assignment_problem.png" class="align-center" src="../../_images/lb_assignment_problem.png" style="width: 400pt;" /></a>
+<img alt="../../_images/lb_assignment_problem.png" class="align-center" src="../../_images/lb_assignment_problem.png" style="width: 400pt;" />
 <p>On the left (figure (a)), we have an original graph with two depots: a starting depot <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/> and an ending depot
 <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5" style="vertical-align: 0px"/> and three transit nodes <img class="math" src="../../_images/math/e776ea524ca7e92dff794b92acf711ed57cd9367.png" alt="2,3" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/>. On the right (figure (b)), we have a bipartite
 graph<a class="footnote-reference" href="#bipartite-graph-not-really" id="id5">[5]</a> with the same number of left and right nodes. The cost on an arc <tt class="docutils literal"><span class="pre">(l,r)</span></tt> is
@@ -502,7 +502,7 @@ only triggered on <tt class="docutils literal"><span class="pre">WhenBound()</sp
 <p>Basically, these constraints ensure that the variables are respecting the equalities of the basic
 constraints. They only perform bound reduction on the variables when these variables are bound.</p>
 <p>You can trigger the use of these light constraints with the following flag:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">routing_use_light_propagation</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">routing_use_light_propagation</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span>
        <span class="s">&quot;Use constraints with light propagation in routing model.&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -666,7 +666,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

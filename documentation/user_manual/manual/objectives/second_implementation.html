@@ -120,7 +120,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <p class="caption">How to generate the quaternary constraints, part II.</p>
 </div>
 <p>We define a helper function that, given a difference <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> corresponding to an interval <img class="math" src="../../_images/math/de3d6be914b10a36aa1a46bdc0d2b7587b58ebf0.png" alt="X[j] - X[i]" style="vertical-align: -5px"/> computes the next difference in the sequence:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">next_interval</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">j</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">next_i</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="nf">next_interval</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">j</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">next_i</span><span class="p">,</span>
                                                          <span class="kt">int</span><span class="o">*</span> <span class="n">next_j</span><span class="p">)</span>  <span class="p">{</span>
   <span class="n">CHECK_LT</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
   <span class="n">CHECK_LE</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
@@ -129,7 +129,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 
   <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="o">==</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="o">*</span><span class="n">next_i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
       <span class="o">*</span><span class="n">next_j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
@@ -139,7 +139,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
     <span class="o">*</span><span class="n">next_j</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -391,7 +391,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

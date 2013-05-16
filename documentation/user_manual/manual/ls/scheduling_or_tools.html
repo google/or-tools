@@ -114,7 +114,7 @@ in the next figure:</p>
 thus doesn&#8217;t necessarily correspond to the figure. Read on.</td></tr>
 </tbody>
 </table>
-<a class="reference internal image-reference" href="../../_images/intervalvar.png"><img alt="../../_images/intervalvar.png" class="align-center" src="../../_images/intervalvar.png" style="width: 700px;" /></a>
+<img alt="../../_images/intervalvar.png" class="align-center" src="../../_images/intervalvar.png" style="width: 700px;" />
 <p>and you have the following setters and getters:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">virtual</span> <span class="pre">int64</span> <span class="pre">StartMin()</span> <span class="pre">const</span> <span class="pre">=</span> <span class="pre">0;</span></tt></li>
@@ -137,7 +137,7 @@ thus doesn&#8217;t necessarily correspond to the figure. Read on.</td></tr>
 the <tt class="docutils literal"><span class="pre">FixedDurationPerformedIntervalVar</span></tt> class in the previous section (created with
 <tt class="docutils literal"><span class="pre">MakeFixedDurationIntervalVar()</span></tt>).</p>
 <p>To create <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables, use the factory methods provided by the solver. For instance:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntervalVar</span><span class="o">*</span> <span class="nl">Solver:</span><span class="n">MakeFixedInterval</span><span class="p">(</span><span class="n">int64</span> <span class="n">start</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntervalVar</span><span class="o">*</span> <span class="n">Solver</span><span class="o">:</span><span class="n">MakeFixedInterval</span><span class="p">(</span><span class="n">int64</span> <span class="n">start</span><span class="p">,</span>
                                       <span class="n">int64</span> <span class="n">duration</span><span class="p">,</span>
                                       <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 
@@ -178,7 +178,7 @@ than ending time, duration &lt; 0...). You can get and set if an <tt class="docu
 with the following methods:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="n">MustBePerformed</span><span class="p">()</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 <span class="k">virtual</span> <span class="kt">bool</span> <span class="n">MayBePerformed</span><span class="p">()</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">bool</span> <span class="n">CannotBePerformed</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="o">!</span><span class="n">MayBePerformed</span><span class="p">();</span> <span class="p">}</span>
+<span class="kt">bool</span> <span class="nf">CannotBePerformed</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="o">!</span><span class="n">MayBePerformed</span><span class="p">();</span> <span class="p">}</span>
 <span class="kt">bool</span> <span class="n">IsPerformedBound</span><span class="p">()</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">MustBePerformed</span><span class="p">()</span> <span class="o">==</span> <span class="n">MayBePerformed</span><span class="p">();</span>
 <span class="p">}</span>
@@ -187,7 +187,7 @@ with the following methods:</p>
 </div>
 <p>As for the starting time, the ending time and the duration of an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable, its &#8220;performedness&#8221; is
 encapsulated in an <tt class="docutils literal"><span class="pre">IntExpr</span></tt> you can query with:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntExpr</span><span class="o">*</span> <span class="n">PerformedExpr</span><span class="p">();</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntExpr</span><span class="o">*</span> <span class="nf">PerformedExpr</span><span class="p">();</span>
 </pre></div>
 </div>
 <p>The corresponding <tt class="docutils literal"><span class="pre">IntExpr</span></tt> acts like a <img class="math" src="../../_images/math/016f10daec11b69c18d2bf68896ecd98339fe426.png" alt="0-1" style="vertical-align: -1px"/> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt><a class="footnote-reference" href="#performed-intexpr-is-intervalvar" id="id2">[2]</a>.
@@ -226,7 +226,7 @@ it is often used in scheduling. And for once it is <strong>not</strong> an abstr
 are among the less refined variables in <em>or-tools</em>. They also have the least number of methods.</p>
 <p>Basically, this class contains an array of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and a precedence matrix indicating how the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s
 are ranked. You can conceptualize<a class="footnote-reference" href="#sequencevar-virtually-conceptualized" id="id3">[3]</a> this class as depicted in the following figure:</p>
-<a class="reference internal image-reference" href="../../_images/sequencevar.png"><img alt="../../_images/sequencevar.png" class="align-center" src="../../_images/sequencevar.png" style="width: 700px;" /></a>
+<img alt="../../_images/sequencevar.png" class="align-center" src="../../_images/sequencevar.png" style="width: 700px;" />
 <p>where the precedence matrix <tt class="docutils literal"><span class="pre">mat</span></tt> is such that <tt class="docutils literal"><span class="pre">mat(i,j)</span> <span class="pre">=</span> <span class="pre">1</span></tt> if <tt class="docutils literal"><span class="pre">i</span></tt> is ranked before <tt class="docutils literal"><span class="pre">j</span></tt>.</p>
 <p>The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> are often given by their indices in the array of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s.</p>
 <table class="docutils footnote" frame="void" id="sequencevar-virtually-conceptualized" rules="none">
@@ -243,13 +243,13 @@ contains some more data structures to facilitate and optimize the propagation.</
 <p><em>Ranked</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s are exactly that: already ranked variables in the sequence. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s can be ranked
 at the beginning or at the end of the sequence in the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable. <em>unperformed</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can not
 be ranked<a class="footnote-reference" href="#unranked-and-three-state" id="id4">[4]</a>. The next figure illustrates this:</p>
-<a class="reference internal image-reference" href="../../_images/sequencevar_ranked.png"><img alt="../../_images/sequencevar_ranked.png" class="align-center" src="../../_images/sequencevar_ranked.png" style="width: 700px;" /></a>
+<img alt="../../_images/sequencevar_ranked.png" class="align-center" src="../../_images/sequencevar_ranked.png" style="width: 700px;" />
 <p><tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables <tt class="docutils literal"><span class="pre">1</span></tt> and <tt class="docutils literal"><span class="pre">2</span></tt> are ranked (and <em>performed</em>) while <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable <tt class="docutils literal"><span class="pre">0</span></tt>
 may be <em>performed</em> but
 is not <em>performed</em> yet and <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable <tt class="docutils literal"><span class="pre">3</span></tt> is <em>unperformed</em> and thus doesn&#8217;t exist anymore.</p>
 <p>To rank the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables, we say that we <em>rank</em> them <em>first</em> or <em>last</em>. <em>First</em> and <em>last</em>
 <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables must be understood with respect to the unranked variables:</p>
-<a class="reference internal image-reference" href="../../_images/sequencevar_ranked_first_last.png"><img alt="../../_images/sequencevar_ranked_first_last.png" class="align-center" src="../../_images/sequencevar_ranked_first_last.png" style="width: 1100px;" /></a>
+<img alt="../../_images/sequencevar_ranked_first_last.png" class="align-center" src="../../_images/sequencevar_ranked_first_last.png" style="width: 1100px;" />
 <ul class="simple">
 <li>to <em>rank first</em> an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable means that this variable will be ranked before <strong>all unranked</strong>
 variables and</li>
@@ -372,7 +372,7 @@ ranked last are given in the opposite order.</p>
 <li><dl class="first docutils">
 <dt><tt class="docutils literal"><span class="pre">ComputePossibleFirstsAndLasts(...)</span></tt>:</dt>
 <dd><p class="first">a getter giving the possibilities among <em>unranked</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">ComputePossibleFirstsAndLasts</span><span class="p">(</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">ComputePossibleFirstsAndLasts</span><span class="p">(</span>
                        <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;*</span> <span class="k">const</span> <span class="n">possible_firsts</span><span class="p">,</span>
                        <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;*</span> <span class="k">const</span> <span class="n">possible_lasts</span><span class="p">);</span>
 </pre></div>
@@ -416,7 +416,7 @@ among all currently unranked <tt class="docutils literal"><span class="pre">Inte
 <li><dl class="first docutils">
 <dt><tt class="docutils literal"><span class="pre">void</span> <span class="pre">RankSequence(...)</span></tt>:</dt>
 <dd><p class="first">a setter acting on three <tt class="docutils literal"><span class="pre">std::vector&lt;int&gt;</span></tt> of first, last and unperformed variables:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">RankSequence</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&amp;</span> <span class="n">rank_firsts</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">RankSequence</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&amp;</span> <span class="n">rank_firsts</span><span class="p">,</span>
                   <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&amp;</span> <span class="n">rank_lasts</span><span class="p">,</span>
                   <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&amp;</span> <span class="n">unperformed</span><span class="p">);</span>
 </pre></div>
@@ -513,7 +513,7 @@ is bound to <tt class="docutils literal"><span class="pre">0</span></tt> and els
 variables. Think of the <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt> as
 a kind of <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraints but on <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s.</p>
 <p>The factory method is:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span>        <span class="n">MakeDisjunctiveConstraint</span> <span class="p">(</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span>        <span class="nf">MakeDisjunctiveConstraint</span> <span class="p">(</span>
                     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">IntervalVar</span> <span class="o">*</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">intervals</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -552,14 +552,14 @@ capacity.</p>
 and the corresponding intervals are filtered out, as they neither impact
 nor are impacted by this constraint.</p>
 <p>Here is one factory method with a limited static capacity:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span><span class="o">*</span> <span class="n">MakeCumulative</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;&amp;</span> <span class="n">intervals</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span><span class="o">*</span> <span class="nf">MakeCumulative</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;&amp;</span> <span class="n">intervals</span><span class="p">,</span>
                            <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">int64</span><span class="o">&gt;&amp;</span> <span class="n">demands</span><span class="p">,</span>
                            <span class="n">int64</span> <span class="n">capacity</span><span class="p">,</span>
                            <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>If you need more flexibility, use the following factory method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span><span class="o">*</span> <span class="n">MakeCumulative</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;&amp;</span> <span class="n">intervals</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span><span class="o">*</span> <span class="nf">MakeCumulative</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntervalVar</span><span class="o">*&gt;&amp;</span> <span class="n">intervals</span><span class="p">,</span>
                            <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">int64</span><span class="o">&gt;&amp;</span> <span class="n">demands</span><span class="p">,</span>
                            <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">capacity</span><span class="p">,</span>
                            <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
@@ -605,7 +605,7 @@ time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>)
 in its <tt class="docutils literal"><span class="pre">Apply()</span></tt> method and, in its <tt class="docutils literal"><span class="pre">Refute()</span></tt> method, delays the execution of the corresponding task by <tt class="docutils literal"><span class="pre">1</span></tt> unit
 of time, i.e. the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> cannot be scheduled before <tt class="docutils literal"><span class="pre">StartMin()</span> <span class="pre">+</span> <span class="pre">1</span></tt>.</p>
 <p>You create the corresponding phase with the good old <tt class="docutils literal"><span class="pre">MakePhase</span></tt> factory method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="n">MakePhase</span> <span class="p">(</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="nf">MakePhase</span> <span class="p">(</span>
                     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">IntervalVar</span> <span class="o">*</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">intervals</span><span class="p">,</span>
                     <span class="n">IntervalStrategy</span> <span class="n">str</span><span class="p">);</span>
 </pre></div>
@@ -842,7 +842,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

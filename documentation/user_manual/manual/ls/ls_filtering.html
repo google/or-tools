@@ -93,7 +93,7 @@ in terms of <tt class="docutils literal"><span class="pre">delta</span></tt> and
 the current solution, which allows you to reconstruct the candidate solutions given by the <tt class="docutils literal"><span class="pre">delta</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>.</p>
 <p>If your <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> is <em>incremental</em>, you <strong>must</strong> notice the CP solver by implementing the <tt class="docutils literal"><span class="pre">IsIncremental()</span></tt>
 method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="n">IsIncremental</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">true</span><span class="p">;</span> <span class="p">}</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="n">IsIncremental</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">true</span><span class="p">;</span> <span class="p">}</span>
 </pre></div>
 </div>
 <p>By default, this method returns <tt class="docutils literal"><span class="pre">false</span></tt>.</p>
@@ -117,7 +117,7 @@ method.</p>
 </div>
 <p><tt class="docutils literal"><span class="pre">obj_</span></tt> is an <tt class="docutils literal"><span class="pre">int64</span></tt> to keep the objective value of the current solution.</p>
 <p>Let&#8217;s synchronize our filter with the objective value of the current solution:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="n">OnSynchronize</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="nf">OnSynchronize</span><span class="p">()</span> <span class="p">{</span>
   <span class="n">obj_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">Size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">obj_</span> <span class="o">+=</span> <span class="n">Value</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
@@ -136,7 +136,7 @@ solution. These values are automatically updated when <tt class="docutils litera
 the <tt class="docutils literal"><span class="pre">IntVarLocalSearchFilter</span></tt> class.</li>
 </ul>
 <p>To test a candidate solution, we use the <tt class="docutils literal"><span class="pre">delta</span></tt>, and sum the changed value of the objective function:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="n">Accept</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="nf">Accept</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
                     <span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">unused_deltadelta</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">const</span> <span class="n">Assignment</span><span class="o">::</span><span class="n">IntContainer</span><span class="o">&amp;</span> <span class="n">solution_delta</span> <span class="o">=</span>
                                            <span class="n">delta</span><span class="o">-&gt;</span><span class="n">IntVarContainer</span><span class="p">();</span>
@@ -198,7 +198,7 @@ how to write a custom <tt class="docutils literal"><span class="pre">LocalSearch
 must be equal or greater than <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>.</p>
 <p>Let&#8217;s write a <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt> that filters infeasible candidate solutions. We don&#8217;t need to provide an
 <tt class="docutils literal"><span class="pre">OnSyncronize()</span></tt> method. Here is our version of the <tt class="docutils literal"><span class="pre">Accept()</span></tt> method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="n">Accept</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">bool</span> <span class="nf">Accept</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
                     <span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">deltadelta</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">const</span> <span class="n">Assignment</span><span class="o">::</span><span class="n">IntContainer</span><span class="o">&amp;</span> <span class="n">solution_delta</span> <span class="o">=</span>
                                            <span class="n">delta</span><span class="o">-&gt;</span><span class="n">IntVarContainer</span><span class="p">();</span>
@@ -207,10 +207,10 @@ must be equal or greater than <img class="math" src="../../_images/math/bc1f9d9b
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">solution_delta_size</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">const</span> <span class="n">IntVarElement</span><span class="o">&amp;</span> <span class="n">element</span> <span class="o">=</span> <span class="n">solution_delta</span><span class="p">.</span><span class="n">Element</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">element</span><span class="p">.</span><span class="n">Var</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Contains</span><span class="p">(</span><span class="n">element</span><span class="p">.</span><span class="n">Value</span><span class="p">()))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">}</span>
-  <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -381,7 +381,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

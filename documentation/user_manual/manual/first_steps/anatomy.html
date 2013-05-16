@@ -63,8 +63,8 @@ the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of t
 in more details.</p>
 <div class="section" id="at-a-glance">
 <span id="anatomy-at-a-glance"></span><h2>2.3.1. At a glance</h2>
-<a class="reference internal image-reference" href="../../_images/anatomy1_2.png"><img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/anatomy3_4.png"><img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" /></a>
+<img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" />
+<img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" />
 </div>
 <div class="section" id="headers">
 <h2>2.3.2. Headers</h2>
@@ -103,7 +103,7 @@ the same convention in all our examples and code inside this namespace:</p>
 let&#8217;s concentrate on <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt> where all the magic happens.</p>
 <p>It is called from the main<a class="footnote-reference" href="#main-not-inside-namespace" id="id2">[2]</a>
 function:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">operations_research</span><span class="o">::</span><span class="n">CPIsFun</span><span class="p">();</span>
   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
@@ -125,7 +125,7 @@ instance. It is also responsible for the creation of the model. It has a very
 rich Application Programming Interface (API) and provides a lots of
 functionalities.</p>
 <p>The CP solver is created as follows:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">solver</span><span class="p">(</span><span class="s">&quot;CP is fun!&quot;</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">solver</span><span class="p">(</span><span class="s">&quot;CP is fun!&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The only argument of the constructor is an identification string.</p>
@@ -242,7 +242,7 @@ term of our cryptarithmetic puzzle <tt class="docutils literal"><span class="pre
 </pre></div>
 </div>
 <p>The function <tt class="docutils literal"><span class="pre">MakeBaseLine2()</span></tt> is defined as follow:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">MakeBaseLine2</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span>  <span class="n">s</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="nf">MakeBaseLine2</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span>  <span class="n">s</span><span class="p">,</span>
                             <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">v1</span><span class="p">,</span>
                             <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">v2</span><span class="p">,</span>
                             <span class="k">const</span> <span class="n">int64</span> <span class="n">base</span><span class="p">)</span> <span class="p">{</span>
@@ -517,7 +517,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

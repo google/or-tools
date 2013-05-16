@@ -85,7 +85,7 @@ and a valid index <img class="math" src="../../_images/math/34857b3ba74ce5cd8607
 <img class="math" src="../../_images/math/1fb5e597525d6008ac2d935abb8d146f3ddc02f2.png" alt="x[i] = 2" style="vertical-align: -5px"/> at one branch and <img class="math" src="../../_images/math/4937591eda0b24f172fddd70dec6839a7f7e2761.png" alt="x[i] \neq 2" style="vertical-align: -5px"/> at another branch like in the Figure
 <a class="reference internal" href="#search-space-divided-in-two"><em>The search space is divided in two search sub-trees</em></a>.</p>
 <div class="figure align-center" id="search-space-divided-in-two">
-<a class="reference internal image-reference" href="../../_images/search_tree0.png"><img alt="The search space is divided in two search sub-trees." src="../../_images/search_tree0.png" style="width: 200px;" /></a>
+<img alt="The search space is divided in two search sub-trees." src="../../_images/search_tree0.png" style="width: 200px;" />
 <p class="caption">The search space is divided in two search sub-trees</p>
 </div>
 <p>Each subspace is now smaller and we hope easier to solve. We continue this divide and conquer mechanism until we
@@ -130,7 +130,7 @@ inherit from <tt class="docutils literal"><span class="pre">SearchMonitor</span>
 </pre></div>
 </div>
 <p>You then pass this <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> to the solver:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">solver</span><span class="p">(</span><span class="s">&quot;Test my new SearchMonitor&quot;</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">solver</span><span class="p">(</span><span class="s">&quot;Test my new SearchMonitor&quot;</span><span class="p">);</span>
 <span class="n">MySearchMonitor</span><span class="o">*</span> <span class="k">const</span> <span class="n">sm</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MySearchMonitor</span><span class="p">(</span><span class="o">&amp;</span><span class="n">solver</span><span class="p">);</span>
 <span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="p">...;</span>
 <span class="n">solver</span><span class="p">.</span><span class="n">NewSearch</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">sm</span><span class="p">);</span>
@@ -162,7 +162,7 @@ tree at this node by applying this decision (left branch: <img class="math" src=
 a <tt class="docutils literal"><span class="pre">Decision</span></tt>. The <tt class="docutils literal"><span class="pre">Decision</span></tt> class basically tells the solver what to do
 going left (<tt class="docutils literal"><span class="pre">Apply()</span></tt>) or right (<tt class="docutils literal"><span class="pre">Refute()</span></tt>) as illustrated on the next figure.</p>
 <div class="figure align-center">
-<a class="reference internal image-reference" href="../../_images/decision1.png"><img alt="A Decision class Apply() or Refute()" src="../../_images/decision1.png" style="width: 150pt;" /></a>
+<img alt="A Decision class Apply() or Refute()" src="../../_images/decision1.png" style="width: 150pt;" />
 <p class="caption"><tt class="docutils literal"><span class="pre">Apply()</span></tt>: go left, <tt class="docutils literal"><span class="pre">Refute()</span></tt>: go right.</p>
 </div>
 <p>From the root node, we follow the left branch whenever possible and backtrack
@@ -204,7 +204,7 @@ you can act every time a solution is found. <tt class="docutils literal"><span c
            <span class="n">SearchMonitor</span><span class="o">*</span> <span class="k">const</span> <span class="o">*</span> <span class="n">monitors</span><span class="p">,</span>
            <span class="kt">int</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">NewSearch</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">monitors</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
-  <span class="n">searches_</span><span class="p">.</span><span class="n">back</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_created_by_solve</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>  <span class="c1">// Overwrites default.</span>
+  <span class="n">searches_</span><span class="p">.</span><span class="n">back</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_created_by_solve</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>  <span class="c1">// Overwrites default.</span>
   <span class="n">NextSolution</span><span class="p">();</span>
   <span class="k">const</span> <span class="kt">bool</span> <span class="n">solution_found</span> <span class="o">=</span> <span class="n">searches_</span><span class="p">.</span><span class="n">back</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">solution_counter</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span>
   <span class="n">EndSearch</span><span class="p">();</span>
@@ -216,7 +216,7 @@ you can act every time a solution is found. <tt class="docutils literal"><span c
 using another <tt class="docutils literal"><span class="pre">phase</span></tt>/<tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>).
 Here we take the current search (<tt class="docutils literal"><span class="pre">searches_.back()</span></tt>) and tell the solver that the search was initiated by a <tt class="docutils literal"><span class="pre">Solve()</span></tt>
 call:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">searches_</span><span class="p">.</span><span class="n">back</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_created_by_solve</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>  <span class="c1">// Overwrites default.</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">searches_</span><span class="p">.</span><span class="n">back</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_created_by_solve</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>  <span class="c1">// Overwrites default.</span>
 </pre></div>
 </div>
 <p>Indeed, the solver needs to know if it let you interfere during the search process or not.</p>
@@ -413,7 +413,7 @@ call the <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>,
   <span class="n">state_</span> <span class="o">=</span> <span class="n">IN_ROOT_NODE</span><span class="p">;</span>
   <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginInitialPropagation</span><span class="p">();</span>  <span class="c1">// SEARCHMONITOR CALLBACK</span>
 
-  <span class="k">try</span> <span class="p">{</span>
+  <span class="n">try</span> <span class="p">{</span>
     <span class="c1">//  Initial constraint propagation</span>
     <span class="n">ProcessConstraints</span><span class="p">();</span>
     <span class="n">search</span><span class="o">-&gt;</span><span class="n">EndInitialPropagation</span><span class="p">();</span>  <span class="c1">// SEARCHMONITOR CALLBACK</span>
@@ -565,25 +565,25 @@ algorithm:</p>
 
   <span class="c1">//  Take action following solver state</span>
   <span class="k">switch</span> <span class="p">(</span><span class="n">state_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">case</span> <span class="nl">PROBLEM_INFEASIBLE:</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="k">case</span> <span class="nl">NO_MORE_SOLUTIONS:</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="k">case</span> <span class="nl">AT_SOLUTION:</span> <span class="p">{</span><span class="c1">//  We need to backtrack</span>
+    <span class="k">case</span> <span class="n">PROBLEM_INFEASIBLE</span>:
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">case</span> <span class="n">NO_MORE_SOLUTIONS</span>:
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">case</span> <span class="n">AT_SOLUTION</span>: <span class="p">{</span><span class="c1">//  We need to backtrack</span>
       <span class="c1">// SEARCHMONITOR CALLBACK</span>
       <span class="c1">//  BacktrackOneLevel() calls search-&gt;EndFail()</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">BacktrackOneLevel</span><span class="p">(</span><span class="o">&amp;</span><span class="n">fd</span><span class="p">))</span> <span class="p">{</span><span class="c1">// No more solutions.</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">NoMoreSolutions</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACKS</span>
         <span class="n">state_</span> <span class="o">=</span> <span class="n">NO_MORE_SOLUTIONS</span><span class="p">;</span>
-        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
       <span class="p">}</span>
       <span class="n">state_</span> <span class="o">=</span> <span class="n">IN_SEARCH</span><span class="p">;</span>
       <span class="k">break</span><span class="p">;</span>
     <span class="p">}</span>
-    <span class="k">case</span> <span class="nl">OUTSIDE_SEARCH:</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">OUTSIDE_SEARCH</span>: <span class="p">{</span>
       <span class="n">state_</span> <span class="o">=</span> <span class="n">IN_ROOT_NODE</span><span class="p">;</span>
       <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginInitialPropagation</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACKS</span>
-      <span class="k">try</span> <span class="p">{</span>
+      <span class="n">try</span> <span class="p">{</span>
         <span class="n">ProcessConstraints</span><span class="p">();</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">EndInitialPropagation</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACKS</span>
         <span class="p">...</span>
@@ -591,28 +591,28 @@ algorithm:</p>
       <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="k">const</span> <span class="n">FailException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
         <span class="p">...</span>
         <span class="n">state_</span> <span class="o">=</span> <span class="n">PROBLEM_INFEASIBLE</span><span class="p">;</span>
-        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
       <span class="p">}</span>
       <span class="k">break</span><span class="p">;</span>
     <span class="p">}</span>
-    <span class="k">case</span> <span class="nl">IN_SEARCH:</span>
+    <span class="k">case</span> <span class="n">IN_SEARCH</span>:
       <span class="k">break</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="n">search</span><span class="o">-&gt;</span><span class="n">decision_builder</span><span class="p">();</span>
 
   <span class="c1">//  MAIN SEARCH LOOP TO FIND THE NEXT SOLUTION IF ANY</span>
-  <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">finish</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-  <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">finish</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="k">volatile</span> <span class="kt">bool</span> <span class="n">result</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
 
   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">finish</span><span class="p">)</span> <span class="p">{</span><span class="c1">//  Try to find next solution</span>
-    <span class="k">try</span> <span class="p">{</span>
+    <span class="n">try</span> <span class="p">{</span>
       <span class="c1">//  Explore right branch of the tree on backtrack</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">fd</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span><span class="c1">//  We have a right branch</span>
         <span class="p">...</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">RefuteDecision</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
         <span class="n">fd</span><span class="o">-&gt;</span><span class="n">Refute</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-        <span class="n">search</span><span class="o">-&gt;</span><span class="n">AfterDecision</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
+        <span class="n">search</span><span class="o">-&gt;</span><span class="n">AfterDecision</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
         <span class="p">...</span>
         <span class="n">fd</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
       <span class="p">}</span>
@@ -620,7 +620,7 @@ algorithm:</p>
       <span class="c1">//  Explore left branches of the tree</span>
       <span class="n">Decision</span><span class="o">*</span> <span class="n">d</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
       <span class="c1">//  Go left as often as possible</span>
-      <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span><span class="c1">// Trying to branch left</span>
+      <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span><span class="c1">// Trying to branch left</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginNextDecision</span><span class="p">(</span><span class="n">db</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">db</span><span class="o">-&gt;</span><span class="n">Next</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">EndNextDecision</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">d</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
@@ -628,13 +628,13 @@ algorithm:</p>
         <span class="k">if</span> <span class="p">(</span><span class="n">d</span> <span class="o">==</span> <span class="n">fail_decision_</span><span class="p">)</span> <span class="p">{</span>
           <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginFail</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
           <span class="c1">// fail now instead of after 2 branches.</span>
-          <span class="k">throw</span> <span class="n">FailException</span><span class="p">();</span>
+          <span class="k">throw</span> <span class="nf">FailException</span><span class="p">();</span>
         <span class="p">}</span>
         <span class="c1">//  Explore next left branch of the tree</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">d</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
           <span class="n">search</span><span class="o">-&gt;</span><span class="n">ApplyDecision</span><span class="p">(</span><span class="n">d</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
           <span class="n">d</span><span class="o">-&gt;</span><span class="n">Apply</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-          <span class="n">search</span><span class="o">-&gt;</span><span class="n">AfterDecision</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
+          <span class="n">search</span><span class="o">-&gt;</span><span class="n">AfterDecision</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
           <span class="p">...</span>
         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span><span class="c1">//  No Decision left, the DecisionBuilder has finished</span>
           <span class="k">break</span><span class="p">;</span>
@@ -646,15 +646,15 @@ algorithm:</p>
       <span class="k">if</span> <span class="p">(</span><span class="n">search</span><span class="o">-&gt;</span><span class="n">AcceptSolution</span><span class="p">())</span> <span class="p">{</span><span class="c1">//  Accept Solution</span>
         <span class="c1">// SEARCHMONITOR CALLBACK</span>
         <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">search</span><span class="o">-&gt;</span><span class="n">AtSolution</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">CurrentlyInSolve</span><span class="p">())</span> <span class="p">{</span>
-          <span class="n">result</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-          <span class="n">finish</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+          <span class="n">result</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+          <span class="n">finish</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
           <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginFail</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
-          <span class="k">throw</span> <span class="n">FailException</span><span class="p">();</span>
+          <span class="k">throw</span> <span class="nf">FailException</span><span class="p">();</span>
         <span class="p">}</span>
       <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginFail</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
-        <span class="k">throw</span> <span class="n">FailException</span><span class="p">();</span>
+        <span class="k">throw</span> <span class="nf">FailException</span><span class="p">();</span>
       <span class="p">}</span>
     <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="k">const</span> <span class="n">FailException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
       <span class="c1">//  We must backtrack</span>
@@ -662,8 +662,8 @@ algorithm:</p>
       <span class="c1">//  BacktrackOneLevel() calls search-&gt;EndFail()</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">BacktrackOneLevel</span><span class="p">(</span><span class="o">&amp;</span><span class="n">fd</span><span class="p">))</span> <span class="p">{</span>  <span class="c1">// no more solutions.</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">NoMoreSolutions</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACK</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-        <span class="n">finish</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="n">finish</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
        <span class="p">}</span>
     <span class="p">}</span>
   <span class="p">}</span><span class="c1">//  while (!finish)</span>
@@ -927,7 +927,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

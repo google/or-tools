@@ -91,12 +91,12 @@ the variables domains take the input graph into account.</p>
 <span class="k">using</span> <span class="n">operations_research</span><span class="p">;</span>
 
 <span class="c1">//  Cost function</span>
-<span class="n">int64</span> <span class="n">MyCost</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span> <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">to</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">int64</span> <span class="nf">MyCost</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span> <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">to</span><span class="p">)</span> <span class="p">{</span>
   <span class="p">...</span>
   <span class="k">return</span> <span class="p">...;</span>
 <span class="p">}</span>
 
-<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">RoutingModel</span> <span class="n">TSP</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span><span class="c1">// 42 nodes, 1 vehicle</span>
   <span class="n">TSP</span><span class="p">.</span><span class="n">SetCost</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="n">MyCost</span><span class="p">));</span>
 
@@ -118,7 +118,7 @@ the variables domains take the input graph into account.</p>
 </pre></div>
 </div>
 <p>Given an appropriate cost function, a TSP can be modelled and solved in 3 lines:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">TSP</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span><span class="c1">// 42 nodes, 1 vehicle</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="nf">TSP</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span><span class="c1">// 42 nodes, 1 vehicle</span>
 <span class="n">TSP</span><span class="p">.</span><span class="n">SetCost</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="n">MyCost</span><span class="p">));</span>
 
 <span class="k">const</span> <span class="n">Assignment</span> <span class="o">*</span> <span class="n">solution</span> <span class="o">=</span> <span class="n">TSP</span><span class="p">.</span><span class="n">Solve</span><span class="p">();</span>
@@ -310,7 +310,7 @@ TOUR_SECTION
 <div class="section" id="the-main-function">
 <h3>9.6.2.4. The main function</h3>
 <p>Here is the main function:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">usage</span><span class="p">(</span><span class="s">&quot;...&quot;</span><span class="p">);</span>
   <span class="n">usage</span> <span class="o">+=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
   <span class="n">usage</span> <span class="o">+=</span> <span class="s">&quot; -tsp_size=&lt;size&gt;</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
@@ -318,7 +318,7 @@ TOUR_SECTION
   <span class="n">usage</span> <span class="o">+=</span> <span class="s">&quot; -tsp_data_file=&lt;TSPLIB file&gt;&quot;</span><span class="p">;</span>
 
   <span class="n">google</span><span class="o">::</span><span class="n">SetUsageMessage</span><span class="p">(</span><span class="n">usage</span><span class="p">);</span>
-  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
 
   <span class="n">operations_research</span><span class="o">::</span><span class="n">TSPData</span> <span class="n">tsp_data</span><span class="p">;</span>
 
@@ -345,7 +345,7 @@ hidden in a function declared in the <tt class="docutils literal"><span class="p
 <h3>9.6.2.5. The <tt class="docutils literal"><span class="pre">TSP()</span></tt> function</h3>
 <p>We only detail the relevant parts of the <tt class="docutils literal"><span class="pre">TSP()</span></tt> function. First, we create the CP solver:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="kt">int</span> <span class="n">size</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">Size</span><span class="p">();</span>
-<span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
 <span class="n">routing</span><span class="p">.</span><span class="n">SetCost</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">TSPData</span><span class="o">::</span><span class="n">Distance</span><span class="p">));</span>
 </pre></div>
 </div>
@@ -443,7 +443,7 @@ much much larger that the largest distance between two cities.</td></tr>
 </table>
 <p>We have implemented a <tt class="docutils literal"><span class="pre">RandomForbidArcs()</span></tt> method in the <tt class="docutils literal"><span class="pre">TSPData</span></tt> class to randomly forbid a percentage
 of arcs:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">RandomForbidArcs</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">percentage_forbidden_arcs</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">RandomForbidArcs</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">percentage_forbidden_arcs</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>This method alters the existing distance matrix and replaces the distance of forbidden arcs by the flag <tt class="docutils literal"><span class="pre">M</span></tt>:</p>
@@ -452,14 +452,14 @@ of arcs:</p>
 </div>
 <p>We have also defined a flag to switch between the two techniques and a flag for the percentage of
 arcs to forbid randomly in the file <tt class="file docutils literal"><span class="pre">tsp_forbidden_arcs.cc</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">use_M</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&quot;Use big m or not?&quot;</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">use_M</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span> <span class="s">&quot;Use big m or not?&quot;</span><span class="p">);</span>
 <span class="n">DEFINE_int32</span><span class="p">(</span><span class="n">percentage_forbidden_arcs</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span>
                                     <span class="s">&quot;Percentage of forbidden arcs&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The code in <tt class="docutils literal"><span class="pre">RandomForbidArcs()</span></tt> simply computes the number of arcs to forbid and <em>uniformly</em> tries to
 forbid arcs one after the other:</p>
-<div class="highlight-c++"><div class="highlight"><pre>  <span class="kt">void</span> <span class="n">RandomForbidArcs</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">percentage_forbidden_arcs</span><span class="p">)</span>  <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre>  <span class="kt">void</span> <span class="nf">RandomForbidArcs</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">percentage_forbidden_arcs</span><span class="p">)</span>  <span class="p">{</span>
     <span class="n">CHECK_GT</span><span class="p">(</span><span class="n">size_</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Instance non initialized yet!&quot;</span><span class="p">;</span>
 
     <span class="c1">//  Compute number of forbidden arcs</span>
@@ -632,7 +632,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

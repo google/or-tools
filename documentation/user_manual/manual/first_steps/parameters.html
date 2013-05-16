@@ -84,8 +84,8 @@ a help string.</p>
 </pre></div>
 </div>
 <p>and then parse the command line:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
   <span class="n">operations_research</span><span class="o">::</span><span class="n">CPIsFun</span><span class="p">();</span>
   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
@@ -124,7 +124,7 @@ the constructor of the <tt class="docutils literal"><span class="pre">Solver</sp
 <span class="n">solver_params</span><span class="p">.</span><span class="n">profile_level</span> <span class="o">=</span> <span class="n">SolverParameters</span><span class="o">::</span><span class="n">NORMAL_PROFILING</span><span class="p">;</span>
 
 <span class="c1">// Constraint programming engine</span>
-<span class="n">Solver</span> <span class="n">solver</span><span class="p">(</span><span class="s">&quot;CP is fun!&quot;</span><span class="p">,</span> <span class="n">solver_params</span><span class="p">);</span>
+<span class="n">Solver</span> <span class="nf">solver</span><span class="p">(</span><span class="s">&quot;CP is fun!&quot;</span><span class="p">,</span> <span class="n">solver_params</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>We can now ask for a detailed report after the search is done:</p>
@@ -280,7 +280,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

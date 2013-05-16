@@ -64,7 +64,7 @@ several variables and values selection primitives are available. As stated befor
 <li>Second, select an available value for this variable.</li>
 </ul>
 <p>To construct the corresponding <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, use one of the <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> factory methods. For instance:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                                           <span class="n">IntVarStrategy</span> <span class="n">var_str</span><span class="p">,</span>
                                           <span class="n">IntValueStrategy</span> <span class="n">val_str</span><span class="p">);</span>
 </pre></div>
@@ -139,7 +139,7 @@ strategy is most convenient when you try to find simple paths (paths
 with no repeated vertices) in a solution and the variables correspond to nodes on the paths. When a
 variable <tt class="docutils literal"><span class="pre">i</span></tt> is bound (has been assigned a value), the path
 connects variable <tt class="docutils literal"><span class="pre">i</span></tt> to the next variable <tt class="docutils literal"><span class="pre">vars[i]</span></tt> as on the figure below:</p>
-<a class="reference internal image-reference" href="../../_images/path_selector.png"><img alt="../../_images/path_selector.png" class="align-center" src="../../_images/path_selector.png" style="width: 283px; height: 168px;" /></a>
+<img alt="../../_images/path_selector.png" class="align-center" src="../../_images/path_selector.png" style="width: 283px; height: 168px;" />
 <p>We have</p>
 <div class="math">
 <p><img src="../../_images/math/ea61ff2b3d23b1417a30c4a7aa0498658d9eeb36.png" alt="\textrm{vars} = [- , 0, 3, 1, -, -]"/></p>
@@ -310,7 +310,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

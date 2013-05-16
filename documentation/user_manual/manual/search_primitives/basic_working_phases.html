@@ -201,11 +201,11 @@ a value to a variable in the left branch and forbids this assignment in the righ
 </div>
 <p><tt class="docutils literal"><span class="pre">var_</span></tt> and <tt class="docutils literal"><span class="pre">value_</span></tt> are local <tt class="docutils literal"><span class="pre">private</span></tt> copies of the variable and the value.</p>
 <p>The <tt class="docutils literal"><span class="pre">Apply()</span></tt> and <tt class="docutils literal"><span class="pre">Refute()</span></tt> methods are straithforward:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">Apply</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">Apply</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">var_</span><span class="o">-&gt;</span><span class="n">SetValue</span><span class="p">(</span><span class="n">value_</span><span class="p">);</span>
 <span class="p">}</span>
 
-<span class="kt">void</span> <span class="n">Refute</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+<span class="kt">void</span> <span class="nf">Refute</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">var_</span><span class="o">-&gt;</span><span class="n">RemoveValue</span><span class="p">(</span><span class="n">value_</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
@@ -226,14 +226,14 @@ See the subsection <a class="reference internal" href="../under_the_hood/convent
 <p>When dealing with <tt class="docutils literal"><span class="pre">IntVar</span></tt>s, two possibilities can be audited:</p>
 <ul>
 <li><p class="first">when a variable will be assigned a value, implement the</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="n">VisitSetVariableValue</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">,</span> <span class="n">int64</span> <span class="n">value</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="nf">VisitSetVariableValue</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">,</span> <span class="n">int64</span> <span class="n">value</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>method.</p>
 </li>
 <li><p class="first">when a variable domain will be splitted in two by a given value, implement
 the</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="n">VisitSplitVariableDomain</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="nf">VisitSplitVariableDomain</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">,</span>
                                       <span class="n">int64</span> <span class="n">value</span><span class="p">,</span>
                                       <span class="kt">bool</span> <span class="n">start_with_lower_half</span><span class="p">);</span>
 </pre></div>
@@ -247,7 +247,7 @@ the</p>
 </div></li>
 </ul>
 <p>There is also a default option:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="n">VisitUnknownDecision</span><span class="p">();</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="kt">void</span> <span class="nf">VisitUnknownDecision</span><span class="p">();</span>
 </pre></div>
 </div>
 <p>In the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>, we present a concept that uses <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s.</p>
@@ -266,7 +266,7 @@ the</p>
 <div class="section" id="compose">
 <h3>5.5.3.1. <tt class="docutils literal"><span class="pre">Compose()</span></tt></h3>
 <p>Creates a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> which sequentially composes <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">s</span><span class="p">(...);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(...);</span>
 <span class="p">...</span>
 <span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db1</span> <span class="o">=</span> <span class="p">...;</span>
 <span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db2</span> <span class="o">=</span> <span class="p">...;</span>
@@ -276,7 +276,7 @@ the</p>
 <p>At each leaf of the search tree corresponding to the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt>, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
 <tt class="docutils literal"><span class="pre">db2</span></tt> is called.</p>
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt> search tree will be as follows:</p>
-<a class="reference internal image-reference" href="../../_images/compose.png"><img alt="../../_images/compose.png" class="align-center" src="../../_images/compose.png" style="width: 250pt;" /></a>
+<img alt="../../_images/compose.png" class="align-center" src="../../_images/compose.png" style="width: 250pt;" />
 <p>This composition of <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s frequently happens in scheduling. For instance, in
 the section <a class="reference internal" href="../ls/jobshop_implementation.html#jobshop-decision-builders-compose"><em>The DecisionBuilders</em></a> where we try to solve a Job-Shop Problem,
 the solving process is done in two consecutive phases:
@@ -284,7 +284,7 @@ first we rank the tasks for each machine, then we schedule each task at its earl
 To do so, we <tt class="docutils literal"><span class="pre">Compose()</span></tt> two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s.</p>
 <p>You can <tt class="docutils literal"><span class="pre">Compose()</span></tt> more than two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s. There are two more specific methods to
 <tt class="docutils literal"><span class="pre">Compose()</span></tt> three and even four <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s. And if that is not enough, use</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">Compose</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">DecisionBuilder</span><span class="o">*&gt;&amp;</span> <span class="n">dbs</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">Compose</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">DecisionBuilder</span><span class="o">*&gt;&amp;</span> <span class="n">dbs</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>where you can <tt class="docutils literal"><span class="pre">Compose()</span></tt> as many <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s as you like!</p>
@@ -292,7 +292,7 @@ To do so, we <tt class="docutils literal"><span class="pre">Compose()</span></tt
 <div class="section" id="try">
 <h3>5.5.3.2. <tt class="docutils literal"><span class="pre">Try()</span></tt></h3>
 <p>Creates a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> which tries <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s in parallel.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">s</span><span class="p">(...);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(...);</span>
 <span class="p">...</span>
 <span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db1</span> <span class="o">=</span> <span class="p">...;</span>
 <span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db2</span> <span class="o">=</span> <span class="p">...;</span>
@@ -302,11 +302,11 @@ To do so, we <tt class="docutils literal"><span class="pre">Compose()</span></tt
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt> and the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db2</span></tt> are each called from the top of the search tree
 one after the other.</p>
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt> search tree will be as follows:</p>
-<a class="reference internal image-reference" href="../../_images/try.png"><img alt="../../_images/try.png" class="align-center" src="../../_images/try.png" style="width: 200pt;" /></a>
+<img alt="../../_images/try.png" class="align-center" src="../../_images/try.png" style="width: 200pt;" />
 <p>This combination is handy to try a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt> which partially explores the
 search space. If it fails, you can use the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db2</span></tt> as a backup.</p>
 <p>As with <tt class="docutils literal"><span class="pre">Compose()</span></tt>, you can <tt class="docutils literal"><span class="pre">Try()</span></tt> up to four <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and use</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">Try</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">DecisionBuilder</span><span class="o">*&gt;&amp;</span> <span class="n">dbs</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">Try</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">DecisionBuilder</span><span class="o">*&gt;&amp;</span> <span class="n">dbs</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>for more.</p>
@@ -331,7 +331,7 @@ and returns the first solution encountered. If there are no solutions in this ne
 fail.</p>
 <p>The factory method is <tt class="docutils literal"><span class="pre">MakeSolveOnce()</span></tt>. You have to invoke it with another <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. You can add none or up to
 four <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s and if you want to use more than four <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s, use</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakeSolveOnce</span><span class="p">(</span><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakeSolveOnce</span><span class="p">(</span><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span><span class="p">,</span>
                        <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SearchMonitor</span><span class="o">*&gt;&amp;</span> <span class="n">monitors</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -342,7 +342,7 @@ four <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s a
 If there are no solutions in this nested tree, it fails.</p>
 <p>The factory method is <tt class="docutils literal"><span class="pre">MakeNestedOptimize()</span></tt>. Again, you can use none or up to four <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
 and use the version with an <tt class="docutils literal"><span class="pre">std::vector&lt;SearchMonitor*&gt;</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakeNestedOptimize</span><span class="p">(</span><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakeNestedOptimize</span><span class="p">(</span><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span><span class="p">,</span>
                        <span class="n">Assignment</span><span class="o">*</span> <span class="k">const</span> <span class="n">solution</span><span class="p">,</span>
                        <span class="kt">bool</span> <span class="n">maximize</span><span class="p">,</span>
                        <span class="n">int64</span> <span class="n">step</span><span class="p">,</span>
@@ -370,7 +370,7 @@ and <tt class="docutils literal"><span class="pre">std::vector&lt;SequenceVar*&g
 <p>Variables and values are chosen in two steps: first a variable is chosen and only then is a value chosen to be assigned
 to this variable.</p>
 <p>The basic version of the <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method is:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                                           <span class="n">IntVarStrategy</span> <span class="n">var_str</span><span class="p">,</span>
                                           <span class="n">IntValueStrategy</span> <span class="n">val_str</span><span class="p">);</span>
 </pre></div>
@@ -411,13 +411,13 @@ strategies.</p>
 <p class="last">Ownership of the callbacks is always passed to the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>.</p>
 </div>
 <p>We detail some combinations:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                            <span class="n">IndexEvaluator1</span><span class="o">*</span> <span class="n">var_evaluator</span><span class="p">,</span>
                            <span class="n">IndexEvaluator2</span><span class="o">*</span> <span class="n">val_eval</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>You provide both evaluators.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                            <span class="n">IntVarStrategy</span> <span class="n">var_str</span><span class="p">,</span>
                            <span class="n">IndexEvaluator2</span><span class="o">*</span> <span class="n">val_eval</span><span class="p">,</span>
                            <span class="n">IndexEvaluator1</span><span class="o">*</span> <span class="n">tie_breaker</span><span class="p">);</span>
@@ -427,7 +427,7 @@ strategies.</p>
 callback <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt> to find the next value to give to this variable and an evaluator <tt class="docutils literal"><span class="pre">IndexEvaluator1</span></tt>
 to break any
 tie between different values.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                            <span class="n">IndexEvaluator1</span><span class="o">*</span> <span class="n">var_evaluator</span><span class="p">,</span>
                            <span class="n">IntValueStrategy</span> <span class="n">val_str</span><span class="p">);</span>
 </pre></div>
@@ -440,13 +440,13 @@ on a predefined <tt class="docutils literal"><span class="pre">IntValueStrategy<
 <h3>5.5.5.3. When the 2-steps approach isn&#8217;t enough</h3>
 <p>Sometimes this 2-step approach isn&#8217;t satisfactory. You may want to test all combinations of variables/values.
 We provide two versions of the <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method just to do that:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                            <span class="n">IndexEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">,</span>
                            <span class="n">EvaluatorStrategy</span> <span class="n">str</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>and</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="nf">MakePhase</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">,</span>
                            <span class="n">IndexEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">,</span>
                            <span class="n">IndexEvaluator1</span><span class="o">*</span> <span class="n">tie_breaker</span><span class="p">,</span>
                            <span class="n">EvaluatorStrategy</span> <span class="n">str</span><span class="p">);</span>
@@ -604,7 +604,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

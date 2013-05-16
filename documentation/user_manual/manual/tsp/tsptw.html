@@ -140,7 +140,7 @@ due time are considered infeasible.</p>
 <li>the <em>arrival time</em> <img class="math" src="../../_images/math/273e0046b505d99f3d1167caa82b2ac76c96d075.png" alt="t_i" style="vertical-align: -3px"/>: the time you arrive at the client and</li>
 <li>the <em>service start time</em> <img class="math" src="../../_images/math/d3b63c17213f84d730e0de1f8c08597f7a648e37.png" alt="s_i" style="vertical-align: -3px"/>: the time you start to service the client.</li>
 </ul>
-<a class="reference internal image-reference" href="../../_images/servicing_client_in_tsptw.png"><img alt="../../_images/servicing_client_in_tsptw.png" class="align-center" src="../../_images/servicing_client_in_tsptw.png" style="width: 400pt;" /></a>
+<img alt="../../_images/servicing_client_in_tsptw.png" class="align-center" src="../../_images/servicing_client_in_tsptw.png" style="width: 400pt;" />
 <p>In real application, the time spent at a client might be limited to the service. For instance, you might wait in front
 of the client&#8217;s office. It&#8217;s common to consider that you start to service and leave as soon as possible and
 this is our assumption in this chapter</p>
@@ -331,7 +331,7 @@ in López-Ibáñez-Blum or da Silva-Urrutia formats:</p>
 </pre></div>
 </div>
 <p>This program checks if all the nodes have been serviced and if the solution is feasible:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">IsFeasibleSolution</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="nf">IsFeasibleSolution</span><span class="p">()</span> <span class="p">{</span>
   <span class="p">...</span>
   <span class="c1">//  for loop to test each node in the tour</span>
   <span class="k">for</span> <span class="p">(...)</span> <span class="p">{</span>
@@ -341,11 +341,11 @@ in López-Ibáñez-Blum or da Silva-Urrutia formats:</p>
       <span class="n">total_time</span> <span class="o">=</span> <span class="n">ReadyTime</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">total_time</span> <span class="o">+</span> <span class="n">ServiceTime</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">DueTime</span><span class="p">(</span><span class="n">node</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">}</span>
   <span class="p">...</span>
-  <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -432,7 +432,7 @@ node.
 At a given node <tt class="docutils literal"><span class="pre">to</span></tt>, the accumulated time is the travel cost of the arc <tt class="docutils literal"><span class="pre">(from,</span> <span class="pre">to)</span></tt> plus the time to service
 the node <tt class="docutils literal"><span class="pre">to</span></tt>. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class has a special
 method to return this quantity:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">CumulTime</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="nf">CumulTime</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span>
                 <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">to</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">Distance</span><span class="p">(</span><span class="n">from</span><span class="p">,</span> <span class="n">to</span><span class="p">)</span> <span class="o">+</span> <span class="n">ServiceTime</span><span class="p">(</span><span class="n">from</span><span class="p">);</span>
 <span class="p">}</span>
@@ -442,7 +442,7 @@ method to return this quantity:</p>
 <div class="section" id="to-read-solution-files">
 <h3>9.8.3.2. To read solution files</h3>
 <p>To read solution files, use the</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">LoadTSPTWSolutionFile</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">LoadTSPTWSolutionFile</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>method. This way, you can
@@ -511,7 +511,7 @@ overwritten without mercy.</p>
 excellent <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a>. The
 file <tt class="file docutils literal"><span class="pre">tsptw_epix.h</span></tt> contains the <tt class="docutils literal"><span class="pre">TSPTWEpixData</span></tt> class. This class is similar to the <tt class="docutils literal"><span class="pre">TSPEpixData</span></tt> class.
 Its unique constructor reads:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(...);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(...);</span>
 <span class="p">...</span>
 <span class="n">TSPTWData</span> <span class="n">data</span><span class="p">(...);</span>
 <span class="p">...</span>
@@ -520,7 +520,7 @@ Its unique constructor reads:</p>
 </pre></div>
 </div>
 <p>To write a <em>ePiX</em> solution file, use the following methods:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">WriteSolutionFile</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span> <span class="o">*</span> <span class="n">solution</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">WriteSolutionFile</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span> <span class="o">*</span> <span class="n">solution</span><span class="p">,</span>
                        <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span> <span class="n">epix_filename</span><span class="p">)</span>
 <span class="kt">void</span> <span class="n">WriteSolutionFile</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span> <span class="n">tpstw_solution_filename</span><span class="p">,</span>
                        <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span> <span class="n">epix_filename</span><span class="p">);</span>
@@ -537,12 +537,12 @@ Its unique constructor reads:</p>
 </pre></div>
 </div>
 <p>Here is an example of the solution in the file <tt class="file docutils literal"><span class="pre">n20w20.001.sol</span></tt>:</p>
-<a class="reference internal image-reference" href="../../_images/n20w20_001_sol.png"><img alt="../../_images/n20w20_001_sol.png" class="align-center" src="../../_images/n20w20_001_sol.png" style="width: 300pt;" /></a>
+<img alt="../../_images/n20w20_001_sol.png" class="align-center" src="../../_images/n20w20_001_sol.png" style="width: 300pt;" />
 <p>The dot in red in the center represents the depot or first node. The arrows indicate the direction of the tour. Because of the time
 windows, the solution is no longer planar, i.e. the tour crosses itself.</p>
 <p>You can also print the node labels and the time windows with the flags:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">tsptw_epix_labels</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&quot;Print labels or not?&quot;</span><span class="p">);</span>
-<span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">tsptw_epix_time_windows</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">tsptw_epix_labels</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span> <span class="s">&quot;Print labels or not?&quot;</span><span class="p">);</span>
+<span class="n">DEFINE_bool</span><span class="p">(</span><span class="n">tsptw_epix_time_windows</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span>
                                       <span class="s">&quot;Print time windows or not?&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -678,7 +678,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

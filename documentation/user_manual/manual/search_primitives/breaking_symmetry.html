@@ -72,8 +72,8 @@ process,
 <h2>5.8.1. The basic idea</h2>
 <div align="center"><p>The basic idea is quite simple. Consider again the 4-queens problem. The following figures represent
 two symmetric solutions.</p>
-<a class="reference internal image-reference" href="../../_images/sol_4x4_a.png"><img alt="../../_images/sol_4x4_a.png" src="../../_images/sol_4x4_a.png" style="width: 159pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/sol_4x4_b1.png"><img alt="../../_images/sol_4x4_b1.png" src="../../_images/sol_4x4_b1.png" style="width: 159pt;" /></a>
+<img alt="../../_images/sol_4x4_a.png" src="../../_images/sol_4x4_a.png" style="width: 159pt;" />
+<img alt="../../_images/sol_4x4_b1.png" src="../../_images/sol_4x4_b1.png" style="width: 159pt;" />
 </div><p>These two solutions are symmetric along a vertical axis dividing the square in two equal parts.
 If we have <img class="math" src="../../_images/math/2dd241834905de5246fcbb2444ed65f963fccbce.png" alt="x_1 = 1" style="vertical-align: -4px"/> (or <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>) during the search, we know that we don&#8217;t have to test a
 solution with <img class="math" src="../../_images/math/58fb02244e2f372fd19355336d29c446a295b43d.png" alt="x_2 = 1" style="vertical-align: -3px"/> (or <img class="math" src="../../_images/math/05828ed4feb79128b2e290b0ec46e6fa8f16a5ab.png" alt="x_2 = 0" style="vertical-align: -3px"/>)
@@ -100,14 +100,14 @@ method to find the symmetric indices of the variables and the symmetric values f
 <p>where <tt class="docutils literal"><span class="pre">size_</span></tt> denotes the number of variables and the range of possible values (<img class="math" src="../../_images/math/3d39a957d390cfe4fa0ba4407a8650f33cd13d72.png" alt="[0,\mathtt{size\_} - 1]" style="vertical-align: -5px"/>) in our model.</p>
 <p>The next figure illustrates the returned indices by the <tt class="docutils literal"><span class="pre">symmetric()</span></tt> method.</p>
 <div class="align-center figure align-center">
-<a class="reference internal image-reference" href="../../_images/symmetry_helper_function.png"><img alt="../../_images/symmetry_helper_function.png" src="../../_images/symmetry_helper_function.png" style="width: 500pt;" /></a>
+<img alt="../../_images/symmetry_helper_function.png" src="../../_images/symmetry_helper_function.png" style="width: 500pt;" />
 <p class="caption">The indices returned by the <tt class="docutils literal"><span class="pre">symmetric()</span></tt> method.</p>
 <div class="legend">
 </div>
 </div>
 <p>We also use two methods to do the translation between the indices and the variables. Given an <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span> <span class="pre">var</span></tt>, <tt class="docutils literal"><span class="pre">Index(var)</span></tt>
 returns the index of the variable corresponding to <tt class="docutils literal"><span class="pre">var</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">Index</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">Index</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">FindWithDefault</span><span class="p">(</span><span class="n">indices_</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
@@ -124,7 +124,7 @@ it returns the default argument given, <img class="math" src="../../_images/math
 <p>where <tt class="docutils literal"><span class="pre">vars_</span></tt> is the <tt class="docutils literal"><span class="pre">private</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span></tt> with the variables of our model.</p>
 <p>We create a base <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the n-queens problem:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NQueenSymmetry</span> <span class="o">:</span> <span class="k">public</span> <span class="n">SymmetryBreaker</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
+ <span class="nl">public:</span>
   <span class="n">NQueenSymmetry</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">)</span>
       <span class="o">:</span> <span class="n">solver_</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">vars_</span><span class="p">(</span><span class="n">vars</span><span class="p">),</span> <span class="n">size_</span><span class="p">(</span><span class="n">vars</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{</span>
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">size_</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -133,7 +133,7 @@ it returns the default argument given, <img class="math" src="../../_images/math
   <span class="p">}</span>
   <span class="k">virtual</span> <span class="o">~</span><span class="n">NQueenSymmetry</span><span class="p">()</span> <span class="p">{}</span>
 
- <span class="k">protected</span><span class="o">:</span>
+ <span class="nl">protected:</span>
   <span class="kt">int</span> <span class="n">Index</span><span class="p">(</span><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">FindWithDefault</span><span class="p">(</span><span class="n">indices_</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
   <span class="p">}</span>
@@ -144,7 +144,7 @@ it returns the default argument given, <img class="math" src="../../_images/math
   <span class="kt">int</span> <span class="n">symmetric</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">size_</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">index</span><span class="p">;</span> <span class="p">}</span>
   <span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">solver_</span><span class="p">;</span> <span class="p">}</span>
 
- <span class="k">private</span><span class="o">:</span>
+ <span class="nl">private:</span>
   <span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver_</span><span class="p">;</span>
   <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">vars_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">indices_</span><span class="p">;</span>
@@ -163,7 +163,7 @@ if the <tt class="docutils literal"><span class="pre">Decision</span></tt> assig
 the <tt class="docutils literal"><span class="pre">VisitSetVariableValue()</span></tt> method of the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>. All this might sound complicated but it is not:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  Vertical axis symmetry</span>
 <span class="k">class</span> <span class="nc">SY</span> <span class="o">:</span> <span class="k">public</span> <span class="n">NQueenSymmetry</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
+ <span class="nl">public:</span>
   <span class="n">SY</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">)</span> <span class="o">:</span>
                                           <span class="n">NQueenSymmetry</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">vars</span><span class="p">)</span> <span class="p">{}</span>
   <span class="k">virtual</span> <span class="o">~</span><span class="n">SY</span><span class="p">()</span> <span class="p">{}</span>
@@ -202,7 +202,7 @@ to register the given object as being reversible to the solver. That is, the sol
 of the object and delete it
 when it backtracks out of the current state. To register an object as reversible, you invoke the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method
 of the solver:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="n">s</span><span class="p">(</span><span class="s">&quot;nqueens&quot;</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;nqueens&quot;</span><span class="p">);</span>
 <span class="p">...</span>
 <span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sy</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SY</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
 </pre></div>
@@ -389,7 +389,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

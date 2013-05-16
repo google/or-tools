@@ -94,14 +94,14 @@ Remember the formula from last section:</p>
 <li><tt class="docutils literal"><span class="pre">SlackVar(i)</span></tt>: <tt class="docutils literal"><span class="pre">Waiting</span> <span class="pre">time</span> <span class="pre">at</span> <span class="pre">i</span></tt>.</li>
 </ul>
 <p>Let&#8217;s write the corresponding code. First, we declare the routing solver:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="n">routing</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">Size</span><span class="p">(),</span> <span class="mi">1</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingModel</span> <span class="nf">routing</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">Size</span><span class="p">(),</span> <span class="mi">1</span><span class="p">);</span>
 <span class="n">routing</span><span class="p">.</span><span class="n">SetDepot</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">Depot</span><span class="p">());</span>
 <span class="n">routing</span><span class="p">.</span><span class="n">SetCost</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">TSPTWData</span><span class="o">::</span><span class="n">Distance</span><span class="p">));</span>
 </pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">data</span></tt> is an <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> object with the instance details. To add a <tt class="docutils literal"><span class="pre">Dimension</span></tt>, we need to compute the quantity
 that is added at each node. <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> has a dedicated method to do this:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="n">DistancePlusServiceTime</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">int64</span> <span class="nf">DistancePlusServiceTime</span><span class="p">(</span><span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">from</span><span class="p">,</span>
                               <span class="n">RoutingModel</span><span class="o">::</span><span class="n">NodeIndex</span> <span class="n">to</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">Distance</span><span class="p">(</span><span class="n">from</span><span class="p">,</span> <span class="n">to</span><span class="p">)</span> <span class="o">+</span> <span class="n">ServiceTime</span><span class="p">(</span><span class="n">from</span><span class="p">);</span>
 <span class="p">}</span>
@@ -110,11 +110,11 @@ that is added at each node. <tt class="docutils literal"><span class="pre">TSPTW
 <p>We pass this callback to the routing solver:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">routing</span><span class="p">.</span><span class="n">AddDimension</span><span class="p">(</span><span class="n">NewPermanentCallback</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span>
                      <span class="o">&amp;</span><span class="n">TSPTWData</span><span class="o">::</span><span class="n">DistancePlusServiceTime</span><span class="p">),</span>
-                     <span class="n">data</span><span class="p">.</span><span class="n">Horizon</span><span class="p">(),</span> <span class="n">data</span><span class="p">.</span><span class="n">Horizon</span><span class="p">(),</span> <span class="kc">true</span><span class="p">,</span> <span class="s">&quot;time&quot;</span><span class="p">);</span>
+                     <span class="n">data</span><span class="p">.</span><span class="n">Horizon</span><span class="p">(),</span> <span class="n">data</span><span class="p">.</span><span class="n">Horizon</span><span class="p">(),</span> <span class="nb">true</span><span class="p">,</span> <span class="s">&quot;time&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The signature of <tt class="docutils literal"><span class="pre">AddDimension()</span></tt> is as follows:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">AddDimension</span><span class="p">(</span><span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">AddDimension</span><span class="p">(</span><span class="n">NodeEvaluator2</span><span class="o">*</span> <span class="n">evaluator</span><span class="p">,</span>
                   <span class="n">int64</span> <span class="n">slack_max</span><span class="p">,</span>
                   <span class="n">int64</span> <span class="n">capacity</span><span class="p">,</span>
                   <span class="kt">bool</span> <span class="n">fix_start_cumul_to_zero</span><span class="p">,</span>
@@ -350,7 +350,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

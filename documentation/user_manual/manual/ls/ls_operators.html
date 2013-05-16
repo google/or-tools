@@ -99,7 +99,7 @@ last candidate solution defined by the local search operator (an <tt class="docu
 </table>
 <p>The next figure shows the
 LS Operators hierarchy.</p>
-<a class="reference internal image-reference" href="../../_images/lsn_hierarchy.png"><img alt="../../_images/lsn_hierarchy.png" class="align-center" src="../../_images/lsn_hierarchy.png" style="width: 400pt;" /></a>
+<img alt="../../_images/lsn_hierarchy.png" class="align-center" src="../../_images/lsn_hierarchy.png" style="width: 400pt;" />
 <p>These classes are declared in the header <tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solveri.h</span></tt>.</p>
 <p>The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class is itself the base class of several other path specialized
 LS Operators. We will review them in the subsection <a class="reference internal" href="../tsp/two_phases_approaches.html#local-search-pathoperators"><em>Local Search PathOperators</em></a>.</p>
@@ -154,25 +154,25 @@ and <tt class="docutils literal"><span class="pre">SetBackwardSequence()</span><
 </table>
 <p>Without further delay, here is the code for our custom LSO:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">DecreaseOneVar</span><span class="o">:</span> <span class="k">public</span> <span class="n">IntVarLocalSearchOperator</span> <span class="p">{</span>
-<span class="k">public</span><span class="o">:</span>
+<span class="nl">public:</span>
   <span class="n">DecreaseOneVar</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">variables</span><span class="p">)</span>
     <span class="o">:</span> <span class="n">IntVarLocalSearchOperator</span><span class="p">(</span><span class="n">variables</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">variables</span><span class="p">.</span><span class="n">size</span><span class="p">()),</span>
       <span class="n">variable_index_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
   <span class="k">virtual</span> <span class="o">~</span><span class="n">MoveOneVar</span><span class="p">()</span> <span class="p">{}</span>
 
-<span class="k">protected</span><span class="o">:</span>
+<span class="nl">protected:</span>
   <span class="c1">// Make a neighbor assigning one variable to its target value.</span>
   <span class="k">virtual</span> <span class="kt">bool</span> <span class="n">MakeOneNeighbor</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">variable_index_</span> <span class="o">==</span>  <span class="n">Size</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
     <span class="k">const</span> <span class="n">int64</span> <span class="n">current_value</span> <span class="o">=</span> <span class="n">Value</span><span class="p">(</span><span class="n">variable_index_</span><span class="p">);</span>
     <span class="n">SetValue</span><span class="p">(</span><span class="n">variable_index_</span><span class="p">,</span> <span class="n">current_value</span>  <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
     <span class="n">variable_index_</span> <span class="o">=</span> <span class="n">variable_index_</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
 
-<span class="k">private</span><span class="o">:</span>
+<span class="nl">private:</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">OnStart</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">variable_index_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
   <span class="p">}</span>
@@ -194,7 +194,7 @@ is then equal to <tt class="docutils literal"><span class="pre">Size()</span></t
 <p>The <tt class="docutils literal"><span class="pre">private</span></tt> method <tt class="docutils literal"><span class="pre">OnStart()</span></tt> that is used whenever we start again with a new feasible solution, simply resets
 the variable index to <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> to be able to decrease the first variable <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> by <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>.</p>
 <p>We use the LS Operator <tt class="docutils literal"><span class="pre">DecreaseOneVar</span></tt> in the function <tt class="docutils literal"><span class="pre">SimpleLS()</span></tt> that starts as follow:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">SimpleLS</span><span class="p">(</span><span class="k">const</span> <span class="n">int64</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">init_phase</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">SimpleLS</span><span class="p">(</span><span class="k">const</span> <span class="n">int64</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">bool</span> <span class="n">init_phase</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">CHECK_GE</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;size of problem (n) must be &gt;= 2&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Simple LS &quot;</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">init_phase</span> <span class="o">?</span> <span class="s">&quot;with initial phase&quot;</span> <span class="o">:</span>
                               <span class="s">&quot;with initial solution&quot;</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
@@ -260,7 +260,7 @@ then <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c
 <p>The search phase using the LS Operator is given by a... <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
 which shouldn&#8217;t surprise you by now:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">//  IntVarLocalSearchOperator</span>
-<span class="n">DecreaseOneVar</span> <span class="n">one_var_ls</span><span class="p">(</span><span class="n">vars</span><span class="p">);</span>
+<span class="n">DecreaseOneVar</span> <span class="nf">one_var_ls</span><span class="p">(</span><span class="n">vars</span><span class="p">);</span>
 <span class="n">LocalSearchPhaseParameters</span><span class="o">*</span> <span class="n">ls_params</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
 
 <span class="n">DecisionBuilder</span><span class="o">*</span> <span class="n">ls</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
@@ -367,7 +367,7 @@ what the 29 constructed candidate solutions (neighbors)  and 11 accepted solutio
 <div class="section" id="combining-ls-operators">
 <h2>6.6.3. Combining LS operators</h2>
 <p>Often, you want to combine several <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. This can be done with the <tt class="docutils literal"><span class="pre">ConcatenateOperators()</span></tt> method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">LocalSearchOperator</span><span class="o">*</span> <span class="n">ConcatenateOperators</span><span class="p">(</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">LocalSearchOperator</span><span class="o">*</span> <span class="nf">ConcatenateOperators</span><span class="p">(</span>
                       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">LocalSearchOperator</span><span class="o">*&gt;&amp;</span> <span class="n">ops</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -388,7 +388,7 @@ argument is the index of the operator to be evaluated.
 Ownership of the callback is taken by the solver.</p>
 <p>Here is an example:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="kt">int</span> <span class="n">kPriorities</span> <span class="o">=</span> <span class="p">{</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
-<span class="n">int64</span> <span class="n">Evaluate</span><span class="p">(</span><span class="kt">int</span> <span class="n">active_operator</span><span class="p">,</span> <span class="kt">int</span> <span class="n">current_operator</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">int64</span> <span class="nf">Evaluate</span><span class="p">(</span><span class="kt">int</span> <span class="n">active_operator</span><span class="p">,</span> <span class="kt">int</span> <span class="n">current_operator</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">kPriorities</span><span class="p">[</span><span class="n">current_operator</span><span class="p">];</span>
 <span class="p">}</span>
 
@@ -598,7 +598,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

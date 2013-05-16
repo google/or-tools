@@ -81,8 +81,8 @@ in the header <tt class="docutils literal"><span class="pre">./nqueens_utilities
 </div>
 <p>For the moment we don&#8217;t implement any symmetry related mechanism and abort
 in the <tt class="docutils literal"><span class="pre">main</span></tt> function if <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_use_symmetry</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">LOG</span><span class="p">(</span><span class="n">FATAL</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Symmetries not yet implemented!&quot;</span><span class="p">;</span>
   <span class="p">}</span>
@@ -110,7 +110,7 @@ doesn&#8217;t output any solution.</p>
 <h2>5.2.1. The model</h2>
 <p>The model is defined in the <tt class="docutils literal"><span class="pre">NQueens()</span></tt> function. The beginning of the
 function shouldn&#8217;t surprise you:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">NQueens</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">NQueens</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">CHECK_GE</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
   <span class="n">Solver</span> <span class="n">s</span><span class="p">(</span><span class="s">&quot;nqueens&quot;</span><span class="p">);</span>
 
@@ -208,7 +208,7 @@ constraint:</p>
 <p>To test our model (and the solver!), we use the function <tt class="docutils literal"><span class="pre">CheckNumberOfSolutions()</span></tt>
 to check the number of known solutions, unique up to a symmetry when we use
 <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s and otherwise distinct:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">CheckNumberOfSolutions</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_solutions</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">CheckNumberOfSolutions</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_solutions</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_use_symmetry</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">kKnownUniqueSolutions</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">CHECK_EQ</span><span class="p">(</span><span class="n">num_solutions</span><span class="p">,</span> <span class="n">kNumUniqueSolutions</span><span class="p">[</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]);</span>
@@ -232,7 +232,7 @@ with the proven number of solutions. We restrict ourselves to testing the number
 up to <tt class="docutils literal"><span class="pre">kKnownSolutions</span> <span class="pre">=</span> <span class="pre">18</span></tt> and unique solutions up to <tt class="docutils literal"><span class="pre">kKnownUniqueSolutions</span> <span class="pre">=</span> <span class="pre">19</span></tt>. By <em>unique solution</em> we mean
 a unique solution up to a symmetry (see the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a> for more).</p>
 <p>The print helper functions are all based on <tt class="docutils literal"><span class="pre">PrintSolution()</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">PrintSolution</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">size</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">PrintSolution</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">size</span><span class="p">,</span>
                    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">queens</span><span class="p">,</span>
                    <span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">collector</span><span class="p">,</span>
                    <span class="k">const</span> <span class="kt">int</span> <span class="n">solution_number</span><span class="p">)</span> <span class="p">{</span>
@@ -463,7 +463,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

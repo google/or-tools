@@ -133,7 +133,7 @@ subsection). <tt class="docutils literal"><span class="pre">kUnassigned</span></
 <span id="auxiliary-graph-detailed"></span><h2>14.11.2. The auxiliary graph</h2>
 <p>You can find the source code in the file <tt class="file docutils literal"><span class="pre">rl_auxiliary_graph.cc</span></tt>.</p>
 <p>The auxiliary graph is a graph constructed from the original graph. Let&#8217;s examine the original graph of the next figure:</p>
-<a class="reference internal image-reference" href="../../_images/rl_original_graph1.png"><img alt="../../_images/rl_original_graph1.png" class="align-center" src="../../_images/rl_original_graph1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_original_graph1.png" class="align-center" src="../../_images/rl_original_graph1.png" style="width: 250px;" />
 <p>There are nine nodes, two of which are starting depots (1 and 3), one is an ending
 depot (7) and one is a starting and ending depot (4). The <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es range from 0 to 8.</p>
 <p>There are <tt class="docutils literal"><span class="pre">start_end_count_</span> <span class="pre">=</span> <span class="pre">4</span></tt> distinct depots (nodes 1, 3, 4 and 7) and <tt class="docutils literal"><span class="pre">nodes_</span> <span class="pre">-</span> <span class="pre">start_end_count_</span> <span class="pre">=</span> <span class="pre">5</span></tt>
@@ -153,13 +153,13 @@ transit nodes (nodes 0, 2, 5, 6 and 8).</p>
 <span class="n">depots</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_pair</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">);</span>
 <span class="n">depots</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_pair</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">7</span><span class="p">);</span>
 
-<span class="n">RoutingModel</span> <span class="n">VRP</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">depots</span><span class="p">);</span>
+<span class="n">RoutingModel</span> <span class="nf">VRP</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">depots</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The auxiliary graph is obtained by keeping the transit nodes and
 adding a starting and ending depot for each vehicle/route if needed
 as shown in the following figure:</p>
-<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph1.png"><img alt="../../_images/rl_auxiliary_graph1.png" class="align-center" src="../../_images/rl_auxiliary_graph1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_auxiliary_graph1.png" class="align-center" src="../../_images/rl_auxiliary_graph1.png" style="width: 250px;" />
 <p>Node 1 is not duplicated because there is only one route (route 0) that starts from 1. Node 3
 is duplicated once because there are two routes (routes 1 and 2) that start from 3. Node 7 is
 duplicated once because two routes (routes 2 and 3) end at 7 and finally there are two copies
@@ -200,7 +200,7 @@ pairs of depots are given.</p>
 one index for each combination of depots and vehicles.</p>
 </div>
 <p>For our example, this numbering is as follows:</p>
-<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph_numberred1.png"><img alt="../../_images/rl_auxiliary_graph_numberred1.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_auxiliary_graph_numberred1.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred1.png" style="width: 250px;" />
 <p>If you set the <tt class="docutils literal"><span class="pre">FLAGS_log_level</span></tt> to 2 and skip the log prefix:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./rl_auxiliary_graph --log_level<span class="o">=</span>2 --log_prefix<span class="o">=</span><span class="nb">false</span>
 </pre></div>
@@ -236,7 +236,7 @@ Node index 8 -&gt; Variable index 7
 unique <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es of each node in the original graph. Note that <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> 7 doesn&#8217;t have a
 corresponding <tt class="docutils literal"><span class="pre">int64</span></tt> index (-1 means exactly that) and that <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> 8 corresponds to <tt class="docutils literal"><span class="pre">int64</span></tt> 7 (not 8!).</p>
 <p>Here is one possible solution:</p>
-<a class="reference internal image-reference" href="../../_images/rl_sol1.png"><img alt="../../_images/rl_sol1.png" class="align-center" src="../../_images/rl_sol1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_sol1.png" class="align-center" src="../../_images/rl_sol1.png" style="width: 250px;" />
 <p>We output the routes, first with the <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es and then with the internal <tt class="docutils literal"><span class="pre">int64</span></tt> indices with:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">p</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="n">VRP</span><span class="p">.</span><span class="n">vehicles</span><span class="p">();</span> <span class="o">++</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">LG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Route: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">p</span><span class="p">;</span>
@@ -279,7 +279,7 @@ Route: 3
 <li><p class="first">All ending indices are equal or greater than <tt class="docutils literal"><span class="pre">Size()</span></tt>. Because there are <tt class="docutils literal"><span class="pre">vehicles_</span></tt> ending
 <tt class="docutils literal"><span class="pre">int64</span></tt> indices, this means that all <tt class="docutils literal"><span class="pre">int64</span></tt> indices equal or greater than <tt class="docutils literal"><span class="pre">Size()</span></tt> must correspond
 to end depots. The method <tt class="docutils literal"><span class="pre">IsEnd(int64)</span></tt> is thus simply:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">IsEnd</span><span class="p">(</span><span class="n">int64</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="nf">IsEnd</span><span class="p">(</span><span class="n">int64</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">Size</span><span class="p">();</span>
 <span class="p">}</span>
 </pre></div>
@@ -429,7 +429,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>
