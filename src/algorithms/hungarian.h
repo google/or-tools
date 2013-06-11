@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// IMPORTANT NOTE: we advise to use the code in
+// graph/linear_assignment.h whose complexity is
+// usually much smaller.
+// TODO(user): base this code on LinearSumAssignment.
+//
 // See: //depot/google3/java/com/google/wireless/genie/frontend
 //       /mixer/matching/HungarianOptimizer.java
 
@@ -35,10 +41,12 @@
 
 namespace operations_research {
 
+// See IMPORTANT NOTE at the top of the file.
 void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment);
 
+// See IMPORTANT NOTE at the top of the file.
 void MaximizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment);
