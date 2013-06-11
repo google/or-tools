@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,10 +17,22 @@
 %{
 #include "util/zvector.h"
 #include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
+#include "graph/assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
 %}
+
+#if defined(SWIGPYTHON)
+// Instructs swig to ignore the std::vector<int>* parameters as inputs since
+// they are actually outputs. Note that the name "result" is important and
+// only such parameters will be ignored.
+%typemap(in, numinputs=0) std::vector<int>* result(std::vector<int> temp) {
+  $1 = &temp;
+}
+
+// Apply std::vector<int> to python list conversion.
+%apply std::vector<int>* OUTPUT {std::vector<int>* result}
+#endif  // SWIGPYTHON
 
 #if defined(SWIGJAVA)
 // Rename rules on EbertGraph.
@@ -41,6 +53,19 @@
 %rename (flow) operations_research::GenericMaxFlow::Flow;
 %rename (capacity) operations_research::GenericMaxFlow::Capacity;
 
+// Rename rules on SimpleMaxFlow.
+%rename(addArcWithCapacity) operations_research::SimpleMaxFlow::AddArcWithCapacity;
+%rename(getNumNodes) operations_research::SimpleMaxFlow::NumNodes;
+%rename(getNumArcs) operations_research::SimpleMaxFlow::NumArcs;
+%rename(getTail) operations_research::SimpleMaxFlow::Tail;
+%rename(getHead) operations_research::SimpleMaxFlow::Head;
+%rename(getCapacity) operations_research::SimpleMaxFlow::Capacity;
+%rename(solve) operations_research::SimpleMaxFlow::Solve;
+%rename(getOptimalFlow) operations_research::SimpleMaxFlow::OptimalFlow;
+%rename(getFlow) operations_research::SimpleMaxFlow::Flow;
+%rename(getSourceSideMinCut) operations_research::SimpleMaxFlow::GetSourceSideMinCut;
+%rename(getSinkSideMinCut) operations_research::SimpleMaxFlow::GetSinkSideMinCut;
+
 // Rename rules on MinCostFlow.
 %rename(setNodeSupply) operations_research::GenericMinCostFlow::SetNodeSupply;
 %rename(setArcUnitCost) operations_research::GenericMinCostFlow::SetArcUnitCost;
@@ -54,36 +79,30 @@
 %rename(supply) operations_research::GenericMinCostFlow::Supply;
 
 // Rename rules on SimpleMinCostFlow.
-%rename(addArc) operations_research::SimpleMinCostFlow::AddArc;
+%rename(addArcWithCapacityAndUnitCost) operations_research::SimpleMinCostFlow::AddArcWithCapacityAndUnitCost;
 %rename(setNodeSupply) operations_research::SimpleMinCostFlow::SetNodeSupply;
-%rename(setArcUnitCost) operations_research::SimpleMinCostFlow::SetArcUnitCost;
-%rename(setArcCapacity) operations_research::SimpleMinCostFlow::SetArcCapacity;
-%rename(setArcFlow) operations_research::SimpleMinCostFlow::SetArcFlow;
 %rename(solve) operations_research::SimpleMinCostFlow::Solve;
-%rename(getOptimalCost) operations_research::SimpleMinCostFlow::GetOptimalCost;
-%rename(getArcFlow) operations_research::SimpleMinCostFlow::Flow;
+%rename(getOptimalCost) operations_research::SimpleMinCostFlow::OptimalCost;
 %rename(getNumNodes) operations_research::SimpleMinCostFlow::NumNodes;
 %rename(getNumArcs) operations_research::SimpleMinCostFlow::NumArcs;
-%rename(getArcTail) operations_research::SimpleMinCostFlow::Tail;
-%rename(getArcHead) operations_research::SimpleMinCostFlow::Head;
-%rename(getArcUnitCost) operations_research::SimpleMinCostFlow::UnitCost;
-%rename(getNodeSupply) operations_research::SimpleMinCostFlow::Supply;
+%rename(getTail) operations_research::SimpleMinCostFlow::Tail;
+%rename(getHead) operations_research::SimpleMinCostFlow::Head;
+%rename(getFlow) operations_research::SimpleMinCostFlow::Flow;
+%rename(getCapacity) operations_research::SimpleMinCostFlow::Capacity;
+%rename(getUnitCost) operations_research::SimpleMinCostFlow::UnitCost;
+%rename(getSupply) operations_research::SimpleMinCostFlow::Supply;
 
-// Rename rules on LinearSumAssignment.
-%rename(setCostScalingDivisor) operations_research::LinearSumAssignment::SetCostScalingDivisor;
-%rename(optimizeGraphLayout) operations_research::LinearSumAssignment::OptimizeGraphLayout;
-%rename(graph) operations_research::LinearSumAssignment::Graph;
-%rename(head) operations_research::LinearSumAssignment::Head;
-%rename(setArcCost) operations_research::LinearSumAssignment::SetArcCost;
-%rename(finalizeSetup) operations_research::LinearSumAssignment::FinalizeSetup;
-%rename(computeAssignment) operations_research::LinearSumAssignment::ComputeAssignment;
-%rename(getCost) operations_research::LinearSumAssignment::GetCost;
-%rename(numNodes) operations_research::LinearSumAssignment::NumNodes;
-%rename(numLeftNodes) operations_research::LinearSumAssignment::NumLeftNodes;
-%rename(getAssignmentArc) operations_research::LinearSumAssignment::GetAssignmentArc;
-%rename(getAssignmentCost) operations_research::LinearSumAssignment::GetAssignmentCost;
-%rename(getMate) operations_research::LinearSumAssignment::GetMate;
-%rename(statsString) operations_research::LinearSumAssignment::StatsString;
+// Rename rules on SimpleLinearSumAssignment.
+%rename(addArcWithCost) operations_research::SimpleLinearSumAssignment::AddArcWithCost;
+%rename(getNumNodes) operations_research::SimpleLinearSumAssignment::NumNodes;
+%rename(getNumArcs) operations_research::SimpleLinearSumAssignment::NumArcs;
+%rename(getLeftNode) operations_research::SimpleLinearSumAssignment::LeftNode;
+%rename(getRightNode) operations_research::SimpleLinearSumAssignment::RightNode;
+%rename(getCost) operations_research::SimpleLinearSumAssignment::Cost;
+%rename(solve) operations_research::SimpleLinearSumAssignment::Solve;
+%rename(getOptimalCost) operations_research::SimpleLinearSumAssignment::OptimalCost;
+%rename(getRightMate) operations_research::SimpleLinearSumAssignment::RightMate;
+%rename(getAssignmentCost) operations_research::SimpleLinearSumAssignment::AssignmentCost;
 
 #endif  // SWIGJAVA
 
@@ -109,11 +128,15 @@
 %rename (GetStatus) operations_research::MinCostFlow::status;
 #endif  // SWIGCSHARP
 
-// Second phase: %include the same files.
 
+// Use the SimpleLinearSumAssignment in SWIG (java and python).
+%rename(ComplexLinearSumAssignment) operations_research::LinearSumAssignment;
+%rename(LinearSumAssignment) operations_research::SimpleLinearSumAssignment;
+
+// Second phase: %include the same files.
 %include "util/zvector.h"
 %include "graph/ebert_graph.h"
-%include "graph/linear_assignment.h"
+%include "graph/assignment.h"
 %include "graph/max_flow.h"
 %include "graph/min_cost_flow.h"
 
@@ -125,7 +148,5 @@
 %template(ForwardStarGraph) operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
 %template(ForwardStarStaticStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(ForwardStarStaticGraph) operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
-%template(ForwardEbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(EbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(MaxFlow) operations_research::GenericMaxFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(MinCostFlow) operations_research::GenericMinCostFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(MinCostFlow) operations_research::GenericMinCostFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>, operations_research::FlowQuantity, operations_research::CostValue>;

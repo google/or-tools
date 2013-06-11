@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,103 @@
 #include "graph/graphs.h"
 
 namespace operations_research {
+
+SimpleMaxFlow::SimpleMaxFlow() : num_nodes_(0) {}
+
+ArcIndex SimpleMaxFlow::AddArcWithCapacity(
+    NodeIndex tail, NodeIndex head, FlowQuantity capacity) {
+  const ArcIndex num_arcs = arc_tail_.size();
+  num_nodes_ = std::max(num_nodes_, tail + 1);
+  num_nodes_ = std::max(num_nodes_, head + 1);
+  arc_tail_.push_back(tail);
+  arc_head_.push_back(head);
+  arc_capacity_.push_back(capacity);
+  return num_arcs;
+}
+
+NodeIndex SimpleMaxFlow::NumNodes() const {
+  return num_nodes_;
+}
+
+ArcIndex SimpleMaxFlow::NumArcs() const {
+  return arc_tail_.size();
+}
+
+NodeIndex SimpleMaxFlow::Tail(ArcIndex arc) const {
+  return arc_tail_[arc];
+}
+
+NodeIndex SimpleMaxFlow::Head(ArcIndex arc) const {
+  return arc_head_[arc];
+}
+
+FlowQuantity SimpleMaxFlow::Capacity(ArcIndex arc) const {
+  return arc_capacity_[arc];
+}
+
+SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
+  const ArcIndex num_arcs = arc_capacity_.size();
+  arc_flow_.assign(num_arcs, 0);
+  underlying_max_flow_.reset();
+  underlying_graph_.reset();
+  optimal_flow_ = 0;
+  if (source == sink || source < 0 || sink < 0) {
+    return BAD_INPUT;
+  }
+  if (source >= num_nodes_ || sink >= num_nodes_) {
+    return OPTIMAL;
+  }
+  underlying_graph_.reset(new Graph(num_nodes_, num_arcs));
+  underlying_graph_->AddNode(source);
+  underlying_graph_->AddNode(sink);
+  for (int arc = 0; arc < num_arcs; ++arc) {
+    underlying_graph_->AddArc(arc_tail_[arc], arc_head_[arc]);
+  }
+  underlying_graph_->Build(&arc_permutation_);
+  underlying_max_flow_.reset(new GenericMaxFlow<Graph>(
+      underlying_graph_.get(), source, sink));
+  for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
+    ArcIndex permuted_arc =
+        arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
+    underlying_max_flow_->SetArcCapacity(permuted_arc, arc_capacity_[arc]);
+  }
+  if (underlying_max_flow_->Solve()) {
+    optimal_flow_ = underlying_max_flow_->GetOptimalFlow();
+    for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
+      ArcIndex permuted_arc =
+          arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
+      arc_flow_[arc] = underlying_max_flow_->Flow(permuted_arc);
+    }
+  }
+  // Translate the GenericMaxFlow::Status. It is different because NOT_SOLVED
+  // does not make sense in the simple api.
+  switch (underlying_max_flow_->status()) {
+    case GenericMaxFlow<Graph>::NOT_SOLVED : return BAD_RESULT;
+    case GenericMaxFlow<Graph>::OPTIMAL : return OPTIMAL;
+    case GenericMaxFlow<Graph>::POSSIBLE_OVERFLOW : return POSSIBLE_OVERFLOW;
+    case GenericMaxFlow<Graph>::BAD_INPUT : return BAD_INPUT;
+    case GenericMaxFlow<Graph>::BAD_RESULT : return BAD_RESULT;
+  }
+  return BAD_RESULT;
+}
+
+FlowQuantity SimpleMaxFlow::OptimalFlow() const {
+  return optimal_flow_;
+}
+
+FlowQuantity SimpleMaxFlow::Flow(ArcIndex arc) const {
+  return arc_flow_[arc];
+}
+
+void SimpleMaxFlow::GetSourceSideMinCut(std::vector<NodeIndex>* result) {
+  if (underlying_max_flow_.get() == NULL) return;
+  underlying_max_flow_->GetSourceSideMinCut(result);
+}
+
+void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
+  if (underlying_max_flow_.get() == NULL) return;
+  underlying_max_flow_->GetSinkSideMinCut(result);
+}
 
 template<typename Graph>
 GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph,
@@ -207,6 +304,17 @@ bool GenericMaxFlow<Graph>::Solve() {
     return false;
   }
   InitializePreflow();
+
+  // Deal with the case when source_ or sink_ is not inside graph_.
+  // Since they are both specified independently of the graph, we do need to
+  // take care of this corner case.
+  const NodeIndex num_nodes = graph_->num_nodes();
+  if (sink_ >= num_nodes || source_ >= num_nodes) {
+    // Behave like a normal graph where source_ and sink_ are disconnected.
+    // Note that the arc flow is set to 0 by InitializePreflow().
+    status_ = OPTIMAL;
+    return true;
+  }
   if (use_global_update_) {
     RefineWithGlobalUpdate();
   } else {
@@ -219,7 +327,7 @@ bool GenericMaxFlow<Graph>::Solve() {
   DCHECK_EQ(node_excess_[sink_], -node_excess_[source_]);
   if (GetOptimalFlow() == kMaxFlowQuantity) {
     // In this case, we are not sure we are at the optimal.
-    status_ = FEASIBLE;
+    status_ = POSSIBLE_OVERFLOW;
   } else {
     status_ = OPTIMAL;
   }
@@ -272,6 +380,7 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
   // The visited nodes that are not yet stored are all the nodes from the
   // source_ to the current node in the current dfs branch.
   std::vector<bool> visited(num_nodes, false);
+  visited[sink_] = true;
 
   // Stack of arcs to explore in the dfs search.
   // The current node is Head(arc_stack.back()).
@@ -758,8 +867,16 @@ const FlowQuantity GenericMaxFlow<Graph>::kMaxFlowQuantity =
 template<typename Graph> template<bool reverse>
 void GenericMaxFlow<Graph>::ComputeReachableNodes(
     NodeIndex start, std::vector<NodeIndex>* result) {
-  bfs_queue_.clear();
+  // If start is not a valid node index, it can reach only itself.
+  // Note(user): This is needed because source and sink are given independently
+  // of the graph and sometimes before it is even constructed.
   const NodeIndex num_nodes = graph_->num_nodes();
+  if (start >= num_nodes) {
+    result->clear();
+    result->push_back(start);
+    return;
+  }
+  bfs_queue_.clear();
   node_in_bfs_queue_.assign(num_nodes, false);
 
   int queue_index = 0;

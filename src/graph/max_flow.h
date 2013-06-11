@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -120,6 +120,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/scoped_ptr.h"
 #include "graph/ebert_graph.h"
 #include "graph/graph.h"
 #include "util/stats.h"
@@ -129,18 +130,96 @@ using std::string;
 
 namespace operations_research {
 
-// Different statuses for a solved problem.
-// We use a base class to share it between our different interfaces.
-class MaxFlowBase {
+// Forward declaration.
+template<typename Graph> class GenericMaxFlow;
+
+// A simple and efficient max-cost flow interface. This is as fast as
+// GenericMaxFlow<ReverseArcStaticGraph>, which is the fastest, but uses
+// more memory in order to hide the somewhat involved construction of the
+// static graph.
+//
+// TODO(user): If the need arises, extend this interface to support warm start
+// and incrementality between solves.
+class SimpleMaxFlow {
  public:
+  // The constructor takes no size.
+  // New node indices will be created lazily by AddArcWithCapacity().
+  SimpleMaxFlow();
+
+  // Adds a directed arc with the given capacity from tail to head.
+  // * Node indices and capacity must be non-negative (>= 0).
+  // * Self-looping and duplicate arcs are supported.
+  // * After the method finishes, NumArcs() == the returned ArcIndex + 1.
+  ArcIndex AddArcWithCapacity(
+      NodeIndex tail, NodeIndex head, FlowQuantity capacity);
+
+  // Returns the current number of nodes. This is one more than the largest
+  // node index seen so far in AddArcWithCapacity().
+  NodeIndex NumNodes() const;
+
+  // Returns the current number of arcs in the graph.
+  ArcIndex NumArcs() const;
+
+  // Returns user-provided data.
+  // The implementation will crash if "arc" is not in [0, NumArcs()).
+  NodeIndex Tail(ArcIndex arc) const;
+  NodeIndex Head(ArcIndex arc) const;
+  FlowQuantity Capacity(ArcIndex arc) const;
+
+  // Solves the problem (finds the maximum flow from the given source to the
+  // given sink), and returns the problem status.
   enum Status {
-    NOT_SOLVED,  // The problem was not solved, or its data were edited.
-    OPTIMAL,     // Solve() was called and found an optimal solution.
-    FEASIBLE,    // There is a feasible flow.
-    INFEASIBLE,  // There is no feasible flow.
-    BAD_INPUT,   // The input is inconsistent.
-    BAD_RESULT   // There was an error.
+    // Solve() was called and found an optimal solution. Note that OptimalFlow()
+    // may be 0 which means that the sink is not reachable from the source.
+    OPTIMAL,
+    // There is a flow >= std::numeric_limits<FlowQuantity>::max().
+    POSSIBLE_OVERFLOW,
+    // The input is inconsistent (bad tail/head/capacity values).
+    BAD_INPUT,
+    // This should not happen. There was an error in our code (i.e. file a bug).
+    BAD_RESULT
   };
+  Status Solve(NodeIndex source, NodeIndex sink);
+
+  // Returns the maximum flow we can send from the source to the sink in the
+  // last OPTIMAL Solve() context.
+  FlowQuantity OptimalFlow() const;
+
+  // Returns the flow on the given arc in the last OPTIMAL Solve() context.
+  //
+  // Note: It is possible that there is more than one optimal solution. The
+  // algorithm is deterministic so it will always return the same solution for
+  // a given problem. However, there is no guarantee of this from one code
+  // version to the next (but the code does not change often).
+  FlowQuantity Flow(ArcIndex arc) const;
+
+  // Returns the nodes reachable from the source by non-saturated arcs (.i.e.
+  // arc with Flow(arc) < Capacity(arc)), the outgoing arcs of this set form a
+  // minimum cut. This works only if Solve() returned OPTIMAL.
+  void GetSourceSideMinCut(std::vector<NodeIndex>* result);
+
+  // Returns the nodes that can reach the sink by non-saturated arcs, the
+  // outgoing arcs of this set form a minimun cut. Note that if this is the
+  // complement set of GetNodeReachableFromSource(), then the min-cut is unique.
+  // This works only if Solve() returned OPTIMAL.
+  void GetSinkSideMinCut(std::vector<NodeIndex>* result);
+
+ private:
+  NodeIndex num_nodes_;
+  std::vector<NodeIndex> arc_tail_;
+  std::vector<NodeIndex> arc_head_;
+  std::vector<FlowQuantity> arc_capacity_;
+  std::vector<ArcIndex> arc_permutation_;
+  std::vector<FlowQuantity> arc_flow_;
+  FlowQuantity optimal_flow_;
+
+  // Note that we cannot free the graph before we stop using the max-flow
+  // instance that uses it.
+  typedef ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
+  scoped_ptr<Graph> underlying_graph_;
+  scoped_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
+
+  DISALLOW_COPY_AND_ASSIGN(SimpleMaxFlow);
 };
 
 // Specific but efficient priority queue implementation. The priority type must
@@ -188,6 +267,19 @@ class PriorityQueueWithRestrictedPush {
   std::vector<std::pair<Element, IntegerPriority> > odd_queue_;
 
   DISALLOW_COPY_AND_ASSIGN(PriorityQueueWithRestrictedPush);
+};
+
+// Base class (easier for SWIG when wrapping the enum).
+
+class MaxFlowBase {
+ public:
+  enum Status {
+    NOT_SOLVED,         // The problem was not solved, or its data were edited.
+    OPTIMAL,            // Solve() was called and found an optimal solution.
+    POSSIBLE_OVERFLOW,  // There is a feasible flow >= max possible flow.
+    BAD_INPUT,          // The input is inconsistent.
+    BAD_RESULT          // There was an error.
+  };
 };
 
 // Generic MaxFlow (there is a default MaxFlow specialization defined below)

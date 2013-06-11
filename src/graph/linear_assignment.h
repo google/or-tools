@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -45,7 +45,8 @@
 //  CostValue optimum_cost = a.GetCost();
 //  // Retrieve the node-node correspondence of the optimum assignment and the
 //  // cost of each node pairing.
-//  for (::operations_research::LinearSumAssignment::BipartiteLeftNodeIterator
+//  for (::operations_research::LinearSumAssignment<
+//           ForwardStarGraph>::BipartiteLeftNodeIterator
 //         node_it(a);
 //       node_it.Ok();
 //       node_it.Next()) {
@@ -882,7 +883,7 @@ template <typename GraphType> class LinearSumAssignment {
     // pencil handy. :-)
     const double result =
         static_cast<double>(std::max<CostValue>(1, n / 2 - 1)) *
-        static_cast<double>(old_epsilon + new_epsilon);
+        (static_cast<double>(old_epsilon) + static_cast<double>(new_epsilon));
     const double limit =
         static_cast<double>(std::numeric_limits<CostValue>::max());
     if (result > limit) {

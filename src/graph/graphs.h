@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,8 +50,8 @@ struct Graphs {
 template<>
 struct Graphs<operations_research::StarGraph> {
   typedef operations_research::StarGraph Graph;
-  typedef Graph::ArcIndex ArcIndex;
-  typedef Graph::NodeIndex NodeIndex;
+  typedef typename Graph::ArcIndex ArcIndex;
+  typedef typename Graph::NodeIndex NodeIndex;
   static ArcIndex OppositeArc(const Graph& graph, ArcIndex arc) {
     return graph.Opposite(arc);
   }
