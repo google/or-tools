@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -169,4 +169,17 @@ int64 CycleTimer::GetInMs() const {
   const int64 kMsInUsec = 1000;
   return GetInUsec() / kMsInUsec;
 }
+
+ScopedWallTime::ScopedWallTime(double* aggregate_time)
+    : aggregate_time_(aggregate_time),
+      timer_() {
+  DCHECK(aggregate_time != NULL);
+  timer_.Start();
+}
+
+ScopedWallTime::~ScopedWallTime() {
+  timer_.Stop();
+  *aggregate_time_ += timer_.Get();
+}
+
 }  // namespace operations_research

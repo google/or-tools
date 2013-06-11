@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(__GNUC__) && defined(__linux__)
-# include <linux/limits.h>
+#if defined(__GNUC__)
 # include <unistd.h>
-#endif
-#if defined(__APPLE__) && defined(__GNUC__)
-# include <unistd.h>
+# if defined(__linux__)
+#  include <linux/limits.h>
+# endif
 #endif
 #if defined(_MSC_VER)
 # include <windows.h>

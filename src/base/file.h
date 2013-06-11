@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -61,7 +61,7 @@ class File {
   // If write failed, program will exit.
   void WriteOrDie(const void* const buff, size_t size);
 
-  // Writse a string to file.
+  // Writes a string to file.
   size_t WriteString(const std::string& line);
 
   // Writes a string to file and append a "\n".
@@ -80,13 +80,13 @@ class File {
   static void Init();
 
   // Returns the file name.
-  std::string CreateFileName() const;
+  std::string filename() const;
 
   // Deletes a file.
-  static bool Delete(char* const name);
+  static bool Delete(const char* const name);
 
   // Tests if a file exists.
-  static bool Exists(char* const name);
+  static bool Exists(const char* const name);
 
   bool Open() const;
 
@@ -96,6 +96,24 @@ class File {
   FILE* f_;
   const std::string name_;
 };
+
+namespace file {
+// A trivial wrapper around a boolean, with a ok() accessor.
+class Status {
+ public:
+  explicit Status(bool ok) : ok_(ok) { }
+  bool ok() const { return ok_; }
+ private:
+  const bool ok_;
+};
+
+// A reduced version of the file::SetContents() function, which as of 2013-04
+// can only be used with flags = file::Defaults().
+Status SetContents(const std::string& filename, const std::string& contents,
+                   int flags);
+inline int Defaults() { return 0xBABA; }
+}  // namespace file
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_FILE_H_

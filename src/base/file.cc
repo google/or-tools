@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,11 +33,11 @@ namespace operations_research {
 File::File(FILE* const f_des, const std::string& name)
   : f_(f_des), name_(name) {}
 
-bool File::Delete(char* const name) {
+bool File::Delete(const char* const name) {
   return remove(name) == 0;
 }
 
-bool File::Exists(char* const name) {
+bool File::Exists(const char* const name) {
   return access(name, F_OK) == 0;
 }
 
@@ -130,7 +130,7 @@ bool File::WriteLine(const std::string& line) {
   return Write("\n", 1) == 1;
 }
 
-std::string File::CreateFileName() const {
+std::string File::filename() const {
   return name_;
 }
 
@@ -139,4 +139,18 @@ bool File::Open() const {
 }
 
 void File::Init() {}
+
+namespace file {
+Status SetContents(const std::string& filename, const std::string& contents,
+                   int flags) {
+  if (flags != Defaults()) {
+    LOG(DFATAL) << "file::SetContents() with unsupported flags=" << flags;
+    return Status(false);
+  }
+  File* file = File::Open(filename, "w");
+  if (file == NULL) return Status(false);
+  return Status(file->WriteString(contents) == contents.size());
+};
+}  // namespace file
+
 }  // namespace operations_research

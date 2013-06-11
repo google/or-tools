@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #if defined(_MSC_VER)
 #include <iterator>
 #endif  // _MSC_VER
+#include "base/logging.h"
 
 namespace operations_research {
 // ----------------------------------------------------------------------
@@ -66,4 +67,15 @@ void SplitStringUsing(const std::string& full,
   std::back_insert_iterator< std::vector<std::string> > it(*result);
   SplitStringToIteratorUsing(full, delim, it);
 }
+
+namespace strings {
+std::vector<std::string> Split(const std::string& full, const char* delim,
+                               int flags) {
+  CHECK_EQ(SkipEmpty(), flags);
+  std::vector<std::string> out;
+  SplitStringUsing(full, delim, &out);
+  return out;
+}
+}  // namespace strings
+
 }  // namespace operations_research

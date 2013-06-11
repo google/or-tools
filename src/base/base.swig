@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -462,7 +462,7 @@ COPY_TYPEMAPS(uint64, Fprint);
    }
    const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
    if (!$1_pstr) return $null;
-   /* possible thread/reentrant code problem */
+   /* possible thread - reentrant code problem */
    static std::string $1_str;
    $1_str = $1_pstr;
    $result = &$1_str;

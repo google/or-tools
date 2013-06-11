@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,6 +39,10 @@ class WallTimer {
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
 };
 
+// A WallTimer clone meant to support SetClock(), for unit testing. But for now
+// we just use WallTimer directly.
+typedef WallTimer ClockTimer;
+
 // This class is currently using the same counter as the WallTimer class, but
 // is supposed to use the cpu cycle counter.
 // TODO(user): Implement it properly.
@@ -73,6 +77,23 @@ class CycleTimerBase {
   static int64 UsecToCycles(int64 usec) {
     return usec;
   }
+};
+
+class ScopedWallTime {
+ public:
+  // We do not own the pointer. The pointer must be valid for the duration
+  // of the existence of the ScopedWallTime instance. Not thread safe for
+  // aggregate_time.
+  explicit ScopedWallTime(double* aggregate_time);
+  ~ScopedWallTime();
+
+ private:
+  double* aggregate_time_;
+
+  // When the instance was created.
+  WallTimer timer_;
+
+  DISALLOW_COPY_AND_ASSIGN(ScopedWallTime);
 };
 
 }  // namespace operations_research
