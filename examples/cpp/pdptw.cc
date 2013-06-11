@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -155,9 +155,9 @@ namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
 // of integers. Returns true iff the input string was entirely valid and parsed.
 bool SafeParseInt64Array(const string& str, std::vector<int64>* parsed_int) {
-  std::vector<string> items;
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
-  SplitStringUsing(str, kWhiteSpaces, &items);
+  std::vector<string> items = strings::Split(
+      str, strings::delimiter::AnyOf(kWhiteSpaces), strings::SkipEmpty());
   parsed_int->assign(items.size(), 0);
   for (int i = 0; i < items.size(); ++i) {
     const char* item = items[i].c_str();
@@ -304,8 +304,8 @@ bool LoadAndSolve(const string& pdp_file) {
   // Solve pickup and delivery problem.
   const Assignment* assignment =  routing.Solve(NULL);
   if (NULL != assignment) {
-    LG << "Cost: " << assignment->ObjectiveValue();
-    LG << VerboseOutput(routing, *assignment, coords, service_times);
+    LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
+    LOG(INFO) << VerboseOutput(routing, *assignment, coords, service_times);
     return true;
   }
   return false;
@@ -316,7 +316,7 @@ bool LoadAndSolve(const string& pdp_file) {
 int main(int argc, char **argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
-    LG << "Error solving " << FLAGS_pdp_file;
+    LOG(INFO) << "Error solving " << FLAGS_pdp_file;
   }
   return 0;
 }

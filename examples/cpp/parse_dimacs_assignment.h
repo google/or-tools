@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -110,7 +110,7 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
   NodeIndex num_nodes;
   ArcIndex num_arcs;
 
-  if ((sscanf(line, "%*c%3s%d%d",  // NOLINT
+  if ((sscanf(line, "%*c%3s%d%d",
               problem_type,
               &num_nodes,
               &num_arcs) != 3) ||
@@ -131,7 +131,7 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
 template <typename GraphType>
 void DimacsAssignmentParser<GraphType>::ParseNodeLine(const char* line) {
   NodeIndex node_id;
-  if (sscanf(line, "%*c%d", &node_id) != 1) {  // NOLINT
+  if (sscanf(line, "%*c%d", &node_id) != 1) {
     state_.bad = true;
     state_.reason = "Syntax error in node desciption.";
     state_.bad_line.reset(new string(line));
@@ -165,7 +165,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(
   NodeIndex tail;
   NodeIndex head;
   CostValue cost;
-  if (sscanf(line, "%*c%d%d%lld", &tail, &head, &cost) != 3) {  // NOLINT
+  if (sscanf(line, "%*c%d%d%lld", &tail, &head, &cost) != 3) {
     state_.bad = true;
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new string(line));

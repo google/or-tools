@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,8 +14,10 @@
 // Linear programming example that shows how to use the API.
 
 #include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "linear_solver/linear_solver.h"
+#include "linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
 void RunLinearProgrammingExample(

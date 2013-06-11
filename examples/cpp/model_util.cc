@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -285,7 +285,7 @@ int Run() {
   CPModelProto model_proto;
   RecordReader reader(file);
   if (!(reader.ReadProtocolMessage(&model_proto) && reader.Close())) {
-    LOG(INFO) << "No model found in " << file->CreateFileName();
+    LOG(INFO) << "No model found in " << file->filename();
     return kProblem;
   }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,16 +88,17 @@ void Cryptoarithmetics() {
     CHECK_EQ(r->Value(), 8);
     CHECK_EQ(y->Value(), 2);
 
-    LG << "S=" << s->Value();
-    LG << "M=" << m->Value();
-    LG << "O=" << o->Value();
-    LG << "E=" << e->Value();
-    LG << "N=" << n->Value();
-    LG << "D=" << d->Value();
-    LG << "R=" << r->Value();
-    LG << "Y=" << y->Value();
+    LOG(INFO) << "S=" << s->Value();
+    LOG(INFO) << "M=" << m->Value();
+    LOG(INFO) << "O=" << o->Value();
+    LOG(INFO) << "E=" << e->Value();
+    LOG(INFO) << "N=" << n->Value();
+    LOG(INFO) << "D=" << d->Value();
+    LOG(INFO) << "R=" << r->Value();
+    LOG(INFO) << "Y=" << y->Value();
   } else {
-    LG << "Cannot solve problem: number of failures " << solver.failures();
+    LOG(INFO) << "Cannot solve problem: number of failures "
+              << solver.failures();
   }
   solver.EndSearch();
 }

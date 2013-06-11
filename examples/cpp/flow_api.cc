@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -61,9 +61,9 @@ void MaxFeasibleFlow() {
   LOG(INFO) << "Max Feasible Flow";
   const int kNumNodes = 6;
   const int kNumArcs = 9;
-  const NodeIndex kTail[kNumArcs] = { 0, 0, 0, 0, 1, 2, 3, 3, 4 };
-  const NodeIndex kHead[kNumArcs] = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };
-  const FlowQuantity kCapacity[kNumArcs] = { 5, 8, 5, 3, 4, 5, 6, 6, 4 };
+  const NodeIndex kTail[kNumArcs] =            { 0, 0, 0, 0, 1, 2, 3, 3, 4 };
+  const NodeIndex kHead[kNumArcs] =            { 1, 2, 3, 4, 3, 4, 4, 5, 5 };
+  const FlowQuantity kCapacity[kNumArcs] =     { 5, 8, 5, 3, 4, 5, 6, 6, 4 };
   const FlowQuantity kExpectedFlow[kNumArcs] = { 1, 1, 5, 3, 1, 1, 0, 6, 4 };
   const FlowQuantity kExpectedTotalFlow = 10;
   StarGraph graph(kNumNodes, kNumArcs);
@@ -88,3 +88,4 @@ int main(int argc, char **argv) {
   operations_research::MaxFeasibleFlow();
   return 0;
 }
+

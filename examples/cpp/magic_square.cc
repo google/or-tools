@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -52,7 +52,7 @@ void MagicSquare(int grid_size) {
   const int sum = grid_size * (total_size + 1) / 2;
   // create the variables
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(total_size, 1, total_size, "v", &vars);
+  solver.MakeIntVarArray(total_size, 1, total_size, "", &vars);
   solver.AddConstraint(solver.MakeAllDifferent(vars));
 
   // create the constraints
@@ -139,11 +139,11 @@ void MagicSquare(int grid_size) {
         int64 v = vars[n * grid_size + m]->Value();
         StringAppendF(&output, "%3lld ", v);
       }
-      LG << output;
+      LOG(INFO) << output;
     }
-    LG << "";
+    LOG(INFO) << "";
   } else {
-    LG << "No solution found!";
+    LOG(INFO) << "No solution found!";
   }
   solver.EndSearch();
 }

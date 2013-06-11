@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 // This model implements a simple jobshop problem.
 //
 // A jobshop is a standard scheduling problem where you must schedule a
@@ -34,15 +33,17 @@
 
 #ifndef OR_TOOLS_EXAMPLES_JOBSHOP_LS_H_
 #define OR_TOOLS_EXAMPLES_JOBSHOP_LS_H_
+
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/bitmap.h"
+#include "base/strtoint.h"
+#include "base/file.h"
+#include "base/filelinereader.h"
+#include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 

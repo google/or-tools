@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,7 @@
 //
 // Search will be implemented as local search on the sequence variables.
 
+#include "cpp/jobshop_ls.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -44,7 +45,6 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "cpp/jobshop.h"
-#include "cpp/jobshop_ls.h"
 
 DEFINE_string(
     data_file,

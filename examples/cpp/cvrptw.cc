@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -204,7 +204,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
                     plan.Max(time_var));
     }
   }
-  LG << plan_output;
+  LOG(INFO) << plan_output;
 }
 
 int main(int argc, char **argv) {
@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
   if (solution != NULL) {
     DisplayPlan(routing, *solution);
   } else {
-    LG << "No solution found.";
+    LOG(INFO) << "No solution found.";
   }
   return 0;
 }
