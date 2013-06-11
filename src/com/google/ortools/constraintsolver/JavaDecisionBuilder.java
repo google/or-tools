@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,14 +27,14 @@ public class JavaDecisionBuilder extends DecisionBuilder {
   public final Decision nextWrap(Solver solver) {
     try {
       return next(solver);
-    } catch (FailException e) {
+    } catch (Solver.FailException e) {
       return solver.makeFailDecision();
     }
   }
   /**
    * This is the new method to subclass when defining a java decision builder.
    */
-  public Decision next(Solver solver) throws FailException {
+  public Decision next(Solver solver) throws Solver.FailException {
     return null;
   }
 }
