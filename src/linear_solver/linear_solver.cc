@@ -310,46 +310,6 @@ void* MPSolver::underlying_solver() {
   return interface_->underlying_solver();
 }
 
-// ---- Solver-specific parameters ----
-
-bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
-  solver_specific_parameter_string_ = parameters;
-
-  // Note(user): this method needs to return a success/failure boolean
-  // immediately, so we also perform the actual parameter parsing right away.
-  // Some implementations will keep them forever and won't need to re-parse
-  // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
-  // they do Solve(). We just store the parameters string anyway.
-  string extension = interface_->ValidFileExtensionForParameterFile();
-int32 tid = static_cast<int32>(pthread_self());
-  int32 pid = static_cast<int32>(getpid());
-  int64 now = WallTimer::GetTimeInMicroSeconds();
-  string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
-      tid, pid, now, extension.c_str());
-  bool no_error_so_far = true;
-  if (no_error_so_far) {
-    no_error_so_far =
-        file::SetContents(filename, parameters, file::Defaults()).ok();
-  }
-  if (no_error_so_far) {
-    no_error_so_far = interface_->ReadParameterFile(filename);
-    // We need to clean up the file even if ReadParameterFile() returned
-    // false. In production we can continue even if the deletion failed.
-    if (!File::Delete(filename.c_str())) {
-      LOG(DFATAL) << "Couldn't delete temporary parameters file: "
-                  << filename;
-    }
-  }
-  if (!no_error_so_far) {
-    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
-        << "for solver type: "
-        << MPModelRequest::OptimizationProblemType_Name(
-               static_cast<MPModelRequest::OptimizationProblemType>(
-                   ProblemType()));
-  }
-  return no_error_so_far;
-}
-
 // ----- Solver -----
 
 #if defined(USE_CLP) || defined(USE_CBC)
@@ -1575,4 +1535,3 @@ int MPSolverParameters::GetIntegerParam(
 
 
 }  // namespace operations_research
-
