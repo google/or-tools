@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -262,7 +262,7 @@ inline int MostSignificantBitPosition32(uint32 n) {
 }
 
 #undef USE_DEBRUIJN
-#undef USE_ASM_BITCOUNT
+#undef USE_ASM_LEAST_SIGNIFICANT_BIT
 
 // Returns a word with bits from s to e set.
 inline uint64 OneRange64(uint64 s, uint64 e) {
@@ -389,13 +389,22 @@ int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
 template <typename IndexType>
 class Bitset64 {
  public:
-  Bitset64() : size_(), data_() {}
+  Bitset64() : size_(), data_(),
+      end_(*this, /*at_end=*/true) {}
   explicit Bitset64(IndexType size)
       : size_(size > 0 ? size : IndexType(0)),
-        data_(BitLength64(size_.value())) {}
+        data_(BitLength64(size_.value())),
+        end_(*this, /*at_end=*/true) {}
 
   // Returns how many bits this Bitset64 can hold.
   IndexType size() const { return size_; }
+
+  // Appends value at the end of the bitset.
+  void PushBack(bool value) {
+    ++size_;
+    data_.resize(BitLength64(size_.value()), 0);
+    Set(size_ - 1, value);
+  }
 
   // Changes the number of bits the Bitset64 can hold and set all of them to 0.
   void ClearAndResize(IndexType size) {
@@ -491,14 +500,42 @@ class Bitset64 {
       current_ &= current_ - 1;
     }
 
+    // STL version of the functions above to support range-based "for" loop.
+    // These functions are only meant to be used with GetNonZeroPositions(), see
+    // below.
+    Iterator(const Bitset64 &data_, bool at_end)
+        : bitset_(data_), index_(0), base_index_(0), current_(0) {
+      if (at_end || bitset_.data_.empty()) {
+        index_ = -1;
+      } else {
+        current_ = bitset_.data_[0];
+        Next();
+      }
+    }
+    bool operator!=(const Iterator& other) const {
+      return index_ != other.index_;
+    }
+    IndexType operator*() const {
+      return IndexType(index_);
+    }
+    void operator++() {
+      Next();
+    }
+
    private:
     const Bitset64& bitset_;
     int index_;
     int base_index_;
     uint64 current_;
-
-    DISALLOW_COPY_AND_ASSIGN(Iterator);
   };
+
+  // Allows range-based "for" loop on the non-zero positions:
+  //   for (const IndexType index : bitset) {}
+  // instead of:
+  //   for (Bitset64<IndexType>::Iterator it(bitset); it.Ok(); it.Next()) {
+  //     const IndexType index = it.Index();
+  Iterator begin() const { return Iterator(*this); }
+  Iterator end() const { return end_; }
 
   // Cryptic function!
   // This is just an optimized version of a given piece of code and has probably
@@ -521,6 +558,10 @@ class Bitset64 {
  private:
   IndexType size_;
   std::vector<uint64> data_;
+
+  // It is faster to store the end() Iterator than to recompute it every time.
+  // Note that we cannot do the same for begin().
+  const Iterator end_;
 
   DISALLOW_COPY_AND_ASSIGN(Bitset64);
 };

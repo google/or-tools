@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -135,10 +135,10 @@ template<class T> class ZVector {
 
   // Sets all the elements in the array to value.
   void SetAll(T value) {
-    for (T* current = base_ + min_index_;
-         current <= base_ + max_index_;
-         ++current) {
-      *current = value;
+    DLOG_IF(WARNING, base_ == NULL || size_ <= 0)
+        << "Trying to set values to uninitialized vector.";
+    for (int64 i = 0; i < size_; ++i) {
+      base_[min_index_ + i] = value;
     }
   }
 

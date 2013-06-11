@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -415,16 +415,14 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 // Typemaps for callbacks in java.
 %typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(javain) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1T_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-
+%typemap(javain) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
 %typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(javain) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2T_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+%typemap(javain) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
 
 %typemap(jstype) ResultCallback3<int64, int64, int64, int64>*
 "LongResultCallback3";
 %typemap(javain) ResultCallback3<int64, int64, int64, int64>*
- "SWIGTYPE_p_ResultCallback3T_long_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-
+"$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
 
 // Typemaps to represent const std::vector<int64>& arguments as arrays of long.
 %typemap(jni) const std::vector<int64>& "jobjectArray"
@@ -804,15 +802,13 @@ class LongResultCallback3 {
 
 // Typemaps for callbacks in csharp.
 %typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(csin) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1T_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
-
+%typemap(csin) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
 %typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(csin) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2T_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
-
+%typemap(csin) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
 %typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
 "LongResultCallback3";
 %typemap(csin) ResultCallback3<int64, int64, int64, int64>*
- "SWIGTYPE_p_ResultCallback3T_long_long_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+"$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
 
 CS_TYPEMAP_STDVECTOR(int64, int64, long)
 CS_TYPEMAP_STDVECTOR(int, int, int)
