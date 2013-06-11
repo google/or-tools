@@ -23,9 +23,11 @@
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
 #include <fenv.h>  // NOLINT
+#if defined(__GNUC__) && defined(__linux__)
 #include <fpu_control.h>
 #ifdef __SSE__
 #include <xmmintrin.h>
+#endif
 #endif
 
 #include <cmath>
@@ -45,12 +47,12 @@ namespace operations_research {
 #endif
 
 #if defined(__i386__) || defined(__x86_64__)
+#if defined(__linux__)
 inline fpu_control_t GetFPPrecision() {
   fpu_control_t status;
   _FPU_GETCW(status);
   return status & (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
 }
-
 // CPU precision control. Parameters can be:
 // _FPU_EXTENDED, _FPU_DOUBLE or _FPU_SINGLE.
 inline void SetFPPrecision(fpu_control_t precision) {
@@ -62,6 +64,7 @@ inline void SetFPPrecision(fpu_control_t precision) {
   _FPU_SETCW(status);
   DCHECK_EQ(precision, GetFPPrecision());
 }
+#endif
 #endif  // defined(__i386__) || defined(__x86_64__)
 
 #undef TOUCH
