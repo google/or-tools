@@ -297,11 +297,11 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/pack.$O\
 	$(OBJ_DIR)/range_cst.$O\
 	$(OBJ_DIR)/resource.$O\
+	$(OBJ_DIR)/sched_constraints.$O\
 	$(OBJ_DIR)/sched_expr.$O\
 	$(OBJ_DIR)/sched_search.$O\
 	$(OBJ_DIR)/search.$O\
 	$(OBJ_DIR)/search_limit.pb.$O\
-	$(OBJ_DIR)/set_var.$O\
 	$(OBJ_DIR)/softgcc.$O\
 	$(OBJ_DIR)/table.$O\
 	$(OBJ_DIR)/timetabling.$O\
@@ -415,6 +415,9 @@ $(OBJ_DIR)/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc
 $(OBJ_DIR)/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)resource.$O
 
+$(OBJ_DIR)/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_constraints.cc $(OBJ_OUT)sched_constraints.$O
+
 $(OBJ_DIR)/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_expr.cc $(OBJ_OUT)sched_expr.$O
 
@@ -431,9 +434,6 @@ $(GEN_DIR)/constraint_solver/search_limit.pb.cc:$(SRC_DIR)/constraint_solver/sea
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/search_limit.proto
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.h:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
-
-$(OBJ_DIR)/set_var.$O:$(SRC_DIR)/constraint_solver/set_var.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/set_var.cc $(OBJ_OUT)set_var.$O
 
 $(OBJ_DIR)/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/softgcc.cc $(OBJ_OUT)softgcc.$O
@@ -473,6 +473,7 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/gurobi_interface.$O \
 	$(OBJ_DIR)/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver.pb.$O \
+	$(OBJ_DIR)/model_exporter.$O \
 	$(OBJ_DIR)/scip_interface.$O \
 	$(OBJ_DIR)/sulum_interface.$O
 
@@ -499,6 +500,9 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.cc:$(SRC_DIR)/linear_solver/linear_sol
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/linear_solver/linear_solver.proto
 
 $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solver.pb.cc
+
+$(OBJ_DIR)/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/model_exporter.cc $(OBJ_OUT)model_exporter.$O
 
 $(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)scip_interface.$O
@@ -553,6 +557,7 @@ endif
 # Graph library.
 
 GRAPH_LIB_OBJS=\
+	$(OBJ_DIR)/simple_assignment.$O \
 	$(OBJ_DIR)/linear_assignment.$O \
 	$(OBJ_DIR)/cliques.$O \
 	$(OBJ_DIR)/connectivity.$O \
@@ -561,6 +566,9 @@ GRAPH_LIB_OBJS=\
 
 $(OBJ_DIR)/linear_assignment.$O:$(SRC_DIR)/graph/linear_assignment.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/linear_assignment.cc $(OBJ_OUT)linear_assignment.$O
+
+$(OBJ_DIR)/simple_assignment.$O:$(SRC_DIR)/graph/assignment.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/assignment.cc $(OBJ_OUT)simple_assignment.$O
 
 $(OBJ_DIR)/cliques.$O:$(SRC_DIR)/graph/cliques.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/cliques.cc $(OBJ_OUT)cliques.$O
