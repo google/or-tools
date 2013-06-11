@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Google
+# Copyright 2010-2013 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,20 +11,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Min Cost Flow and Max Flow examples."""
+"""MaxFlow and MinCostFlow examples."""
 
 
 
 from google.apputils import app
-import gflags
 from graph import pywrapgraph
 
-FLAGS = gflags.FLAGS
+
+def MaxFlow():
+  """MaxFlow simple interface example."""
+  print 'MaxFlow on a simple network.'
+  tails = [0, 0, 0, 0, 1, 2, 3, 3, 4]
+  heads = [1, 2, 3, 4, 3, 4, 4, 5, 5]
+  capacities = [5, 8, 5, 3, 4, 5, 6, 6, 4]
+  expected_total_flow = 10
+  max_flow = pywrapgraph.SimpleMaxFlow()
+  for i in range(0, len(tails)):
+    max_flow.AddArcWithCapacity(tails[i], heads[i], capacities[i])
+  if max_flow.Solve(0, 5) == max_flow.OPTIMAL:
+    print 'Total flow', max_flow.OptimalFlow(), '/', expected_total_flow
+    for i in range(max_flow.NumArcs()):
+      print 'From source %d to target %d: %d / %d' % (
+          max_flow.Tail(i),
+          max_flow.Head(i),
+          max_flow.Flow(i),
+          max_flow.Capacity(i))
+    print 'Source side min-cut:', max_flow.GetSourceSideMinCut()
+    print 'Sink side min-cut:', max_flow.GetSinkSideMinCut()
+  else:
+    print 'There was an issue with the max flow input.'
 
 
 def MinCostFlow():
-  """Min Cost Flow Example."""
-  print 'Min Cost Flow on 4x4 Matrix'
+  """MinCostFlow simple interface example.
+
+  Note that this example is actually a linear sum assignment example and will
+  be more efficiently solved with the pywrapgraph.LinearSumAssignement class.
+  """
+  print 'MinCostFlow on 4x4 matrix.'
   num_sources = 4
   num_targets = 4
   costs = [[90, 75, 75, 80],
@@ -32,49 +57,30 @@ def MinCostFlow():
            [125, 95, 90, 105],
            [45, 110, 95, 115]]
   expected_cost = 275
-  graph = pywrapgraph.StarGraph(num_sources + num_targets,
-                                num_sources * num_targets)
-  min_cost_flow = pywrapgraph.MinCostFlow(graph)
+  min_cost_flow = pywrapgraph.SimpleMinCostFlow()
   for source in range(0, num_sources):
     for target in range(0, num_targets):
-      arc = graph.AddArc(source, num_sources + target)
-      min_cost_flow.SetArcUnitCost(arc, costs[source][target])
-      min_cost_flow.SetArcCapacity(arc, 1)
-
-  for source in range(0, num_sources):
-    min_cost_flow.SetNodeSupply(source, 1)
-  for target in range(0, num_targets):
-    min_cost_flow.SetNodeSupply(num_sources + target, -1)
-  min_cost_flow.Solve()
-  total_flow_cost = min_cost_flow.GetOptimalCost()
-  print 'total flow', total_flow_cost, '/', expected_cost
-
-
-def MaxFeasibleFlow():
-  """Max Flow Example."""
-  print 'MaxFeasibleFlow'
-  num_nodes = 6
-  num_arcs = 9
-  tails = [0, 0, 0, 0, 1, 2, 3, 3, 4]
-  heads = [1, 2, 3, 4, 3, 4, 4, 5, 5]
-  capacities = [5, 8, 5, 3, 4, 5, 6, 6, 4]
-  expected_flows = [4, 4, 2, 0, 4, 4, 0, 6, 4]
-  expected_total_flow = 10
-  graph = pywrapgraph.StarGraph(num_nodes, num_arcs)
-  max_flow = pywrapgraph.MaxFlow(graph, 0, num_nodes - 1)
-  for i in range(0, num_arcs):
-    arc = graph.AddArc(tails[i], heads[i])
-    max_flow.SetArcCapacity(arc, capacities[i])
-  max_flow.Solve()
-  total_flow = max_flow.GetOptimalFlow()
-  print 'total flow', total_flow, '/', expected_total_flow
-  for i in range(num_arcs):
-    print 'Arc', i, ':', max_flow.Flow(i), '/', expected_flows[i]
+      min_cost_flow.AddArcWithCapacityAndUnitCost(
+          source, num_sources + target, 1, costs[source][target])
+  for node in range(0, num_sources):
+    min_cost_flow.SetNodeSupply(node, 1)
+    min_cost_flow.SetNodeSupply(num_sources + node, -1)
+  status = min_cost_flow.Solve()
+  if status == min_cost_flow.OPTIMAL:
+    print 'Total flow', min_cost_flow.OptimalCost(), '/', expected_cost
+    for i in range(0, min_cost_flow.NumArcs()):
+      if min_cost_flow.Flow(i) > 0:
+        print 'From source %d to target %d: cost %d' % (
+            min_cost_flow.Tail(i),
+            min_cost_flow.Head(i) - num_sources,
+            min_cost_flow.UnitCost(i))
+  else:
+    print 'There was an issue with the min cost flow input.'
 
 
 def main(unused_argv):
+  MaxFlow()
   MinCostFlow()
-  MaxFeasibleFlow()
 
 
 if __name__ == '__main__':
