@@ -498,10 +498,6 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     ORTOOLS_SCIP_CALL(SCIPresetParam(scip_, "limits/time"));
   }
 
-  // TODO(user): clarify the differences and the precedence between the two
-  // SetParameter*() API (file-based and generic, parameter-based).
-  solver_->SetSolverSpecificParametersAsString(
-      solver_->solver_specific_parameter_string_);
   SetParameters(param);
 
   // Solve.
