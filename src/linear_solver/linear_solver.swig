@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 %include base/base.swig
 %include util/data.swig
+// Swig doesn't like module initializers.
+#define DECLARE_MODULE_INITIALIZER(x);
 
 // Include the file we want to wrap a first time.
 %{
@@ -372,9 +374,29 @@ class LinearConstraint(object):
 # See ../python/linear_programming.py for example on how to use the nice
 # extended python API provided below.
 %extend MPSolver {
+  string ExportModelAsLpFormat(bool obfuscated) {
+    string output;
+    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    string output;
+    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+
   %pythoncode {
     def Add(self, constraint, name=''):
-      return constraint.Extract(self, name)
+      if isinstance(constraint, bool):
+        if constraint:
+          return self.RowConstraint(0, 0, name)
+        else:
+          return self.RowConstraint(1, 1, name)
+      else:
+        return constraint.Extract(self, name)
 
     def Sum(self, expr_array):
       result = SumArray(expr_array)
@@ -435,6 +457,8 @@ namespace operations_research {
 %rename (setCoefficient) MPConstraint::SetCoefficient;
 %rename (setLb) MPConstraint::SetLB;
 %rename (setUb) MPConstraint::SetUB;
+%rename (setIsLazy) MPConstraint::set_is_lazy;
+%rename (isLazy) MPConstraint::is_lazy;
 
 // Rename rules on MPObjective.
 %rename (addOffset) MPObjective::AddOffset;

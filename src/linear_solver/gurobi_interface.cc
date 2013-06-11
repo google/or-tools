@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -93,9 +93,6 @@ class GurobiInterface : public MPSolverInterface {
   virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
   // ----- Misc -----
-  // Writes model
-  virtual void WriteModel(const string& filename);
-
   // Queries problem type.
   virtual bool IsContinuous() const { return IsLP(); }
   virtual bool IsLP() const { return !mip_; }
@@ -154,6 +151,9 @@ class GurobiInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
+  virtual bool ReadParameterFile(const string& filename);
+  virtual string ValidFileExtensionForParameterFile() const;
+
   MPSolver::BasisStatus
   TransformGRBVarBasisStatus(int gurobi_basis_status) const;
   MPSolver::BasisStatus
@@ -193,10 +193,6 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
 GurobiInterface::~GurobiInterface() {
   CHECKED_GUROBI_CALL(GRBfreemodel(model_));
   GRBfreeenv(env_);
-}
-
-void GurobiInterface::WriteModel(const string& filename) {
-  CHECKED_GUROBI_CALL(GRBwrite(model_, filename.c_str()));
 }
 
 // ------ Model modifications and extraction -----
@@ -672,8 +668,6 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << StringPrintf("Model build in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   // Time limit.
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
@@ -682,7 +676,8 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
                                        solver_->time_limit() / 1000.0));
   }
 
-
+  solver_->SetSolverSpecificParametersAsString(
+      solver_->solver_specific_parameter_string_);
   SetParameters(param);
 
   // Solve
@@ -695,20 +690,57 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
   }
 
-  // Get the results.
-  int total_num_rows = solver_->constraints_.size();
-  int total_num_cols = solver_->variables_.size();
-  scoped_array<double> values(new double[total_num_cols]);
-  scoped_array<double> dual_values(new double[total_num_rows]);
-  scoped_array<double> slacks(new double[total_num_rows]);
-  scoped_array<double> rhs(new double[total_num_rows]);
-  scoped_array<double> reduced_costs(new double[total_num_cols]);
+  // Get the status.
   int optimization_status = 0;
   CHECKED_GUROBI_CALL(GRBgetintattr(model_,
                                     GRB_INT_ATTR_STATUS,
                                     &optimization_status));
-  if (optimization_status == GRB_OPTIMAL ||
-      optimization_status == GRB_SUBOPTIMAL) {
+  VLOG(1) << StringPrintf("Solution status %d.\n", optimization_status);
+  int solution_count = 0;
+  CHECKED_GUROBI_CALL(GRBgetintattr(model_,
+                                    GRB_INT_ATTR_SOLCOUNT,
+                                    &solution_count));
+
+  switch (optimization_status) {
+    case GRB_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case GRB_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case GRB_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    case GRB_INF_OR_UNBD:
+      // TODO(user,user): We could introduce our own "infeasible or
+      // unbounded" status.
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    default: {
+      if (solution_count > 0) {
+        result_status_ = MPSolver::FEASIBLE;
+      } else {
+        // TODO(user,user): We could introduce additional values for the
+        // status: for example, stopped because of time limit.
+        result_status_ = MPSolver::ABNORMAL;
+      }
+      break;
+    }
+  }
+
+  if (solution_count > 0) {
+    DCHECK(result_status_ == MPSolver::FEASIBLE ||
+           result_status_ == MPSolver::OPTIMAL);
+    // Get the results.
+    const int total_num_rows = solver_->constraints_.size();
+    const int total_num_cols = solver_->variables_.size();
+
+    scoped_array<double> values(new double[total_num_cols]);
+    scoped_array<double> dual_values(new double[total_num_rows]);
+    scoped_array<double> slacks(new double[total_num_rows]);
+    scoped_array<double> rhs(new double[total_num_rows]);
+    scoped_array<double> reduced_costs(new double[total_num_cols]);
+
     CHECKED_GUROBI_CALL(GRBgetdblattr(model_,
                                       GRB_DBL_ATTR_OBJVAL,
                                       &objective_value_));
@@ -739,13 +771,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
                                              total_num_rows,
                                              dual_values.get()));
     }
-  }
 
-  int solution_count = 0;
-  CHECKED_GUROBI_CALL(GRBgetintattr(model_,
-                                    GRB_INT_ATTR_SOLCOUNT,
-                                    &solution_count));
-  if (solution_count > 0) {
     VLOG(1) << "objective = " << objective_value_;
     for (int i = 0; i < solver_->variables_.size(); ++i) {
       MPVariable* const var = solver_->variables_[i];
@@ -756,6 +782,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
         VLOG(4) << var->name() << ", reduced cost = " << reduced_costs[i];
       }
     }
+
     for (int i = 0; i < solver_->constraints_.size(); ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       ct->set_activity(rhs[i] - slacks[i]);
@@ -773,43 +800,25 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     }
   }
 
-  VLOG(1) << StringPrintf("Solution status %d.\n", optimization_status);
-
-  switch (optimization_status) {
-    case GRB_OPTIMAL:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case GRB_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case GRB_UNBOUNDED:
-      result_status_ = MPSolver::UNBOUNDED;
-      break;
-    case GRB_INF_OR_UNBD:
-      // TODO(user,user): We could introduce our own "infeasible or
-      // unbounded" status.
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    default: {
-      if (solution_count > 0) {
-        result_status_ = MPSolver::FEASIBLE;
-      } else {
-        // TODO(user,user): We could introduce additional values for the
-        // status: for example, stopped because of time limit.
-        result_status_ = MPSolver::ABNORMAL;
-      }
-      break;
-    }
-  }
-
   sync_status_ = SOLUTION_SYNCHRONIZED;
   GRBresetparams(GRBgetenv(model_));
   return result_status_;
 }
 
+bool GurobiInterface::ReadParameterFile(const string& filename) {
+  // A non-zero return value indicates that a problem occurred.
+  return GRBreadparams(GRBgetenv(model_), filename.c_str()) == 0;
+}
+
+string GurobiInterface::ValidFileExtensionForParameterFile() const {
+  return ".prm";
+}
+
 MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
   return new GurobiInterface(solver, mip);
 }
+
+#undef CHECKED_GUROBI_CALL
 
 
 }  // namespace operations_research

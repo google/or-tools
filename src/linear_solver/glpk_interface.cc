@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -152,9 +152,6 @@ class GLPKInterface : public MPSolverInterface {
   virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
-  // Write model
-  virtual void WriteModel(const string& filename);
-
   // Query problem type.
   virtual bool IsContinuous() const { return IsLP(); }
   virtual bool IsLP() const { return !mip_; }
@@ -221,8 +218,7 @@ class GLPKInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
-    : MPSolverInterface(solver), lp_(NULL), mip_(mip),
-      mip_callback_info_(NULL) {
+    : MPSolverInterface(solver), lp_(NULL), mip_(mip) {
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, GLP_MIN);
@@ -243,14 +239,6 @@ void GLPKInterface::Reset() {
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, maximize_ ? GLP_MAX : GLP_MIN);
   ResetExtractionInformation();
-}
-
-void GLPKInterface::WriteModel(const string& filename) {
-  if (HasSuffixString(filename, ".lp")) {
-    glp_write_lp(lp_, NULL, filename.c_str());
-  } else {
-    glp_write_mps(lp_, GLP_MPS_FILE, NULL, filename.c_str());
-  }
 }
 
 // ------ Model modifications and extraction -----
@@ -560,8 +548,6 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   // Configure parameters at every solve, even when the model has not
   // been changed, in case some of the parameters such as the time
   // limit have been changed since the last solve.
@@ -704,8 +690,11 @@ int64 GLPKInterface::iterations() const {
     return kUnknownNumberOfIterations;
   } else {
     if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
-    //    return lpx_get_int_parm(lp_, LPX_K_ITCNT);  // FIXME
+#if GLP_MINOR_VERSION >= 49
     return kUnknownNumberOfIterations;
+#else
+    return lpx_get_int_parm(lp_, LPX_K_ITCNT);
+#endif
   }
 }
 

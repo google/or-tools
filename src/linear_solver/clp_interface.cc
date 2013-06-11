@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -98,9 +98,6 @@ class CLPInterface : public MPSolverInterface {
   virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
   // ----- Misc -----
-  // Write model
-  virtual void WriteModel(const string& filename);
-
   // Query problem type.
   virtual bool IsContinuous() const { return true; }
   virtual bool IsLP() const { return true; }
@@ -160,17 +157,6 @@ void CLPInterface::Reset() {
   clp_.reset(new ClpSimplex);
   clp_->setOptimizationDirection(maximize_ ? -1 : 1);
   ResetExtractionInformation();
-}
-
-void CLPInterface::WriteModel(const string& filename) {
-  // CLP does not support the LP format natively. It only supports it
-  // through OsiClpSolverInterface.
-  // TODO(user) : Implement support for .lp format.
-  if (HasSuffixString(filename, ".lp")) {
-    LOG(WARNING) << "CLP does not support the LP format, "
-                 << "writing in MPS format instead.";
-  }
-  clp_->writeMps(filename.c_str());
 }
 
 // ------ Model modifications and extraction -----
@@ -244,12 +230,20 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
 // Cached
 void CLPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
-  sync_status_ = MUST_RELOAD;
+  InvalidateSolutionSynchronization();
+  if (variable->index() != kNoIndex) {
+    clp_->setObjectiveCoefficient(variable->index(), coefficient);
+  } else {
+    sync_status_ = MUST_RELOAD;
+  }
 }
 
 // Cached
-void CLPInterface::SetObjectiveOffset(double value) {
-  sync_status_ = MUST_RELOAD;
+void CLPInterface::SetObjectiveOffset(double offset) {
+  // Constant term. Use -offset instead of +offset because CLP does
+  // not follow conventions.
+  InvalidateSolutionSynchronization();
+  clp_->setObjectiveOffset(-offset);
 }
 
 // Clear objective of all its terms.
@@ -329,13 +323,14 @@ void CLPInterface::ExtractNewVariables() {
       // Add new variables to existing constraints.
       for (int i = 0; i < last_constraint_index_; i++) {
         MPConstraint* const ct = solver_->constraints_[i];
+        const int ct_index = ct->index();
         for (ConstIter<hash_map<const MPVariable*, double> > it(
                  ct->coefficients_);
              !it.at_end(); ++it) {
           const int var_index = it->first->index();
           DCHECK_NE(kNoIndex, var_index);
-          if (var_index >= last_variable_index_) {
-            clp_->modifyCoefficient(i, var_index, it->second);
+          if (var_index >= last_variable_index_ + 1) {  // + 1 because of dummy.
+            clp_->modifyCoefficient(ct_index, var_index, it->second);
           }
         }
       }
@@ -448,8 +443,6 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   // Time limit.
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
@@ -467,35 +460,6 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   timer.Restart();
   clp_->initialSolve(*options_);
   VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
-
-  // Get the results
-  objective_value_ = clp_->objectiveValue();
-  VLOG(1) << "objective=" << objective_value_;
-  const double* const values = clp_->getColSolution();
-  const double* const reduced_costs = clp_->getReducedCost();
-  for (int i = 0; i < solver_->variables_.size(); ++i) {
-    MPVariable* const var = solver_->variables_[i];
-    const int var_index = var->index();
-    double val = values[var_index];
-    var->set_solution_value(val);
-    VLOG(3) << var->name() << ": value = " << val;
-    double reduced_cost = reduced_costs[var_index];
-    var->set_reduced_cost(reduced_cost);
-    VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
-  }
-  const double* const dual_values = clp_->getRowPrice();
-  const double* const row_activities = clp_->getRowActivity();
-  for (int i = 0; i < solver_->constraints_.size(); ++i) {
-    MPConstraint* const ct = solver_->constraints_[i];
-    const int constraint_index = ct->index();
-    const double row_activity = row_activities[constraint_index];
-    ct->set_activity(row_activity);
-    const double dual_value = dual_values[constraint_index];
-    ct->set_dual_value(dual_value);
-    VLOG(4) << "row " << ct->index()
-            << ": activity = " << row_activity
-            << " dual value = " << dual_value;
-  }
 
   // Check the status: optimal, infeasible, etc.
   int tmp_status = clp_->status();
@@ -516,6 +480,38 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     default:
       result_status_ = MPSolver::ABNORMAL;
       break;
+  }
+
+  if (result_status_ == MPSolver::OPTIMAL ||
+      result_status_ == MPSolver::FEASIBLE) {
+    // Get the results
+    objective_value_ = clp_->objectiveValue();
+    VLOG(1) << "objective=" << objective_value_;
+    const double* const values = clp_->getColSolution();
+    const double* const reduced_costs = clp_->getReducedCost();
+    for (int i = 0; i < solver_->variables_.size(); ++i) {
+      MPVariable* const var = solver_->variables_[i];
+      const int var_index = var->index();
+      double val = values[var_index];
+      var->set_solution_value(val);
+      VLOG(3) << var->name() << ": value = " << val;
+      double reduced_cost = reduced_costs[var_index];
+      var->set_reduced_cost(reduced_cost);
+      VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
+    }
+    const double* const dual_values = clp_->getRowPrice();
+    const double* const row_activities = clp_->getRowActivity();
+    for (int i = 0; i < solver_->constraints_.size(); ++i) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      const int constraint_index = ct->index();
+      const double row_activity = row_activities[constraint_index];
+      ct->set_activity(row_activity);
+      const double dual_value = dual_values[constraint_index];
+      ct->set_dual_value(dual_value);
+      VLOG(4) << "row " << ct->index()
+              << ": activity = " << row_activity
+              << " dual value = " << dual_value;
+    }
   }
 
   ResetParameters();

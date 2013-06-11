@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -62,9 +62,6 @@ class CBCInterface : public MPSolverInterface {
 
   // TODO(user): separate the solve from the model extraction.
   virtual void ExtractModel() {}
-
-  // Write model
-  virtual void WriteModel(const string& filename);
 
   // Query problem type.
   virtual bool IsContinuous() const { return false; }
@@ -199,16 +196,6 @@ void CBCInterface::SetOptimizationDirection(bool maximize) {
     osi_.setObjSense(maximize ? -1 : 1);
   } else {
     sync_status_ = MUST_RELOAD;
-  }
-}
-
-void CBCInterface::WriteModel(const string& filename) {
-  if (HasSuffixString(filename, ".lp")) {
-    osi_.writeLp(filename.c_str(), "");
-  } else {
-    // If filename does not end in ".gz", CBC will
-    // append ".gz" to the filename.
-    osi_.writeMps(filename.c_str(), "");
   }
 }
 
@@ -349,8 +336,6 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   sync_status_ = MODEL_SYNCHRONIZED;
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   ResetBestObjectiveBound();
 
   // Solve
@@ -397,35 +382,6 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
 
-  // Get the results
-  objective_value_ = model.getObjValue();
-  VLOG(1) << "objective=" << objective_value_;
-  const double* const values = model.bestSolution();
-  if (values != NULL) {
-    // if optimal or feasible solution is found.
-    for (int i = 0; i < solver_->variables_.size(); ++i) {
-      MPVariable* const var = solver_->variables_[i];
-      const int var_index = var->index();
-      const double val = values[var_index];
-      var->set_solution_value(val);
-      VLOG(3) << var->name() << "=" << val;
-    }
-  } else {
-    VLOG(1) << "No feasible solution found.";
-  }
-
-  const double* const row_activities = model.getRowActivity();
-  if (row_activities != NULL) {
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      const int constraint_index = ct->index();
-      const double row_activity = row_activities[constraint_index];
-      ct->set_activity(row_activity);
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity;
-    }
-  }
-
   // Check the status: optimal, infeasible, etc.
   int tmp_status = model.status();
 
@@ -464,6 +420,38 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     default:
       result_status_ = MPSolver::ABNORMAL;
       break;
+  }
+
+  if (result_status_ == MPSolver::OPTIMAL ||
+      result_status_ == MPSolver::FEASIBLE) {
+    // Get the results
+    objective_value_ = model.getObjValue();
+    VLOG(1) << "objective=" << objective_value_;
+    const double* const values = model.bestSolution();
+    if (values != NULL) {
+      // if optimal or feasible solution is found.
+      for (int i = 0; i < solver_->variables_.size(); ++i) {
+        MPVariable* const var = solver_->variables_[i];
+        const int var_index = var->index();
+        const double val = values[var_index];
+        var->set_solution_value(val);
+        VLOG(3) << var->name() << "=" << val;
+      }
+    } else {
+      VLOG(1) << "No feasible solution found.";
+    }
+
+    const double* const row_activities = model.getRowActivity();
+    if (row_activities != NULL) {
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint* const ct = solver_->constraints_[i];
+        const int constraint_index = ct->index();
+        const double row_activity = row_activities[constraint_index];
+        ct->set_activity(row_activity);
+        VLOG(4) << "row " << ct->index()
+                << ": activity = " << row_activity;
+      }
+    }
   }
 
   iterations_ = model.getIterationCount();

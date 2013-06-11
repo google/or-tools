@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -107,9 +107,6 @@ class SCIPInterface : public MPSolverInterface {
   }
 
   // ----- Misc -----
-  // Write model
-  virtual void WriteModel(const string& filename);
-
   // Query problem type.
   virtual bool IsContinuous() const { return false; }
   virtual bool IsLP() const { return false; }
@@ -139,6 +136,9 @@ class SCIPInterface : public MPSolverInterface {
   virtual void SetPresolveMode(int value);
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
+
+  virtual bool ReadParameterFile(const string& filename);
+  virtual string ValidFileExtensionForParameterFile() const;
 
   void CreateSCIP();
   void DeleteSCIP();
@@ -199,21 +199,6 @@ void SCIPInterface::DeleteSCIP() {
   scip_constraints_.clear();
   ORTOOLS_SCIP_CALL(SCIPfree(&scip_));
   scip_ = NULL;
-}
-
-void SCIPInterface::WriteModel(const string& filename) {
-#if (SCIP_VERSION < 300)
-  // The message handler also controls how the model is written to a file.
-  // If it is NULL, then nothing is written to the file.
-  ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
-#endif
-  ORTOOLS_SCIP_CALL(SCIPwriteOrigProblem(scip_, filename.c_str(), NULL, false));
-  // Restore mesage handler to its original value.
-#if (SCIP_VERSION < 300)
-  if (quiet_) {
-    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
-  }
-#endif
 }
 
 // ------ Model modifications and extraction -----
@@ -504,8 +489,6 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   // Time limit.
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
@@ -515,6 +498,10 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     ORTOOLS_SCIP_CALL(SCIPresetParam(scip_, "limits/time"));
   }
 
+  // TODO(user): clarify the differences and the precedence between the two
+  // SetParameter*() API (file-based and generic, parameter-based).
+  solver_->SetSolverSpecificParametersAsString(
+      solver_->solver_specific_parameter_string_);
   SetParameters(param);
 
   // Solve.
@@ -676,6 +663,14 @@ void SCIPInterface::SetLpAlgorithm(int value) {
                                         value);
     }
   }
+}
+
+bool SCIPInterface::ReadParameterFile(const string& filename) {
+  return SCIPreadParams(scip_, filename.c_str()) == SCIP_OKAY;
+}
+
+string SCIPInterface::ValidFileExtensionForParameterFile() const {
+  return ".set";
 }
 
 MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {

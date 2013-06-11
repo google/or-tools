@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -163,6 +163,7 @@ class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
 
+
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
 class MPSolver {
@@ -321,23 +322,26 @@ class MPSolver {
   ResultStatus Solve(const MPSolverParameters& param);
 
   // Advanced usage:
-  // Verifies the *correctness* of solution: all variables must be within
-  // their domain, all constraints must be satisfied, and the reported
+  // Verifies the *correctness* of the solution: all variables must be within
+  // their domains, all constraints must be satisfied, and the reported
   // objective value must be accurate.
   // Usage:
   // - This can only be called after Solve() was called.
-  // - If "max_absolute_error" is negative, it will be set to infinity().
+  // - "tolerance" is interpreted as an absolute error threshold.
+  // - For the objective value only, if the absolute error is too large,
+  //   the tolerance is interpreted as a relative error threshold instead.
   // - If "log_errors" is true, every single violation will be logged.
-  // - The observer maximum absolute error is output if
-  //   "observed_max_absolute_error" is not NULL.
+  // - If "tolerance" is negative, it will be set to infinity().
   //
   // Most users should just set the --verify_solution flag and not bother
   // using this method directly.
-  bool VerifySolution(double max_absolute_error,
-                      bool log_errors,
-                      double* observed_max_absolute_error) const;
+  bool VerifySolution(double tolerance, bool log_errors) const;
 
-  // Advanced usage: resets extracted model to solve from scratch.
+  // Advanced usage: resets extracted model to solve from scratch. This won't
+  // reset the parameters that were set with
+  // SetSolverSpecificParametersAsString() or set_time_limit() or even clear the
+  // linear program. It will just make sure that next Solve() will be as if
+  // everything was reconstructed from scratch.
   void Reset();
 
   // ----- Methods using protocol buffers -----
@@ -366,6 +370,7 @@ class MPSolver {
   // that creates the MPSolver object on the heap and returns it.
   static void SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                        MPSolutionResponse* response);
+
 
   // Exports model to protocol buffer.
   void ExportModel(MPModelProto* output_model) const;
@@ -400,7 +405,24 @@ class MPSolver {
   // VerifySolution() for that.
   bool LoadSolutionFromProto(const MPSolutionResponse& response);
 
+  // ----- Export model to files or strings -----
+
+  // Shortcuts to the homonymous MPModelProtoExporter methods, via
+  // exporting to a MPModelProto with ExportModel() (see above).
+  bool ExportModelAsLpFormat(bool obfuscated, string* model_str);
+  bool ExportModelAsMpsFormat(
+      bool fixed_format, bool obfuscated, string* model_str);
+
   // ----- Misc -----
+
+  // Advanced usage: pass solver specific parameters in text format. The format
+  // is solver-specific and is the same as the corresponding solver
+  // configuration file format. Returns true if the operation was successful.
+  //
+  // TODO(user): Currently SCIP will always return true even if the format is
+  // wrong (you can check the log if you suspect an issue there). This seems to
+  // be a bug in SCIP though.
+  bool SetSolverSpecificParametersAsString(const string& parameters);
 
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
@@ -426,14 +448,6 @@ class MPSolver {
   // stdout.
   void EnableOutput();
 
-  void set_write_model_filename(const string &filename) {
-    write_model_filename_ = filename;
-  }
-
-  string write_model_filename() const {
-    return write_model_filename_;
-  }
-
   void set_time_limit(int64 time_limit_milliseconds) {
     DCHECK_GE(time_limit_milliseconds, 0);
     time_limit_ = time_limit_milliseconds;
@@ -456,10 +470,12 @@ class MPSolver {
   // discrete problems.
   int64 nodes() const;
 
-  // Checks the validity of a variable or constraint name.
-  bool CheckNameValidity(const string& name);
-  // Checks the validity of all variables and constraints names.
-  bool CheckAllNamesValidity();
+  // True iff all variable and constraint names allow exporting the model
+  // to a file (or as a proto).
+  // See MPModelProtoExporter::CheckNameValidity() in ./model_exporter.h.
+  bool var_and_constraint_names_allow_export() {
+    return var_and_constraint_names_allow_export_;
+  }
 
   // Returns a string describing the underlying solver and its version.
   string SolverVersion() const;
@@ -562,14 +578,23 @@ class MPSolver {
   // Time limit in milliseconds (0 = no limit).
   int64 time_limit_;
 
-  // Name of the file where the solver writes out the model when Solve
-  // is called. If empty, no file is written.
-  string write_model_filename_;
+  // See the homonymous getter above.
+  bool var_and_constraint_names_allow_export_;
 
   WallTimer timer_;
 
+  // Permanent storage for SetSolverSpecificParametersAsString().
+  string solver_specific_parameter_string_;
+
+
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
+
+// The data structure used to store the coefficients of the contraints and of
+// the objective. Also define a type to facilitate iteration over them with:
+//  for (CoeffEntry entry : coefficients_) { ... }
+typedef hash_map<const MPVariable*, double> CoeffMap;
+typedef std::pair<const MPVariable*, double> CoeffEntry;
 
 // A class to express a linear objective.
 class MPObjective {
@@ -633,12 +658,12 @@ class MPObjective {
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
   explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), offset_(0.0) {}
+      : interface_(interface), coefficients_(1), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
   // Mapping var -> coefficient.
-  hash_map<const MPVariable*, double> coefficients_;
+  CoeffMap coefficients_;
   // Constant term.
   double offset_;
 
@@ -744,6 +769,18 @@ class MPConstraint {
   // Sets both the lower and upper bounds.
   void SetBounds(double lb, double ub);
 
+  // Advanced usage: returns true if the constraint is "lazy" (see below).
+  bool is_lazy() const { return is_lazy_; }
+  // Advanced usage: sets the constraint "laziness".
+  // *** This is only supported for SCIP and has no effect on other solvers. ***
+  // When 'laziness' is true, the constraint is only considered by the Linear
+  // Programming solver if its current solution violates the constraint.
+  // In this case, the constraint is definitively added to the problem.
+  // This may be useful in some MIP problems, and may have a dramatic impact
+  // on performance.
+  // For more info see: http://tinyurl.com/lazy-constraints.
+  void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
+
   // Returns the constraint's activity in the current solution:
   // sum over all terms of (coefficient * variable value)
   double activity() const;
@@ -778,8 +815,8 @@ class MPConstraint {
                double ub,
                const string& name,
                MPSolverInterface* const interface)
-      : lb_(lb), ub_(ub), name_(name), index_(-1), dual_value_(0.0),
-        activity_(0.0), interface_(interface) {}
+      : coefficients_(1), lb_(lb), ub_(ub), name_(name), is_lazy_(false),
+        index_(-1), dual_value_(0.0), activity_(0.0), interface_(interface) {}
 
   void set_index(int index) { index_ = index; }
   void set_activity(double activity) { activity_ = activity; }
@@ -791,20 +828,28 @@ class MPConstraint {
   bool ContainsNewVariables();
 
   // Mapping var -> coefficient.
-  hash_map<const MPVariable*, double> coefficients_;
+  CoeffMap coefficients_;
 
   // The lower bound for the linear constraint.
   double lb_;
+
   // The upper bound for the linear constraint.
   double ub_;
+
   // Name.
   const string name_;
+
+  // True if the constraint is "lazy", i.e. the constraint is added to the
+  // underlying Linear Programming solver only if it is violated.
+  // By default this parameter is 'false'.
+  bool is_lazy_;
   int index_;
   double dual_value_;
   double activity_;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
+
 
 
 // This class stores parameter settings for LP and MIP solvers.
@@ -998,8 +1043,7 @@ class MPSolverInterface {
 
   // ----- Solve -----
   // Solves problem with specified parameter values. Returns true if the
-  // solution is optimal. Calls WriteModelToPredefinedFiles
-  // to allow the user to write the model to a file.
+  // solution is optimal.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
 
   // ----- Model modifications and extraction -----
@@ -1080,9 +1124,6 @@ class MPSolverInterface {
   virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
-  // Writes model to a file.
-  virtual void WriteModel(const string& filename) = 0;
-
   // Queries problem type. For simplicity, the distinction between
   // continuous and discrete is based on the declaration of the user
   // when the solver is created (example: GLPK_LINEAR_PROGRAMMING
@@ -1156,16 +1197,6 @@ class MPSolverInterface {
   // objective offset.
   static const int kDummyVariableIndex;
 
-  // Writes out the model to a file specified by the
-  // --solver_write_model command line argument or
-  // MPSolver::set_write_model_filename.
-  // The file is written by each solver interface (CBC, CLP, GLPK, SCIP) and
-  // each behaves a little differently.
-  // If filename ends in ".lp", then the file is written in the
-  // LP format (except for the CLP solver that does not support the LP
-  // format). In all other cases it is written in the MPS format.
-  void WriteModelToPredefinedFiles();
-
   // Extracts model stored in MPSolver.
   void ExtractModel();
   // Extracts the variables that have not been extracted yet.
@@ -1201,6 +1232,15 @@ class MPSolverInterface {
   virtual void SetPrimalTolerance(double value) = 0;
   virtual void SetDualTolerance(double value) = 0;
   virtual void SetPresolveMode(int value) = 0;
+
+  // Reads a solver-specific file of parameters and set them.
+  // Returns true if there was no errors.
+  virtual bool ReadParameterFile(const string& filename);
+
+  // Returns a file extension like ".tmp", this is needed because some solvers
+  // require a given extension for the ReadParameterFile() filename and we need
+  // to know it to generate a temporary parameter file.
+  virtual string ValidFileExtensionForParameterFile() const;
 
   // Sets the scaling mode.
   virtual void SetScalingMode(int value) = 0;
