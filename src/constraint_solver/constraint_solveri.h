@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1244,14 +1244,14 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
     DCHECK(index != NULL);
     return FindCopy(var_to_index_, var, index);
   }
+
+  // Add variables to "track" to the filter.
+  void AddVars(const IntVar* const* vars, int size);
   int Size() const { return size_; }
   IntVar* Var(int index) const { return vars_[index]; }
   int64 Value(int index) const { return values_[index]; }
 
  protected:
-  // Add variables to "track" to the filter.
-  void AddVars(const IntVar* const* vars, int size);
-
   virtual void OnSynchronize() {}
 
  private:
@@ -1499,6 +1499,7 @@ class ModelCache {
   enum ExprExprExpressionType {
     EXPR_EXPR_DIFFERENCE = 0,
     EXPR_EXPR_PROD,
+    EXPR_EXPR_DIV,
     EXPR_EXPR_MAX,
     EXPR_EXPR_MIN,
     EXPR_EXPR_SUM,
@@ -1853,6 +1854,7 @@ class ModelParser : public ModelVisitor {
                                     const IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
+                                     int64 value,
                                      const IntervalVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
@@ -2283,15 +2285,21 @@ template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
 // ----- Arithmetic operations -----
 
 inline int64 PosIntDivUp(int64 e, int64 v) {
+  DCHECK_GT(v, 0);
   if (e >= 0) {
-    return (e + v - 1) / v;
+    return e % v == 0 ? e / v : e / v + 1;
   } else {
     return -(-e / v);
   }
 }
 
 inline int64 PosIntDivDown(int64 e, int64 v) {
-  return -PosIntDivUp(-e, v);
+  DCHECK_GT(v, 0);
+  if (e >= 0) {
+    return e / v;
+  } else {
+    return e % v == 0 ? e / v : e / v - 1;
+  }
 }
 }  // namespace operations_research
 

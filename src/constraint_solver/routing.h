@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -57,6 +57,8 @@
 // cf. http://en.wikipedia.org/wiki/Local_search_(optimization)), potentially
 // combined with exact techniques based on dynamic programming and exhaustive
 // tree search.
+// TODO(user): Add a section on costs (vehicle arc costs, span costs,
+//                disjunctions costs).
 //
 // Advanced tips: Flags are available to tune the search used to solve routing
 // problems. Here is a quick overview of the ones one might want to modify:
@@ -171,28 +173,17 @@ namespace operations_research {
 
 class LocalSearchOperator;
 class RoutingCache;
-struct VehicleClass;
+class RoutingDimension;
+#ifndef SWIG
+class SweepArranger;
+#endif
 struct SweepNode;
-
-
-// Class to arrange nodes by by their distance and their angles from the
-// depot. Used in the Sweep first solution heuristic.
-class SweepArranger {
- public:
-  explicit SweepArranger(const std::vector<int>& points)
-      : points_(points), sectors_(1) { }
-  ~SweepArranger() {}
-  void ArrangeNodes(std::vector<int>* nodes);
-  void SetSectors(const int sectors) { sectors_ = sectors; }
-
- private:
-  std::vector<int> points_;
-  int sectors_;
-};
+struct VehicleClass;
 
 // The type must be defined outside the class RoutingModel, SWIG does not parse
 // it correctly if it's inside.
 DEFINE_INT_TYPE(_RoutingModel_NodeIndex, int);
+DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
 
 class RoutingModel {
@@ -267,6 +258,7 @@ class RoutingModel {
   };
 
   typedef _RoutingModel_NodeIndex NodeIndex;
+  typedef _RoutingModel_DimensionIndex DimensionIndex;
   typedef _RoutingModel_DisjunctionIndex DisjunctionIndex;
   typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
@@ -280,6 +272,10 @@ class RoutingModel {
   // Constant used to express the "no disjunction" index, returned when a node
   // does not appear in any disjunction.
   static const DisjunctionIndex kNoDisjunction;
+
+  // Constant used to express the "no dimension" index, returned when a
+  // dimension name does not correspond to an actual dimension.
+  static const DimensionIndex kNoDimension;
 
   // Supposes a single depot. A depot is the start and end node of the route of
   // a vehicle.
@@ -318,12 +314,16 @@ class RoutingModel {
   // slack variable and 'capacity' is the upper bound of the cumul variables.
   // 'name' is the name used to reference the dimension; this name is used to
   // get cumul and transit variables from the routing model.
-  void AddDimension(NodeEvaluator2* evaluator,
+  // Returns false if a dimension with the same name has already been created
+  // (and doesn't create the new dimension).
+  // Takes ownership of the callback 'evaluator'.
+  bool AddDimension(NodeEvaluator2* evaluator,
                     int64 slack_max,
                     int64 capacity,
                     bool fix_start_cumul_to_zero,
                     const string& name);
-  void AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
+  // Takes ownership of both 'evaluator' and 'vehicle_capacity' callbacks.
+  bool AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
                                        int64 slack_max,
                                        VehicleEvaluator* vehicle_capacity,
                                        bool fix_start_cumul_to_zero,
@@ -332,7 +332,9 @@ class RoutingModel {
   // equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   // 'name' is the name used to reference the dimension; this name is used to
   // get cumul and transit variables from the routing model.
-  void AddConstantDimension(int64 value,
+  // Returns false if a dimension with the same name has already been created
+  // (and doesn't create the new dimension).
+  bool AddConstantDimension(int64 value,
                             int64 capacity,
                             bool fix_start_cumul_to_zero,
                             const string& name);
@@ -341,7 +343,9 @@ class RoutingModel {
   // the cumul variables. 'name' is the name used to reference the dimension;
   // this name is used to get cumul and transit variables from the routing
   // model.
-  void AddVectorDimension(const int64* values,
+  // Returns false if a dimension with the same name has already been created
+  // (and doesn't create the new dimension).
+  bool AddVectorDimension(const int64* values,
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
                           const string& name);
@@ -350,12 +354,21 @@ class RoutingModel {
   // the cumul variables. 'name' is the name used to reference the dimension;
   // this name is used to get cumul and transit variables from the routing
   // model.
-  void AddMatrixDimension(const int64* const* values,
+  // Returns false if a dimension with the same name has already been created
+  // (and doesn't create the new dimension).
+  bool AddMatrixDimension(const int64* const* values,
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
                           const string& name);
-  // Returns the names of all dimensions added to the routing engine.
-  void GetAllDimensions(std::vector<string>* names);
+  // Outputs the names of all dimensions added to the routing engine.
+  void GetAllDimensions(std::vector<string>* dimension_names) const;
+  // Returns true if a dimension exists for a given dimension name.
+  bool HasDimension(const string& dimension_name) const;
+  // Returns a dimension from its name. Dies if the dimension does not exist.
+  const RoutingDimension& GetDimensionOrDie(const string& dimension_name) const;
+  // Returns a dimension from its name. Returns NULL if the dimension does
+  // not exist.
+  RoutingDimension* GetMutableDimension(const string& dimension_name) const;
   // Constrains all nodes to be active (to belong to a route).
   void AddAllActive();
   // Adds a disjunction constraint on the nodes: exactly one of the nodes is
@@ -458,8 +471,49 @@ class RoutingModel {
   int64 GetVehicleFixedCost(int vehicle) const;
   // Sets the fixed cost of one vehicle route.
   void SetVehicleFixedCost(int vehicle, int64 cost);
-
-
+  // Sets a cost proportional to the sum of the transit variables of a given
+  // dimension.
+  void SetDimensionTransitCost(const string& dimension_name, int64 coefficient);
+  // Gets the cost coefficient corresponding to a dimension.
+  int64 GetDimensionTransitCost(const string& dimension_name) const;
+  // Sets the dimension span cost. This is the cost proportional to the
+  // difference between the largest value of route end cumul variables and
+  // the smallest value of route start cumul variables.
+  // In other words:
+  // span_cost =
+  //   coefficient * (Max(dimension end value) - Min(dimension start value)).
+  // Only positive coefficients are supported.
+  void SetDimensionSpanCost(const string& dimension_name, int64 coefficient);
+  // Returns the dimension span cost coefficient for the dimension named
+  // "dimension".
+  int64 GetDimensionSpanCost(const string& dimension_name) const;
+  // Sets a soft upper bound to the cumul variable of a given node. If the
+  // value of the cumul variable is greater than the bound, a cost proportional
+  // to the difference between this value and the bound is added to the cost
+  // function of the model:
+  // cumulVar <= upper_bound -> cost = 0
+  // cumulVar > upper_bound -> cost = coefficient * (cumulVar - upper_bound).
+  // This is also handy to model tardiness costs when the dimension represents
+  // time.
+  void SetCumulVarSoftUpperBound(NodeIndex node,
+                                 const string& dimension_name,
+                                 int64 upper_bound,
+                                 int64 coefficient);
+  // Returns true if a soft upper bound has been set for a given node and a
+  // given dimension.
+  bool HasCumulVarSoftUpperBound(NodeIndex node,
+                                 const string& dimension_name) const;
+  // Returns the soft upper bound of a cumul variable for a given node and
+  // dimension. The "hard" upper bound of the variable is returned if no soft
+  // upper bound has been set.
+  int64 GetCumulVarSoftUpperBound(NodeIndex node,
+                                  const string& dimension_name) const;
+  // Returns the cost coefficient of the soft upper bound of a cumul variable
+  // for a given node and dimension. If no soft upper bound has been set, 0 is
+  // returned.
+  int64 GetCumulVarSoftUpperBoundCoefficient(
+      NodeIndex node,
+      const string& dimension_name) const;
   // Search
   // Returns the strategy used to build a first solution.
   RoutingStrategy first_solution_strategy() const {
@@ -568,7 +622,7 @@ class RoutingModel {
   // With ignore_inactive_nodes set to false, this method will fail (return
   // NULL) in case some of the route contain nodes that are deactivated in the
   // model; when set to true, these nodes will be skipped.
-  // Returns true if the route was successfully loaded. However, such assignment
+  // Returns true if routes were successfully loaded. However, such assignment
   // still might not be a valid solution to the routing problem due to more
   // complex constraints; it is advisible to call solver()->CheckSolution()
   // afterwards.
@@ -602,6 +656,7 @@ class RoutingModel {
   Assignment* CompactAssignment(const Assignment& assignment) const;
   // Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
+#ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
   void SetSweepArranger(SweepArranger* sweep_arranger) {
     sweep_arranger_.reset(sweep_arranger);
@@ -610,6 +665,7 @@ class RoutingModel {
   SweepArranger* sweep_arranger() const {
     return sweep_arranger_.get();
   }
+#endif
 
   // Model inspection.
   // Returns the variable index of the starting node of a vehicle route.
@@ -636,6 +692,8 @@ class RoutingModel {
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
+  // Returns all cumul variables of the model for the dimension named "name".
+  const std::vector<IntVar*>& CumulVars(const string& dimension_name) const;
 #endif
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
@@ -644,11 +702,11 @@ class RoutingModel {
   // Returns the vehicle variable of the node corresponding to index.
   IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
   // Returns the cumul variable for the dimension named 'name'.
-  IntVar* CumulVar(int64 index, const string& name) const;
+  IntVar* CumulVar(int64 index, const string& dimension_name) const;
   // Returns the transit variable for the dimension named 'name'.
-  IntVar* TransitVar(int64 index, const string& name) const;
+  IntVar* TransitVar(int64 index, const string& dimension_name) const;
   // Return the slack variable for the dimension named 'name'.
-  IntVar* SlackVar(int64 index, const string& name) const;
+  IntVar* SlackVar(int64 index, const string& dimension_name) const;
   // Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
   // Returns the cost of the segment between two nodes for a given vehicle
@@ -660,14 +718,20 @@ class RoutingModel {
     return GetCost(i, j, 0);
   }
   // Returns the number of different vehicle cost callbacks in the model.
-  int GetVehicleCostCount() const { return cost_callback_vehicles_.size(); }
+  int GetVehicleCostCount() const { return  costs_.size(); }
   // Returns the different types of vehicles in the model.
   void GetVehicleClasses(std::vector<VehicleClass>* vehicle_classes) const;
   // Returns a transition value given a dimension and a pair of nodes; this
   // value is the one taken by the corresponding transit variable when the
   // 'next' variable for 'from_index' is bound to 'to_index'.
-  int64 GetTransitValue(const string& dimension,
+  int64 GetTransitValue(const string& dimension_name,
                         int64 from_index, int64 to_index) const;
+  // Print some debugging information about an assignment, including the
+  // feasible intervals of the CumulVar for dimension "dimension_to_print"
+  // at each step of the routes.
+  // If "dimension_to_print" is omitted, all dimensions will be printed.
+  string DebugOutputAssignment(const Assignment& solution_assignment,
+                               const string& dimension_to_print) const;
 
   // Returns the underlying constraint solver. Can be used to add extra
   // constraints and/or modify search algoithms.
@@ -688,6 +752,9 @@ class RoutingModel {
   // considered a failure case.  Clients who need start and end
   // variable indices should use RoutingModel::Start and RoutingModel::End.
   int64 NodeToIndex(NodeIndex node) const;
+  // Returns true if the node can be safely converted to variable index. All
+  // nodes that are not end of a route are safe.
+  bool HasIndex(NodeIndex node) const;
 
   // Time limits
   // Returns the current time limit used in the search.
@@ -713,8 +780,6 @@ class RoutingModel {
                                         RoutingMetaheuristic* metaheuristic);
 
  private:
-  typedef hash_map<string, std::vector<IntVar*> > VarMap;
-
   // Structure storing node disjunction information (nodes and penalty when
   // unperformed).
   struct Disjunction {
@@ -735,27 +800,34 @@ class RoutingModel {
   void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
-  void AddDimensionWithCapacityInternal(NodeEvaluator2* evaluator,
+  bool AddDimensionWithCapacityInternal(NodeEvaluator2* evaluator,
                                         int64 slack_max,
                                         int64 capacity,
                                         VehicleEvaluator* vehicle_capacity,
                                         bool fix_start_cumul_to_zero,
-                                        const string& name);
+                                        const string& dimension_name);
+  DimensionIndex GetDimensionIndex(const string& dimension_name) const;
   void SetVehicleCostInternal(int vehicle, NodeEvaluator2* evaluator);
+  void ComputeVehicleCostClasses();
+  void AppendHomogeneousArcCosts(int node_index,
+                                 std::vector<IntVar*>* cost_elements);
+  void AppendArcCosts(int node_index, std::vector<IntVar*>* cost_elements);
   Assignment* DoRestoreAssignment();
   // Returns the cost of the segment between two nodes for a given vehicle
   // class. Input are variable indices of nodes and the vehicle class.
   int64 GetVehicleClassCost(int64 from_index, int64 to_index, int64 cost_class);
   int64 GetSafeVehicleCostClass(int64 vehicle) const {
     DCHECK_LT(0, vehicles_);
-    return vehicle >= 0 ? GetVehicleCostClass(vehicle) : 0;
+    return vehicle >= 0 ? GetVehicleCostClass(vehicle) : -1;
   }
   int64 GetVehicleCostClass(int64 vehicle) const {
+    DCHECK(closed_);
     return vehicle_cost_classes_[vehicle];
   }
   void SetVehicleCostClass(int64 vehicle, int64 cost_class) {
     vehicle_cost_classes_[vehicle] = cost_class;
   }
+  int64 GetDimensionTransitCostSum(int64 i, int64 j) const;
   // Returns NULL if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   // Returns the first active node in nodes starting from index + 1.
@@ -805,53 +877,47 @@ class RoutingModel {
   void SetupAssignmentCollector();
   void SetupTrace();
   void SetupSearchMonitors();
-
-  const std::vector<IntVar*>& GetOrMakeCumuls(
-      VehicleEvaluator* vehicle_capacity,
-      int64 capacity,
-      const string& name);
-  const std::vector<IntVar*>& GetOrMakeTransits(NodeEvaluator2* evaluator,
-                                           int64 slack_max,
-                                           const string& name);
+  void AddVariableMinimizedByFinalizer(IntVar* var);
+  void AddVariableMaximizedByFinalizer(IntVar* var);
 
   int64 GetArcCost(int64 i, int64 j, int64 cost_class);
-  int64 WrappedEvaluator(NodeEvaluator2* evaluator,
-                         int64 from,
-                         int64 to);
-  int64 WrappedVehicleEvaluator(VehicleEvaluator* evaluator,
-                                int64 vehicle);
 
   // Model
   scoped_ptr<Solver> solver_;
+  int nodes_;
+  int vehicles_;
   Constraint* no_cycle_constraint_;
+  // Decision variables
   std::vector<IntVar*> nexts_;
   std::vector<IntVar*> vehicle_vars_;
   std::vector<IntVar*> active_;
+  // Dimensions
+  hash_map<string, DimensionIndex> dimension_name_to_index_;
+  ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
+  // Costs
   std::vector<NodeEvaluator2*> costs_;
+  std::vector<NodeEvaluator2*> vehicle_costs_;
   bool homogeneous_costs_;
   std::vector<CostCacheElement> cost_cache_;
   std::vector<RoutingCache*> routing_caches_;
-  hash_map<NodeEvaluator2*, std::vector<int> > cost_callback_vehicles_;
   std::vector<int64> vehicle_cost_classes_;
+  std::vector<int64> fixed_costs_;
+  std::vector<const RoutingDimension*> dimensions_with_transit_cost_;
+  IntVar* cost_;
+  // Disjunctions
   ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<DisjunctionIndex> node_to_disjunction_;
+  // Pickup and delivery
   NodePairs pickup_delivery_pairs_;
-  IntVar* cost_;
-  std::vector<int64> fixed_costs_;
-  int nodes_;
-  int vehicles_;
+  // Index management
   std::vector<NodeIndex> index_to_node_;
   ITIVector<NodeIndex, int> node_to_index_;
   std::vector<int> index_to_vehicle_;
   std::vector<int64> starts_;
   std::vector<int64> ends_;
   int start_end_count_;
+  // Model status
   bool is_depot_set_;
-  VarMap cumuls_;
-  hash_map<string, VehicleEvaluator*> capacity_evaluators_;
-  VarMap transits_;
-  VarMap slacks_;
-  hash_map<string, Solver::IndexEvaluator2*> transit_evaluators_;
   bool closed_;
   Status status_;
 
@@ -869,7 +935,11 @@ class RoutingModel {
   std::vector<IntVar*> extra_vars_;
   std::vector<LocalSearchOperator*> extra_operators_;
   std::vector<LocalSearchFilter*> filters_;
+  std::vector<IntVar*> variables_maximized_by_finalizer_;
+  std::vector<IntVar*> variables_minimized_by_finalizer_;
+#ifndef SWIG
   scoped_ptr<SweepArranger> sweep_arranger_;
+#endif
 
   int64 time_limit_ms_;
   int64 lns_time_limit_ms_;
@@ -881,12 +951,151 @@ class RoutingModel {
   hash_set<NodeEvaluator2*> owned_node_callbacks_;
   hash_set<Solver::IndexEvaluator2*> owned_index_callbacks_;
 
+  friend class RoutingDimension;
+
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
 
+// Dimensions represent quantities accumulated at nodes along the routes. They
+// represent quantities such as weights or volumes carried along the route, or
+// distance or times.
+// Quantities at a node are represented by "cumul" variables and the increase
+// or decrease of quantities between nodes are represented by "transit"
+// variables. These variables are linked as follows:
+// if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i)
+// where slack is a positive slack variable (can represent waiting times for
+// a time dimension).
+class RoutingDimension {
+ public:
+#ifndef SWIG
+  // Returns all cumul variables for the dimension.
+  const std::vector<IntVar*>& cumuls() const { return cumuls_; }
+  // Returns all transit variables for the dimension.
+  const std::vector<IntVar*>& transits() const { return transits_; }
+  // Returns all slack variables for the dimension.
+  const std::vector<IntVar*>& slacks() const { return slacks_; }
+#endif
+  // Returns the cost coefficient corresponding to the transit cost.
+  int64 transit_cost_coefficient() const { return transit_cost_coefficient_; }
+  // Returns the transition value for a given pair of nodes; this value is the
+  // one taken by the corresponding transit variable when the 'next' variable
+  // for 'from_index' is bound to 'to_index'.
+  int64 GetTransitValue(int64 from_index, int64 to_index) const;
+  // Returns the cost coefficient corresponding to the span cost.
+  int64 span_cost_coefficient() const { return span_cost_coefficient_; }
+#ifndef SWIG
+  // Returns the callback evaluating the capacity for vehicle indices.
+  RoutingModel::VehicleEvaluator* capacity_evaluator() const {
+    return capacity_evaluator_.get();
+  }
+  // Returns the callback evaluating the transit value between to node indices.
+  Solver::IndexEvaluator2* transit_evaluator() const {
+    return transit_evaluator_.get();
+  }
+#endif
+  // Returns true if a soft upper bound has been set for a given node.
+  bool HasCumulVarSoftUpperBound(RoutingModel::NodeIndex node) const;
+  // Returns the soft upper bound of a cumul variable for a given node. The
+  // "hard" upper bound of the variable is returned if no soft/ upper bound has
+  // been set.
+  int64 GetCumulVarSoftUpperBound(RoutingModel::NodeIndex node) const;
+  // Returns the cost coefficient of the soft upper bound of a cumul variable
+  // for a given node. If no soft upper bound has been set, 0 is returned.
+  int64 GetCumulVarSoftUpperBoundCoefficient(
+      RoutingModel::NodeIndex node) const;
+  // Returns the name of the dimension.
+  const string& name() const { return name_; }
+
+ private:
+  struct SoftBound {
+    SoftBound() : var(NULL), bound(0), coefficient(0) {}
+    IntVar* var;
+    int64 bound;
+    int64 coefficient;
+  };
+
+  RoutingDimension(RoutingModel* model, const string& name);
+  void Initialize(RoutingModel::VehicleEvaluator* vehicle_capacity,
+                  int64 capacity,
+                  RoutingModel::NodeEvaluator2* transit_evaluator,
+                  int64 slack_max);
+  void InitializeCumuls(RoutingModel::VehicleEvaluator* vehicle_capacity,
+                        int64 capacity);
+  void InitializeTransits(RoutingModel::NodeEvaluator2* transit_evaluator,
+                          int64 slack_max);
+  // Sets a cost proportional to the sum of the transit variables.
+  void set_transit_cost_coefficient(int64 coefficient) {
+    transit_cost_coefficient_ = coefficient;
+  }
+  // Sets a cost proportional to the span of the dimension. The span is the
+  // difference between the largest value of route end cumul variables and
+  // the smallest value of route start cumul variables.
+  // In other words:
+  // span_cost =
+  //   coefficient * (Max(dimension end value) - Min(dimension start value)).
+  // Only positive coefficients are supported.
+  void set_span_cost_coefficient(int64 coefficient) {
+    span_cost_coefficient_ = coefficient;
+  }
+  // Sets a soft upper bound to the cumul variable of a given node. If the
+  // value of the cumul variable is greater than the bound, a cost proportional
+  // to the difference between this value and the bound is added to the cost
+  // function of the model:
+  // cumulVar <= upper_bound -> cost = 0
+  // cumulVar > upper_bound -> cost = coefficient * (cumulVar - upper_bound).
+  // This is also handy to model tardiness costs when the dimension represents
+  // time.
+  void SetCumulVarSoftUpperBound(RoutingModel::NodeIndex node,
+                                 int64 upper_bound,
+                                 int64 coefficient);
+  // Sets up the cost variables related to cumul soft upper bounds.
+  void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  // Sets up the cost variables related to span costs.
+  void SetupSpanCosts(std::vector<IntVar*>* cost_elements) const;
+  // Set up the cost variables related to slack costs.
+  void SetupSlackCosts(std::vector<IntVar*>* cost_elements) const;
+
+  std::vector<IntVar*> cumuls_;
+  scoped_ptr<RoutingModel::VehicleEvaluator> capacity_evaluator_;
+  std::vector<IntVar*> transits_;
+  scoped_ptr<Solver::IndexEvaluator2> transit_evaluator_;
+  std::vector<IntVar*> slacks_;
+  int64 transit_cost_coefficient_;
+  int64 span_cost_coefficient_;
+  std::vector<SoftBound> cumul_var_soft_upper_bound_;
+  RoutingModel* const model_;
+  const string name_;
+
+  friend class RoutingModel;
+
+  DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
+};
+
+
+#ifndef SWIG
+// Class to arrange nodes by by their distance and their angles from the
+// depot. Used in the Sweep first solution heuristic.
+class SweepArranger {
+ public:
+  explicit SweepArranger(
+      const ITIVector<RoutingModel::NodeIndex, pair<int64, int64> >& points);
+  virtual ~SweepArranger() {}
+  void ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes);
+  void SetSectors(int sectors) { sectors_ = sectors; }
+
+ private:
+  ITIVector<RoutingModel::NodeIndex, int> coordinates_;
+  int sectors_;
+
+  DISALLOW_COPY_AND_ASSIGN(SweepArranger);
+};
+#endif
+
 // Routing filters, exposed for testing.
-LocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model);
+LocalSearchFilter* MakeNodeDisjunctionFilter(const RoutingModel& routing_model);
+LocalSearchFilter* MakePathCumulFilter(const RoutingModel& routing_model,
+                                       const string& dimension_name,
+                                       Callback1<int64>* objective_callback);
 
 }  // namespace operations_research
 

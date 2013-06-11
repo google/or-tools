@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -400,6 +400,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
   }
 
   void SumChanged() {
+    DCHECK(CheckInternalState());
     if (target_var_->Max() == RootMin()) {
       // We can fix all terms to min.
       for (int i = 0; i < size_; ++i) {
@@ -479,11 +480,17 @@ class SafeSumConstraint : public TreeArrayConstraint {
   void PushUp(int position, int64 delta_min, int64 delta_max) {
     DCHECK_GE(delta_max, 0);
     DCHECK_GE(delta_min, 0);
-    DCHECK_GT(CapAdd(delta_min, delta_max), 0);
+    if (CapAdd(delta_min, delta_max) == 0) {
+      // This may happen if the computation of old min/max has under/overflowed
+      // resulting in no actual change in min and max.
+      return;
+    }
     bool delta_corrupted = false;
     for (int depth = MaxDepth(); depth >= 0; --depth) {
       if (Min(depth, position) != kint64min &&
           Max(depth, position) != kint64max &&
+          delta_min != kint64max &&
+          delta_max != kint64max &&
           !delta_corrupted) {  // No overflow.
         ReduceRange(depth, position, delta_min, delta_max);
       } else if (depth == MaxDepth()) {  // Leaf.
@@ -517,6 +524,31 @@ class SafeSumConstraint : public TreeArrayConstraint {
   }
 
  private:
+  bool CheckInternalState() {
+    for (int i = 0; i < size_; ++i) {
+      CheckLeaf(i, vars_[i]->Min(), vars_[i]->Max());
+    }
+    // Check up.
+    for (int i = MaxDepth() - 1; i >= 0; --i) {
+      for (int j = 0; j < Width(i); ++j) {
+        int64 sum_min = 0;
+        int64 sum_max = 0;
+        SafeComputeNode(i, j, &sum_min, &sum_max);
+        CheckNode(i, j, sum_min, sum_max);
+      }
+    }
+    return true;
+  }
+
+  void CheckLeaf(int position, int64 var_min, int64 var_max) {
+    CheckNode(MaxDepth(), position, var_min, var_max);
+  }
+
+  void CheckNode(int depth, int position, int64 node_min, int64 node_max) {
+    DCHECK_EQ(Min(depth, position), node_min);
+    DCHECK_EQ(Max(depth, position), node_max);
+  }
+
   Demon* sum_demon_;
 };
 
@@ -852,7 +884,6 @@ class ArrayBoolAndEq : public CastConstraint {
                                           i);
         vars_[i]->WhenBound(demons_[i]);
       }
-
     }
     Demon* const target_demon =
         MakeConstraintDemon0(solver(),
@@ -884,7 +915,7 @@ class ArrayBoolAndEq : public CastConstraint {
         target_var_->SetMin(1);
       } else if (target_var_->Max() == 0 && unbounded == 1) {
         const int index = FindPossibleZero();
-        CHECK(index != -1);
+        CHECK_NE(-1, index);
         vars_[index]->SetMax(0);
       } else {
         unbounded_.SetValue(solver(), unbounded);
@@ -995,7 +1026,6 @@ class ArrayBoolOrEq : public CastConstraint {
                                           i);
         vars_[i]->WhenBound(demons_[i]);
       }
-
     }
     Demon* const target_demon =
         MakeConstraintDemon0(solver(),
@@ -1027,7 +1057,7 @@ class ArrayBoolOrEq : public CastConstraint {
         target_var_->SetMax(0);
       } else if (target_var_->Min() == 1 && unbounded == 1) {
         const int index = FindPossibleOne();
-        CHECK(index != -1);
+        CHECK_NE(-1, index);
         vars_[index]->SetMin(1);
       } else {
         unbounded_.SetValue(solver(), unbounded);
@@ -2864,8 +2894,10 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   for (ConstIter<hash_map<const IntExpr*, int64> > iter(map);
        !iter.at_end();
        ++iter) {
-     vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
-     coefs.push_back(iter->second);
+    if (iter->second != 0) {
+      vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
+      coefs.push_back(iter->second);
+    }
   }
   if (constant != 0) {
     vars.push_back(solver->MakeIntConst(1));
@@ -2957,26 +2989,27 @@ IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
   for (ConstIter<hash_map<const IntExpr*, int64> > iter(map);
        !iter.at_end();
        ++iter) {
-     vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
-     coefs.push_back(iter->second);
+    if (iter->second != 0) {
+      vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
+      coefs.push_back(iter->second);
+    }
   }
-  if (constant != 0) {
-    vars.push_back(solver->MakeIntConst(1));
-    coefs.push_back(constant);
-  }
-
-  const int size = vars.size();
+  int size = vars.size();
   if (vars.empty() || AreAllNull<int64>(coefs)) {
-    return solver->MakeIntConst(0LL);
+    return solver->MakeIntConst(constant);
   }
   if (AreAllBoundOrNull(vars, coefs)) {
-    int64 cst = 0;
+    int64 cst = constant;
     for (int i = 0; i < size; ++i) {
       cst += vars[i]->Min() * coefs[i];
     }
     return solver->MakeIntConst(cst);
   }
   if (AreAllOnes(coefs)) {
+    if (constant != 0) {
+      vars.push_back(solver->MakeIntConst(constant));
+      size++;
+    }
     int64 new_min = 0;
     int64 new_max = 0;
     for (int i = 0; i < size; ++i) {
@@ -2995,8 +3028,20 @@ IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
     return sum_var;
   }
   if (size == 1) {
-    return solver->MakeProd(vars[0], coefs[0]);
+    if (constant != 0) {
+      return solver->MakeSum(solver->MakeProd(vars[0], coefs[0]), constant);
+    } else {
+      return solver->MakeProd(vars[0], coefs[0]);
+    }
   }
+
+  // TODO(user): Optimize constant usage below.
+  if (constant != 0) {
+    vars.push_back(solver->MakeIntConst(1));
+    coefs.push_back(constant);
+    size++;
+  }
+
   if (AreAllBooleans(vars) && size > 2) {
     if (AreAllPositive<int64>(coefs)) {
       return solver->RegisterIntExpr(solver->RevAlloc(

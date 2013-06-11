@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -132,6 +132,36 @@ const std::vector<operations_research::RoutingModel::NodeIndex>& {
     return $null;
   }
 }
+
+%typemap(jni) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "jobjectArray"
+%typemap(jtype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
+%typemap(jstype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
+%typemap(javain) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "$javainput"
+
+%typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
+(std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
+  if ($input) {
+    const int size = jenv->GetArrayLength($input);
+    temp.clear();
+    temp.resize(size);
+    for (int i = 0; i < size; ++i) {
+      jintArray values =
+          (jintArray)jenv->GetObjectArrayElement((jobjectArray)$input, i);
+      const int inner_size = jenv->GetArrayLength(values);
+      jint* inner_values = jenv->GetIntArrayElements(values, NULL);
+      for (int j = 0; j < inner_size; ++j) {
+        const int value = inner_values[j];
+        temp[i].push_back(operations_research::RoutingModel::NodeIndex(value));
+      }
+      jenv->ReleaseIntArrayElements(values, inner_values, 0);
+      jenv->DeleteLocalRef(values);
+    }
+    $1 = &temp;
+  } else {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
+    return $null;
+  }
+}
 #endif    // defined(SWIGJAVA)
 #ifdef SWIGCSHARP
 %typemap(ctype)    const std::vector<operations_research::RoutingModel::NodeIndex>&  %{ int length$argnum, int* %}
@@ -204,17 +234,29 @@ static int64 PyCallback2NodeIndexNodeIndex(
 %module(directors="1") main
 %feature("director") NodeEvaluator2;
 %{
-class NodeEvaluator2 {
+// When created, instances of NodeEvaluator2 must be used in a context where
+// someone takes ownership of the C++ part of the NodeEvaluator2 and deletes
+// it when no longer needed. Otherwise, the object would remain on the heap
+// forever. See the comment for the LongResultCallback* classes in
+// ../util/data.swig for more details.
+class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  int64 runAux(operations_research::RoutingModel::NodeIndex i,
-               operations_research::RoutingModel::NodeIndex j) {
-    return run(i.value(), j.value());
-  }
+  NodeEvaluator2() : used_as_permanent_handler_(false) {}
   virtual int64 run(int i, int j) = 0;
   operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
-    return NewPermanentCallback(this, &NodeEvaluator2::runAux);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
   virtual ~NodeEvaluator2() {}
+
+ private:
+  virtual bool IsRepeatable() const { return true; }
+  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
+                    operations_research::RoutingModel::NodeIndex j) {
+    return run(i.value(), j.value());
+  }
+  bool used_as_permanent_handler_;
 };
 %}
 
@@ -226,7 +268,7 @@ class NodeEvaluator2 {
 };
 
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($javainput.getPermanentCallback())";
+%typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($javainput.getPermanentCallback())";
 #endif  // SWIGJAVA
 #ifdef SWIGCSHARP
 %module(directors="1") main
@@ -254,7 +296,7 @@ class NodeEvaluator2 {
 };
 
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.GetPermanentCallback())";
 #endif  // SWIGCSHARP
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
@@ -266,8 +308,6 @@ class NodeEvaluator2 {
     int64 capacity,
     const string& name);
 
-%ignore operations_research::RoutingModel::SetSweepArranger;
-
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
@@ -276,10 +316,6 @@ class NodeEvaluator2 {
     DCHECK_EQ(values.size(), self->nodes());
     self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
-  }
-
-  void SetSweepArrangerPoints(const std::vector<int>& points) {
-    self->SetSweepArranger(new operations_research::SweepArranger(points));
   }
 }
 
@@ -293,6 +329,7 @@ class NodeEvaluator2 {
 #ifdef SWIGJAVA
 %rename (solve) Solve;
 %rename (addDimension) AddDimension;
+%rename (addDimensionWithVehicleCapacity) AddDimensionWithVehicleCapacity;
 %rename (addConstantDimension) AddConstantDimension;
 %rename (addVectorDimension) AddVectorDimension;
 %rename (addAllActive) AddAllActive;
@@ -313,6 +350,7 @@ class NodeEvaluator2 {
 %rename (getFirstSolutionCost) GetFirstSolutionCost;
 %rename (nexts) Nexts;
 %rename (nextVar) NextVar;
+%rename (vehicleVar) VehicleVar;
 %rename (activeVar) ActiveVar;
 %rename (cumulVar) CumulVar;
 %rename (transitVar) TransitVar;
@@ -331,6 +369,15 @@ class NodeEvaluator2 {
 %rename (getMetaheuristic) metaheuristic;
 %rename (setMetaheuristic) set_metaheuristic;
 %rename (setCommandLineOption) SetCommandLineOption;
+%rename (routesToAssignment) RoutesToAssignment;
+%rename (closeModel) CloseModel;
+%rename (setDimensionTransitCost) SetDimensionTransitCost;
+%rename (getDimensionTransitCost) GetDimensionTransitCost;
+%rename (setDimensionSpanCost) SetDimensionSpanCost;
+%rename (getDimensionSpanCost) GetDimensionSpanCost;
+%rename (setCumulVarSoftUpperBound) SetCumulVarSoftUpperBound;
+%rename (getCumulVarSoftUpperBound) GetCumulVarSoftUpperBound;
+%rename (getCumulVarSoftUpperBoundCoefficient) GetCumulVarSoftUpperBoundCoefficient;
 #endif // SWIGJAVA
 
 #ifdef SWIGCSHARP

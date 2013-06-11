@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,8 +40,7 @@ struct FailureProtect {
   }
 };
 
-namespace operations_research {
-class CallPyDecisionBuilder : public DecisionBuilder {
+class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
  public:
   CallPyDecisionBuilder(PyObject* pydb) : pysolver_(NULL), pyarg_(NULL) {
     Py_INCREF(pydb);
@@ -65,14 +64,15 @@ class CallPyDecisionBuilder : public DecisionBuilder {
     pyarg_ = NULL;
   }
 
-  virtual Decision* Next(Solver* const s) {
+  virtual operations_research::Decision* Next(
+      operations_research::Solver* const s) {
     if (pysolver_ == NULL) {
       pysolver_ = SWIG_NewPointerObj(s,
                                      SWIGTYPE_p_operations_research__Solver,
                                      SWIG_POINTER_EXCEPTION);
       pyarg_ = Py_BuildValue((char*)"(O)", pysolver_);
     }
-    Decision* result = NULL;
+    operations_research::Decision* result = NULL;
     PyObject* pyresult = PyEval_CallObject(func_, pyarg_);
     if (pyresult) {
       if (SWIG_ConvertPtr(pyresult,
@@ -107,16 +107,17 @@ class CallPyDecisionBuilder : public DecisionBuilder {
   PyObject* str_func_;
 };
 
-class PyLNSNoValues : public BaseLNS {
+class PyLNSNoValues : public operations_research::BaseLNS {
  public:
-  PyLNSNoValues(const std::vector<IntVar*>& vars, PyObject* op)
+  PyLNSNoValues(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
       : BaseLNS(vars.data(), vars.size()), op_(op) {
     Py_INCREF(op_);
-    init_func_ = PyObject_GetAttrString(op_, "InitFragment");
+    init_func_ = PyObject_GetAttrString(op_, "InitFragments");
     Py_XINCREF(init_func_);
     fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
     Py_XINCREF(fragment_func_);
   }
+
   virtual ~PyLNSNoValues() {
     Py_DECREF(op_);
     op_ = NULL;
@@ -161,12 +162,12 @@ class PyLNSNoValues : public BaseLNS {
   PyObject* fragment_func_;
 };
 
-class PyLNS : public BaseLNS {
+class PyLNS : public operations_research::BaseLNS {
  public:
-  PyLNS(const std::vector<IntVar*>& vars, PyObject* op)
+  PyLNS(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
       : BaseLNS(vars.data(), vars.size()), op_(op) {
     Py_INCREF(op_);
-    init_func_ = PyObject_GetAttrString(op_, "InitFragment");
+    init_func_ = PyObject_GetAttrString(op_, "InitFragments");
     Py_XINCREF(init_func_);
     fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
     Py_XINCREF(fragment_func_);
@@ -221,14 +222,12 @@ class PyLNS : public BaseLNS {
   PyObject* fragment_func_;
   PyObject* base_lns_;
 };
-
-}  // namespace operations_research
 %}
 
 namespace operations_research {
 %pythoncode {
 import gflags
-FLAGS=gflags.FLAGS
+FLAGS = gflags.FLAGS
 gflags.DEFINE_boolean('cp_trace_propagation', False,
                       'trace all propagation events.')
 gflags.DEFINE_boolean('cp_trace_search', False,
@@ -284,6 +283,7 @@ class PyDecisionBuilder(object):
 %rename (Stamp) operations_research::Solver::stamp;
 %rename (WallTime) operations_research::Solver::wall_time;
 
+// Generic rule to remove all Make prefixes.
 %rename("%(strip:[Make])s", %$isfunction) "";
 
 namespace operations_research {
@@ -291,12 +291,12 @@ namespace operations_research {
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr($input,
                       (void**)&t,
-                      SWIGTYPE_p_operations_research__IntExpr,
+                      $descriptor(operations_research::IntExpr*),
                       SWIG_POINTER_EXCEPTION | 0 ) == -1) {
     operations_research::Constraint* c;
     if (SWIG_ConvertPtr($input,
                         (void**)&c,
-                        SWIGTYPE_p_operations_research__Constraint,
+                        $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1) {
       operations_research::IntVar* const v = c->Var();
       if (v == NULL) {
@@ -317,11 +317,11 @@ namespace operations_research {
   operations_research::Constraint* c;
   $1 = (SWIG_ConvertPtr($input,
                         (void**)&t,
-                        SWIGTYPE_p_operations_research__IntExpr,
+                        $descriptor(operations_research::IntExpr*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
         SWIG_ConvertPtr($input,
                         (void**)&c,
-                        SWIGTYPE_p_operations_research__Constraint,
+                        $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1);
   if ($1 == 0) {
     PyErr_Clear();
@@ -332,12 +332,12 @@ namespace operations_research {
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr($input,
                       (void**)&t,
-                      SWIGTYPE_p_operations_research__IntExpr,
+                      $descriptor(operations_research::IntExpr*),
                       SWIG_POINTER_EXCEPTION | 0 ) == -1) {
     operations_research::Constraint* c;
     if (SWIG_ConvertPtr($input,
                         (void**)&c,
-                        SWIGTYPE_p_operations_research__Constraint,
+                        $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1) {
       if (c == NULL) {
         PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
@@ -362,11 +362,11 @@ namespace operations_research {
   operations_research::Constraint* c;
   $1 = (SWIG_ConvertPtr($input,
                         (void**)&t,
-                        SWIGTYPE_p_operations_research__IntExpr,
+                        $descriptor(operations_research::IntExpr*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
         SWIG_ConvertPtr($input,
                         (void**)&c,
-                        SWIGTYPE_p_operations_research__Constraint,
+                        $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1);
 
   if ($1 == 0) {
@@ -378,7 +378,7 @@ namespace operations_research {
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr($input,
                       (void**)&t,
-                      SWIGTYPE_p_operations_research__IntExpr,
+                      $descriptor(operations_research::IntExpr*),
                       SWIG_POINTER_EXCEPTION | 0 ) == -1) {
     SWIG_fail;
   }
@@ -389,7 +389,7 @@ namespace operations_research {
   operations_research::IntExpr* t;
   $1 = SWIG_ConvertPtr($input,
                        (void**)&t,
-                       SWIGTYPE_p_operations_research__IntExpr,
+                       $descriptor(operations_research::IntExpr*),
                        SWIG_POINTER_EXCEPTION | 0 ) != -1;
   if ($1 == 0) {
     PyErr_Clear();
@@ -411,12 +411,12 @@ namespace operations_research {
                      PyList_GetItem($input, i));
     operations_research::IntExpr* t;
     if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__IntExpr,
+                         $descriptor(operations_research::IntExpr*),
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       operations_research::Constraint* c;
       if (SWIG_ConvertPtr(obj,
                           (void**)&c,
-                          SWIGTYPE_p_operations_research__Constraint,
+                          $descriptor(operations_research::Constraint*),
                           SWIG_POINTER_EXCEPTION | 0 ) != -1) {
         if (c == NULL) {
           PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
@@ -455,11 +455,11 @@ namespace operations_research {
       operations_research::IntExpr* t;
       operations_research::Constraint* c;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__IntExpr,
+                           $descriptor(operations_research::IntExpr*),
                            SWIG_POINTER_EXCEPTION | 0 )) == -1 &&
           SWIG_ConvertPtr(obj,
                           (void**)&c,
-                          SWIGTYPE_p_operations_research__Constraint,
+                          $descriptor(operations_research::Constraint*),
                           SWIG_POINTER_EXCEPTION | 0 ) == -1) {
         PyErr_Clear();
         failed = true;
@@ -485,10 +485,10 @@ namespace operations_research {
                      PyList_GetItem($input, i));
     operations_research::DecisionBuilder* t;
     if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__DecisionBuilder,
+                         $descriptor(operations_research::DecisionBuilder*),
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       PyErr_Clear();
-      t = new operations_research::CallPyDecisionBuilder(obj);
+      t = new CallPyDecisionBuilder(obj);
     }
     if (t == NULL) {
       PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
@@ -511,7 +511,7 @@ namespace operations_research {
           is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
       operations_research::DecisionBuilder* t;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__DecisionBuilder,
+                           $descriptor(operations_research::DecisionBuilder*),
                            SWIG_POINTER_EXCEPTION | 0 )) == -1) {
         PyErr_Clear();
         PyObject* next_func = PyObject_GetAttrString(obj, "Next");
@@ -539,7 +539,7 @@ namespace operations_research {
                      PyList_GetItem($input, i));
     operations_research::TYPE* t;
     if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__##TYPE,
+                         $descriptor(operations_research::##TYPE*),
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       SWIG_fail;
     }
@@ -564,7 +564,7 @@ namespace operations_research {
           is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
       operations_research::TYPE* t;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__##TYPE,
+                           $descriptor(operations_research::##TYPE*),
                            SWIG_POINTER_EXCEPTION | 0 )) == -1) {
         PyErr_Clear();
         failed = true;
@@ -586,10 +586,10 @@ CONVERT_VECTOR(LocalSearchFilter);
   operations_research::DecisionBuilder* tmp;
   if (SWIG_ConvertPtr($input,
                       (void **) &tmp,
-                      SWIGTYPE_p_operations_research__DecisionBuilder,
+                      $descriptor(operations_research::DecisionBuilder*),
                       SWIG_POINTER_EXCEPTION | 0) == -1) {
     PyErr_Clear();
-    $1 = new operations_research::CallPyDecisionBuilder($input);
+    $1 = new CallPyDecisionBuilder($input);
   } else {
     $1 = tmp;
   }
@@ -599,7 +599,7 @@ CONVERT_VECTOR(LocalSearchFilter);
   operations_research::DecisionBuilder* tmp;
   if (SWIG_ConvertPtr($input,
                       (void **) &tmp,
-                      SWIGTYPE_p_operations_research__DecisionBuilder,
+                      $descriptor(operations_research::DecisionBuilder*),
                       SWIG_POINTER_EXCEPTION | 0) == -1) {
     PyErr_Clear();
     PyObject* next_func = PyObject_GetAttrString($input, "Next");
@@ -795,12 +795,12 @@ static void SetPythonFlags(bool trace_propagation,
 
   LocalSearchOperator* LNSOperator(const std::vector<IntVar*>& vars,
                                    PyObject* lns) {
-    return self->RevAlloc(new operations_research::PyLNS(vars, lns));
+    return self->RevAlloc(new PyLNS(vars, lns));
   }
 
   LocalSearchOperator* LNSNoValuesOperator(const std::vector<IntVar*>& vars,
                                            PyObject* lns) {
-    return self->RevAlloc(new operations_research::PyLNSNoValues(vars, lns));
+    return self->RevAlloc(new PyLNSNoValues(vars, lns));
   }
 
   DecisionBuilder* VarEvalValStrPhase(
@@ -906,6 +906,7 @@ static void SetPythonFlags(bool trace_propagation,
 %ignore Solver::MakeLess;
 %ignore Solver::MakeConstraintInitialPropagateCallback;
 %ignore Solver::MakeDelayedConstraintInitialPropagateCallback;
+%ignore Solver::MakeLocalSearchObjectiveFilter;
 %ignore Solver::MakePhase(IntVar* const v0, PhaseStrategy str);
 %ignore Solver::MakePhase(IntVar* const v0,
                           IntVar* const v1,
@@ -971,19 +972,10 @@ static void SetPythonFlags(bool trace_propagation,
     return self->solver()->MakeDiv(self, v);
   }
   IntExpr* __mod__(int64 v) {
-    operations_research::IntVar* const modulo =
-        self->solver()->MakeIntVar(-v, v);
-    self->solver()->AddConstraint(
-        self->solver()->MakeModuloConstraint(self->Var(), v, modulo));
-    return modulo;
+    return self->solver()->MakeModulo(self, v);
   }
   IntExpr* __mod__(IntExpr* e) {
-    const int64 v = std::max(abs(e->Min()), abs(e->Max()));
-    operations_research::IntVar* const modulo =
-        self->solver()->MakeIntVar(-v, v);
-    self->solver()->AddConstraint(
-        self->solver()->MakeModuloConstraint(self->Var(), e->Var(), modulo));
-    return modulo;
+    return self->solver()->MakeModulo(self, e);
   }
 
   IntExpr* __neg__() {
@@ -1195,14 +1187,14 @@ static void SetPythonFlags(bool trace_propagation,
 }
 
 // Protect from failure
-#define PREPROTECT\
+#define PREPROTECT \
   FailureProtect protect;\
   Closure* const intercept = \
       NewCallback<>(&protect, &FailureProtect::JumpBack);\
   solver->set_fail_intercept(intercept);\
   if (setjmp(protect.exception_buffer) == 0) {
 
-#define POSTPROTECT\
+#define POSTPROTECT \
     solver->clear_fail_intercept();\
     delete intercept;\
   } else {\
@@ -1253,6 +1245,8 @@ static void SetPythonFlags(bool trace_propagation,
     $action
   POSTPROTECT
 }
+#undef PREPROTECT
+#undef POSTPROTECT
 }  // namespace operations_research
 #endif  // SWIGPYTHON
 
@@ -1267,7 +1261,6 @@ static void SetPythonFlags(bool trace_propagation,
 %feature("director") BaseLns;
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchFilter;
-
 %include "std_vector.i"
 
 %template(IntVector) std::vector<int>;
@@ -1341,6 +1334,20 @@ CONVERT_VECTOR(LocalSearchOperator);
 CONVERT_VECTOR(LocalSearchFilter);
 
 %typemap(javacode) Solver %{
+  /**
+   * This exceptions signal that a failure has been raised in the C++ world.
+   *
+   */
+  public static class FailException extends Exception {
+    public FailException() {
+      super();
+    }
+
+    public FailException(String message) {
+      super(message);
+    }
+  }
+
   public IntVar[] makeIntVarArray(int count, long min, long max) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
@@ -1433,7 +1440,7 @@ CONVERT_VECTOR(LocalSearchFilter);
     solver->clear_fail_intercept();\
     jclass fail_class = jenv->FindClass(\
         "com/google/ortools/constraintsolver/"\
-        "FailException");\
+        "Solver$FailException");\
     jenv->ThrowNew(fail_class, "fail");\
     return $null;\
   }
@@ -1485,8 +1492,8 @@ CONVERT_VECTOR(LocalSearchFilter);
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters() {}
-  ~LocalSearchPhaseParameters() {}
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
 };
 }  // namespace operations_research
 
@@ -1501,6 +1508,7 @@ class LocalSearchPhaseParameters {
 %feature("director") DecisionBuilder;
 %feature("director") IntVarLocalSearchFilter;
 %feature("director") IntVarLocalSearchOperator;
+%feature("director") LocalSearchOperator;
 %feature("director") OptimizeVar;
 %feature("director") SearchLimit;
 %feature("director") SearchMonitor;
@@ -2203,14 +2211,14 @@ namespace operations_research {
 }
 
 // Protect from failure
-#define PREPROTECT\
+#define PREPROTECT \
   FailureProtect protect;\
   Closure* const intercept = \
       NewCallback<>(&protect, &FailureProtect::JumpBack);\
   solver->set_fail_intercept(intercept);\
   if (setjmp(protect.exception_buffer) == 0) {
 
-#define POSTPROTECT\
+#define POSTPROTECT \
     solver->clear_fail_intercept();\
     delete intercept;\
   } else {\
@@ -2261,13 +2269,15 @@ namespace operations_research {
     $action
   POSTPROTECT
 }
+#undef PREPROTECT
+#undef POSTPROTECT
 }  // namespace operations_research
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters() {}
-  ~LocalSearchPhaseParameters() {}
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
 };
 }  // namespace operations_research
 

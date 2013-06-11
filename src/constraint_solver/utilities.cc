@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -297,9 +297,10 @@ class PrintModelVisitor : public ModelVisitor {
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
+                                     int64 value,
                                      const IntervalVar* const delegate) {
     if (delegate != NULL) {
-      LOG(INFO) << Spaces() << operation << " <";
+      LOG(INFO) << Spaces() << operation << " <" << value << ", ";
       Increase();
       delegate->Accept(this);
       Decrease();
@@ -561,6 +562,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
+                                     int64 value,
                                      const IntervalVar* const delegate) {
     num_intervals_++;
     if (delegate) {
@@ -710,6 +712,7 @@ class VariableDegreeVisitor : public ModelVisitor {
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
+                                     int64 value,
                                      const IntervalVar* const delegate) {
     if (delegate) {
       VisitSubArgument(delegate);

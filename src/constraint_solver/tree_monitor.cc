@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -495,7 +495,6 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
       filename_config_(""),
       filename_tree_(filename_tree),
       filename_visualizer_(filename_visualizer),
-      root_node_(NULL),
       search_level_(0),
       tree_xml_(NULL),
       visualization_xml_(NULL) {
@@ -514,7 +513,6 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
       filename_config_(""),
       filename_tree_(""),
       filename_visualizer_(""),
-      root_node_(NULL),
       search_level_(0),
       tree_xml_(tree_xml),
       visualization_xml_(visualization_xml) {
@@ -536,7 +534,6 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
       filename_config_(filename_config),
       filename_tree_(filename_tree),
       filename_visualizer_(filename_visualizer),
-      root_node_(NULL),
       search_level_(0),
       tree_xml_(NULL),
       visualization_xml_(NULL) {
@@ -556,7 +553,6 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
       filename_config_(""),
       filename_tree_(""),
       filename_visualizer_(""),
-      root_node_(NULL),
       search_level_(0),
       tree_xml_(tree_xml),
       visualization_xml_(visualization_xml) {

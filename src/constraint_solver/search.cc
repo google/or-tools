@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,7 +42,10 @@
 
 DEFINE_bool(cp_use_sparse_gls_penalties, false,
             "Use sparse implementation to store Guided Local Search penalties");
-
+DEFINE_bool(cp_log_to_vlog, false, "Whether search related logging should be "
+            "vlog or info.");
+DEFINE_int64(cp_large_domain_no_splitting_limit, 0xFFFFF,
+             "Size limit to allow holes in variables from the strategy.");
 namespace operations_research {
 
 // ---------- Search Log ---------
@@ -154,10 +157,9 @@ bool SearchLog::AtSolution() {
   if (progress != SearchMonitor::kNoProgress) {
     StringAppendF(&log, ", limit = %d%%", progress);
   }
-  log.append(")");
-  LG << log;
+  OutputLine(log);
   if (display_callback_.get() != NULL) {
-    LG << display_callback_->Run();
+    LOG(INFO) << display_callback_->Run();
   }
   return false;
 }
@@ -250,7 +252,11 @@ void SearchLog::EndInitialPropagation() {
 }
 
 void SearchLog::OutputLine(const string& line) {
-  LG << line;
+  if (FLAGS_cp_log_to_vlog) {
+    VLOG(1) << line;
+  } else {
+    LOG(INFO) << line;
+  }
 }
 
 string SearchLog::MemoryUsage() {
@@ -261,12 +267,12 @@ string SearchLog::MemoryUsage() {
   const int64 memory_usage = Solver::MemoryUsage();
   if (memory_usage > kDisplayThreshold * kGigaByte) {
     return StringPrintf("memory used = %.2lf GB",
-                        memory_usage * 1.0 / kGigaByte);
+                        memory_usage  * 1.0 / kGigaByte);
   } else if (memory_usage > kDisplayThreshold * kMegaByte) {
     return StringPrintf("memory used = %.2lf MB",
-                        memory_usage * 1.0 / kMegaByte);
+                        memory_usage  * 1.0 / kMegaByte);
   } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-    return StringPrintf("memory used = %.2lf KB",
+    return StringPrintf("memory used = %2lf KB",
                         memory_usage * 1.0 / kKiloByte);
   } else {
     return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
@@ -310,55 +316,55 @@ class SearchTrace : public SearchMonitor {
   virtual ~SearchTrace() {}
 
   virtual void EnterSearch() {
-    LG << prefix_ << " EnterSearch(" << solver()->SolveDepth() << ")";
+    LOG(INFO) << prefix_ << " EnterSearch(" << solver()->SolveDepth() << ")";
   }
   virtual void RestartSearch() {
-    LG << prefix_ << " RestartSearch(" << solver()->SolveDepth() << ")";
+    LOG(INFO) << prefix_ << " RestartSearch(" << solver()->SolveDepth() << ")";
   }
   virtual void ExitSearch() {
-    LG << prefix_ << " ExitSearch(" << solver()->SolveDepth() << ")";
+    LOG(INFO) << prefix_ << " ExitSearch(" << solver()->SolveDepth() << ")";
   }
   virtual void BeginNextDecision(DecisionBuilder* const b) {
-    LG << prefix_ << " BeginNextDecision(" << b << ") ";
+    LOG(INFO) << prefix_ << " BeginNextDecision(" << b << ") ";
   }
   virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d) {
     if (d) {
-      LG << prefix_ << " EndNextDecision(" << b << ", " << d << ") ";
+      LOG(INFO) << prefix_ << " EndNextDecision(" << b << ", " << d << ") ";
     } else {
-      LG << prefix_ << " EndNextDecision(" << b << ") ";
+      LOG(INFO) << prefix_ << " EndNextDecision(" << b << ") ";
     }
   }
   virtual void ApplyDecision(Decision* const d) {
-    LG << prefix_ << " ApplyDecision(" << d << ") ";
+    LOG(INFO) << prefix_ << " ApplyDecision(" << d << ") ";
   }
   virtual void RefuteDecision(Decision* const d) {
-    LG << prefix_ << " RefuteDecision(" << d << ") ";
+    LOG(INFO) << prefix_ << " RefuteDecision(" << d << ") ";
   }
   virtual void AfterDecision(Decision* const d, bool apply) {
-    LG << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
+    LOG(INFO) << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
   }
   virtual void BeginFail() {
-    LG << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
+    LOG(INFO) << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
   }
   virtual void EndFail() {
-    LG << prefix_ << " EndFail(" << solver()->SearchDepth() << ")";
+    LOG(INFO) << prefix_ << " EndFail(" << solver()->SearchDepth() << ")";
   }
   virtual void BeginInitialPropagation() {
-    LG << prefix_ << " BeginInitialPropagation()";
+    LOG(INFO) << prefix_ << " BeginInitialPropagation()";
   }
   virtual void EndInitialPropagation() {
-    LG << prefix_ << " EndInitialPropagation()";
+    LOG(INFO) << prefix_ << " EndInitialPropagation()";
   }
   virtual bool AtSolution() {
-    LG << prefix_ << " AtSolution()";
+    LOG(INFO) << prefix_ << " AtSolution()";
     return false;
   }
   virtual bool AcceptSolution() {
-    LG << prefix_ << " AcceptSolution()";
+    LOG(INFO) << prefix_ << " AcceptSolution()";
     return true;
   }
   virtual void NoMoreSolutions() {
-    LG << prefix_ << " NoMoreSolutions()";
+    LOG(INFO) << prefix_ << " NoMoreSolutions()";
   }
 
   virtual string DebugString() const {
@@ -645,8 +651,7 @@ class BaseVariableAssignmentSelector : public BaseObject {
 
 class VariableSelector : public BaseObject {
  public:
-  VariableSelector(const IntVar* const* vars, int size)
-  : vars_(NULL), size_(size) {
+  VariableSelector(const IntVar* const* vars, int size) : size_(size) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
       vars_.reset(new IntVar*[size_]);
@@ -717,7 +722,7 @@ class MinSizeLowestMinSelector : public VariableSelector {
 
 IntVar* MinSizeLowestMinSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  uint64 best_size = kint64max;
+  uint64 best_size = kuint64max;
   int64 best_min = kint64max;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
@@ -992,34 +997,33 @@ IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
 
 // ----- Choose Highest Regret -----
 
-class HighestRegretSelector : public VariableSelector {
+class HighestRegretSelectorOnMin : public VariableSelector {
  public:
-  HighestRegretSelector(const IntVar* const* vars, int size)
+  HighestRegretSelectorOnMin(const IntVar* const* vars, int size)
       : VariableSelector(vars, size),
         iterators_(size) {
     for (int i = 0; i < size; ++i) {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
-  virtual ~HighestRegretSelector() {}
+  virtual ~HighestRegretSelectorOnMin() {}
   virtual IntVar* Select(Solver* const s, int64* id);
   virtual string DebugString() const { return "MaxRegretSelector"; }
 
   int64 ComputeRegret(int index) const {
+    DCHECK(!vars_[index]->Bound());
     const int64 vmin = vars_[index]->Min();
-    if (vars_[index]->Contains(vmin + 1)) {
-      return 1;
-    }
-    iterators_[index]->Init();
-    iterators_[index]->Next();
-    return iterators_[index]->Value() - vmin;
+    IntVarIterator* const iterator = iterators_[index];
+    iterator->Init();
+    iterator->Next();
+    return iterator->Value() - vmin;
   }
 
-private:
+ private:
   std::vector<IntVarIterator*> iterators_;
 };
 
-IntVar* HighestRegretSelector::Select(Solver* const s, int64* id) {
+IntVar* HighestRegretSelectorOnMin::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
   int64 best_regret = 0;
   int index = -1;
@@ -1239,8 +1243,9 @@ class RandomValueSelector : public ValueSelector {
 };
 
 int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
-  const int64 span = v->Max() - v->Min() + 1;
-  if (span > 0xFFFFFF) {
+  const uint64 span = v->Max() - v->Min() + 1;
+  if (span > FLAGS_cp_large_domain_no_splitting_limit) {
+    // Do not create holes in large domains.
     return v->Min();
   }
   const uint64 size = v->Size();
@@ -1293,7 +1298,8 @@ class CenterValueSelector : public ValueSelector {
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
   const int64 vmin = v->Min();
   const int64 vmax = v->Max();
-  if (vmax - vmin > 0xFFFFFF) {
+  if (vmax - vmin > FLAGS_cp_large_domain_no_splitting_limit) {
+    // Do not create holes in large domains.
     return vmin;
   }
   const int64 mid = (vmin + vmax) / 2;
@@ -1316,7 +1322,7 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
 
 class SplitValueSelector : public ValueSelector {
  public:
-  SplitValueSelector(const string& name) : name_(name) {}
+  explicit SplitValueSelector(const string& name) : name_(name) {}
   virtual ~SplitValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
   string DebugString() const {
@@ -1330,7 +1336,8 @@ class SplitValueSelector : public ValueSelector {
 int64 SplitValueSelector::Select(const IntVar* const v, int64 id) {
   const int64 vmin = v->Min();
   const int64 vmax = v->Max();
-  const int64 mid = (vmin + vmax) / 2;
+  const uint64 delta = vmax - vmin;
+  const int64 mid = vmin + delta / 2;
   return mid;
 }
 
@@ -1440,7 +1447,7 @@ BaseEvaluatorSelector::BaseEvaluatorSelector(
     const IntVar* const* vars,
     int size,
     ResultCallback2<int64, int64, int64>* evaluator)
-    : vars_(NULL), size_(size), evaluator_(evaluator) {
+    : size_(size), evaluator_(evaluator) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
     vars_.reset(new IntVar*[size_]);
@@ -1566,7 +1573,9 @@ StaticEvaluatorSelector::StaticEvaluatorSelector(
     const IntVar* const* vars, int size,
     ResultCallback2<int64, int64, int64>* evaluator)
     : BaseEvaluatorSelector(vars, size, evaluator),
-      comp_(evaluator), elements_(NULL), element_size_(0), first_(-1) {}
+      comp_(evaluator),
+      element_size_(0),
+      first_(-1) {}
 
 int64 StaticEvaluatorSelector::SelectValue(const IntVar* const var, int64 id) {
   return elements_[first_].value;
@@ -1802,7 +1811,7 @@ class AssignVariablesValues : public Decision {
 AssignVariablesValues::AssignVariablesValues(const IntVar* const* vars,
                                              int size,
                                              const int64* const values)
-  : vars_(NULL), values_(NULL), size_(size) {
+    : size_(size) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
     vars_.reset(new IntVar*[size_]);
@@ -1906,8 +1915,8 @@ class BaseAssignVariables : public DecisionBuilder {
       case Solver::CHOOSE_MAX_SIZE:
         var_selector = s->RevAlloc(new HighestSizeSelector(vars, size));
         break;
-      case Solver::CHOOSE_MAX_REGRET:
-        var_selector = s->RevAlloc(new HighestRegretSelector(vars, size));
+      case Solver::CHOOSE_MAX_REGRET_ON_MIN:
+        var_selector = s->RevAlloc(new HighestRegretSelectorOnMin(vars, size));
         break;
       case Solver::CHOOSE_PATH:
         var_selector = s->RevAlloc(new PathSelector(vars, size));
@@ -3001,6 +3010,7 @@ class TabuSearch : public Metaheuristic {
   double tabu_factor_;
   int64 stamp_;
   bool found_initial_solution_;
+
   DISALLOW_COPY_AND_ASSIGN(TabuSearch);
 };
 
@@ -3132,7 +3142,7 @@ bool TabuSearch::LocalOptimum() {
   } else {
     current_ = kint64max;
   }
-  return true;
+  return found_initial_solution_;
 }
 
 void TabuSearch::AcceptNeighbor() {
@@ -3183,7 +3193,9 @@ class SimulatedAnnealing : public Metaheuristic {
                      int64 step,
                      int64 initial_temperature);
   virtual ~SimulatedAnnealing() {}
+  virtual void EnterSearch();
   virtual void ApplyDecision(Decision* d);
+  virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
   virtual string DebugString() const {
@@ -3196,6 +3208,9 @@ class SimulatedAnnealing : public Metaheuristic {
   const int64 temperature0_;
   int64 iteration_;
   ACMRandom rand_;
+  bool found_initial_solution_;
+
+  DISALLOW_COPY_AND_ASSIGN(SimulatedAnnealing);
 };
 
 SimulatedAnnealing::SimulatedAnnealing(Solver* const s,
@@ -3206,14 +3221,20 @@ SimulatedAnnealing::SimulatedAnnealing(Solver* const s,
     : Metaheuristic(s, maximize, objective, step),
       temperature0_(initial_temperature),
       iteration_(0),
-      rand_(654) {}
+      rand_(654),
+      found_initial_solution_(false) {}
+
+void SimulatedAnnealing::EnterSearch() {
+  Metaheuristic::EnterSearch();
+  found_initial_solution_ = false;
+}
 
 void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
     return;
   }
-  #if defined(_MSC_VER)
+  #if defined(_MSC_VER) || defined(__ANDROID__)
   const int64  energy_bound = Temperature() * log(rand_.RndFloat()) / log(2.0L);
 #else
   const int64  energy_bound = Temperature() * log2(rand_.RndFloat());
@@ -3229,6 +3250,14 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   }
 }
 
+bool SimulatedAnnealing::AtSolution() {
+  if (!Metaheuristic::AtSolution()) {
+    return false;
+  }
+  found_initial_solution_ = true;
+  return true;
+}
+
 bool SimulatedAnnealing::LocalOptimum() {
   if (maximize_) {
     current_ = kint64min;
@@ -3236,7 +3265,7 @@ bool SimulatedAnnealing::LocalOptimum() {
     current_ = kint64max;
   }
   ++iteration_;
-  return Temperature() > 0;
+  return found_initial_solution_ && Temperature() > 0;
 }
 
 void SimulatedAnnealing::AcceptNeighbor() {
@@ -4593,7 +4622,6 @@ class LubyRestart : public SearchMonitor {
     if (++current_fails_ >= next_step_) {
       current_fails_ = 0;
       next_step_ = NextLuby(++iteration_) * scale_factor_;
-      VLOG(1) << "Restart Luby, next step = " << next_step_;
       RestartCurrentSearch();
     }
   }

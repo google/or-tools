@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -513,7 +513,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     DCHECK(ct != NULL);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() == Solver::OUTSIDE_SEARCH) {
       void_constraints_[type] = ct;
     }
   }
@@ -539,7 +539,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         var_constant_constraints_[type]->Find(var, value) == NULL) {
       var_constant_constraints_[type]->UnsafeInsert(var, value, ct);
     }
@@ -568,7 +568,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         var_constant_constant_constraints_[type]->Find(var,
                                                        value1,
                                                        value2) == NULL) {
@@ -601,7 +601,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPR_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         expr_expr_constraints_[type]->Find(var1, var2) == NULL) {
       expr_expr_constraints_[type]->UnsafeInsert(var1, var2, ct);
     }
@@ -624,7 +624,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(expr != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         expr_expressions_[type]->Find(expr) == NULL) {
       expr_expressions_[type]->UnsafeInsert(expr, expression);
     }
@@ -651,7 +651,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(expr != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         expr_constant_expressions_[type]->Find(expr, value) == NULL) {
       expr_constant_expressions_[type]->UnsafeInsert(expr, value, expression);
     }
@@ -680,7 +680,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPR_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         expr_expr_expressions_[type]->Find(var1, var2) == NULL) {
       expr_expr_expressions_[type]->UnsafeInsert(var1, var2, expression);
     }
@@ -709,7 +709,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         var_constant_constant_expressions_[type]->Find(var,
                                                        value1,
                                                        value2) == NULL) {
@@ -741,7 +741,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_ARRAY_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         var_constant_array_expressions_[type]->Find(var, values) == NULL) {
       var_constant_array_expressions_[type]->UnsafeInsert(var,
                                                           values,
@@ -766,7 +766,7 @@ class NonReversibleCache : public ModelCache {
     DCHECK(expression != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         var_array_expressions_[type]->Find(vars) == NULL) {
       var_array_expressions_[type]->UnsafeInsert(vars, expression);
     }

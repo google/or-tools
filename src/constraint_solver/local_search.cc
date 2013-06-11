@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -65,10 +65,7 @@ void AcceptNeighbor(Search* const search);
 // ----- Base operator class for operators manipulating IntVars -----
 
 IntVarLocalSearchOperator::IntVarLocalSearchOperator()
-: vars_(NULL),
-  size_(0),
-  values_(NULL),
-  old_values_(NULL),
+    : size_(0),
   activated_(0, false),
   was_activated_(0, false),
   has_changed_(0, false),
@@ -77,10 +74,7 @@ IntVarLocalSearchOperator::IntVarLocalSearchOperator()
 
 IntVarLocalSearchOperator::IntVarLocalSearchOperator(const IntVar* const* vars,
                                                      int size)
-    : vars_(NULL),
-      size_(0),
-      values_(NULL),
-      old_values_(NULL),
+    : size_(0),
       activated_(size, false),
       was_activated_(size, false),
       has_changed_(size, false),
@@ -92,10 +86,7 @@ IntVarLocalSearchOperator::IntVarLocalSearchOperator(const IntVar* const* vars,
 
 IntVarLocalSearchOperator::IntVarLocalSearchOperator(
     const std::vector<IntVar*>& vars)
-    : vars_(NULL),
-      size_(0),
-      values_(NULL),
-      old_values_(NULL),
+    : size_(0),
       activated_(vars.size(), false),
       was_activated_(vars.size(), false),
       has_changed_(vars.size(), false),
@@ -239,11 +230,7 @@ bool IntVarLocalSearchOperator::MakeOneNeighbor() {
 // ----- Sequence Var Local Search Operator -----
 
 SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator()
-  : vars_(NULL),
-    size_(0),
-    values_(NULL),
-    backward_values_(NULL),
-    old_values_(NULL),
+    : size_(0),
     activated_(0, false),
     was_activated_(0, false),
     has_changed_(0, false),
@@ -252,11 +239,7 @@ SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator()
 
 SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator(
     const SequenceVar* const* vars, int size)
-    : vars_(NULL),
-      size_(0),
-      values_(NULL),
-      backward_values_(NULL),
-      old_values_(NULL),
+    : size_(0),
       activated_(size, false),
       was_activated_(size, false),
       has_changed_(size, false),
@@ -998,7 +981,10 @@ bool TwoOpt::MakeNeighbor() {
     last_base_ = BaseNode(0);
     last_ = Next(BaseNode(0));
     int64 chain_last;
-    if (ReverseChain(BaseNode(0), BaseNode(1), &chain_last)) {
+    if (ReverseChain(BaseNode(0), BaseNode(1), &chain_last)
+        // Check there are more than one node in the chain (reversing a
+        // single node is a NOP).
+        && last_ != chain_last) {
       return true;
     } else {
       last_ = -1;
@@ -1255,6 +1241,47 @@ class MakeInactiveOperator : public PathOperator {
 
   virtual string DebugString() const {
     return "MakeInactiveOperator";
+  }
+};
+
+// ----- MakeChainInactiveOperator -----
+
+// Operator which makes a "chain" of path nodes inactive.
+// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+// and last nodes of the path) are:
+//   1 -> 3 -> 4 with 2 inactive
+//   1 -> 2 -> 4 with 3 inactive
+//   1 -> 4 with 2 and 3 inactive
+
+class MakeChainInactiveOperator : public PathOperator {
+ public:
+  MakeChainInactiveOperator(const IntVar* const* vars,
+                            const IntVar* const* secondary_vars,
+                            int size)
+      : PathOperator(vars, secondary_vars, size, 2) {}
+  virtual ~MakeChainInactiveOperator() {}
+  virtual bool MakeNeighbor() {
+    return MakeChainInactive(BaseNode(0), BaseNode(1));
+  }
+
+  virtual string DebugString() const {
+    return "MakeChainInactiveOperator";
+  }
+
+ protected:
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    // Start and end of chain (defined by both base nodes) must be on the same
+    // path.
+    return true;
+  }
+
+  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+    // Base node 1 must be after base node 0.
+    if (base_index == 0) {
+      return StartNode(base_index);
+    } else {
+      return BaseNode(base_index - 1);
+    }
   }
 };
 
@@ -1978,11 +2005,7 @@ class CompoundOperator : public LocalSearchOperator {
 CompoundOperator::CompoundOperator(
     const std::vector<LocalSearchOperator*>& operators,
     ResultCallback2<int64, int, int>* const evaluator)
-      : index_(0),
-        size_(0),
-        operators_(NULL),
-        operator_indices_(NULL),
-        evaluator_(evaluator) {
+    : index_(0), size_(0), evaluator_(evaluator) {
   for (int i = 0; i < operators.size(); ++i) {
     if (operators[i] != NULL) {
       ++size_;
@@ -2195,6 +2218,12 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
     case Solver::MAKEINACTIVE: {
       result = RevAlloc(
           new MakeInactiveOperator(vars.data(), secondary_vars.data(), size));
+      break;
+    }
+    case Solver::MAKECHAININACTIVE: {
+      result = RevAlloc(
+          new MakeChainInactiveOperator(
+              vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::SWAPACTIVE: {
@@ -2423,7 +2452,7 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(const IntVar* const* vars,
                                                  int size)
-    : vars_(NULL), values_(NULL), size_(0) {
+    : size_(0) {
   var_to_index_.set_empty_key(NULL);
   AddVars(vars, size);
   CHECK_GE(size_, 0);
@@ -2431,7 +2460,7 @@ IntVarLocalSearchFilter::IntVarLocalSearchFilter(const IntVar* const* vars,
 
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(
     const std::vector<IntVar*>& vars)
-    : vars_(NULL), values_(NULL), size_(0) {
+    : size_(0) {
   AddVars(vars.data(), vars.size());
   CHECK_GE(size_, 0);
 }
@@ -2617,6 +2646,9 @@ void ObjectiveFilter::OnSynchronize() {
   old_value_ = op_->value();
   old_delta_value_ = old_value_;
   incremental_ = false;
+  if (delta_objective_callback_ != NULL) {
+    delta_objective_callback_->Run(op_->value());
+  }
 }
 
 int64 ObjectiveFilter::Evaluate(const Assignment* delta,
@@ -3444,7 +3476,7 @@ void LocalSearch::PushLocalSearchDecision() {
 
 class DefaultSolutionPool : public SolutionPool {
  public:
-  DefaultSolutionPool() : reference_assignment_(NULL) {}
+  DefaultSolutionPool() {}
 
   virtual ~DefaultSolutionPool() {}
 

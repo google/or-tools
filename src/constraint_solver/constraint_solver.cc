@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -329,6 +329,16 @@ class Queue {
       }
     }
   }
+
+  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
+    for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
+      Demon* const demon = *it;
+      DCHECK_EQ(demon->priority(), Solver::DELAYED_PRIORITY);
+      demon->set_stamp(stamp_);
+      containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
+    }
+  }
+
 
   void EnqueueVar(Demon* const demon) {
     DCHECK(demon->priority() == Solver::VAR_PRIORITY);
@@ -926,7 +936,8 @@ class Search {
   explicit Search(Solver* const s)
       : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
         decision_builder_(NULL), created_by_solve_(false),
-        selector_(NULL), search_depth_(0), left_search_depth_(0),
+        search_depth_(0),
+        left_search_depth_(0),
         should_restart_(false), should_finish_(false),
         sentinel_pushed_(0), jmpbuf_filled_(false),
         backtrack_at_the_end_of_the_search_(true) {}
@@ -937,7 +948,8 @@ class Search {
   Search(Solver* const s, int /* dummy_argument */)
       : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
         decision_builder_(NULL), created_by_solve_(false),
-        selector_(NULL), search_depth_(-1), left_search_depth_(-1),
+        search_depth_(-1),
+        left_search_depth_(-1),
         should_restart_(false), should_finish_(false),
         sentinel_pushed_(0), jmpbuf_filled_(false),
         backtrack_at_the_end_of_the_search_(true) {}
@@ -1036,13 +1048,13 @@ class Search {
 // CP_TRY to start searching
 // CP_DO_FAIL to signal a failure. The program will continue on the CP_ON_FAIL
 // primitive.
-// CP_FAST_BACKTRACK protects an implementation of backtrack using
-// setjmp/longjmp.  The clean portable way is to use exceptions,
-// unfortunately, it can be much slower.  Thus we use ideas from
-// Prolog, CP/CLP implementations, continuations in C and implement failing
-// and backtracking using setjmp/longjmp.
-#define CP_FAST_BACKTRACK
-#if defined(CP_FAST_BACKTRACK)
+// Implementation of backtrack using setjmp/longjmp.
+// The clean portable way is to use exceptions, unfortunately, it can be much
+// slower.  Thus we use ideas from Prolog, CP/CLP implementations,
+// continuations in C and implement the default failing and backtracking
+// using setjmp/longjmp. You can still use exceptions by defining
+// CP_USE_EXCEPTIONS_FOR_BACKTRACK
+#ifndef CP_USE_EXCEPTIONS_FOR_BACKTRACK
 // We cannot use a method/function for this as we would lose the
 // context in the setjmp implementation.
 #define CP_TRY(search)                                              \
@@ -1051,7 +1063,7 @@ class Search {
   if (setjmp(search->fail_buffer_) == 0)
 #define CP_ON_FAIL else
 #define CP_DO_FAIL(search) longjmp(search->fail_buffer_, 1)
-#else  // CP_FAST_BACKTRACK
+#else  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 class FailException {};
 #define CP_TRY(search)                                                 \
   CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";    \
@@ -1059,7 +1071,7 @@ class FailException {};
   try
 #define CP_ON_FAIL catch(FailException&)
 #define CP_DO_FAIL(search) throw FailException()
-#endif  // CP_FAST_BACKTRACK
+#endif  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 
 void Search::JumpBack() {
   if (jmpbuf_filled_) {
@@ -1175,114 +1187,88 @@ void Search::EnterSearch() {
   // top-level search.
   solution_counter_ = 0;
 
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->EnterSearch();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->EnterSearch();
   }
 }
 
 void Search::ExitSearch() {
   // Backtrack to the correct state.
 
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->ExitSearch();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->ExitSearch();
   }
 }
 
 void Search::RestartSearch() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->RestartSearch();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->RestartSearch();
   }
 }
 
 void Search::BeginNextDecision(DecisionBuilder* const db) {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->BeginNextDecision(db);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->BeginNextDecision(db);
   }
   CheckFail();
 }
 
 void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->EndNextDecision(db, d);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->EndNextDecision(db, d);
   }
   CheckFail();
 }
 
 void Search::ApplyDecision(Decision* const d) {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->ApplyDecision(d);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->ApplyDecision(d);
   }
   CheckFail();
 }
 
 void Search::AfterDecision(Decision* const d, bool apply) {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->AfterDecision(d, apply);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->AfterDecision(d, apply);
   }
   CheckFail();
 }
 
 void Search::RefuteDecision(Decision* const d) {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->RefuteDecision(d);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->RefuteDecision(d);
   }
   CheckFail();
 }
 
 void Search::BeginFail() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->BeginFail();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->BeginFail();
   }
 }
 
 void Search::EndFail() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->EndFail();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->EndFail();
   }
 }
 
 void Search::BeginInitialPropagation() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->BeginInitialPropagation();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->BeginInitialPropagation();
   }
 }
 
 void Search::EndInitialPropagation() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->EndInitialPropagation();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->EndInitialPropagation();
   }
 }
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    if (!(*it)->AcceptSolution()) {
+  for (int index = 0; index < monitors_.size(); ++index) {
+    if (!monitors_[index]->AcceptSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
       // a chance to look at the solution.
@@ -1294,10 +1280,8 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    if ((*it)->AtSolution()) {
+  for (int index = 0; index < monitors_.size(); ++index) {
+    if (monitors_[index]->AtSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
       // a chance to look at the solution.
@@ -1308,19 +1292,15 @@ bool Search::AtSolution() {
 }
 
 void Search::NoMoreSolutions() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->NoMoreSolutions();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->NoMoreSolutions();
   }
 }
 
 bool Search::LocalOptimum() {
   bool res = false;
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    if ((*it)->LocalOptimum()) {
+  for (int index = 0; index < monitors_.size(); ++index) {
+    if (monitors_[index]->LocalOptimum()) {
       res = true;
     }
   }
@@ -1329,10 +1309,8 @@ bool Search::LocalOptimum() {
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   bool accept = true;
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    if (!(*it)->AcceptDelta(delta, deltadelta)) {
+  for (int index = 0; index < monitors_.size(); ++index) {
+    if (!monitors_[index]->AcceptDelta(delta, deltadelta)) {
       accept = false;
     }
   }
@@ -1340,37 +1318,29 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
 }
 
 void Search::AcceptNeighbor() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->AcceptNeighbor();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->AcceptNeighbor();
   }
 }
 
 void Search::PeriodicCheck() {
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    (*it)->PeriodicCheck();
+  for (int index = 0; index < monitors_.size(); ++index) {
+    monitors_[index]->PeriodicCheck();
   }
 }
 
 int Search::ProgressPercent() {
   int progress = SearchMonitor::kNoProgress;
-  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    progress = std::max(progress, (*it)->ProgressPercent());
+  for (int index = 0; index < monitors_.size(); ++index) {
+    progress = std::max(progress, monitors_[index]->ProgressPercent());
   }
   return progress;
 }
 
 void Search::Accept(ModelVisitor* const visitor) const {
-  for (std::vector<SearchMonitor*>::const_iterator it = monitors_.begin();
-       it != monitors_.end();
-       ++it) {
-    DCHECK((*it) != NULL);
-    (*it)->Accept(visitor);
+  for (int index = 0; index < monitors_.size(); ++index) {
+    DCHECK(monitors_[index] != NULL);
+    monitors_[index]->Accept(visitor);
   }
   if (decision_builder_ != NULL) {
     decision_builder_->Accept(visitor);
@@ -1466,8 +1436,6 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_decision_(new FailDecision()),
       constraint_index_(0),
       additional_constraint_index_(0),
-      model_cache_(NULL),
-      dependency_graph_(NULL),
       propagation_monitor_(BuildTrace(this)),
       print_trace_(NULL),
       anonymous_variable_index_(0) {
@@ -1501,8 +1469,6 @@ Solver::Solver(const string& name)
       fail_decision_(new FailDecision()),
       constraint_index_(0),
       additional_constraint_index_(0),
-      model_cache_(NULL),
-      dependency_graph_(NULL),
       propagation_monitor_(BuildTrace(this)),
       print_trace_(NULL),
       anonymous_variable_index_(0) {
@@ -1714,6 +1680,10 @@ void Solver::Execute(Demon* const d) {
 
 void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
   queue_->ExecuteAll(demons);
+}
+
+void Solver::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
+  queue_->EnqueueAll(demons);
 }
 
 uint64 Solver::stamp() const {
@@ -2310,7 +2280,8 @@ bool Solver::NextSolution() {
           switch (modification) {
             case SWITCH_BRANCHES: {
               d = RevAlloc(new ReverseDecision(d));
-            }  // We reverse the decision and fall through the normal code.
+              // We reverse the decision and fall through the normal code.
+            }
             case NO_CHANGE: {
               decisions_++;
               StateInfo i2(d,
@@ -2645,6 +2616,10 @@ void PropagationBaseObject::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
   solver_->ExecuteAll(demons);
 }
 
+void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
+  solver_->EnqueueAll(demons);
+}
+
 // ---------- Decision Builder ----------
 
 string DecisionBuilder::DebugString() const {
@@ -2686,6 +2661,7 @@ const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
 const char ModelVisitor::kBetween[] = "Between";
 const char ModelVisitor::kConvexPiecewise[] = "ConvexPiecewise";
 const char ModelVisitor::kCountEqual[] = "CountEqual";
+const char ModelVisitor::kCover[] = "Cover";
 const char ModelVisitor::kCumulative[] = "Cumulative";
 const char ModelVisitor::kDeviation[] = "Deviation";
 const char ModelVisitor::kDifference[] = "Difference";
@@ -2724,7 +2700,7 @@ const char ModelVisitor::kMaxEqual[] = "MaxEqual";
 const char ModelVisitor::kMember[] = "Member";
 const char ModelVisitor::kMin[] = "Min";
 const char ModelVisitor::kMinEqual[] = "MinEqual";
-const char ModelVisitor::kModuloConstraint[] = "ModuloConstraint";
+const char ModelVisitor::kModulo[] = "Modulo";
 const char ModelVisitor::kNoCycle[] = "NoCycle";
 const char ModelVisitor::kNonEqual[] = "NonEqual";
 const char ModelVisitor::kNullIntersect[] = "NullIntersect";
@@ -2760,6 +2736,7 @@ const char ModelVisitor::kInt64ToInt64Extension[] = "Int64ToInt64Function";
 const char ModelVisitor::kObjectiveExtension[] = "Objective";
 const char ModelVisitor::kSearchLimitExtension[] = "SearchLimit";
 const char ModelVisitor::kUsageEqualVariableExtension[] = "UsageEqualVariable";
+
 const char ModelVisitor::kUsageLessConstantExtension[] = "UsageLessConstant";
 const char ModelVisitor::kVariableGroupExtension[] = "VariableGroup";
 const char ModelVisitor::kVariableUsageLessConstantExtension[] =
@@ -2821,14 +2798,14 @@ const char ModelVisitor::kValuesArgument[] = "values";
 const char ModelVisitor::kVarsArgument[] = "variables";
 const char ModelVisitor::kVariableArgument[] = "variable";
 
-const char ModelVisitor::kCoverOperation[] = "cover";
 const char ModelVisitor::kMirrorOperation[] = "mirror";
 const char ModelVisitor::kRelaxedMaxOperation[] = "relaxed_max";
 const char ModelVisitor::kRelaxedMinOperation[] = "relaxed_min";
 const char ModelVisitor::kSumOperation[] = "sum";
 const char ModelVisitor::kDifferenceOperation[] = "difference";
 const char ModelVisitor::kProductOperation[] = "product";
-
+const char ModelVisitor::kStartSyncOnStartOperation[] = "start_synced_on_start";
+const char ModelVisitor::kStartSyncOnEndOperation[] = "start_synced_on_end";
 
 // Methods
 
@@ -2869,6 +2846,7 @@ void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
 
 void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
                                          const string& operation,
+                                         int64 value,
                                          const IntervalVar* const delegate) {
   if (delegate != NULL) {
     delegate->Accept(this);

@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -530,9 +530,7 @@ SearchMonitor* MtSolveSupport::MakeLimit(Solver* const s,
 class MTSharingSolutionPool : public SolutionPool {
  public:
   MTSharingSolutionPool(MtSolveSupport* const support, int worker)
-      : reference_assignment_(NULL), support_(support), worker_(worker),
-        count_(0) {
-  }
+      : support_(support), worker_(worker), count_(0) {}
 
   virtual ~MTSharingSolutionPool() {}
 

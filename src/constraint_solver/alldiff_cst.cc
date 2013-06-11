@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,7 +41,7 @@ class BaseAllDifferent : public Constraint {
 BaseAllDifferent::BaseAllDifferent(Solver* const s,
                                    const IntVar* const* vars,
                                    int size)
-    : Constraint(s), vars_(NULL), size_(size) {
+    : Constraint(s), size_(size) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
     vars_.reset(new IntVar*[size_]);
@@ -469,8 +469,6 @@ class SortConstraint : public Constraint {
       : Constraint(solver),
         ovars_(original_vars),
         svars_(sorted_vars),
-        mins_(NULL),
-        maxs_(NULL),
         size_(original_vars.size()),
         matching_(solver, size_) {
     if (size_ > 0) {

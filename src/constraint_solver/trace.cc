@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -291,6 +291,14 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
+  virtual int64 OldStartMin() const {
+    return inner_->OldStartMin();
+  }
+
+  virtual int64 OldStartMax() const  {
+    return inner_->OldStartMax();
+  }
+
   virtual void WhenStartRange(Demon* const d) {
     inner_->WhenStartRange(d);
   }
@@ -326,6 +334,14 @@ class TraceIntervalVar : public IntervalVar {
       solver()->GetPropagationMonitor()->SetEndRange(inner_, mi, ma);
       inner_->SetEndRange(mi, ma);
     }
+  }
+
+  virtual int64 OldEndMin() const {
+    return inner_->OldEndMin();
+  }
+
+  virtual int64 OldEndMax() const  {
+    return inner_->OldEndMax();
   }
 
   virtual void WhenEndRange(Demon* const d) {
@@ -365,6 +381,14 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
+  virtual int64 OldDurationMin() const {
+    return inner_->OldDurationMin();
+  }
+
+  virtual int64 OldDurationMax() const  {
+    return inner_->OldDurationMax();
+  }
+
   virtual void WhenDurationRange(Demon* const d) {
     inner_->WhenDurationRange(d);
   }
@@ -388,6 +412,8 @@ class TraceIntervalVar : public IntervalVar {
       inner_->SetPerformed(value);
     }
   }
+
+  virtual bool WasPerformedBound() const { return inner_->WasPerformedBound(); }
 
   virtual void WhenPerformedBound(Demon* const d) {
     inner_->WhenPerformedBound(d);

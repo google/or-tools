@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -395,26 +395,29 @@ class ScheduleOrPostpone : public Decision {
 
   virtual void Apply(Solver* const s) {
     var_->SetPerformed(true);
-    var_->SetStartRange(est_, est_);
+    if (est_.Value() < var_->StartMin()) {
+      est_.SetValue(s, var_->StartMin());
+    }
+    var_->SetStartRange(est_.Value(), est_.Value());
   }
 
   virtual void Refute(Solver* const s) {
-    s->SaveAndSetValue(marker_, est_ + 1);
+    s->SaveAndSetValue(marker_, est_.Value() + 1);
   }
 
   virtual void Accept(DecisionVisitor* const visitor) const {
     CHECK_NOTNULL(visitor);
-    visitor->VisitScheduleOrPostpone(var_, est_);
+    visitor->VisitScheduleOrPostpone(var_, est_.Value());
   }
 
   virtual string DebugString() const {
     return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
-                        var_->DebugString().c_str(), est_);
+                        var_->DebugString().c_str(), est_.Value());
   }
 
  private:
   IntervalVar* const var_;
-  const int64 est_;
+  NumericalRev<int64> est_;
   int64* const marker_;
 };
 
@@ -597,7 +600,6 @@ class RankFirstIntervalVars : public DecisionBuilder {
     for (int index = 0; index < best_possible_firsts_.size(); ++index) {
       const int candidate = best_possible_firsts_[index];
       IntervalVar* const interval = best_sequence->Interval(candidate);
-      //      LOG(INFO) << "  - " << candidate << " -> " << interval->DebugString();
       if (interval->StartMin() < best_start_min) {
         best_interval = candidate;
         best_start_min = interval->StartMin();
@@ -654,21 +656,21 @@ class RankFirstIntervalVars : public DecisionBuilder {
       int unperformed = 0;
       candidate_sequence->ComputeStatistics(&ranked, &not_ranked, &unperformed);
       if (not_ranked > 0) {
-        std::vector<int> candidate_possible_firsts;
-        std::vector<int> candidate_possible_lasts;
+        candidate_possible_firsts_.clear();
+        candidate_possible_lasts_.clear();
         candidate_sequence->ComputePossibleFirstsAndLasts(
-            &candidate_possible_firsts,
-            &candidate_possible_lasts);
+            &candidate_possible_firsts_,
+            &candidate_possible_lasts_);
         // No possible first, failing.
-        if (candidate_possible_firsts.size() == 0) {
+        if (candidate_possible_firsts_.size() == 0) {
           s->Fail();
         }
         // Only 1 candidate, and non optional: ranking without branching.
-        if (candidate_possible_firsts.size() == 1 &&
+        if (candidate_possible_firsts_.size() == 1 &&
             candidate_sequence->Interval(
-                candidate_possible_firsts.back())->MustBePerformed()) {
+                candidate_possible_firsts_.back())->MustBePerformed()) {
           *best_sequence = candidate_sequence;
-          best_possible_firsts_ = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts_;
           return true;
         }
 
@@ -683,7 +685,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
             (current_slack == best_slack && ahmin < best_ahmin)) {
           best_slack = current_slack;
           *best_sequence = candidate_sequence;
-          best_possible_firsts_ = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts_;
           best_ahmin = ahmin;
         }
       }
@@ -702,26 +704,26 @@ class RankFirstIntervalVars : public DecisionBuilder {
       int unperformed = 0;
       candidate_sequence->ComputeStatistics(&ranked, &not_ranked, &unperformed);
       if (not_ranked > 0) {
-        std::vector<int> candidate_possible_firsts;
-        std::vector<int> candidate_possible_lasts;
+        candidate_possible_firsts_.clear();
+        candidate_possible_lasts_.clear();
         candidate_sequence->ComputePossibleFirstsAndLasts(
-            &candidate_possible_firsts,
-            &candidate_possible_lasts);
+            &candidate_possible_firsts_,
+            &candidate_possible_lasts_);
         // No possible first, failing.
-        if (candidate_possible_firsts.size() == 0) {
+        if (candidate_possible_firsts_.size() == 0) {
           s->Fail();
         }
         // Only 1 candidate, and non optional: ranking without branching.
-        if (candidate_possible_firsts.size() == 1 &&
+        if (candidate_possible_firsts_.size() == 1 &&
             candidate_sequence->Interval(
-                candidate_possible_firsts.back())->MustBePerformed()) {
+                candidate_possible_firsts_.back())->MustBePerformed()) {
           *best_sequence = candidate_sequence;
-          best_possible_firsts_ = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts_;
           return true;
         }
 
         all_candidates.push_back(i);
-        all_possible_firsts.push_back(candidate_possible_firsts);
+        all_possible_firsts.push_back(candidate_possible_firsts_);
       }
     }
     if (all_candidates.empty()) {
@@ -751,6 +753,8 @@ class RankFirstIntervalVars : public DecisionBuilder {
   const int size_;
   const Solver::SequenceStrategy strategy_;
   std::vector<int> best_possible_firsts_;
+  std::vector<int> candidate_possible_firsts_;
+  std::vector<int> candidate_possible_lasts_;
 };
 }  // namespace
 

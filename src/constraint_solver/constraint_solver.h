@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -95,8 +95,6 @@ template <typename R, typename T1> class ResultCallback1;
 template <typename T1> class Callback1;
 template <typename T> class ResultCallback;
 
-using operations_research::WallTimer;
-#define ClockTimer WallTimer
 
 using std::string;
 
@@ -114,7 +112,6 @@ class CPModelLoader;
 class CPModelProto;
 class CPSequenceVariableProto;
 class CastConstraint;
-class ClockTimer;
 class ConstIntArray;
 class Constraint;
 class Decision;
@@ -461,17 +458,18 @@ class Solver {
     // order in the vector of IntVars used to create the selector.
     CHOOSE_MAX_SIZE,
 
-    // Among unbound variables, select the variable with the biggest
+    // Among unbound variables, select the variable with the largest
     // gap between the first and the second values of the domain.
-    CHOOSE_MAX_REGRET,
+    CHOOSE_MAX_REGRET_ON_MIN,
 
     // Selects the next unbound variable on a path, the path being defined by
     // the variables: var[i] corresponds to the index of the next of i.
     CHOOSE_PATH,
   };
+  // TODO(user): add HIGHEST_MIN and LOWEST_MAX.
 
-  // This enum describes the strategy used to select the next decision
-  // to apply on this variable.
+  // This enum describes the strategy used to select the next variable value to
+  // set.
   enum IntValueStrategy {
     // The default behavior is ASSIGN_MIN_VALUE.
     INT_VALUE_DEFAULT,
@@ -608,6 +606,14 @@ class Solver {
     //   1 -> 3 -> 4 with 2 inactive
     //   1 -> 2 -> 4 with 3 inactive
     MAKEINACTIVE,
+
+    // Operator which makes a "chain" of path nodes inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+    // and last nodes of the path) are:
+    //   1 -> 3 -> 4 with 2 inactive
+    //   1 -> 2 -> 4 with 3 inactive
+    //   1 -> 4 with 2 and 3 inactive
+    MAKECHAININACTIVE,
 
     // Operator which replaces an active node by an inactive one.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
@@ -1115,8 +1121,8 @@ class Solver {
                        SequenceVariableBuilder* const builder);
 
   ConstraintBuilder* GetConstraintBuilder(const string& tag) const;
-  IntegerExpressionBuilder* GetIntegerExpressionBuilder(
-      const string& tag) const;
+  IntegerExpressionBuilder*
+      GetIntegerExpressionBuilder(const string& tag) const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const string& tag) const;
   SequenceVariableBuilder* GetSequenceVariableBuilder(const string& tag) const;
 #endif  // SWIG
@@ -1305,7 +1311,8 @@ class Solver {
   // vars[expr]
   IntExpr* MakeElement(const std::vector<IntVar*>& vars, IntVar* const index);
 
-  // Position of i in array.
+  // Returns the expression expr such that vars[expr] == value.
+  // It assumes that vars are all different.
   IntExpr* MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value);
 
   // min(vars)
@@ -1336,6 +1343,12 @@ class Solver {
   IntExpr* MakeSemiContinuousExpr(IntExpr* const e,
                                   int64 fixed_charge,
                                   int64 step);
+
+  // Modulo expression x % mod (with the python convention for modulo).
+  IntExpr* MakeModulo(IntExpr* const x, int64 mod);
+
+  // Modulo expression x % mod (with the python convention for modulo).
+  IntExpr* MakeModulo(IntExpr* const x, IntExpr* const mod);
 
   // ----- Constraints -----
   // This constraint always succeeds.
@@ -1486,14 +1499,14 @@ class Solver {
   Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
                                   IntVar* const index,
                                   int64 target);
+  // Creates the constraint abs(var) == abs_var.
   Constraint* MakeAbsEquality(IntVar* const var, IntVar* const abs_var);
-  // This constraints is a special case of the element constraint with
-  // an array of integer variables where all the variables are all
-  // differents.  In that case, and with a constant value, the index
-  // of the element constraint is bound to be the unique index of the
-  // variable in 'vars' equal to the value target.
+  // This constraint is a special case of the element constraint with
+  // an array of integer variables where the variables are all
+  // different and the index variable is constrained such that
+  // vars[index] == target.
   Constraint* MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
-                                    IntVar* const position,
+                                    IntVar* const index,
                                     int64 target);
 
   // This method is a specialized case of the MakeConstraintDemon
@@ -1507,16 +1520,6 @@ class Solver {
   Demon* MakeCallbackDemon(Callback1<Solver*>* const callback);
   // Creates a demon from a closure.
   Demon* MakeCallbackDemon(Closure* const closure);
-
-  // Modulo constraint  v % m == y
-  Constraint* MakeModuloConstraint(IntVar* const x,
-                                   int64 mod,
-                                   IntVar* const y);
-
-  // Modulo constraint  v % m == y
-  Constraint* MakeModuloConstraint(IntVar* const x,
-                                   IntVar* const mod,
-                                   IntVar* const y);
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntVar* const v, int64 l, int64 u);
@@ -1818,9 +1821,61 @@ class Solver {
                                  int64 duration,
                                  const string& name);
 
+  // Creates an interval var by specifying the bounds on start,
+  // duration, and end.
+  IntervalVar* MakeIntervalVar(int64 start_min,
+                               int64 start_max,
+                               int64 duration_min,
+                               int64 duration_max,
+                               int64 end_min,
+                               int64 end_max,
+                               bool optional,
+                               const string& name);
+
+  // This method fills the vector with 'count' interval var built with
+  // the corresponding parameters.
+  void MakeIntervalVarArray(int count,
+                            int64 start_min,
+                            int64 start_max,
+                            int64 duration_min,
+                            int64 duration_max,
+                            int64 end_min,
+                            int64 end_max,
+                            bool optional,
+                            const string& name,
+                            std::vector<IntervalVar*>* const array);
+
   // Creates an interval var that is the mirror image of the given one, that is,
   // the interval var obtained by reversing the axis.
   IntervalVar* MakeMirrorInterval(IntervalVar* const interval_var);
+
+  // Creates an interval var with a fixed duration whose start is
+  // synchronized with the start of another interval, with a given
+  // offset. The performed status is also in sync with the performed
+  // status of the given interval variable.
+  IntervalVar* MakeFixedDurationStartSyncedOnStartIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
+
+  // Creates an interval var with a fixed duration whose start is
+  // synchronized with the end of another interval, with a given
+  // offset. The performed status is also in sync with the performed
+  // status of the given interval variable.
+  IntervalVar* MakeFixedDurationStartSyncedOnEndIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
+
+  // Creates an interval var with a fixed duration whose end is
+  // synchronized with the start of another interval, with a given
+  // offset. The performed status is also in sync with the performed
+  // status of the given interval variable.
+  IntervalVar* MakeFixedDurationEndSyncedOnStartIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
+
+  // Creates an interval var with a fixed duration whose end is
+  // synchronized with the end of another interval, with a given
+  // offset. The performed status is also in sync with the performed
+  // status of the given interval variable.
+  IntervalVar* MakeFixedDurationEndSyncedOnEndIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
 
   // Creates and returns an interval variable that wraps around the given one,
   // relaxing the min start and end. Relaxing means making unbounded when
@@ -1946,6 +2001,17 @@ class Solver {
                              const std::vector<int>& demands,
                              IntVar* const capacity,
                              const string& name);
+
+  // This constraint states that the target_var is the convex hull of
+  // the intervals. If none of the interval variables is performed,
+  // then the target var is unperformed too. Also, if the target
+  // variable is unperformed, then all the intervals variables are
+  // unperformed too.
+  Constraint* MakeCover(const std::vector<IntervalVar*>& intervals,
+                        IntervalVar* const target_var);
+
+  // This constraints states that the two interval variables are equal.
+  Constraint* MakeEquality(IntervalVar* const left, IntervalVar* const right);
 
   // ----- Assignments -----
 
@@ -2886,6 +2952,10 @@ class Solver {
                     IntVar** sub_var,
                     bool* is_negated) const;
 
+  // Internal. If the variables is the result of expr->Var(), this
+  // method returns expr, NULL otherwise.
+  IntExpr* CastExpression(IntVar* const var) const;
+
  private:
   void Init();  // Initialization. To be called by the constructors only.
   void PushState(MarkerType t, const StateInfo& info);
@@ -2903,6 +2973,7 @@ class Solver {
   void EnqueueDelayedDemon(Demon* const d);
   void Execute(Demon* const d);
   void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
+  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
   void UnfreezeQueue();
   void set_queue_action_on_fail(Action* a);
   void set_queue_cleaner_on_fail(IntVar* const var);
@@ -2966,7 +3037,6 @@ class Solver {
   void SetName(const PropagationBaseObject* object, const string& name);
 
   // Internal.
-  IntExpr* CastExpression(IntVar* const var) const;
   bool IsADifference(IntExpr* expr,
                      IntExpr** const left,
                      IntExpr** const right);
@@ -3093,6 +3163,7 @@ class PropagationBaseObject : public BaseObject {
   void EnqueueVar(Demon* const d) { solver_->EnqueueVar(d); }
   void Execute(Demon* const d) { solver_->Execute(d); }
   void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
+  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
 
   // This method sets a callback that will be called if a failure
   // happens during the propagation of the queue.
@@ -3255,6 +3326,7 @@ class ModelVisitor : public BaseObject {
   static const char kBetween[];
   static const char kConvexPiecewise[];
   static const char kCountEqual[];
+  static const char kCover[];
   static const char kCumulative[];
   static const char kDeviation[];
   static const char kDifference[];
@@ -3292,7 +3364,7 @@ class ModelVisitor : public BaseObject {
   static const char kMember[];
   static const char kMin[];
   static const char kMinEqual[];
-  static const char kModuloConstraint[];
+  static const char kModulo[];
   static const char kNoCycle[];
   static const char kNonEqual[];
   static const char kNullIntersect[];
@@ -3328,6 +3400,7 @@ class ModelVisitor : public BaseObject {
   static const char kObjectiveExtension[];
   static const char kSearchLimitExtension[];
   static const char kUsageEqualVariableExtension[];
+
   static const char kUsageLessConstantExtension[];
   static const char kVariableGroupExtension[];
   static const char kVariableUsageLessConstantExtension[];
@@ -3389,13 +3462,14 @@ class ModelVisitor : public BaseObject {
   static const char kVarsArgument[];
 
   // Operations.
-  static const char kCoverOperation[];
   static const char kMirrorOperation[];
   static const char kRelaxedMaxOperation[];
   static const char kRelaxedMinOperation[];
   static const char kSumOperation[];
   static const char kDifferenceOperation[];
   static const char kProductOperation[];
+  static const char kStartSyncOnStartOperation[];
+  static const char kStartSyncOnEndOperation[];
 
   virtual ~ModelVisitor();
 
@@ -3422,6 +3496,7 @@ class ModelVisitor : public BaseObject {
                                     const IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
+                                     int64 value,
                                      const IntervalVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string& operation,
@@ -3992,7 +4067,6 @@ class SolutionCollector : public SearchMonitor {
   const std::vector<int>& Unperformed(int n, SequenceVar* const var) const;
 #endif
 
-
  protected:
   // Push the current state as a new solution.
   void PushSolution();
@@ -4199,6 +4273,8 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetStartMin(int64 m) = 0;
   virtual void SetStartMax(int64 m) = 0;
   virtual void SetStartRange(int64 mi, int64 ma) = 0;
+  virtual int64 OldStartMin() const = 0;
+  virtual int64 OldStartMax() const = 0;
   virtual void WhenStartRange(Demon* const d) = 0;
   virtual void WhenStartBound(Demon* const d) = 0;
 
@@ -4208,6 +4284,8 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetDurationMin(int64 m) = 0;
   virtual void SetDurationMax(int64 m) = 0;
   virtual void SetDurationRange(int64 mi, int64 ma) = 0;
+  virtual int64 OldDurationMin() const = 0;
+  virtual int64 OldDurationMax() const = 0;
   virtual void WhenDurationRange(Demon* const d) = 0;
   virtual void WhenDurationBound(Demon* const d) = 0;
 
@@ -4217,6 +4295,8 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetEndMin(int64 m) = 0;
   virtual void SetEndMax(int64 m) = 0;
   virtual void SetEndRange(int64 mi, int64 ma) = 0;
+  virtual int64 OldEndMin() const = 0;
+  virtual int64 OldEndMax() const = 0;
   virtual void WhenEndRange(Demon* const d) = 0;
   virtual void WhenEndBound(Demon* const d) = 0;
 
@@ -4225,10 +4305,11 @@ class IntervalVar : public PropagationBaseObject {
   virtual bool MustBePerformed() const = 0;
   virtual bool MayBePerformed() const = 0;
   bool CannotBePerformed() const { return !MayBePerformed(); }
-  bool IsPerformedBound() {
+  bool IsPerformedBound() const {
     return MustBePerformed() == MayBePerformed();
   }
   virtual void SetPerformed(bool val) = 0;
+  virtual bool WasPerformedBound() const = 0;
   virtual void WhenPerformedBound(Demon* const d) = 0;
 
   // Attaches a demon awakened when anything about this interval changes.
@@ -4360,30 +4441,6 @@ class SequenceVar : public PropagationBaseObject {
   const int size_;
   const int next_size_;
   mutable std::vector<int> previous_;
-};
-
-// ----- Class Set Var -----
-
-class SetVar : public PropagationBaseObject {
- public:
-  SetVar(Solver* const s, int64 min_value, int64 max_value);
-  SetVar(Solver* const s, const std::vector<int64>& values);
-  SetVar(Solver* const s, const std::vector<int>& values);
-  virtual ~SetVar();
-
-  IntVar* Var(int64 value) const;
-  IntVar* CardVar() const;
-
-  virtual string DebugString() const;
-
-  int64 SetMin() const;
-  int64 SetMax() const;
-
- private:
-  const int64 min_value_;
-  const int64 max_value_;
-  std::vector<IntVar*> elements_;
-  IntVar* card_var_;
 };
 
 // --------- Assignments ----------------------------
