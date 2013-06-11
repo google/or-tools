@@ -32,16 +32,16 @@ int main(int argc, char **argv) {
 
   const int kExpectedArgc = 4;
   if (argc != kExpectedArgc) {
-    LG << "Wrong number of files to read." << endl
-       << "The syntax should be:" << endl
-       << "solution_checker instance_filename "
-       << "initial_solution_filename new_solution_filename" << endl
-       << "Current is:" << endl;
+    LOG(INFO) << "Wrong number of files to read." << endl
+              << "The syntax should be:" << endl
+              << "solution_checker instance_filename "
+              << "initial_solution_filename new_solution_filename" << endl
+              << "Current is:" << endl;
 
     for (int i = 0; i < argc; ++i) {
-      LG << " " << argv[i];
+      LOG(INFO) << " " << argv[i];
     }
-    LG << endl;
+    LOG(INFO) << endl;
     return 0;
   }
 
@@ -69,12 +69,13 @@ int main(int argc, char **argv) {
 
   if (solution_checker.Check()) {
     const int64 objective_cost = solution_checker.GetObjectiveCost();
-    LG << "Solution is valid. Total objective cost is " << objective_cost
-       << endl;
+    LOG(INFO) << "Solution is valid. Total objective cost is " << objective_cost
+              << endl;
   } else {
-    LG << "Solution is invalid." << endl;
+    LOG(INFO) << "Solution is invalid." << endl;
   }
 
+  solution_checker.PrintStats();
 
   return 0;
 }

@@ -313,8 +313,9 @@ bool SolutionChecker::CheckRemainingCapacities() const {
   for (MachineIndex machine_id(0); machine_id < num_machines; ++machine_id) {
     const Machine& machine = machines(machine_id);
     if (machine.HasNegativeRemainingCapacity()) {
-      LG << "Machine " << machine_id << " has a negative remaining capacity."
-         << endl;
+      LOG(INFO) << "Machine " << machine_id
+                << " has a negative remaining capacity."
+                << endl;
       return false;
     }
   }
@@ -334,8 +335,9 @@ vector<bool> is_machine_used(machines_.size(), false);
       const ProcessIndex process_id = process.id();
       const MachineIndex machine_id = new_assignments_.at(process_id);
       if (is_machine_used.at(machine_id)) {
-        LG << "Service " << service_id << " has two processes running on "
-           << "the same machine " << machine_id << "." << endl;
+        LOG(INFO) << "Service " << service_id
+                  << " has two processes running on "
+                  << "the same machine " << machine_id << "." << endl;
         return false;
       }
       is_machine_used.at(machine_id) = true;
@@ -367,9 +369,10 @@ vector<bool> is_location_used(machines_.size(), false);
 
     const NumberOfLocations spread_min = service.spread_min();
     if (spread < spread_min) {
-      LG << "Service " << service_id << " runs in " << spread
-         << " different locations. It should run in at least " << spread_min
-         << " different locations." << endl;
+      LOG(INFO) << "Service " << service_id << " runs in " << spread
+                << " different locations. It should run in at least "
+                << spread_min
+                << " different locations." << endl;
       return false;
     }
   }
@@ -405,10 +408,10 @@ vector<bool> used_neighborhoods(machines_.size(),
     const Machine& machine = machines(machine_id);
     const NeighborhoodIndex neighborhood_id = machine.neighborhood_id();
     if (!used_neighborhoods.at(neighborhood_id)) {
-      LG << "Process " << process_id << " of service "
-         << dependent_service.id()
-         << " should run in the neighborhood of a process of service "
-         << service.id() << " runs." << endl;
+      LOG(INFO) << "Process " << process_id << " of service "
+                << dependent_service.id()
+                << " should run in the neighborhood of a process of service "
+                << service.id() << " runs." << endl;
       return false;
     }
   }
@@ -538,14 +541,15 @@ DataParser::~DataParser() {
 int DataParser::GetNextModelValue(int max_value) {
   const int next_value = raw_model_data_.at(raw_data_iterator_);
   if (next_value < 0) {
-    LG << "Value at position " << raw_data_iterator_
-       << " should be positive; current value is " << next_value << "." << endl;
+    LOG(INFO) << "Value at position " << raw_data_iterator_
+              << " should be positive; current value is " << next_value << "."
+              << endl;
   }
 
   if (next_value > max_value) {
-    LG << "Value at position " << raw_data_iterator_
-       << " should be smaller than " << max_value
-       << " ; current value is " << next_value << "." << endl;
+    LOG(INFO) << "Value at position " << raw_data_iterator_
+              << " should be smaller than " << max_value
+              << " ; current value is " << next_value << "." << endl;
   }
   CHECK(next_value >= 0 && next_value <= max_value);
 
