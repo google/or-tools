@@ -2100,13 +2100,13 @@ void RoutingModel::CloseModel() {
 }
 
 struct Link {
-  Link(pair<int, int> link, double value, int vehicle_class,
+  Link(std::pair<int, int> link, double value, int vehicle_class,
           int64 start_depot, int64 end_depot)
     : link(link), value(value), vehicle_class(vehicle_class),
       start_depot(start_depot), end_depot(end_depot) { }
   ~Link() { }
 
-  pair<int, int> link;
+  std::pair<int, int> link;
   int64 value;
   int vehicle_class;
   int64 start_depot;
@@ -2212,7 +2212,7 @@ class RouteConstructor {
       node_to_vehicle_class_index_(nodes_number, -1) {
         model_->GetAllDimensions(&dimensions_);
         cumuls_.resize(dimensions_.size());
-        for (MutableIter<std::vector<vector <int64> > > it(cumuls_);
+        for (MutableIter<std::vector<std::vector <int64> > > it(cumuls_);
              !it.at_end(); ++it) {
           it->resize(nodes_number_);
         }
@@ -2649,9 +2649,9 @@ class RouteConstructor {
   const std::vector<VehicleClass> vehicle_classes_;
   std::vector<IntVar*> nexts_;
   std::vector<string> dimensions_;
-  std::vector<vector <int64> > cumuls_;
+  std::vector<std::vector <int64> > cumuls_;
   std::vector<hash_map<int, int64> > new_possible_cumuls_;
-  std::vector<vector <int> > routes_;
+  std::vector<std::vector <int> > routes_;
   std::vector<int> in_route_;
   hash_set<int> deleted_routes_;
   std::vector<std::vector<int> > final_routes_;
@@ -2808,7 +2808,7 @@ struct SweepNodeSortDistance {
 } SweepNodeDistanceComparator;
 
 SweepArranger::SweepArranger(
-    const ITIVector<RoutingModel::NodeIndex, pair<int64, int64> >& points)
+    const ITIVector<RoutingModel::NodeIndex, std::pair<int64, int64> >& points)
   : coordinates_(2 * points.size(), 0), sectors_(1) {
   for (RoutingModel::NodeIndex i(0); i < points.size(); ++i) {
     coordinates_[2 * i] = points[i].first;
@@ -3829,7 +3829,9 @@ string RoutingModel::DebugOutputAssignment(
                       "%" GG_LL_FORMAT "d Vehicle(%" GG_LL_FORMAT "d) ",
                       index,
                       solution_assignment.Value(vehicle));
-        for (const string& dimension_name : dimension_names) {
+        for (int dim_index = 0; dim_index < dimension_names.size();
+	     ++dim_index) {
+	  const string& dimension_name = dimension_names[dim_index];
           const IntVar* var = CumulVar(index, dimension_name);
           StringAppendF(
               &output,

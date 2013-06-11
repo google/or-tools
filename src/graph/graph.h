@@ -1607,11 +1607,22 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>
   for (int i = 0; i < num_arcs_; ++i) {
     opposite_[opposite_[i]] = i;
   }
+#if defined(_MSC_VER)
+  for (IntegerRangeIterator<NodeIndex> node_iter = Base::AllNodes().begin();
+       node_iter != Base::AllNodes().end(); ++node_iter) {
+    for (IntegerRangeIterator<ArcIndexType> arc_iter =
+	   OutgoingArcs(*node_iter).begin(); 
+	 arc_iter != OutgoingArcs(*node_iter).end(); ++arc_iter) {
+      head_[opposite_[*arc_iter]] = *node_iter;
+    }
+  }
+#else
   for (const NodeIndexType node : Base::AllNodes()) {
     for (const ArcIndexType arc : OutgoingArcs(node)) {
       head_[opposite_[arc]] = node;
     }
   }
+#endif
 }
 
 template<typename NodeIndexType, typename ArcIndexType>

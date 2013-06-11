@@ -438,7 +438,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // As the information regarding a column needs to be contiguous, we create
   // a map associating a variable to a the vector containing the indices of the
   // constraints where this variable appears.
-  std::vector<std::vector<pair<int, double> > > transpose(proto_.variables_size());
+  std::vector<std::vector<std::pair<int, double> > > transpose(proto_.variables_size());
   for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
     for (int k = 0; k < ct_proto.terms_size(); ++k) {
@@ -452,7 +452,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
       }
       const double coeff = term_proto.coefficient();
       if (coeff != 0.0) {
-        transpose[var_index].push_back(pair<int, double>(cst_index, coeff));
+        transpose[var_index].push_back(std::pair<int, double>(cst_index, coeff));
       }
     }
   }
@@ -491,7 +491,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
           var_name, "COST", objective_coef, &columns_section);
     }
     for (int k = 0; k < transpose[var_index].size(); ++k) {
-      const pair<int, double> p = transpose[var_index][k];
+      const std::pair<int, double> p = transpose[var_index][k];
       const int cst_index = p.first;
       const double coeff = p.second;
       const string cst_name = GetConstraintName(cst_index);

@@ -22,8 +22,8 @@
 #ifndef OR_TOOLS_UTIL_FP_UTILS_H_
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
-#include <fenv.h>  // NOLINT
 #if defined(__GNUC__) && defined(__linux__)
+#include <fenv.h>  // NOLINT
 #include <fpu_control.h>
 #ifdef __SSE__
 #include <xmmintrin.h>

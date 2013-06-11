@@ -379,7 +379,7 @@ int NumDigits(int n) {
   // Number of digits needed to write a non-negative integer in base 10.
   // Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
 #if defined(_MSC_VER)
-  return static_cast<int>(std::max(1.0, log(1.0L * n) / log(10.0L) + 1.0));
+  return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
 #else
   return static_cast<int>(std::max(1.0, log10(n) + 1));
 #endif
@@ -389,8 +389,10 @@ int NumDigits(int n) {
 MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
     : name_(name),
       problem_type_(problem_type),
+#if !defined(_MSC_VER)
       variable_name_to_index_(1),
       constraint_name_to_index_(1),
+#endif
       time_limit_(0.0),
       var_and_constraint_names_allow_export_(true) {
   timer_.Restart();
@@ -594,20 +596,21 @@ void OutputTermsToProto(
     google::protobuf::RepeatedPtrField<MPTermProto>* output_terms) {
   // Vector linear_term will contain pairs (variable index, coeff), that will
   // be sorted by variable index.
-  std::vector<pair<int, double> > linear_term;
-  for (CoeffEntry entry : var_coeff_map) {
-    const MPVariable* const var = entry.first;
-    const double coef = entry.second;
+  std::vector<std::pair<int, double> > linear_term;
+  for (CoeffMap::const_iterator entry = var_coeff_map.begin(); 
+       entry != var_coeff_map.end(); ++entry) {
+    const MPVariable* const var = entry->first;
+    const double coef = entry->second;
     const int var_index = FindWithDefault(var_name_to_index, var, -1);
     DCHECK_NE(-1, var_index);
-    linear_term.push_back(pair<int, double>(var_index, coef));
+    linear_term.push_back(std::pair<int, double>(var_index, coef));
   }
   // The cost of sort is expected to be low as constraints usually have very
   // few terms.
   sort(linear_term.begin(), linear_term.end());
   // Now use linear term.
   for (int k = 0; k < linear_term.size(); ++k) {
-    const pair<int, double>& p = linear_term[k];
+    const std::pair<int, double>& p = linear_term[k];
     const int var_index = p.first;
     const double coef = p.second;
     const MPVariable* const var = variables[var_index];
