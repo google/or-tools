@@ -55,7 +55,6 @@ SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump);
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
       bool_var_count(-1),
-      set_var_count(-1),
       objective_variable_(-1),
       solve_annotations_(NULL),
       solver_(NULL),
@@ -69,8 +68,6 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   integer_variables_.resize(intVars);
   bool_var_count = 0;
   boolean_variables_.resize(boolVars);
-  set_var_count = 0;
-  set_variables_.resize(setVars);
 }
 
 void FlatZincModel::InitSolver() {
@@ -149,19 +146,19 @@ void FlatZincModel::SkipBoolVar() {
 }
 
 void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
-  if (vs->alias) {
-    set_variables_[set_var_count++] = set_variables_[vs->i];
-  } else {
-    AstSetLit* const domain = vs->domain_.value();
-    if (domain->interval) {
-      set_variables_[set_var_count++] =
-          solver_->RevAlloc(
-              new SetVar(solver_.get(), domain->imin, domain->imax));
-    } else {
-      set_variables_[set_var_count++] =
-          solver_->RevAlloc(new SetVar(solver_.get(), domain->s));
-    }
-  }
+  // if (vs->alias) {
+  //   set_variables_[set_var_count++] = set_variables_[vs->i];
+  // } else {
+  //   AstSetLit* const domain = vs->domain_.value();
+  //   if (domain->interval) {
+  //     set_variables_[set_var_count++] =
+  //         solver_->RevAlloc(
+  //             new SetVar(solver_.get(), domain->imin, domain->imax));
+  //   } else {
+  //     set_variables_[set_var_count++] =
+  //         solver_->RevAlloc(new SetVar(solver_.get(), domain->s));
+  //   }
+  // }
 }
 
 void FlatZincModel::Satisfy(AstArray* const annotations) {
@@ -242,8 +239,8 @@ string FlatZincModel::DebugString(AstNode* const ai) const {
     IntVar* const var = boolean_variables_[ai->getBoolVar()]->Var();
     output += var->Value() ? "true" : "false";
   } else if (ai->isSetVar()) {
-    SetVar* const var = set_variables_[ai->getSetVar()];
-    output += var->DebugString();
+    // SetVar* const var = set_variables_[ai->getSetVar()];
+    // output += var->DebugString();
   } else if (ai->isBool()) {
     output += (ai->getBool() ? "true" : "false");
   } else if (ai->isSet()) {

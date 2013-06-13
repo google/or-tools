@@ -221,14 +221,6 @@ class FlatZincModel {
     }
   }
 
-  SetVar* SetVariable(int index) const {
-    return set_variables_[index];
-  }
-
-  void SetSetVariable(int index, SetVar* const var) {
-    set_variables_[index] = var;
-  }
-
   /// Post a constraint specified by \a ce
   void PostConstraint(CtSpec* const spec);
 
@@ -289,8 +281,6 @@ class FlatZincModel {
   std::vector<IntExpr*> integer_variables_;
   /// The Boolean variables
   std::vector<IntExpr*> boolean_variables_;
-  /// The set variables
-  std::vector<SetVar*> set_variables_;
   // Useful for search.
   std::vector<IntVar*> active_variables_;
   std::vector<IntVar*> one_constraint_variables_;

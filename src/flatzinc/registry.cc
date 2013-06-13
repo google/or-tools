@@ -1480,12 +1480,14 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
   if (spec->Arg(1)->isIntVar()) {
     IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
-    Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
+    Constraint* const ct =
+        solver->MakeEquality(solver->MakeModulo(left, mod), target);
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
     const int64 mod = spec->Arg(1)->getInt();
-    Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
+    Constraint* const ct =
+        solver->MakeEquality(solver->MakeModulo(left, mod), target);
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
@@ -1994,10 +1996,8 @@ void p_array_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
   }
-  Constraint* const ct =
-      solver->MakeModuloConstraint(solver->MakeSum(variables)->Var(),
-                                   2,
-                                   solver->MakeIntConst(1));
+  Constraint* const ct = solver->MakeEquality(
+      solver->MakeModulo(solver->MakeSum(variables), 2), 1);
   VLOG(1) << "  - posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }

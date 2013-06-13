@@ -546,7 +546,7 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
           str = Solver::CHOOSE_HIGHEST_MAX;
         }
         if (args->hasAtom("max_regret")) {
-          str = Solver::CHOOSE_MAX_REGRET;
+          str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
         }
         if (args->hasAtom("occurrence")) {
           SortVariableByDegree(solver_.get(), &int_vars);
