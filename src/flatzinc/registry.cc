@@ -1478,18 +1478,36 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntExpr(spec->Arg(0))->Var();
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
-  if (spec->Arg(1)->isIntVar()) {
-    IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeModulo(left, mod), target);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+  if (spec->IsDefined(spec->Arg(2))) {
+    if (spec->Arg(1)->isIntVar()) {
+      IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
+      IntExpr* const target = solver->MakeModulo(left, mod);
+      VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
+              << target->DebugString();
+      model->CheckIntegerVariableIsNull(spec->Arg(2));
+      model->SetIntegerExpression(spec->Arg(2), target);
+    } else {
+      const int64 mod = spec->Arg(1)->getInt();
+      IntExpr* const target = solver->MakeModulo(left, mod);
+      VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
+              << target->DebugString();
+      model->CheckIntegerVariableIsNull(spec->Arg(2));
+      model->SetIntegerExpression(spec->Arg(2), target);
+    }
   } else {
-    const int64 mod = spec->Arg(1)->getInt();
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeModulo(left, mod), target);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (spec->Arg(1)->isIntVar()) {
+      IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    } else {
+      const int64 mod = spec->Arg(1)->getInt();
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 

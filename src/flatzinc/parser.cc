@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -169,6 +169,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations())) ||
       id == "int_max" ||
       id == "int_min" ||
+      id == "int_mod" ||
       id == "int_eq") {
     // Defines an int var.
     AstNode* const define = FindTarget(spec->annotations());
