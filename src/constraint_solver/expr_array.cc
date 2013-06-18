@@ -2975,7 +2975,7 @@ IntExpr* MakeScalProdAux(Solver* solver,
                                                      positive_coefs, constant);
           return solver->MakeDifference(positives->Var(), negatives->Var());
         } else {
-          return solver->MakeOpposite(negatives);
+          return solver->MakeDifference(constant, negatives);
         }
       }
     }
