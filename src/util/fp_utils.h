@@ -53,6 +53,7 @@ inline fpu_control_t GetFPPrecision() {
   _FPU_GETCW(status);
   return status & (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
 }
+
 // CPU precision control. Parameters can be:
 // _FPU_EXTENDED, _FPU_DOUBLE or _FPU_SINGLE.
 inline void SetFPPrecision(fpu_control_t precision) {

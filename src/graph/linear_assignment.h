@@ -1418,9 +1418,10 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
   CostValue old_error_parameter = epsilon_;
   do {
     new_error_parameter = NewEpsilon(old_error_parameter);
-    double_price_lower_bound -= 2.0 * PriceChangeBound(old_error_parameter,
-                                                       new_error_parameter,
-                                                       &in_range);
+    double_price_lower_bound -= 2.0 *
+        static_cast<double>(PriceChangeBound(old_error_parameter,
+                                                new_error_parameter,
+                                                &in_range));
     old_error_parameter = new_error_parameter;
   } while (new_error_parameter != kMinEpsilon);
   const double limit =

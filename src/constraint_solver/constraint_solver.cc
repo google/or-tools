@@ -2725,6 +2725,7 @@ const char ModelVisitor::kSumEqual[] = "SumEqual";
 const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
 const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
 const char ModelVisitor::kTransition[]= "Transition";
+const char ModelVisitor::kTrace[] = "Trace";
 const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
 const char ModelVisitor::kVarBoundWatcher[] = "VarBoundWatcher";
 const char ModelVisitor::kVarValueWatcher[] = "VarValueWatcher";
@@ -2806,6 +2807,7 @@ const char ModelVisitor::kDifferenceOperation[] = "difference";
 const char ModelVisitor::kProductOperation[] = "product";
 const char ModelVisitor::kStartSyncOnStartOperation[] = "start_synced_on_start";
 const char ModelVisitor::kStartSyncOnEndOperation[] = "start_synced_on_end";
+const char ModelVisitor::kTraceOperation[] = "trace";
 
 // Methods
 

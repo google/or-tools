@@ -210,6 +210,7 @@ dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MO
 
 # Clean everything.
 clean_third_party:
+	$(DEL) Makefile.local
 	$(DELREC) dependencies/install
 	$(DELREC) dependencies/sources/coin-cbc*
 	$(DELREC) dependencies/sources/gflags*
@@ -220,7 +221,6 @@ clean_third_party:
 	$(DELREC) dependencies/sources/protobuf*
 	$(DELREC) dependencies/sources/sparsehash*
 	$(DELREC) dependencies/sources/swig*
-	$(DEL) Makefile.local
 
 # Create Makefile.local
 makefile_third_party: Makefile.local

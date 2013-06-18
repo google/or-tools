@@ -269,9 +269,11 @@ class PriorityQueueWithRestrictedPush {
   DISALLOW_COPY_AND_ASSIGN(PriorityQueueWithRestrictedPush);
 };
 
-// Base class (easier for SWIG when wrapping the enum).
-
-class MaxFlowBase {
+// We want an enum for the Status of a max flow run, and we want this
+// enum to be scoped under GenericMaxFlow<>. Unfortunately, swig
+// doesn't handle templated enums very well, so we need a base,
+// untemplated class to hold it.
+class MaxFlowStatusClass {
  public:
   enum Status {
     NOT_SOLVED,         // The problem was not solved, or its data were edited.
@@ -285,7 +287,7 @@ class MaxFlowBase {
 // Generic MaxFlow (there is a default MaxFlow specialization defined below)
 // that works with StarGraph and all the reverse arc graphs from graph.h, see
 // the end of max_flow.cc for the exact types this class is compiled for.
-template<typename Graph> class GenericMaxFlow : public MaxFlowBase {
+template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;

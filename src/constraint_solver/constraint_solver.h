@@ -3387,6 +3387,7 @@ class ModelVisitor : public BaseObject {
   static const char kSumEqual[];
   static const char kSumGreaterOrEqual[];
   static const char kSumLessOrEqual[];
+  static const char kTrace[];
   static const char kTransition[];
   static const char kTrueConstraint[];
   static const char kVarBoundWatcher[];
@@ -3470,6 +3471,7 @@ class ModelVisitor : public BaseObject {
   static const char kProductOperation[];
   static const char kStartSyncOnStartOperation[];
   static const char kStartSyncOnEndOperation[];
+  static const char kTraceOperation[];
 
   virtual ~ModelVisitor();
 

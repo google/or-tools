@@ -2980,7 +2980,7 @@ void TimesNegCstIntVar::SetMax(int64 m) {
 }
 
 void TimesNegCstIntVar::SetRange(int64 l, int64 u) {
-  var_->SetRange(PosIntDivDown(-u, -cst_), PosIntDivUp(-l, -cst_));
+  var_->SetRange(PosIntDivUp(-u, -cst_), PosIntDivDown(-l, -cst_));
 }
 
 void TimesNegCstIntVar::SetValue(int64 v) {
@@ -3027,14 +3027,33 @@ class PlusIntExpr : public BaseIntExpr {
  public:
   PlusIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
+
   virtual ~PlusIntExpr() {}
+
   virtual int64 Min() const { return CapAdd(left_->Min(), right_->Min()); }
+
   virtual void SetMin(int64 m) {
     left_->SetMin(CapSub(m, right_->Max()));
     right_->SetMin(CapSub(m, left_->Max()));
   }
-  virtual void SetRange(int64 l, int64 u);
+
+  virtual void SetRange(int64 l, int64 u) {
+    const int64 left_min = left_->Min();
+    const int64 right_min = right_->Min();
+    const int64 left_max = left_->Max();
+    const int64 right_max = right_->Max();
+    if (l > CapAdd(left_min, right_min)) {
+      left_->SetMin(CapSub(l, right_max));
+      right_->SetMin(CapSub(l, left_max));
+    }
+    if (u < CapAdd(left_max, right_max)) {
+      left_->SetMax(CapSub(u, right_min));
+      right_->SetMax(CapSub(u, left_min));
+    }
+  }
+
   virtual int64 Max() const { return CapAdd(left_->Max(), right_->Max()); }
+
   virtual void SetMax(int64 m) {
     if (!SubOverflows(m, right_->Min())) {
       left_->SetMax(CapSub(m, right_->Min()));
@@ -3043,15 +3062,19 @@ class PlusIntExpr : public BaseIntExpr {
       right_->SetMax(CapSub(m, left_->Min()));
     }
   }
+
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
+
   virtual string name() const {
     return StringPrintf("(%s + %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("(%s + %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
+
   virtual void WhenRange(Demon* d) {
     left_->WhenRange(d);
     right_->WhenRange(d);
@@ -3069,21 +3092,6 @@ class PlusIntExpr : public BaseIntExpr {
   IntExpr* const left_;
   IntExpr* const right_;
 };
-
-void PlusIntExpr::SetRange(int64 l, int64 u) {
-  const int64 left_min = left_->Min();
-  const int64 right_min = right_->Min();
-  const int64 left_max = left_->Max();
-  const int64 right_max = right_->Max();
-  if (l > CapAdd(left_min, right_min)) {
-    left_->SetMin(CapSub(l, right_max));
-    right_->SetMin(CapSub(l, left_max));
-  }
-  if (u < CapAdd(left_max, right_max)) {
-    left_->SetMax(CapSub(u, right_min));
-    right_->SetMax(CapSub(u, left_min));
-  }
-}
 
 // ----- PlusIntCstExpr -----
 

@@ -278,7 +278,8 @@ Constraint* MakeLightElement2(
 // Relocate neighborhood which moves chains of neighbors.
 // The operator starts by relocating a node n after a node m, then continues
 // moving nodes which were after n as long as the "cost" added is less than
-// the "cost" of the arc (m, n).
+// the "cost" of the arc (m, n). If the new chain doesn't respect the domain of
+// next variables, it will try reordering the nodes.
 // Possible neighbors for path 1 -> A -> B -> C -> D -> E -> 2 (where (1, 2) are
 // first and last nodes of the path and can therefore not be moved, A must
 // be performed before B, and A, D and E are located at the same place):
@@ -305,6 +306,11 @@ class MakeRelocateNeighborsOperator : public PathOperator {
                                 int size)
       : PathOperator(vars, secondary_vars, size, 2),
         arc_evaluator_(arc_evaluator) {
+    int64 max_next = -1;
+    for (int i = 0; i < size; ++i) {
+      max_next = std::max(max_next, vars[i]->Max());
+    }
+    prevs_.resize(max_next + 1, -1);
   }
   virtual ~MakeRelocateNeighborsOperator() {}
   virtual bool MakeNeighbor() {
@@ -324,14 +330,72 @@ class MakeRelocateNeighborsOperator : public PathOperator {
         chain_end = next;
         next = Next(chain_end);
     }
-    return MoveChain(before_chain, chain_end, destination);
+    return MoveChainAndRepair(before_chain, chain_end, destination);
   }
   virtual string DebugString() const {
     return "RelocateNeighbors";
   }
 
  private:
+  virtual void OnNodeInitialization() {
+    for (int i = 0; i < number_of_nexts(); ++i) {
+      prevs_[Next(i)] = i;
+    }
+  }
+
+  // Moves a chain starting after 'before_chain' and ending at 'chain_end'
+  // after node 'destination'. Tries to repair the resulting solution by
+  // checking if the new arc created after 'destination' is compatible with
+  // NextVar domains, and moves the 'destination' down the path if the solution
+  // is inconsistent. Iterates the process on the new arcs created before
+  // the node 'destination' (if destination was moved).
+  bool MoveChainAndRepair(int64 before_chain,
+                          int64 chain_end,
+                          int64 destination) {
+    if (MoveChain(before_chain, chain_end, destination)) {
+      int64 current = prevs_[destination];
+      int64 last = chain_end;
+      if (current == last) {  // chain was just before destination
+        current = before_chain;
+      }
+      while (last >= 0 && current >= 0) {
+        last = Reposition(current, last);
+        current = prevs_[current];
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // Moves node after 'before_to_move' down the path until a position is found
+  // where NextVar domains are not violated, it it exists. Stops when reaching
+  // position after 'up_to'.
+  int64 Reposition(int64 before_to_move, int64 up_to) {
+    const int64 kNoChange = -1;
+    const int64 to_move = Next(before_to_move);
+    int64 next = Next(to_move);
+    if (Var(to_move)->Contains(next)) {
+      return kNoChange;
+    }
+    int64 prev = next;
+    next = Next(next);
+    while (prev != up_to) {
+      if (Var(prev)->Contains(to_move) && Var(to_move)->Contains(next)) {
+        MoveChain(before_to_move, to_move, prev);
+        return up_to;
+      }
+      prev = next;
+      next = Next(next);
+    }
+    if (Var(prev)->Contains(to_move)) {
+      MoveChain(before_to_move, to_move, prev);
+      return to_move;
+    }
+    return kNoChange;
+  }
+
   scoped_ptr<Solver::IndexEvaluator2> arc_evaluator_;
+  std::vector<int64> prevs_;
 };
 
 LocalSearchOperator* MakeRelocateNeighbors(
@@ -938,6 +1002,10 @@ class PathCumulFilter : public BasePathFilter {
     return span_cost_coefficient_ != 0;
   }
 
+  bool FilterSlackCost() const {
+    return slack_cost_coefficient_ != 0;
+  }
+
   bool FilterCumulSoftBounds() const {
     return !cumul_soft_bounds_.empty();
   }
@@ -964,6 +1032,7 @@ class PathCumulFilter : public BasePathFilter {
   int64 injected_objective_value_;
   const int64 span_cost_coefficient_;
   std::vector<SoftBound> cumul_soft_bounds_;
+  int64 slack_cost_coefficient_;
   IntVar* const cost_var_;
   // Data reflecting information on paths and cumul variables for the solution
   // to which the filter was synchronized.
@@ -994,6 +1063,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       cumul_cost_delta_(0),
       injected_objective_value_(0),
       span_cost_coefficient_(dimension.span_cost_coefficient()),
+      slack_cost_coefficient_(dimension.transit_cost_coefficient()),
       cost_var_(routing_model.CostVar()),
       delta_max_end_cumul_(kint64min),
       lns_detected_(false),
@@ -1003,6 +1073,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   memcpy(cumuls_.get(), cumuls, cumuls_size_ * sizeof(*cumuls));
   cumul_soft_bounds_.resize(cumuls_size_);
   bool has_cumul_soft_bounds = false;
+  bool has_cumul_hard_bounds = false;
   for (int i = 0; i < cumuls_size_; ++i) {
     RoutingModel::NodeIndex node = routing_model.IndexToNode(i);
     if (dimension.HasCumulVarSoftUpperBound(node)) {
@@ -1012,9 +1083,16 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       cumul_soft_bounds_[i].coefficient =
           dimension.GetCumulVarSoftUpperBoundCoefficient(node);
     }
+    IntVar* const cumul_var = cumuls_[i];
+    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
+      has_cumul_hard_bounds = true;
+    }
   }
   if (!has_cumul_soft_bounds) {
     cumul_soft_bounds_.clear();
+  }
+  if (!has_cumul_hard_bounds) {
+    slack_cost_coefficient_ = 0;
   }
 }
 
@@ -1034,7 +1112,7 @@ void PathCumulFilter::OnSynchronize() {
   total_current_cumul_cost_value_ = 0;
   cumul_cost_delta_ = 0;
   current_cumul_cost_values_.clear();
-  if (FilterSpanCost() || FilterCumulSoftBounds()) {
+  if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost()) {
     InitializeSupportedPathCumul(&current_min_start_, kint64max);
     InitializeSupportedPathCumul(&current_max_end_, kint64min);
     current_path_transits_.Clear();
@@ -1044,14 +1122,22 @@ void PathCumulFilter::OnSynchronize() {
       int64 node = Start(r);
       int64 cumul = cumuls_[node]->Min();
       int64 current_cumul_cost_value = GetCumulSoftCost(node, cumul);
+      int64 total_transit = 0;
       while (node < Size()) {
         const int64 next = Value(node);
         const int64 transit = evaluator_->Run(node, next);
+        total_transit += transit;
         current_path_transits_.PushTransit(r, node, next, transit);
         cumul += transit;
         cumul = std::max(cumuls_[next]->Min(), cumul);
         node = next;
         current_cumul_cost_value += GetCumulSoftCost(node, cumul);
+      }
+      if (FilterSlackCost()) {
+        const int64 start = ComputePathMaxStartFromEndCumul(
+            current_path_transits_, r, cumul);
+        current_cumul_cost_value +=
+            slack_cost_coefficient_ * (cumul - start - total_transit);
       }
       current_cumul_cost_values_[Start(r)] = current_cumul_cost_value;
       current_max_end_.path_values[r] = cumul;
@@ -1076,7 +1162,6 @@ void PathCumulFilter::OnSynchronize() {
   // Initialize this before considering any deltas (neighbor).
   delta_max_end_cumul_ = kint64min;
   lns_detected_ = false;
-
   if (delta_objective_callback_ != NULL) {
     const int64 new_objective_value =
         injected_objective_value_
@@ -1092,6 +1177,7 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
   int64 node = path_start;
   int64 cumul = cumuls_[node]->Min();
   cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
+  int64 total_transit = 0;
   const int path = delta_path_transits_.AddPaths(1);
   // Check that the path is feasible with regards to cumul bounds, scanning
   // the paths from start to end (caching path node sequences and transits
@@ -1104,6 +1190,7 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
       return true;
     }
     const int64 transit = evaluator_->Run(node, next);
+    total_transit += transit;
     delta_path_transits_.PushTransit(path, node, next, transit);
     cumul += transit;
     if (cumul > cumuls_[next]->Max()) {
@@ -1113,7 +1200,13 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
     node = next;
     cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
   }
-  if (FilterSpanCost() || FilterCumulSoftBounds()) {
+  if (FilterSlackCost()) {
+    const int64 start = ComputePathMaxStartFromEndCumul(
+        delta_path_transits_, path, cumul);
+    cumul_cost_delta_ +=
+        slack_cost_coefficient_ * (cumul - start - total_transit);
+  }
+  if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost()) {
     delta_paths_.insert(GetPath(path_start));
     delta_max_end_cumul_ = std::max(delta_max_end_cumul_, cumul);
     cumul_cost_delta_ -= current_cumul_cost_values_[path_start];
@@ -1122,7 +1215,8 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
 }
 
 bool PathCumulFilter::FinalizeAcceptPath() {
-  if ((!FilterSpanCost() && !FilterCumulSoftBounds()) || lns_detected_) {
+  if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost())
+      || lns_detected_) {
     // Cleaning up for the next delta.
     delta_max_end_cumul_ = kint64min;
     delta_paths_.clear();
@@ -3970,17 +4064,17 @@ LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
     if (!FLAGS_routing_no_cross) {
       CP_ROUTING_PUSH_BACK_OPERATOR(Solver::CROSS);
     }
-    if (pickup_delivery_pairs_.size() > 0
-        || !FLAGS_routing_no_relocate_neighbors) {
-      const IntVar* const* vehicle_vars =
-          homogeneous_costs_ ? NULL : vehicle_vars_.data();
-      operators.push_back(MakeRelocateNeighbors(
-          solver_.get(),
-          nexts_.data(),
-          vehicle_vars,
-          NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
-          size));
-    }
+  }
+  if (pickup_delivery_pairs_.size() > 0
+      || !FLAGS_routing_no_relocate_neighbors) {
+    const IntVar* const* vehicle_vars =
+        homogeneous_costs_ ? NULL : vehicle_vars_.data();
+    operators.push_back(MakeRelocateNeighbors(
+        solver_.get(),
+        nexts_.data(),
+        vehicle_vars,
+        NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
+        size));
   }
   if (!FLAGS_routing_no_lkh
       && !FLAGS_routing_tabu_search
@@ -4715,6 +4809,10 @@ void RoutingDimension::SetupSlackCosts(std::vector<IntVar*>* cost_elements) cons
   Solver* const solver = model_->solver();
   DCHECK_GT(transit_cost_coefficient_, 0);
   for (int node_index = 0; node_index < model_->Size(); ++node_index) {
+    for (int i = 0; i < model_->vehicles(); ++i) {
+      model_->AddVariableMinimizedByFinalizer(cumuls_[model_->End(i)]);
+      model_->AddVariableMaximizedByFinalizer(cumuls_[model_->Start(i)]);
+    }
     cost_elements->push_back(solver->MakeProd(
             solver->MakeProd(slacks_[node_index], transit_cost_coefficient_),
             model_->ActiveVar(node_index))->Var());

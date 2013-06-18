@@ -277,7 +277,7 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
     if (m > unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetStartMin(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetStartMin(m);
     }
   }
@@ -296,7 +296,7 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
     if (m < unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetStartMax(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetStartMax(m);
     }
   }
@@ -305,7 +305,7 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
     if (v != unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetStartRange(v, v);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetStartRange(v, v);
     }
   }
@@ -320,7 +320,9 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("safe_end(%s)", interval_->DebugString().c_str());
+    return StringPrintf("safe_start(%s, %" GG_LL_FORMAT "d)",
+                        interval_->DebugString().c_str(),
+                        unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -362,7 +364,7 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
     if (m > unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetDurationMin(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetDurationMin(m);
     }
   }
@@ -381,7 +383,7 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
     if (m < unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetDurationMax(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetDurationMax(m);
     }
   }
@@ -390,7 +392,7 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
     if (v != unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetDurationRange(v, v);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetDurationRange(v, v);
     }
   }
@@ -405,7 +407,9 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("safe_end(%s)", interval_->DebugString().c_str());
+    return StringPrintf("safe_duration(%s, %" GG_LL_FORMAT "d)",
+                        interval_->DebugString().c_str(),
+                        unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -447,7 +451,7 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
     if (m > unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetEndMin(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetEndMin(m);
     }
   }
@@ -466,7 +470,7 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
     if (m < unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetEndMax(m);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetEndMax(m);
     }
   }
@@ -475,7 +479,7 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
     if (v != unperformed_value_) {
       interval_->SetPerformed(true);
       interval_->SetEndRange(v, v);
-    } else if (interval_->MustBePerformed()) {
+    } else if (interval_->MayBePerformed()) {
       interval_->SetEndRange(v, v);
     }
   }
@@ -490,7 +494,9 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("safe_end(%s)", interval_->DebugString().c_str());
+    return StringPrintf("safe_end(%s, %" GG_LL_FORMAT "d)",
+                        interval_->DebugString().c_str(),
+                        unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -563,7 +569,8 @@ IntExpr* IntervalVar::SafeStartExpr(int64 unperformed_value) {
   IntExpr* const end_expr = solver()->RegisterIntExpr(solver()->RevAlloc(
       new IntervalVarSafeStartExpr(this, unperformed_value)));
   if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_start(%s)", name().c_str()));
+    end_expr->set_name(StringPrintf("safe_start(%s, %" GG_LL_FORMAT "d)",
+                                    name().c_str(), unperformed_value));
   }
   return end_expr;
 }
@@ -572,7 +579,8 @@ IntExpr* IntervalVar::SafeDurationExpr(int64 unperformed_value) {
   IntExpr* const end_expr = solver()->RegisterIntExpr(solver()->RevAlloc(
       new IntervalVarSafeDurationExpr(this, unperformed_value)));
   if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_start(%s)", name().c_str()));
+    end_expr->set_name(StringPrintf("safe_duration(%s, %" GG_LL_FORMAT "d)",
+                                    name().c_str(), unperformed_value));
   }
   return end_expr;
 }
@@ -581,7 +589,8 @@ IntExpr* IntervalVar::SafeEndExpr(int64 unperformed_value) {
   IntExpr* const end_expr = solver()->RegisterIntExpr(
       solver()->RevAlloc(new IntervalVarSafeEndExpr(this, unperformed_value)));
   if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_end(%s)", name().c_str()));
+    end_expr->set_name(StringPrintf("safe_end(%s, %" GG_LL_FORMAT "d)",
+                                    name().c_str(), unperformed_value));
   }
   return end_expr;
 }

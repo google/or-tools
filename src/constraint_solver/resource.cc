@@ -1053,14 +1053,16 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
     int64 max_transit = kint64min;
     for (int64 i = 0; i < size_; ++i) {
-      const int64 fixed_transit = intervals_[i]->DurationMin();
+      IntervalVar* const var = intervals_[i];
+      const int64 fixed_transit = var->DurationMin();
       time_transits_[i + 1] =
           s->MakeIntVar(fixed_transit,
                         horizon,
                         StringPrintf("time_transit(%" GG_LL_FORMAT "d)",
                                      i + 1));
       max_transit = std::max(max_transit, time_transits_[i + 1]->Max());
-      time_cumuls_[i + 1] = intervals_[i]->StartExpr()->Var();
+      // TODO(user): Check SafeStartExpr();
+      time_cumuls_[i + 1] = var->SafeStartExpr(var->StartMin())->Var();
     }
     time_cumuls_[size_ + 1] =
         s->MakeIntVar(0, horizon + max_transit, ct_name + "_ect");
@@ -2060,6 +2062,9 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
   }
+  if (capacity == 1 && AreAllOnes(demands)) {
+    return MakeDisjunctiveConstraint(intervals, name);
+  }
   return RevAlloc(new CumulativeConstraint(this,
                                            intervals.data(),
                                            demands.data(),
@@ -2075,6 +2080,9 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
+  }
+  if (capacity == 1 && AreAllOnes(demands)) {
+    return MakeDisjunctiveConstraint(intervals, name);
   }
   return RevAlloc(new CumulativeConstraint(this,
                                            intervals.data(),

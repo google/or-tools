@@ -29,6 +29,10 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
+DEFINE_bool(
+    cp_full_trace, false,
+    "Display all trace information, even if the modifiers has no effect");
+
 namespace operations_research {
 namespace {
 // ---------- Code Instrumentation ----------
@@ -158,7 +162,14 @@ class TraceIntVar : public IntVar {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    inner_->Accept(visitor);
+    IntExpr* const cast_expr =
+        solver()->CastExpression(const_cast<TraceIntVar*>(this));
+    if (cast_expr != NULL) {
+      visitor->VisitIntegerVariable(this, cast_expr);
+    } else {
+      visitor->VisitIntegerVariable(
+          this, ModelVisitor::kTraceOperation, 0, inner_);
+    }
   }
 
   virtual string DebugString() const {
@@ -241,7 +252,10 @@ class TraceIntExpr : public IntExpr {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    inner_->Accept(visitor);
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kTrace, this);
+    visitor->VisitIntegerExpressionArgument(
+        ModelVisitor::kExpressionArgument, inner_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kTrace, this);
   }
 
   virtual string DebugString() const {
@@ -837,17 +851,27 @@ class PrintTrace : public PropagationMonitor {
 
  private:
   void PushDelayedInfo(const string& delayed) {
-    contexes_.top().delayed_info.push_back(Info(delayed));
+    if (FLAGS_cp_full_trace) {
+      LOG(INFO) << Indent() << delayed << " {";
+      IncreaseIndent();
+    } else {
+      contexes_.top().delayed_info.push_back(Info(delayed));
+    }
   }
 
   void PopDelayedInfo() {
-    CHECK(!contexes_.top().delayed_info.empty());
-    if (contexes_.top().delayed_info.back().displayed &&
-        !contexes_.top().TopLevel()) {
+    if (FLAGS_cp_full_trace) {
       DecreaseIndent();
       LOG(INFO) << Indent() << "}";
     } else {
-      contexes_.top().delayed_info.pop_back();
+      CHECK(!contexes_.top().delayed_info.empty());
+      if (contexes_.top().delayed_info.back().displayed &&
+          !contexes_.top().TopLevel()) {
+        DecreaseIndent();
+        LOG(INFO) << Indent() << "}";
+      } else {
+        contexes_.top().delayed_info.pop_back();
+      }
     }
   }
 
@@ -869,28 +893,32 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void DisplayModification(const string& to_print) {
-    PrintDelayedString();
-    if (contexes_.top().in_demon ||
-        contexes_.top().in_constraint ||
-        contexes_.top().in_decision_builder ||
-        contexes_.top().in_decision ||
-        contexes_.top().in_objective) {
-      // Inside a demon, constraint, decision builder -> normal print.
+    if (FLAGS_cp_full_trace) {
       LOG(INFO) << Indent() << to_print;
     } else {
-      // Top level, modification pushed by the objective.  This is a
-      // hack. The SetMax or SetMin done by the objective happens in
-      // the RefuteDecision callback of search monitors.  We cannot
-      // easily differentiate that from the actual modifications done
-      // by the Refute() call itself.  To distinguish that, we force
-      // the print trace to be last in the list of monitors. Thus
-      // modifications that happens at the top level before the
-      // RefuteDecision() callbacks must be from the objective.
-      // In that case, we push the in_objective context.
-      CHECK(contexes_.top().TopLevel());
-      DisplaySearch(StringPrintf("Objective -> %s", to_print.c_str()));
-      IncreaseIndent();
-      contexes_.top().in_objective = true;
+      PrintDelayedString();
+      if (contexes_.top().in_demon ||
+          contexes_.top().in_constraint ||
+          contexes_.top().in_decision_builder ||
+          contexes_.top().in_decision ||
+          contexes_.top().in_objective) {
+        // Inside a demon, constraint, decision builder -> normal print.
+        LOG(INFO) << Indent() << to_print;
+      } else {
+        // Top level, modification pushed by the objective.  This is a
+        // hack. The SetMax or SetMin done by the objective happens in
+        // the RefuteDecision callback of search monitors.  We cannot
+        // easily differentiate that from the actual modifications done
+        // by the Refute() call itself.  To distinguish that, we force
+        // the print trace to be last in the list of monitors. Thus
+        // modifications that happens at the top level before the
+        // RefuteDecision() callbacks must be from the objective.
+        // In that case, we push the in_objective context.
+        CHECK(contexes_.top().TopLevel());
+        DisplaySearch(StringPrintf("Objective -> %s", to_print.c_str()));
+        IncreaseIndent();
+        contexes_.top().in_objective = true;
+      }
     }
   }
 
@@ -905,6 +933,7 @@ class PrintTrace : public PropagationMonitor {
   }
 
   string Indent() {
+    CHECK_GE(contexes_.top().indent, 0);
     string output = " @ ";
     for (int i = 0; i < contexes_.top().indent; ++i) {
       output.append("    ");
@@ -917,7 +946,9 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void DecreaseIndent() {
-    contexes_.top().indent--;
+    if (contexes_.top().indent > 0) {
+      contexes_.top().indent--;
+    }
   }
 
   void PushNestedContext() {

@@ -278,6 +278,7 @@ endif
 
 # Clean everything.
 clean_third_party:
+	-$(DEL) Makefile.local
 	-$(DELREC) dependencies\install
 	-$(DELREC) dependencies\sources\coin-cbc*
 	-$(DELREC) dependencies\sources\gflags*
@@ -287,9 +288,6 @@ clean_third_party:
 	-$(DELREC) dependencies\sources\pcre*
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\sparsehash*
-	-$(DELREC) dependencies\install\swig*
-	-$(DELREC) dependencies\install\scip*
-	-$(DEL) Makefile.local
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
