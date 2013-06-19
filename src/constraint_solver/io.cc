@@ -1001,6 +1001,8 @@ void MakeCallbackFromProto(CPModelLoader* const builder,
 
 #define VERIFY(expr) \
   if (!(expr)) return NULL
+#define VERIFY_BOOL(expr) \
+  if (!(expr)) return false
 #define VERIFY_EQ(e1, e2) \
   if ((e1) != (e2)) return NULL
 
@@ -1895,10 +1897,11 @@ bool AddUsageLessConstantDimension(Pack* const pack,
                                    CPModelLoader* const builder,
                                    const CPExtensionProto& proto) {
   std::vector<int64> weights;
-  VERIFY(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
-                                &weights));
+  VERIFY_BOOL(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
+                                     &weights));
   std::vector<int64> upper;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &upper));
+  VERIFY_BOOL(builder->ScanArguments(ModelVisitor::kValuesArgument, proto,
+                                     &upper));
   pack->AddWeightedSumLessOrEqualConstantDimension(weights, upper);
   return true;
 }
@@ -1907,7 +1910,8 @@ bool AddCountAssignedItemsDimension(Pack* const pack,
                                     CPModelLoader* const builder,
                                     const CPExtensionProto& proto) {
   IntExpr* target = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  VERIFY_BOOL(builder->ScanArguments(ModelVisitor::kTargetArgument, proto,
+                                     &target));
   pack->AddCountAssignedItemsDimension(target->Var());
   return true;
 }
@@ -1915,7 +1919,8 @@ bool AddCountAssignedItemsDimension(Pack* const pack,
 bool AddCountUsedBinDimension(Pack* const pack, CPModelLoader* const builder,
                               const CPExtensionProto& proto) {
   IntExpr* target = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  VERIFY_BOOL(
+      builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
   pack->AddCountUsedBinDimension(target->Var());
   return true;
 }
@@ -1924,10 +1929,11 @@ bool AddUsageEqualVariableDimension(Pack* const pack,
                                     CPModelLoader* const builder,
                                     const CPExtensionProto& proto) {
   std::vector<int64> weights;
-  VERIFY(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
-                                &weights));
+  VERIFY_BOOL(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
+                                     &weights));
   std::vector<IntVar*> loads;
-  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &loads));
+  VERIFY_BOOL(
+      builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &loads));
   pack->AddWeightedSumEqualVarDimension(weights, loads);
   return true;
 }
@@ -1936,9 +1942,11 @@ bool AddVariableUsageLessConstantDimension(Pack* const pack,
                                            CPModelLoader* const builder,
                                            const CPExtensionProto& proto) {
   std::vector<int64> uppers;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &uppers));
+  VERIFY_BOOL(
+      builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &uppers));
   std::vector<IntVar*> usages;
-  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &usages));
+  VERIFY_BOOL(
+      builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &usages));
   pack->AddSumVariableWeightsLessOrEqualConstantDimension(usages, uppers);
   return true;
 }
@@ -1947,10 +1955,11 @@ bool AddWeightedSumOfAssignedDimension(Pack* const pack,
                                        CPModelLoader* const builder,
                                        const CPExtensionProto& proto) {
   std::vector<int64> weights;
-  VERIFY(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
-                                &weights));
+  VERIFY_BOOL(builder->ScanArguments(ModelVisitor::kCoefficientsArgument, proto,
+                                     &weights));
   IntExpr* target = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  VERIFY_BOOL(
+      builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
   pack->AddWeightedSumOfAssignedDimension(weights, target->Var());
   return true;
 }
@@ -2303,7 +2312,7 @@ bool CPModelLoader::BuildFromProto(const CPIntervalVariableProto& proto) {
       solver_->GetIntervalVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
-    return NULL;
+    return false;
   }
   IntervalVar* const built = builder->Run(this, proto);
   if (!built) {
@@ -2321,7 +2330,7 @@ bool CPModelLoader::BuildFromProto(const CPSequenceVariableProto& proto) {
       solver_->GetSequenceVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
-    return NULL;
+    return false;
   }
   SequenceVar* const built = builder->Run(this, proto);
   if (!built) {
