@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
       const int64 from = randomizer.Uniform(FLAGS_tsp_size - 1);
       const int64 to = randomizer.Uniform(FLAGS_tsp_size - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {
-        LG << "Forbidding connection " << from << " -> " << to;
+        LOG(INFO) << "Forbidding connection " << from << " -> " << to;
         routing.NextVar(from)->RemoveValue(to);
         ++forbidden_connections;
       }
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     const Assignment* solution = routing.Solve();
     if (solution != NULL) {
       // Solution cost.
-      LG << "Cost " << solution->ObjectiveValue();
+      LOG(INFO) << "Cost " << solution->ObjectiveValue();
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       const int route_number = 0;
@@ -149,12 +149,12 @@ int main(int argc, char **argv) {
         route = StrCat(route, StrCat(node, " -> "));
       }
       route = StrCat(route, "0");
-      LG << route;
+      LOG(INFO) << route;
     } else {
-      LG << "No solution found.";
+      LOG(INFO) << "No solution found.";
     }
   } else {
-    LG << "Specify an instance size greater than 0.";
+    LOG(INFO) << "Specify an instance size greater than 0.";
   }
   return 0;
 }

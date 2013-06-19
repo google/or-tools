@@ -29,7 +29,7 @@ $(GEN_DIR)/algorithms/pywrapknapsack_solver.py: $(SRC_DIR)/algorithms/knapsack_s
 $(GEN_DIR)/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/algorithms/pywrapknapsack_solver.py
 
 $(OBJ_DIR)/knapsack_solver_python_wrap.$O: $(GEN_DIR)/algorithms/knapsack_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJ_OUT)knapsack_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sknapsack_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/knapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_LIBS) $(STATIC_LP_LIBS) $(STATIC_BASE_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sknapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
@@ -46,7 +46,7 @@ $(GEN_DIR)/graph/pywrapgraph.py: $(SRC_DIR)/graph/graph.swig $(SRC_DIR)/graph/mi
 $(GEN_DIR)/graph/pywrapgraph_python_wrap.cc: $(GEN_DIR)/graph/pywrapgraph.py
 
 $(OBJ_DIR)/pywrapgraph_python_wrap.$O: $(GEN_DIR)/graph/pywrapgraph_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/graph/pywrapgraph_python_wrap.cc $(OBJ_OUT)pywrapgraph_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/graph/pywrapgraph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Spywrapgraph_python_wrap.$O
 
 $(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/pywrapgraph_python_wrap.$O $(STATIC_GRAPH_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Spywrapgraph_python_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
@@ -64,7 +64,7 @@ $(GEN_DIR)/constraint_solver/pywrapcp.py: $(SRC_DIR)/constraint_solver/constrain
 $(GEN_DIR)/constraint_solver/constraint_solver_python_wrap.cc: $(GEN_DIR)/constraint_solver/pywrapcp.py
 
 $(OBJ_DIR)/constraint_solver_python_wrap.$O: $(GEN_DIR)/constraint_solver/constraint_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)constraint_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/constraint_solver_python_wrap.$O $(STATIC_CP_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(STATIC_CP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
@@ -80,7 +80,7 @@ $(GEN_DIR)/constraint_solver/pywraprouting.py: $(SRC_DIR)/constraint_solver/rout
 $(GEN_DIR)/constraint_solver/routing_python_wrap.cc: $(GEN_DIR)/constraint_solver/pywraprouting.py
 
 $(OBJ_DIR)/routing_python_wrap.$O: $(GEN_DIR)/constraint_solver/routing_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/constraint_solver/routing_python_wrap.cc $(OBJ_OUT)routing_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/constraint_solver/routing_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting_python_wrap.$O
 
 $(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/routing_python_wrap.$O $(STATIC_ROUTING_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Srouting_python_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
@@ -98,7 +98,7 @@ $(GEN_DIR)/linear_solver/pywraplp.py: $(SRC_DIR)/linear_solver/linear_solver.swi
 $(GEN_DIR)/linear_solver/linear_solver_python_wrap.cc: $(GEN_DIR)/linear_solver/pywraplp.py
 
 $(OBJ_DIR)/linear_solver_python_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJ_OUT)linear_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/linear_solver_python_wrap.$O $(STATIC_LP_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Slinear_solver_python_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
