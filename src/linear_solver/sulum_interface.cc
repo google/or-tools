@@ -575,8 +575,6 @@ MPSolver::ResultStatus SLMInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  WriteModelToPredefinedFiles();
-
   // Configure parameters at every solve, even when the model has not
   // been changed, in case some of the parameters such as the time
   // limit have been changed since the last solve.
