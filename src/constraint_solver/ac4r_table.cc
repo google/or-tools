@@ -11,15 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-#include "base/hash.h"
-#include "base/int-type.h"
-#include "base/int-type-indexed-vector.h"
-#include "base/map-util.h"
+#include "base/integral_types.h"
+#include "base/logging.h"
+#include "base/macros.h"
 #include "base/scoped_ptr.h"
+#include "base/int-type-indexed-vector.h"
+#include "base/int-type.h"
+#include "base/map-util.h"
 #include "base/stl_util.h"
-#include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "util/vector_map.h"
 
 namespace operations_research {
@@ -35,14 +36,13 @@ class IndexedTable {
  public:
   class Column {
    public:
-    Column()
-    : num_tuples_(0) {}
+    Column() : num_tuples_(0) {}
 
     void Init(const IntTupleSet& table, int var_index) {
       num_tuples_ = table.NumTuples();
       column_of_value_indices_.resize(num_tuples_);
-      num_tuples_per_value_.resize(
-          table.NumDifferentValuesInColumn(var_index), 0);
+      num_tuples_per_value_.resize(table.NumDifferentValuesInColumn(var_index),
+                                   0);
       for (int tuple_index = 0; tuple_index < num_tuples_; tuple_index++) {
         const int64 val = table.Value(tuple_index, var_index);
         if (!value_map_.Contains(val)) {
@@ -58,9 +58,7 @@ class IndexedTable {
       return column_of_value_indices_[tuple_index];
     }
 
-    int IndexFromValue(int64 value) const {
-      return value_map_.Index(value);
-    }
+    int IndexFromValue(int64 value) const { return value_map_.Index(value); }
 
     int64 ValueFromIndex(int value_index) const {
       return value_map_.Element(value_index);
@@ -70,13 +68,9 @@ class IndexedTable {
       return num_tuples_per_value_[value_index];
     }
 
-    int NumTuples() const {
-      return num_tuples_;
-    }
+    int NumTuples() const { return num_tuples_; }
 
-    int NumDifferentValues() const {
-      return num_tuples_per_value_.size();
-    }
+    int NumDifferentValues() const { return num_tuples_per_value_.size(); }
 
    private:
     std::vector<int> column_of_value_indices_;
@@ -86,10 +80,10 @@ class IndexedTable {
   };
 
   IndexedTable(const IntTupleSet& tuple_set)
-  : tuple_set_(tuple_set),
-    arity_(tuple_set.Arity()),
-    num_tuples_(tuple_set.NumTuples()),
-    columns_(arity_) {
+      : tuple_set_(tuple_set),
+        arity_(tuple_set.Arity()),
+        num_tuples_(tuple_set.NumTuples()),
+        columns_(arity_) {
     for (int i = 0; i < arity_; i++) {
       columns_[i].Init(tuple_set, i);
     }
@@ -99,17 +93,11 @@ class IndexedTable {
 
   int NumVars() const { return arity_; }
 
-  const Column& column(int var_index) const {
-    return columns_[var_index];
-  }
+  const Column& column(int var_index) const { return columns_[var_index]; }
 
-  int NumTuples() const {
-    return num_tuples_;
-  }
+  int NumTuples() const { return num_tuples_; }
 
-  const IntTupleSet& tuple_set() const {
-    return tuple_set_;
-  }
+  const IntTupleSet& tuple_set() const { return tuple_set_; }
 
  private:
   const IntTupleSet tuple_set_;
@@ -120,8 +108,7 @@ class IndexedTable {
 
 class TableVar {
  public:
-  TableVar(Solver* const solver,
-           IntVar* var,
+  TableVar(Solver* const solver, IntVar* var,
            const IndexedTable::Column& column)
       : solver_(solver),
         column_(column),
@@ -131,23 +118,21 @@ class TableVar {
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
         shared_positions_(new int[column.NumTuples()]) {
-    for (int value_index = 0;
-         value_index < tuples_per_value_.size();
+    for (int value_index = 0; value_index < tuples_per_value_.size();
          value_index++) {
       tuples_per_value_[value_index] =
           new RevIntSet<int>(column.NumTuplesContainingValueIndex(value_index),
-                             shared_positions_.get());
+                             shared_positions_.get(),
+                             column.NumTuples());
       active_values_.Insert(solver_, value_index);
     }
   }
 
   ~TableVar() {
-    STLDeleteElements(&tuples_per_value_); // delete all elements of a vector
+    STLDeleteElements(&tuples_per_value_);  // delete all elements of a vector
   }
 
-  IntVar* Variable() const {
-    return var_;
-  }
+  IntVar* Variable() const { return var_; }
 
   int NumTuplesPerValue(int value_index) const {
     return tuples_per_value_[value_index]->Size();
@@ -173,10 +158,11 @@ class TableVar {
     return (num_remaining_tuples < num_deleted_tuples);
   }
 
-  void InitialPropagate(std::vector<int64>* const to_remove) {
+  void InitialPropagate(const std::vector<int>& valid_tuples,
+                        std::vector<int64>* const to_remove) {
     // Insert tuples in correct maps.
-    const int num_tuples = column_.NumTuples();
-    for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
+    for (int tuple_ref = 0; tuple_ref < valid_tuples.size(); ++tuple_ref) {
+      const int tuple_index = valid_tuples[tuple_ref];
       const int value_index = column_.ValueIndex(tuple_index);
       tuples_per_value_[value_index]->Insert(solver_, tuple_index);
     }
@@ -254,8 +240,7 @@ class TableVar {
 
   void CollectTuplesToKeep(std::vector<int>* const tuples_to_keep) const {
     tuples_to_keep->clear();
-    for (domain_iterator_->Init();
-         domain_iterator_->Ok();
+    for (domain_iterator_->Init(); domain_iterator_->Ok();
          domain_iterator_->Next()) {
       const int value_index = column_.IndexFromValue(domain_iterator_->Value());
       RevIntSet<int>* const active_tuples = tuples_per_value_[value_index];
@@ -320,10 +305,8 @@ class TableVar {
 
 class Ac4TableConstraint : public Constraint {
  public:
-  Ac4TableConstraint(Solver* const solver,
-                     IndexedTable* const table,
-                     bool delete_table,
-                     const std::vector<IntVar*>& vars)
+  Ac4TableConstraint(Solver* const solver, IndexedTable* const table,
+                     bool delete_table, const std::vector<IntVar*>& vars)
       : Constraint(solver),
         original_vars_(vars),
         vars_(table->NumVars()),
@@ -339,7 +322,7 @@ class Ac4TableConstraint : public Constraint {
   }
 
   ~Ac4TableConstraint() {
-    STLDeleteElements(&vars_); // delete all elements of a vector
+    STLDeleteElements(&vars_);  // delete all elements of a vector
     if (delete_table_) {
       delete table_;
     }
@@ -347,20 +330,37 @@ class Ac4TableConstraint : public Constraint {
 
   void Post() {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
-      Demon* const demon =
-          MakeConstraintDemon1(solver(),
-                               this,
-                               &Ac4TableConstraint::FilterOneVariable,
-                               "FilterOneVariable",
-                               var_index);
+      Demon* const demon = MakeConstraintDemon1(
+          solver(), this, &Ac4TableConstraint::FilterOneVariable,
+          "FilterOneVariable", var_index);
       vars_[var_index]->Variable()->WhenDomain(demon);
     }
   }
 
+  bool IsValid(int tuple_index) {
+    for (int var_index = 0; var_index < num_variables_; ++var_index) {
+      if (!original_vars_[var_index]->Contains(
+              table_->tuple_set().Value(tuple_index, var_index))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void InitialPropagate() {
+    std::vector<int> valid_tuples;
+    for (int i = 0; i < table_->NumTuples(); ++i) {
+      if (IsValid(i)) {
+        valid_tuples.push_back(i);
+      }
+    }
+    if (valid_tuples.empty()) {
+      solver()->Fail();
+    }
+
     std::vector<int64> to_remove;
     for (int var_index = 0; var_index < num_variables_; var_index++) {
-      vars_[var_index]->InitialPropagate(&to_remove);
+      vars_[var_index]->InitialPropagate(valid_tuples, &to_remove);
     }
   }
 
@@ -384,8 +384,7 @@ class Ac4TableConstraint : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
-                        table_->NumVars(),
-                        table_->NumTuples());
+                        table_->NumVars(), table_->NumTuples());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -397,7 +396,6 @@ class Ac4TableConstraint : public Constraint {
                                         table_->tuple_set());
     visitor->EndVisitConstraint(ModelVisitor::kAllowedAssignments, this);
   }
-
 
  private:
   std::vector<IntVar*> original_vars_;
@@ -432,4 +430,4 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
 IndexedTable* BuildIndexedTable(const IntTupleSet& tuples) {
   return new IndexedTable(tuples);
 }
-} // namespace operations_research
+}  // namespace operations_research

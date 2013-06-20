@@ -1023,6 +1023,7 @@ class PathCumulFilter : public BasePathFilter {
 
   scoped_array<IntVar*> cumuls_;
   const int cumuls_size_;
+  std::vector<int64> start_to_vehicle_;
   Solver::IndexEvaluator2* const evaluator_;
   int64 total_current_cumul_cost_value_;
   // Map between paths and path soft cumul bound costs. The paths are indexed
@@ -1034,6 +1035,7 @@ class PathCumulFilter : public BasePathFilter {
   std::vector<SoftBound> cumul_soft_bounds_;
   int64 slack_cost_coefficient_;
   IntVar* const cost_var_;
+  RoutingModel::VehicleEvaluator* const capacity_evaluator_;
   // Data reflecting information on paths and cumul variables for the solution
   // to which the filter was synchronized.
   SupportedPathCumul current_min_start_;
@@ -1065,6 +1067,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       span_cost_coefficient_(dimension.span_cost_coefficient()),
       slack_cost_coefficient_(dimension.transit_cost_coefficient()),
       cost_var_(routing_model.CostVar()),
+      capacity_evaluator_(dimension.capacity_evaluator()),
       delta_max_end_cumul_(kint64min),
       lns_detected_(false),
       delta_objective_callback_(delta_objective_callback) {
@@ -1093,6 +1096,10 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   }
   if (!has_cumul_hard_bounds) {
     slack_cost_coefficient_ = 0;
+  }
+  start_to_vehicle_.resize(Size(), -1);
+  for (int i = 0; i < routing_model.vehicles(); ++i) {
+    start_to_vehicle_[routing_model.Start(i)] = i;
   }
 }
 
@@ -1179,6 +1186,8 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
   cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
   int64 total_transit = 0;
   const int path = delta_path_transits_.AddPaths(1);
+  const int64 capacity = capacity_evaluator_ == NULL ?
+      kint64max : capacity_evaluator_->Run(start_to_vehicle_[path_start]);
   // Check that the path is feasible with regards to cumul bounds, scanning
   // the paths from start to end (caching path node sequences and transits
   // for further span cost filtering).
@@ -1193,7 +1202,7 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
     total_transit += transit;
     delta_path_transits_.PushTransit(path, node, next, transit);
     cumul += transit;
-    if (cumul > cumuls_[next]->Max()) {
+    if (cumul > std::min(capacity, cumuls_[next]->Max())) {
       return false;
     }
     cumul = std::max(cumuls_[next]->Min(), cumul);

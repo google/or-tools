@@ -2005,13 +2005,13 @@ template <class T> class RevIntSet {
   }
 
   // Capacity is the fixed size of the set (it cannot grow).
-  RevIntSet(int capacity, int* shared_positions)
+  RevIntSet(int capacity, int* shared_positions, int shared_positions_size)
   : elements_(new T[capacity]),
     num_elements_(0),
     capacity_(capacity),
     position_(shared_positions),
     delete_position_(false) {
-    for (int i = 0; i < capacity; ++i) {
+    for (int i = 0; i < shared_positions_size; ++i) {
       position_[i] = kNoInserted;
     }
   }

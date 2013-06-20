@@ -35,7 +35,9 @@ DEFINE_bool(cp_use_compact_table, true,
             "Use compact table constraint when possible.");
 DEFINE_bool(cp_use_small_table, true,
             "Use small compact table constraint when possible.");
-DEFINE_bool(cp_use_ac4r_table, true, "Use ac4r table");
+DEFINE_int32(cp_ac4r_table_threshold, 2048,
+             "Above this size, allowed assignment constraints will use the "
+             "revised AC-4 implementation of the table constraint.");
 
 namespace operations_research {
 namespace {
@@ -942,7 +944,7 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
 Constraint* Solver::MakeAllowedAssignments(
     const std::vector<IntVar*>& vars,
     const IntTupleSet& tuples) {
-  if (tuples.NumTuples() > 1024 && FLAGS_cp_use_ac4r_table) {
+  if (tuples.NumTuples() > FLAGS_cp_ac4r_table_threshold) {
     return BuildAc4TableConstraint(this, tuples, vars);
   }
   if (FLAGS_cp_use_compact_table
