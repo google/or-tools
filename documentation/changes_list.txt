@@ -1,16 +1,16 @@
 
+v.0.2.7: (2013-06-21 14:49:53)
+------------------------------
+* Minor enhancements to the manual:
+
+* Back to Sphinx 1.2b
+
+
 v.0.2.6: (2013-05-16 00:08:01)
 ------------------------------
 * Minor enhancements to the manual:
 - 10.6 written.
 * Use of Sphinx 1.1.3 and Mageia distro.
-
-
-v.0.2.6: (2013-05-15 17:42:11)
-------------------------------
-* Minor enhancements to the manual:
-- 10.6 written.
-
 
 v.0.2.5: (2013-04-16 12:51:32)
 ------------------------------

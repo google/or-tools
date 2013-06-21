@@ -147,6 +147,7 @@ dd.examples_list {
 
 .code_line {
 		 background:	#E6E6E6; /* #C0EF4A; */
+		 background-repeat: no-repeat;
 		 font-family: "Courier New", Courier, monospace;
 		 font-stretch: condensed;
 		 font-size: -80%;  

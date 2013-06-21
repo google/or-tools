@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -119,7 +117,7 @@ vehicle can visit a node in a solution.</td></tr>
 <p>To understand how the auxiliary graph is constructed, we need to consider a more general Routing Problem than just
 a TSP with one vehicle. We&#8217;ll use a VRP with four vehicles/routes.</p>
 <p>Let&#8217;s take the original graph of the next figure:</p>
-<img alt="../../_images/rl_original_graph.png" class="align-center" src="../../_images/rl_original_graph.png" style="width: 200pt;" />
+<a class="reference internal image-reference" href="../../_images/rl_original_graph.png"><img alt="../../_images/rl_original_graph.png" class="align-center" src="../../_images/rl_original_graph.png" style="width: 200pt;" /></a>
 <p>You can of course number (or name) the nodes of the original graph any way you like. For instance, in the <tt class="docutils literal"><span class="pre">TSPLIB</span></tt>,
 nodes are numbered from <tt class="docutils literal"><span class="pre">1</span></tt> to <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>. In the RL, you <strong>must</strong> number your original nodes from <tt class="docutils literal"><span class="pre">0</span></tt> to <img class="math" src="../../_images/math/4bdca93962a2beaffc172ca394e04fe05bd74ffd.png" alt="n-1" style="vertical-align: -1px"/>.
 If you don&#8217;t follow this advice, you might get some surprises!</p>
@@ -138,13 +136,13 @@ depot (7) and one is a starting and ending depot (4). The <tt class="docutils li
 </ul>
 <p>The auxiliary graph is obtained by keeping the transit nodes and
 adding a starting and ending depot for each vehicle/route if needed like in the following figure:</p>
-<img alt="../../_images/rl_auxiliary_graph.png" class="align-center" src="../../_images/rl_auxiliary_graph.png" style="width: 200pt;" />
+<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph.png"><img alt="../../_images/rl_auxiliary_graph.png" class="align-center" src="../../_images/rl_auxiliary_graph.png" style="width: 200pt;" /></a>
 <p>Node 1 is not duplicated because there is only one route (route 0) that starts from 1. Node 3
 is duplicated once because there are two routes (routes 1 and 2) that start from 3. Node 7 has been
 duplicated once because two routes (routes 2 and 3) end at 7 and finally there are two added copies
 of node 4 because two routes (routes 0 and 1) end at 4 and one route (route 3) starts from 4.</p>
 <p>The way these nodes are numbered doesn&#8217;t matter for the moment. For our example, the next figure shows this numbering:</p>
-<img alt="../../_images/rl_auxiliary_graph_numberred.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred.png" style="width: 200pt;" />
+<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph_numberred.png"><img alt="../../_images/rl_auxiliary_graph_numberred.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred.png" style="width: 200pt;" /></a>
 <p>Note that the <tt class="docutils literal"><span class="pre">int64</span></tt> indices don&#8217;t depend on a given solution but only on the given graph/network and the depots.</p>
 <table class="docutils footnote" frame="void" id="simplified-version-of-auxiliary-graph-section" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
@@ -253,7 +251,7 @@ provides also an <tt class="docutils literal"><span class="pre">IsStart(int64)</
 starting depots have a main decision <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable. There are 9 original nodes in the next figure. They
 have a <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> ranging from 0 to 8. There are 2 starting depots (1 and 7) and 2 ending depot (5 and 8).
 Route 0 starts at 1 and ends at 5 while route 1 starts at 7 and ends at 8.</p>
-<img alt="../../_images/not_all_int64_have_v.png" class="align-center" src="../../_images/not_all_int64_have_v.png" style="width: 300px;" />
+<a class="reference internal image-reference" href="../../_images/not_all_int64_have_v.png"><img alt="../../_images/not_all_int64_have_v.png" class="align-center" src="../../_images/not_all_int64_have_v.png" style="width: 300px;" /></a>
 <p>Because nodes 5 and 8 are ending nodes, there is no <tt class="docutils literal"><span class="pre">nexts_</span> <span class="pre">IntVar</span></tt> attached to them.</p>
 <p>The solution depicted is:</p>
 <ul class="simple">
@@ -453,7 +451,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>
