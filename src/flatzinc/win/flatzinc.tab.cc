@@ -261,7 +261,7 @@ typedef union YYSTYPE
   operations_research::AstArray* argVec;
 }
 /* Line 193 of yacc.c.  */
-#line 265 "src/flatzinc/flatzinc.win.tab.cc"
+#line 265 "src/flatzinc/win/flatzinc.tab.cc"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -274,7 +274,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 278 "src/flatzinc/flatzinc.win.tab.cc"
+#line 278 "src/flatzinc/win/flatzinc.tab.cc"
 
 #ifdef short
 # undef short
@@ -2994,7 +2994,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 2998 "src/flatzinc/flatzinc.win.tab.cc"
+#line 2998 "src/flatzinc/win/flatzinc.tab.cc"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);

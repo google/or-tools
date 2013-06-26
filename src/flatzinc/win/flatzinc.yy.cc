@@ -1,6 +1,6 @@
-#line 2 "src/flatzinc/flatzinc.win.yy.cc"
+#line 2 "src/flatzinc/win/flatzinc.yy.cc"
 
-#line 4 "src/flatzinc/flatzinc.win.yy.cc"
+#line 4 "src/flatzinc/win/flatzinc.yy.cc"
 
 #define  YY_INT_ALIGNED short int
 
@@ -647,7 +647,7 @@ int stringbufpos;
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
   result = yy_input_proc(buf, max_size, yyscanner);
-#line 651 "src/flatzinc/flatzinc.win.yy.cc"
+#line 651 "src/flatzinc/win/flatzinc.yy.cc"
 
 #define INITIAL 0
 
@@ -883,7 +883,7 @@ YY_DECL
 #line 66 "src/flatzinc/flatzinc.lex"
 
 
-#line 887 "src/flatzinc/flatzinc.win.yy.cc"
+#line 887 "src/flatzinc/win/flatzinc.yy.cc"
 
     yylval = yylval_param;
 
@@ -1275,7 +1275,7 @@ YY_RULE_SETUP
 #line 138 "src/flatzinc/flatzinc.lex"
 ECHO;
 	YY_BREAK
-#line 1279 "src/flatzinc/flatzinc.win.yy.cc"
+#line 1279 "src/flatzinc/win/flatzinc.yy.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

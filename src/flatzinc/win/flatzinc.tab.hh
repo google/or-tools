@@ -166,7 +166,7 @@ typedef union YYSTYPE
   operations_research::AstArray* argVec;
 }
 /* Line 1529 of yacc.c.  */
-#line 170 "src/flatzinc/flatzinc.win.tab.hh"
+#line 170 "src/flatzinc/win/flatzinc.tab.hh"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

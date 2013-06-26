@@ -236,6 +236,7 @@ clean_cc:
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$S*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
 
@@ -744,14 +745,14 @@ FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/registry.$O
 
 ifeq ($(SYSTEM),win)
-$(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.win.yy.cc
-	copy $(SRC_DIR)\\flatzinc\\flatzinc.win.yy.cc $(GEN_DIR)\\flatzinc\\flatzinc.yy.cc
+$(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/win/flatzinc.yy.cc
+	copy $(SRC_DIR)\\flatzinc\\win\\flatzinc.yy.cc $(GEN_DIR)\\flatzinc\\flatzinc.yy.cc
 
-$(GEN_DIR)/flatzinc/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.win.tab.cc
-	copy $(SRC_DIR)\\flatzinc\\flatzinc.win.tab.cc $(GEN_DIR)\\flatzinc\\flatzinc.tab.cc
+$(GEN_DIR)/flatzinc/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc
+	copy $(SRC_DIR)\\flatzinc\\win\\flatzinc.tab.cc $(GEN_DIR)\\flatzinc\\flatzinc.tab.cc
 
-$(GEN_DIR)/flatzinc/flatzinc.tab.hh: $(SRC_DIR)/flatzinc/flatzinc.win.tab.hh
-	copy $(SRC_DIR)\\flatzinc\\flatzinc.win.tab.hh $(GEN_DIR)\\flatzinc\\flatzinc.tab.hh
+$(GEN_DIR)/flatzinc/flatzinc.tab.hh: $(SRC_DIR)/flatzinc/win/flatzinc.tab.hh
+	copy $(SRC_DIR)\\flatzinc\\win\\flatzinc.tab.hh $(GEN_DIR)\\flatzinc\\flatzinc.tab.hh
 
 else
 $(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.lex
@@ -762,15 +763,15 @@ $(GEN_DIR)/flatzinc/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy
 
 $(GEN_DIR)/flatzinc/flatzinc.tab.hh: $(GEN_DIR)/flatzinc/flatzinc.tab.cc
 
-win_parser: $(SRC_DIR)/flatzinc/flatzinc.win.yy.cc $(SRC_DIR)/flatzinc/flatzinc.win.tab.cc $(SRC_DIR)/flatzinc/flatzinc.win.tab.hh
+win_parser: $(SRC_DIR)/flatzinc/win/flatzinc.yy.cc $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc $(SRC_DIR)/flatzinc/win/flatzinc.tab.hh
 
-$(SRC_DIR)/flatzinc/flatzinc.win.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.lex
-	flex -nounistd -o$(SRC_DIR)/flatzinc/flatzinc.win.yy.cc $(SRC_DIR)/flatzinc/flatzinc.lex
+$(SRC_DIR)/flatzinc/win/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.lex
+	flex -nounistd -o$(SRC_DIR)/flatzinc/win/flatzinc.yy.cc $(SRC_DIR)/flatzinc/flatzinc.lex
 
-$(SRC_DIR)/flatzinc/flatzinc.win.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy
-	bison -t -o $(SRC_DIR)/flatzinc/flatzinc.win.tab.cc -d $<
+$(SRC_DIR)/flatzinc/win/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy
+	bison -t -o $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc -d $<
 
-$(SRC_DIR)/flatzinc/flatzinc.win.tab.hh: $(SRC_DIR)/flatzinc/flatzinc.win.tab.cc
+$(SRC_DIR)/flatzinc/win/flatzinc.tab.hh: $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc
 endif
 
 $(OBJ_DIR)/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
