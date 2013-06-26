@@ -27,7 +27,7 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
-#include "flatzinc/flatzinc.tab.h"
+#include "flatzinc/flatzinc.tab.hh"
 #include "util/string_array.h"
 
 extern int orfz_parse(void* input);

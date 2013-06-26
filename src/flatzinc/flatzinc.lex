@@ -50,7 +50,7 @@ void orfz_error(void*, const char*);
 
 #include "base/strtoint.h"
 #include "flatzinc/parser.h"
-#include "flatzinc/flatzinc.tab.h"
+#include "flatzinc/flatzinc.tab.hh"
 
 using operations_research::atoi64;
 

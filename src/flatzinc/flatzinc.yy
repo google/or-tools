@@ -41,7 +41,7 @@
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
-#include "flatzinc/flatzinc.tab.h"
+#include "flatzinc/flatzinc.tab.hh"
 
 #include <stdio.h>
 #include <stdlib.h>
