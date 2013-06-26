@@ -239,6 +239,8 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Sflatzinc$S*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
+	-$(DEL) $(SRC_DIR)$Sflatzinc$Slexer*
+	-$(DEL) $(SRC_DIR)$Sflatzinc$Sparser.tab.*
 
 clean_compat:
 	-$(DELREC) $(OR_ROOT)constraint_solver

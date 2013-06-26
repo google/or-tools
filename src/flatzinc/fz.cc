@@ -46,7 +46,7 @@
 #include "flatzinc/flatzinc.h"
 
 DEFINE_int32(log_period, 10000000, "Search log period");
-DEFINE_bool(use_log, false, "Show search log");
+DEFINE_bool(logging, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
   char free_param[] = "--free";
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
+  char logging_param[] == "--logging";
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-a") == 0) {
       argv[i] = all_param;
@@ -164,6 +165,9 @@ int main(int argc, char** argv) {
     }
     if (strcmp(argv[i], "-n") == 0) {
       argv[i] = solutions_param;
+    }
+    if (strcmp(argv[i], "-l") == 0) {
+      argv[i] = logging_param;
     }
   }
   google::ParseCommandLineFlags( &argc, &argv, true);
