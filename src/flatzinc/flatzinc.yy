@@ -35,7 +35,7 @@
 
 %pure-parser
 %parse-param {void* parm}
-%name-prefix "orfz_"
+%name-prefix = "orfz_"
 %{
 #define YYPARSE_PARAM parm
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
