@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   char free_param[] = "--free";
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
-  char logging_param[] == "--logging";
+  char logging_param[] = "--logging";
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-a") == 0) {
       argv[i] = all_param;
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     parameters.simplex_frequency = FLAGS_simplex_frequency;
     parameters.threads = FLAGS_workers;
     parameters.time_limit_in_ms = FLAGS_time_limit;
-    parameters.use_log = FLAGS_use_log;
+    parameters.use_log = FLAGS_logging;
     parameters.verbose_impact = FLAGS_verbose_impact;
     parameters.worker_id = -1;
     parameters.search_type =

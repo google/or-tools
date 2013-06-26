@@ -409,38 +409,67 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
   if (spec->DefinedArg() != NULL) {
-    std::vector<int64> coefficients;
-    std::vector<IntVar*> variables;
-    int64 constant = 0;
-    AstNode* defined = NULL;
-    for (int i = 0; i < size; ++i) {
-      if (array_variables->a[i]->isInt()) {
-        constant += array_coefficients->a[i]->getInt() *
-                    array_variables->a[i]->getInt();
-      } else if (spec->IsDefined(array_variables->a[i])) {
-        CHECK(defined == NULL);
-        defined = array_variables->a[i];
-        if (array_coefficients->a[i]->getInt() != -1) {
-          throw Error(
-              "ModelBuilder",
-              string("Constraint ") + spec->Id() +
-                  " cannot define an integer variable with a coefficient"
-                  " different from -1");
-        }
+    if (size == 2) {
+      IntExpr* other = nullptr;
+      int64 other_coef = 0;
+      AstNode* defined = nullptr;
+      if (spec->IsDefined(array_variables->a[0]) &&
+          array_coefficients->a[0]->getInt() == -1) {
+        other = model->GetIntExpr(array_variables->a[1]);
+        other_coef = array_coefficients->a[1]->getInt();
+        defined = array_variables->a[0];
+      } else if (spec->IsDefined(array_variables->a[1]) &&
+                 array_coefficients->a[1]->getInt() == -1) {
+        other = model->GetIntExpr(array_variables->a[0]);
+        other_coef = array_coefficients->a[0]->getInt();
+        defined = array_variables->a[1];
       } else {
-        coefficients.push_back(array_coefficients->a[i]->getInt());
-        variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
+        throw Error(
+            "ModelBuilder",
+            string("Constraint ") + spec->Id() +
+            " cannot define an integer variable with a coefficient"
+            " different from -1");
       }
+      IntExpr* const target =
+          solver->MakeSum(solver->MakeProd(other, other_coef), -rhs);
+      VLOG(1) << "  - creating " << defined->DebugString()
+              << " := " << target->DebugString();
+      model->CheckIntegerVariableIsNull(defined);
+      model->SetIntegerExpression(defined, target);
+    } else {
+      std::vector<int64> coefficients;
+      std::vector<IntVar*> variables;
+      int64 constant = 0;
+      AstNode* defined = NULL;
+      for (int i = 0; i < size; ++i) {
+        if (array_variables->a[i]->isInt()) {
+          constant += array_coefficients->a[i]->getInt() *
+              array_variables->a[i]->getInt();
+        } else if (spec->IsDefined(array_variables->a[i])) {
+          CHECK(defined == NULL);
+          defined = array_variables->a[i];
+          if (array_coefficients->a[i]->getInt() != -1) {
+            throw Error(
+                "ModelBuilder",
+                string("Constraint ") + spec->Id() +
+                " cannot define an integer variable with a coefficient"
+                " different from -1");
+          }
+        } else {
+          coefficients.push_back(array_coefficients->a[i]->getInt());
+          variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
+        }
+      }
+      if (constant - rhs != 0) {
+        coefficients.push_back(constant - rhs);
+        variables.push_back(solver->MakeIntConst(1));
+      }
+      IntExpr* const target = solver->MakeScalProd(variables, coefficients);
+      VLOG(1) << "  - creating " << defined->DebugString()
+              << " := " << target->DebugString();
+      model->CheckIntegerVariableIsNull(defined);
+      model->SetIntegerExpression(defined, target);
     }
-    if (constant - rhs != 0) {
-      coefficients.push_back(constant - rhs);
-      variables.push_back(solver->MakeIntConst(1));
-    }
-    IntExpr* const target = solver->MakeScalProd(variables, coefficients);
-    VLOG(1) << "  - creating " << defined->DebugString()
-            << " := " << target->DebugString();
-    model->CheckIntegerVariableIsNull(defined);
-    model->SetIntegerExpression(defined, target);
   } else {
     std::vector<int64> coefficients(size);
     std::vector<IntVar*> variables(size);
@@ -1452,11 +1481,11 @@ void p_int_div(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  IntVar* const left = model->GetIntExpr(spec->Arg(0))->Var();
-  IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
+  IntExpr* const left = model->GetIntExpr(spec->Arg(0));
+  IntExpr* const target = model->GetIntExpr(spec->Arg(2));
   if (spec->IsDefined(spec->Arg(2))) {
     if (spec->Arg(1)->isIntVar()) {
-      IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
+      IntExpr* const mod = model->GetIntExpr(spec->Arg(1));
       IntExpr* const target = solver->MakeModulo(left, mod);
       VLOG(1) << "  - creating " << spec->Arg(2)->DebugString()
               << " := " << target->DebugString();
@@ -1472,7 +1501,7 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     if (spec->Arg(1)->isIntVar()) {
-      IntVar* const mod = model->GetIntExpr(spec->Arg(1))->Var();
+      IntExpr* const mod = model->GetIntExpr(spec->Arg(1));
       Constraint* const ct =
           solver->MakeEquality(solver->MakeModulo(left, mod), target);
       VLOG(1) << "  - posted " << ct->DebugString();
@@ -1941,7 +1970,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
     }
   }
   if (spec->IsDefined(node_boolvar)) {
-    IntExpr* const boolvar = solver->MakeMin(variables)->Var();
+    IntExpr* const boolvar = solver->MakeMin(variables);
     VLOG(1) << "  - creating " << node_boolvar->DebugString()
             << " := " << boolvar->DebugString();
     model->CheckIntegerVariableIsNull(node_boolvar);
