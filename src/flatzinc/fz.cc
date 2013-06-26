@@ -3,11 +3,10 @@
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
  *  Modified:
- *     Laurent Perron (lperron@google.com)
+ *     Laurent Perron for OR-Tools (laurent.perron@gmail.com)
  *
  *  Copyright:
  *     Guido Tack, 2007
- *
  *
  *  This file is part of Gecode, the generic constraint
  *  development environment:
@@ -34,8 +33,8 @@
  *
  */
 
-#include <iostream>
-#include <fstream>
+#include <iostream>  // NOLINT
+#include <fstream>  // NOLINT
 #include <cstring>
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
@@ -63,9 +62,12 @@ DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 
 DECLARE_bool(log_prefix);
 
+using std::string;
+using operations_research::scoped_ptr;
+using operations_research::ThreadPool;
+
 namespace operations_research {
-int Run(const std::string& file,
-        const FlatZincSearchParameters& parameters,
+int Run(const string& file, const FlatZincSearchParameters& parameters,
         FzParallelSupport* const parallel_support) {
   FlatZincModel fz_model;
   if (file == "-") {
@@ -81,13 +83,11 @@ int Run(const std::string& file,
     }
   }
 
-
   fz_model.Solve(parameters, parallel_support);
   return 0;
 }
 
-void ParallelRun(char* const file,
-                 int worker_id,
+void ParallelRun(char* const file, int worker_id,
                  FzParallelSupport* const parallel_support) {
   operations_research::FlatZincSearchParameters parameters;
   parameters.all_solutions = FLAGS_all;
@@ -107,6 +107,7 @@ void ParallelRun(char* const file,
     case 0: {
       parameters.free_search = false;
       parameters.restart_log_size = -1.0;
+      break;
     }
     case 1: {
       parameters.free_search = false;
@@ -132,9 +133,10 @@ void ParallelRun(char* const file,
     }
     default: {
       parameters.free_search = false;
-      parameters.search_type = worker_id % 2 == 0 ?
-          operations_research::FlatZincSearchParameters::RANDOM_MIN:
-          operations_research::FlatZincSearchParameters::RANDOM_MAX;
+      parameters.search_type =
+          worker_id % 2 == 0
+              ? operations_research::FlatZincSearchParameters::RANDOM_MIN
+              : operations_research::FlatZincSearchParameters::RANDOM_MAX;
       parameters.restart_log_size = -1.0;
       parameters.luby_restart = 250;
     }
@@ -145,22 +147,26 @@ void ParallelRun(char* const file,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  FLAGS_log_prefix=false;
+  FLAGS_log_prefix = false;
+  char all_param[] = "--all";
+  char free_param[] = "--free";
+  char workers_param[] = "--workers";
+  char solutions_param[] = "--num_solutions";
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-a") == 0) {
-      argv[i] = "--all";
+      argv[i] = all_param;
     }
     if (strcmp(argv[i], "-f") == 0) {
-      argv[i] = "--free";
+      argv[i] = free_param;
     }
     if (strcmp(argv[i], "-p") == 0) {
-      argv[i] = "--workers";
+      argv[i] = workers_param;
     }
     if (strcmp(argv[i], "-n") == 0) {
-      argv[i] = "--num_solutions";
+      argv[i] = solutions_param;
     }
   }
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   if (argc <= 1) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
@@ -182,27 +188,24 @@ int main(int argc, char** argv) {
     parameters.use_log = FLAGS_use_log;
     parameters.verbose_impact = FLAGS_verbose_impact;
     parameters.worker_id = -1;
-    parameters.search_type = FLAGS_use_impact ?
-        operations_research::FlatZincSearchParameters::IBS :
-        operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
+    parameters.search_type =
+        FLAGS_use_impact
+            ? operations_research::FlatZincSearchParameters::IBS
+            : operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
 
-    operations_research::scoped_ptr<operations_research::FzParallelSupport>
-        parallel_support(
-            operations_research::MakeSequentialSupport(parameters.all_solutions,
-                                                       parameters.num_solutions,
-                                                       FLAGS_verbose_mt));
+    scoped_ptr<operations_research::FzParallelSupport> parallel_support(
+        operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                   parameters.num_solutions,
+                                                   FLAGS_verbose_mt));
     operations_research::Run(argv[1], parameters, parallel_support.get());
   } else {
-    operations_research::scoped_ptr<operations_research::FzParallelSupport>
-        parallel_support(
-            operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt));
+    scoped_ptr<operations_research::FzParallelSupport> parallel_support(
+        operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt));
     {
-      operations_research::ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
+      ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
       pool.StartWorkers();
       for (int w = 0; w < FLAGS_workers; ++w) {
-        pool.Add(NewCallback(&operations_research::ParallelRun,
-                             argv[1],
-                             w,
+        pool.Add(NewCallback(&operations_research::ParallelRun, argv[1], w,
                              parallel_support.get()));
       }
     }

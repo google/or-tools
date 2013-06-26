@@ -3,14 +3,10 @@
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
  *  Modified:
- *     Laurent Perron <lperron@google.com>
+ *     Laurent Perron for OR-Tools (laurent.perron@gmail.com)
  *
  *  Copyright:
  *     Guido Tack, 2007
- *
- *  Last modified:
- *     $Date: 2011-01-18 20:06:16 +1100 (Tue, 18 Jan 2011) $ by $Author: tack $
- *     $Revision: 11538 $
  *
  *  This file is part of Gecode, the generic constraint
  *  development environment:
@@ -37,16 +33,15 @@
  *
  */
 
-#ifndef __FLATZINC_PARSER_H_
-#define __FLATZINC_PARSER_H_
-
+#ifndef OR_TOOLS_FLATZINC_PARSER_H_
+#define OR_TOOLS_FLATZINC_PARSER_H_
 
 // This is a workaround for a bug in flex that only shows up
 // with the Microsoft C++ compiler
 #if defined(_MSC_VER)
 #define YY_NO_UNISTD_H
 #ifdef __cplusplus
-extern "C" int isatty(int);
+extern "C" int isatty(int t);
 #endif
 #endif
 
@@ -60,16 +55,15 @@ extern "C" int isatty(int);
 #include <cstring>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <algorithm>
 #include <map>
 
-#include "base/concise_iterator.h"
-#include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/map-util.h"
 #include "base/stringprintf.h"
+#include "base/concise_iterator.h"
+#include "base/map-util.h"
+#include "base/hash.h"
 
 using std::string;
 
@@ -80,126 +74,124 @@ class AstArray;
 class AstAtom;
 class AstSetLit;
 
-/// %Exception signaling type error
+// %Exception signaling type error
 class AstTypeError {
  private:
-  std::string _what;
+  string _what;
+
  public:
   AstTypeError() : _what("") {}
-  AstTypeError(std::string what) : _what(what) {}
-  std::string what(void) const { return _what; }
+  explicit AstTypeError(string what) : _what(what) {}
+  string what() const { return _what; }
 };
 
-/**
+/*
  * \brief A node in a %FlatZinc abstract syntax tree
  */
 class AstNode {
  public:
-  /// Destructor
-  virtual ~AstNode(void);
+  // Destructor
+  virtual ~AstNode() {}
 
-  /// Append \a n to an array node
+  // Append \a n to an array node
   void append(AstNode* n);
 
-  /// Test if node has atom with \a id
-  bool hasAtom(const std::string& id);
-  /// Test if node is int, if yes set \a i to the value
-  bool isInt(int& i);
-  /// Test if node is function call with \a id
-  bool isCall(const std::string& id);
-  /// Return function call
-  AstCall* getCall(void);
-  /// Test if node is function call or array containing function call \a id
-  bool hasCall(const std::string& id);
-  /// Return function call \a id
-  AstCall* getCall(const std::string& id);
-  /// Cast this node to an array node
-  AstArray* getArray(void);
-  /// Cast this node to an Atom node
-  AstAtom* getAtom(void);
-  /// Cast this node to an integer variable node
-  int getIntVar(void);
-  /// Cast this node to a Boolean variable node
-  int getBoolVar(void);
-  /// Cast this node to a set variable node
-  int getSetVar(void);
+  // Test if node has atom with \a id
+  bool hasAtom(const string& id);
+  // Test if node is int, if yes set \a i to the value
+  bool isInt(int& i);  // NOLINT
+  // Test if node is function call with \a id
+  bool isCall(const string& id);
+  // Return function call
+  AstCall* getCall();
+  // Test if node is function call or array containing function call \a id
+  bool hasCall(const string& id);
+  // Return function call \a id
+  AstCall* getCall(const string& id);
+  // Cast this node to an array node
+  AstArray* getArray();
+  // Cast this node to an Atom node
+  AstAtom* getAtom();
+  // Cast this node to an integer variable node
+  int getIntVar();
+  // Cast this node to a Boolean variable node
+  int getBoolVar();
+  // Cast this node to a set variable node
+  int getSetVar();
 
-  /// Cast this node to an integer node
-  int64 getInt(void);
-  /// Cast thos node to an integer node and assign value.
-  void setInt(int64);
-  /// Cast this node to a Boolean node
-  bool getBool(void);
-  /// Cast this node to a Float node
-  double getFloat(void);
-  /// Cast this node to a set literal node
-  AstSetLit *getSet(void);
+  // Cast this node to an integer node
+  int64 getInt();
+  // Cast thos node to an integer node and assign value.
+  void setInt(int64 v);
+  // Cast this node to a Boolean node
+  bool getBool();
+  // Cast this node to a Float node
+  double getFloat();
+  // Cast this node to a set literal node
+  AstSetLit* getSet();
 
-  /// Cast this node to a string node
-  std::string getString(void);
+  // Cast this node to a string node
+  string getString();
 
-  /// Test if node is an integer variable node
-  bool isIntVar(void);
-  /// Test if node is a Boolean variable node
-  bool isBoolVar(void);
-  /// Test if node is a set variable node
-  bool isSetVar(void);
-  /// Test if node is an integer node
-  bool isInt(void);
-  /// Test if node is a Boolean node
-  bool isBool(void);
-  /// Test if node is a string node
-  bool isString(void);
-  /// Test if node is an array node
-  bool isArray(void);
-  /// Test if node is a set literal node
-  bool isSet(void);
-  /// Test if node is an atom node
-  bool isAtom(void);
+  // Test if node is an integer variable node
+  bool isIntVar();
+  // Test if node is a Boolean variable node
+  bool isBoolVar();
+  // Test if node is a set variable node
+  bool isSetVar();
+  // Test if node is an integer node
+  bool isInt();
+  // Test if node is a Boolean node
+  bool isBool();
+  // Test if node is a string node
+  bool isString();
+  // Test if node is an array node
+  bool isArray();
+  // Test if node is a set literal node
+  bool isSet();
+  // Test if node is an atom node
+  bool isAtom();
 
-  /// Output string representation
+  // Output string representation
   virtual string DebugString() const = 0;
 };
 
-/// Boolean literal node
+// Boolean literal node
 class AstBoolLit : public AstNode {
  public:
   bool b;
-  AstBoolLit(bool b0) : b(b0) {}
-  virtual string DebugString() const {
-    return b ? "b(true)" : "b(false)";
-  }
+  explicit AstBoolLit(bool b0) : b(b0) {}
+  virtual string DebugString() const { return b ? "b(true)" : "b(false)"; }
 };
 
-/// Integer literal node
+// Integer literal node
 class AstIntLit : public AstNode {
  public:
   int64 i;
-  AstIntLit(int64 i0) : i(i0) {}
+  explicit AstIntLit(int64 i0) : i(i0) {}
   virtual string DebugString() const {
     return StringPrintf("i(%" GG_LL_FORMAT "d)", i);
   }
 };
-/// Float literal node
+// Float literal node
 class AstFloatLit : public AstNode {
  public:
   double d;
-  AstFloatLit(double d0) : d(d0) {}
-  virtual string DebugString() const {
-    return StringPrintf("f(%f)", d);
-  }
+  explicit AstFloatLit(double d0) : d(d0) {}
+  virtual string DebugString() const { return StringPrintf("f(%f)", d); }
 };
-/// %Set literal node
+// %Set literal node
 class AstSetLit : public AstNode {
  public:
   bool interval;
-  int64 imin; int64 imax;
+  int64 imin;
+  int64 imax;
   std::vector<int64> s;
-  AstSetLit(void) {}
+  AstSetLit() {}
   AstSetLit(int64 min0, int64 max0) : interval(true), imin(min0), imax(max0) {}
-  AstSetLit(const std::vector<int64>& s0) : interval(false), s(s0) {}
-  bool empty(void) const {
-    return ( (interval && imin > imax) || (!interval && s.size() == 0));
+  explicit AstSetLit(const std::vector<int64>& s0) : interval(false), s(s0) {}
+  bool empty() const {
+    return ((interval && imin > imax) || (!interval && s.size() == 0));
   }
   AstSetLit* Copy() const {
     if (interval) {
@@ -209,176 +201,157 @@ class AstSetLit : public AstNode {
     }
   }
   virtual string DebugString() const {
-    if (interval)
-      return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
-                          imin, imax);
-    else {
+    if (interval) {
+      return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", imin, imax);
+    } else {
       string output = "s({";
       for (unsigned int i = 0; i < s.size(); i++) {
-        output += StringPrintf("%" GG_LL_FORMAT "d%s",
-                               s[i], (i < s.size()-1 ? ", " : "})"));
+        output += StringPrintf("%" GG_LL_FORMAT "d%s", s[i],
+                               (i < s.size() - 1 ? ", " : "})"));
       }
       return output;
     }
   }
 };
 
-/// Variable node base class
+// Variable node base class
 class AstVar : public AstNode {
  public:
+  explicit AstVar(int i0) : i(i0) {}
+
   int i;
-  AstVar(int i0) : i(i0) {}
 };
-/// Boolean variable node
+// Boolean variable node
 class AstBoolVar : public AstVar {
  public:
-  AstBoolVar(int i0) : AstVar(i0) {}
-  virtual string DebugString() const {
-    return StringPrintf("xb(%d)", i);
-  }
+  explicit AstBoolVar(int i0) : AstVar(i0) {}
+  virtual string DebugString() const { return StringPrintf("xb(%d)", i); }
 };
-/// Integer variable node
+// Integer variable node
 class AstIntVar : public AstVar {
  public:
-  AstIntVar(int i0) : AstVar(i0) {}
-  virtual string DebugString() const {
-    return StringPrintf("xi(%d)", i);
-  }
+  explicit AstIntVar(int i0) : AstVar(i0) {}
+  virtual string DebugString() const { return StringPrintf("xi(%d)", i); }
 };
-/// Float variable node
+// Float variable node
 class AstFloatVar : public AstVar {
  public:
-  AstFloatVar(int i0) : AstVar(i0) {}
-  virtual string DebugString() const {
-    return StringPrintf("xf(%d)", i);
-  }
+  explicit AstFloatVar(int i0) : AstVar(i0) {}
+  virtual string DebugString() const { return StringPrintf("xf(%d)", i); }
 };
-/// %Set variable node
+// %Set variable node
 class AstSetVar : public AstVar {
  public:
-  AstSetVar(int i0) : AstVar(i0) {}
-  virtual string DebugString() const {
-    return StringPrintf("xs(%d)", i);
-  }
+  explicit AstSetVar(int i0) : AstVar(i0) {}
+  virtual string DebugString() const { return StringPrintf("xs(%d)", i); }
 };
 
-/// %Array node
+// %Array node
 class AstArray : public AstNode {
  public:
-  std::vector<AstNode*> a;
-  AstArray(const std::vector<AstNode*>& a0)
-      : a(a0) {}
-  AstArray(AstNode* n)
-  : a(1) { a[0] = n; }
-  AstArray(int n=0) : a(n) {}
+  explicit AstArray(const std::vector<AstNode*>& a0) : a(a0) {}
+  explicit AstArray(AstNode* const n) : a(1) { a[0] = n; }
+  explicit AstArray(int n) : a(n) {}
+  AstArray() : a(0) {}
   virtual string DebugString() const {
     string output = "[";
-    for (unsigned int i=0; i<a.size(); i++) {
+    for (unsigned int i = 0; i < a.size(); i++) {
       output += a[i]->DebugString();
-      if (i < a.size() - 1)
-        output += ", ";
+      if (i < a.size() - 1) output += ", ";
     }
     output += "]";
     return output;
   }
-  ~AstArray(void) {
-    for (int i=a.size(); i--;)
-      delete a[i];
+  virtual ~AstArray() {
+    for (int i = a.size(); i--;) delete a[i];
   }
+
+  std::vector<AstNode*> a;
 };
 
-/// %Node representing a function call
+// %Node representing a function call
 class AstCall : public AstNode {
  public:
-  const std::string id;
+  const string id;
   AstNode* const args;
-  AstCall(const std::string& id0, AstNode* args0)
-      : id(id0), args(args0) {}
-  ~AstCall(void) { delete args; }
+  AstCall(const string& id0, AstNode* args0) : id(id0), args(args0) {}
+  virtual ~AstCall() { delete args; }
   virtual string DebugString() const {
     return StringPrintf("%s(%s)", id.c_str(), args->DebugString().c_str());
   }
   AstArray* getArgs(unsigned int n) {
-    AstArray *a = args->getArray();
-    if (a->a.size() != n)
-      throw AstTypeError("arity mismatch");
+    AstArray* a = args->getArray();
+    if (a->a.size() != n) throw AstTypeError("arity mismatch");
     return a;
   }
 };
 
-/// %Node representing an array access
+// %Node representing an array access
 class AstArrayAccess : public AstNode {
  public:
   AstNode* a;
   AstNode* idx;
-  AstArrayAccess(AstNode* a0, AstNode* idx0)
-      : a(a0), idx(idx0) {}
-  ~AstArrayAccess(void) { delete a; delete idx; }
+  AstArrayAccess(AstNode* a0, AstNode* idx0) : a(a0), idx(idx0) {}
+  virtual ~AstArrayAccess() {
+    delete a;
+    delete idx;
+  }
   virtual string DebugString() const {
-    return StringPrintf("%s[%s]",
-                        a->DebugString().c_str(),
+    return StringPrintf("%s[%s]", a->DebugString().c_str(),
                         idx->DebugString().c_str());
   }
 };
 
-/// %Node representing an atom
+// %Node representing an atom
 class AstAtom : public AstNode {
  public:
-  std::string id;
-  AstAtom(const std::string& id0) : id(id0) {}
-  virtual string DebugString() const {
-    return id;
-  }
+  explicit AstAtom(const string& id0) : id(id0) {}
+  virtual string DebugString() const { return id; }
+  string id;
 };
 
-/// %String node
+// %String node
 class AstString : public AstNode {
  public:
-  std::string s;
-  AstString(const std::string& s0) : s(s0) {}
+  explicit AstString(const string& s0) : s(s0) {}
   virtual string DebugString() const {
     return StringPrintf("s(\"%s\")", s.c_str());
   }
+  string s;
 };
-
-inline AstNode::~AstNode(void) {}
 
 inline void AstNode::append(AstNode* newNode) {
   AstArray* a = dynamic_cast<AstArray*>(this);
-  if (!a)
-    throw AstTypeError("array expected");
+  if (!a) throw AstTypeError("array expected");
   a->a.push_back(newNode);
 }
 
-inline bool AstNode::hasAtom(const std::string& id) {
+inline bool AstNode::hasAtom(const string& id) {
   if (AstArray* a = dynamic_cast<AstArray*>(this)) {
-    for (int i=a->a.size(); i--;)
+    for (int i = a->a.size(); i--;)
       if (AstAtom* at = dynamic_cast<AstAtom*>(a->a[i]))
-        if (at->id == id)
-          return true;
+        if (at->id == id) return true;
   } else if (AstAtom* a = dynamic_cast<AstAtom*>(this)) {
     return a->id == id;
   }
   return false;
 }
 
-inline bool AstNode::isCall(const std::string& id) {
+inline bool AstNode::isCall(const string& id) {
   if (AstCall* a = dynamic_cast<AstCall*>(this)) {
-    if (a->id == id)
-      return true;
+    if (a->id == id) return true;
   }
   return false;
 }
 
-inline AstCall* AstNode::getCall(void) {
-  if (AstCall* a = dynamic_cast<AstCall*>(this))
-    return a;
+inline AstCall* AstNode::getCall() {
+  if (AstCall* a = dynamic_cast<AstCall*>(this)) return a;
   throw AstTypeError("call expected");
 }
 
-inline bool AstNode::hasCall(const std::string& id) {
+inline bool AstNode::hasCall(const string& id) {
   if (AstArray* a = dynamic_cast<AstArray*>(this)) {
-    for (int i=a->a.size(); i--;)
+    for (int i = a->a.size(); i--;)
       if (AstCall* at = dynamic_cast<AstCall*>(a->a[i]))
         if (at->id == id) {
           return true;
@@ -389,7 +362,7 @@ inline bool AstNode::hasCall(const std::string& id) {
   return false;
 }
 
-inline bool AstNode::isInt(int& i) {
+inline bool AstNode::isInt(int& i) {  // NOLINT
   if (AstIntLit* il = dynamic_cast<AstIntLit*>(this)) {
     i = il->i;
     return true;
@@ -397,49 +370,41 @@ inline bool AstNode::isInt(int& i) {
   return false;
 }
 
-inline AstCall* AstNode::getCall(const std::string& id) {
+inline AstCall* AstNode::getCall(const string& id) {
   if (AstArray* a = dynamic_cast<AstArray*>(this)) {
-    for (int i=a->a.size(); i--;)
+    for (int i = a->a.size(); i--;)
       if (AstCall* at = dynamic_cast<AstCall*>(a->a[i]))
-        if (at->id == id)
-          return at;
+        if (at->id == id) return at;
   } else if (AstCall* a = dynamic_cast<AstCall*>(this)) {
-    if (a->id == id)
-      return a;
+    if (a->id == id) return a;
   }
   throw AstTypeError("call expected");
 }
 
-inline AstArray* AstNode::getArray(void) {
-  if (AstArray* a = dynamic_cast<AstArray*>(this))
-    return a;
+inline AstArray* AstNode::getArray() {
+  if (AstArray* a = dynamic_cast<AstArray*>(this)) return a;
   throw AstTypeError("array expected");
 }
 
-inline AstAtom* AstNode::getAtom(void) {
-  if (AstAtom* a = dynamic_cast<AstAtom*>(this))
-    return a;
+inline AstAtom* AstNode::getAtom() {
+  if (AstAtom* a = dynamic_cast<AstAtom*>(this)) return a;
   throw AstTypeError("atom expected");
 }
 
-inline int AstNode::getIntVar(void) {
-  if (AstIntVar* a = dynamic_cast<AstIntVar*>(this))
-    return a->i;
+inline int AstNode::getIntVar() {
+  if (AstIntVar* a = dynamic_cast<AstIntVar*>(this)) return a->i;
   throw AstTypeError("integer variable expected");
 }
-inline int AstNode::getBoolVar(void) {
-  if (AstBoolVar* a = dynamic_cast<AstBoolVar*>(this))
-    return a->i;
+inline int AstNode::getBoolVar() {
+  if (AstBoolVar* a = dynamic_cast<AstBoolVar*>(this)) return a->i;
   throw AstTypeError("bool variable expected");
 }
-inline int AstNode::getSetVar(void) {
-  if (AstSetVar* a = dynamic_cast<AstSetVar*>(this))
-    return a->i;
+inline int AstNode::getSetVar() {
+  if (AstSetVar* a = dynamic_cast<AstSetVar*>(this)) return a->i;
   throw AstTypeError("set variable expected");
 }
-inline int64 AstNode::getInt(void) {
-  if (AstIntLit* a = dynamic_cast<AstIntLit*>(this))
-    return a->i;
+inline int64 AstNode::getInt() {
+  if (AstIntLit* a = dynamic_cast<AstIntLit*>(this)) return a->i;
   throw AstTypeError("integer literal expected");
 }
 inline void AstNode::setInt(int64 v) {
@@ -448,51 +413,47 @@ inline void AstNode::setInt(int64 v) {
   else
     throw AstTypeError("integer literal expected");
 }
-inline bool AstNode::getBool(void) {
-  if (AstBoolLit* a = dynamic_cast<AstBoolLit*>(this))
-    return a->b;
+inline bool AstNode::getBool() {
+  if (AstBoolLit* a = dynamic_cast<AstBoolLit*>(this)) return a->b;
   throw AstTypeError("bool literal expected");
 }
-inline double AstNode::getFloat(void) {
-  if (AstFloatLit* a = dynamic_cast<AstFloatLit*>(this))
-    return a->d;
+inline double AstNode::getFloat() {
+  if (AstFloatLit* a = dynamic_cast<AstFloatLit*>(this)) return a->d;
   throw AstTypeError("float literal expected");
 }
-inline AstSetLit* AstNode::getSet(void) {
-  if (AstSetLit* a = dynamic_cast<AstSetLit*>(this))
-    return a;
+inline AstSetLit* AstNode::getSet() {
+  if (AstSetLit* a = dynamic_cast<AstSetLit*>(this)) return a;
   throw AstTypeError("set literal expected");
 }
-inline std::string AstNode::getString(void) {
-  if (AstString* a = dynamic_cast<AstString*>(this))
-    return a->s;
+inline string AstNode::getString() {
+  if (AstString* a = dynamic_cast<AstString*>(this)) return a->s;
   throw AstTypeError("string literal expected");
 }
-inline bool AstNode::isIntVar(void) {
+inline bool AstNode::isIntVar() {
   return (dynamic_cast<AstIntVar*>(this) != NULL);
 }
-inline bool AstNode::isBoolVar(void) {
+inline bool AstNode::isBoolVar() {
   return (dynamic_cast<AstBoolVar*>(this) != NULL);
 }
-inline bool AstNode::isSetVar(void) {
+inline bool AstNode::isSetVar() {
   return (dynamic_cast<AstSetVar*>(this) != NULL);
 }
-inline bool AstNode::isInt(void) {
+inline bool AstNode::isInt() {
   return (dynamic_cast<AstIntLit*>(this) != NULL);
 }
-inline bool AstNode::isBool(void) {
+inline bool AstNode::isBool() {
   return (dynamic_cast<AstBoolLit*>(this) != NULL);
 }
-inline bool AstNode::isSet(void) {
+inline bool AstNode::isSet() {
   return (dynamic_cast<AstSetLit*>(this) != NULL);
 }
-inline bool AstNode::isString(void) {
+inline bool AstNode::isString() {
   return (dynamic_cast<AstString*>(this) != NULL);
 }
-inline bool AstNode::isArray(void) {
+inline bool AstNode::isArray() {
   return (dynamic_cast<AstArray*>(this) != NULL);
 }
-inline bool AstNode::isAtom(void) {
+inline bool AstNode::isAtom() {
   return (dynamic_cast<AstAtom*>(this) != NULL);
 }
 
@@ -515,45 +476,45 @@ class FlatZincModel;
 typedef hash_set<CtSpec*> ConstraintSet;
 typedef hash_set<AstNode*> NodeSet;
 
-/// Symbol table mapping identifiers (strings) to values
-template<class Val> class SymbolTable {
+// Symbol table mapping identifiers (strings) to values
+template <class Val>
+class SymbolTable {
  public:
-  /// Insert \a val with \a key
-  void put(const std::string& key, const Val& val) {
-    m[key] = val;
-  }
+  // Insert \a val with \a key
+  void put(const string& key, const Val& val) { m[key] = val; }
 
-  /// Return whether \a key exists, and set \a val if it does exist
-  bool get(const std::string& key, Val& val) const {
-    typename std::map<std::string,Val>::const_iterator i =
-        m.find(key);
-    if (i == m.end())
-      return false;
+  // Return whether \a key exists, and set \a val if it does exist
+  bool get(const string& key, Val& val) const {  // NOLINT
+    typename std::map<string, Val>::const_iterator i = m.find(key);
+    if (i == m.end()) return false;
     val = i->second;
     return true;
   }
 
  private:
-  std::map<std::string, Val> m;
+  std::map<string, Val> m;
 };
 
-/// %Alias for a variable specification
+// %Alias for a variable specification
 class Alias {
  public:
+  explicit Alias(int v0) : v(v0) {}
+
   const int v;
-  Alias(int v0) : v(v0) {}
 };
 
-/// Optional value
-template<class Val> struct Option {
+// Optional value
+template <class Val>
+struct Option {
  private:
   bool defined_;
   Val value_;
+
  public:
   bool defined() const { return defined_; }
-  const Val& value(void) const { return value_; }
+  const Val& value() const { return value_; }
 
-  static Option<Val> none(void) {
+  static Option<Val> none() {
     Option<Val> o;
     o.defined_ = false;
     new (&o.value_) Val();
@@ -568,67 +529,59 @@ template<class Val> struct Option {
   }
 };
 
-/// Base class for variable specifications
+// Base class for variable specifications
 class VarSpec {
  public:
-  /// Whether the variable was introduced in the mzn2fzn translation
+  // Constructor
+  VarSpec(const string& name0, bool introduced0, bool alias0, bool assigned0)
+      : introduced(introduced0),
+        alias(alias0),
+        assigned(assigned0),
+        name(name0) {}
+  // Debug string.
+  virtual string DebugString() const { return "VarSpec"; }
+  void SetName(const string& n) { name = n; }
+  const string& Name() const { return name; }
+
+  // Whether the variable was introduced in the mzn2fzn translation
   const bool introduced;
-  /// Destructor
-  virtual ~VarSpec(void) {}
-  /// Variable index
+  // Destructor
+  virtual ~VarSpec() {}
+  // Variable index
   int64 i;
-  /// Whether the variable aliases another variable
+  // Whether the variable aliases another variable
   const bool alias;
-  /// Whether the variable is assigned
+  // Whether the variable is assigned
   bool assigned;
   // name
   string name;
-  /// Constructor
-  VarSpec(const string& name0, bool introduced0, bool alias0, bool assigned0)
-      : name(name0),
-        introduced(introduced0),
-        alias(alias0),
-        assigned(assigned0) {}
-  // Debug string.
-  virtual string DebugString() const {
-    return "VarSpec";
-  }
-  void SetName(const string& n) {
-    name = n;
-  }
-  const string& Name() const {
-    return name;
-  }
 };
 
-/// Specification for integer variables
+// Specification for integer variables
 class IntVarSpec : public VarSpec {
  public:
-  IntVarSpec(const string& name,
-             const Option<AstSetLit*>& d,
-             bool introduced,
+  IntVarSpec(const string& name, const Option<AstSetLit*>& d, bool introduced,
              bool own_domain)
-      : VarSpec(name, introduced, false, false),
-        own_domain_(own_domain) {
+      : VarSpec(name, introduced, false, false), own_domain_(own_domain) {
     i = -1;
     domain_ = d;
   }
 
   IntVarSpec(const string& name, int64 i0, bool introduced)
       : VarSpec(name, introduced, false, true),
-        own_domain_(false),
-        domain_(Option<AstSetLit*>::none()) {
+        domain_(Option<AstSetLit*>::none()),
+        own_domain_(false) {
     i = i0;
   }
 
   IntVarSpec(const string& name, const Alias& eq, bool introduced)
       : VarSpec(name, introduced, true, false),
-        own_domain_(false),
-        domain_(Option<AstSetLit*>::none()) {
+        domain_(Option<AstSetLit*>::none()),
+        own_domain_(false) {
     i = eq.v;
   }
 
-  virtual ~IntVarSpec(void) {
+  virtual ~IntVarSpec() {
     if (!alias && !assigned && domain_.defined() && own_domain_)
       delete domain_.value();
   }
@@ -639,7 +592,7 @@ class IntVarSpec : public VarSpec {
       return false;
     }
     if (!domain_.defined()) {
-      domain_ =  Option<AstSetLit*>::some(new AstSetLit(nmin, nmax));
+      domain_ = Option<AstSetLit*>::some(new AstSetLit(nmin, nmax));
       own_domain_ = true;
       return true;
     }
@@ -691,7 +644,7 @@ class IntVarSpec : public VarSpec {
       return false;
     }
     if (!domain_.defined()) {
-      domain_ =  Option<AstSetLit*>::some(new AstSetLit(values));
+      domain_ = Option<AstSetLit*>::some(new AstSetLit(values));
       own_domain_ = true;
       return true;
     }
@@ -730,29 +683,23 @@ class IntVarSpec : public VarSpec {
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
-          "IntVarSpec(name = %s, alias to = %d)",
-          name.c_str(),
+          "IntVarSpec(name = %s, alias to = %" GG_LL_FORMAT "d)", name.c_str(),
           i);
     } else if (assigned) {
       return StringPrintf(
-          "IntVarSpec(name = %s, assigned to = %d)",
-          name.c_str(),
-          i);
+          "IntVarSpec(name = %s, assigned to = %" GG_LL_FORMAT "d)",
+          name.c_str(), i);
     } else {
       return StringPrintf(
-          "IntVarSpec(name = %s, id = %d, domain = %s%s)",
-          name.c_str(),
-          i,
-          (domain_.defined() ?
-           domain_.value()->DebugString().c_str() :
-           "no domain"),
+          "IntVarSpec(name = %s, id = %" GG_LL_FORMAT "d, domain = %s%s)",
+          name.c_str(), i,
+          (domain_.defined() ? domain_.value()->DebugString().c_str()
+                             : "no domain"),
           (introduced ? ", introduced" : ""));
     }
   }
 
-  AstSetLit* Domain() const {
-    return domain_.value();
-  }
+  AstSetLit* Domain() const { return domain_.value(); }
 
   bool HasDomain() const {
     return domain_.defined() && domain_.value() != NULL;
@@ -763,12 +710,10 @@ class IntVarSpec : public VarSpec {
   bool own_domain_;
 };
 
-/// Specification for Boolean variables
+// Specification for Boolean variables
 class BoolVarSpec : public VarSpec {
  public:
-  BoolVarSpec(const string& name,
-              const Option<AstSetLit*>& d,
-              bool introduced,
+  BoolVarSpec(const string& name, const Option<AstSetLit*>& d, bool introduced,
               bool own_domain)
       : VarSpec(name, introduced, false, false), own_domain_(own_domain) {
     i = -1;
@@ -776,7 +721,7 @@ class BoolVarSpec : public VarSpec {
   }
 
   BoolVarSpec(const string& name, bool b, bool introduced)
-      : VarSpec(name, introduced, false, true), own_domain_(false)  {
+      : VarSpec(name, introduced, false, true), own_domain_(false) {
     i = b;
   }
 
@@ -785,7 +730,7 @@ class BoolVarSpec : public VarSpec {
     i = eq.v;
   }
 
-  ~BoolVarSpec() {
+  virtual ~BoolVarSpec() {
     if (!alias && !assigned && domain_.defined() && own_domain_)
       delete domain_.value();
   }
@@ -795,17 +740,11 @@ class BoolVarSpec : public VarSpec {
     i = value;
   }
 
-  bool IsTrue() const {
-    return (assigned && i == 1);
-  }
+  bool IsTrue() const { return (assigned && i == 1); }
 
-  bool IsFalse() const {
-    return (assigned && i == 0);
-  }
+  bool IsFalse() const { return (assigned && i == 0); }
 
-  bool IsBound() const {
-    return IsTrue() || IsFalse();
-  }
+  bool IsBound() const { return IsTrue() || IsFalse(); }
 
   int GetBound() const {
     CHECK(IsBound());
@@ -815,22 +754,18 @@ class BoolVarSpec : public VarSpec {
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
-          "BoolVarSpec(name = %s, alias to = %d)",
-          name.c_str(),
+          "BoolVarSpec(name = %s, alias to = %" GG_LL_FORMAT "d)", name.c_str(),
           i);
     } else if (assigned) {
       return StringPrintf(
-          "BoolVarSpec(name = %s, assigned to = %d)",
-          name.c_str(),
-          i);
+          "BoolVarSpec(name = %s, assigned to = %" GG_LL_FORMAT "d)",
+          name.c_str(), i);
     } else {
       return StringPrintf(
-          "BoolVarSpec(name = %s, id = %d, domain = %s)",
-          name.c_str(),
-          i,
-          (domain_.defined() ?
-           domain_.value()->DebugString().c_str() :
-           "no domain"));
+          "BoolVarSpec(name = %s, id = %" GG_LL_FORMAT "d, domain = %s)",
+          name.c_str(), i,
+          (domain_.defined() ? domain_.value()->DebugString().c_str()
+                             : "no domain"));
     }
   }
 
@@ -839,12 +774,10 @@ class BoolVarSpec : public VarSpec {
   const bool own_domain_;
 };
 
-/// Specification for floating point variables
+// Specification for floating point variables
 class FloatVarSpec : public VarSpec {
  public:
-  Option<std::vector<double>*> domain;
-  FloatVarSpec(const string& name,
-               Option<std::vector<double>*>& d,
+  FloatVarSpec(const string& name, const Option<std::vector<double>*>& d,
                bool introduced)
       : VarSpec(name, introduced, false, false) {
     domain = d;
@@ -860,66 +793,60 @@ class FloatVarSpec : public VarSpec {
     i = eq.v;
   }
 
-  ~FloatVarSpec(void) {
-    if (!alias && !assigned && domain.defined())
-      delete domain.value();
+  virtual ~FloatVarSpec() {
+    if (!alias && !assigned && domain.defined()) delete domain.value();
   }
+
+  Option<std::vector<double>*> domain;
 };
 
-/// Specification for set variables
+// Specification for set variables
 class SetVarSpec : public VarSpec {
  public:
-  Option<AstSetLit*> domain_;
   SetVarSpec(const string& name, bool introduced)
-      : VarSpec(name, introduced, false, false),
-        own_domain_(false) {
+      : VarSpec(name, introduced, false, false), own_domain_(false) {
     domain_ = Option<AstSetLit*>::none();
   }
-  SetVarSpec(const string& name,
-             const Option<AstSetLit*>& v,
-             bool introduced, bool own_domain)
-      : VarSpec(name, introduced, false, false),
-        own_domain_(own_domain) {
-    domain_ = v;
 
+  SetVarSpec(const string& name, const Option<AstSetLit*>& v, bool introduced,
+             bool own_domain)
+      : VarSpec(name, introduced, false, false), own_domain_(own_domain) {
+    domain_ = v;
   }
+
   SetVarSpec(const string& name, AstSetLit* v, bool introduced)
-      : VarSpec(name, introduced, false, true),
-        own_domain_(false) {
+      : VarSpec(name, introduced, false, true), own_domain_(false) {
     domain_ = Option<AstSetLit*>::some(v);
   }
+
   SetVarSpec(const string& name, const Alias& eq, bool introduced)
-      : VarSpec(name, introduced, true, false),
-        own_domain_(false) {
+      : VarSpec(name, introduced, true, false), own_domain_(false) {
     i = eq.v;
   }
-  virtual ~SetVarSpec(void) {
-    if (!alias && domain_.defined() && own_domain_)
-      delete domain_.value();
+
+  virtual ~SetVarSpec() {
+    if (!alias && domain_.defined() && own_domain_) delete domain_.value();
   }
 
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
-          "SetVarSpec(name = %s, alias to = %d)",
-          name.c_str(),
+          "SetVarSpec(name = %s, alias to = %" GG_LL_FORMAT "d)", name.c_str(),
           i);
     } else if (assigned) {
       return StringPrintf(
-          "SetVarSpec(name = %s, assigned to = %d)",
-          name.c_str(),
-          i);
+          "SetVarSpec(name = %s, assigned to = %" GG_LL_FORMAT "d)",
+          name.c_str(), i);
     } else {
       return StringPrintf(
-          "SetVarSpec(name = %s, id = %d, domain = %s)",
-          name.c_str(),
-          i,
-          (domain_.defined() ?
-           domain_.value()->DebugString().c_str() :
-           "no domain"));
+          "SetVarSpec(name = %s, id = %" GG_LL_FORMAT "d, domain = %s)",
+          name.c_str(), i,
+          (domain_.defined() ? domain_.value()->DebugString().c_str()
+                             : "no domain"));
     }
   }
 
+  Option<AstSetLit*> domain_;
 
  private:
   const bool own_domain_;
@@ -927,46 +854,31 @@ class SetVarSpec : public VarSpec {
 
 class CtSpec {
  public:
-  CtSpec(int index,
-         const std::string& id,
-         AstArray* const args,
+  CtSpec(int index, const string& id, AstArray* const args,
          AstNode* const annotations)
       : index_(index),
         id_(id),
         args_(args),
         annotations_(annotations),
         nullified_(false),
-        defined_arg_(NULL) {
-  }
+        defined_arg_(NULL) {}
 
   ~CtSpec() {
     delete args_;
     delete annotations_;
   }
 
-  const std::string& Id() const {
-    return id_;
-  }
+  const string& Id() const { return id_; }
 
-  void SetId(const std::string& id) {
-    id_ = id;
-  }
+  void SetId(const string& id) { id_ = id; }
 
-  int Index() const {
-    return index_;
-  }
+  int Index() const { return index_; }
 
-  AstNode* Arg(int index) const {
-    return args_->a[index];
-  }
+  AstNode* Arg(int index) const { return args_->a[index]; }
 
-  AstNode* LastArg() const {
-    return args_->a.back();
-  }
+  AstNode* LastArg() const { return args_->a.back(); }
 
-  int NumArgs() const {
-    return args_->a.size();
-  }
+  int NumArgs() const { return args_->a.size(); }
 
   void RemoveArg(int index) {
     delete args_->a[index];
@@ -978,42 +890,33 @@ class CtSpec {
 
   bool IsDefined(AstNode* const arg) {
     if (defined_arg_ != NULL) {
-      return ((arg->isIntVar() &&
-               defined_arg_->isIntVar() &&
+      return ((arg->isIntVar() && defined_arg_->isIntVar() &&
                arg->getIntVar() == defined_arg_->getIntVar()) ||
-              (arg->isBoolVar() &&
-               defined_arg_->isBoolVar() &&
+              (arg->isBoolVar() && defined_arg_->isBoolVar() &&
                arg->getBoolVar() == defined_arg_->getBoolVar()));
     }
     return false;
   }
 
-  AstArray* Args() const {
-    return args_;
-  }
+  AstArray* Args() const { return args_; }
 
   void ReplaceArg(int index, AstNode* const node) {
     delete args_->a[index];
     args_->a[index] = node;
   }
 
-  AstNode* annotations() const {
-    return annotations_;
-  }
+  AstNode* annotations() const { return annotations_; }
 
   string DebugString() const {
-    string output =
-        StringPrintf("CtSpec(no = %d, id = %s, args = %s",
-                     index_,
-                     id_.c_str(),
-                     args_->DebugString().c_str());
+    string output = StringPrintf("CtSpec(no = %d, id = %s, args = %s", index_,
+                                 id_.c_str(), args_->DebugString().c_str());
     if (annotations_ != NULL) {
       output += StringPrintf(", annotations = %s",
                              annotations_->DebugString().c_str());
     }
     if (defined_arg_ != NULL) {
-      output += StringPrintf(", target = %s",
-                             defined_arg_->DebugString().c_str());
+      output +=
+          StringPrintf(", target = %s", defined_arg_->DebugString().c_str());
     }
     if (!requires_.empty()) {
       output += ", requires = [";
@@ -1027,21 +930,13 @@ class CtSpec {
     return output;
   }
 
-  void SetDefinedArg(AstNode* const arg) {
-    defined_arg_ = arg;
-  }
+  void SetDefinedArg(AstNode* const arg) { defined_arg_ = arg; }
 
-  AstNode* DefinedArg() const {
-    return defined_arg_;
-  }
+  AstNode* DefinedArg() const { return defined_arg_; }
 
-  const NodeSet& require_map() const {
-    return requires_;
-  }
+  const NodeSet& require_map() const { return requires_; }
 
-  NodeSet* mutable_require_map() {
-    return &requires_;
-  }
+  NodeSet* mutable_require_map() { return &requires_; }
 
   void Unreify() {
     id_.resize(id_.size() - 5);
@@ -1056,9 +951,7 @@ class CtSpec {
     id_.append("_null");
   }
 
-  bool Nullified() const {
-    return nullified_;
-  }
+  bool Nullified() const { return nullified_; }
 
   void AddAnnotation(AstNode* const node) {
     if (annotations_ == NULL) {
@@ -1102,7 +995,7 @@ class CtSpec {
 
  private:
   const int index_;
-  std::string id_;
+  string id_;
   AstArray* const args_;
   AstNode* annotations_;
   std::vector<int> uses_;
@@ -1111,21 +1004,20 @@ class CtSpec {
   AstNode* defined_arg_;
 };
 
-/// %State of the %FlatZinc parser
+// %State of the %FlatZinc parser
 class ParserState {
  public:
-  ParserState(const std::string& b,
+  ParserState(const string& b,
               operations_research::FlatZincModel* const model0)
       : buf(b.c_str()),
         pos(0),
         length(b.size()),
-        model_(model0),
-        hadError(false) {}
+        hadError(false),
+        model_(model0) {}
 
-  ParserState(char* const buf0,
-              int length0,
+  ParserState(char* const buf0, int length0,
               operations_research::FlatZincModel* const model0)
-      : buf(buf0), pos(0), length(length0), model_(model0), hadError(false) {}
+      : buf(buf0), pos(0), length(length0), hadError(false), model_(model0) {}
 
   ~ParserState();
 
@@ -1159,28 +1051,25 @@ class ParserState {
   bool hadError;
 
   int FillBuffer(char* lexBuf, unsigned int lexBufSize);
-  void output(std::string x, AstNode* n);
-  AstArray* Output(void);
+  void output(string x, AstNode* n);
+  AstArray* Output();
   void AnalyseAndCreateModel();
   AstNode* ArrayElement(string id, unsigned int offset);
   AstNode* VarRefArg(string id, bool annotation);
   void AddIntVarDomainConstraint(int var_id, AstSetLit* const dom);
   void AddBoolVarDomainConstraint(int var_id, AstSetLit* const dom);
   void AddSetVarDomainConstraint(int var_id, AstSetLit* const dom);
-  void AddConstraint(const std::string& id,
-                     AstArray* const args,
+  void AddConstraint(const string& id, AstArray* const args,
                      AstNode* const annotations);
   void InitModel();
-  void FillOutput(operations_research::FlatZincModel& m);
+  void FillOutput(operations_research::FlatZincModel* const m);
   void Presolve();
   bool IsBound(AstNode* const node) const;
   int64 GetBound(AstNode* const node) const;
   bool IsAllDifferent(AstNode* const node) const;
   bool MergeIntDomain(IntVarSpec* const source, IntVarSpec* const dest);
 
-  FlatZincModel* model() const {
-    return model_;
-  }
+  FlatZincModel* model() const { return model_; }
 
   AstNode* Copy(AstNode* const node) const {
     if (node->isIntVar()) {
@@ -1206,32 +1095,27 @@ class ParserState {
   void MarkComputedVariables(CtSpec* const spec, NodeSet* const computed);
   void SortConstraints(NodeSet* const candidates,
                        NodeSet* const computed_variables);
-  void BuildModel(const NodeSet& candidates,
-                  const NodeSet& computed_variables);
+  void BuildModel(const NodeSet& candidates, const NodeSet& computed_variables);
   bool PresolveOneConstraint(CtSpec* const spec);
   bool DiscoverAliases(CtSpec* const spec);
   void ReplaceAliases(CtSpec* const spec);
   AstNode* FindTarget(AstNode* const annotations) const;
-  void CollectRequired(AstArray* const args,
-                       const NodeSet& candidates,
+  void CollectRequired(AstArray* const args, const NodeSet& candidates,
                        NodeSet* const require) const;
   void ComputeDependencies(const NodeSet& candidates, CtSpec* const spec) const;
   void ComputeViableTarget(CtSpec* const spec, NodeSet* const candidates) const;
   void Sanitize(CtSpec* const spec);
   void BuildStatistics();
-  void Regroup(const std::string& ct_id, const std::vector<int>& ct_list);
-  void RegroupAux(const std::string& ct_id,
-                  int start_index,
-                  int end_index,
-                  int output_var_index,
-                  const std::vector<int>& indices);
+  void Regroup(const string& ct_id, const std::vector<int>& ct_list);
+  void RegroupAux(const string& ct_id, int start_index, int end_index,
+                  int output_var_index, const std::vector<int>& indices);
   void Strongify(int constraint_index);
   bool IsAlias(AstNode* const node) const;
   bool IsIntroduced(AstNode* const node) const;
   IntVarSpec* IntSpec(AstNode* const node) const;
 
   operations_research::FlatZincModel* model_;
-  std::vector<std::pair<std::string,AstNode*> > output_;
+  std::vector<std::pair<string, AstNode*> > output_;
   NodeSet orphans_;
   NodeSet targets_;
   ConstraintSet stored_constraints_;
@@ -1251,4 +1135,4 @@ class ParserState {
 AstNode* ArrayOutput(AstCall* ann);
 }  // namespace operations_research
 
-#endif
+#endif  // OR_TOOLS_FLATZINC_PARSER_H_

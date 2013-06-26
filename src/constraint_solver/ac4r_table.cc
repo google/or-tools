@@ -337,7 +337,7 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  bool IsValid(int tuple_index) {
+  bool IsTupleSupported(int tuple_index) {
     for (int var_index = 0; var_index < num_variables_; ++var_index) {
       if (!original_vars_[var_index]->Contains(
               table_->tuple_set().Value(tuple_index, var_index))) {
@@ -350,7 +350,7 @@ class Ac4TableConstraint : public Constraint {
   void InitialPropagate() {
     std::vector<int> valid_tuples;
     for (int i = 0; i < table_->NumTuples(); ++i) {
-      if (IsValid(i)) {
+      if (IsTupleSupported(i)) {
         valid_tuples.push_back(i);
       }
     }

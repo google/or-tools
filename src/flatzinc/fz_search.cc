@@ -13,9 +13,9 @@
 
 // -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
 
-
-#include <vector>
+#include <iostream>  // NOLINT
 #include <string>
+#include <vector>
 
 #include "base/concise_iterator.h"
 #include "base/hash.h"
@@ -29,12 +29,8 @@ namespace operations_research {
 namespace {
 class MtOptimizeVar : public OptimizeVar {
  public:
-  MtOptimizeVar(Solver* const s,
-                bool maximize,
-                IntVar* const v,
-                int64 step,
-                FzParallelSupport* const support,
-                int worker_id)
+  MtOptimizeVar(Solver* const s, bool maximize, IntVar* const v, int64 step,
+                FzParallelSupport* const support, int worker_id)
       : OptimizeVar(s, maximize, v, step),
         support_(support),
         worker_id_(worker_id) {}
@@ -47,9 +43,8 @@ class MtOptimizeVar : public OptimizeVar {
         (!maximize_ && polled_best < best_)) {
       support_->Log(
           worker_id_,
-          StringPrintf(
-              "Polling improved objective %" GG_LL_FORMAT "d",
-              polled_best));
+          StringPrintf("Polling improved objective %" GG_LL_FORMAT "d",
+                       polled_best));
       best_ = polled_best;
     }
     OptimizeVar::RefuteDecision(d);
@@ -62,12 +57,9 @@ class MtOptimizeVar : public OptimizeVar {
 
 class MtCustomLimit : public SearchLimit {
  public:
-  MtCustomLimit(Solver* const s,
-                FzParallelSupport* const support,
+  MtCustomLimit(Solver* const s, FzParallelSupport* const support,
                 int worker_id)
-      : SearchLimit(s),
-        support_(support),
-        worker_id_(worker_id) {}
+      : SearchLimit(s), support_(support), worker_id_(worker_id) {}
 
   virtual ~MtCustomLimit() {}
 
@@ -93,12 +85,12 @@ class MtCustomLimit : public SearchLimit {
 class SequentialSupport : public FzParallelSupport {
  public:
   SequentialSupport(bool print_all, int num_solutions, bool verbose)
-  : print_all_(print_all),
-    verbose_(verbose),
-    num_solutions_(num_solutions),
-    type_(UNDEF),
-    best_solution_(0),
-    interrupted_(false) {}
+      : print_all_(print_all),
+        verbose_(verbose),
+        num_solutions_(num_solutions),
+        type_(UNDEF),
+        best_solution_(0),
+        interrupted_(false) {}
 
   virtual ~SequentialSupport() {}
 
@@ -122,8 +114,7 @@ class SequentialSupport : public FzParallelSupport {
     }
   }
 
-  virtual void OptimizeSolution(int worker_id,
-                                int64 value,
+  virtual void OptimizeSolution(int worker_id, int64 value,
                                 const string& solution_string) {
     best_solution_ = value;
     if (print_all_) {
@@ -138,9 +129,7 @@ class SequentialSupport : public FzParallelSupport {
     std::cout << final_output;
   }
 
-  virtual bool ShouldFinish() const {
-    return false;
-  }
+  virtual bool ShouldFinish() const { return false; }
 
   virtual void EndSearch(int worker_id, bool interrupted) {
     if (!last_solution_.empty()) {
@@ -149,29 +138,20 @@ class SequentialSupport : public FzParallelSupport {
     interrupted_ = interrupted;
   }
 
-  virtual int64 BestSolution() const {
-    return best_solution_;
-  }
+  virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* const s,
-                                 bool maximize,
-                                 IntVar* const var,
-                                 int64 step,
-                                 int worker_id) {
+  virtual OptimizeVar* Objective(Solver* const s, bool maximize,
+                                 IntVar* const var, int64 step, int worker_id) {
     return s->MakeOptimize(maximize, var, step);
   }
 
-  virtual SearchLimit* Limit(Solver* const s, int worker_id) {
-    return NULL;
-  }
+  virtual SearchLimit* Limit(Solver* const s, int worker_id) { return NULL; }
 
   virtual void Log(int worker_id, const string& message) {
     std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
   }
 
-  virtual bool Interrupted() const {
-    return interrupted_;
-  }
+  virtual bool Interrupted() const { return interrupted_; }
 
  private:
   const bool print_all_;
@@ -186,13 +166,13 @@ class SequentialSupport : public FzParallelSupport {
 class MtSupport : public FzParallelSupport {
  public:
   MtSupport(bool print_all, bool verbose)
-  : print_all_(print_all),
-    verbose_(verbose),
-    type_(UNDEF),
-    best_solution_(0),
-    last_worker_(-1),
-    should_finish_(false),
-    interrupted_(false) {}
+      : print_all_(print_all),
+        verbose_(verbose),
+        type_(UNDEF),
+        last_worker_(-1),
+        best_solution_(0),
+        should_finish_(false),
+        interrupted_(false) {}
 
   virtual ~MtSupport() {}
 
@@ -226,8 +206,7 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
-  virtual void OptimizeSolution(int worker_id,
-                                int64 value,
+  virtual void OptimizeSolution(int worker_id, int64 value,
                                 const string& solution_string) {
     MutexLock lock(&mutex_);
     if (!should_finish_) {
@@ -239,9 +218,8 @@ class MtSupport : public FzParallelSupport {
             if (print_all_) {
               LogNoLock(
                   worker_id,
-                  StringPrintf(
-                      "solution found with value %" GG_LL_FORMAT "d",
-                      value));
+                  StringPrintf("solution found with value %" GG_LL_FORMAT "d",
+                               value));
               std::cout << solution_string;
             } else {
               last_solution_ = solution_string;
@@ -257,9 +235,8 @@ class MtSupport : public FzParallelSupport {
             if (print_all_) {
               LogNoLock(
                   worker_id,
-                  StringPrintf(
-                      "solution found with value %" GG_LL_FORMAT "d",
-                      value));
+                  StringPrintf("solution found with value %" GG_LL_FORMAT "d",
+                               value));
               std::cout << solution_string;
             } else {
               last_solution_ = solution_string;
@@ -279,9 +256,7 @@ class MtSupport : public FzParallelSupport {
     std::cout << final_output;
   }
 
-  virtual bool ShouldFinish() const {
-    return should_finish_;
-  }
+  virtual bool ShouldFinish() const { return should_finish_; }
 
   virtual void EndSearch(int worker_id, bool interrupted) {
     MutexLock lock(&mutex_);
@@ -299,15 +274,10 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
-  virtual int64 BestSolution() const {
-    return best_solution_;
-  }
+  virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* const s,
-                                 bool maximize,
-                                 IntVar* const var,
-                                 int64 step,
-                                 int w) {
+  virtual OptimizeVar* Objective(Solver* const s, bool maximize,
+                                 IntVar* const var, int64 step, int w) {
     return s->RevAlloc(new MtOptimizeVar(s, maximize, var, step, this, w));
   }
 
@@ -322,9 +292,7 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
-  virtual bool Interrupted() const {
-    return interrupted_;
-  }
+  virtual bool Interrupted() const { return interrupted_; }
 
   void LogNoLock(int worker_id, const string& message) {
     if (verbose_) {
@@ -345,23 +313,22 @@ class MtSupport : public FzParallelSupport {
 };
 
 // Flatten Search annotations.
-void FlattenAnnotations(AstArray* const annotations,
-                        std::vector<AstNode*>& out) {
-  for (unsigned int i=0; i < annotations->a.size(); i++) {
+void FlattenAnnotations(AstArray* const annotations, std::vector<AstNode*>* out) {
+  for (unsigned int i = 0; i < annotations->a.size(); i++) {
     if (annotations->a[i]->isCall("seq_search")) {
       AstCall* c = annotations->a[i]->getCall();
       if (c->args->isArray()) {
         FlattenAnnotations(c->args->getArray(), out);
       } else {
-        out.push_back(c->args);
+        out->push_back(c->args);
       }
     } else {
-      out.push_back(annotations->a[i]);
+      out->push_back(annotations->a[i]);
     }
   }
 }
 
-  // Comparison helpers. This one sorts in a decreasing way.
+// Comparison helpers. This one sorts in a decreasing way.
 struct VarDegreeIndex {
   IntVar* v;
   int d;
@@ -379,7 +346,7 @@ void SortVariableByDegree(Solver* const solver,
                           std::vector<IntVar*>* const int_vars) {
   hash_map<IntVar*, int> degree_map;
   for (int i = 0; i < int_vars->size(); ++i) {
-    degree_map[(*int_vars)[i]] = 0;
+    degree_map[ (*int_vars)[i]] = 0;
   }
   ModelVisitor* const degree_visitor =
       solver->MakeVariableDegreeVisitor(&degree_map);
@@ -403,14 +370,11 @@ string FlatZincMemoryUsage() {
   static const int64 kGigaByte = kMegaByte * kKiloByte;
   const int64 memory_usage = Solver::MemoryUsage();
   if (memory_usage > kDisplayThreshold * kGigaByte) {
-    return StringPrintf("%.2lf GB",
-                        memory_usage  * 1.0 / kGigaByte);
+    return StringPrintf("%.2lf GB", memory_usage * 1.0 / kGigaByte);
   } else if (memory_usage > kDisplayThreshold * kMegaByte) {
-    return StringPrintf("%.2lf MB",
-                        memory_usage  * 1.0 / kMegaByte);
+    return StringPrintf("%.2lf MB", memory_usage * 1.0 / kMegaByte);
   } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-    return StringPrintf("%2lf KB",
-                        memory_usage * 1.0 / kKiloByte);
+    return StringPrintf("%2lf KB", memory_usage * 1.0 / kKiloByte);
   } else {
     return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
   }
@@ -419,7 +383,7 @@ string FlatZincMemoryUsage() {
 // Assign to bound decision builder
 class AssignToBounds : public DecisionBuilder {
  public:
-  AssignToBounds(const std::vector<IntVar*>& vars)
+  explicit AssignToBounds(const std::vector<IntVar*>& vars)
       : vars_(vars), mins_(vars.size()), max_(vars.size()), init_(false) {}
   virtual ~AssignToBounds() {}
 
@@ -449,15 +413,12 @@ class AssignToBounds : public DecisionBuilder {
     return NULL;
   }
 
-  virtual string DebugString() const {
-    return "AssignToBounds";
-  }
+  virtual string DebugString() const { return "AssignToBounds"; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(),
-                                               vars_.size());
+                                               vars_.data(), vars_.size());
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
@@ -474,20 +435,22 @@ bool FlatZincModel::HasSolveAnnotations() const {
   if (solve_annotations_) {
     std::vector<AstNode*> flat_annotations;
     if (solve_annotations_->isArray()) {
-      FlattenAnnotations(solve_annotations_->getArray(), flat_annotations);
+      FlattenAnnotations(solve_annotations_->getArray(), &flat_annotations);
     } else {
       flat_annotations.push_back(solve_annotations_);
     }
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
-        AstCall *call = flat_annotations[i]->getCall("int_search");
+        flat_annotations[i]->getCall("int_search");
         has_annotations = true;
-      } catch (AstTypeError& e) {
+      }
+      catch (AstTypeError & e) {
         (void) e;
         try {
-          AstCall *call = flat_annotations[i]->getCall("bool_search");
+          flat_annotations[i]->getCall("bool_search");
           has_annotations = true;
-        } catch (AstTypeError& e) {
+        }
+        catch (AstTypeError & e) {
           (void) e;
         }
       }
@@ -505,7 +468,7 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
   if (has_solve_annotations) {
     CHECK_NOTNULL(solve_annotations_);
     if (solve_annotations_->isArray()) {
-      FlattenAnnotations(solve_annotations_->getArray(), flat_annotations);
+      FlattenAnnotations(solve_annotations_->getArray(), &flat_annotations);
     } else {
       flat_annotations.push_back(solve_annotations_);
     }
@@ -515,9 +478,9 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
   if (!p.free_search) {
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
-        AstCall *call = flat_annotations[i]->getCall("int_search");
-        AstArray *args = call->getArgs(4);
-        AstArray *vars = args->a[0]->getArray();
+        AstCall* call = flat_annotations[i]->getCall("int_search");
+        AstArray* args = call->getArgs(4);
+        AstArray* vars = args->a[0]->getArray();
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           if (vars->a[i]->isIntVar()) {
@@ -570,12 +533,13 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
           vstr = Solver::SPLIT_UPPER_HALF;
         }
         builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
-      } catch (AstTypeError& e) {
+      }
+      catch (AstTypeError & e) {
         (void) e;
         try {
-          AstCall *call = flat_annotations[i]->getCall("bool_search");
-          AstArray *args = call->getArgs(4);
-          AstArray *vars = args->a[0]->getArray();
+          AstCall* call = flat_annotations[i]->getCall("bool_search");
+          AstArray* args = call->getArgs(4);
+          AstArray* vars = args->a[0]->getArray();
           std::vector<IntVar*> bool_vars;
           for (int i = 0; i < vars->a.size(); ++i) {
             if (vars->a[i]->isBoolVar()) {
@@ -603,14 +567,16 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
             vstr = Solver::ASSIGN_RANDOM_VALUE;
           }
           builders_.push_back(solver_->MakePhase(bool_vars, str, vstr));
-        } catch (AstTypeError& e) {
+        }
+        catch (AstTypeError & e) {
           (void) e;
           try {
-            AstCall *call = flat_annotations[i]->getCall("set_search");
-            AstArray *args = call->getArgs(4);
-            AstArray *vars = args->a[0]->getArray();
+            AstCall* call = flat_annotations[i]->getCall("set_search");
+            AstArray* args = call->getArgs(4);
+            args->a[0]->getArray();
             LOG(FATAL) << "Search on set variables not supported";
-          } catch (AstTypeError& e) {
+          }
+          catch (AstTypeError & e) {
             (void) e;
             if (!p.ignore_unknown) {
               LOG(WARNING) << "Warning, ignored search annotation: "
@@ -622,8 +588,7 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
     }
   }
 
-  if (p.free_search ||
-      builders_.size() == 0 ||
+  if (p.free_search || builders_.size() == 0 ||
       (builders_.size() == 1 && method_ != SAT)) {
     search_name_ = "automatic";
     // We collect the objective linked decision builder.
@@ -656,15 +621,14 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
     }
     parameters.run_all_heuristics = true;
     parameters.heuristic_period =
-        method_ != SAT || (!p.all_solutions && p.num_solutions == 1) ?
-         p.heuristic_period :
-         -1;
+        method_ != SAT || (!p.all_solutions && p.num_solutions == 1)
+            ? p.heuristic_period
+            : -1;
     parameters.restart_log_size = p.restart_log_size;
-    parameters.display_level = p.use_log ?
-                               (p.verbose_impact ?
-                                DefaultPhaseParameters::VERBOSE :
-                                DefaultPhaseParameters::NORMAL) :
-                               DefaultPhaseParameters::NONE;
+    parameters.display_level =
+        p.use_log ? (p.verbose_impact ? DefaultPhaseParameters::VERBOSE
+                                      : DefaultPhaseParameters::NORMAL)
+                  : DefaultPhaseParameters::NONE;
     parameters.use_no_goods = true;
     parameters.var_selection_schema =
         DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
@@ -740,28 +704,21 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   switch (method_) {
     case MIN:
     case MAX: {
-      objective_ =
-          parallel_support->Objective(
-              solver_.get(),
-              method_ == MAX,
-              integer_variables_[objective_variable_]->Var(),
-              1,
-              p.worker_id);
-      SearchMonitor* const log = p.use_log ?
-          solver_->MakeSearchLog(p.log_period, objective_) :
-          NULL;
+      objective_ = parallel_support->Objective(
+          solver_.get(), method_ == MAX,
+          integer_variables_[objective_variable_]->Var(), 1, p.worker_id);
+      SearchMonitor* const log =
+          p.use_log ? solver_->MakeSearchLog(p.log_period, objective_) : NULL;
       monitors.push_back(log);
       monitors.push_back(objective_);
-      parallel_support->StartSearch(p.worker_id,
-                                    method_ == MAX ?
-                                    FzParallelSupport::MAXIMIZE :
-                                    FzParallelSupport::MINIMIZE);
+      parallel_support->StartSearch(
+          p.worker_id, method_ == MAX ? FzParallelSupport::MAXIMIZE
+                                      : FzParallelSupport::MINIMIZE);
       break;
     }
     case SAT: {
-      SearchMonitor* const log = p.use_log ?
-          solver_->MakeSearchLog(p.log_period) :
-          NULL;
+      SearchMonitor* const log =
+          p.use_log ? solver_->MakeSearchLog(p.log_period) : NULL;
       monitors.push_back(log);
       parallel_support->StartSearch(p.worker_id, FzParallelSupport::SATISFY);
 
@@ -771,12 +728,10 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   // Custom limit in case of parallelism.
   monitors.push_back(parallel_support->Limit(solver_.get(), p.worker_id));
 
-  SearchLimit* const limit = (p.time_limit_in_ms > 0 ?
-                              solver_->MakeLimit(p.time_limit_in_ms,
-                                                 kint64max,
-                                                 kint64max,
-                                                 kint64max) :
-                              NULL);
+  SearchLimit* const limit = (
+      p.time_limit_in_ms > 0 ? solver_->MakeLimit(p.time_limit_in_ms, kint64max,
+                                                  kint64max, kint64max)
+                             : NULL);
   monitors.push_back(limit);
 
   if (p.simplex_frequency > 0) {
@@ -802,8 +757,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
         case MIN:
         case MAX: {
           const int64 best = objective_ != NULL ? objective_->best() : 0;
-          parallel_support->OptimizeSolution(p.worker_id,
-                                             best,
+          parallel_support->OptimizeSolution(p.worker_id, best,
                                              solution_string);
           break;
         }
@@ -830,28 +784,24 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     if (parallel_support->Interrupted()) {
       final_output.append("%% TIMEOUT\n");
       timeout = true;
-    } else if (!breaked &&
-               num_solutions == 0 &&
+    } else if (!breaked && num_solutions == 0 &&
                !parallel_support->Interrupted()) {
       final_output.append("=====UNSATISFIABLE=====\n");
     } else if (!breaked && !parallel_support->Interrupted()) {
       final_output.append("==========\n");
       proven = true;
     }
+    final_output.append(
+        StringPrintf("%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
+                     solve_time + build_time));
     final_output.append(StringPrintf(
-        "%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
-        solve_time + build_time));
-    final_output.append(
-        StringPrintf("%%%%  build time:           %" GG_LL_FORMAT "d ms\n",
-                     build_time));
-    final_output.append(
-        StringPrintf("%%%%  solve time:           %" GG_LL_FORMAT "d ms\n",
-                     solve_time));
+        "%%%%  build time:           %" GG_LL_FORMAT "d ms\n", build_time));
+    final_output.append(StringPrintf(
+        "%%%%  solve time:           %" GG_LL_FORMAT "d ms\n", solve_time));
     final_output.append(
         StringPrintf("%%%%  solutions:            %d\n", num_solutions));
-    final_output.append(
-        StringPrintf("%%%%  constraints:          %d\n",
-                     solver_->constraints()));
+    final_output.append(StringPrintf("%%%%  constraints:          %d\n",
+                                     solver_->constraints()));
     final_output.append(
         StringPrintf("%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
                      solver_->demon_runs(Solver::NORMAL_PRIORITY)));
@@ -871,52 +821,40 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       if (method_ == MIN && solver_->solutions() > 0) {
         final_output.append(
             StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
-                         best,
-                         (proven ? " (proven)" : "")));
+                         best, (proven ? " (proven)" : "")));
       } else if (solver_->solutions() > 0) {
         final_output.append(
             StringPrintf("%%%%  max objective:        %" GG_LL_FORMAT "d%s\n",
-                         best,
-                         (proven ? " (proven)" : "")));
+                         best, (proven ? " (proven)" : "")));
       }
     }
     const int num_solutions_found = solver_->solutions();
     const bool no_solutions = num_solutions_found == 0;
     const string status_string =
-        (no_solutions ?
-         (timeout ? "**timeout**" : "**unsat**") :
-         (objective_ == NULL ?
-          "**sat**" :
-          (timeout ? "**feasible**" :"**proven**")));
-    const string obj_string = (objective_ != NULL && !no_solutions ?
-                               StringPrintf("%" GG_LL_FORMAT "d", best) :
-                               "");
+        (no_solutions
+             ? (timeout ? "**timeout**" : "**unsat**")
+             : (objective_ == NULL ? "**sat**" : (timeout ? "**feasible**"
+                                                          : "**proven**")));
+    const string obj_string = (objective_ != NULL && !no_solutions
+                                   ? StringPrintf("%" GG_LL_FORMAT "d", best)
+                                   : "");
     final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "
                         "fails, cts, demon, delayed, mem, search\n");
-    final_output.append(
-        StringPrintf("%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT
-                     "d ms, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT "d, %"
-                     GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-                     "d, %s, %s\n",
-                     filename_.c_str(),
-                     status_string.c_str(),
-                     obj_string.c_str(),
-                     num_solutions_found,
-                     solve_time,
-                     build_time,
-                     solver_->branches(),
-                     solver_->failures(),
-                     solver_->constraints(),
-                     solver_->demon_runs(Solver::NORMAL_PRIORITY),
-                     solver_->demon_runs(Solver::DELAYED_PRIORITY),
-                     FlatZincMemoryUsage().c_str(),
-                     search_name_.c_str()));
+    final_output.append(StringPrintf(
+        "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
+        "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
+        "d, %" GG_LL_FORMAT "d, %s, %s\n",
+        filename_.c_str(), status_string.c_str(), obj_string.c_str(),
+        num_solutions_found, solve_time, build_time, solver_->branches(),
+        solver_->failures(), solver_->constraints(),
+        solver_->demon_runs(Solver::NORMAL_PRIORITY),
+        solver_->demon_runs(Solver::DELAYED_PRIORITY),
+        FlatZincMemoryUsage().c_str(), search_name_.c_str()));
     parallel_support->FinalOutput(p.worker_id, final_output);
   }
 }
 
-FzParallelSupport* MakeSequentialSupport(bool print_all,
-                                         int num_solutions,
+FzParallelSupport* MakeSequentialSupport(bool print_all, int num_solutions,
                                          bool verbose) {
   return new SequentialSupport(print_all, num_solutions, verbose);
 }

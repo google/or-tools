@@ -2,14 +2,10 @@
 /*
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
- *  Modified by Laurent Perron for Google (lperron@google.com)
+ *  Modified by Laurent Perron for OR-Tools (laurent.perron@gmail.com)
  *
  *  Copyright:
  *     Guido Tack, 2007
- *
- *  Last modified:
- *     $Date: 2010-07-02 19:18:43 +1000 (Fri, 02 Jul 2010) $ by $Author: tack $
- *     $Revision: 11149 $
  *
  *  This file is part of Gecode, the generic constraint
  *  development environment:
@@ -36,15 +32,12 @@
  *
  */
 
-#include <vector>
 #include <string>
 
-#include "base/hash.h"
-#include "base/concise_iterator.h"
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
-
-using namespace std;
+#include "base/concise_iterator.h"
+#include "base/hash.h"
 
 DEFINE_bool(backjump, false, "Use backjump is the minisat connection");
 DECLARE_bool(use_minisat);
@@ -55,13 +48,13 @@ SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump);
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
       bool_var_count(-1),
+      objective_(NULL),
       objective_variable_(-1),
       solve_annotations_(NULL),
-      solver_(NULL),
-      objective_(NULL),
       output_(NULL),
-      parsed_ok_(true),
-      sat_(NULL) {}
+      parsed_ok_(true)
+           ,sat_(NULL)
+      {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
@@ -80,10 +73,8 @@ void FlatZincModel::InitSolver() {
   }
 }
 
-void FlatZincModel::NewIntVar(const std::string& name,
-                              IntVarSpec* const vs,
-                              bool active,
-                              bool appears_in_one_constraint) {
+void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
+                              bool active, bool appears_in_one_constraint) {
   IntVar* var = NULL;
   if (vs->alias) {
     var = integer_variables_[vs->i]->Var();
@@ -91,7 +82,7 @@ void FlatZincModel::NewIntVar(const std::string& name,
     var = solver_->MakeIntConst(vs->i, name);
   } else {
     if (!vs->HasDomain()) {
-        var = solver_->MakeIntVar(kint32min, kint32max, name);
+      var = solver_->MakeIntVar(kint32min, kint32max, name);
     } else {
       AstSetLit* const domain = vs->Domain();
       if (domain->interval) {
@@ -117,16 +108,14 @@ void FlatZincModel::NewIntVar(const std::string& name,
   integer_variables_[int_var_count++] = var;
 }
 
-void FlatZincModel::SkipIntVar() {
-  integer_variables_[int_var_count++] = NULL;
-}
+void FlatZincModel::SkipIntVar() { integer_variables_[int_var_count++] = NULL; }
 
-void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
+void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
   IntVar* var = NULL;
   if (vs->alias) {
-    var = boolean_variables_[vs->i]->Var();;
+    var = boolean_variables_[vs->i]->Var();
   } else if (vs->assigned) {
-     var = solver_->MakeIntConst(vs->i, name);
+    var = solver_->MakeIntConst(vs->i, name);
   } else {
     var = solver_->MakeBoolVar(name);
     VLOG(1) << "  - creates " << var->DebugString();
@@ -145,7 +134,7 @@ void FlatZincModel::SkipBoolVar() {
   boolean_variables_[bool_var_count++] = NULL;
 }
 
-void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
+void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
   // if (vs->alias) {
   //   set_variables_[set_var_count++] = set_variables_[vs->i];
   // } else {
@@ -212,9 +201,7 @@ FlatZincModel::~FlatZincModel(void) {
   delete output_;
 }
 
-void FlatZincModel::InitOutput(AstArray* const output) {
-  output_ = output;
-}
+void FlatZincModel::InitOutput(AstArray* const output) { output_ = output; }
 
 string FlatZincModel::DebugString(AstNode* const ai) const {
   string output;
@@ -234,7 +221,7 @@ string FlatZincModel::DebugString(AstNode* const ai) const {
     output += StringPrintf("%d", k);
   } else if (ai->isIntVar()) {
     IntVar* const var = integer_variables_[ai->getIntVar()]->Var();
-    output += StringPrintf("%d", var->Value());
+    output += StringPrintf("%" GG_LL_FORMAT "d", var->Value());
   } else if (ai->isBoolVar()) {
     IntVar* const var = boolean_variables_[ai->getBoolVar()]->Var();
     output += var->Value() ? "true" : "false";
@@ -246,26 +233,32 @@ string FlatZincModel::DebugString(AstNode* const ai) const {
   } else if (ai->isSet()) {
     AstSetLit* s = ai->getSet();
     if (s->interval) {
-      output += StringPrintf("%d..%d", s->imin, s->imax);
+      output += StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", s->imin,
+                             s->imax);
     } else {
       output += "{";
-      for (unsigned int i=0; i<s->s.size(); i++) {
-        output += StringPrintf("%d%s",
-                               s->s[i],
-                               (i < s->s.size()-1 ? ", " : "}"));
+      for (unsigned int i = 0; i < s->s.size(); i++) {
+        output += StringPrintf("%" GG_LL_FORMAT "d%s", s->s[i],
+                               (i < s->s.size() - 1 ? ", " : "}"));
       }
     }
   } else if (ai->isString()) {
     string s = ai->getString();
     for (unsigned int i = 0; i < s.size(); i++) {
       if (s[i] == '\\' && i < s.size() - 1) {
-        switch (s[i+1]) {
-          case 'n': output += "\n"; break;
-          case '\\': output += "\\"; break;
-          case 't': output += "\t"; break;
+        switch (s[i + 1]) {
+          case 'n':
+            output += "\n";
+            break;
+          case '\\':
+            output += "\\";
+            break;
+          case 't':
+            output += "\t";
+            break;
           default: {
             output += "\\";
-            output += s[i+1];
+            output += s[i + 1];
           }
         }
         i++;

@@ -3,14 +3,10 @@
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
  *  Modified:
- *     Laurent Perron <lperron@google.com>
+ *     Laurent Perron for OR-Tools (laurent.perron@gmail.com)
  *
  *  Copyright:
  *     Guido Tack, 2007
- *
- *  Last modified:
- *     $Date: 2006-12-11 03:27:31 +1100 (Mon, 11 Dec 2006) $ by $Author: schulte $
- *     $Revision: 4024 $
  *
  *  This file is part of Gecode, the generic constraint
  *  development environment:
@@ -39,12 +35,13 @@
 
 %pure-parser
 %parse-param {void* parm}
+%name-prefix "orfz_"
 %{
 #define YYPARSE_PARAM parm
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
-#include "flatzinc/parser.tab.h"
+#include "flatzinc/flatzinc.tab.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,26 +53,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-  using namespace std;
-
-  extern int yylex(YYSTYPE*, void* scanner);
-  extern int yyget_lineno (void* scanner);
-  extern int yydebug;
+  extern int orfz_lex(YYSTYPE*, void* scanner);
+  extern int orfz_get_lineno (void* scanner);
+  extern int orfz_debug;
 
   using namespace operations_research;
 
-  void yyerror(void* parm, const char* str) {
+  void orfz_error(void* parm, const char* str) {
     ParserState* const pp = static_cast<ParserState*>(parm);
     LOG(ERROR) << "Error: " << str
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
   }
 
-  void yyassert(ParserState* const pp, bool cond, const char* str)
+  void orfz_assert(ParserState* const pp, bool cond, const char* str)
   {
     if (!cond) {
       LOG(ERROR) << "Error: " << str
-                 << " in line no. " << yyget_lineno(pp->yyscanner);
+                 << " in line no. " << orfz_get_lineno(pp->yyscanner);
       pp->hadError = true;
     }
   }
@@ -277,7 +272,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->int_var_map_.put($4, pp->int_variables_.size());
   if (print) {
-    pp->output(std::string($4), new AstIntVar(pp->int_variables_.size()));
+    pp->output(string($4), new AstIntVar(pp->int_variables_.size()));
   }
   if ($6.defined()) {
     AstNode* arg = $6.value();
@@ -289,7 +284,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
           new IntVarSpec($4, Alias(arg->getIntVar()), introduced));
       pp->AddIntVarDomainConstraint(pp->int_variables_.size() - 1, $2.value());
     } else {
-      yyassert(pp, false, "Invalid var int initializer.");
+      orfz_assert(pp, false, "Invalid var int initializer.");
     }
     delete arg;
   } else {
@@ -304,7 +299,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->bool_var_map_.put($4, pp->bool_variables_.size());
   if (print) {
-    pp->output(std::string($4), new AstBoolVar(pp->bool_variables_.size()));
+    pp->output(string($4), new AstBoolVar(pp->bool_variables_.size()));
   }
   if ($6.defined()) {
     AstNode* arg = $6.value();
@@ -315,7 +310,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
       pp->bool_variables_.push_back(
           new BoolVarSpec($4, Alias(arg->getBoolVar()), introduced));
     } else {
-      yyassert(pp, false, "Invalid var bool initializer.");
+      orfz_assert(pp, false, "Invalid var bool initializer.");
     }
     if (!pp->hadError) {
       pp->AddBoolVarDomainConstraint(pp->bool_variables_.size()-1, $2.value());
@@ -328,7 +323,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 }
 | FZ_VAR float_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 { ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, false, "Floats not supported.");
+  orfz_assert(pp, false, "Floats not supported.");
   delete $5; free($4);
 }
 | FZ_VAR FZ_SET FZ_OF int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
@@ -338,7 +333,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $7->hasAtom("var_is_introduced");
   pp->set_var_map_.put($6, pp->set_variables_.size());
   if (print) {
-    pp->output(std::string($6), new AstSetVar(pp->set_variables_.size()));
+    pp->output(string($6), new AstSetVar(pp->set_variables_.size()));
   }
   if ($8.defined()) {
     AstNode* arg = $8.value();
@@ -350,7 +345,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
           new SetVarSpec($6, Alias(arg->getSetVar()),introduced));
       delete arg;
     } else {
-      yyassert(pp, false, "Invalid var set initializer.");
+      orfz_assert(pp, false, "Invalid var set initializer.");
       delete arg;
     }
     if (!pp->hadError) {
@@ -364,21 +359,21 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 | FZ_INT ':' var_par_id annotations '=' non_array_expr
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $6->isInt(), "Invalid int initializer.");
+  orfz_assert(pp, $6->isInt(), "Invalid int initializer.");
   pp->int_map_.put($3, $6->getInt());
   delete $4; free($3);
 }
 | FZ_BOOL ':' var_par_id annotations '=' non_array_expr
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $6->isBool(), "Invalid bool initializer.");
+  orfz_assert(pp, $6->isBool(), "Invalid bool initializer.");
   pp->bool_map_.put($3, $6->getBool());
   delete $4; free($3);
 }
 | FZ_SET FZ_OF FZ_INT ':' var_par_id annotations '=' non_array_expr
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $8->isSet(), "Invalid set initializer.");
+  orfz_assert(pp, $8->isSet(), "Invalid set initializer.");
   AstSetLit* set = $8->getSet();
   pp->set_map_.put($5, *set);
   delete set;
@@ -388,14 +383,14 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 var_par_id annotations vardecl_int_var_array_init
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
     bool print = $12->hasCall("output_array");
-    vector<int64> vars($5);
+    std::vector<int64> vars($5);
     if (!pp->hadError) {
       if ($13.defined()) {
-        vector<IntVarSpec*>* vsv = $13.value();
-        yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
+        std::vector<IntVarSpec*>* vsv = $13.value();
+        orfz_assert(pp, vsv->size() == static_cast<unsigned int>($5),
                  "Initializer size does not match array dimension");
         if (!pp->hadError) {
           for (int i=0; i<$5; i++) {
@@ -430,7 +425,8 @@ var_par_id annotations vardecl_int_var_array_init
             }
           }
           vars[$5 - 1] = pp->int_variables_.size();
-          const string var_name = StringPrintf("%s[%d]", $11, $5);
+          const string var_name =
+              StringPrintf("%s[%" GG_LL_FORMAT "d]", $11, $5);
           pp->int_variables_.push_back(
               new IntVarSpec(var_name, $9, false, true));
         }
@@ -444,7 +440,7 @@ var_par_id annotations vardecl_int_var_array_init
         output->a.push_back(new AstIntVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(std::string($11), a);
+      pp->output(string($11), a);
     }
     pp->int_var_array_map_.put($11, vars);
   }
@@ -455,12 +451,12 @@ var_par_id annotations vardecl_bool_var_array_init
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   bool print = $12->hasCall("output_array");
-  yyassert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
-    vector<int64> vars($5);
+    std::vector<int64> vars($5);
     if ($13.defined()) {
-      vector<BoolVarSpec*>* vsv = $13.value();
-      yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
+      std::vector<BoolVarSpec*>* vsv = $13.value();
+      orfz_assert(pp, vsv->size() == static_cast<unsigned int>($5),
                "Initializer size does not match array dimension");
       if (!pp->hadError) {
         for (int i = 0; i < $5; i++) {
@@ -494,7 +490,7 @@ var_par_id annotations vardecl_bool_var_array_init
         output->a.push_back(new AstBoolVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(std::string($11), a);
+      pp->output(string($11), a);
     }
     pp->bool_var_array_map_.put($11, vars);
   }
@@ -504,7 +500,7 @@ var_par_id annotations vardecl_bool_var_array_init
 var_par_id annotations vardecl_float_var_array_init
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, false, "Floats not supported.");
+  orfz_assert(pp, false, "Floats not supported.");
   delete $12; free($11);
 }
 | FZ_ARRAY '[' FZ_INT_LIT FZ_DOTDOT FZ_INT_LIT ']' FZ_OF FZ_VAR FZ_SET FZ_OF int_ti_expr_tail ':'
@@ -512,12 +508,12 @@ var_par_id annotations vardecl_set_var_array_init
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   bool print = $14->hasCall("output_array");
-  yyassert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
-    vector<int64> vars($5);
+    std::vector<int64> vars($5);
     if ($15.defined()) {
-      vector<SetVarSpec*>* vsv = $15.value();
-      yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
+      std::vector<SetVarSpec*>* vsv = $15.value();
+      orfz_assert(pp, vsv->size() == static_cast<unsigned int>($5),
                "Initializer size does not match array dimension");
       if (!pp->hadError) {
         for (int i=0; i<$5; i++) {
@@ -556,7 +552,7 @@ var_par_id annotations vardecl_set_var_array_init
         output->a.push_back(new AstSetVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(std::string($13), a);
+      pp->output(string($13), a);
     }
     pp->set_var_array_map_.put($13, vars);
   }
@@ -566,8 +562,8 @@ var_par_id annotations vardecl_set_var_array_init
 var_par_id annotations '=' '[' int_list ']'
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $3==1, "Arrays must start at 1");
-  yyassert(pp, $14->size() == static_cast<unsigned int>($5),
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $14->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
     pp->int_value_array_map_.put($10, *$14);
@@ -579,8 +575,8 @@ var_par_id annotations '=' '[' int_list ']'
 var_par_id annotations '=' '[' bool_list ']'
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $3==1, "Arrays must start at 1");
-  yyassert(pp, $14->size() == static_cast<unsigned int>($5),
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $14->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
     pp->bool_value_array_map_.put($10, *$14);
@@ -592,15 +588,15 @@ var_par_id annotations '=' '[' bool_list ']'
 var_par_id annotations '=' '[' float_list ']'
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, false, "Floats not supported.");
+  orfz_assert(pp, false, "Floats not supported.");
   delete $11; free($10);
 }
 | FZ_ARRAY '[' FZ_INT_LIT FZ_DOTDOT FZ_INT_LIT ']' FZ_OF FZ_SET FZ_OF FZ_INT ':'
 var_par_id annotations '=' '[' set_literal_list ']'
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  yyassert(pp, $3==1, "Arrays must start at 1");
-  yyassert(pp, $16->size() == static_cast<unsigned int>($5),
+  orfz_assert(pp, $3==1, "Arrays must start at 1");
+  orfz_assert(pp, $16->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
     pp->set_value_array_map_.put($12, *$16);
@@ -621,7 +617,7 @@ FZ_INT_LIT
     $$ = new IntVarSpec("", Alias(v), false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new IntVarSpec("", 0, false); // keep things consistent
   }
@@ -629,10 +625,10 @@ FZ_INT_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int64> v;
+  std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, v)) {
-    yyassert(pp,static_cast<unsigned int>($3) > 0 &&
+    orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
@@ -641,7 +637,7 @@ FZ_INT_LIT
       $$ = new IntVarSpec($1, 0,false); // keep things consistent
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new IntVarSpec($1, 0,false); // keep things consistent
   }
@@ -650,13 +646,13 @@ FZ_INT_LIT
 
 int_init_list :
 /* empty */
-{ $$ = new vector<IntVarSpec*>(0); }
+{ $$ = new std::vector<IntVarSpec*>(0); }
 | int_init_list_head list_tail
 { $$ = $1; }
 
 int_init_list_head :
 int_init
-{ $$ = new vector<IntVarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<IntVarSpec*>(1); (*$$)[0] = $1; }
 | int_init_list_head ',' int_init
 { $$ = $1; $$->push_back($3); }
 
@@ -676,7 +672,7 @@ FZ_FLOAT_LIT
     $$ = new FloatVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new FloatVarSpec("", 0.0,false);
   }
@@ -684,10 +680,10 @@ FZ_FLOAT_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int64> v;
+  std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->float_var_array_map_.get($1, v)) {
-    yyassert(pp,static_cast<unsigned int>($3) > 0 &&
+    orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
@@ -696,7 +692,7 @@ FZ_FLOAT_LIT
       $$ = new FloatVarSpec($1, 0.0,false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new FloatVarSpec($1, 0.0,false);
   }
@@ -705,13 +701,13 @@ FZ_FLOAT_LIT
 
 float_init_list :
 /* empty */
-{ $$ = new vector<FloatVarSpec*>(0); }
+{ $$ = new std::vector<FloatVarSpec*>(0); }
 | float_init_list_head list_tail
 { $$ = $1; }
 
 float_init_list_head :
 float_init
-{ $$ = new vector<FloatVarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<FloatVarSpec*>(1); (*$$)[0] = $1; }
 | float_init_list_head ',' float_init
 { $$ = $1; $$->push_back($3); }
 
@@ -730,7 +726,7 @@ FZ_BOOL_LIT
     $$ = new BoolVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new BoolVarSpec("", false,false);
   }
@@ -738,10 +734,10 @@ FZ_BOOL_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int64> v;
+  std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->bool_var_array_map_.get($1, v)) {
-    yyassert(pp,static_cast<unsigned int>($3) > 0 &&
+    orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
@@ -750,7 +746,7 @@ FZ_BOOL_LIT
       $$ = new BoolVarSpec($1, false,false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new BoolVarSpec($1, false,false);
   }
@@ -759,13 +755,13 @@ FZ_BOOL_LIT
 
 bool_init_list :
 /* empty */
-{ $$ = new vector<BoolVarSpec*>(0); }
+{ $$ = new std::vector<BoolVarSpec*>(0); }
 | bool_init_list_head list_tail
 { $$ = $1; }
 
 bool_init_list_head :
 bool_init
-{ $$ = new vector<BoolVarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<BoolVarSpec*>(1); (*$$)[0] = $1; }
 | bool_init_list_head ',' bool_init
 { $$ = $1; $$->push_back($3); }
 
@@ -782,7 +778,7 @@ set_literal
     $$ = new SetVarSpec("", Alias(v),false);
   } else {
     LOG(ERROR) << "Error: undefined identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new SetVarSpec("", Alias(0),false);
   }
@@ -790,10 +786,10 @@ set_literal
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int64> v;
+  std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->set_var_array_map_.get($1, v)) {
-    yyassert(pp,static_cast<unsigned int>($3) > 0 &&
+    orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
@@ -802,7 +798,7 @@ set_literal
       $$ = new SetVarSpec($1, Alias(0),false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
     $$ = new SetVarSpec($1, Alias(0),false);
   }
@@ -811,13 +807,13 @@ set_literal
 
 set_init_list :
 /* empty */
-{ $$ = new vector<SetVarSpec*>(0); }
+{ $$ = new std::vector<SetVarSpec*>(0); }
 | set_init_list_head list_tail
 { $$ = $1; }
 
 set_init_list_head :
 set_init
-{ $$ = new vector<SetVarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<SetVarSpec*>(1); (*$$)[0] = $1; }
 | set_init_list_head ',' set_init
 { $$ = $1; $$->push_back($3); }
 
@@ -826,27 +822,27 @@ set_var_array_literal : '[' set_init_list ']'
 
 vardecl_int_var_array_init :
 /* empty */
-{ $$ = Option<vector<IntVarSpec*>*>::none(); }
+{ $$ = Option<std::vector<IntVarSpec*>*>::none(); }
 | '=' int_var_array_literal
-{ $$ = Option<vector<IntVarSpec*>*>::some($2); }
+{ $$ = Option<std::vector<IntVarSpec*>*>::some($2); }
 
 vardecl_bool_var_array_init :
 /* empty */
-{ $$ = Option<vector<BoolVarSpec*>*>::none(); }
+{ $$ = Option<std::vector<BoolVarSpec*>*>::none(); }
 | '=' bool_var_array_literal
-{ $$ = Option<vector<BoolVarSpec*>*>::some($2); }
+{ $$ = Option<std::vector<BoolVarSpec*>*>::some($2); }
 
 vardecl_float_var_array_init :
 /* empty */
-{ $$ = Option<vector<FloatVarSpec*>*>::none(); }
+{ $$ = Option<std::vector<FloatVarSpec*>*>::none(); }
 | '=' float_var_array_literal
-{ $$ = Option<vector<FloatVarSpec*>*>::some($2); }
+{ $$ = Option<std::vector<FloatVarSpec*>*>::some($2); }
 
 vardecl_set_var_array_init :
 /* empty */
-{ $$ = Option<vector<SetVarSpec*>*>::none(); }
+{ $$ = Option<std::vector<SetVarSpec*>*>::none(); }
 | '=' set_var_array_literal
-{ $$ = Option<vector<SetVarSpec*>*>::some($2); }
+{ $$ = Option<std::vector<SetVarSpec*>*>::some($2); }
 
 constraint_item :
 FZ_CONSTRAINT FZ_ID '(' flat_expr_list ')' annotations
@@ -941,49 +937,49 @@ set_literal :
 
 int_list :
 /* empty */
-{ $$ = new vector<int64>(0); }
+{ $$ = new std::vector<int64>(0); }
 | int_list_head list_tail
 { $$ = $1; }
 
 int_list_head :
 FZ_INT_LIT
-{ $$ = new vector<int64>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<int64>(1); (*$$)[0] = $1; }
 | int_list_head ',' FZ_INT_LIT
 { $$ = $1; $$->push_back($3); }
 
 bool_list :
 /* empty */
-{ $$ = new vector<int64>(0); }
+{ $$ = new std::vector<int64>(0); }
 | bool_list_head list_tail
 { $$ = $1; }
 
 bool_list_head :
 FZ_BOOL_LIT
-{ $$ = new vector<int64>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<int64>(1); (*$$)[0] = $1; }
 | bool_list_head ',' FZ_BOOL_LIT
 { $$ = $1; $$->push_back($3); }
 
 float_list :
 /* empty */
-{ $$ = new vector<double>(0); }
+{ $$ = new std::vector<double>(0); }
 | float_list_head list_tail
 { $$ = $1; }
 
 float_list_head:
 FZ_FLOAT_LIT
-{ $$ = new vector<double>(1); (*$$)[0] = $1; }
+{ $$ = new std::vector<double>(1); (*$$)[0] = $1; }
 | float_list_head ',' FZ_FLOAT_LIT
 { $$ = $1; $$->push_back($3); }
 
 set_literal_list :
 /* empty */
-{ $$ = new vector<AstSetLit>(0); }
+{ $$ = new std::vector<AstSetLit>(0); }
 | set_literal_list_head list_tail
 { $$ = $1; }
 
 set_literal_list_head :
 set_literal
-{ $$ = new vector<AstSetLit>(1); (*$$)[0] = *$1; delete $1; }
+{ $$ = new std::vector<AstSetLit>(1); (*$$)[0] = *$1; delete $1; }
 | set_literal_list_head ',' set_literal
 { $$ = $1; $$->push_back(*$3); delete $3; }
 
@@ -1020,7 +1016,7 @@ FZ_BOOL_LIT
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
 {
-  vector<int64> as;
+  std::vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
     AstArray* ia = new AstArray(as.size());
@@ -1071,7 +1067,7 @@ FZ_BOOL_LIT
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   int i = -1;
-  yyassert(pp, $3->isInt(i), "Non-integer array index.");
+  orfz_assert(pp, $3->isInt(i), "Non-integer array index.");
   if (!pp->hadError)
     $$ = static_cast<ParserState*>(parm)->ArrayElement($1, i);
   else
@@ -1102,7 +1098,7 @@ var_par_id
   int64 value;
   if (!pp->int_var_map_.get($1, value)) {
     LOG(ERROR) << "Error: unknown integer variable " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
   }
   $$ = value;
@@ -1110,16 +1106,16 @@ var_par_id
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int64> tmp;
+  std::vector<int64> tmp;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (!pp->int_var_array_map_.get($1, tmp)) {
     LOG(ERROR) << "Error: unknown integer variable array " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
   }
   if ($3 == 0 || static_cast<unsigned int>($3) > tmp.size()) {
     LOG(ERROR) << "Error: array index out of bounds for array " << $1
-               << " in line no. " << yyget_lineno(pp->yyscanner);
+               << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
   } else {
     $$ = tmp[$3 - 1];
@@ -1178,7 +1174,7 @@ FZ_BOOL_LIT
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
 {
-  vector<int64> as;
+  std::vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
     AstArray* const ia = new AstArray(as.size());
@@ -1228,7 +1224,7 @@ FZ_BOOL_LIT
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   int i = -1;
-  yyassert(pp, $3->isInt(i), "Non-integer array index.");
+  orfz_assert(pp, $3->isInt(i), "Non-integer array index.");
   if (!pp->hadError)
     $$ = pp->ArrayElement($1, i);
   else

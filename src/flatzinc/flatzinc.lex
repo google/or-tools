@@ -3,7 +3,7 @@
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
  *  Modified:
- *     Laurent Perron <lperron@google.com>
+ *     Laurent Perron for OR-Tools (laurent.perron@gmail.com)
  *
  *  Copyright:
  *     Guido Tack, 2007
@@ -41,15 +41,18 @@
 %option bison-bridge
 %option noyywrap
 %option yylineno
+%option prefix="orfz_"
 
 %{
 
-void yyerror(void*, const char*);
-#define yyerror(s) yyerror(yyextra, s)
+void orfz_error(void*, const char*);
+#define orfz_error(s) orfz_error(yyextra, s)
 
 #include "base/strtoint.h"
 #include "flatzinc/parser.h"
-#include "flatzinc/parser.tab.h"
+#include "flatzinc/flatzinc.tab.h"
+
+using operations_research::atoi64;
 
 const char* stringbuf;
 int stringbuflen;
@@ -69,15 +72,15 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 "true"            { yylval->iValue = 1; return FZ_BOOL_LIT; }
 "false"           { yylval->iValue = 0; return FZ_BOOL_LIT; }
 -?[0-9]+          {
-    const int64 val = operations_research::atoi64(yytext);
+    const int64 val = atoi64(yytext);
     yylval->iValue = val;
     return FZ_INT_LIT;
   }
 -?0x[0-9A-Fa-f]+  {
-    yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
+    yylval->iValue = atoi64(yytext); return FZ_INT_LIT;
   }
 -?0o[0-7]+        {
-    yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
+    yylval->iValue = atoi64(yytext); return FZ_INT_LIT;
   }
 -?[0-9]+\.[0-9]+  { yylval->dValue = strtod(yytext,NULL);
                     return FZ_FLOAT_LIT; }
@@ -131,7 +134,7 @@ _[_]*[A-Za-z][A-Za-z0-9_]* { yylval->sValue = strdup(yytext); return FZ_U_ID; }
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return FZ_STRING_LIT; }
-.                 { yyerror("Unknown character"); }
+.                 { orfz_error("Unknown character"); }
 %%
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
   operations_research::ParserState* parm =

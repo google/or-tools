@@ -282,10 +282,10 @@ class GccConstraint : public Constraint {
 
     // The variable domains must be inside the domain defined by
     // the lower bounds_ (l) and the upper bounds_ (u).
-    //assert(MinValue(l) == MinValue(u));
-    //assert(MaxValue(l) == MaxValue(u));
-    //assert(MinValue(l) <= sorted_by_min_[0]->min);
-    //assert(sorted_by_max_[n-1]->max <= MaxValue(u));
+    // assert(MinValue(l) == MinValue(u));
+    // assert(MaxValue(l) == MaxValue(u));
+    // assert(MinValue(l) <= sorted_by_min_[0]->min);
+    // assert(sorted_by_max_[n-1]->max <= MaxValue(u));
 
     // Checks if there are values that must be assigned before the
     // smallest interval or after the last interval. If this is
@@ -375,7 +375,7 @@ class GccConstraint : public Constraint {
     int64 min = sorted_by_min_[0]->min_value;
     int64 max = sorted_by_max_[0]->max_value + 1;
     int64 last = lower_sum_.offset() + 1;
-    //MODIFIED: bounds_[0] = last = min - 2;
+    // MODIFIED: bounds_[0] = last = min - 2;
     bounds_[0] = last;
 
     // merge sorted_by_min_[] and sorted_by_max_[] into bounds_[]
@@ -407,7 +407,7 @@ class GccConstraint : public Constraint {
       }
     }
     active_size_ = active_index;
-    //MODIFIED: bounds_[active_index+1] = bounds_[active_index] + 2;
+    // MODIFIED: bounds_[active_index+1] = bounds_[active_index] + 2;
     bounds_[active_index + 1] = upper_sum_.last_value() + 1;
   }
 
