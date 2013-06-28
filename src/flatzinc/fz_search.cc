@@ -586,6 +586,40 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
         }
       }
     }
+
+    // Add completion goals to be robust to incomplete search.
+
+    // First on active varialbes, create the variable array, push
+    // smaller variable first.
+    std::vector<IntVar*> vars;
+    for (int i = 0; i < active_variables_.size(); ++i) {
+      IntVar* const var = active_variables_[i];
+      if (var->Size() < 0xFFFF) {
+        vars.push_back(var);
+      }
+    }
+    for (int i = 0; i < active_variables_.size(); ++i) {
+      IntVar* const var = active_variables_[i];
+      if (var->Size() >= 0xFFFF) {
+        vars.push_back(var);
+      }
+    }
+
+    // Then introduced variables.
+    builders_.push_back(solver_->MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND,
+                                           Solver::ASSIGN_MIN_VALUE));
+    // Then fixed variables.
+    if (!introduced_variables_.empty() && !has_solve_annotations) {
+      // Better safe than sorry.
+      builders_.push_back(solver_->MakePhase(introduced_variables_,
+                                             Solver::CHOOSE_FIRST_UNBOUND,
+                                             Solver::ASSIGN_MIN_VALUE));
+    }
+    if (!one_constraint_variables_.empty()) {
+      // Better safe than sorry.
+      builders_.push_back(
+          solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
+    }
   }
 
   if (p.free_search || builders_.size() == 0 ||
