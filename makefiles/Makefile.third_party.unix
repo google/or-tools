@@ -3,14 +3,14 @@ GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 498 # version 2.5.0 + fix
 GOOGLE_APPUTILS_TAG = 13 # 0.3.0
 SPARSEHASH_TAG = 116 # 2.0.2
-CBC_TAG = 2.7.8
+CBC_TAG = 2.8.2
 SWIG_TAG = rel-2.0.9
 PCRE_TAG = 800 # version 8.21
 MONO_TAG = 2.10.9
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
-GLPK_TAG = 4.49
+GLPK_TAG = 4.51
 # The archive should be scipoptsuite-3.0.1.tgz
 SCIP_TAG = 3.0.1
 
