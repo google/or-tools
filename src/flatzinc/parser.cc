@@ -1674,7 +1674,7 @@ AstNode* ArrayOutput(AstCall* ann) {
 
   string out;
 
-  out = StringPrintf("array%lu(", a->a.size());
+  out = StringPrintf("array%lud(", a->a.size());
   for (unsigned int i = 0; i < a->a.size(); i++) {
     AstSetLit* s = a->a[i]->getSet();
     if (s->empty()) {
