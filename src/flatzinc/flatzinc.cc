@@ -91,17 +91,17 @@ void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
         var = solver_->MakeIntVar(domain->s, name);
       }
     }
-    VLOG(1) << "  - creates " << var->DebugString();
+    VLOG(2) << "  - creates " << var->DebugString();
     if (!var->Bound()) {
       if (active && !appears_in_one_constraint) {
         active_variables_.push_back(var);
-        VLOG(1) << "  - add as active";
+        VLOG(2) << "  - add as active";
       } else if (active && appears_in_one_constraint) {
         one_constraint_variables_.push_back(var);
-        VLOG(1) << "  - add as one_constraint_variables_";
+        VLOG(2) << "  - add as one_constraint_variables_";
       } else {
         introduced_variables_.push_back(var);
-        VLOG(1) << "  - add as secondary";
+        VLOG(2) << "  - add as secondary";
       }
     }
   }
@@ -118,7 +118,7 @@ void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
     var = solver_->MakeIntConst(vs->i, name);
   } else {
     var = solver_->MakeBoolVar(name);
-    VLOG(1) << "  - creates " << var->DebugString();
+    VLOG(2) << "  - creates " << var->DebugString();
     if (!var->Bound()) {
       if (!vs->introduced) {
         active_variables_.push_back(var);
