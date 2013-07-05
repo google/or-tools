@@ -283,6 +283,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/demon_profiler.pb.$O\
 	$(OBJ_DIR)/dependency_graph.$O\
 	$(OBJ_DIR)/deviation.$O\
+	$(OBJ_DIR)/diffn.$O\
 	$(OBJ_DIR)/element.$O\
 	$(OBJ_DIR)/expr_array.$O\
 	$(OBJ_DIR)/expr_cst.$O\
@@ -360,6 +361,9 @@ $(OBJ_DIR)/dependency_graph.$O:$(SRC_DIR)/constraint_solver/dependency_graph.cc
 
 $(OBJ_DIR)/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/deviation.cc $(OBJ_OUT)$(OBJ_DIR)$Sdeviation.$O
+
+$(OBJ_DIR)/diffn.$O:$(SRC_DIR)/constraint_solver/diffn.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/diffn.cc $(OBJ_OUT)$(OBJ_DIR)$Sdiffn.$O
 
 $(OBJ_DIR)/element.$O:$(SRC_DIR)/constraint_solver/element.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/element.cc $(OBJ_OUT)$(OBJ_DIR)$Selement.$O

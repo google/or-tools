@@ -1754,6 +1754,18 @@ class Solver {
   }
 #endif
 
+  // This constraint states that all the rectangles must not overlap.
+  // The coordinates of rectangle i are :
+  //   (x_vars[i], y_vars[i]),
+  //   (x_vars[i], y_vars[i] +y_size[i]),
+  //   (x_vars[i] + x_size[i], y_vars[i]),
+  //   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
+  // The sizes must be strictly positive.
+  Constraint* MakeNonOverlappingRectanglesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<IntVar*>& x_size,
+      const std::vector<IntVar*>& y_size);
 
   // ----- Packing constraint -----
 
@@ -3442,12 +3454,16 @@ class ModelVisitor : public BaseObject {
   static const char kModuloArgument[];
   static const char kNextsArgument[];
   static const char kOptionalArgument[];
+  static const char kPositionXArgument[];
+  static const char kPositionYArgument[];
   static const char kRangeArgument[];
   static const char kRelationArgument[];
   static const char kRightArgument[];
   static const char kSequenceArgument[];
   static const char kSequencesArgument[];
   static const char kSizeArgument[];
+  static const char kSizeXArgument[];
+  static const char kSizeYArgument[];
   static const char kSmartTimeCheckArgument[];
   static const char kSolutionLimitArgument[];
   static const char kStartMaxArgument[];

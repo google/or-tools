@@ -2790,6 +2790,39 @@ void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_diffn(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const ax_variables = spec->Arg(0)->getArray();
+  const int x_size = ax_variables->a.size();
+  std::vector<IntVar*> x_variables(x_size);
+  for (int i = 0; i < x_size; ++i) {
+    x_variables[i] = model->GetIntExpr(ax_variables->a[i])->Var();
+  }
+  AstArray* const ay_variables = spec->Arg(1)->getArray();
+  const int y_size = ax_variables->a.size();
+  std::vector<IntVar*> y_variables(y_size);
+  for (int i = 0; i < y_size; ++i) {
+    y_variables[i] = model->GetIntExpr(ay_variables->a[i])->Var();
+  }
+  AstArray* const ax_sizes = spec->Arg(2)->getArray();
+  const int xs_size = ax_sizes->a.size();
+  std::vector<IntVar*> x_sizes(xs_size);
+  for (int i = 0; i < xs_size; ++i) {
+    x_sizes[i] = model->GetIntExpr(ax_sizes->a[i])->Var();
+  }
+  AstArray* const ay_sizes = spec->Arg(3)->getArray();
+  const int ys_size = ay_sizes->a.size();
+  std::vector<IntVar*> y_sizes(ys_size);
+  for (int i = 0; i < ys_size; ++i) {
+    y_sizes[i] = model->GetIntExpr(ay_sizes->a[i])->Var();
+  }
+  Constraint* const ct =
+      solver->MakeNonOverlappingRectanglesConstraint(
+          x_variables, y_variables, x_sizes, y_sizes);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 void p_true_constraint(FlatZincModel* const model, CtSpec* const) {}
 
 void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
@@ -2907,6 +2940,7 @@ class IntBuilder {
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
+    global_model_builder.Register("diffn", &p_diffn);
   }
 };
 IntBuilder __int_Builder;
