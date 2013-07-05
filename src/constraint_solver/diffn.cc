@@ -198,68 +198,38 @@ class Diffn : public Constraint {
 
   // Push all boxes apart the mandatory part of a box.
   void PushOverlappingBoxes(int box) {
-    // Mandatory part of box.
-    const int64 start_max_box_x = x_[box]->Max();
-    const int64 end_min_box_x = x_[box]->Min() + dx_[box]->Min();
-    const int64 start_max_box_y = y_[box]->Max();
-    const int64 end_min_box_y = y_[box]->Min() + dy_[box]->Min();
-    // Mandatory part non empty?
-    if (start_max_box_x < end_min_box_x && start_max_box_y < end_min_box_y) {
-      // Try to push overlapping boxes.
-      for (int i = 0; i < neighbors_.size(); ++i) {
-        PushOneBox(box, neighbors_[i], start_max_box_x,
-                   end_min_box_x, start_max_box_y,
-                   end_min_box_y);
-      }
+    for (int i = 0; i < neighbors_.size(); ++i) {
+      PushOneBox(box, neighbors_[i]);
     }
   }
 
-  void PushOneDirection(int box, int other, int64 start_max_box,
-                        int64 end_min_box, int64 start_max_other,
-                        int64 end_min_other,
-                        const std::vector<IntVar*>& positions,
-                        const std::vector<IntVar*>& sizes) {
-    if (end_min_other > start_max_box) {
-      // Other is forced after box.
-      positions[other]->SetMin(end_min_box);
-      positions[box]->SetMax(start_max_other - sizes[box]->Min());
-      sizes[box]->SetMax(start_max_other - positions[box]->Min());
-    } else if (end_min_box > start_max_other) {
-      // Box is forced after other.
-      positions[box]->SetMin(end_min_other);
-      positions[other]->SetMax(start_max_box - sizes[other]->Min());
-      sizes[other]->SetMax(start_max_box - positions[other]->Min());
+  void PushOneBox(int box, int other) {
+    const int count =
+        (x_[box]->Min() + dx_[box]->Min() <= x_[other]->Max()) +
+        (x_[other]->Min() + dx_[other]->Min() <= x_[box]->Max()) +
+        (y_[box]->Min() + dy_[box]->Min() <= y_[other]->Max()) +
+        (y_[other]->Min() + dy_[other]->Min() <= y_[box]->Max());
+    if (count == 0) {
+      solver()->Fail();
     }
-  }
-
-  void PushOneBox(int box, int other, int64 start_max_box_x,
-                  int64 end_min_box_x, int64 start_max_box_y,
-                  int64 end_min_box_y) {
-    // Mandatory part of the other box.
-    const int64 start_max_other_x = x_[other]->Max();
-    const int64 end_min_other_x = x_[other]->Min() + dx_[other]->Min();
-    const int64 start_max_other_y = y_[other]->Max();
-    const int64 end_min_other_y = y_[other]->Min() + dy_[other]->Min();
-    // Mandatory part of the other box is non empty.
-    if (start_max_other_x < end_min_other_x &&
-        start_max_other_y < end_min_other_y) {
-      const bool overlap_horizontal =
-          start_max_other_x < end_min_box_x &&
-          start_max_box_x < end_min_other_x;
-      const bool overlap_vertical =
-          start_max_other_y < end_min_box_y &&
-          start_max_box_y < end_min_other_y;
-      if (overlap_horizontal && overlap_vertical) {
-        // Mandatory parts overlap. We fail early.
-        solver()->Fail();
-      } else if (overlap_horizontal) {
-        PushOneDirection(box, other, start_max_box_y, end_min_box_y,
-                         start_max_other_y, end_min_other_y,
-                         y_, dy_);
-      } else if (overlap_vertical) {
-        PushOneDirection(box, other, start_max_box_x, end_min_box_x,
-                         start_max_other_x, end_min_other_x,
-                         x_, dx_);
+    if (count == 1) {  // Only one direction to avoid overlap.
+      if (x_[box]->Min() + dx_[box]->Min() <= x_[other]->Max()) {
+        x_[other]->SetMin(x_[box]->Min() + dx_[box]->Min());
+        x_[box]->SetMax(x_[other]->Max() - dx_[box]->Min());
+        dx_[box]->SetMax(x_[other]->Max() - x_[box]->Min());
+      } else if (x_[other]->Min() + dx_[other]->Min() <= x_[box]->Max()) {
+        x_[box]->SetMin(x_[other]->Min() + dx_[other]->Min());
+        x_[other]->SetMax(x_[box]->Max() - dx_[other]->Min());
+        dx_[other]->SetMax(x_[box]->Max() - x_[other]->Min());
+      } else if (y_[box]->Min() + dy_[box]->Min() <= y_[other]->Max()) {
+        y_[other]->SetMin(y_[box]->Min() + dy_[box]->Min());
+        y_[box]->SetMax(y_[other]->Max() - dy_[box]->Min());
+        dy_[box]->SetMax(y_[other]->Max() - y_[box]->Min());
+      } else {
+        DCHECK(y_[other]->Min() + dy_[other]->Min() <= y_[box]->Max());
+        y_[box]->SetMin(y_[other]->Min() + dy_[other]->Min());
+        y_[other]->SetMax(y_[box]->Max() - dy_[other]->Min());
+        dy_[other]->SetMax(y_[box]->Max() - y_[other]->Min());
       }
     }
   }
