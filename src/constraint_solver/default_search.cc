@@ -1002,16 +1002,13 @@ class RunHeuristicsAsDives : public Decision {
 
   bool RunAllHeuristics(Solver* const solver) {
     if (run_all_heuristics_) {
-      LOG(INFO) << "Start";
       for (int index = 0; index < heuristics_.size(); ++index) {
         for (int run = 0; run < heuristics_[index]->runs; ++run) {
           if (RunOneHeuristic(solver, index)) {
-            LOG(INFO) << "Success";
             return true;
           }
         }
       }
-      LOG(INFO) << "No Success";
       return false;
     } else {
       const int index = random_.Uniform(heuristics_.size());
