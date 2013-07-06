@@ -73,6 +73,7 @@ struct FlatZincSearchParameters {
         search_type(MIN_SIZE) {}
 
   enum SearchType {
+    DEFAULT,
     IBS,
     FIRST_UNBOUND,
     MIN_SIZE,
@@ -225,9 +226,15 @@ class FlatZincModel {
 
   bool HasSolveAnnotations() const;
 
-  void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);
+  DecisionBuilder* CreateDecisionBuilders(
+      const FlatZincSearchParameters& parameters);
 
-  const std::vector<DecisionBuilder*>& DecisionBuilders() const;
+  void ParseSearchAnnotations(bool ignore_unknown,
+                              std::vector<DecisionBuilder*>* const defined,
+                              std::vector<IntVar*>* const defined_vars);
+  void AddCompletionDecisionBuilders(
+      std::vector<DecisionBuilder*>* const builders);
+
   const std::vector<IntVar*>& PrimaryVariables() const;
   const std::vector<IntVar*>& SecondaryVariables() const;
 
@@ -242,7 +249,6 @@ class FlatZincModel {
   int set_var_count;
 
   scoped_ptr<Solver> solver_;
-  std::vector<DecisionBuilder*> builders_;
   OptimizeVar* objective_;
 
   // Index of the integer variable to optimize

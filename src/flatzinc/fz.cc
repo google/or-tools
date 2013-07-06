@@ -106,6 +106,8 @@ void ParallelRun(char* const file, int worker_id,
   switch (worker_id) {
     case 0: {
       parameters.free_search = false;
+      parameters.search_type =
+          operations_research::FlatZincSearchParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       break;
     }
@@ -144,64 +146,70 @@ void ParallelRun(char* const file, int worker_id,
   Run(file, parameters, parallel_support);
 }
 
-}  // namespace operations_research
+void SequentialRun(char* const file) {
+  FlatZincSearchParameters parameters;
+  parameters.all_solutions = FLAGS_all;
+  parameters.free_search = FLAGS_free;
+  parameters.heuristic_period = FLAGS_heuristic_period;
+  parameters.ignore_unknown = false;
+  parameters.log_period = FLAGS_log_period;
+  parameters.luby_restart = FLAGS_luby_restart;
+  parameters.num_solutions = FLAGS_num_solutions;
+  parameters.restart_log_size = FLAGS_restart_log_size;
+  parameters.simplex_frequency = FLAGS_simplex_frequency;
+  parameters.threads = FLAGS_workers;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.use_log = FLAGS_logging;
+  parameters.verbose_impact = FLAGS_verbose_impact;
+  parameters.worker_id = -1;
+  parameters.search_type =
+      FLAGS_use_impact ? FlatZincSearchParameters::IBS
+      : FlatZincSearchParameters::DEFAULT;
 
-int main(int argc, char** argv) {
+  scoped_ptr<FzParallelSupport> parallel_support(
+      operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                 parameters.num_solutions,
+                                                 FLAGS_verbose_mt));
+  Run(file, parameters, parallel_support.get());
+}
+
+void FixAndParseParameters(int* argc, char*** argv) {
   FLAGS_log_prefix = false;
   char all_param[] = "--all";
   char free_param[] = "--free";
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--logging";
-  for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], "-a") == 0) {
-      argv[i] = all_param;
+  for (int i = 1; i < *argc; ++i) {
+    if (strcmp((*argv)[i], "-a") == 0) {
+      (*argv)[i] = all_param;
     }
-    if (strcmp(argv[i], "-f") == 0) {
-      argv[i] = free_param;
+    if (strcmp((*argv)[i], "-f") == 0) {
+      (*argv)[i] = free_param;
     }
-    if (strcmp(argv[i], "-p") == 0) {
-      argv[i] = workers_param;
+    if (strcmp((*argv)[i], "-p") == 0) {
+      (*argv)[i] = workers_param;
     }
-    if (strcmp(argv[i], "-n") == 0) {
-      argv[i] = solutions_param;
+    if (strcmp((*argv)[i], "-n") == 0) {
+      (*argv)[i] = solutions_param;
     }
-    if (strcmp(argv[i], "-l") == 0) {
-      argv[i] = logging_param;
+    if (strcmp((*argv)[i], "-l") == 0) {
+      (*argv)[i] = logging_param;
     }
   }
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  google::ParseCommandLineFlags(argc, argv, true);
+}
+}  // namespace operations_research
+
+int main(int argc, char** argv) {
+  operations_research::FixAndParseParameters(&argc, &argv);
   if (argc <= 1) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
 
   if (FLAGS_workers == 0) {
-    operations_research::FlatZincSearchParameters parameters;
-    parameters.all_solutions = FLAGS_all;
-    parameters.free_search = FLAGS_free;
-    parameters.heuristic_period = FLAGS_heuristic_period;
-    parameters.ignore_unknown = false;
-    parameters.log_period = FLAGS_log_period;
-    parameters.luby_restart = FLAGS_luby_restart;
-    parameters.num_solutions = FLAGS_num_solutions;
-    parameters.restart_log_size = FLAGS_restart_log_size;
-    parameters.simplex_frequency = FLAGS_simplex_frequency;
-    parameters.threads = FLAGS_workers;
-    parameters.time_limit_in_ms = FLAGS_time_limit;
-    parameters.use_log = FLAGS_logging;
-    parameters.verbose_impact = FLAGS_verbose_impact;
-    parameters.worker_id = -1;
-    parameters.search_type =
-        FLAGS_use_impact
-            ? operations_research::FlatZincSearchParameters::IBS
-            : operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
-
-    scoped_ptr<operations_research::FzParallelSupport> parallel_support(
-        operations_research::MakeSequentialSupport(parameters.all_solutions,
-                                                   parameters.num_solutions,
-                                                   FLAGS_verbose_mt));
-    operations_research::Run(argv[1], parameters, parallel_support.get());
+    operations_research::SequentialRun(argv[1]);
   } else {
     scoped_ptr<operations_research::FzParallelSupport> parallel_support(
         operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt));

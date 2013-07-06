@@ -507,6 +507,9 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
 }
 
 DecisionBuilder* Solver::Compose(const std::vector<DecisionBuilder*>& dbs) {
+  if (dbs.size() == 1) {
+    return dbs[0];
+  }
   return  RevAlloc(new ComposeDecisionBuilder(dbs));
 }
 

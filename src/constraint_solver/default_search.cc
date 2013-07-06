@@ -43,9 +43,6 @@ const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
 const int DefaultPhaseParameters::kDefaultSeed = 0;
 const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
 const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
-const DefaultPhaseParameters::SearchStrategy
-DefaultPhaseParameters::kDefaultSearchStrategy =
-    DefaultPhaseParameters::IMPACT_BASED_SEARCH;
 
 class NoGoodManager;
 
@@ -1005,13 +1002,16 @@ class RunHeuristicsAsDives : public Decision {
 
   bool RunAllHeuristics(Solver* const solver) {
     if (run_all_heuristics_) {
+      LOG(INFO) << "Start";
       for (int index = 0; index < heuristics_.size(); ++index) {
         for (int run = 0; run < heuristics_[index]->runs; ++run) {
           if (RunOneHeuristic(solver, index)) {
+            LOG(INFO) << "Success";
             return true;
           }
         }
       }
+      LOG(INFO) << "No Success";
       return false;
     } else {
       const int index = random_.Uniform(heuristics_.size());
@@ -1162,21 +1162,16 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
-    IntVar* var = NULL;
-    int64 value = 0;
-    if (FindVarValue(&var, &value)) {
-      return solver->MakeAssignVariableValue(var, value);
-    } else {
-      return NULL;
-    }
+    return parameters_.decision_builder != NULL ?
+        parameters_.decision_builder->Next(solver) :
+        ImpactNext(solver);
   }
 
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
-    if (parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
+    if (parameters_.decision_builder == NULL) {
       extras->push_back(&impact_recorder_);
     }
     if (parameters_.restart_log_size >= 0) {
@@ -1195,11 +1190,11 @@ class DefaultIntegerSearch : public DecisionBuilder {
   virtual string DebugString() const {
     string out = "DefaultIntegerSearch(";
 
-    if (parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
+    if (parameters_.decision_builder == NULL) {
       out.append("Impact Based Search, ");
     } else {
-      out.append("Choose First Unbound Assing Min, ");
+      out.append(parameters_.decision_builder->DebugString());
+      out.append(", ");
     }
     out.append(DebugStringVector(vars_, ", "));
     out.append(")");
@@ -1211,8 +1206,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     if (init_done_) {
       return;
     }
-    if (parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
+    if (parameters_.decision_builder == NULL) {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
@@ -1220,8 +1214,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
             LOG(INFO) << "Domains are too large, switching to simple "
                       << "heuristics";
           }
-          parameters_.search_strategy =
-              DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+          parameters_.decision_builder =
+              solver->MakePhase(vars_, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                                Solver::ASSIGN_MIN_VALUE);
           init_done_ = true;
           return;
         }
@@ -1232,8 +1227,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
         }
-        parameters_.search_strategy =
-            DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+        parameters_.decision_builder =
+            solver->MakePhase(vars_, Solver::CHOOSE_FIRST_UNBOUND,
+                              Solver::ASSIGN_MIN_VALUE);
         init_done_ = true;
         return;
       }
@@ -1257,31 +1253,13 @@ class DefaultIntegerSearch : public DecisionBuilder {
     }
   }
 
-  bool FindVarValue(IntVar** const var, int64* const value) {
-    switch (parameters_.search_strategy) {
-      case DefaultPhaseParameters::IMPACT_BASED_SEARCH:
-        return FindUnboundVarValueWithImpact(var, value);
-      case DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN:
-        return FindUnboundVarValueNoImpact(var, value);
-      case DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN:
-        return FindUnboundVarValueMinSize(var, value);
-      case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN:
-        return FindUnboundVarValueRandom(var, value, true);
-      case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX:
-        return FindUnboundVarValueRandom(var, value, false);
-    }
-    return false;
-  }
-
   // This method will do an exhaustive scan of all domains of all
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
   // minimal impact.
-  bool FindUnboundVarValueWithImpact(IntVar** const var, int64* const value) {
-    CHECK_NOTNULL(var);
-    CHECK_NOTNULL(value);
-    *var = NULL;
-    *value = 0;
+  Decision* ImpactNext(Solver* const solver) {
+    IntVar* var = NULL;
+    int64 value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
@@ -1293,72 +1271,17 @@ class DefaultIntegerSearch : public DecisionBuilder {
                                         parameters_.var_selection_schema,
                                         parameters_.value_selection_schema);
         if (current_var_impact > best_var_impact) {
-          *var = vars_[i];
-          *value = current_value;
+          var = vars_[i];
+          value = current_value;
           best_var_impact = current_var_impact;
         }
       }
     }
-    return (*var != NULL);
-  }
-
-  bool FindUnboundVarValueNoImpact(IntVar** const var, int64* const value) {
-    CHECK_NOTNULL(var);
-    CHECK_NOTNULL(value);
-    *var = NULL;
-    *value = 0;
-    for (int i = 0; i < vars_.size(); ++i) {
-      if (!vars_[i]->Bound()) {
-        *var = vars_[i];;
-        *value = vars_[i]->Min();
-        return true;
-      }
+    if (var == NULL) {
+      return NULL;
+    } else {
+      return solver->MakeAssignVariableValue(var, value);
     }
-    return false;
-  }
-
-  bool FindUnboundVarValueMinSize(IntVar** const found_var,
-                                  int64* const value) {
-    CHECK_NOTNULL(found_var);
-    CHECK_NOTNULL(value);
-    *found_var = NULL;
-    *value = 0;
-    uint64 best_size = kint64max;
-    int64 best_min = kint64max;
-    for (int i = 0; i < vars_.size(); ++i) {
-      IntVar* const var = vars_[i];
-      if (!var->Bound()) {
-        if (var->Size() < best_size ||
-            (var->Size() == best_size && var->Min() < best_min)) {
-          best_size = var->Size();
-          best_min = var->Min();
-          *value = var->Min();
-          *found_var = var;
-        }
-      }
-    }
-    return *found_var != NULL;
-  }
-
-  bool FindUnboundVarValueRandom(IntVar** const found_var,
-                                 int64* const value,
-                                 bool assign_min) {
-    CHECK_NOTNULL(found_var);
-    CHECK_NOTNULL(value);
-    *found_var = NULL;
-    *value = 0;
-    const int size = vars_.size();
-    const int shift = heuristics_.Rand32(size);
-    for (int i = 0; i < size; ++i) {
-      const int index = (i + shift) < size ? i + shift : i + shift - size;
-      IntVar* const var = vars_[index];
-      if (!var->Bound()) {
-        *found_var = var;
-        *value = assign_min ? var->Min() : var->Max();
-        return true;
-      }
-    }
-    return false;
   }
 
   // ----- data members -----

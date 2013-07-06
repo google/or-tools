@@ -459,11 +459,11 @@ bool FlatZincModel::HasSolveAnnotations() const {
   return has_annotations;
 }
 
-void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
+void FlatZincModel::ParseSearchAnnotations(
+    bool ignore_unknown,
+    std::vector<DecisionBuilder*>* const defined,
+    std::vector<IntVar*>* const active_variables) {
   const bool has_solve_annotations = HasSolveAnnotations();
-  hash_set<IntVar*> added;
-
-  VLOG(1) << "Create decision builders";
   std::vector<AstNode*> flat_annotations;
   if (has_solve_annotations) {
     CHECK_NOTNULL(solve_annotations_);
@@ -473,21 +473,82 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
       flat_annotations.push_back(solve_annotations_);
     }
   }
-  search_name_ = p.free_search ? "free" : "defined";
 
-  if (!p.free_search) {
-    for (unsigned int i = 0; i < flat_annotations.size(); i++) {
+  VLOG(1) << "Create decision builders from search annotations";
+  hash_set<IntVar*> added;
+  for (unsigned int i = 0; i < flat_annotations.size(); i++) {
+    try {
+      AstCall* call = flat_annotations[i]->getCall("int_search");
+      AstArray* args = call->getArgs(4);
+      AstArray* vars = args->a[0]->getArray();
+      std::vector<IntVar*> int_vars;
+      for (int i = 0; i < vars->a.size(); ++i) {
+        if (vars->a[i]->isIntVar()) {
+          IntVar* const to_add =
+              integer_variables_[vars->a[i]->getIntVar()]->Var();
+          if (!ContainsKey(added, to_add)) {
+            int_vars.push_back(to_add);
+            active_variables->push_back(to_add);
+            added.insert(to_add);
+          }
+        }
+      }
+      Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+      if (args->hasAtom("input_order")) {
+        str = Solver::CHOOSE_FIRST_UNBOUND;
+      }
+      if (args->hasAtom("first_fail")) {
+        str = Solver::CHOOSE_MIN_SIZE;
+      }
+      if (args->hasAtom("anti_first_fail")) {
+        str = Solver::CHOOSE_MAX_SIZE;
+      }
+      if (args->hasAtom("smallest")) {
+        str = Solver::CHOOSE_LOWEST_MIN;
+      }
+      if (args->hasAtom("largest")) {
+        str = Solver::CHOOSE_HIGHEST_MAX;
+      }
+      if (args->hasAtom("max_regret")) {
+        str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
+      }
+      if (args->hasAtom("occurrence")) {
+        SortVariableByDegree(solver_.get(), &int_vars);
+        str = Solver::CHOOSE_FIRST_UNBOUND;
+      }
+      Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
+      if (args->hasAtom("indomain_max")) {
+        vstr = Solver::ASSIGN_MAX_VALUE;
+      }
+      if (args->hasAtom("indomain_median") ||
+          args->hasAtom("indomain_middle")) {
+        vstr = Solver::ASSIGN_CENTER_VALUE;
+      }
+      if (args->hasAtom("indomain_random")) {
+        vstr = Solver::ASSIGN_RANDOM_VALUE;
+      }
+      if (args->hasAtom("indomain_split")) {
+        vstr = Solver::SPLIT_LOWER_HALF;
+      }
+      if (args->hasAtom("indomain_reverse_split")) {
+        vstr = Solver::SPLIT_UPPER_HALF;
+      }
+      defined->push_back(solver_->MakePhase(int_vars, str, vstr));
+    }
+    catch (AstTypeError & e) {
+      (void) e;
       try {
-        AstCall* call = flat_annotations[i]->getCall("int_search");
+        AstCall* call = flat_annotations[i]->getCall("bool_search");
         AstArray* args = call->getArgs(4);
         AstArray* vars = args->a[0]->getArray();
-        std::vector<IntVar*> int_vars;
+        std::vector<IntVar*> bool_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
-          if (vars->a[i]->isIntVar()) {
+          if (vars->a[i]->isBoolVar()) {
             IntVar* const to_add =
-                integer_variables_[vars->a[i]->getIntVar()]->Var();
+                boolean_variables_[vars->a[i]->getBoolVar()]->Var();
             if (!ContainsKey(added, to_add)) {
-              int_vars.push_back(to_add);
+              bool_vars.push_back(to_add);
+              active_variables->push_back(to_add);
               added.insert(to_add);
             }
           }
@@ -496,162 +557,140 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
         if (args->hasAtom("input_order")) {
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
-        if (args->hasAtom("first_fail")) {
-          str = Solver::CHOOSE_MIN_SIZE;
-        }
-        if (args->hasAtom("anti_first_fail")) {
-          str = Solver::CHOOSE_MAX_SIZE;
-        }
-        if (args->hasAtom("smallest")) {
-          str = Solver::CHOOSE_LOWEST_MIN;
-        }
-        if (args->hasAtom("largest")) {
-          str = Solver::CHOOSE_HIGHEST_MAX;
-        }
-        if (args->hasAtom("max_regret")) {
-          str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
-        }
         if (args->hasAtom("occurrence")) {
-          SortVariableByDegree(solver_.get(), &int_vars);
+          SortVariableByDegree(solver_.get(), &bool_vars);
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
-        Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
-        if (args->hasAtom("indomain_max")) {
-          vstr = Solver::ASSIGN_MAX_VALUE;
-        }
-        if (args->hasAtom("indomain_median") ||
-            args->hasAtom("indomain_middle")) {
-          vstr = Solver::ASSIGN_CENTER_VALUE;
+        Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
+        if (args->hasAtom("indomain_min")) {
+          vstr = Solver::ASSIGN_MIN_VALUE;
         }
         if (args->hasAtom("indomain_random")) {
           vstr = Solver::ASSIGN_RANDOM_VALUE;
         }
-        if (args->hasAtom("indomain_split")) {
-          vstr = Solver::SPLIT_LOWER_HALF;
-        }
-        if (args->hasAtom("indomain_reverse_split")) {
-          vstr = Solver::SPLIT_UPPER_HALF;
-        }
-        builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
+        defined->push_back(solver_->MakePhase(bool_vars, str, vstr));
       }
       catch (AstTypeError & e) {
         (void) e;
         try {
-          AstCall* call = flat_annotations[i]->getCall("bool_search");
+          AstCall* call = flat_annotations[i]->getCall("set_search");
           AstArray* args = call->getArgs(4);
-          AstArray* vars = args->a[0]->getArray();
-          std::vector<IntVar*> bool_vars;
-          for (int i = 0; i < vars->a.size(); ++i) {
-            if (vars->a[i]->isBoolVar()) {
-              IntVar* const to_add =
-                  boolean_variables_[vars->a[i]->getBoolVar()]->Var();
-              if (!ContainsKey(added, to_add)) {
-                bool_vars.push_back(to_add);
-                added.insert(to_add);
-              }
-            }
-          }
-          Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
-          if (args->hasAtom("input_order")) {
-            str = Solver::CHOOSE_FIRST_UNBOUND;
-          }
-          if (args->hasAtom("occurrence")) {
-            SortVariableByDegree(solver_.get(), &bool_vars);
-            str = Solver::CHOOSE_FIRST_UNBOUND;
-          }
-          Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
-          if (args->hasAtom("indomain_min")) {
-            vstr = Solver::ASSIGN_MIN_VALUE;
-          }
-          if (args->hasAtom("indomain_random")) {
-            vstr = Solver::ASSIGN_RANDOM_VALUE;
-          }
-          builders_.push_back(solver_->MakePhase(bool_vars, str, vstr));
+          args->a[0]->getArray();
+          LOG(FATAL) << "Search on set variables not supported";
         }
         catch (AstTypeError & e) {
           (void) e;
-          try {
-            AstCall* call = flat_annotations[i]->getCall("set_search");
-            AstArray* args = call->getArgs(4);
-            args->a[0]->getArray();
-            LOG(FATAL) << "Search on set variables not supported";
-          }
-          catch (AstTypeError & e) {
-            (void) e;
-            if (!p.ignore_unknown) {
-              LOG(WARNING) << "Warning, ignored search annotation: "
-                           << flat_annotations[i]->DebugString();
-            }
+          if (!ignore_unknown) {
+            LOG(WARNING) << "Warning, ignored search annotation: "
+                         << flat_annotations[i]->DebugString();
           }
         }
       }
     }
+  }
 
-    // Add completion goals to be robust to incomplete search.
-
-    // First on active varialbes, create the variable array, push
-    // smaller variable first.
-    std::vector<IntVar*> vars;
+  if (defined->empty() || (defined->size() == 1 && method_ != SAT)) {
+    active_variables->clear();
+    // Create the variable array, push smaller variable first.
     for (int i = 0; i < active_variables_.size(); ++i) {
       IntVar* const var = active_variables_[i];
       if (var->Size() < 0xFFFF) {
-        vars.push_back(var);
+        active_variables->push_back(var);
       }
     }
     for (int i = 0; i < active_variables_.size(); ++i) {
       IntVar* const var = active_variables_[i];
       if (var->Size() >= 0xFFFF) {
-        vars.push_back(var);
+        active_variables->push_back(var);
       }
     }
+  }
+}
 
-    // Then introduced variables.
-    builders_.push_back(solver_->MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND,
+  // Add completion goals to be robust to incomplete search specifications.
+void FlatZincModel::AddCompletionDecisionBuilders(
+    std::vector<DecisionBuilder*>* const builders) {
+  const bool has_solve_annotations = HasSolveAnnotations();
+  // Add introduced variables.
+  // builders->push_back(solver_->MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND,
+  //                                        Solver::ASSIGN_MIN_VALUE));
+  // Then fixed variables.
+  if (!introduced_variables_.empty() && !has_solve_annotations) {
+    // Better safe than sorry.
+    builders->push_back(solver_->MakePhase(introduced_variables_,
+                                           Solver::CHOOSE_FIRST_UNBOUND,
                                            Solver::ASSIGN_MIN_VALUE));
-    // Then fixed variables.
-    if (!introduced_variables_.empty() && !has_solve_annotations) {
-      // Better safe than sorry.
-      builders_.push_back(solver_->MakePhase(introduced_variables_,
-                                             Solver::CHOOSE_FIRST_UNBOUND,
-                                             Solver::ASSIGN_MIN_VALUE));
-    }
-    if (!one_constraint_variables_.empty()) {
-      // Better safe than sorry.
-      builders_.push_back(
-          solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
+  }
+  if (!one_constraint_variables_.empty()) {
+    // Better safe than sorry.
+    builders->push_back(
+        solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
+  }
+}
+
+DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
+    const FlatZincSearchParameters& p) {
+  VLOG(1) << "Create decision builders";
+  // Fill builders_ with predefined search.
+  std::vector<DecisionBuilder*> defined;
+  std::vector<IntVar*> active_variables;
+  ParseSearchAnnotations(p.ignore_unknown, &defined, &active_variables);
+
+  // We collect the decision builder linked to the objective.
+  DecisionBuilder* obj_db = NULL;
+  if (defined.size() > 0 && method_ != SAT) {
+    obj_db = defined.back();
+    defined.pop_back();
+    if (defined.size() > 0) {
+      // We need to remove the objective variables from the list of
+      // defined_vars.
+      active_variables.pop_back();
     }
   }
+  search_name_ =
+      defined.empty() ? "automatic" : (p.free_search ? "free" : "defined");
 
-  if (p.free_search || builders_.size() == 0 ||
-      (builders_.size() == 1 && method_ != SAT)) {
-    search_name_ = "automatic";
-    // We collect the objective linked decision builder.
-    DecisionBuilder* const obj_db =
-        builders_.size() == 1 ? builders_.back() : NULL;
-    builders_.clear();
-
+  // We fill builders with information from search (flags, annotations).
+  std::vector<DecisionBuilder*> builders;
+  if (!p.free_search && !defined.empty()) {
+    builders = defined;
+  } else {
     DefaultPhaseParameters parameters;
+    DecisionBuilder* inner_builder = NULL;
     switch (p.search_type) {
-      case FlatZincSearchParameters::IBS:
-        parameters.search_strategy =
-            DefaultPhaseParameters::IMPACT_BASED_SEARCH;
+      case FlatZincSearchParameters::DEFAULT: {
+        if (defined.empty()) {
+          inner_builder = solver_->MakePhase(active_variables,
+                                             Solver::CHOOSE_MIN_SIZE,
+                                             Solver::ASSIGN_MIN_VALUE);
+        } else {
+          inner_builder = solver_->Compose(defined);
+        }
         break;
-      case FlatZincSearchParameters::FIRST_UNBOUND:
-        parameters.search_strategy =
-            DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+      }
+      case FlatZincSearchParameters::IBS: {
         break;
-      case FlatZincSearchParameters::MIN_SIZE:
-        parameters.search_strategy =
-            DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN;
+      }
+      case FlatZincSearchParameters::FIRST_UNBOUND: {
+        inner_builder = solver_->MakePhase(
+            active_variables, Solver::CHOOSE_FIRST_UNBOUND,
+            Solver::ASSIGN_MIN_VALUE);
         break;
-      case FlatZincSearchParameters::RANDOM_MIN:
-        parameters.search_strategy =
-            DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN;
+      }
+      case FlatZincSearchParameters::MIN_SIZE: {
+        inner_builder = solver_->MakePhase(
+            active_variables, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+            Solver::ASSIGN_MIN_VALUE);
         break;
-      case FlatZincSearchParameters::RANDOM_MAX:
-        parameters.search_strategy =
-            DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX;
-        break;
+      }
+      case FlatZincSearchParameters::RANDOM_MIN: {
+        inner_builder = solver_->MakePhase(
+            active_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MIN_VALUE);
+      }
+      case FlatZincSearchParameters::RANDOM_MAX: {
+        inner_builder = solver_->MakePhase(
+            active_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE);
+      }
     }
     parameters.run_all_heuristics = true;
     parameters.heuristic_period =
@@ -663,50 +702,31 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
         p.use_log ? (p.verbose_impact ? DefaultPhaseParameters::VERBOSE
                                       : DefaultPhaseParameters::NORMAL)
                   : DefaultPhaseParameters::NONE;
-    parameters.use_no_goods = true;
+    parameters.use_no_goods = (p.restart_log_size > 0);
     parameters.var_selection_schema =
         DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
     parameters.value_selection_schema =
         DefaultPhaseParameters::SELECT_MIN_IMPACT;
     parameters.random_seed = p.random_seed;
-    // Create the variable array, push smaller variable first.
-    std::vector<IntVar*> vars;
-    for (int i = 0; i < active_variables_.size(); ++i) {
-      IntVar* const var = active_variables_[i];
-      if (var->Size() < 0xFFFF) {
-        vars.push_back(var);
-      }
+    if (inner_builder == NULL) {
+      CHECK_EQ(FlatZincSearchParameters::IBS, p.search_type);
+      parameters.decision_builder = NULL;
+    } else {
+      parameters.decision_builder = inner_builder;
     }
-    for (int i = 0; i < active_variables_.size(); ++i) {
-      IntVar* const var = active_variables_[i];
-      if (var->Size() >= 0xFFFF) {
-        vars.push_back(var);
-      }
-    }
-    builders_.push_back(solver_->MakeDefaultPhase(vars, parameters));
-    if (!introduced_variables_.empty() && !has_solve_annotations) {
-      // Better safe than sorry.
-      builders_.push_back(solver_->MakePhase(introduced_variables_,
-                                             Solver::CHOOSE_FIRST_UNBOUND,
-                                             Solver::ASSIGN_MIN_VALUE));
-    }
-    if (!one_constraint_variables_.empty()) {
-      // Better safe than sorry.
-      builders_.push_back(
-          solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
-    }
-    if (obj_db != NULL) {
-      builders_.push_back(obj_db);
-    }
+    builders.push_back(solver_->MakeDefaultPhase(active_variables, parameters));
+  }
+  // Add completion decision builders to be more robust.
+  AddCompletionDecisionBuilders(&builders);
+  // Add finally the objective decision builder.
+  if (obj_db != NULL) {
+    builders.push_back(obj_db);
   }
   // Reporting
-  for (int i = 0; i < builders_.size(); ++i) {
-    VLOG(1) << "  - adding decision builder = " << builders_[i]->DebugString();
+  for (int i = 0; i < builders.size(); ++i) {
+    VLOG(1) << "  - adding decision builder = " << builders[i]->DebugString();
   }
-}
-
-const std::vector<DecisionBuilder*>& FlatZincModel::DecisionBuilders() const {
-  return builders_;
+  return solver_->Compose(builders);
 }
 
 const std::vector<IntVar*>& FlatZincModel::PrimaryVariables() const {
@@ -723,7 +743,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     return;
   }
 
-  CreateDecisionBuilders(p);
+  DecisionBuilder* const db = CreateDecisionBuilders(p);
   bool print_last = false;
   if (p.all_solutions && p.num_solutions == 0) {
     p.num_solutions = kint32max;
@@ -779,7 +799,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   bool breaked = false;
   string solution_string;
   const int64 build_time = solver_->wall_time();
-  solver_->NewSearch(solver_->Compose(builders_), monitors);
+  solver_->NewSearch(db, monitors);
   while (solver_->NextSolution()) {
     if (output_ != NULL && !parallel_support->ShouldFinish()) {
       solution_string.clear();
