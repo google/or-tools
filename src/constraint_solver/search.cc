@@ -157,6 +157,7 @@ bool SearchLog::AtSolution() {
   if (progress != SearchMonitor::kNoProgress) {
     StringAppendF(&log, ", limit = %d%%", progress);
   }
+  log.append(")");
   OutputLine(log);
   if (display_callback_.get() != NULL) {
     LOG(INFO) << display_callback_->Run();
@@ -228,6 +229,7 @@ void SearchLog::OutputDecision() {
   if (progress != SearchMonitor::kNoProgress) {
     StringAppendF(&buffer, ", limit = %d%%", progress);
   }
+  buffer.append(")");
   OutputLine(buffer);
 }
 

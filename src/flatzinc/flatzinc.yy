@@ -465,7 +465,8 @@ var_par_id annotations vardecl_bool_var_array_init
             vars[i] = bvsv->i;
           else {
             vars[i] = pp->bool_variables_.size();
-            (*vsv)[i]->SetName($11);
+            const string var_name = StringPrintf("%s[%d]", $11, i + 1);
+            (*vsv)[i]->SetName(var_name);
             pp->bool_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $9.defined()) {
@@ -478,8 +479,9 @@ var_par_id annotations vardecl_bool_var_array_init
     } else {
       for (int i = 0; i < $5; i++) {
         vars[i] = pp->bool_variables_.size();
+        const string var_name = StringPrintf("%s[%d]", $11, i + 1);
         pp->bool_variables_.push_back(
-            new BoolVarSpec($11, $9, !print, (i == $5 - 1)));
+            new BoolVarSpec(var_name, $9, !print, (i == $5 - 1)));
       }
     }
     if (print) {

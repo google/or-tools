@@ -231,8 +231,11 @@ class FlatZincModel {
 
   void ParseSearchAnnotations(bool ignore_unknown,
                               std::vector<DecisionBuilder*>* const defined,
-                              std::vector<IntVar*>* const defined_vars);
+                              std::vector<IntVar*>* const defined_vars,
+                              std::vector<IntVar*>* const active_vars,
+                              DecisionBuilder** obj_db);
   void AddCompletionDecisionBuilders(
+      const std::vector<IntVar*>& active_variables,
       std::vector<DecisionBuilder*>* const builders);
 
   const std::vector<IntVar*>& PrimaryVariables() const;
