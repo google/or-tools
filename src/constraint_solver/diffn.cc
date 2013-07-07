@@ -13,11 +13,11 @@
 
 #include <algorithm>
 #include <string>
-#include <vector>
+#include <std::vector>
 
 #include "base/integral_types.h"
 #include "base/concise_iterator.h"
-#include "base/int-type-indexed-vector.h"
+#include "base/int-type-indexed-std::vector.h"
 #include "base/int-type.h"
 #include "base/logging.h"
 #include "base/hash.h"
@@ -82,9 +82,9 @@ class Diffn : public Constraint {
       const int64 min_y = MinVarArray(y_);
       const int64 max_y = MaxVarArray(y_);
       const int64 max_size_y = MaxVarArray(dy_);
-      vector<int64> size_x;
+      std::vector<int64> size_x;
       FillValues(dx_, &size_x);
-      vector<int64> size_y;
+      std::vector<int64> size_y;
       FillValues(dy_, &size_y);
 
       AddCumulativeConstraint(x_, size_x, size_y, max_size_y + max_y - min_y);
@@ -124,10 +124,10 @@ class Diffn : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
-                        DebugStringVector(x_, ", ").c_str(),
-                        DebugStringVector(y_, ", ").c_str(),
-                        DebugStringVector(dx_, ", ").c_str(),
-                        DebugStringVector(dy_, ", ").c_str());
+                        DebugStringStd::Vector(x_, ", ").c_str(),
+                        DebugStringStd::Vector(y_, ", ").c_str(),
+                        DebugStringStd::Vector(dx_, ", ").c_str(),
+                        DebugStringStd::Vector(dy_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -238,7 +238,7 @@ class Diffn : public Constraint {
                                const std::vector<int64>& sizes,
                                const std::vector<int64>& demands,
                                int64 capacity) {
-    vector<IntervalVar*> intervals;
+    std::vector<IntervalVar*> intervals;
     solver()->MakeFixedDurationIntervalVarArray(
         positions, sizes, "interval", &intervals);
     solver()->AddConstraint(solver()->MakeCumulative(
