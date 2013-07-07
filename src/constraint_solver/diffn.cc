@@ -13,7 +13,7 @@
 
 #include <algorithm>
 #include <string>
-#include <std::vector>
+#include <vector>
 
 #include "base/integral_types.h"
 #include "base/concise_iterator.h"
