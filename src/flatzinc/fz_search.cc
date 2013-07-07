@@ -23,6 +23,7 @@
 #include "base/stringprintf.h"
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
+#include "util/string_array.h"
 
 using std::string;
 namespace operations_research {
@@ -485,16 +486,17 @@ void FlatZincModel::ParseSearchAnnotations(
       AstArray* args = call->getArgs(4);
       AstArray* vars = args->a[0]->getArray();
       std::vector<IntVar*> int_vars;
-      for (int i = 0; i < vars->a.size(); ++i) {
-        if (vars->a[i]->isIntVar()) {
+      for (int j = 0; j < vars->a.size(); ++j) {
+        if (vars->a[j]->isIntVar()) {
           IntVar* const to_add =
-              integer_variables_[vars->a[i]->getIntVar()]->Var();
+              integer_variables_[vars->a[j]->getIntVar()]->Var();
           if (!ContainsKey(added, to_add)) {
+            added.insert(to_add);
             int_vars.push_back(to_add);
+            // Ignore the variable defined in the objective.
             if (satisfy || i != flat_annotations.size() - 1) {
               defined_variables->push_back(to_add);
             }
-            added.insert(to_add);
           }
         }
       }
@@ -552,14 +554,14 @@ void FlatZincModel::ParseSearchAnnotations(
         AstArray* args = call->getArgs(4);
         AstArray* vars = args->a[0]->getArray();
         std::vector<IntVar*> bool_vars;
-        for (int i = 0; i < vars->a.size(); ++i) {
-          if (vars->a[i]->isBoolVar()) {
+        for (int j = 0; j < vars->a.size(); ++j) {
+          if (vars->a[j]->isBoolVar()) {
             IntVar* const to_add =
-                boolean_variables_[vars->a[i]->getBoolVar()]->Var();
+                boolean_variables_[vars->a[j]->getBoolVar()]->Var();
             if (!ContainsKey(added, to_add)) {
+              added.insert(to_add);
               bool_vars.push_back(to_add);
               defined_variables->push_back(to_add);
-              added.insert(to_add);
             }
           }
         }
@@ -604,8 +606,8 @@ void FlatZincModel::ParseSearchAnnotations(
     IntVar* const var = active_variables_[i];
     if (!ContainsKey(added, var)) {
       if (var->Size() < 0xFFFF) {
-        active_variables->push_back(var);
         added.insert(var);
+        active_variables->push_back(var);
       }
     }
   }
@@ -613,8 +615,8 @@ void FlatZincModel::ParseSearchAnnotations(
     IntVar* const var = active_variables_[i];
     if (!ContainsKey(added, var)) {
       if (var->Size() >= 0xFFFF) {
-        active_variables->push_back(var);
         added.insert(var);
+        active_variables->push_back(var);
       }
     }
   }
