@@ -707,7 +707,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
             defined_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE);
       }
     }
-    parameters.run_all_heuristics = true;
+    parameters.run_all_heuristics = false;
     parameters.heuristic_period =
         method_ != SAT || (!p.all_solutions && p.num_solutions == 1)
             ? p.heuristic_period
@@ -729,7 +729,8 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     } else {
       parameters.decision_builder = inner_builder;
     }
-    builders.push_back(solver_->MakeDefaultPhase(defined_variables, parameters));
+    builders.push_back(
+        solver_->MakeDefaultPhase(defined_variables, parameters));
   }
   // Add completion decision builders to be more robust.
   AddCompletionDecisionBuilders(active_variables, &builders);

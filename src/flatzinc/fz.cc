@@ -56,7 +56,7 @@ DEFINE_int32(simplex_frequency, 0, "Simplex frequency, 0 = no simplex");
 DEFINE_bool(use_impact, false, "Use impact based search");
 DEFINE_double(restart_log_size, -1, "Restart log size for impact search");
 DEFINE_int32(luby_restart, -1, "Luby restart factor, <= 0 = no luby");
-DEFINE_int32(heuristic_period, 30, "Period to call heuristics in free search");
+DEFINE_int32(heuristic_period, 100, "Period to call heuristics in free search");
 DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 
