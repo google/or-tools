@@ -17,7 +17,7 @@
 
 #include "base/integral_types.h"
 #include "base/concise_iterator.h"
-#include "base/int-type-indexed-std::vector.h"
+#include "base/int-type-indexed-vector.h"
 #include "base/int-type.h"
 #include "base/logging.h"
 #include "base/hash.h"
@@ -124,10 +124,10 @@ class Diffn : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
-                        DebugStringStd::Vector(x_, ", ").c_str(),
-                        DebugStringStd::Vector(y_, ", ").c_str(),
-                        DebugStringStd::Vector(dx_, ", ").c_str(),
-                        DebugStringStd::Vector(dy_, ", ").c_str());
+                        DebugStringVector(x_, ", ").c_str(),
+                        DebugStringVector(y_, ", ").c_str(),
+                        DebugStringVector(dx_, ", ").c_str(),
+                        DebugStringVector(dy_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
