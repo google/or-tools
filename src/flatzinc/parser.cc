@@ -1647,8 +1647,8 @@ bool FlatZincModel::Parse(const string& filename) {
     LOG(ERROR) << "Cannot open file " << filename;
     return false;
   }
-  string s =
-      string(istreambuf_iterator<char>(file), istreambuf_iterator<char>());
+  string s = string(std::istreambuf_iterator<char>(file),
+		    std::istreambuf_iterator<char>());
   ParserState pp(s, this);
 #endif
   orfz_lex_init(&pp.yyscanner);
@@ -1665,7 +1665,7 @@ bool FlatZincModel::Parse(const string& filename) {
 bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
   filename_ = "stdin";
   string s = string(std::istreambuf_iterator<char>(is),
-                         std::istreambuf_iterator<char>());
+		    std::istreambuf_iterator<char>());
 
   ParserState pp(s, this);
   orfz_lex_init(&pp.yyscanner);
