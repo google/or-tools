@@ -102,7 +102,7 @@ int64* NewUniqueSortedArray(const T* const values, int* size) {
   }
   if (non_unique > 0) {
     scoped_array<int64> sorted(new_array);
-    DCHECK_GT(*size, 0);
+    DCHECK_GE(*size, non_unique);
     new_array = new int64[(*size) - non_unique];
     new_array[0] = sorted[0];
     int pos = 1;
@@ -930,6 +930,20 @@ class DomainIntVar : public IntVar {
 
 // ----- BitSet -----
 
+// Return whether an integer interval [a..b] (inclusive) contains at most
+// K values, i.e. b - a < K, in a way that's robust to overflows.
+// For performance reasons, in opt mode it doesn't check that [a, b] is a
+// valid interval, nor that K is nonnegative.
+inline bool ClosedIntervalNoLargerThan(int64 a, int64 b, int64 K) {
+  DCHECK_LE(a, b);
+  DCHECK_GE(K, 0);
+  if (a > 0) {
+    return a > b - K;
+  } else {
+    return a + K > b;
+  }
+}
+
 class SimpleBitSet : public DomainIntVar::BitSet {
  public:
   SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
@@ -940,7 +954,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         omax_(vmax),
         size_(vmax - vmin + 1),
         bsize_(BitLength64(size_.Value())) {
-    CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
+    CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
+        << "Bitset too large: [" << vmin << ", " << vmax << "]";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
     for (int i = 0; i < bsize_; ++i) {
@@ -960,7 +975,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         omax_(vmax),
         size_(sorted_values.size()),
         bsize_(BitLength64(vmax - vmin + 1)) {
-    CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
+    CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
+        << "Bitset too large: [" << vmin << ", " << vmax << "]";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
     for (int i = 0; i < bsize_; ++i) {
@@ -984,9 +1000,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   bool bit(int64 val) const { return IsBitSet64(bits_, val - omin_); }
 
   virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) {
-    DCHECK_GE(nmin, omin_);
-    DCHECK_LE(nmin, omax_);
+    DCHECK_GE(nmin, cmin);
     DCHECK_LE(nmin, cmax);
+    DCHECK_LE(cmin, cmax);
+    DCHECK_GE(cmin, omin_);
+    DCHECK_LE(cmax, omax_);
     const int64 new_min =
         UnsafeLeastSignificantBitPosition64(bits_, nmin - omin_, cmax - omin_) +
         omin_;
@@ -997,8 +1015,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   }
 
   virtual int64 ComputeNewMax(int64 nmax, int64 cmin, int64 cmax) {
-    DCHECK_GE(nmax, omin_);
-    DCHECK_LE(nmax, omax_);
+    DCHECK_GE(nmax, cmin);
+    DCHECK_LE(nmax, cmax);
+    DCHECK_LE(cmin, cmax);
+    DCHECK_GE(cmin, omin_);
+    DCHECK_LE(cmax, omax_);
     const int64 new_max =
         UnsafeMostSignificantBitPosition64(bits_, cmin - omin_, nmax - omin_) +
         omin_;
@@ -1132,6 +1153,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
 // This is a special case where the bitset fits into one 64 bit integer.
 // In that case, there are no offset to compute.
+// Overflows are caught by the robust ClosedIntervalNoLargerThan() method.
 class SmallBitSet : public DomainIntVar::BitSet {
  public:
   SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
@@ -1141,7 +1163,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
         omin_(vmin),
         omax_(vmax),
         size_(vmax - vmin + 1) {
-    CHECK_LE(size_.Value(), 64) << "Bitset too large";
+    CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 64)) << vmin << ", " << vmax;
     bits_ = OneRange64(0, size_.Value() - 1);
   }
 
@@ -1153,10 +1175,12 @@ class SmallBitSet : public DomainIntVar::BitSet {
         omin_(vmin),
         omax_(vmax),
         size_(sorted_values.size()) {
+    CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 64)) << vmin << ", " << vmax;
     // We know the array is sorted and does not contains duplicate values.
-    CHECK_LE(size_.Value(), 64) << "Bitset too large";
     for (int i = 0; i < sorted_values.size(); ++i) {
       const int64 val = sorted_values[i];
+      DCHECK_GE(val, vmin);
+      DCHECK_LE(val, vmax);
       DCHECK(!IsBitSet64(&bits_, val - omin_));
       bits_ |= OneBit64(val - omin_);
     }
@@ -1165,12 +1189,17 @@ class SmallBitSet : public DomainIntVar::BitSet {
   virtual ~SmallBitSet() {}
 
   bool bit(int64 val) const {
-    DCHECK_GE(val - omin_, 0);
-    DCHECK_LT(val - omin_, 64);
+    DCHECK_GE(val, omin_);
+    DCHECK_LE(val, omax_);
     return (bits_ & OneBit64(val - omin_)) != 0;
   }
 
   virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) {
+    DCHECK_GE(nmin, cmin);
+    DCHECK_LE(nmin, cmax);
+    DCHECK_LE(cmin, cmax);
+    DCHECK_GE(cmin, omin_);
+    DCHECK_LE(cmax, omax_);
     // We do not clean the bits between cmin and nmin.
     // But we use mask to look only at 'active' bits.
 
@@ -1190,6 +1219,11 @@ class SmallBitSet : public DomainIntVar::BitSet {
   }
 
   virtual int64 ComputeNewMax(int64 nmax, int64 cmin, int64 cmax) {
+    DCHECK_GE(nmax, cmin);
+    DCHECK_LE(nmax, cmax);
+    DCHECK_LE(cmin, cmax);
+    DCHECK_GE(cmin, omin_);
+    DCHECK_LE(cmax, omax_);
     // We do not clean the bits between nmax and cmax.
     // But we use mask to look only at 'active' bits.
 

@@ -82,7 +82,8 @@ string SearchLog::DebugString() const {
 }
 
 void SearchLog::EnterSearch() {
-  const string buffer = StringPrintf("Start search, %s", MemoryUsage().c_str());
+  const string buffer =
+      StringPrintf("Start search (%s)", MemoryUsage().c_str());
   OutputLine(buffer);
   timer_->Restart();
   min_right_depth_ = kint32max;
@@ -171,7 +172,7 @@ void SearchLog::BeginFail() {
 
 void SearchLog::NoMoreSolutions() {
   string buffer = StringPrintf(
-      "Finished search tree, time = %" GG_LL_FORMAT
+      "Finished search tree (time = %" GG_LL_FORMAT
       "d ms, branches = %" GG_LL_FORMAT "d,"
       " failures = %" GG_LL_FORMAT "d",
       timer_->GetInMs(),
@@ -229,7 +230,6 @@ void SearchLog::OutputDecision() {
   if (progress != SearchMonitor::kNoProgress) {
     StringAppendF(&buffer, ", limit = %d%%", progress);
   }
-  buffer.append(")");
   OutputLine(buffer);
 }
 

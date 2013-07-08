@@ -1521,8 +1521,7 @@ void ParserState::RegroupAux(const string& ct_id, int start_index,
   }
 }
 
-void ParserState::Regroup(const string& ct_id,
-                          const std::vector<int>& ct_indices) {
+void ParserState::Regroup(const string& ct_id, const std::vector<int>& ct_indices) {
   int start_index = -1;
   int end_index = -1;
   std::vector<int> variables;
@@ -1648,7 +1647,7 @@ bool FlatZincModel::Parse(const string& filename) {
     return false;
   }
   string s = string(std::istreambuf_iterator<char>(file),
-		    std::istreambuf_iterator<char>());
+                    std::istreambuf_iterator<char>());
   ParserState pp(s, this);
 #endif
   orfz_lex_init(&pp.yyscanner);
@@ -1665,7 +1664,7 @@ bool FlatZincModel::Parse(const string& filename) {
 bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
   filename_ = "stdin";
   string s = string(std::istreambuf_iterator<char>(is),
-		    std::istreambuf_iterator<char>());
+                    std::istreambuf_iterator<char>());
 
   ParserState pp(s, this);
   orfz_lex_init(&pp.yyscanner);

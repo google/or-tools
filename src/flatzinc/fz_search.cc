@@ -23,7 +23,6 @@
 #include "base/stringprintf.h"
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
-#include "util/string_array.h"
 
 using std::string;
 namespace operations_research {
@@ -96,7 +95,7 @@ class SequentialSupport : public FzParallelSupport {
   virtual ~SequentialSupport() {}
 
   virtual void Init(int worker_id, const string& init_string) {
-    std::cout << init_string;
+    std::cout << init_string << std::endl;
   }
 
   virtual void StartSearch(int worker_id, Type type) {
@@ -111,7 +110,7 @@ class SequentialSupport : public FzParallelSupport {
   virtual void SatSolution(int worker_id, const string& solution_string) {
     if (NumSolutions() == 0) {
       IncrementSolutions();
-      std::cout << solution_string;
+      std::cout << solution_string << std::endl;
     }
   }
 
@@ -119,15 +118,15 @@ class SequentialSupport : public FzParallelSupport {
                                 const string& solution_string) {
     best_solution_ = value;
     if (print_all_) {
-      std::cout << solution_string;
+      std::cout << solution_string << std::endl;
     } else {
-      last_solution_ = solution_string;
+      last_solution_ = solution_string + "\n";
     }
     IncrementSolutions();
   }
 
   virtual void FinalOutput(int worker_id, const string& final_output) {
-    std::cout << final_output;
+    std::cout << final_output << std::endl;
   }
 
   virtual bool ShouldFinish() const { return false; }
@@ -202,7 +201,7 @@ class MtSupport : public FzParallelSupport {
     if (NumSolutions() == 0) {
       IncrementSolutions();
       LogNoLock(worker_id, "solution found");
-      std::cout << solution_string;
+      std::cout << solution_string << std::endl;
       should_finish_ = true;
     }
   }
@@ -221,9 +220,9 @@ class MtSupport : public FzParallelSupport {
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
                                value));
-              std::cout << solution_string;
+              std::cout << solution_string << std::endl;
             } else {
-              last_solution_ = solution_string;
+              last_solution_ = solution_string + "\n";
               last_worker_ = worker_id;
             }
           }
@@ -238,9 +237,9 @@ class MtSupport : public FzParallelSupport {
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
                                value));
-              std::cout << solution_string;
+              std::cout << solution_string << std::endl;
             } else {
-              last_solution_ = solution_string;
+              last_solution_ = solution_string + "\n";
               last_worker_ = worker_id;
             }
           }
@@ -254,7 +253,7 @@ class MtSupport : public FzParallelSupport {
 
   virtual void FinalOutput(int worker_id, const string& final_output) {
     MutexLock lock(&mutex_);
-    std::cout << final_output;
+    std::cout << final_output << std::endl;
   }
 
   virtual bool ShouldFinish() const { return should_finish_; }
@@ -461,11 +460,9 @@ bool FlatZincModel::HasSolveAnnotations() const {
 }
 
 void FlatZincModel::ParseSearchAnnotations(
-    bool ignore_unknown,
-    std::vector<DecisionBuilder*>* const defined,
+    bool ignore_unknown, std::vector<DecisionBuilder*>* const defined,
     std::vector<IntVar*>* const defined_variables,
-    std::vector<IntVar*>* const active_variables,
-    DecisionBuilder** obj_db) {
+    std::vector<IntVar*>* const active_variables, DecisionBuilder** obj_db) {
   const bool has_solve_annotations = HasSolveAnnotations();
   const bool satisfy = method_ == SAT;
   std::vector<AstNode*> flat_annotations;
@@ -622,23 +619,23 @@ void FlatZincModel::ParseSearchAnnotations(
   }
 }
 
-  // Add completion goals to be robust to incomplete search specifications.
+// Add completion goals to be robust to incomplete search specifications.
 void FlatZincModel::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& active_variables,
     std::vector<DecisionBuilder*>* const builders) {
   const bool has_solve_annotations = HasSolveAnnotations();
   // Add introduced variables.
   if (!active_variables.empty()) {
-    builders->push_back(solver_->MakePhase(
-        active_variables, Solver::CHOOSE_FIRST_UNBOUND,
-        Solver::ASSIGN_MIN_VALUE));
+    builders->push_back(
+        solver_->MakePhase(active_variables, Solver::CHOOSE_FIRST_UNBOUND,
+                           Solver::ASSIGN_MIN_VALUE));
   }
   // Then fixed variables.
   if (!introduced_variables_.empty() && !has_solve_annotations) {
     // Better safe than sorry.
-    builders->push_back(solver_->MakePhase(introduced_variables_,
-                                           Solver::CHOOSE_FIRST_UNBOUND,
-                                           Solver::ASSIGN_MIN_VALUE));
+    builders->push_back(
+        solver_->MakePhase(introduced_variables_, Solver::CHOOSE_FIRST_UNBOUND,
+                           Solver::ASSIGN_MIN_VALUE));
   }
   if (!one_constraint_variables_.empty()) {
     // Better safe than sorry.
@@ -675,27 +672,25 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     switch (p.search_type) {
       case FlatZincSearchParameters::DEFAULT: {
         if (defined.empty()) {
-          inner_builder = solver_->MakePhase(defined_variables,
-                                             Solver::CHOOSE_MIN_SIZE,
-                                             Solver::ASSIGN_MIN_VALUE);
+          inner_builder =
+              solver_->MakePhase(defined_variables, Solver::CHOOSE_MIN_SIZE,
+                                 Solver::ASSIGN_MIN_VALUE);
         } else {
           inner_builder = solver_->Compose(defined);
         }
         break;
       }
-      case FlatZincSearchParameters::IBS: {
-        break;
-      }
+      case FlatZincSearchParameters::IBS: { break; }
       case FlatZincSearchParameters::FIRST_UNBOUND: {
-        inner_builder = solver_->MakePhase(
-            defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
-            Solver::ASSIGN_MIN_VALUE);
+        inner_builder =
+            solver_->MakePhase(defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
+                               Solver::ASSIGN_MIN_VALUE);
         break;
       }
       case FlatZincSearchParameters::MIN_SIZE: {
-        inner_builder = solver_->MakePhase(
-            defined_variables, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-            Solver::ASSIGN_MIN_VALUE);
+        inner_builder = solver_->MakePhase(defined_variables,
+                                           Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                                           Solver::ASSIGN_MIN_VALUE);
         break;
       }
       case FlatZincSearchParameters::RANDOM_MIN: {
@@ -822,7 +817,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       for (unsigned int i = 0; i < output_->a.size(); i++) {
         solution_string.append(DebugString(output_->a[i]));
       }
-      solution_string.append("----------\n");
+      solution_string.append("----------");
       switch (method_) {
         case MIN:
         case MAX: {
@@ -913,7 +908,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     final_output.append(StringPrintf(
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
-        "d, %" GG_LL_FORMAT "d, %s, %s\n",
+        "d, %" GG_LL_FORMAT "d, %s, %s",
         filename_.c_str(), status_string.c_str(), obj_string.c_str(),
         num_solutions_found, solve_time, build_time, solver_->branches(),
         solver_->failures(), solver_->constraints(),

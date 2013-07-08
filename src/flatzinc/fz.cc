@@ -77,7 +77,7 @@ int Run(const string& file, const FlatZincSearchParameters& parameters,
   } else {
     parallel_support->Init(
         parameters.worker_id,
-        StringPrintf("%%%%  model:                %s\n", file.c_str()));
+        StringPrintf("%%%%  model:                %s", file.c_str()));
     if (!fz_model.Parse(file)) {
       return -1;
     }
@@ -197,7 +197,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = logging_param;
     }
   }
-  google::ParseCommandLineFlags(argc, argv, true);
+  google::ParseCommandLineFlags( argc, argv, true);
 }
 }  // namespace operations_research
 

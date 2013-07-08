@@ -53,8 +53,7 @@ namespace {
 // search space of all integer variables.
 class DomainWatcher {
  public:
-  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size)
-      : vars_(vars) {
+  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size) : vars_(vars) {
     cached_log_.Init(cache_size);
   }
 
@@ -66,16 +65,13 @@ class DomainWatcher {
     return result;
   }
 
-  double Log2(int64 size) const {
-    return cached_log_.Log2(size);
-  }
+  double Log2(int64 size) const { return cached_log_.Log2(size); }
 
  private:
   std::vector<IntVar*> vars_;
   CachedLog cached_log_;
   DISALLOW_COPY_AND_ASSIGN(DomainWatcher);
 };
-
 
 // ---------- FindVar decision visitor ---------
 
@@ -91,8 +87,7 @@ class FindVar : public DecisionVisitor {
     valid_ = true;
   }
 
-  virtual void VisitSplitVariableDomain(IntVar* const var,
-                                        int64 value,
+  virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                         bool start_with_lower_half) {
     valid_ = false;
   }
@@ -109,9 +104,7 @@ class FindVar : public DecisionVisitor {
     valid_ = false;
   }
 
-  virtual void VisitUnknownDecision() {
-    valid_ = false;
-  }
+  virtual void VisitUnknownDecision() { valid_ = false; }
 
   // Indicates whether var() and value() can be called.
   bool valid() { return valid_; }
@@ -128,9 +121,7 @@ class FindVar : public DecisionVisitor {
     return value_;
   }
 
-  virtual string DebugString() const {
-    return "FindVar decision visitor";
-  }
+  virtual string DebugString() const { return "FindVar decision visitor"; }
 
  private:
   IntVar* var_;
@@ -164,9 +155,7 @@ class InitVarImpacts : public DecisionBuilder {
     update_impact_callback_->Run(var_index_, var_->Min());
   }
 
-  void Init(IntVar* const var,
-            IntVarIterator* const iterator,
-            int var_index) {
+  void Init(IntVar* const var, IntVarIterator* const iterator, int var_index) {
     var_ = var;
     iterator_ = iterator;
     var_index_ = var_index;
@@ -202,9 +191,7 @@ class InitVarImpacts : public DecisionBuilder {
   class AssignCallFail : public Decision {
    public:
     explicit AssignCallFail(Closure* const update_impact_closure)
-        : var_(NULL),
-          value_(0),
-          update_impact_closure_(update_impact_closure) {
+        : var_(NULL), value_(0), update_impact_closure_(update_impact_closure) {
       CHECK_NOTNULL(update_impact_closure_);
     }
     virtual ~AssignCallFail() {}
@@ -296,9 +283,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     }
   }
 
-  void Init(IntVar* const var,
-            IntVarIterator* const iterator,
-            int var_index) {
+  void Init(IntVar* const var, IntVarIterator* const iterator, int var_index) {
     var_ = var;
     iterator_ = iterator;
     var_index_ = var_index;
@@ -362,8 +347,7 @@ class ImpactRecorder : public SearchMonitor {
   static const double kInitFailureImpact;
   static const int kUninitializedVarIndex;
 
-  ImpactRecorder(Solver* const solver,
-                 DomainWatcher* const domain_watcher,
+  ImpactRecorder(Solver* const solver, DomainWatcher* const domain_watcher,
                  const std::vector<IntVar*>& vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
       : SearchMonitor(solver),
@@ -373,7 +357,7 @@ class ImpactRecorder : public SearchMonitor {
         current_log_space_(0.0),
         impacts_(size_),
         original_min_(size_, 0LL),
-        domain_iterators_(new IntVarIterator*[size_]),
+        domain_iterators_(new IntVarIterator* [size_]),
         display_level_(display_level),
         current_var_(kUninitializedVarIndex),
         current_value_(0),
@@ -428,8 +412,8 @@ class ImpactRecorder : public SearchMonitor {
       // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
-      impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
-                         kInitFailureImpact);
+      impacts_[i]
+          .resize(vars_[i]->Max() - vars_[i]->Min() + 1, kInitFailureImpact);
     }
 
     for (int i = 0; i < size_; ++i) {
@@ -467,8 +451,8 @@ class ImpactRecorder : public SearchMonitor {
     const int64 init_time = s->wall_time();
     ResetAllImpacts();
     int64 removed_counter = 0;
-    FirstRunVariableContainers* container = s->RevAlloc(
-        new FirstRunVariableContainers(this, splits));
+    FirstRunVariableContainers* container =
+        s->RevAlloc(new FirstRunVariableContainers(this, splits));
     // Loop on the variables, scan domains and initialize impacts.
     for (int var_index = 0; var_index < size_; ++var_index) {
       IntVar* const var = vars_[var_index];
@@ -479,15 +463,15 @@ class ImpactRecorder : public SearchMonitor {
       DecisionBuilder* init_decision_builder = NULL;
       if (var->Max() - var->Min() < splits) {
         // The domain is small enough, we scan it completely.
-        container->without_split()->set_update_impact_callback(
-            container->update_impact_callback());
+        container->without_split()
+            ->set_update_impact_callback(container->update_impact_callback());
         container->without_split()->Init(var, iterator, var_index);
         init_decision_builder = container->without_split();
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        container->with_splits()->set_update_impact_callback(
-            container->update_impact_callback());
+        container->with_splits()
+            ->set_update_impact_callback(container->update_impact_callback());
         container->with_splits()->Init(var, iterator, var_index);
         init_decision_builder = container->with_splits();
       }
@@ -517,14 +501,13 @@ class ImpactRecorder : public SearchMonitor {
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
-        LOG(INFO) << "  - init done, time = "
-                  << s->wall_time() - init_time
-                  << " ms, " << removed_counter
-                  << " values removed, log2(SearchSpace) = "
-                  << current_log_space_;
+        LOG(INFO)
+            << "  - init done, time = " << s->wall_time() - init_time << " ms, "
+            << removed_counter
+            << " values removed, log2(SearchSpace) = " << current_log_space_;
       } else {
-        LOG(INFO) << "  - init done, time = "
-                  << s->wall_time() - init_time << " ms";
+        LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
+                  << " ms";
       }
     }
     s->SaveAndSetValue(&init_done_, true);
@@ -533,8 +516,7 @@ class ImpactRecorder : public SearchMonitor {
   // This method scans the domain of one variable and returns the sum
   // of the impacts of all values in its domain, along with the value
   // with minimal impact.
-  void ScanVarImpacts(int var_index,
-                      int64* const best_impact_value,
+  void ScanVarImpacts(int var_index, int64* const best_impact_value,
                       double* const var_impacts,
                       DefaultPhaseParameters::VariableSelection var_select,
                       DefaultPhaseParameters::ValueSelection value_select) {
@@ -590,9 +572,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const {
-    return "ImpactRecorder";
-  }
+  virtual string DebugString() const { return "ImpactRecorder"; }
 
  private:
   // A container for the variables needed in FirstRun that is reversibly
@@ -600,9 +580,8 @@ class ImpactRecorder : public SearchMonitor {
   class FirstRunVariableContainers : public BaseObject {
    public:
     FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
-        : update_impact_callback_(
-              NewPermanentCallback(impact_recorder,
-                                   &ImpactRecorder::InitImpact)),
+        : update_impact_callback_(NewPermanentCallback(
+              impact_recorder, &ImpactRecorder::InitImpact)),
           removed_values_(),
           without_splits_(),
           with_splits_(splits) {}
@@ -617,9 +596,7 @@ class ImpactRecorder : public SearchMonitor {
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
 
-    virtual string DebugString() const {
-      return "FirstRunVariableContainers";
-    }
+    virtual string DebugString() const { return "FirstRunVariableContainers"; }
 
    private:
     scoped_ptr<Callback2<int, int64> > update_impact_callback_;
@@ -672,10 +649,8 @@ class ChoiceInfo {
       : value_(value), var_(var), left_(left) {}
 
   string DebugString() const {
-    return StringPrintf("%s %s %lld",
-                        var_->name().c_str(),
-                        (left_ ? "==" : "!="),
-                        value_);
+    return StringPrintf("%s %s %lld", var_->name().c_str(),
+                        (left_ ? "==" : "!="), value_);
   }
 
   IntVar* var() const { return var_; }
@@ -695,17 +670,16 @@ class ChoiceInfo {
 // Hook on the search to check restart before the refutation of a decision.
 class RestartMonitor : public SearchMonitor {
  public:
-  RestartMonitor(Solver* const solver,
-                 DefaultPhaseParameters parameters,
+  RestartMonitor(Solver* const solver, DefaultPhaseParameters parameters,
                  DomainWatcher* const domain_watcher)
       : SearchMonitor(solver),
         parameters_(parameters),
         domain_watcher_(domain_watcher),
         min_log_search_space_(std::numeric_limits<double>::infinity()),
         no_good_manager_(parameters_.restart_log_size >= 0 &&
-                         parameters_.use_no_goods ?
-                         solver->MakeNoGoodManager() :
-                         NULL),
+                                 parameters_.use_no_goods
+                             ? solver->MakeNoGoodManager()
+                             : NULL),
         branches_between_restarts_(0),
         min_restart_period_(ComputeBranchRestart(parameters_.restart_log_size)),
         maximum_restart_depth_(kint64max),
@@ -784,9 +758,7 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const {
-    return "RestartMonitor";
-  }
+  virtual string DebugString() const { return "RestartMonitor"; }
 
  private:
   // Called before applying the refutation of the decision.  This
@@ -817,11 +789,11 @@ class RestartMonitor : public SearchMonitor {
 
       // Some verbose display.
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(2) << "search_depth = " << search_depth
-                << ", branches between restarts = "
-                << branches_between_restarts_
-                << ", log_search_space_size = " << log_search_space_size
-                << ", min_log_search_space = " << min_log_search_space_;
+        VLOG(2)
+            << "search_depth = " << search_depth
+            << ", branches between restarts = " << branches_between_restarts_
+            << ", log_search_space_size = " << log_search_space_size
+            << ", min_log_search_space = " << min_log_search_space_;
       }
       bool all_rights = true;
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
@@ -844,7 +816,7 @@ class RestartMonitor : public SearchMonitor {
       // We may restart either because of the search space criteria,
       // or the search depth is less than maximum_restart_depth_.
       if (min_log_search_space_ + parameters_.restart_log_size <
-          log_search_space_size  ||
+              log_search_space_size ||
           (search_depth <= maximum_restart_depth_ &&
            maximum_restart_depth_ != kint64max)) {
         // If we have not visited enough branches, we postpone the
@@ -854,8 +826,8 @@ class RestartMonitor : public SearchMonitor {
           maximum_restart_depth_ = search_depth - 1;
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
             VLOG(2) << "Postpone restarting until depth <= "
-                    << maximum_restart_depth_ << ", visited nodes = "
-                    << branches_between_restarts_
+                    << maximum_restart_depth_
+                    << ", visited nodes = " << branches_between_restarts_
                     << " / " << min_restart_period_;
           }
           return false;
@@ -876,9 +848,7 @@ class RestartMonitor : public SearchMonitor {
     // Creates nogood.
     if (parameters_.use_no_goods) {
       bool all_rights = true;
-      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
-           it.ok();
-           ++it) {
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
         const ChoiceInfo& choice = *it;
         if (choice.left()) {
           all_rights = false;
@@ -901,18 +871,14 @@ class RestartMonitor : public SearchMonitor {
       // if the nogood contains both x == 3 and x != 4, we can simplify
       // to keep only x == 3.
       hash_set<IntVar*> positive_variable;
-      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
-           it.ok();
-           ++it) {
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
         const ChoiceInfo& choice = *it;
         if (choice.left()) {
           positive_variable.insert(choice.var());
         }
       }
       // We fill the nogood structure.
-      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
-           it.ok();
-           ++it) {
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
         const ChoiceInfo& choice = *it;
         IntVar* const var = choice.var();
         const int64 value = choice.value();
@@ -953,13 +919,10 @@ class RestartMonitor : public SearchMonitor {
 
 class RunHeuristicsAsDives : public Decision {
  public:
-  RunHeuristicsAsDives(Solver* const solver,
-                       const std::vector<IntVar*>& vars,
+  RunHeuristicsAsDives(Solver* const solver, const std::vector<IntVar*>& vars,
                        DefaultPhaseParameters::DisplayLevel level,
-                       bool run_all_heuristics,
-                       int random_seed,
-                       int heuristic_period,
-                       int heuristic_num_failures_limit)
+                       bool run_all_heuristics, int random_seed,
+                       int heuristic_period, int heuristic_num_failures_limit)
       : heuristic_limit_(NULL),
         display_level_(level),
         run_all_heuristics_(run_all_heuristics),
@@ -969,9 +932,7 @@ class RunHeuristicsAsDives : public Decision {
     Init(solver, vars, heuristic_num_failures_limit);
   }
 
-  virtual ~RunHeuristicsAsDives() {
-    STLDeleteElements(&heuristics_);
-  }
+  virtual ~RunHeuristicsAsDives() { STLDeleteElements(&heuristics_); }
 
   virtual void Apply(Solver* const solver) {
     if (!RunAllHeuristics(solver)) {
@@ -996,7 +957,7 @@ class RunHeuristicsAsDives : public Decision {
         solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
     if (result && display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  --- solution found by heuristic " << wrapper->name
-                << " --- ";;
+                << " --- ";
     }
     return result;
   }
@@ -1017,90 +978,58 @@ class RunHeuristicsAsDives : public Decision {
     }
   }
 
-  int Rand32(int size) {
-    return random_.Next() % size;
-  }
+  int Rand32(int size) { return random_.Next() % size; }
 
-  void Init(Solver* const solver,
-            const std::vector<IntVar*>& vars,
+  void Init(Solver* const solver, const std::vector<IntVar*>& vars,
             int heuristic_num_failures_limit) {
     const int kRunOnce = 1;
     const int kRunMore = 2;
     const int kRunALot = 3;
 
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                             Solver::ASSIGN_MIN_VALUE,
-                             "AssignMinValueToMinDomainSize",
-                             kRunOnce));
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+        Solver::ASSIGN_MIN_VALUE, "AssignMinValueToMinDomainSize", kRunOnce));
+
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
+        Solver::ASSIGN_MAX_VALUE, "AssignMaxValueToMinDomainSize", kRunOnce));
 
     heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                             Solver::ASSIGN_MAX_VALUE,
-                             "AssignMaxValueToMinDomainSize",
-                             kRunOnce));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+        new HeuristicWrapper(solver, vars, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                              Solver::ASSIGN_CENTER_VALUE,
-                             "AssignCenterValueToMinDomainSize",
-                             kRunOnce));
+                             "AssignCenterValueToMinDomainSize", kRunOnce));
 
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_FIRST_UNBOUND,
-                             Solver::ASSIGN_RANDOM_VALUE,
-                             "AssignRandomValueToFirstUnbound",
-                             kRunALot));
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_RANDOM_VALUE,
+        "AssignRandomValueToFirstUnbound", kRunALot));
 
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_MIN_VALUE,
-                             "AssignMinValueToRandomVariable",
-                             kRunMore));
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MIN_VALUE,
+        "AssignMinValueToRandomVariable", kRunMore));
 
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_MAX_VALUE,
-                             "AssignMaxValueToRandomVariable",
-                             kRunMore));
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE,
+        "AssignMaxValueToRandomVariable", kRunMore));
 
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_RANDOM_VALUE,
-                             "AssignRandomValueToRandomVariable",
-                             kRunMore));
+    heuristics_.push_back(new HeuristicWrapper(
+        solver, vars, Solver::CHOOSE_RANDOM, Solver::ASSIGN_RANDOM_VALUE,
+        "AssignRandomValueToRandomVariable", kRunMore));
 
     heuristic_limit_ =
-        solver->MakeLimit(kint64max,  // time.
-                          kint64max,  // branches.
+        solver->MakeLimit(kint64max,                     // time.
+                          kint64max,                     // branches.
                           heuristic_num_failures_limit,  // fails.
-                          kint64max);  // solutions.
+                          kint64max);                    // solutions.
   }
 
  private:
   // This class wraps one heuristic with extra information: name and
   // number of runs.
   struct HeuristicWrapper {
-    HeuristicWrapper(Solver* const solver,
-                     const std::vector<IntVar*>& vars,
+    HeuristicWrapper(Solver* const solver, const std::vector<IntVar*>& vars,
                      Solver::IntVarStrategy var_strategy,
                      Solver::IntValueStrategy value_strategy,
-                     const string& heuristic_name,
-                     int heuristic_runs)
+                     const string& heuristic_name, int heuristic_runs)
         : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
           name(heuristic_name),
           runs(heuristic_runs) {}
@@ -1131,21 +1060,15 @@ class DefaultIntegerSearch : public DecisionBuilder {
  public:
   static const double kSmallSearchSpaceLimit;
 
-  DefaultIntegerSearch(Solver* const solver,
-                       const std::vector<IntVar*>& vars,
+  DefaultIntegerSearch(Solver* const solver, const std::vector<IntVar*>& vars,
                        const DefaultPhaseParameters& parameters)
       : vars_(vars),
         parameters_(parameters),
         domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
-        impact_recorder_(solver,
-                         &domain_watcher_,
-                         vars,
+        impact_recorder_(solver, &domain_watcher_, vars,
                          parameters.display_level),
-        heuristics_(solver,
-                    vars_,
-                    parameters_.display_level,
-                    parameters_.run_all_heuristics,
-                    parameters_.random_seed,
+        heuristics_(solver, vars_, parameters_.display_level,
+                    parameters_.run_all_heuristics, parameters_.random_seed,
                     parameters_.heuristic_period,
                     parameters_.heuristic_num_failures_limit),
         restart_monitor_(solver, parameters_, &domain_watcher_),
@@ -1160,9 +1083,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
-    return parameters_.decision_builder != NULL ?
-        parameters_.decision_builder->Next(solver) :
-        ImpactNext(solver);
+    return parameters_.decision_builder != NULL
+               ? parameters_.decision_builder->Next(solver)
+               : ImpactNext(solver);
   }
 
   virtual void AppendMonitors(Solver* const solver,
@@ -1180,8 +1103,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(),
-                                               vars_.size());
+                                               vars_.data(), vars_.size());
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
@@ -1212,10 +1134,12 @@ class DefaultIntegerSearch : public DecisionBuilder {
             LOG(INFO) << "Domains are too large, switching to simple "
                       << "heuristics";
           }
+          solver->SaveValue(reinterpret_cast<void**>(
+              &parameters_.decision_builder));
           parameters_.decision_builder =
               solver->MakePhase(vars_, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                                 Solver::ASSIGN_MIN_VALUE);
-          init_done_ = true;
+          solver->SaveAndSetValue(&init_done_, true);
           return;
         }
       }
@@ -1225,10 +1149,11 @@ class DefaultIntegerSearch : public DecisionBuilder {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
         }
-        parameters_.decision_builder =
-            solver->MakePhase(vars_, Solver::CHOOSE_FIRST_UNBOUND,
-                              Solver::ASSIGN_MIN_VALUE);
-        init_done_ = true;
+        solver->SaveValue(reinterpret_cast<void**>(
+            &parameters_.decision_builder));
+        parameters_.decision_builder = solver->MakePhase(
+            vars_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
+        solver->SaveAndSetValue(&init_done_, true);
         return;
       }
 
@@ -1237,8 +1162,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                   << " variables, initialization splits = "
                   << parameters_.initialization_splits
                   << ", heuristic_period = " << parameters_.heuristic_period
-                  << ", run_all_heuristics = "
-                  << parameters_.run_all_heuristics
+                  << ", run_all_heuristics = " << parameters_.run_all_heuristics
                   << ", restart_log_size = " << parameters_.restart_log_size;
       }
       // Init the impacts.
@@ -1263,9 +1187,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       if (!vars_[i]->Bound()) {
         int64 current_value = 0;
         double current_var_impact = 0.0;
-        impact_recorder_.ScanVarImpacts(i,
-                                        &current_value,
-                                        &current_var_impact,
+        impact_recorder_.ScanVarImpacts(i, &current_value, &current_var_impact,
                                         parameters_.var_selection_schema,
                                         parameters_.value_selection_schema);
         if (current_var_impact > best_var_impact) {
@@ -1304,8 +1226,7 @@ DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
 }
 
 DecisionBuilder* Solver::MakeDefaultPhase(
-    const std::vector<IntVar*>& vars,
-    const DefaultPhaseParameters& parameters) {
+    const std::vector<IntVar*>& vars, const DefaultPhaseParameters& parameters) {
   return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
 }
 }  // namespace operations_research
