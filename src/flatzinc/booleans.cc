@@ -13,7 +13,6 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -23,9 +22,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/map-util.h"
-#include "base/scoped_ptr.h"
-#include "base/stl_util.h"
-#include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
