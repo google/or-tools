@@ -47,6 +47,7 @@ inline Variable Var(Literal p)   { return Variable(p.value() >> 1); }
 static const Literal kUndefinedLiteral = Literal(-2);
 static const Literal kErrorLiteral = Literal(-1);
 
+// Lifted boolean class with undefined value.
 DEFINE_INT_TYPE(Boolean, uint8);
 static const Boolean kTrue = Boolean((uint8)0);
 static const Boolean kFalse = Boolean((uint8)1);
@@ -81,7 +82,7 @@ struct Watcher {
   Literal blocker;
 };
 
-// WatcherList -- a class for maintaining occurence lists with lazy deletion:
+// WatcherList -- a class for maintaining occurence lists.
 class WatcherList {
  public:
   void init(const Variable& v) {
