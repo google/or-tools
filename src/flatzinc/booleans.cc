@@ -275,10 +275,9 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
 
   // Check if clause is satisfied and remove false/duplicate literals:
   std::sort(ps->begin(), ps->end());
-  Literal p;
-  int i;
-  int j;
-  for (i = j = 0, p = kUndefinedLiteral; i < ps->size(); i++) {
+  Literal p = kUndefinedLiteral;
+  int j = 0;
+  for (int i; i < ps->size(); ++i) {
     if (Value((*ps)[i]) == kTrue || (*ps)[i] == Negated(p)) {
       return true;
     } else if (Value((*ps)[i]) != kFalse && (*ps)[i] != p) {
@@ -288,11 +287,11 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
   ps->resize(j);
 
   if (ps->size() == 0) {
-    return ok_ = false;
+    return (ok_ = false);
   }
   else if (ps->size() == 1) {
     UncheckedEnqueue((*ps)[0]);
-    return ok_ = Propagate();
+    return (ok_ = Propagate());
   } else {
     Clause* const cr = new Clause(ps);
     clauses.push_back(cr);
@@ -322,7 +321,7 @@ bool Solver::Propagate() {
       // Make sure the false literal is data[1]:
       Clause* const cr  = ws[i].clause;
       Clause& c = *cr;
-      Literal false_lit = Negated(p);
+      const Literal false_lit = Negated(p);
       if (c[0] == false_lit) {
         c[0] = c[1], c[1] = false_lit;
       }
@@ -331,7 +330,7 @@ bool Solver::Propagate() {
 
       // If 0th watch is true, then clause is already satisfied.
       const Literal first = c[0];
-      Watcher w = Watcher(cr, first);
+      const Watcher w = Watcher(cr, first);
       if (first != blocker && Value(first) == kTrue) {
         ws[j++] = w;
         continue;
