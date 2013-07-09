@@ -19,6 +19,7 @@
 #include "base/commandlineflags.h"
 #include "base/hash.h"
 #include "base/int-type.h"
+#include "base/int-type-indexed-vector.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/map-util.h"
@@ -82,51 +83,6 @@ struct Watcher {
   Literal blocker;
 };
 
-// WatcherList -- a class for maintaining occurence lists.
-class WatcherList {
- public:
-  void init(const Variable& v) {
-    occs_.resize(2 * v.value() + 2);
-    dirty_.resize(2 * v.value() + 2, 0);
-  }
-
-  std::vector<Watcher>& operator[](const Literal& idx) {
-    return occs_[idx.value()];
-  }
-
-  void cleanAll() {
-    for (int i = 0; i < dirties_.size(); i++) {
-      // Dirties may contain duplicates so check here if a variable is
-      // already cleaned:
-      if (dirty_[dirties_[i].value()]) {
-        clean(dirties_[i]);
-      }
-    }
-    dirties_.clear();
-  }
-
-  void clean(const Literal& idx) {
-    std::vector<Watcher>& vec = occs_[idx.value()];
-    int i, j;
-    for (i = j = 0; i < vec.size(); i++) {
-      vec[j++] = vec[i];
-    }
-    vec.resize(j);
-    dirty_[idx.value()] = 0;
-  }
-
-  void clear() {
-    occs_.clear();
-    dirty_.clear();
-    dirties_.clear();
-  }
-
- private:
-  std::vector<std::vector<Watcher>> occs_;
-  std::vector<char> dirty_;
-  std::vector<Literal> dirties_;
-};
-
 // Solver
 class Solver {
  public:
@@ -136,7 +92,7 @@ class Solver {
   // Add a new variable.
   Variable NewVariable() {
     Variable v = IncrementVariableCounter();
-    watches_.init(v);
+    watches_.resize(2 * v.value() + 2);
     assignment_.push_back(kUndefined);
     return v;
   }
@@ -181,7 +137,7 @@ class Solver {
     if (TrailMarker() > level) {
       for (int c = trail_.size() - 1; c >= trail_markers_[level]; c--) {
         Variable x = Var(trail_[c]);
-        assignment_[x.value()] = kUndefined;
+        assignment_[x] = kUndefined;
       }
       qhead_ = trail_markers_[level];
       trail_.resize(trail_markers_[level]);
@@ -194,10 +150,10 @@ class Solver {
   std::vector<Literal> touched_variables_;
 
   // The current value of a variable.
-  Boolean Value(Variable x) const { return assignment_[x.value()]; }
+  Boolean Value(Variable x) const { return assignment_[x]; }
   // The current value of a literal.
   Boolean Value(Literal p) const {
-    const Boolean b = assignment_[Var(p).value()];
+    const Boolean b = assignment_[Var(p)];
     return b == kUndefined ? kUndefined : Xor(b, Sign(p));
   }
   // The current number of original clauses.
@@ -218,10 +174,10 @@ class Solver {
   // Enqueue a literal. Assumes value of literal is undefined.
   void UncheckedEnqueue(Literal p) {
     DCHECK_EQ(Value(p), kUndefined);
-    if (assignment_[Var(p).value()] == kUndefined) {
+    if (assignment_[Var(p)] == kUndefined) {
       touched_variables_.push_back(p);
     }
-    assignment_[Var(p).value()] = Sign(p) ? kFalse : kTrue;
+    assignment_[Var(p)] = Sign(p) ? kFalse : kTrue;
     trail_.push_back(p);
   }
 
@@ -249,9 +205,9 @@ class Solver {
   std::vector<Clause*> clauses;
   // 'watches_[lit]' is a list of constraints watching 'lit'(will go
   // there if literal becomes true).
-  WatcherList watches_;
+  ITIVector<Literal, std::vector<Watcher>> watches_;
   // The current assignments.
-  std::vector<Boolean> assignment_;
+  ITIVector<Variable, Boolean> assignment_;
   // Assignment stack; stores all assigments made in the order they
   // were made.
   std::vector<Literal> trail_;
@@ -302,7 +258,6 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
 
 bool Solver::Propagate() {
   bool result = true;
-  watches_.cleanAll();
   while (qhead_ < trail_.size()) {
     Literal p = trail_[qhead_++];
     // 'p' is enqueued fact to propagate.
@@ -383,7 +338,7 @@ bool Solver::PropagateOneLiteral(Literal lit) {
   PushTrailMarker();
   // Unchecked enqueue
   DCHECK_EQ(Value(lit), kUndefined);
-  assignment_[Var(lit).value()] = MakeBoolean(!Sign(lit));
+  assignment_[Var(lit)] = MakeBoolean(!Sign(lit));
   trail_.push_back(lit);
   if (!Propagate()) {
     return false;
