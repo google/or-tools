@@ -786,17 +786,15 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
           p.use_log ? solver_->MakeSearchLog(p.log_period) : NULL;
       monitors.push_back(log);
       parallel_support->StartSearch(p.worker_id, FzParallelSupport::SATISFY);
-
       break;
     }
   }
   // Custom limit in case of parallelism.
   monitors.push_back(parallel_support->Limit(solver_.get(), p.worker_id));
 
-  SearchLimit* const limit = (
-      p.time_limit_in_ms > 0 ? solver_->MakeLimit(p.time_limit_in_ms, kint64max,
-                                                  kint64max, kint64max)
-                             : NULL);
+  SearchLimit* const limit =
+      p.time_limit_in_ms > 0 ? solver_->MakeTimeLimit(p.time_limit_in_ms)
+                             : NULL;
   monitors.push_back(limit);
 
   if (p.simplex_frequency > 0) {
