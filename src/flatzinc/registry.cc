@@ -44,7 +44,7 @@
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
-DEFINE_bool(use_minisat, false, "Use minisat for boolean propagation");
+DEFINE_bool(use_sat, true, "Use sat for boolean propagation");
 
 namespace operations_research {
 class SatPropagator;
@@ -1583,7 +1583,7 @@ void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    if (FLAGS_use_minisat && AddBoolEq(model->Sat(), left, right)) {
+    if (FLAGS_use_sat && AddBoolEq(model->Sat(), left, right)) {
       VLOG(2) << "  - posted to minisat";
     } else {
       Constraint* const ct = solver->MakeEquality(left, right);
@@ -1603,7 +1603,7 @@ void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
     solver->AddConstraint(ct);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    if (FLAGS_use_minisat && AddBoolNot(model->Sat(), left, right)) {
+    if (FLAGS_use_sat && AddBoolNot(model->Sat(), left, right)) {
       VLOG(2) << "  - posted to minisat";
     } else {
       Constraint* const ct = solver->MakeNonEquality(left, right);
@@ -1623,7 +1623,7 @@ void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
     solver->AddConstraint(ct);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    if (FLAGS_use_minisat && AddBoolLe(model->Sat(), right, left)) {
+    if (FLAGS_use_sat && AddBoolLe(model->Sat(), right, left)) {
       VLOG(2) << "  - posted to minisat";
     } else {
       Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
@@ -1658,7 +1658,7 @@ void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
     solver->AddConstraint(ct);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    if (FLAGS_use_minisat && AddBoolLe(model->Sat(), left, right)) {
+    if (FLAGS_use_sat && AddBoolLe(model->Sat(), left, right)) {
       VLOG(2) << "  - posted to minisat";
     } else {
       Constraint* const ct = solver->MakeLessOrEqual(left, right);
@@ -1702,7 +1702,7 @@ void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(node_right);
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolIsEqVar(model->Sat(), left, right, boolvar)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1731,7 +1731,7 @@ void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolIsNEqVar(model->Sat(), left, right, boolvar)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1761,7 +1761,7 @@ void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolIsLeVar(model->Sat(), right, left, boolvar)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1815,7 +1815,7 @@ void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolIsLeVar(model->Sat(), left, right, boolvar)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1862,7 +1862,7 @@ void p_bool_and(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(2), target);
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolAndEqVar(model->Sat(), left, right, target)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1886,7 +1886,7 @@ void p_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(2), target);
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    if (FLAGS_use_minisat &&
+    if (FLAGS_use_sat &&
         AddBoolOrEqVar(model->Sat(), left, right, target)) {
       VLOG(2) << "  - posted to minisat";
     } else {
@@ -1927,7 +1927,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     if (node_boolvar->isBool()) {
       if (node_boolvar->getBool() == 1) {
-        if (FLAGS_use_minisat &&
+        if (FLAGS_use_sat &&
             AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
           VLOG(2) << "  - posted to minisat";
         } else {
@@ -1942,7 +1942,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
       }
     } else {
       IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      if (FLAGS_use_minisat &&
+      if (FLAGS_use_sat &&
           AddBoolOrArrayEqVar(model->Sat(), variables, boolvar)) {
         VLOG(2) << "  - posted to minisat";
       } else {
@@ -1983,7 +1983,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     if (node_boolvar->isBool()) {
       if (node_boolvar->getBool() == 0) {
-        if (FLAGS_use_minisat &&
+        if (FLAGS_use_sat &&
             AddBoolAndArrayEqualFalse(model->Sat(), variables)) {
           VLOG(2) << "  - posted to minisat";
         } else {
@@ -2000,7 +2000,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
       }
     } else {
       IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      if (FLAGS_use_minisat &&
+      if (FLAGS_use_sat &&
           AddBoolAndArrayEqVar(model->Sat(), variables, boolvar)) {
         VLOG(2) << "  - posted to minisat";
       } else {
@@ -2040,7 +2040,7 @@ void p_array_bool_clause(FlatZincModel* const model, CtSpec* const spec) {
     variables.push_back(solver->MakeDifference(
         1, model->GetIntExpr(b_array_variables->a[i])->Var())->Var());
   }
-  if (FLAGS_use_minisat && AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
+  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
     VLOG(2) << "  - posted to minisat";
   } else {
     Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
@@ -2054,7 +2054,7 @@ void p_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
-  if (FLAGS_use_minisat && AddBoolIsNEqVar(model->Sat(), left, right, target)) {
+  if (FLAGS_use_sat && AddBoolIsNEqVar(model->Sat(), left, right, target)) {
     VLOG(2) << "  - posted to minisat";
   } else {
     Constraint* const ct =
@@ -2075,7 +2075,7 @@ void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(1), target);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    if (FLAGS_use_minisat && AddBoolNot(model->Sat(), left, right)) {
+    if (FLAGS_use_sat && AddBoolNot(model->Sat(), left, right)) {
       VLOG(2) << "  - posted to minisat";
     } else {
       Constraint* const ct =

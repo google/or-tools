@@ -39,11 +39,10 @@
 #include "base/concise_iterator.h"
 #include "base/hash.h"
 
-DEFINE_bool(backjump, false, "Use backjump is the minisat connection");
-DECLARE_bool(use_minisat);
+DECLARE_bool(use_sat);
 
 namespace operations_research {
-SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump);
+SatPropagator* MakeSatPropagator(Solver* const solver);
 
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
@@ -65,8 +64,9 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 
 void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
-  if (FLAGS_use_minisat) {
-    sat_ = MakeSatPropagator(solver_.get(), FLAGS_backjump);
+  if (FLAGS_use_sat) {
+    VLOG(1) << "  - Use minisat";
+    sat_ = MakeSatPropagator(solver_.get());
     solver_->AddConstraint(reinterpret_cast<Constraint*>(sat_));
   } else {
     sat_ = NULL;

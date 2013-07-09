@@ -37,7 +37,7 @@ extern int orfz_get_lineno(void* scanner);
 extern void orfz_set_extra(void* user_defined, void* yyscanner);
 extern void yyerror(void* parm, const char* str);
 
-DECLARE_bool(use_minisat);
+DECLARE_bool(use_sat);
 
 namespace operations_research {
 // ----- Misc -----
@@ -164,18 +164,18 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       candidates->insert(define);
       VLOG(3) << id << " -> insert " << define->DebugString();
     }
-  } else if ((id == "array_bool_and" && !FLAGS_use_minisat) ||
-             (id == "array_bool_or" && !FLAGS_use_minisat) ||
+  } else if ((id == "array_bool_and" && !FLAGS_use_sat) ||
+             (id == "array_bool_or" && !FLAGS_use_sat) ||
              id == "array_bool_element" || id == "count_reif" ||
              id == "int_lin_eq_reif" || id == "int_lin_ne_reif" ||
              id == "int_lin_ge_reif" || id == "int_lin_le_reif" ||
              id == "int_lin_gt_reif" || id == "int_lin_lt_reif" ||
              id == "int_eq_reif" || id == "int_ne_reif" ||
              id == "int_le_reif" || id == "int_ge_reif" ||
-             (id == "bool_eq_reif" && !FLAGS_use_minisat) ||
-             (id == "bool_ne_reif" && !FLAGS_use_minisat) ||
-             (id == "bool_le_reif" && !FLAGS_use_minisat) ||
-             (id == "bool_ge_reif" && !FLAGS_use_minisat) || id == "bool_not") {
+             (id == "bool_eq_reif" && !FLAGS_use_sat) ||
+             (id == "bool_ne_reif" && !FLAGS_use_sat) ||
+             (id == "bool_le_reif" && !FLAGS_use_sat) ||
+             (id == "bool_ge_reif" && !FLAGS_use_sat) || id == "bool_not") {
     // Defines a bool var.
     AstNode* const bool_define = FindTarget(spec->annotations());
     if (bool_define != NULL) {
