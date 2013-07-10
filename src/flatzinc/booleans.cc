@@ -38,8 +38,8 @@ inline Literal MakeLiteral (Variable var, bool sign) {
 }
 
 inline Literal Negated(Literal p) { return Literal(p.value() ^ 1); }
-inline bool Sign(Literal p)   { return p.value() & 1; }
-inline Variable Var(Literal p)   { return Variable(p.value() >> 1); }
+inline bool Sign(Literal p) { return p.value() & 1; }
+inline Variable Var(Literal p) { return Variable(p.value() >> 1); }
 
 static const Literal kUndefinedLiteral = Literal(-2);
 static const Literal kErrorLiteral = Literal(-1);
@@ -71,9 +71,10 @@ class Clause {
   std::vector<Literal> literals_;
 };
 
+// A watcher represent a clause attached to a literal.
 struct Watcher {
   Watcher(): blocker(kUndefinedLiteral) {}
-  Watcher(Clause* cr, Literal p) : clause(cr), blocker(p) {}
+  Watcher(Clause* const cr, Literal p) : clause(cr), blocker(p) {}
 
   Clause* clause;
   Literal blocker;
@@ -159,14 +160,13 @@ class Solver {
   bool PropagateOneLiteral(Literal lit);
 
   private:
-  // Helper structures:
-  //
   Variable IncrementVariableCounter() { return Variable(num_vars_++); };
 
   // Begins a new decision level.
   void PushTrailMarker() {
     trail_markers_.push_back(trail_.size());
   }
+
   // Enqueue a literal. Assumes value of literal is undefined.
   void UncheckedEnqueue(Literal p) {
     DCHECK_EQ(Value(p), kUndefined);
@@ -376,8 +376,8 @@ class SatPropagator : public Constraint {
       return Sat::MakeLiteral(indices_[expr_var], !expr_negated);
     } else {
       const Sat::Variable var = minisat_.NewVariable();
+      DCHECK_EQ(vars_.size(), var.value());
       vars_.push_back(expr_var);
-      sat_variables_.push_back(var);
       indices_[expr_var] = var;
       Sat::Literal lit = Sat::MakeLiteral(var, !expr_negated);
       VLOG(2) << " - created var = " << var.value()
@@ -391,9 +391,9 @@ class SatPropagator : public Constraint {
       VLOG(2) << "After failure, minisat_trail = " << minisat_trail_.Value()
               << ", minisat decision level = " << minisat_.TrailMarker();
       minisat_.cancelUntil(minisat_trail_.Value());
-      CHECK_EQ(minisat_trail_.Value(), minisat_.TrailMarker());
+      DCHECK_EQ(minisat_trail_.Value(), minisat_.TrailMarker());
     }
-    const Sat::Variable var = sat_variables_[index];
+    const Sat::Variable var = Sat::Variable(index);
     VLOG(2) << "VariableBound: " << vars_[index]->DebugString()
             << " with sat variable " << var;
     const Sat::Boolean internal_value = minisat_.Value(var);
@@ -483,7 +483,6 @@ class SatPropagator : public Constraint {
   Sat::Solver minisat_;
   std::vector<IntVar*> vars_;
   hash_map<IntVar*, Sat::Variable> indices_;
-  std::vector<Sat::Variable> sat_variables_;
   std::vector<Sat::Literal> bound_literals_;
   NumericalRev<int> minisat_trail_;
   std::vector<Demon*> demons_;
