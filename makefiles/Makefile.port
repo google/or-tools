@@ -77,10 +77,10 @@ ifeq ("$(SYSTEM)","win")
   CODEPORT = OpSys-Windows
   ifeq ("$(VisualStudioVersion)", "11.0")
     VISUAL_STUDIO=2012
-    VS_RELEASE=100
+    VS_RELEASE=v110
   else
     VISUAL_STUDIO=2010
-    VS_RELEASE=110
+    VS_RELEASE=v100
   endif
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
@@ -90,14 +90,14 @@ ifeq ("$(SYSTEM)","win")
   endif
   ifeq ("$(PLATFORM)", "x64")
     PORT = VisualStudio$(VISUAL_STUDIO)-64b
-    CBC_PLATFORM = x64
+    CBC_PLATFORM = x64-$(VS_RELEASE)-Release
     PTRLENGTH = 64
     NETPLATFORM = x64
   else
     PTRLENGTH = 32
     PLATFORM = Win32
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
-    CBC_PLATFORM = Win32
+    CBC_PLATFORM = Win32\\Release
     NETPLATFORM = x86
   endif
   OS = Windows

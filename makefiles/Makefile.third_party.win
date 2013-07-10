@@ -200,8 +200,8 @@ dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
 
-dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\*.lib dependencies\install\lib\coin
+dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe
+	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
 	copy dependencies\sources\coin-cbc\Cbc\src\*.hpp dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Clp\src\*.hpp dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
@@ -213,9 +213,9 @@ dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStud
 	copy dependencies\sources\coin-cbc\CoinUtils\src\*.h dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Cgl\src\*.h dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Osi\src\Osi\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe dependencies\install\bin
+	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
-dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe: dependencies\sources\coin-cbc\configure
+dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\coin-cbc\configure
 ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
 	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
