@@ -39,8 +39,11 @@ class LocalSearchPhaseParameters;
 }  // namespace operations_research
 
 // Neighborhood deactivation
+// TODO(user): move (most of?) these flags into a parameter-driven API.
 DEFINE_bool(routing_no_lns, false,
             "Routing: forbids use of Large Neighborhood Search.");
+DEFINE_bool(routing_no_fullpathlns, true,
+            "Routing: forbids use of Full-path Large Neighborhood Search.");
 DEFINE_bool(routing_no_relocate, false,
             "Routing: forbids use of Relocate neighborhood.");
 DEFINE_bool(routing_no_relocate_neighbors, true,
@@ -3933,8 +3936,8 @@ string RoutingModel::DebugOutputAssignment(
                       index,
                       solution_assignment.Value(vehicle));
         for (int dim_index = 0; dim_index < dimension_names.size();
-	     ++dim_index) {
-	  const string& dimension_name = dimension_names[dim_index];
+             ++dim_index) {
+          const string& dimension_name = dimension_names[dim_index];
           const IntVar* var = CumulVar(index, dimension_name);
           StringAppendF(
               &output,
@@ -4124,6 +4127,9 @@ LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
       && !FLAGS_routing_tabu_search
       && !FLAGS_routing_simulated_annealing) {
     CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(Solver::TSPLNS);
+  }
+  if (!FLAGS_routing_no_fullpathlns) {
+    CP_ROUTING_PUSH_BACK_OPERATOR(Solver::FULLPATHLNS);
   }
   if (!FLAGS_routing_no_lns) {
     CP_ROUTING_PUSH_BACK_OPERATOR(Solver::PATHLNS);
@@ -4613,6 +4619,77 @@ int64 WrappedVehicleEvaluator(RoutingModel::VehicleEvaluator* evaluator,
     return kint64max;
   }
 }
+
+// Very light version of the RangeLessOrEqual constraint (see ./range_cst.cc).
+// Only performs initial propagation and then checks the compatibility of the
+// variable domains without domain pruning.
+// This is useful when to avoid ping-pong effects with costly constraints
+// such as the PathCumul constraint.
+// This constraint has not been added to the cp library (in range_cst.cc) given
+// it only does checking and no propagation (except the initial propagation)
+// and is only fit for local search, in particular in the context of vehicle
+// routing.
+class LightRangeLessOrEqual : public Constraint {
+ public:
+  LightRangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
+  virtual ~LightRangeLessOrEqual() {}
+  virtual void Post();
+  virtual void InitialPropagate();
+  virtual string DebugString() const;
+  virtual IntVar* Var() {
+    return solver()->MakeIsLessOrEqualVar(left_, right_);
+  }
+  // TODO(user): introduce a kLightLessOrEqual tag.
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
+  }
+
+ private:
+  void CheckRange();
+
+  IntExpr* const left_;
+  IntExpr* const right_;
+  Demon* demon_;
+};
+
+LightRangeLessOrEqual::LightRangeLessOrEqual(
+    Solver* const s, IntExpr* const l, IntExpr* const r)
+    : Constraint(s), left_(l), right_(r), demon_(NULL) {}
+
+void LightRangeLessOrEqual::Post() {
+  demon_ = MakeConstraintDemon0(solver(),
+                                this,
+                                &LightRangeLessOrEqual::CheckRange,
+                                "CheckRange");
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
+}
+
+void LightRangeLessOrEqual::InitialPropagate() {
+  left_->SetMax(right_->Max());
+  right_->SetMin(left_->Min());
+  if (left_->Max() <= right_->Min()) {
+    demon_->inhibit(solver());
+  }
+}
+
+void LightRangeLessOrEqual::CheckRange() {
+  if (left_->Min() > right_->Max()) {
+    solver()->Fail();
+  }
+  if (left_->Max() <= right_->Min()) {
+    demon_->inhibit(solver());
+  }
+}
+
+string LightRangeLessOrEqual::DebugString() const {
+  return left_->DebugString() + " < " + right_->DebugString();
+}
+
 }  // namespace
 
 void RoutingDimension::InitializeCumuls(
@@ -4651,6 +4728,15 @@ void RoutingDimension::InitializeCumuls(
             solver->MakeLessOrEqual(cumuls_[i], capacity_var));
       }
     }
+  }
+  // Explicitly constrain the end cumul to be greater or equal to the start
+  // cumul; so that we don't need to worry about it later (eg. clients setting
+  // a max on the end cumul won't need to also set it on the start cumul).
+  for (int i = 0; i < model_->vehicles(); ++i) {
+    solver->AddConstraint(solver->RevAlloc(
+        new LightRangeLessOrEqual(solver,
+                                  cumuls_[model_->Start(i)],
+                                  cumuls_[model_->End(i)])));
   }
   capacity_evaluator_.reset(vehicle_capacity);
 }

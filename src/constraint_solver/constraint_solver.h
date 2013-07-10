@@ -261,7 +261,7 @@ struct DefaultPhaseParameters {
         restart_log_size(kDefaultRestartLogSize),
         display_level(NORMAL),
         use_no_goods(kDefaultUseNoGoods),
-        decision_builder(NULL) {}
+        decision_builder(nullptr) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -633,6 +633,10 @@ class Solver {
     // Note that the two sub-chains can be part of the same path; they even may
     // overlap.
     PATHLNS,
+
+    // Operator which relaxes one entire path and all unactive nodes, thus
+    // defining num_paths neighbors.
+    FULLPATHLNS,
 
     // Operator which relaxes all inactive nodes and one sub-chain of six
     // consecutive arcs. That way the path can be improve by inserting inactive

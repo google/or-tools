@@ -1853,7 +1853,9 @@ bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
 
 // ----- Path-based Large Neighborhood Search -----
 
-// Breaks number_of_chunks chains of chunk_size arcs.
+// Breaks "number_of_chunks" chains of "chunk_size" arcs, and deactivate all
+// inactive nodes if "unactive_fragments" is true.
+// As a special case, if chunk_size=0, then we break full paths.
 
 class PathLNS : public PathOperator {
  public:
@@ -1867,7 +1869,7 @@ class PathLNS : public PathOperator {
         number_of_chunks_(number_of_chunks),
         chunk_size_(chunk_size),
         unactive_fragments_(unactive_fragments) {
-    CHECK_GT(chunk_size_, 0);
+    CHECK_GE(chunk_size_, 0);
   }
   virtual ~PathLNS() {}
   virtual bool MakeNeighbor();
@@ -1877,6 +1879,7 @@ class PathLNS : public PathOperator {
   }
 
  private:
+  inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
   void DeactivateChain(int64 node0);
   void DeactivateUnactives();
 
@@ -1886,6 +1889,14 @@ class PathLNS : public PathOperator {
 };
 
 bool PathLNS::MakeNeighbor() {
+  if (ChainsAreFullPaths()) {
+    // Reject the current position as a neighbor if any of its base node
+    // isn't at the start of a path.
+    // TODO(user): make this more efficient.
+    for (int i = 0; i < number_of_chunks_; ++i) {
+      if (BaseNode(i) != StartNode(i)) return false;
+    }
+  }
   for (int i = 0; i < number_of_chunks_; ++i) {
     DeactivateChain(BaseNode(i));
   }
@@ -1895,7 +1906,7 @@ bool PathLNS::MakeNeighbor() {
 
 void PathLNS::DeactivateChain(int64 node) {
   for (int i = 0, current = node;
-       i < chunk_size_ && !IsPathEnd(current);
+       (ChainsAreFullPaths() || i < chunk_size_) && !IsPathEnd(current);
        ++i, current = Next(current)) {
     Deactivate(current);
     if (!ignore_path_vars_) {
@@ -2242,6 +2253,13 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
     case Solver::PATHLNS: {
       result = RevAlloc(
           new PathLNS(vars.data(), secondary_vars.data(), size, 2, 3, false));
+      break;
+    }
+    case Solver::FULLPATHLNS: {
+      result = RevAlloc(
+          new PathLNS(vars.data(), secondary_vars.data(), size,
+                      /*number_of_chunks=*/ 1, /*chunk_size=*/ 0,
+                      /*unactive_fragment=*/ true));
       break;
     }
     case Solver::UNACTIVELNS: {
