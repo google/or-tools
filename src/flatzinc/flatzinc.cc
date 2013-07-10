@@ -51,9 +51,8 @@ FlatZincModel::FlatZincModel(void)
       objective_variable_(-1),
       solve_annotations_(NULL),
       output_(NULL),
-      parsed_ok_(true)
-           ,sat_(NULL)
-      {}
+      parsed_ok_(true),
+      sat_(NULL) {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
