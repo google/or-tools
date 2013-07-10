@@ -77,8 +77,10 @@ ifeq ("$(SYSTEM)","win")
   CODEPORT = OpSys-Windows
   ifeq ("$(VisualStudioVersion)", "11.0")
     VISUAL_STUDIO=2012
+    VS_RELEASE=100
   else
     VISUAL_STUDIO=2010
+    VS_RELEASE=110
   endif
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
