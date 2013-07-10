@@ -42,6 +42,7 @@
 DECLARE_bool(use_sat);
 
 namespace operations_research {
+
 SatPropagator* MakeSatPropagator(Solver* const solver);
 
 FlatZincModel::FlatZincModel(void)

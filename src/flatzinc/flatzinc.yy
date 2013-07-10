@@ -853,7 +853,7 @@ FZ_CONSTRAINT FZ_ID '(' flat_expr_list ')' annotations
   if (!pp->hadError) {
     try {
       pp->AddConstraint($2, $4, $6);
-    } catch (operations_research::Error& e) {
+    } catch (operations_research::FzError& e) {
       yyerror(pp, e.DebugString().c_str());
     }
   }
@@ -867,7 +867,7 @@ FZ_SOLVE annotations FZ_SATISFY
     try {
       pp->AnalyseAndCreateModel();
       pp->model()->Satisfy($2);
-    } catch (operations_research::Error& e) {
+    } catch (operations_research::FzError& e) {
       yyerror(pp, e.DebugString().c_str());
     }
   } else {
@@ -884,7 +884,7 @@ FZ_SOLVE annotations FZ_SATISFY
         pp->model()->Minimize($4,$2);
       else
         pp->model()->Maximize($4,$2);
-    } catch (operations_research::Error& e) {
+    } catch (operations_research::FzError& e) {
       yyerror(pp, e.DebugString().c_str());
     }
   } else {

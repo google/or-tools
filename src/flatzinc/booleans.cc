@@ -54,6 +54,18 @@ inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
   return Boolean((uint8)(a.value() ^ (uint8) b));
 }
+inline string ToString(Boolean b) {
+  switch (b.value()) {
+    case 0:
+      return "true";
+    case 1:
+      return "false";
+    case 2:
+      return "undefined";
+    default:
+      return "error";
+  }
+}
 
 // Clause -- a simple class for representing a clause:
 class Clause {
@@ -122,7 +134,7 @@ class Solver {
   }
 
   // Incremental propagation.
-  bool initPropagator() {
+  bool InitPropagator() {
     touched_variables_.clear();
     return !ok_;
   }
@@ -367,7 +379,7 @@ class SatPropagator : public Constraint {
     if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
       return Sat::kErrorLiteral;
     }
-    VLOG(2) << "SAT: Parse " << expr->DebugString() << " to "
+    VLOG(2) << "  - SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated;
     if (ContainsKey(indices_, expr_var)) {
       return Sat::MakeLiteral(indices_[expr_var], !expr_negated);
@@ -377,7 +389,7 @@ class SatPropagator : public Constraint {
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
       Sat::Literal lit = Sat::MakeLiteral(var, !expr_negated);
-      VLOG(2) << " - created var = " << var.value()
+      VLOG(2) << "    - created var = " << var.value()
               << ", lit = " << lit.value();
       return lit;
     }
@@ -393,14 +405,7 @@ class SatPropagator : public Constraint {
     const Sat::Variable var = Sat::Variable(index);
     VLOG(2) << "VariableBound: " << vars_[index]->DebugString()
             << " with sat variable " << var;
-    const Sat::Boolean internal_value = sat_.Value(var);
     const bool new_value = vars_[index]->Value() != 0;
-    if (internal_value != Sat::kUndefined &&
-        ((internal_value == Sat::kTrue && !new_value) ||
-         (internal_value == Sat::kFalse && new_value))) {
-      VLOG(2) << " - internal value = " << internal_value << ", failing";
-      solver()->Fail();
-    }
     Sat::Literal lit = Sat::MakeLiteral(var, new_value);
     VLOG(2) << " - enqueue lit = " << lit.value() << " at depth "
             << sat_trail_.Value();
@@ -432,7 +437,8 @@ class SatPropagator : public Constraint {
 
   virtual void InitialPropagate() {
     VLOG(2) << "Initial propagation on sat solver";
-    sat_.initPropagator();
+    sat_.InitPropagator();
+    ApplyEarlyDeductions();
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       if (var->Bound()) {
@@ -444,23 +450,33 @@ class SatPropagator : public Constraint {
 
   // Add a clause to the solver, clears the vector.
   bool AddClause(std::vector<Sat::Literal>* const lits) {
-    return sat_.AddClause(lits);
+    bool result = sat_.AddClause(lits);
+    StoreEarlyDeductions();
+    return result;
   }
 
   // Add the empty clause, making the solver contradictory.
   bool AddEmptyClause() { return sat_.AddEmptyClause(); }
 
   // Add a unit clause to the solver.
-  bool AddClause(Sat::Literal p) { return sat_.AddClause(p); }
+  bool AddClause(Sat::Literal p) {
+    bool result = sat_.AddClause(p);
+    StoreEarlyDeductions();
+    return result;
+  }
 
   // Add a binary clause to the solver.
   bool AddClause(Sat::Literal p, Sat::Literal q) {
-    return sat_.AddClause(p, q);
+    bool result = sat_.AddClause(p, q);
+    StoreEarlyDeductions();
+    return result;
   }
 
   // Add a ternary clause to the solver.
   bool AddClause(Sat::Literal p, Sat::Literal q, Sat::Literal r) {
-    return sat_.AddClause(p, q, r);
+    bool result = sat_.AddClause(p, q, r);
+    StoreEarlyDeductions();
+    return result;
   }
 
   virtual string DebugString() const { return "SatConstraint"; }
@@ -470,13 +486,41 @@ class SatPropagator : public Constraint {
   }
 
  private:
+  void StoreEarlyDeductions() {
+    for (int i = 0; i < sat_.touched_variables_.size(); ++i) {
+      const Sat::Literal lit = sat_.touched_variables_[i];
+      VLOG(2) << "Postponing deduction " << lit.value();
+      early_deductions_.push_back(lit);
+    }
+    sat_.touched_variables_.clear();
+  }
+
+  void ApplyEarlyDeductions() {
+    for (int i = 0; i < early_deductions_.size(); ++i) {
+      const Sat::Literal lit = early_deductions_[i];
+      const Sat::Variable var = Sat::Var(lit);
+      const bool assigned_bool = Sat::Sign(lit);
+      VLOG(2) << " - var " << var << " (" << vars_[var.value()]->DebugString()
+              << ") was early assigned to " << assigned_bool
+              << " from literal " << lit.value();
+      demons_[var.value()]->inhibit(solver());
+      vars_[var.value()]->SetValue(assigned_bool);
+    }
+  }
+
   Sat::Solver sat_;
   std::vector<IntVar*> vars_;
   hash_map<IntVar*, Sat::Variable> indices_;
   std::vector<Sat::Literal> bound_literals_;
   NumericalRev<int> sat_trail_;
   std::vector<Demon*> demons_;
+  std::vector<Sat::Literal> early_deductions_;
 };
+
+void DeclareVariable(SatPropagator* const sat, IntVar* const var) {
+  CHECK(sat->Check(var));
+  sat->Literal(var);
+}
 
 bool AddBoolEq(SatPropagator* const sat, IntExpr* const left,
                IntExpr* const right) {

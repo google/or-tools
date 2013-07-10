@@ -41,6 +41,7 @@
 
 #include "base/commandlineflags.h"
 #include "flatzinc/flatzinc.h"
+#include "constraint_solver/constraint_solveri.h"
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
@@ -85,6 +86,8 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
 
 bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars);
+
+bool DeclareVariable(SatPropagator* const sat, IntVar* const var);
 
 extern bool HasDomainAnnotation(AstNode* const annotations);
 namespace {
@@ -143,7 +146,7 @@ void ModelBuilder::Post(FlatZincModel* const model, CtSpec* const spec) {
     const string& id = spec->Id();
     std::map<string, Builder>::iterator i = r.find(id);
     if (i == r.end()) {
-      throw Error("ModelBuilder",
+      throw FzError("ModelBuilder",
                   string("Constraint ") + spec->Id() + " not found");
     }
     i->second(model, spec);
@@ -424,7 +427,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
         other_coef = array_coefficients->a[0]->getInt();
         defined = array_variables->a[1];
       } else {
-        throw Error(
+        throw FzError(
             "ModelBuilder",
             string("Constraint ") + spec->Id() +
             " cannot define an integer variable with a coefficient"
@@ -449,7 +452,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
           CHECK(defined == NULL);
           defined = array_variables->a[i];
           if (array_coefficients->a[i]->getInt() != -1) {
-            throw Error(
+            throw FzError(
                 "ModelBuilder",
                 string("Constraint ") + spec->Id() +
                 " cannot define an integer variable with a coefficient"
@@ -1093,10 +1096,16 @@ void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficients->a[i]->getInt();
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  Constraint* const ct =
-      solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (FLAGS_use_sat && rhs == 1 && AreAllBooleans(variables) &&
+      AreAllOnes(coefficients) &&
+      AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
+    VLOG(2) << "  - posted to minisat";
+  } else {
+    Constraint* const ct =
+        solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
@@ -2961,7 +2970,7 @@ void p_set_in(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
-    throw Error("ModelBuilder", string("Constraint ") + spec->Id() +
+    throw FzError("ModelBuilder", string("Constraint ") + spec->Id() +
                                     " does not support variable sets");
   }
 }
@@ -2982,7 +2991,7 @@ void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
-    throw Error("ModelBuilder", string("Constraint ") + spec->Id() +
+    throw FzError("ModelBuilder", string("Constraint ") + spec->Id() +
                                     " does not support variable sets");
   }
 }
@@ -3002,7 +3011,7 @@ void FlatZincModel::PostConstraint(CtSpec* const spec) {
     global_model_builder.Post(this, spec);
   }
   catch (AstTypeError & e) {
-    throw Error("Type error", e.what());
+    throw FzError("Type error", e.what());
   }
 }  // namespace
 }  // namespace operations_research

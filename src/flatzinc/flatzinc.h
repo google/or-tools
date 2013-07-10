@@ -279,12 +279,12 @@ class FlatZincModel {
 };
 
 // %Exception class for %FlatZinc errors
-class Error {
+class FzError {
  private:
   const string msg;
 
  public:
-  Error(const string& where, const string& what)
+  FzError(const string& where, const string& what)
       : msg(where + ": " + what) {}
   const string& DebugString(void) const { return msg; }
 };
