@@ -1312,11 +1312,26 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   }
   if (id == "int_lin_le_reif") {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(1)->getArray();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
     for (int i = 0; i < size; ++i) {
       if (array_coefficients->a[i]->getInt() > 0) {
         one_positive = true;
+        break;
+      }
+    }
+    bool all_ones = true;
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() != 1) {
+        all_ones = false;
+        break;
+      }
+    }
+    bool all_booleans = true;
+    for (int i = 0; i < size; ++i) {
+      if (!IsBoolean(array_variables->a[i])) {
+        all_booleans = false;
         break;
       }
     }
@@ -1328,6 +1343,41 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
       spec->SetId("int_lin_ge_reif");
+      return true;
+    }
+    if (all_ones && all_booleans && spec->Arg(2)->getInt() == 0) {
+      VLOG(2) << "  - presolve:  transform is boolean sum <= 0 "
+              << "bool_sum_null_reif " << spec->DebugString();
+      spec->RemoveArg(2);
+      spec->RemoveArg(0);
+      spec->SetId("bool_sum_null_reif");
+      return true;
+    }
+  }
+  if (id == "int_lin_ge_reif") {
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(1)->getArray();
+    const int size = array_coefficients->a.size();
+    bool all_ones = true;
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() != 1) {
+        all_ones = false;
+        break;
+      }
+    }
+    bool all_booleans = true;
+    for (int i = 0; i < size; ++i) {
+      if (!IsBoolean(array_variables->a[i])) {
+        all_booleans = false;
+        break;
+      }
+    }
+    if (all_ones && all_booleans && spec->Arg(2)->getInt() == 1) {
+      VLOG(2) << "  - presolve:  transform is boolean sum >= 1 "
+              << "bool_sum_notnull_reif " << spec->DebugString();
+      spec->RemoveArg(2);
+      spec->RemoveArg(0);
+      spec->SetId("bool_sum_notnull_reif");
       return true;
     }
   }

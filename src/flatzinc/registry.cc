@@ -2984,6 +2984,45 @@ void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_bool_sum_null_reif(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
+  IntVar* const not_target = solver->MakeDifference(1, target)->Var();
+  if (FLAGS_use_sat &&
+      AddBoolOrArrayEqVar(model->Sat(), variables, not_target)) {
+    VLOG(2) << "  - posted to minisat";
+  } else {
+    Constraint* const ct = solver->MakeMaxEquality(variables, not_target);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
+}
+
+void p_bool_sum_notnull_reif(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
+  if (FLAGS_use_sat &&
+      AddBoolOrArrayEqVar(model->Sat(), variables, target)) {
+    VLOG(2) << "  - posted to minisat";
+  } else {
+    Constraint* const ct = solver->MakeMaxEquality(variables, target);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -3078,7 +3117,9 @@ class IntBuilder {
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
-    global_model_builder.Register("diffn", &p_diffn);
+    global_model_builder.Register("bool_sum_null_reif", &p_bool_sum_null_reif);
+    global_model_builder.Register("bool_sum_notnull_reif",
+                                  &p_bool_sum_notnull_reif);
   }
 };
 IntBuilder __int_Builder;
