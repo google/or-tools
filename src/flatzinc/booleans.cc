@@ -691,6 +691,29 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
   return true;
 }
 
+bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
+  if (!sat->Check(vars)) {
+    return false;
+  }
+  std::vector<Sat::Literal> lits(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    lits[i] = Negated(sat->Literal(vars[i]));
+  }
+  for (int i = 0; i < lits.size() - 1; ++i) {
+    for (int j = i + 1; j < lits.size(); ++j) {
+      sat->AddClause(lits[i], lits[j]);
+    }
+  }
+  return true;
+}
+
+bool AddArrayXor(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
+  if (!sat->Check(vars)) {
+    return false;
+  }
+  return false;
+}
+
 SatPropagator* MakeSatPropagator(Solver* const solver) {
   return solver->RevAlloc(new SatPropagator(solver));
 }

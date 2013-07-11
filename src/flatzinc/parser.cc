@@ -152,7 +152,6 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
                                       NodeSet* const candidates) const {
   const string& id = spec->Id();
   if (id == "bool2int" || id == "int_plus" || id == "int_minus" ||
-      id == "int_times" ||
       (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" || id == "int_abs" ||
       (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations())) ||
@@ -163,6 +162,16 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       //      CHECK(IsIntroduced(define));
       candidates->insert(define);
       VLOG(3) << id << " -> insert " << define->DebugString();
+    }
+  } else if (id == "int_times") {
+    if (FLAGS_use_sat && IsBoolean(spec->Arg(1)) && IsBoolean(spec->Arg(2))) {
+      VLOG(3) << "Not marking " << spec->DebugString();
+    } else {
+      AstNode* const define = FindTarget(spec->annotations());
+      if (define != NULL) {
+        candidates->insert(define);
+        VLOG(3) << id << " -> insert " << define->DebugString();
+      }
     }
   } else if ((id == "array_bool_and" && !FLAGS_use_sat) ||
              (id == "array_bool_or" && !FLAGS_use_sat) ||
@@ -789,19 +798,19 @@ void ParserState::AnalyseAndCreateModel() {
 AstNode* ParserState::ArrayElement(string id, unsigned int offset) {
   if (offset > 0) {
     std::vector<int64> tmp;
-    if (int_var_array_map_.get(id, tmp) && offset <= tmp.size())
+    if (Get(int_var_array_map_, id, tmp) && offset <= tmp.size())
       return new AstIntVar(tmp[offset - 1]);
-    if (bool_var_array_map_.get(id, tmp) && offset <= tmp.size())
+    if (Get(bool_var_array_map_, id, tmp) && offset <= tmp.size())
       return new AstBoolVar(tmp[offset - 1]);
-    if (set_var_array_map_.get(id, tmp) && offset <= tmp.size())
+    if (Get(set_var_array_map_, id, tmp) && offset <= tmp.size())
       return new AstSetVar(tmp[offset - 1]);
 
-    if (int_value_array_map_.get(id, tmp) && offset <= tmp.size())
+    if (Get(int_value_array_map_, id, tmp) && offset <= tmp.size())
       return new AstIntLit(tmp[offset - 1]);
-    if (bool_value_array_map_.get(id, tmp) && offset <= tmp.size())
+    if (Get(bool_value_array_map_, id, tmp) && offset <= tmp.size())
       return new AstBoolLit(tmp[offset - 1]);
     std::vector<AstSetLit> tmpS;
-    if (set_value_array_map_.get(id, tmpS) && offset <= tmpS.size())
+    if (Get(set_value_array_map_, id, tmpS) && offset <= tmpS.size())
       return new AstSetLit(tmpS[offset - 1]);
   }
 
@@ -813,9 +822,9 @@ AstNode* ParserState::ArrayElement(string id, unsigned int offset) {
 
 AstNode* ParserState::VarRefArg(string id, bool annotation) {
   int64 tmp;
-  if (int_var_map_.get(id, tmp)) return new AstIntVar(tmp);
-  if (bool_var_map_.get(id, tmp)) return new AstBoolVar(tmp);
-  if (set_var_map_.get(id, tmp)) return new AstSetVar(tmp);
+  if (Get(int_var_map_, id, tmp)) return new AstIntVar(tmp);
+  if (Get(bool_var_map_, id, tmp)) return new AstBoolVar(tmp);
+  if (Get(set_var_map_, id, tmp)) return new AstSetVar(tmp);
   if (annotation) return new AstAtom(id);
   LOG(ERROR) << "Error: undefined variable " << id << " in line no. "
              << orfz_get_lineno(yyscanner);
@@ -875,6 +884,14 @@ bool ParserState::IsAlias(AstNode* const node) const {
     return bool_variables_[node->getBoolVar()]->alias;
   }
   return false;
+}
+
+bool ParserState::IsBoolean(AstNode* const node) const {
+  return (
+      node->isBool() || node->isBoolVar() ||
+      (node->isInt() && (node->getInt() == 0 || node->getInt() == 1)) ||
+      (node->isIntVar() && ContainsKey(bool2int_vars_, node->getIntVar())) ||
+      (node->isIntVar() && IntSpec(node)->IsBoolean()));
 }
 
 int64 ParserState::GetBound(AstNode* const node) const {
@@ -1201,6 +1218,12 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   if (id == "int_abs" && !ContainsKey(stored_constraints_, spec) &&
       spec->Arg(0)->isIntVar() && spec->Arg(1)->isIntVar()) {
     abs_map_[spec->Arg(1)->getIntVar()] = spec->Arg(0)->getIntVar();
+    stored_constraints_.insert(spec);
+    return true;
+  }
+  if (id == "bool2int" && !ContainsKey(stored_constraints_, spec) &&
+      spec->Arg(0)->isBoolVar() && spec->Arg(1)->isIntVar()) {
+    bool2int_vars_.insert(spec->Arg(1)->getIntVar());
     stored_constraints_.insert(spec);
     return true;
   }

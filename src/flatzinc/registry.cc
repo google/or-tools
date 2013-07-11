@@ -42,6 +42,7 @@
 #include "base/commandlineflags.h"
 #include "flatzinc/flatzinc.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
@@ -87,11 +88,19 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
 bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars);
 
+bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars);
+
+bool AddArrayXor(SatPropagator* const sat, const std::vector<IntVar*>& vars);
+
 bool DeclareVariable(SatPropagator* const sat, IntVar* const var);
 
 extern bool HasDomainAnnotation(AstNode* const annotations);
 namespace {
 // Help
+
+bool IsBoolean(IntExpr* const expr) {
+  return expr->Min() >= 0 && expr->Max() <= 1;
+}
 
 Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        const std::vector<IntVar*>& variables,
@@ -123,6 +132,112 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
   FLAGS_cp_trace_propagation = propag;
   return solver->MakeAllowedAssignments(variables, tuples);
 }
+
+class SumBooleanOdd : public Constraint {
+ public:
+  SumBooleanOdd(Solver* const s, IntVar* const* bool_vars, int size)
+      : Constraint(s),
+        vars_(new IntVar*[size]),
+        size_(size),
+        num_possible_true_vars_(0),
+        num_always_true_vars_(0) {
+    memcpy(vars_.get(), bool_vars, size_ * sizeof(*bool_vars));
+  }
+
+  virtual ~SumBooleanOdd() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      if (!vars_[i]->Bound()) {
+        Demon* const u = MakeConstraintDemon1(solver(),
+                                              this,
+                                              &SumBooleanOdd::Update,
+                                              "Update",
+                                              i);
+        vars_[i]->WhenBound(u);
+      }
+    }
+  }
+
+  virtual void InitialPropagate() {
+    int num_always_true = 0;
+    int num_possible_true = 0;
+    int possible_true_index = -1;
+    for (int i = 0; i < size_; ++i) {
+      const IntVar* const var = vars_[i];
+      if (var->Min() == 1) {
+        num_always_true++;
+        num_possible_true++;
+      } else if (var->Max() == 1) {
+        num_possible_true++;
+        possible_true_index = i;
+      }
+    }
+    if (num_always_true == num_possible_true &&
+        num_possible_true % 2 == 0) {
+      solver()->Fail();
+    } else if (num_possible_true == num_always_true + 1) {
+      DCHECK_NE(-1, possible_true_index);
+      if (num_possible_true % 2 == 1) {
+        vars_[possible_true_index]->SetMin(1);
+      } else {
+        vars_[possible_true_index]->SetMax(0);
+      }
+    }
+    num_possible_true_vars_.SetValue(solver(), num_possible_true);
+    num_always_true_vars_.SetValue(solver(), num_always_true);
+  }
+
+  void Update(int index) {
+    DCHECK(vars_[index]->Bound());
+    const int64 value = vars_[index]->Min();  // Faster than Value().
+    if (value == 0) {
+      num_possible_true_vars_.Decr(solver());
+    } else {
+      DCHECK_EQ(1, value);
+      num_always_true_vars_.Incr(solver());
+    }
+    if (num_always_true_vars_.Value() == num_possible_true_vars_.Value() &&
+        num_possible_true_vars_.Value() % 2 == 0) {
+      solver()->Fail();
+    } else if (num_possible_true_vars_.Value() ==
+               num_always_true_vars_.Value() + 1) {
+      int possible_true_index = -1;
+      for (int i = 0; i < size_; ++i) {
+        if (!vars_[i]->Bound()) {
+          possible_true_index = i;
+          break;
+        }
+      }
+      if (possible_true_index != -1) {
+        if (num_possible_true_vars_.Value() % 2 == 1) {
+          vars_[possible_true_index]->SetMin(1);
+        } else {
+          vars_[possible_true_index]->SetMax(0);
+        }
+      }
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("SumBooleanOdd([%s])",
+                        DebugStringArray(vars_.get(), size_, ", ").c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
+  }
+
+ private:
+  const scoped_array<IntVar*> vars_;
+  const int size_;
+  NumericalRev<int> num_possible_true_vars_;
+  NumericalRev<int> num_always_true_vars_;
+};
 
 // Map from constraint identifier to constraint posting functions
 class ModelBuilder {
@@ -791,10 +906,16 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficients->a[i]->getInt();
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  Constraint* const ct =
-      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (FLAGS_use_sat && rhs == 1 && AreAllBooleans(variables) &&
+      AreAllOnes(coefficients) &&
+      AddAtMostOne(model->Sat(), variables)) {
+    VLOG(2) << "  - posted to minisat";
+  } else {
+    Constraint* const ct =
+        solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
@@ -1463,10 +1584,14 @@ void p_int_times(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(2), target);
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeProd(left, right), target);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (FLAGS_use_sat && AddBoolAndEqVar(model->Sat(), left, right, target)) {
+      VLOG(2) << "  - posted to minisat";
+    } else {
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeProd(left, right), target);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
@@ -2029,10 +2154,14 @@ void p_array_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
   }
-  Constraint* const ct = solver->MakeEquality(
-      solver->MakeModulo(solver->MakeSum(variables), 2), 1);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (FLAGS_use_sat && AddArrayXor(model->Sat(), variables)) {
+    VLOG(2) << "  - posted to minisat";
+  } else {
+    Constraint* const ct = solver->RevAlloc(
+        new SumBooleanOdd(solver, variables.data(), variables.size()));
+    VLOG(2) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_array_bool_clause(FlatZincModel* const model, CtSpec* const spec) {

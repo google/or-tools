@@ -476,25 +476,6 @@ class FlatZincModel;
 typedef hash_set<CtSpec*> ConstraintSet;
 typedef hash_set<AstNode*> NodeSet;
 
-// Symbol table mapping identifiers (strings) to values
-template <class Val>
-class SymbolTable {
- public:
-  // Insert \a val with \a key
-  void put(const string& key, const Val& val) { m[key] = val; }
-
-  // Return whether \a key exists, and set \a val if it does exist
-  bool get(const string& key, Val& val) const {  // NOLINT
-    typename std::map<string, Val>::const_iterator i = m.find(key);
-    if (i == m.end()) return false;
-    val = i->second;
-    return true;
-  }
-
- private:
-  std::map<string, Val> m;
-};
-
 // %Alias for a variable specification
 class Alias {
  public:
@@ -678,6 +659,12 @@ class IntVarSpec : public VarSpec {
       return i;
     }
     return domain_.value()->imin;
+  }
+
+  bool IsBoolean() const {
+    return (assigned && (i == 0 || i == 1)) ||
+           (domain_.defined() && domain_.value()->imin >= 0 &&
+            domain_.value()->imax <= 1);
   }
 
   virtual string DebugString() const {
@@ -1004,6 +991,14 @@ class CtSpec {
   AstNode* defined_arg_;
 };
 
+template <class T> bool Get(const hash_map<string, T>& map, const string& key,
+                            T& val) {  // NOLINT
+  typename hash_map<string, T>::const_iterator i = map.find(key);
+  if (i == map.end()) return false;
+  val = i->second;
+  return true;
+}
+
 // %State of the %FlatZinc parser
 class ParserState {
  public:
@@ -1025,20 +1020,20 @@ class ParserState {
   const char* buf;
   unsigned int pos, length;
 
-  SymbolTable<int64> int_var_map_;
-  SymbolTable<int64> bool_var_map_;
-  SymbolTable<int64> float_var_map_;
-  SymbolTable<int64> set_var_map_;
-  SymbolTable<std::vector<int64> > int_var_array_map_;
-  SymbolTable<std::vector<int64> > bool_var_array_map_;
-  SymbolTable<std::vector<int64> > float_var_array_map_;
-  SymbolTable<std::vector<int64> > set_var_array_map_;
-  SymbolTable<std::vector<int64> > int_value_array_map_;
-  SymbolTable<std::vector<int64> > bool_value_array_map_;
-  SymbolTable<int64> int_map_;
-  SymbolTable<bool> bool_map_;
-  SymbolTable<AstSetLit> set_map_;
-  SymbolTable<std::vector<AstSetLit> > set_value_array_map_;
+  hash_map<string, int64> int_var_map_;
+  hash_map<string, int64> bool_var_map_;
+  hash_map<string, int64> float_var_map_;
+  hash_map<string, int64> set_var_map_;
+  hash_map<string, std::vector<int64> > int_var_array_map_;
+  hash_map<string, std::vector<int64> > bool_var_array_map_;
+  hash_map<string, std::vector<int64> > float_var_array_map_;
+  hash_map<string, std::vector<int64> > set_var_array_map_;
+  hash_map<string, std::vector<int64> > int_value_array_map_;
+  hash_map<string, std::vector<int64> > bool_value_array_map_;
+  hash_map<string, int64> int_map_;
+  hash_map<string, bool> bool_map_;
+  hash_map<string, AstSetLit> set_map_;
+  hash_map<string, std::vector<AstSetLit> > set_value_array_map_;
 
   std::vector<IntVarSpec*> int_variables_;
   std::vector<BoolVarSpec*> bool_variables_;
@@ -1112,12 +1107,14 @@ class ParserState {
   void Strongify(int constraint_index);
   bool IsAlias(AstNode* const node) const;
   bool IsIntroduced(AstNode* const node) const;
+  bool IsBoolean(AstNode* const node) const;
   IntVarSpec* IntSpec(AstNode* const node) const;
 
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<string, AstNode*> > output_;
   NodeSet orphans_;
   NodeSet targets_;
+  hash_set<int> bool2int_vars_;
   ConstraintSet stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
   hash_map<string, std::vector<int> > constraints_per_id_;

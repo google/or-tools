@@ -270,7 +270,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   ParserState* const pp = static_cast<ParserState*>(parm);
   bool print = $5->hasAtom("output_var");
   bool introduced = $5->hasAtom("var_is_introduced");
-  pp->int_var_map_.put($4, pp->int_variables_.size());
+  pp->int_var_map_[$4] = pp->int_variables_.size();
   if (print) {
     pp->output(string($4), new AstIntVar(pp->int_variables_.size()));
   }
@@ -297,7 +297,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   ParserState* const pp = static_cast<ParserState*>(parm);
   bool print = $5->hasAtom("output_var");
   bool introduced = $5->hasAtom("var_is_introduced");
-  pp->bool_var_map_.put($4, pp->bool_variables_.size());
+  pp->bool_var_map_[$4] = pp->bool_variables_.size();
   if (print) {
     pp->output(string($4), new AstBoolVar(pp->bool_variables_.size()));
   }
@@ -331,7 +331,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   ParserState* const pp = static_cast<ParserState*>(parm);
   bool print = $7->hasAtom("output_var");
   bool introduced = $7->hasAtom("var_is_introduced");
-  pp->set_var_map_.put($6, pp->set_variables_.size());
+  pp->set_var_map_[$6] = pp->set_variables_.size();
   if (print) {
     pp->output(string($6), new AstSetVar(pp->set_variables_.size()));
   }
@@ -360,14 +360,14 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   orfz_assert(pp, $6->isInt(), "Invalid int initializer.");
-  pp->int_map_.put($3, $6->getInt());
+  pp->int_map_[$3] = $6->getInt();
   delete $4; free($3);
 }
 | FZ_BOOL ':' var_par_id annotations '=' non_array_expr
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   orfz_assert(pp, $6->isBool(), "Invalid bool initializer.");
-  pp->bool_map_.put($3, $6->getBool());
+  pp->bool_map_[$3] = $6->getBool();
   delete $4; free($3);
 }
 | FZ_SET FZ_OF FZ_INT ':' var_par_id annotations '=' non_array_expr
@@ -375,7 +375,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   ParserState* const pp = static_cast<ParserState*>(parm);
   orfz_assert(pp, $8->isSet(), "Invalid set initializer.");
   AstSetLit* set = $8->getSet();
-  pp->set_map_.put($5, *set);
+  pp->set_map_[$5] = *set;
   delete set;
   delete $6; free($5);
 }
@@ -442,7 +442,7 @@ var_par_id annotations vardecl_int_var_array_init
       a->a.push_back(new AstString(")"));
       pp->output(string($11), a);
     }
-    pp->int_var_array_map_.put($11, vars);
+    pp->int_var_array_map_[$11] = vars;
   }
   delete $12; free($11);
 }
@@ -494,7 +494,7 @@ var_par_id annotations vardecl_bool_var_array_init
       a->a.push_back(new AstString(")"));
       pp->output(string($11), a);
     }
-    pp->bool_var_array_map_.put($11, vars);
+    pp->bool_var_array_map_[$11] = vars;
   }
   delete $12; free($11);
 }
@@ -556,7 +556,7 @@ var_par_id annotations vardecl_set_var_array_init
       a->a.push_back(new AstString(")"));
       pp->output(string($13), a);
     }
-    pp->set_var_array_map_.put($13, vars);
+    pp->set_var_array_map_[$13] = vars;
   }
   delete $14; free($13);
 }
@@ -568,7 +568,7 @@ var_par_id annotations '=' '[' int_list ']'
   orfz_assert(pp, $14->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
-    pp->int_value_array_map_.put($10, *$14);
+    pp->int_value_array_map_[$10] = *$14;
   delete $14;
   free($10);
   delete $11;
@@ -581,7 +581,7 @@ var_par_id annotations '=' '[' bool_list ']'
   orfz_assert(pp, $14->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
-    pp->bool_value_array_map_.put($10, *$14);
+    pp->bool_value_array_map_[$10] = *$14;
   delete $14;
   free($10);
   delete $11;
@@ -601,7 +601,7 @@ var_par_id annotations '=' '[' set_literal_list ']'
   orfz_assert(pp, $16->size() == static_cast<unsigned int>($5),
            "Initializer size does not match array dimension");
   if (!pp->hadError)
-    pp->set_value_array_map_.put($12, *$16);
+    pp->set_value_array_map_[$12] = *$16;
   delete $16;
   delete $13; free($12);
 }
@@ -615,7 +615,7 @@ FZ_INT_LIT
 {
   int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->int_var_map_.get($1, v))
+  if (Get(pp->int_var_map_, $1, v))
     $$ = new IntVarSpec("", Alias(v), false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
@@ -629,7 +629,7 @@ FZ_INT_LIT
 {
   std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->int_var_array_map_.get($1, v)) {
+  if (Get(pp->int_var_array_map_, $1, v)) {
     orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
@@ -670,7 +670,7 @@ FZ_FLOAT_LIT
 {
   int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->float_var_map_.get($1, v))
+  if (Get(pp->float_var_map_, $1, v))
     $$ = new FloatVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
@@ -684,7 +684,7 @@ FZ_FLOAT_LIT
 {
   std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->float_var_array_map_.get($1, v)) {
+  if (Get(pp->float_var_array_map_, $1, v)) {
     orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
@@ -724,7 +724,7 @@ FZ_BOOL_LIT
 {
   int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->bool_var_map_.get($1, v))
+  if (Get(pp->bool_var_map_, $1, v))
     $$ = new BoolVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
@@ -738,7 +738,7 @@ FZ_BOOL_LIT
 {
   std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->bool_var_array_map_.get($1, v)) {
+  if (Get(pp->bool_var_array_map_, $1, v)) {
     orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
@@ -776,7 +776,7 @@ set_literal
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   int64 v = 0;
-  if (pp->set_var_map_.get($1, v)) {
+  if (Get(pp->set_var_map_, $1, v)) {
     $$ = new SetVarSpec("", Alias(v),false);
   } else {
     LOG(ERROR) << "Error: undefined identifier " << $1
@@ -790,7 +790,7 @@ set_literal
 {
   std::vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->set_var_array_map_.get($1, v)) {
+  if (Get(pp->set_var_array_map_, $1, v)) {
     orfz_assert(pp,static_cast<unsigned int>($3) > 0 &&
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
@@ -1020,17 +1020,17 @@ FZ_BOOL_LIT
 {
   std::vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->int_var_array_map_.get($1, as)) {
+  if (Get(pp->int_var_array_map_, $1, as)) {
     AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
       ia->a[i] = new AstIntVar(as[i]);
     $$ = ia;
-  } else if (pp->bool_var_array_map_.get($1, as)) {
+  } else if (Get(pp->bool_var_array_map_, $1, as)) {
     AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
       ia->a[i] = new AstBoolVar(as[i]);
     $$ = ia;
-  } else if (pp->set_var_array_map_.get($1, as)) {
+  } else if (Get(pp->set_var_array_map_, $1, as)) {
     AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
       ia->a[i] = new AstSetVar(as[i]);
@@ -1040,24 +1040,24 @@ FZ_BOOL_LIT
     std::vector<AstSetLit> isS;
     int64 ival = 0;
     bool bval = false;
-    if (pp->int_value_array_map_.get($1, is)) {
+    if (Get(pp->int_value_array_map_, $1, is)) {
       AstArray* v = new AstArray(is.size());
       for (int i=is.size(); i--;)
         v->a[i] = new AstIntLit(is[i]);
       $$ = v;
-    } else if (pp->bool_value_array_map_.get($1, is)) {
+    } else if (Get(pp->bool_value_array_map_, $1, is)) {
       AstArray* v = new AstArray(is.size());
       for (int i=is.size(); i--;)
         v->a[i] = new AstBoolLit(is[i]);
       $$ = v;
-    } else if (pp->set_value_array_map_.get($1, isS)) {
+    } else if (Get(pp->set_value_array_map_, $1, isS)) {
       AstArray* v = new AstArray(isS.size());
       for (int i=isS.size(); i--;)
         v->a[i] = new AstSetLit(isS[i]);
       $$ = v;
-    } else if (pp->int_map_.get($1, ival)) {
+    } else if (Get(pp->int_map_, $1, ival)) {
       $$ = new AstIntLit(ival);
-    } else if (pp->bool_map_.get($1, bval)) {
+    } else if (Get(pp->bool_map_, $1, bval)) {
       $$ = new AstBoolLit(bval);
     } else {
       $$ = pp->VarRefArg($1, false);
@@ -1098,7 +1098,7 @@ var_par_id
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   int64 value;
-  if (!pp->int_var_map_.get($1, value)) {
+  if (!Get(pp->int_var_map_, $1, value)) {
     LOG(ERROR) << "Error: unknown integer variable " << $1
                << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
@@ -1110,7 +1110,7 @@ var_par_id
 {
   std::vector<int64> tmp;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (!pp->int_var_array_map_.get($1, tmp)) {
+  if (!Get(pp->int_var_array_map_, $1, tmp)) {
     LOG(ERROR) << "Error: unknown integer variable array " << $1
                << " in line no. " << orfz_get_lineno(pp->yyscanner);
     pp->hadError = true;
@@ -1178,19 +1178,19 @@ FZ_BOOL_LIT
 {
   std::vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (pp->int_var_array_map_.get($1, as)) {
+  if (Get(pp->int_var_array_map_, $1, as)) {
     AstArray* const ia = new AstArray(as.size());
     for (int i = as.size(); i--;) {
       ia->a[i] = new AstIntVar(as[i]);
     }
     $$ = ia;
-  } else if (pp->bool_var_array_map_.get($1, as)) {
+  } else if (Get(pp->bool_var_array_map_, $1, as)) {
     AstArray* const ia = new AstArray(as.size());
     for (int i=as.size(); i--;) {
       ia->a[i] = new AstBoolVar(as[i]);
     }
     $$ = ia;
-  } else if (pp->set_var_array_map_.get($1, as)) {
+  } else if (Get(pp->set_var_array_map_, $1, as)) {
     AstArray* const ia = new AstArray(as.size());
     for (int i = as.size(); i--;) {
       ia->a[i] = new AstSetVar(as[i]);
@@ -1200,21 +1200,21 @@ FZ_BOOL_LIT
     std::vector<int64> is;
     int64 ival = 0;
     bool bval = false;
-    if (pp->int_value_array_map_.get($1, is)) {
+    if (Get(pp->int_value_array_map_, $1, is)) {
       AstArray* const v = new AstArray(is.size());
       for (int i = is.size(); i--;) {
         v->a[i] = new AstIntLit(is[i]);
       }
       $$ = v;
-    } else if (pp->bool_value_array_map_.get($1, is)) {
+    } else if (Get(pp->bool_value_array_map_, $1, is)) {
       AstArray* const v = new AstArray(is.size());
       for (int i = is.size(); i--;) {
         v->a[i] = new AstBoolLit(is[i]);
       }
       $$ = v;
-    } else if (pp->int_map_.get($1, ival)) {
+    } else if (Get(pp->int_map_, $1, ival)) {
       $$ = new AstIntLit(ival);
-    } else if (pp->bool_map_.get($1, bval)) {
+    } else if (Get(pp->bool_map_, $1, bval)) {
       $$ = new AstBoolLit(bval);
     } else {
       $$ = pp->VarRefArg($1, true);
