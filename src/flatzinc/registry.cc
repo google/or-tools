@@ -574,35 +574,36 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
                 " different from -1");
           }
         } else {
-          coefficients.push_back(array_coefficients->a[i]->getInt());
-          variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
+          const int64 coef = array_coefficients->a[i]->getInt();
+          IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+          if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+            coefficients.push_back(coef);
+            variables.push_back(var);
+          }
         }
       }
-      if (constant - rhs != 0) {
-        coefficients.push_back(constant - rhs);
-        variables.push_back(solver->MakeIntConst(1));
-      }
-      IntExpr* const target = solver->MakeScalProd(variables, coefficients);
+      IntExpr* const target = solver->MakeSum(
+          solver->MakeScalProd(variables, coefficients), constant - rhs);
       VLOG(2) << "  - creating " << defined->DebugString()
               << " := " << target->DebugString();
       model->CheckIntegerVariableIsNull(defined);
       model->SetIntegerExpression(defined, target);
     }
   } else {
-    std::vector<int64> coefficients(size);
-    std::vector<IntVar*> variables(size);
-    int ones = 0;
+    std::vector<int64> coefficients;
+    std::vector<IntVar*> variables;
     for (int i = 0; i < size; ++i) {
-      coefficients[i] = array_coefficients->a[i]->getInt();
-      ones += coefficients[i] == 1;
-      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+      const int64 coef = array_coefficients->a[i]->getInt();
+      IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+      if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+        coefficients.push_back(coef);
+        variables.push_back(var);
+      }
     }
     Constraint* const ct =
         strong_propagation
             ? MakeStrongScalProdEquality(solver, variables, coefficients, rhs)
-            : (ones == size ? solver->MakeSumEquality(variables, rhs)
-                            : solver->MakeScalProdEquality(variables,
-                                                           coefficients, rhs));
+            : solver->MakeScalProdEquality(variables, coefficients, rhs);
     VLOG(2) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }

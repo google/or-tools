@@ -6403,7 +6403,7 @@ IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
   if (e->Bound()) {
     return MakeIntConst(std::min(e->Min(), v));
   }
-  if (e->Max() < v) {
+  if (e->Max() <= v) {
     return e;
   }
   return RegisterIntExpr(RevAlloc(new MinCstIntExpr(this, e, v)));
@@ -6436,7 +6436,7 @@ IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {
   if (e->Bound()) {
     return MakeIntConst(std::max(e->Min(), v));
   }
-  if (v < e->Min()) {
+  if (v <= e->Min()) {
     return e;
   }
   if (e->Max() < v) {
