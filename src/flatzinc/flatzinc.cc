@@ -148,11 +148,7 @@ void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
 }
 
 void FlatZincModel::AddConstraint(CtSpec* const spec, Constraint* const ct) {
-  if (!spec->Postponed()) {
-    solver_->AddConstraint(ct);
-  } else {
-    postponed_constraints_.push_back(ct);
-  }
+  solver_->AddConstraint(ct);
 }
 
 void FlatZincModel::Satisfy(AstArray* const annotations) {
