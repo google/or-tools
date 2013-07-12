@@ -707,6 +707,18 @@ bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
   return true;
 }
 
+bool AddAtMostNMinusOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
+  if (!sat->Check(vars)) {
+    return false;
+  }
+  std::vector<Sat::Literal> lits(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    lits[i] = Negated(sat->Literal(vars[i]));
+  }
+  sat->AddClause(&lits);
+  return true;
+}
+
 bool AddArrayXor(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
   if (!sat->Check(vars)) {
     return false;

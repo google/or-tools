@@ -848,7 +848,8 @@ class CtSpec {
         args_(args),
         annotations_(annotations),
         nullified_(false),
-        defined_arg_(NULL) {}
+        defined_arg_(NULL),
+        postponed_(false) {}
 
   ~CtSpec() {
     delete args_;
@@ -940,6 +941,10 @@ class CtSpec {
 
   bool Nullified() const { return nullified_; }
 
+  void Postpone() { postponed_ = true; }
+
+  bool Postponed() const { return postponed_; }
+
   void AddAnnotation(AstNode* const node) {
     if (annotations_ == NULL) {
       annotations_ = new AstArray(node);
@@ -989,6 +994,7 @@ class CtSpec {
   NodeSet requires_;
   bool nullified_;
   AstNode* defined_arg_;
+  bool postponed_;
 };
 
 template <class T> bool Get(const hash_map<string, T>& map, const string& key,
@@ -1104,7 +1110,6 @@ class ParserState {
   void Regroup(const string& ct_id, const std::vector<int>& ct_list);
   void RegroupAux(const string& ct_id, int start_index, int end_index,
                   int output_var_index, const std::vector<int>& indices);
-  void Strongify(int constraint_index);
   bool IsAlias(AstNode* const node) const;
   bool IsIntroduced(AstNode* const node) const;
   bool IsBoolean(AstNode* const node) const;

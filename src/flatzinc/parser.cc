@@ -154,7 +154,8 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
   if (id == "bool2int" || id == "int_plus" || id == "int_minus" ||
       (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" || id == "int_abs" ||
-      (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations())) ||
+      (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations()) &&
+       !spec->Postponed()) ||
       id == "int_max" || id == "int_min" || id == "int_mod" || id == "int_eq") {
     // Defines an int var.
     AstNode* const define = FindTarget(spec->annotations());
@@ -425,12 +426,17 @@ void ParserState::Presolve() {
   BuildStatistics();
   std::vector<int> free_variables;
   for (int var_index = 0; var_index < int_variables_.size(); ++var_index) {
-    const std::vector<int> ct_indices = constraints_per_int_variables_[var_index];
+    const std::vector<int>& ct_indices = constraints_per_int_variables_[var_index];
     if (ct_indices.size() == 1) {
       free_variables.push_back(var_index);
+      CtSpec* const spec = constraints_[ct_indices[0]];
       VLOG(2) << "  - variable xi(" << var_index << ") appears only in "
-              << constraints_[ct_indices[0]]->DebugString();
+              << spec->DebugString();
       one_constraint_variables_.insert(var_index);
+      if (int_variables_[var_index]->introduced) {
+        VLOG(2) << "Postpone " << spec->DebugString();
+        spec->Postpone();
+      }
     }
   }
 
@@ -453,13 +459,6 @@ void ParserState::Presolve() {
   for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
        !it.at_end(); ++it) {
     VLOG(1) << "  - " << it->first << ": " << it->second.size();
-  }
-
-  if (ContainsKey(constraints_per_id_, "array_bool_or")) {
-    const std::vector<int>& ors = constraints_per_id_["array_bool_or"];
-    for (int i = 0; i < ors.size(); ++i) {
-      Strongify(ors[i]);
-    }
   }
 }
 
@@ -1373,13 +1372,22 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (all_ones && all_booleans && spec->Arg(2)->getInt() == 1) {
-      VLOG(2) << "  - presolve:  transform is boolean sum >= 1 "
-              << "bool_sum_notnull_reif " << spec->DebugString();
-      spec->RemoveArg(2);
-      spec->RemoveArg(0);
-      spec->SetId("bool_sum_notnull_reif");
-      return true;
+    if (all_ones && all_booleans) {
+      if (spec->Arg(2)->getInt() == 1) {
+        VLOG(2) << "  - presolve:  transform is boolean sum >= 1 "
+                << " into bool_sum_notnull_reif " << spec->DebugString();
+        spec->RemoveArg(2);
+        spec->RemoveArg(0);
+        spec->SetId("bool_sum_notnull_reif");
+        return true;
+      } else if (spec->Arg(2)->getInt() == size) {
+        VLOG(2) << "  - presolve:  transform is boolean sum >= size "
+                << "into bool_sum_full_reif " << spec->DebugString();
+        spec->RemoveArg(2);
+        spec->RemoveArg(0);
+        spec->SetId("bool_sum_full_reif");
+        return true;
+      }
     }
   }
   if (id == "int_lin_lt") {
@@ -1655,8 +1663,6 @@ void ParserState::ReplaceAliases(CtSpec* const spec) {
     }
   }
 }
-
-void ParserState::Strongify(int constraint_index) {}
 
 void ParserState::AddConstraint(const string& id, AstArray* const args,
                                 AstNode* const annotations) {

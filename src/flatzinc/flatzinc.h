@@ -174,6 +174,9 @@ class FlatZincModel {
   // Creates a new set variable from specification.
   void NewSetVar(const string& name, SetVarSpec* const vs);
 
+  // Adds a constraint to the model.
+  void AddConstraint(CtSpec* const spec, Constraint* const ct);
+
   IntExpr* GetIntExpr(AstNode* const node);
 
   void CheckIntegerVariableIsNull(AstNode* const node) const {
@@ -276,6 +279,7 @@ class FlatZincModel {
   string search_name_;
   string filename_;
   SatPropagator* sat_;
+  std::vector<Constraint*> postponed_constraints_;
 };
 
 // %Exception class for %FlatZinc errors
