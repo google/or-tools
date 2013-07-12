@@ -1345,93 +1345,26 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       spec->SetId("int_lin_ge_reif");
       return true;
     }
-    if (all_ones && all_booleans && spec->Arg(2)->getInt() == 0) {
-      VLOG(2) << "  - presolve:  transform is boolean sum <= 0 "
-              << "bool_sum_null_reif " << spec->DebugString();
-      spec->RemoveArg(2);
-      spec->RemoveArg(0);
-      spec->SetId("bool_sum_null_reif");
-      return true;
-    }
-  }
-  if (id == "int_lin_ge_reif") {
-    AstArray* const array_coefficients = spec->Arg(0)->getArray();
-    AstArray* const array_variables = spec->Arg(1)->getArray();
-    const int size = array_coefficients->a.size();
-    bool all_ones = true;
-    for (int i = 0; i < size; ++i) {
-      if (array_coefficients->a[i]->getInt() != 1) {
-        all_ones = false;
-        break;
-      }
-    }
-    bool all_booleans = true;
-    for (int i = 0; i < size; ++i) {
-      if (!IsBoolean(array_variables->a[i])) {
-        all_booleans = false;
-        break;
-      }
-    }
-    if (all_ones && all_booleans) {
-      if (spec->Arg(2)->getInt() == 1) {
-        VLOG(2) << "  - presolve:  transform is boolean sum >= 1 "
-                << " into bool_sum_notnull_reif " << spec->DebugString();
-        spec->RemoveArg(2);
-        spec->RemoveArg(0);
-        spec->SetId("bool_sum_notnull_reif");
-        return true;
-      } else if (spec->Arg(2)->getInt() == size) {
-        VLOG(2) << "  - presolve:  transform is boolean sum >= size "
-                << "into bool_sum_full_reif " << spec->DebugString();
-        spec->RemoveArg(2);
-        spec->RemoveArg(0);
-        spec->SetId("bool_sum_full_reif");
-        return true;
-      }
-    }
   }
   if (id == "int_lin_lt") {
-    AstArray* const array_coefficients = spec->Arg(0)->getArray();
-    const int size = array_coefficients->a.size();
-    bool one_positive = false;
-    for (int i = 0; i < size; ++i) {
-      if (array_coefficients->a[i]->getInt() > 0) {
-        one_positive = true;
-        break;
-      }
-    }
-    if (!one_positive && size > 0) {
-      VLOG(2) << "  - presolve:  transform all negative int_lin_lt into "
-              << "int_lin_gt in " << spec->DebugString();
-
-      for (int i = 0; i < size; ++i) {
-        array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
-      }
-      spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
-      spec->SetId("int_lin_gt");
-      return true;
-    }
+    spec->Arg(2)->setInt(spec->Arg(2)->getInt() - 1);
+    spec->SetId("int_lin_le");
+    return true;
   }
   if (id == "int_lin_lt_reif") {
-    AstArray* const array_coefficients = spec->Arg(0)->getArray();
-    const int size = array_coefficients->a.size();
-    bool one_positive = false;
-    for (int i = 0; i < size; ++i) {
-      if (array_coefficients->a[i]->getInt() > 0) {
-        one_positive = true;
-        break;
-      }
-    }
-    if (!one_positive && size > 0) {
-      VLOG(2) << "  - presolve:  transform all negative int_lin_lt_reif into "
-              << "int_lin_gt_reif in " << spec->DebugString();
-      for (int i = 0; i < size; ++i) {
-        array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
-      }
-      spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
-      spec->SetId("int_lin_gt_reif");
-      return true;
-    }
+    spec->Arg(2)->setInt(spec->Arg(2)->getInt() - 1);
+    spec->SetId("int_lin_le_reif");
+    return true;
+  }
+  if (id == "int_lin_gt") {
+    spec->Arg(2)->setInt(spec->Arg(2)->getInt() + 1);
+    spec->SetId("int_lin_ge");
+    return true;
+  }
+  if (id == "int_lin_gt_reif") {
+    spec->Arg(2)->setInt(spec->Arg(2)->getInt() + 1);
+    spec->SetId("int_lin_ge_reif");
+    return true;
   }
   if (id == "int_lin_eq") {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();

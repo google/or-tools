@@ -384,11 +384,36 @@ void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
                              int64 range_min, int64 range_max,
                              IntVar* const target) {
   Solver* const solver = model->solver();
-  const int size = variables.size();
+  const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
-  if (FLAGS_use_sat && range_min == size &&
-      AddBoolAndArrayEqVar(model->Sat(), variables, target)) {
+  int true_vars = 0;
+  int possible_vars = 0;
+  for (int i = 0; i < size; ++i) {
+    if (variables[i]->Max() == 1) {
+      possible_vars++;
+      if (variables[i]->Min() == 1) {
+        true_vars++;
+      }
+    }
+  }
+  if (true_vars > range_max || possible_vars < range_min) {
+    Constraint* const ct = solver->MakeEquality(target, Zero());
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  } else if (true_vars >= range_min && possible_vars <= range_max) {
+    Constraint* const ct = solver->MakeEquality(target, 1);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  } else if (FLAGS_use_sat && range_min == size &&
+             AddBoolAndArrayEqVar(model->Sat(), variables, target)) {
+    VLOG(2) << "  - posted to minisat";
+  } else if (FLAGS_use_sat && range_max == 0 &&
+             AddBoolOrArrayEqVar(model->Sat(), variables,
+                                 solver->MakeDifference(1, target)->Var())) {
+    VLOG(2) << "  - posted to minisat";
+  } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
+             AddBoolOrArrayEqVar(model->Sat(), variables, target)) {
     VLOG(2) << "  - posted to minisat";
   } else {
     Constraint* const ct = solver->RevAlloc(
@@ -1254,169 +1279,6 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
-void p_int_lin_lt(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_coefficients = spec->Arg(0)->getArray();
-  AstArray* const array_variables = spec->Arg(1)->getArray();
-  AstNode* const node_rhs = spec->Arg(2);
-  const int64 rhs = node_rhs->getInt();
-  const int size = array_coefficients->a.size();
-  CHECK_EQ(size, array_variables->a.size());
-  std::vector<int64> coefficients(size);
-  std::vector<IntVar*> variables(size);
-
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
-  Constraint* const ct =
-      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs - 1);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
-}
-
-void p_int_lin_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_coefficients = spec->Arg(0)->getArray();
-  AstArray* const array_variables = spec->Arg(1)->getArray();
-  AstNode* const node_rhs = spec->Arg(2);
-  AstNode* const node_boolvar = spec->Arg(3);
-  int64 rhs = node_rhs->getInt();
-  const int size = array_coefficients->a.size();
-  CHECK_EQ(size, array_variables->a.size());
-  std::vector<int64> coefficients(size);
-
-  int positive = 0;
-  int negative = 0;
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
-    if (coefficients[i] > 0) {
-      positive++;
-    } else if (coefficients[i] < 0) {
-      negative++;
-    }
-  }
-  const bool define = spec->IsDefined(node_boolvar);
-
-  if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
-    if (negative == 2) {
-      std::vector<IntExpr*> neg_exprs;
-      for (int i = 0; i < size; ++i) {
-        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
-        const int64 coeff = coefficients[i];
-        if (coeff > 0) {
-          pos = solver->MakeProd(expr, coeff);
-        } else if (coeff < 0) {
-          neg_exprs.push_back(solver->MakeProd(expr, -coeff));
-        }
-      }
-      other = solver->MakeSum(neg_exprs[0], neg_exprs[1]);
-    } else {
-      std::vector<IntVar*> neg_vars;
-      std::vector<int64> neg_coeffs;
-      for (int i = 0; i < size; ++i) {
-        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-        const int64 coeff = coefficients[i];
-        if (coeff > 0) {
-          pos = solver->MakeProd(var, coeff);
-        } else if (coeff < 0) {
-          neg_vars.push_back(var);
-          neg_coeffs.push_back(-coeff);
-        }
-      }
-      other = solver->MakeScalProd(neg_vars, neg_coeffs);
-    }
-    pos = solver->MakeSum(pos, -rhs);
-    if (define) {
-      IntVar* const boolvar = solver->MakeIsLessVar(pos, other);
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct = solver->MakeIsLessCt(pos, other, boolvar);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
-  } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
-    if (positive == 2) {
-      std::vector<IntExpr*> pos_exprs;
-      for (int i = 0; i < size; ++i) {
-        const int64 coeff = coefficients[i];
-        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
-        if (coeff < 0) {
-          neg = solver->MakeProd(expr, -coeff);
-        } else if (coeff > 0) {
-          pos_exprs.push_back(solver->MakeProd(expr, coeff));
-        }
-      }
-      other = solver->MakeSum(pos_exprs[0], pos_exprs[1]);
-    } else {
-      std::vector<IntVar*> pos_vars;
-      std::vector<int64> pos_coeffs;
-      for (int i = 0; i < size; ++i) {
-        const int64 coeff = coefficients[i];
-        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-        if (coeff < 0) {
-          neg = solver->MakeProd(var, -coeff);
-        } else if (coeff > 0) {
-          pos_vars.push_back(var);
-          pos_coeffs.push_back(coeff);
-        }
-      }
-      other = solver->MakeScalProd(pos_vars, pos_coeffs);
-    }
-    neg = solver->MakeSum(neg, rhs);
-    if (define) {
-      IntVar* const boolvar = solver->MakeIsGreaterVar(neg, other);
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct = solver->MakeIsGreaterCt(neg, other, boolvar);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
-  } else {
-    std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
-    if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
-      if (define) {
-        boolvar = solver->MakeBoolVar();
-        VLOG(2) << "  - creating " << node_boolvar->DebugString();
-        model->CheckIntegerVariableIsNull(node_boolvar);
-        model->SetIntegerExpression(node_boolvar, boolvar);
-      } else {
-        boolvar = model->GetIntExpr(node_boolvar)->Var();
-      }
-      PostIsBooleanSumInRange(model, spec, variables, 0, rhs - 1, boolvar);
-    } else {
-      IntExpr* const var = solver->MakeScalProd(variables, coefficients);
-      if (define) {
-        IntVar* const boolvar = solver->MakeIsLessCstVar(var, rhs);
-        VLOG(2) << "  - creating " << node_boolvar->DebugString()
-                << " := " << boolvar->DebugString();
-        model->CheckIntegerVariableIsNull(node_boolvar);
-        model->SetIntegerExpression(node_boolvar, boolvar);
-      } else {
-        IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-        Constraint* const ct = solver->MakeIsLessCstCt(var, rhs, boolvar);
-        VLOG(2) << "  - posted " << ct->DebugString();
-        model->AddConstraint(spec, ct);
-      }
-    }
-  }
-}
-
 void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_coefficients = spec->Arg(0)->getArray();
@@ -1581,169 +1443,6 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
         IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
         Constraint* const ct =
             solver->MakeIsGreaterOrEqualCstCt(var, rhs, boolvar);
-        VLOG(2) << "  - posted " << ct->DebugString();
-        model->AddConstraint(spec, ct);
-      }
-    }
-  }
-}
-
-void p_int_lin_gt(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_coefficients = spec->Arg(0)->getArray();
-  AstArray* const array_variables = spec->Arg(1)->getArray();
-  AstNode* const node_rhs = spec->Arg(2);
-  const int64 rhs = node_rhs->getInt();
-  const int size = array_coefficients->a.size();
-  CHECK_EQ(size, array_variables->a.size());
-  std::vector<int64> coefficients(size);
-  std::vector<IntVar*> variables(size);
-
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
-  Constraint* const ct =
-      solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs + 1);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
-}
-
-void p_int_lin_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_coefficients = spec->Arg(0)->getArray();
-  AstArray* const array_variables = spec->Arg(1)->getArray();
-  AstNode* const node_rhs = spec->Arg(2);
-  AstNode* const node_boolvar = spec->Arg(3);
-  int64 rhs = node_rhs->getInt();
-  const int size = array_coefficients->a.size();
-  CHECK_EQ(size, array_variables->a.size());
-  std::vector<int64> coefficients(size);
-
-  int positive = 0;
-  int negative = 0;
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
-    if (coefficients[i] > 0) {
-      positive++;
-    } else if (coefficients[i] < 0) {
-      negative++;
-    }
-  }
-  const bool define = spec->IsDefined(node_boolvar);
-
-  if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
-    if (negative == 2) {
-      std::vector<IntExpr*> neg_exprs;
-      for (int i = 0; i < size; ++i) {
-        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
-        const int64 coeff = coefficients[i];
-        if (coeff > 0) {
-          pos = solver->MakeProd(expr, coeff);
-        } else if (coeff < 0) {
-          neg_exprs.push_back(solver->MakeProd(expr, -coeff));
-        }
-      }
-      other = solver->MakeSum(neg_exprs[0], neg_exprs[1]);
-    } else {
-      std::vector<IntVar*> neg_vars;
-      std::vector<int64> neg_coeffs;
-      for (int i = 0; i < size; ++i) {
-        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-        const int64 coeff = coefficients[i];
-        if (coeff > 0) {
-          pos = solver->MakeProd(var, coeff);
-        } else if (coeff < 0) {
-          neg_vars.push_back(var);
-          neg_coeffs.push_back(-coeff);
-        }
-      }
-      other = solver->MakeScalProd(neg_vars, neg_coeffs);
-    }
-    pos = solver->MakeSum(pos, -rhs);
-    if (define) {
-      IntVar* const boolvar = solver->MakeIsGreaterVar(pos, other);
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct = solver->MakeIsGreaterCt(pos, other, boolvar);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
-  } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
-    if (positive == 2) {
-      std::vector<IntExpr*> pos_exprs;
-      for (int i = 0; i < size; ++i) {
-        const int64 coeff = coefficients[i];
-        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
-        if (coeff < 0) {
-          neg = solver->MakeProd(expr, -coeff);
-        } else if (coeff > 0) {
-          pos_exprs.push_back(solver->MakeProd(expr, coeff));
-        }
-      }
-      other = solver->MakeSum(pos_exprs[0], pos_exprs[1]);
-    } else {
-      std::vector<IntVar*> pos_vars;
-      std::vector<int64> pos_coeffs;
-      for (int i = 0; i < size; ++i) {
-        const int64 coeff = coefficients[i];
-        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-        if (coeff < 0) {
-          neg = solver->MakeProd(var, -coeff);
-        } else if (coeff > 0) {
-          pos_vars.push_back(var);
-          pos_coeffs.push_back(coeff);
-        }
-      }
-      other = solver->MakeScalProd(pos_vars, pos_coeffs);
-    }
-    neg = solver->MakeSum(neg, rhs);
-    if (define) {
-      IntVar* const boolvar = solver->MakeIsLessVar(neg, other);
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct = solver->MakeIsLessCt(neg, other, boolvar);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
-  } else {
-    std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
-    if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
-      if (define) {
-        boolvar = solver->MakeBoolVar();
-        VLOG(2) << "  - creating " << node_boolvar->DebugString();
-        model->CheckIntegerVariableIsNull(node_boolvar);
-        model->SetIntegerExpression(node_boolvar, boolvar);
-      } else {
-        boolvar = model->GetIntExpr(node_boolvar)->Var();
-      }
-      PostIsBooleanSumInRange(model, spec, variables, rhs + 1, size, boolvar);
-    } else {
-      IntExpr* const var = solver->MakeScalProd(variables, coefficients);
-      if (define) {
-        IntVar* const boolvar = solver->MakeIsGreaterCstVar(var, rhs);
-        VLOG(2) << "  - creating " << node_boolvar->DebugString()
-                << " := " << boolvar->DebugString();
-        model->CheckIntegerVariableIsNull(node_boolvar);
-        model->SetIntegerExpression(node_boolvar, boolvar);
-      } else {
-        IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-        Constraint* const ct = solver->MakeIsGreaterCstCt(var, rhs, boolvar);
         VLOG(2) << "  - posted " << ct->DebugString();
         model->AddConstraint(spec, ct);
       }
@@ -3214,82 +2913,6 @@ void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
-void p_bool_sum_null_reif(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_variables = spec->Arg(0)->getArray();
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables;
-  for (int i = 0; i < size; ++i) {
-    IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-    if (var->Max() == 1) {
-      if (var->Min() == 1) {
-        IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
-        Constraint* const ct = solver->MakeEquality(target, Zero());
-        VLOG(2) << "  - posted " << ct->DebugString();
-        model->AddConstraint(spec, ct);
-        return;
-      }
-      variables.push_back(var);
-    }
-  }
-  IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
-  IntVar* const not_target = solver->MakeDifference(1, target)->Var();
-  if (FLAGS_use_sat &&
-      AddBoolOrArrayEqVar(model->Sat(), variables, not_target)) {
-    VLOG(2) << "  - posted to minisat";
-  } else {
-    Constraint* const ct = solver->MakeMaxEquality(variables, not_target);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
-  }
-}
-
-void p_bool_sum_notnull_reif(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_variables = spec->Arg(0)->getArray();
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
-  IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
-  if (FLAGS_use_sat && AddBoolOrArrayEqVar(model->Sat(), variables, target)) {
-    VLOG(2) << "  - posted to minisat";
-  } else {
-    Constraint* const ct = solver->MakeMaxEquality(variables, target);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
-  }
-}
-
-void p_bool_sum_full_reif(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AstArray* const array_variables = spec->Arg(0)->getArray();
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables;
-  for (int i = 0; i < size; ++i) {
-    IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-    if (var->Min() == 0) {
-      if (var->Max() == 0) {
-        IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
-        Constraint* const ct = solver->MakeEquality(target, Zero());
-        VLOG(2) << "  - posted " << ct->DebugString();
-        model->AddConstraint(spec, ct);
-        return;
-      }
-      variables.push_back(var);
-    }
-  }
-  IntVar* const target = model->GetIntExpr(spec->Arg(1))->Var();
-  if (FLAGS_use_sat && AddBoolAndArrayEqVar(model->Sat(), variables, target)) {
-    VLOG(2) << "  - posted to minisat";
-  } else {
-    Constraint* const ct = solver->MakeMinEquality(variables, target);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
-  }
-}
-
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -3311,12 +2934,8 @@ class IntBuilder {
     global_model_builder.Register("int_lin_ne_reif", &p_int_lin_ne_reif);
     global_model_builder.Register("int_lin_le", &p_int_lin_le);
     global_model_builder.Register("int_lin_le_reif", &p_int_lin_le_reif);
-    global_model_builder.Register("int_lin_lt", &p_int_lin_lt);
-    global_model_builder.Register("int_lin_lt_reif", &p_int_lin_lt_reif);
     global_model_builder.Register("int_lin_ge", &p_int_lin_ge);
     global_model_builder.Register("int_lin_ge_reif", &p_int_lin_ge_reif);
-    global_model_builder.Register("int_lin_gt", &p_int_lin_gt);
-    global_model_builder.Register("int_lin_gt_reif", &p_int_lin_gt_reif);
     global_model_builder.Register("int_plus", &p_int_plus);
     global_model_builder.Register("int_minus", &p_int_minus);
     global_model_builder.Register("int_times", &p_int_times);
@@ -3385,10 +3004,6 @@ class IntBuilder {
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
     global_model_builder.Register("diffn", &p_diffn);
-    global_model_builder.Register("bool_sum_null_reif", &p_bool_sum_null_reif);
-    global_model_builder.Register("bool_sum_notnull_reif",
-                                  &p_bool_sum_notnull_reif);
-    global_model_builder.Register("bool_sum_full_reif", &p_bool_sum_full_reif);
   }
 };
 IntBuilder __int_Builder;
