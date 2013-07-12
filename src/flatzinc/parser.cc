@@ -176,7 +176,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
     }
   } else if ((id == "array_bool_and" && !FLAGS_use_sat) ||
              (id == "array_bool_or" && !FLAGS_use_sat) ||
-             id == "array_bool_element" || id == "count_reif" ||
+             id == "array_bool_element" ||
              id == "int_lin_eq_reif" || id == "int_lin_ne_reif" ||
              id == "int_lin_ge_reif" || id == "int_lin_le_reif" ||
              id == "int_lin_gt_reif" || id == "int_lin_lt_reif" ||

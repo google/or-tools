@@ -2456,13 +2456,17 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   if (spec->Arg(1)->isInt()) {
-    std::vector<IntVar*> variables(size);
-    for (int i = 0; i < size; ++i) {
-      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-    }
+    const int64 value = spec->Arg(1)->getInt();
     IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
-    Constraint* const ct =
-        solver->MakeCount(variables, spec->Arg(1)->getInt(), count);
+    std::vector<IntVar*> tmp_sum;
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+    Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
     VLOG(2) << "  - posted " << ct->DebugString();
     model->AddConstraint(spec, ct);
   } else {
@@ -2492,32 +2496,26 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
   const int size = array_variables->a.size();
   AstNode* const node_boolvar = spec->Arg(3);
   if (spec->Arg(1)->isInt()) {
-    std::vector<IntVar*> variables(size);
-    for (int i = 0; i < size; ++i) {
-      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-    }
+    const int64 value = spec->Arg(1)->getInt();
     IntVar* const expected_count = model->GetIntExpr(spec->Arg(2))->Var();
-    IntVar* const real_count = solver->MakeIntVar(0, size);
-    Constraint* const ct =
-        solver->MakeCount(variables, spec->Arg(1)->getInt(), real_count);
-    if (spec->IsDefined(node_boolvar)) {
-      IntVar* const boolvar =
-          solver->MakeIsEqualVar(expected_count, real_count);
+    std::vector<IntVar*> tmp_sum;
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+    if (spec->Arg(2)->isInt()) {
+      const int64 value = spec->Arg(2)->getInt();
+      PostIsBooleanSumInRange(model, spec, tmp_sum, value, value, boolvar);
+    } else {
+      Constraint* const ct =
+          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
+                                model->GetIntExpr(spec->Arg(2)), boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-      CHECK_NOTNULL(boolvar);
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct2 =
-          solver->MakeIsEqualCt(expected_count, real_count, boolvar);
-      VLOG(2) << "  - posted " << ct->DebugString() << ", and "
-              << ct2->DebugString();
-      model->AddConstraint(spec, ct);
-      model->AddConstraint(spec, ct2);
     }
   } else {
     IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
@@ -2526,26 +2524,14 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
       tmp_sum.push_back(solver->MakeIsEqualVar(
           model->GetIntExpr(array_variables->a[i]), value));
     }
-    if (spec->IsDefined(node_boolvar)) {
-      IntVar* const boolvar =
-          spec->Arg(2)->isInt()
-              ? solver->MakeIsEqualCstVar(solver->MakeSum(tmp_sum),
-                                          spec->Arg(2)->getInt())
-              : solver->MakeIsEqualVar(solver->MakeSum(tmp_sum),
-                                       model->GetIntExpr(spec->Arg(2)));
-      VLOG(2) << "  - creating " << node_boolvar->DebugString()
-              << " := " << boolvar->DebugString();
-      model->CheckIntegerVariableIsNull(node_boolvar);
-      model->SetIntegerExpression(node_boolvar, boolvar);
-      CHECK_NOTNULL(boolvar);
+    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+    if (spec->Arg(2)->isInt()) {
+      const int64 value = spec->Arg(2)->getInt();
+      PostIsBooleanSumInRange(model, spec, tmp_sum, value, value, boolvar);
     } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
       Constraint* const ct =
-          spec->Arg(2)->isInt()
-              ? solver->MakeIsEqualCstCt(solver->MakeSum(tmp_sum),
-                                         spec->Arg(2)->getInt(), boolvar)
-              : solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
-                                      model->GetIntExpr(spec->Arg(2)), boolvar);
+          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
+                                model->GetIntExpr(spec->Arg(2)), boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
     }
