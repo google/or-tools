@@ -3118,6 +3118,7 @@ class IntBuilder {
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
+    global_model_builder.Register("diffn", &p_diffn);
     global_model_builder.Register("bool_sum_null_reif", &p_bool_sum_null_reif);
     global_model_builder.Register("bool_sum_notnull_reif",
                                   &p_bool_sum_notnull_reif);

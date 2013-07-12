@@ -624,24 +624,14 @@ void FlatZincModel::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& active_variables,
     std::vector<DecisionBuilder*>* const builders) {
   const bool has_solve_annotations = HasSolveAnnotations();
-  // Add introduced variables.
-  if (!active_variables.empty()) {
-    builders->push_back(
-        solver_->MakePhase(active_variables, Solver::CHOOSE_FIRST_UNBOUND,
-                           Solver::ASSIGN_MIN_VALUE));
+  std::vector<IntVar*> secondary_vars(active_variables);
+  if (!has_solve_annotations) {
+    secondary_vars.insert(secondary_vars.end(),
+                          introduced_variables_.begin(),
+                          introduced_variables_.end());
   }
-  // Then fixed variables.
-  if (!introduced_variables_.empty() && !has_solve_annotations) {
-    // Better safe than sorry.
-    builders->push_back(
-        solver_->MakePhase(introduced_variables_, Solver::CHOOSE_FIRST_UNBOUND,
-                           Solver::ASSIGN_MIN_VALUE));
-  }
-  if (!one_constraint_variables_.empty()) {
-    // Better safe than sorry.
-    builders->push_back(
-        solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
-  }
+  builders->push_back(solver_->MakeSolveOnce(solver_->MakePhase(
+      secondary_vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE)));
 }
 
 DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
@@ -727,12 +717,12 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     builders.push_back(
         solver_->MakeDefaultPhase(defined_variables, parameters));
   }
-  // Add completion decision builders to be more robust.
-  AddCompletionDecisionBuilders(active_variables, &builders);
-  // Add finally the objective decision builder.
+  // Add the objective decision builder.
   if (obj_db != NULL) {
     builders.push_back(obj_db);
   }
+  // Add completion decision builders to be more robust.
+  AddCompletionDecisionBuilders(active_variables, &builders);
   // Reporting
   for (int i = 0; i < builders.size(); ++i) {
     VLOG(1) << "  - adding decision builder = " << builders[i]->DebugString();

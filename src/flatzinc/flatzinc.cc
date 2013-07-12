@@ -93,12 +93,9 @@ void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
     }
     VLOG(2) << "  - creates " << var->DebugString();
     if (!var->Bound()) {
-      if (active && !appears_in_one_constraint) {
+      if (active) {
         active_variables_.push_back(var);
         VLOG(2) << "  - add as active";
-      } else if (active && appears_in_one_constraint) {
-        one_constraint_variables_.push_back(var);
-        VLOG(2) << "  - add as one_constraint_variables_";
       } else {
         introduced_variables_.push_back(var);
         VLOG(2) << "  - add as secondary";
