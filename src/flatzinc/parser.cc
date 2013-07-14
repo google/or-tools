@@ -38,6 +38,7 @@ extern void orfz_set_extra(void* user_defined, void* yyscanner);
 extern void yyerror(void* parm, const char* str);
 
 DECLARE_bool(use_sat);
+DECLARE_bool(logging);
 
 namespace operations_research {
 // ----- Misc -----
@@ -455,11 +456,11 @@ void ParserState::Presolve() {
     }
   }
 
-  VLOG(1) << "Model statistics";
+  FZLOG << "Model statistics" << std::endl;
   BuildStatistics();
   for (ConstIter<hash_map<string, std::vector<int>>> it(constraints_per_id_);
        !it.at_end(); ++it) {
-    VLOG(1) << "  - " << it->first << ": " << it->second.size();
+    FZLOG << "  - " << it->first << ": " << it->second.size() << std::endl;
   }
 }
 
@@ -520,7 +521,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
     }
   }
 
-  VLOG(1) << "Sort constraints";
+  FZLOG << "Sort constraints" << std::endl;
   std::vector<CtSpec*> defines_only;
   std::vector<CtSpec*> no_defines;
   std::vector<CtSpec*> defines_and_require;
@@ -539,10 +540,10 @@ void ParserState::SortConstraints(NodeSet* const candidates,
     }
   }
 
-  VLOG(1) << "  - defines only          : " << defines_only.size();
-  VLOG(1) << "  - no defines            : " << no_defines.size();
-  VLOG(1) << "  - defines and require   : " << defines_and_require.size();
-  VLOG(1) << "  - nullified constraints : " << nullified;
+  FZLOG << "  - defines only          : " << defines_only.size() << std::endl;
+  FZLOG << "  - no defines            : " << no_defines.size() << std::endl;
+  FZLOG << "  - defines and require   : " << defines_and_require.size() << std::endl;
+  FZLOG << "  - nullified constraints : " << nullified << std::endl;
 
   const int size = constraints_.size();
   constraints_.clear();
@@ -661,7 +662,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
 
 void ParserState::BuildModel(const NodeSet& candidates,
                              const NodeSet& computed_variables) {
-  VLOG(1) << "Creating variables";
+  FZLOG << "Creating variables" << std::endl;
   int created = 0;
   int skipped = 0;
 
@@ -687,8 +688,8 @@ void ParserState::BuildModel(const NodeSet& candidates,
       }
     }
   }
-  VLOG(1) << "  - " << created << " integer variables created";
-  VLOG(1) << "  - " << skipped << " integer variables skipped";
+  FZLOG << "  - " << created << " integer variables created" << std::endl;
+  FZLOG << "  - " << skipped << " integer variables skipped" << std::endl;
 
   created = 0;
   skipped = 0;
@@ -721,8 +722,8 @@ void ParserState::BuildModel(const NodeSet& candidates,
       }
     }
   }
-  VLOG(1) << "  - " << created << " boolean variables created";
-  VLOG(1) << "  - " << skipped << " boolean variables skipped";
+  FZLOG << "  - " << created << " boolean variables created" << std::endl;
+  FZLOG << "  - " << skipped << " boolean variables skipped" << std::endl;
 
   array_index = 0;
   for (unsigned int i = 0; i < set_variables_.size(); i++) {
@@ -743,7 +744,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
     }
   }
 
-  VLOG(1) << "Creating constraints";
+  FZLOG << "Creating constraints" << std::endl;
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
@@ -751,9 +752,9 @@ void ParserState::BuildModel(const NodeSet& candidates,
       model_->PostConstraint(spec);
     }
   }
-  VLOG(1) << "  - " << constraints_.size() << " constraints created";
+  FZLOG << "  - " << constraints_.size() << " constraints created" << std::endl;
 
-  VLOG(1) << "Populating aliases";
+  FZLOG << "Populating aliases" << std::endl;
   int aliases = 0;
   for (int i = 0; i < int_variables_.size(); ++i) {
     if (ContainsKey(int_aliases_, i)) {
@@ -765,9 +766,9 @@ void ParserState::BuildModel(const NodeSet& candidates,
       aliases++;
     }
   }
-  VLOG(1) << "  - " << aliases << " aliases filled";
+  FZLOG << "  - " << aliases << " aliases filled" << std::endl;
 
-  VLOG(1) << "Adding domain constraints";
+  FZLOG << "Adding domain constraints" << std::endl;
 
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {

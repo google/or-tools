@@ -46,7 +46,6 @@
 #include "flatzinc/flatzinc.h"
 
 DEFINE_int32(log_period, 10000000, "Search log period");
-DEFINE_bool(logging, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
@@ -61,6 +60,7 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 
 DECLARE_bool(log_prefix);
+DECLARE_bool(logging);
 
 using std::string;
 using operations_research::scoped_ptr;

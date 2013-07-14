@@ -24,6 +24,8 @@
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
 
+DECLARE_bool(logging);
+
 using std::string;
 namespace operations_research {
 namespace {
@@ -475,7 +477,7 @@ void FlatZincModel::ParseSearchAnnotations(
     }
   }
 
-  VLOG(1) << "Create decision builders from search annotations";
+  FZLOG << "Create decision builders from search annotations" << std::endl;
   hash_set<IntVar*> added;
   for (unsigned int i = 0; i < flat_annotations.size(); i++) {
     try {
@@ -639,7 +641,7 @@ void FlatZincModel::AddCompletionDecisionBuilders(
 
 DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     const FlatZincSearchParameters& p) {
-  VLOG(1) << "Create decision builders";
+  FZLOG << "Create decision builders" << std::endl;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
@@ -728,7 +730,8 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
   AddCompletionDecisionBuilders(active_variables, &builders);
   // Reporting
   for (int i = 0; i < builders.size(); ++i) {
-    VLOG(1) << "  - adding decision builder = " << builders[i]->DebugString();
+    FZLOG << "  - adding decision builder = " << builders[i]->DebugString()
+          << std::endl;
   }
   return solver_->Compose(builders);
 }

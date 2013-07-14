@@ -40,6 +40,8 @@
 #include "base/hash.h"
 
 DECLARE_bool(use_sat);
+DEFINE_bool(logging, false,
+            "Print logging information form the flatzinc interpreter.");
 
 namespace operations_research {
 
@@ -65,7 +67,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
   if (FLAGS_use_sat) {
-    VLOG(1) << "  - Use minisat";
+    FZLOG << "  - Use minisat" << std::endl;
     sat_ = MakeSatPropagator(solver_.get());
     solver_->AddConstraint(reinterpret_cast<Constraint*>(sat_));
   } else {

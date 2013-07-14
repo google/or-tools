@@ -50,6 +50,8 @@
  *
  */
 
+#define FZLOG if (FLAGS_logging) std::cout << "%% "
+
 namespace operations_research {
 class SatPropagator;
 
