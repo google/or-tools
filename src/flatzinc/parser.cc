@@ -155,7 +155,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" || id == "int_abs" ||
       (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations()) &&
-       !spec->Postponed()) ||
+       !spec->Ignored()) ||
       id == "int_max" || id == "int_min" || id == "int_mod" || id == "int_eq") {
     // Defines an int var.
     AstNode* const define = FindTarget(spec->annotations());
@@ -200,8 +200,8 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
   }
 }
 
-void ParserState::ComputeDependencies(const NodeSet& candidates,
-                                      CtSpec* const spec) const {
+void ParserState::ComputeDependencies(
+    const NodeSet& candidates, CtSpec* const spec) const {
   AstNode* const define =
       spec->DefinedArg() == NULL ? FindTarget(spec->annotations())
                                  : spec->DefinedArg();
@@ -427,15 +427,16 @@ void ParserState::Presolve() {
   std::vector<int> free_variables;
   for (int var_index = 0; var_index < int_variables_.size(); ++var_index) {
     const std::vector<int>& ct_indices = constraints_per_int_variables_[var_index];
-    if (ct_indices.size() == 1) {
+    if (ct_indices.size() == 1 &&
+        var_index != model_->objective_variable_index()) {
       free_variables.push_back(var_index);
       CtSpec* const spec = constraints_[ct_indices[0]];
       VLOG(2) << "  - variable xi(" << var_index << ") appears only in "
               << spec->DebugString();
       one_constraint_variables_.insert(var_index);
       if (int_variables_[var_index]->introduced) {
-        VLOG(2) << "Postpone " << spec->DebugString();
-        spec->Postpone();
+        VLOG(2) << "Ignore " << spec->DebugString();
+        spec->Ignore();
       }
     }
   }
@@ -456,7 +457,7 @@ void ParserState::Presolve() {
 
   VLOG(1) << "Model statistics";
   BuildStatistics();
-  for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
+  for (ConstIter<hash_map<string, std::vector<int>>> it(constraints_per_id_);
        !it.at_end(); ++it) {
     VLOG(1) << "  - " << it->first << ": " << it->second.size();
   }
@@ -1638,17 +1639,17 @@ bool FlatZincModel::Parse(const string& filename) {
   fd = open(filename.c_str(), O_RDONLY);
   if (fd == -1) {
     LOG(ERROR) << "Cannot open file " << filename;
-    return NULL;
+    return false;
   }
   if (stat(filename.c_str(), &sbuf) == -1) {
     LOG(ERROR) << "Cannot stat file " << filename;
-    return NULL;
+    return false;
   }
   data = reinterpret_cast<char*>(
       mmap((caddr_t) 0, sbuf.st_size, PROT_READ, MAP_SHARED, fd, 0));
   if (data == (caddr_t)(-1)) {
     LOG(ERROR) << "Cannot mmap file " << filename;
-    return NULL;
+    return false;
   }
 
   ParserState pp(data, sbuf.st_size, this);

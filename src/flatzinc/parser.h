@@ -849,7 +849,7 @@ class CtSpec {
         annotations_(annotations),
         nullified_(false),
         defined_arg_(NULL),
-        postponed_(false) {}
+        ignored_(false) {}
 
   ~CtSpec() {
     delete args_;
@@ -941,9 +941,9 @@ class CtSpec {
 
   bool Nullified() const { return nullified_; }
 
-  void Postpone() { postponed_ = true; }
+  void Ignore() { ignored_ = true; }
 
-  bool Postponed() const { return postponed_; }
+  bool Ignored() const { return ignored_; }
 
   void AddAnnotation(AstNode* const node) {
     if (annotations_ == NULL) {
@@ -994,7 +994,7 @@ class CtSpec {
   NodeSet requires_;
   bool nullified_;
   AstNode* defined_arg_;
-  bool postponed_;
+  bool ignored_;
 };
 
 template <class T> bool Get(const hash_map<string, T>& map, const string& key,

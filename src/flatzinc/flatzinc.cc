@@ -148,7 +148,12 @@ void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
 }
 
 void FlatZincModel::AddConstraint(CtSpec* const spec, Constraint* const ct) {
-  solver_->AddConstraint(ct);
+  if (spec->Ignored()) {
+    VLOG(2) << "Ignore " << spec->DebugString() << " ----> "
+              << ct->DebugString();
+  } else {
+    solver_->AddConstraint(ct);
+  }
 }
 
 void FlatZincModel::Satisfy(AstArray* const annotations) {
@@ -173,8 +178,6 @@ void FlatZincModel::Minimize(int var, AstArray* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ =
-      solver_->MakeMinimize(integer_variables_[objective_variable_]->Var(), 1);
 }
 
 void FlatZincModel::Maximize(int var, AstArray* const annotations) {
@@ -193,8 +196,6 @@ void FlatZincModel::Maximize(int var, AstArray* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ =
-      solver_->MakeMaximize(integer_variables_[objective_variable_]->Var(), 1);
 }
 
 FlatZincModel::~FlatZincModel(void) {

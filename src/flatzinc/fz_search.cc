@@ -630,8 +630,11 @@ void FlatZincModel::AddCompletionDecisionBuilders(
                           introduced_variables_.begin(),
                           introduced_variables_.end());
   }
-  builders->push_back(solver_->MakeSolveOnce(solver_->MakePhase(
-      secondary_vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE)));
+  if (!secondary_vars.empty()) {
+    builders->push_back(solver_->MakeSolveOnce(solver_->MakePhase(
+        secondary_vars, Solver::CHOOSE_FIRST_UNBOUND,
+        Solver::ASSIGN_MIN_VALUE)));
+  }
 }
 
 DecisionBuilder* FlatZincModel::CreateDecisionBuilders(

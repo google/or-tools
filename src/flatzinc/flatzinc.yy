@@ -879,11 +879,11 @@ FZ_SOLVE annotations FZ_SATISFY
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (!pp->hadError) {
     try {
-      pp->AnalyseAndCreateModel();
       if ($3)
         pp->model()->Minimize($4,$2);
       else
         pp->model()->Maximize($4,$2);
+      pp->AnalyseAndCreateModel();
     } catch (operations_research::FzError& e) {
       yyerror(pp, e.DebugString().c_str());
     }

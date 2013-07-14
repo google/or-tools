@@ -288,9 +288,11 @@ class IsBooleanSumInRange : public Constraint {
   void UpdateTarget() {
     if (num_always_true_vars_.Value() > range_max_ ||
         num_possible_true_vars_.Value() < range_min_) {
+      inactive_.Switch(solver());
       target_->SetValue(0);
     } else if (num_always_true_vars_.Value() >= range_min_ &&
                num_possible_true_vars_.Value() <= range_max_) {
+      inactive_.Switch(solver());
       target_->SetValue(1);
     } else if (target_->Min() == 1) {
       if (num_possible_true_vars_.Value() == range_min_) {
@@ -310,6 +312,131 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   void Update(int index) {
+    if (!inactive_.Switched()) {
+      DCHECK(vars_[index]->Bound());
+      const int64 value = vars_[index]->Min();  // Faster than Value().
+      if (value == 0) {
+        num_possible_true_vars_.Decr(solver());
+      } else {
+        DCHECK_EQ(1, value);
+        num_always_true_vars_.Incr(solver());
+      }
+      UpdateTarget();
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf(
+        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
+        DebugStringArray(vars_.get(), size_, ", ").c_str(), range_min_,
+        range_max_, target_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(), size_);
+    visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
+  }
+
+ private:
+  void PushAllUnboundToZero() {
+    inactive_.Switch(solver());
+    int true_vars = 0;
+    for (int i = 0; i < size_; ++i) {
+      if (vars_[i]->Min() == 0) {
+        vars_[i]->SetValue(0);
+      } else {
+        true_vars++;
+      }
+    }
+    target_->SetValue(true_vars >= range_min_ && true_vars <= range_max_);
+  }
+
+  void PushAllUnboundToOne() {
+    inactive_.Switch(solver());
+    int true_vars = 0;
+    for (int i = 0; i < size_; ++i) {
+      if (vars_[i]->Max() == 1) {
+        vars_[i]->SetValue(1);
+        true_vars++;
+      }
+    }
+    target_->SetValue(true_vars >= range_min_ && true_vars <= range_max_);
+  }
+
+  const scoped_array<IntVar*> vars_;
+  const int size_;
+  const int64 range_min_;
+  const int64 range_max_;
+  IntVar* const target_;
+  NumericalRev<int> num_possible_true_vars_;
+  NumericalRev<int> num_always_true_vars_;
+  RevSwitch inactive_;
+};
+
+class BooleanSumInRange : public Constraint {
+ public:
+  BooleanSumInRange(Solver* const s, IntVar* const* bool_vars, int size,
+                    int64 range_min, int64 range_max)
+      : Constraint(s),
+        vars_(new IntVar* [size]),
+        size_(size),
+        range_min_(range_min),
+        range_max_(range_max),
+        num_possible_true_vars_(0),
+        num_always_true_vars_(0) {
+    memcpy(vars_.get(), bool_vars, size_ * sizeof(*bool_vars));
+  }
+
+  virtual ~BooleanSumInRange() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      if (!vars_[i]->Bound()) {
+        Demon* const u = MakeConstraintDemon1(
+            solver(), this, &BooleanSumInRange::Update, "Update", i);
+        vars_[i]->WhenBound(u);
+      }
+    }
+  }
+
+  virtual void InitialPropagate() {
+    int num_always_true = 0;
+    int num_possible_true = 0;
+    int possible_true_index = -1;
+    for (int i = 0; i < size_; ++i) {
+      const IntVar* const var = vars_[i];
+      if (var->Min() == 1) {
+        num_always_true++;
+        num_possible_true++;
+      } else if (var->Max() == 1) {
+        num_possible_true++;
+        possible_true_index = i;
+      }
+    }
+    num_possible_true_vars_.SetValue(solver(), num_possible_true);
+    num_always_true_vars_.SetValue(solver(), num_always_true);
+    Check();
+  }
+
+  void Check() {
+    if (num_always_true_vars_.Value() > range_max_ ||
+        num_possible_true_vars_.Value() < range_min_) {
+      solver()->Fail();
+    } else if (num_always_true_vars_.Value() >= range_min_ &&
+               num_possible_true_vars_.Value() <= range_max_) {
+      // Inhibit.
+    } else {
+      if (num_possible_true_vars_.Value() == range_min_) {
+        PushAllUnboundToOne();
+      } else if (num_always_true_vars_.Value() == range_max_) {
+        PushAllUnboundToZero();
+      }
+    }
+  }
+
+  void Update(int index) {
     DCHECK(vars_[index]->Bound());
     const int64 value = vars_[index]->Min();  // Faster than Value().
     if (value == 0) {
@@ -318,14 +445,14 @@ class IsBooleanSumInRange : public Constraint {
       DCHECK_EQ(1, value);
       num_always_true_vars_.Incr(solver());
     }
-    UpdateTarget();
+    Check();
   }
 
   virtual string DebugString() const {
     return StringPrintf(
-        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
+        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
         DebugStringArray(vars_.get(), size_, ", ").c_str(), range_min_,
-        range_max_, target_->DebugString().c_str());
+        range_max_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -357,7 +484,6 @@ class IsBooleanSumInRange : public Constraint {
   const int size_;
   const int64 range_min_;
   const int64 range_max_;
-  IntVar* const target_;
   NumericalRev<int> num_possible_true_vars_;
   NumericalRev<int> num_always_true_vars_;
 };
@@ -407,18 +533,64 @@ void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
     model->AddConstraint(spec, ct);
   } else if (FLAGS_use_sat && range_min == size &&
              AddBoolAndArrayEqVar(model->Sat(), variables, target)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else if (FLAGS_use_sat && range_max == 0 &&
              AddBoolOrArrayEqVar(model->Sat(), variables,
                                  solver->MakeDifference(1, target)->Var())) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
              AddBoolOrArrayEqVar(model->Sat(), variables, target)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct = solver->RevAlloc(
         new IsBooleanSumInRange(solver, variables.data(), variables.size(),
                                 range_min, range_max, target));
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  }
+}
+
+void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max) {
+  Solver* const solver = model->solver();
+  const int64 size = variables.size();
+  range_min = std::max(0LL, range_min);
+  range_max = std::min(size, range_max);
+  int true_vars = 0;
+  std::vector<IntVar*> alt;
+  for (int i = 0; i < size; ++i) {
+    if (!variables[i]->Bound()) {
+      alt.push_back(variables[i]);
+    } else if (variables[i]->Min() == 1) {
+      true_vars++;
+    }
+  }
+  const int possible_vars = alt.size();
+  range_min -= true_vars;
+  range_max -= true_vars;
+
+  if (range_max < 0 || range_min > possible_vars) {
+    Constraint* const ct = solver->MakeFalseConstraint();
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  } else if (range_min <= 0 && range_max >= possible_vars) {
+    Constraint* const ct = solver->MakeTrueConstraint();
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
+             AddAtMostOne(model->Sat(), alt)) {
+    VLOG(2) << "  - posted to sat";
+  } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
+             AddAtMostNMinusOne(model->Sat(), alt)) {
+    VLOG(2) << "  - posted to sat";
+  } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
+             AddBoolOrArrayEqualTrue(model->Sat(), alt) &&
+             AddAtMostOne(model->Sat(), alt)) {
+    VLOG(2) << "  - posted to sat";
+  } else {
+    Constraint* const ct = solver->RevAlloc(new BooleanSumInRange(
+        solver, alt.data(), alt.size(), range_min, range_max));
     VLOG(2) << "  - posted " << ct->DebugString();
     model->AddConstraint(spec, ct);
   }
@@ -789,7 +961,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     if (size == 2 && AreAllBooleans(variables) && AreAllOnes(coefficients) &&
         rhs == 1 && AddBoolNot(model->Sat(), variables[0], variables[1])) {
       // Simple case b1 + b2 == 1, or b1 = not(b2).
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           strong_propagation
@@ -1126,7 +1298,7 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
       ((rhs == 1 && AddAtMostOne(model->Sat(), variables)) ||
        (rhs == variables.size() - 1 &&
         AddAtMostNMinusOne(model->Sat(), variables)))) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct =
         solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
@@ -1297,7 +1469,7 @@ void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
   if (FLAGS_use_sat && rhs == 1 && AreAllBooleans(variables) &&
       AreAllOnes(coefficients) &&
       AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct =
         solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs);
@@ -1521,7 +1693,7 @@ void p_int_times(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
     if (FLAGS_use_sat && AddBoolAndEqVar(model->Sat(), left, right, target)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           solver->MakeEquality(solver->MakeProd(left, right), target);
@@ -1654,7 +1826,7 @@ void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     if (FLAGS_use_sat && AddBoolEq(model->Sat(), left, right)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeEquality(left, right);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1674,7 +1846,7 @@ void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     if (FLAGS_use_sat && AddBoolNot(model->Sat(), left, right)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeNonEquality(left, right);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1694,7 +1866,7 @@ void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     if (FLAGS_use_sat && AddBoolLe(model->Sat(), right, left)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1729,7 +1901,7 @@ void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     if (FLAGS_use_sat && AddBoolLe(model->Sat(), left, right)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeLessOrEqual(left, right);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1773,7 +1945,7 @@ void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const right = model->GetIntExpr(node_right);
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
     if (FLAGS_use_sat && AddBoolIsEqVar(model->Sat(), left, right, boolvar)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1801,7 +1973,7 @@ void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
     if (FLAGS_use_sat && AddBoolIsNEqVar(model->Sat(), left, right, boolvar)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1830,7 +2002,7 @@ void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
     if (FLAGS_use_sat && AddBoolIsLeVar(model->Sat(), right, left, boolvar)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
@@ -1883,7 +2055,7 @@ void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
     if (FLAGS_use_sat && AddBoolIsLeVar(model->Sat(), left, right, boolvar)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
@@ -1929,7 +2101,7 @@ void p_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
     if (FLAGS_use_sat && AddBoolAndEqVar(model->Sat(), left, right, target)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           solver->MakeEquality(solver->MakeMin(left, right), target);
@@ -1952,7 +2124,7 @@ void p_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
     if (FLAGS_use_sat && AddBoolOrEqVar(model->Sat(), left, right, target)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           solver->MakeEquality(solver->MakeMax(left, right), target);
@@ -1992,7 +2164,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     if (node_boolvar->isBool()) {
       if (node_boolvar->getBool() == 1) {
         if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
-          VLOG(2) << "  - posted to minisat";
+          VLOG(2) << "  - posted to sat";
         } else {
           Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
           VLOG(2) << "  - posted " << ct->DebugString();
@@ -2007,7 +2179,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
       IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
       if (FLAGS_use_sat &&
           AddBoolOrArrayEqVar(model->Sat(), variables, boolvar)) {
-        VLOG(2) << "  - posted to minisat";
+        VLOG(2) << "  - posted to sat";
       } else {
         Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
         VLOG(2) << "  - posted " << ct->DebugString();
@@ -2048,7 +2220,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
       if (node_boolvar->getBool() == 0) {
         if (FLAGS_use_sat &&
             AddBoolAndArrayEqualFalse(model->Sat(), variables)) {
-          VLOG(2) << "  - posted to minisat";
+          VLOG(2) << "  - posted to sat";
         } else {
           Constraint* const ct =
               solver->MakeSumLessOrEqual(variables, variables.size() - 1);
@@ -2065,7 +2237,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
       IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
       if (FLAGS_use_sat &&
           AddBoolAndArrayEqVar(model->Sat(), variables, boolvar)) {
-        VLOG(2) << "  - posted to minisat";
+        VLOG(2) << "  - posted to sat";
       } else {
         Constraint* const ct = solver->MakeMinEquality(variables, boolvar);
         VLOG(2) << "  - posted " << ct->DebugString();
@@ -2084,7 +2256,7 @@ void p_array_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
     variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
   }
   if (FLAGS_use_sat && AddArrayXor(model->Sat(), variables)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct = solver->RevAlloc(
         new BooleanSumOdd(solver, variables.data(), variables.size()));
@@ -2108,7 +2280,7 @@ void p_array_bool_clause(FlatZincModel* const model, CtSpec* const spec) {
         1, model->GetIntExpr(b_array_variables->a[i])->Var())->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
     VLOG(2) << "  - posted " << ct->DebugString();
@@ -2122,7 +2294,7 @@ void p_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
   if (FLAGS_use_sat && AddBoolIsNEqVar(model->Sat(), left, right, target)) {
-    VLOG(2) << "  - posted to minisat";
+    VLOG(2) << "  - posted to sat";
   } else {
     Constraint* const ct =
         solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
@@ -2143,7 +2315,7 @@ void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     if (FLAGS_use_sat && AddBoolNot(model->Sat(), left, right)) {
-      VLOG(2) << "  - posted to minisat";
+      VLOG(2) << "  - posted to sat";
     } else {
       Constraint* const ct =
           solver->MakeEquality(solver->MakeDifference(1, left), right);
@@ -2457,7 +2629,6 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
   const int size = array_variables->a.size();
   if (spec->Arg(1)->isInt()) {
     const int64 value = spec->Arg(1)->getInt();
-    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
     std::vector<IntVar*> tmp_sum;
     for (int i = 0; i < size; ++i) {
       IntVar* const var = solver->MakeIsEqualCstVar(
@@ -2466,9 +2637,15 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
         tmp_sum.push_back(var);
       }
     }
-    Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (spec->Arg(2)->isInt()) {
+      const int64 count = spec->Arg(2)->getInt();
+      PostBooleanSumInRange(model, spec, tmp_sum, count, count);
+    } else {
+      IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+      Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   } else {
     IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
     std::vector<IntVar*> tmp_sum;
@@ -2477,10 +2654,8 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
           model->GetIntExpr(array_variables->a[i]), value));
     }
     if (spec->Arg(2)->isInt()) {
-      Constraint* const ct =
-          solver->MakeSumEquality(tmp_sum, spec->Arg(2)->getInt());
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
+      const int64 count = spec->Arg(2)->getInt();
+      PostBooleanSumInRange(model, spec, tmp_sum, count, count);
     } else {
       IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
       Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
@@ -2899,6 +3074,50 @@ void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_regular(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+
+  const int64 num_states = spec->Arg(1)->getInt();
+
+  const int64 num_values = spec->Arg(2)->getInt();
+
+  const AstArray* const array_transitions = spec->Arg(3)->getArray();
+  IntTupleSet tuples(3);
+  int count = 0;
+  for (int q = 1; q <= num_states; ++q) {
+    for (int s = 1; s <= num_values; ++s) {
+      const int64 next = array_transitions->a[count++]->getInt();
+      if (next != 0) {
+        tuples.Insert3(q, s, next);
+      }
+    }
+  }
+
+  const int64 initial_state = spec->Arg(4)->getInt();
+
+  AstSetLit* const final_set = spec->Arg(5)->getSet();
+  std::vector<int64> final_states;
+  if (final_set->interval) {
+    for (int v = final_set->imin; v <= final_set->imax; ++v) {
+      final_states.push_back(v);
+    }
+  } else {
+    final_states.insert(
+        final_states.end(), final_set->s.begin(), final_set->s.end());
+  }
+  Constraint* const ct = solver->MakeTransitionConstraint(
+      variables, tuples, initial_state, final_states);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -2990,6 +3209,7 @@ class IntBuilder {
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
     global_model_builder.Register("diffn", &p_diffn);
+    global_model_builder.Register("regular", &p_regular);
   }
 };
 IntBuilder __int_Builder;
