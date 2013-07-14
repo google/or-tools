@@ -4476,10 +4476,7 @@ class DivIntExpr : public BaseIntExpr {
 class IntAbsConstraint : public CastConstraint {
  public:
   IntAbsConstraint(Solver* const s, IntVar* const sub, IntVar* const target)
-      : CastConstraint(s, target),
-        sub_(sub),
-        target_domain_iterator_(target->MakeDomainIterator(true)),
-        sub_domain_iterator_(sub->MakeDomainIterator(true)) {}
+      : CastConstraint(s, target), sub_(sub) {}
 
   virtual ~IntAbsConstraint() {}
 
@@ -4493,53 +4490,20 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   virtual void InitialPropagate() {
-    if (sub_->Max() <= 0) {
-      target_var_->SetRange(-sub_->Max(), -sub_->Min());
-    } else if (sub_->Min() >= 0) {
-      target_var_->SetRange(sub_->Min(), sub_->Max());
-    } else {
-      target_var_->SetRange(0, std::max(-sub_->Min(), sub_->Max()));
-    }
-    const int64 max_target = target_var_->Max();
-    sub_->SetRange(-max_target, max_target);
-    to_remove_.clear();
-    for (target_domain_iterator_->Init(); target_domain_iterator_->Ok();
-         target_domain_iterator_->Next()) {
-      const int64 value = target_domain_iterator_->Value();
-      if (!sub_->Contains(value) && !sub_->Contains(-value)) {
-        to_remove_.push_back(value);
-      }
-    }
-    if (!to_remove_.empty()) {
-      target_var_->RemoveValues(to_remove_);
-    }
-    to_remove_.clear();
-    for (sub_domain_iterator_->Init(); sub_domain_iterator_->Ok();
-         sub_domain_iterator_->Next()) {
-      const int64 value = sub_domain_iterator_->Value();
-      const int64 abs_value = value >= 0 ? value : -value;
-      if (!target_var_->Contains(abs_value)) {
-        to_remove_.push_back(value);
-      }
-    }
-    if (!to_remove_.empty()) {
-      sub_->RemoveValues(to_remove_);
-    }
+    PropagateSub();
+    PropagateTarget();
   }
 
   void PropagateSub() {
-    if (sub_->Bound()) {
-      const int64 value = sub_->Min();
-      const int64 abs_value = value >= 0 ? value : -value;
-      target_var_->SetValue(abs_value);
+    int64 smin = 0;
+    int64 smax = 0;
+    sub_->Range(&smin, &smax);
+    if (smax <= 0) {
+      target_var_->SetRange(-smax, -smin);
+    } else if (smin >= 0) {
+      target_var_->SetRange(smin, smax);
     } else {
-      if (sub_->Max() <= 0) {
-        target_var_->SetRange(-sub_->Max(), -sub_->Min());
-      } else if (sub_->Min() >= 0) {
-        target_var_->SetRange(sub_->Min(), sub_->Max());
-      } else {
-        target_var_->SetRange(0, std::max(-sub_->Min(), sub_->Max()));
-      }
+      target_var_->SetRange(0, std::max(-smin, smax));
     }
   }
 
@@ -4574,9 +4538,6 @@ class IntAbsConstraint : public CastConstraint {
 
  private:
   IntVar* const sub_;
-  IntVarIterator* const target_domain_iterator_;
-  IntVarIterator* const sub_domain_iterator_;
-  std::vector<int64> to_remove_;
 };
 
 class IntAbs : public BaseIntExpr {
@@ -4674,18 +4635,15 @@ class IntAbs : public BaseIntExpr {
   }
 
   virtual IntVar* CastToVar() {
-    const int64 max_value = std::max(-expr_->Min(), expr_->Max());
-    if (expr_->IsVar() && max_value < 0xFFFFFF) {
-      Solver* const s = solver();
-      const string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
-      IntVar* const target = s->MakeIntVar(0, max_value, name);
-      CastConstraint* const ct =
-          s->RevAlloc(new IntAbsConstraint(s, expr_->Var(), target));
-      s->AddCastConstraint(ct, target, this);
-      return target;
-    } else {
-      return BaseIntExpr::CastToVar();
-    }
+    const int64 min_value = Min();
+    const int64 max_value = Max();
+    Solver* const s = solver();
+    const string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
+    IntVar* const target = s->MakeIntVar(min_value, max_value, name);
+    CastConstraint* const ct =
+        s->RevAlloc(new IntAbsConstraint(s, expr_->Var(), target));
+    s->AddCastConstraint(ct, target, this);
+    return target;
   }
 
  private:
@@ -6313,7 +6271,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
   if (result == NULL) {
     const int64 max_value = std::max(-e->Min(), e->Max());
-    if (e->IsVar() && max_value < 0xFFFFFF) {
+    if (e->IsVar() && max_value < 0xFFFF) {
       const string name = StringPrintf("AbsVar(%s)", e->name().c_str());
       IntVar* const target = MakeIntVar(0, max_value, name);
       AddConstraint(RevAlloc(new IntAbsConstraint(this, e->Var(), target)));
