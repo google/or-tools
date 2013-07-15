@@ -385,7 +385,7 @@ class Lex : public Constraint {
   Lex(Solver* const s, const std::vector<IntVar*>& left,
       const std::vector<IntVar*>& right, bool strict)
       : Constraint(s), left_(left), right_(right), active_var_(0),
-        demons_(left.size()), strict_(strict) {
+        strict_(strict) {
     CHECK_EQ(left.size(), right.size());
   }
 
@@ -393,11 +393,12 @@ class Lex : public Constraint {
 
   virtual void Post() {
     const int position = FindNextValidVar(0);
+    active_var_.SetValue(solver(), position);
     if (position < left_.size()) {
-      demons_[position] = MakeConstraintDemon1(
+      Demon* const demon = MakeConstraintDemon1(
           solver(), this, &Lex::Propagate, "Propagate", position);
-      left_[position]->WhenRange(demons_[position]);
-      right_[position]->WhenRange(demons_[position]);
+      left_[position]->WhenRange(demon);
+      right_[position]->WhenRange(demon);
     }
   }
 
@@ -414,13 +415,10 @@ class Lex : public Constraint {
       return;
     }
     if (position != active_var_.Value()) {
-      if (demons_[active_var_.Value()] != nullptr) {
-        demons_[active_var_.Value()]->inhibit(solver());
-      }
-      demons_[position] = MakeConstraintDemon1(
+      Demon* const demon = MakeConstraintDemon1(
           solver(), this, &Lex::Propagate, "Propagate", position);
-      left_[position]->WhenRange(demons_[position]);
-      right_[position]->WhenRange(demons_[position]);
+      left_[position]->WhenRange(demon);
+      right_[position]->WhenRange(demon);
       active_var_.SetValue(solver(), position);
     }
     if (strict_ && position == left_.size() - 1) {
@@ -461,7 +459,6 @@ class Lex : public Constraint {
   std::vector<IntVar*> left_;
   std::vector<IntVar*> right_;
   NumericalRev<int> active_var_;
-  std::vector<Demon*> demons_;
   const bool strict_;
 };
 
