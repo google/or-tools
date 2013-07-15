@@ -23,12 +23,25 @@
 #include "base/stringprintf.h"
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
+#include "constraint_solver/constraint_solveri.h"
 
 DECLARE_bool(logging);
 
 using std::string;
 namespace operations_research {
 namespace {
+class FzLog : public SearchLog {
+ public:
+  FzLog(Solver* const s, OptimizeVar* const obj, int period)
+      : SearchLog(s, obj, nullptr, nullptr, period) {}
+  virtual ~FzLog() {}
+
+ protected:
+  virtual void OutputLine(const string& line) {
+    std::cout << "%% " << line << std::endl;
+  }
+};
+
 class MtOptimizeVar : public OptimizeVar {
  public:
   MtOptimizeVar(Solver* const s, bool maximize, IntVar* const v, int64 step,
@@ -769,7 +782,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
           solver_.get(), method_ == MAX,
           integer_variables_[objective_variable_]->Var(), 1, p.worker_id);
       SearchMonitor* const log =
-          p.use_log ? solver_->MakeSearchLog(p.log_period, objective_) : NULL;
+          p.use_log ? solver_->RevAlloc(new FzLog(
+              solver_.get(), objective_, p.log_period)) : NULL;
       monitors.push_back(log);
       monitors.push_back(objective_);
       parallel_support->StartSearch(
@@ -779,7 +793,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     }
     case SAT: {
       SearchMonitor* const log =
-          p.use_log ? solver_->MakeSearchLog(p.log_period) : NULL;
+          p.use_log ? solver_->RevAlloc(new FzLog(
+              solver_.get(), NULL, p.log_period)) : NULL;
       monitors.push_back(log);
       parallel_support->StartSearch(p.worker_id, FzParallelSupport::SATISFY);
       break;

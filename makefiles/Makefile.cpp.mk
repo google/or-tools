@@ -744,6 +744,7 @@ $(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX): $(FAP_LIB_OBJS)
 FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/booleans.$O\
 	$(OBJ_DIR)/flatzinc.$O\
+	$(OBJ_DIR)/flatzinc_constraints.$O\
 	$(OBJ_DIR)/fz_search.$O\
 	$(OBJ_DIR)/flatzinc.yy.$O\
 	$(OBJ_DIR)/flatzinc.tab.$O\
@@ -784,6 +785,8 @@ $(OBJ_DIR)/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc/flatz
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sbooleans.$O
 $(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc.$O
+$(OBJ_DIR)/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc/flatzinc_constraints.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc_constraints.$O
 $(OBJ_DIR)/fz_search.$O:$(SRC_DIR)/flatzinc/fz_search.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sfz_search.$O
 $(OBJ_DIR)/flatzinc.yy.$O:$(GEN_DIR)/flatzinc/flatzinc.yy.cc $(GEN_DIR)/flatzinc/flatzinc.tab.hh $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
