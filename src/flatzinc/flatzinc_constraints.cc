@@ -407,6 +407,7 @@ class Lex : public Constraint {
   }
 
   void Propagate(int var_index) {
+    DCHECK_EQ(var_index, active_var_.Value());
     const int position = FindNextValidVar(var_index);
     if (position >= left_.size()) {
       if (strict_) {
@@ -414,7 +415,7 @@ class Lex : public Constraint {
       }
       return;
     }
-    if (position != active_var_.Value()) {
+    if (position != var_index) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &Lex::Propagate, "Propagate", position);
       left_[position]->WhenRange(demon);
@@ -431,9 +432,10 @@ class Lex : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Lex([%s], [%s])",
+    return StringPrintf("Lex([%s], [%s]%s)",
                         DebugStringVector(left_, ", ").c_str(),
-                        DebugStringVector(right_, ", ").c_str());
+                        DebugStringVector(right_, ", ").c_str(),
+                        strict_ ? ", strict" : "");
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
