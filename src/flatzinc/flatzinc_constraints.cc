@@ -378,7 +378,7 @@ class BooleanSumInRange : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
-// Lex
+// ----- Lex constraint -----
 
 class Lex : public Constraint {
  public:
@@ -422,7 +422,11 @@ class Lex : public Constraint {
       right_[position]->WhenRange(demon);
       active_var_.SetValue(solver(), position);
     }
-    if (strict_ && position == left_.size() - 1) {
+    if ((strict_ && position == left_.size() - 1) ||
+        (position < left_.size() - 1 &&
+         left_[position + 1]->Min() > right_[position + 1]->Max())) {
+      // We need to be strict if we are the last in the array, or if
+      // the next one is impossible.
       left_[position]->SetMax(right_[position]->Max() - 1);
       right_[position]->SetMin(left_[position]->Min() + 1);
     } else {
