@@ -29,6 +29,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
+#include "util/string_array.h"
 #include "util/tuple_set.h"
 
 DEFINE_bool(cp_use_compact_table, true,
@@ -303,7 +304,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         stamps_(new uint64[length_]),
         original_min_(new int64[arity_]),
         temp_mask_(new uint64[length_]),
-        demon_(NULL) {
+        demon_(NULL),
+        touched_var_(-1) {
   }
 
   virtual ~CompactPositiveTableConstraint() {}
@@ -473,6 +475,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // at a delayed priority when Update(var_index) deems it necessary.
     memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
     for (int var_index = 0; var_index < arity_; ++var_index) {
+      if (var_index == touched_var_) {
+        continue;
+      }
       to_remove_.clear();
       IntVarIterator* const it = iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {
@@ -502,6 +507,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
       }
     }
+    touched_var_ = -1;
     for (int offset = 0; offset < length_; ++offset) {
       if (active_tuples_[offset]) {
         return;
@@ -511,8 +517,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void UpdateTempMask(const uint64* const mask, int start, int end) {
-    for (int offset = start; offset <= end; ++offset) {
-      temp_mask_[offset] |= mask[offset];
+    if (mask) {
+      for (int offset = start; offset <= end; ++offset) {
+        temp_mask_[offset] |= mask[offset];
+      }
     }
   }
 
@@ -541,20 +549,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     for (hole->Init(); hole->Ok(); hole->Next()) {
       const int64 value_index = hole->Value() - omin;
       const uint64* const mask = masks_[var_index][value_index];
-      if (mask) {
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
-      }
+      UpdateTempMask(mask,
+                     starts_[var_index][value_index],
+                     ends_[var_index][value_index]);
     }
     for (int64 value = vmax + 1; value <= oldmax; ++value) {
       const int64 value_index = value  - omin;
       const uint64* const mask = masks_[var_index][value_index];
-      if (mask) {
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
-      }
+      UpdateTempMask(mask,
+                     starts_[var_index][value_index],
+                     ends_[var_index][value_index]);
     }
     // Then we apply this mask to active_tuples_.
     for (int offset = 0; offset < length_; ++offset) {
@@ -562,6 +566,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         AndActiveTuples(offset, ~temp_mask_[offset]);
         changed = true;
       }
+    }
+    if (touched_var_ == -1) {
+      touched_var_ = var_index;
+    } else {
+      touched_var_ = -2;  // more than one var.
     }
     // And check active_tuples_ is still not empty, we fail otherwise.
     for (int offset = 0; offset < length_; ++offset) {
@@ -605,6 +614,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // The portion of the active tuples supporting each value per variable.
   std::vector<std::vector<int> > supports_;
   Demon* demon_;
+  int touched_var_;
 };
 
 // ----- Small Compact Table. -----
@@ -916,7 +926,11 @@ class TransitionConstraint : public Constraint {
   }
 
   virtual string DebugString() const {
-    return "TransitionConstraint";
+    return StringPrintf("TransitionConstraint([%s], %d transitions, initial = %"
+                        GG_LL_FORMAT "d, final = [%s])",
+                        DebugStringVector(vars_, ", ").c_str(),
+                        transition_table_.NumTuples(), initial_state_,
+                        Int64VectorToString(final_states_, ", ").c_str());
   }
 
  private:
