@@ -531,6 +531,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     const int64 oldmax = var->OldMax();
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
+    // Count the number of masks to collect to compare the deduction
+    // vs the construction of the new active bitset.
     int count = 0;
     for (int64 value_index = 0; value_index < vmin - omin; ++value_index) {
       count += masks_[var_index][value_index] != nullptr;
