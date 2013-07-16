@@ -503,7 +503,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     touched_var_ = -1;
   }
 
-  void UpdateTempMask(const uint64* const mask, int start, int end) {
+  void UpdateTempMask(int var_index, int64 value_index) {
+    const uint64* const mask = masks_[var_index][value_index];
+    const int start = starts_[var_index][value_index];
+    const int end = ends_[var_index][value_index];
     if (mask) {
       for (int offset = start; offset <= end; ++offset) {
         temp_mask_[offset] |= mask[offset];
@@ -529,43 +532,27 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
     int count = 0;
-    for (int64 value = oldmin; value < vmin; ++value) {
-      const int64 value_index = value  - omin;
-      const uint64* const mask = masks_[var_index][value_index];
-      count += mask != nullptr;
+    for (int64 value_index = 0; value_index < vmin - omin; ++value_index) {
+      count += masks_[var_index][value_index] != nullptr;
     }
     IntVarIterator* const hole = holes_[var_index];
     for (hole->Init(); hole->Ok(); hole->Next()) {
       count++;
     }
     for (int64 value = vmax + 1; value <= oldmax; ++value) {
-      const int64 value_index = value  - omin;
-      const uint64* const mask = masks_[var_index][value_index];
-      count += mask != nullptr;
+      count += masks_[var_index][value - omin] != nullptr;
     }
 
     if (count < var->Size()) {
       for (int64 value = oldmin; value < vmin; ++value) {
-        const int64 value_index = value  - omin;
-        const uint64* const mask = masks_[var_index][value_index];
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
+        UpdateTempMask(var_index, value - omin);
       }
       IntVarIterator* const hole = holes_[var_index];
       for (hole->Init(); hole->Ok(); hole->Next()) {
-        const int64 value_index = hole->Value() - omin;
-        const uint64* const mask = masks_[var_index][value_index];
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
+        UpdateTempMask(var_index, hole->Value() - omin);
       }
       for (int64 value = vmax + 1; value <= oldmax; ++value) {
-        const int64 value_index = value  - omin;
-        const uint64* const mask = masks_[var_index][value_index];
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
+        UpdateTempMask(var_index, value - omin);
       }
       // Then we apply this mask to active_tuples_.
       for (int offset = 0; offset < length_; ++offset) {
@@ -578,31 +565,26 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       IntVarIterator* it = iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {
         const int64 value = it->Value();
-        const int64 value_index = value - original_min_[var_index];
-        const uint64* const mask = masks_[var_index][value_index];
-        UpdateTempMask(mask,
-                       starts_[var_index][value_index],
-                       ends_[var_index][value_index]);
+        UpdateTempMask(var_index, it->Value() - omin);
       }
       // Then we apply this mask to active_tuples_.
       for (int offset = 0; offset < length_; ++offset) {
-        const uint64 old = active_tuples_[offset];
-        AndActiveTuples(offset, temp_mask_[offset]);
-        if (old != active_tuples_[offset]) {
+        if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
+          AndActiveTuples(offset, temp_mask_[offset]);
           changed = true;
         }
       }
-    }
-    if (touched_var_ == -1) {
-      touched_var_ = var_index;
-    } else {
-      touched_var_ = -2;  // more than one var.
     }
     // And check active_tuples_ is still not empty, we fail otherwise.
     for (int offset = 0; offset < length_; ++offset) {
       if (active_tuples_[offset]) {
         // We push the propagate method only if something has changed.
         if (changed) {
+          if (touched_var_ == -1) {
+            touched_var_ = var_index;
+          } else {
+            touched_var_ = -2;  // more than one var.
+          }
           EnqueueDelayedDemon(demon_);
         }
         return;
