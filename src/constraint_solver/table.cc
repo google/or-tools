@@ -317,7 +317,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         &CompactPositiveTableConstraint::Propagate,
         "Propagate"));
     for (int i = 0; i < arity_; ++i) {
-      //      vars_[i]->WhenDomain(d);
       Demon* const u = MakeConstraintDemon1(
           solver(),
           this,
@@ -472,48 +471,34 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // This methods scans all values of all variables to see if they
     // are still supported.
     // This method is not attached to any particular variable, but is pushed
-    // at a delayed priority when Update(var_index) deems it necessary.
-    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
+    // at a delayed priority after Update(var_index) is called.
+    ClearTempMask();
     for (int var_index = 0; var_index < arity_; ++var_index) {
       if (var_index == touched_var_) {
         continue;
       }
       to_remove_.clear();
+      int64 new_min = kint64max;
+      int64 new_max = kint64min;
       IntVarIterator* const it = iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value_index = it->Value() - original_min_[var_index];
+        const int64 value = it->Value();
+        const int64 value_index = value - original_min_[var_index];
         if (!Supported(var_index, value_index)) {
-          to_remove_.push_back(it->Value());
+          to_remove_.push_back(value);
+        } else {
+          if (new_min == kint64max) {
+            new_min = value;
+          }
+          new_max = value;
         }
       }
-      if (to_remove_.size() > 0) {
+      if (!to_remove_.empty()) {
+        vars_[var_index]->SetRange(new_min, new_max);
         vars_[var_index]->RemoveValues(to_remove_);
-        // Actively remove unsupported bitsets from active_tuples_.
-        for (int offset = 0; offset < length_; ++offset) {
-          temp_mask_[offset] = 0;
-        }
-        for (ConstIter<std::vector<int64> > it(to_remove_); !it.at_end(); ++it) {
-          const int64 value_index = (*it) - original_min_[var_index];
-          const uint64* const mask = masks_[var_index][value_index];
-          DCHECK(mask);
-          UpdateTempMask(mask,
-                         starts_[var_index][value_index],
-                         ends_[var_index][value_index]);
-        }
-        for (int offset = 0; offset < length_; ++offset) {
-          if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
-            AndActiveTuples(offset, ~temp_mask_[offset]);
-          }
-        }
       }
     }
     touched_var_ = -1;
-    for (int offset = 0; offset < length_; ++offset) {
-      if (active_tuples_[offset]) {
-        return;
-      }
-    }
-    solver()->Fail();
   }
 
   void UpdateTempMask(const uint64* const mask, int start, int end) {
@@ -524,6 +509,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
+  void ClearTempMask() {
+    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
+  }
+
   void Update(int var_index) {
     // This method will update the set of active tuples by masking out all
     // tuples attached to values of the variables that have been removed.
@@ -532,7 +521,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     IntVar* const var = vars_[var_index];
     const int64 omin = original_min_[var_index];
     bool changed = false;
-    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
+    ClearTempMask();
     const int64 oldmax = var->OldMax();
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
