@@ -2507,6 +2507,62 @@ void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   model->AddConstraint(spec, ct);
 }
 
+void p_variable_cumulative(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> start_variables(size);
+  for (int i = 0; i < size; ++i) {
+    start_variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  AstArray* const array_durations = spec->Arg(1)->getArray();
+  const int dsize = array_durations->a.size();
+  std::vector<IntVar*> durations(dsize);
+  for (int i = 0; i < dsize; ++i) {
+    durations[i] = model->GetIntExpr(array_durations->a[i])->Var();
+  }
+  AstArray* const array_usages = spec->Arg(2)->getArray();
+  const int usize = array_usages->a.size();
+  std::vector<IntVar*> usages(usize);
+  for (int i = 0; i < usize; ++i) {
+    usages[i] = model->GetIntExpr(array_usages->a[i])->Var();
+  }
+  IntVar* const capacity = model->GetIntExpr(spec->Arg(3))->Var();
+  if (AreAllBound(durations) && AreAllBound(usages) &&
+      capacity->Bound()) {
+    std::vector<int64> fdurations;
+    FillValues(durations, &fdurations);
+    std::vector<int64> fusages;
+    FillValues(usages, &fusages);
+    const int64 fcapacity = capacity->Min();
+    if (AreAllOnes(fdurations) &&
+        AreAllGreaterOrEqual(fusages, fcapacity / 2 + 1)) {
+      // Hidden alldifferent.
+      Constraint* const ct = solver->MakeAllDifferent(start_variables);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+
+    } else {
+      std::vector<IntervalVar*> intervals;
+      solver->MakeFixedDurationIntervalVarArray(start_variables, fdurations, "",
+                                                &intervals);
+      if (AreAllGreaterOrEqual(fusages, fcapacity / 2 + 1)) {
+        Constraint* const ct = solver->MakeDisjunctiveConstraint(intervals, "");
+        VLOG(2) << "  - posted " << ct->DebugString();
+        model->AddConstraint(spec, ct);
+      } else {
+        Constraint* const ct =
+            solver->MakeCumulative(intervals, fusages, fcapacity, "");
+        VLOG(2) << "  - posted " << ct->DebugString();
+        model->AddConstraint(spec, ct);
+      }
+    }
+  } else {
+    PostVariableCumulative(
+        model, spec, start_variables, durations, usages, capacity);
+  }
+}
+
 void p_diffn(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const ax_variables = spec->Arg(0)->getArray();
@@ -2754,6 +2810,8 @@ class IntBuilder {
     global_model_builder.Register("sort", &p_sort);
     global_model_builder.Register("fixed_cumulative", &p_fixed_cumulative);
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
+    global_model_builder.Register("variable_cumulative",
+                                  &p_variable_cumulative);
     global_model_builder.Register("true_constraint", &p_true_constraint);
     global_model_builder.Register("sliding_sum", &p_sliding_sum);
     global_model_builder.Register("diffn", &p_diffn);

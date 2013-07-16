@@ -89,5 +89,11 @@ void PostLexLess(FlatZincModel* const model, CtSpec* const spec,
 void PostInverse(FlatZincModel* const model, CtSpec* const spec,
                  const std::vector<IntVar*>& left,
                  const std::vector<IntVar*>& right);
+
+void PostVariableCumulative(FlatZincModel* const model, CtSpec* const spec,
+                            const std::vector<IntVar*>& starts,
+                            const std::vector<IntVar*>& durations,
+                            const std::vector<IntVar*>& usages,
+                            IntVar* const capacity);
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_

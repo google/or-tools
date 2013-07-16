@@ -581,6 +581,225 @@ class Inverse : public Constraint {
   std::vector<int64> remove_left_;
   std::vector<int64> remove_right_;
 };
+
+// Variable demand cumulative time table
+
+class VariableCumulativeTask : public BaseObject {
+ public:
+  VariableCumulativeTask(
+      IntVar* const start, IntVar* const duration, IntVar* const demand)
+      : start_(start), duration_(duration), demand_(demand) {}
+  // Copy constructor. Cannot be explicit, because we want to pass instances of
+  // VariableCumulativeTask by copy.
+  VariableCumulativeTask(const VariableCumulativeTask& task)
+      : start_(task.start_), duration_(task.duration_), demand_(task.demand_) {}
+
+  IntVar* start() { return start_; }
+  IntVar* duration() { return duration_; }
+  IntVar* demand() const { return demand_; }
+  int64 StartMin() const { return start_->Min(); }
+  int64 StartMax() const { return start_->Max(); }
+  int64 EndMin() const { return start_->Min() + duration_->Min(); }
+  virtual string DebugString() const {
+    return StringPrintf("Task{ start: %s, duration: %s, demand: %s }",
+                        start_->DebugString().c_str(),
+                        duration_->DebugString().c_str(),
+                        demand_->DebugString().c_str());
+  }
+ private:
+  IntVar* const start_;
+  IntVar* const duration_;
+  IntVar* const demand_;
+};
+
+struct ProfileDelta {
+  ProfileDelta(int64 _time, int64 _delta) : time(_time), delta(_delta) {}
+  int64 time;
+  int64 delta;
+};
+
+bool TimeLessThan(const ProfileDelta& delta1, const ProfileDelta& delta2) {
+  return delta1.time < delta2.time;
+}
+
+bool TaskStartMinLessThan(const VariableCumulativeTask* const task1,
+                          const VariableCumulativeTask* const task2) {
+  return (task1->StartMin() < task2->StartMin());
+}
+
+class VariableCumulativeTimeTable : public Constraint {
+ public:
+  VariableCumulativeTimeTable(Solver* const solver,
+                              const std::vector<VariableCumulativeTask*>& tasks,
+                              IntVar* const capacity)
+      : Constraint(solver), by_start_min_(tasks), capacity_(capacity) {
+    // There may be up to 2 delta's per interval (one on each side),
+    // plus two sentinels
+    const int profile_max_size = 2 * NumTasks() + 2;
+    profile_non_unique_time_.reserve(profile_max_size);
+    profile_unique_time_.reserve(profile_max_size);
+  }
+
+  virtual void InitialPropagate() {
+    BuildProfile();
+    PushTasks();
+  }
+
+  virtual void Post() {
+    Demon* const demon =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    for (int i = 0; i < NumTasks(); ++i) {
+      by_start_min_[i]->start()->WhenRange(demon);
+      by_start_min_[i]->duration()->WhenRange(demon);
+      by_start_min_[i]->demand()->WhenRange(demon);
+    }
+    capacity_->WhenRange(demon);
+  }
+
+  int NumTasks() const { return by_start_min_.size(); }
+
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Should not be visited";
+  }
+
+  virtual string DebugString() const {
+    return "VariableCumulativeTimeTable";
+  }
+
+ private:
+  // Build the usage profile. Runs in O(n log n).
+  void BuildProfile() {
+    // Build profile with non unique time
+    profile_non_unique_time_.clear();
+    for (int i = 0; i < NumTasks(); ++i) {
+      const VariableCumulativeTask* task = by_start_min_[i];
+      const int64 start_max = task->StartMax();
+      const int64 end_min = task->EndMin();
+      if (start_max < end_min) {
+        const int64 demand_min = task->demand()->Min();
+        profile_non_unique_time_.push_back(
+            ProfileDelta(start_max, +demand_min));
+        profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand_min));
+      }
+    }
+    // Sort
+    std::sort(profile_non_unique_time_.begin(),
+              profile_non_unique_time_.end(),
+              TimeLessThan);
+    // Build profile with unique times
+    int64 usage = 0;
+    int64 min_usage = 0;
+    profile_unique_time_.clear();
+    profile_unique_time_.push_back(ProfileDelta(kint64min, 0));
+    for (int i = 0; i < profile_non_unique_time_.size(); ++i) {
+      const ProfileDelta& profile_delta = profile_non_unique_time_[i];
+      if (profile_delta.time == profile_unique_time_.back().time) {
+        profile_unique_time_.back().delta += profile_delta.delta;
+      } else {
+        if (usage > capacity_->Max()) {
+          solver()->Fail();
+        }
+        profile_unique_time_.push_back(profile_delta);
+      }
+      usage += profile_delta.delta;
+      min_usage = std::max(min_usage, usage);
+    }
+    DCHECK_EQ(0, usage);
+    profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
+
+    // Propagate on capacity.
+    capacity_->SetMin(min_usage);
+  }
+
+  // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
+  void PushTasks() {
+    std::sort(by_start_min_.begin(), by_start_min_.end(), TaskStartMinLessThan);
+    int64 usage = 0;
+    int profile_index = 0;
+    for (int task_index = 0 ; task_index < NumTasks(); ++task_index) {
+      VariableCumulativeTask* const task = by_start_min_[task_index];
+      while (task->StartMin() > profile_unique_time_[profile_index].time) {
+        DCHECK(profile_index < profile_unique_time_.size());
+        ++profile_index;
+        usage += profile_unique_time_[profile_index].delta;
+      }
+      PushTask(task, profile_index, usage);
+    }
+  }
+
+  // Push the given task to new_start_min, defined as the smallest integer such
+  // that the profile usage for all tasks, excluding the current one, does not
+  // exceed capacity_ - task->demand() on the interval
+  // [new_start_min, new_start_min + task->interval()->DurationMin() ).
+  void PushTask(VariableCumulativeTask* const task,
+                int profile_index,
+                int64 usage) {
+    // Init
+    const int64 demand_min = task->demand()->Min();
+    const int64 residual_capacity = capacity_->Max() - demand_min;
+    const int64 duration_min = task->duration()->Min();
+    const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
+
+    int64 new_start_min = task->StartMin();
+
+    DCHECK_GE(first_prof_delta.time, task->StartMin());
+    // The check above is with a '>='. Let's first treat the '>' case
+    if (first_prof_delta.time > task->StartMin()) {
+      // There was no profile delta at a time between interval->StartMin()
+      // (included) and the current one.
+      // As we don't delete delta's of 0 value, this means the current task
+      // does not contribute to the usage before:
+      DCHECK((task->StartMax() >= first_prof_delta.time) ||
+             (task->StartMax() >= task->EndMin()));
+      // The 'usage' given in argument is valid at first_prof_delta.time. To
+      // compute the usage at the start min, we need to remove the last delta.
+      const int64 usage_at_start_min = usage - first_prof_delta.delta;
+      if (usage_at_start_min > residual_capacity) {
+        new_start_min = profile_unique_time_[profile_index].time;
+      }
+    }
+
+    // Influence of current task
+    const int64 start_max = task->StartMax();
+    const int64 end_min = task->EndMin();
+    ProfileDelta delta_start(start_max, 0);
+    ProfileDelta delta_end(end_min, 0);
+    if (start_max < end_min) {
+      delta_start.delta = +demand_min;
+      delta_end.delta = -demand_min;
+    }
+    while (profile_unique_time_[profile_index].time <
+           duration_min + new_start_min) {
+      const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
+      DCHECK(profile_index < profile_unique_time_.size());
+      // Compensate for current task
+      if (profile_delta.time == delta_start.time) {
+        usage -= delta_start.delta;
+      }
+      if (profile_delta.time == delta_end.time) {
+        usage -= delta_end.delta;
+      }
+      // Increment time
+      ++profile_index;
+      DCHECK(profile_index < profile_unique_time_.size());
+      // Does it fit?
+      if (usage > residual_capacity) {
+        new_start_min = profile_unique_time_[profile_index].time;
+      }
+      usage += profile_unique_time_[profile_index].delta;
+    }
+    task->start()->SetMin(new_start_min);
+  }
+
+  typedef std::vector<ProfileDelta> Profile;
+
+  Profile profile_unique_time_;
+  Profile profile_non_unique_time_;
+  std::vector<VariableCumulativeTask*> by_start_min_;
+  IntVar* const capacity_;
+
+  DISALLOW_COPY_AND_ASSIGN(VariableCumulativeTimeTable);
+};
 }  // namespace
 
 void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
@@ -728,6 +947,23 @@ void PostInverse(FlatZincModel* const model, CtSpec* const spec,
                  const std::vector<IntVar*>& right) {
   Solver* const solver = model->solver();
   Constraint* const ct = solver->RevAlloc(new Inverse(solver, left, right));
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
+}
+
+void PostVariableCumulative(FlatZincModel* const model, CtSpec* const spec,
+                            const std::vector<IntVar*>& starts,
+                            const std::vector<IntVar*>& durations,
+                            const std::vector<IntVar*>& usages,
+                            IntVar* const capacity) {
+  Solver* const solver = model->solver();
+  std::vector<VariableCumulativeTask*> tasks(starts.size());
+  for (int i = 0; i < starts.size(); ++i) {
+    tasks[i] = solver->RevAlloc(new VariableCumulativeTask(
+        starts[i], durations[i], usages[i]));
+  }
+  Constraint* const ct = solver->RevAlloc(new VariableCumulativeTimeTable(
+      solver, tasks, capacity));
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
