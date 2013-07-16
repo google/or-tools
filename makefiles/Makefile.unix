@@ -91,7 +91,7 @@ endif
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG) $(GUROBI_SWIG)
 
 # Compilation flags
-DEBUG = -O3 -DNDEBUG
+DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
 # Check wether CBC/CLP need a coin subdir in library.
