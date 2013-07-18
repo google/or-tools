@@ -503,8 +503,8 @@ class Inverse : public Constraint {
           solver(), this, &Inverse::Propagate, "Propagate", i, false);
       right_[i]->WhenDomain(right_demon);
     }
-    solver()->AddConstraint(solver()->MakeAllDifferent(left_));
-    solver()->AddConstraint(solver()->MakeAllDifferent(right_));
+    solver()->AddConstraint(solver()->MakeAllDifferent(left_, false));
+    solver()->AddConstraint(solver()->MakeAllDifferent(right_, false));
   }
 
   virtual void InitialPropagate() {
