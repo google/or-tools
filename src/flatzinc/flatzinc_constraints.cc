@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "flatzinc/flatzinc_constraints.h"
+
 #include "base/commandlineflags.h"
 #include "flatzinc/flatzinc.h"
-#include "flatzinc/flatzinc_constraints.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
@@ -339,10 +340,9 @@ class BooleanSumInRange : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-        DebugStringArray(vars_.get(), size_, ", ").c_str(), range_min_,
-        range_max_);
+    return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
+                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        range_min_, range_max_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -384,7 +384,10 @@ class Lex : public Constraint {
  public:
   Lex(Solver* const s, const std::vector<IntVar*>& left,
       const std::vector<IntVar*>& right, bool strict)
-      : Constraint(s), left_(left), right_(right), active_var_(0),
+      : Constraint(s),
+        left_(left),
+        right_(right),
+        active_var_(0),
         strict_(strict) {
     CHECK_EQ(left.size(), right.size());
   }
@@ -395,16 +398,14 @@ class Lex : public Constraint {
     const int position = FindNextValidVar(0);
     active_var_.SetValue(solver(), position);
     if (position < left_.size()) {
-      Demon* const demon = MakeConstraintDemon1(
-          solver(), this, &Lex::Propagate, "Propagate", position);
+      Demon* const demon = MakeConstraintDemon1(solver(), this, &Lex::Propagate,
+                                                "Propagate", position);
       left_[position]->WhenRange(demon);
       right_[position]->WhenRange(demon);
     }
   }
 
-  virtual void InitialPropagate() {
-    Propagate(active_var_.Value());
-  }
+  virtual void InitialPropagate() { Propagate(active_var_.Value()); }
 
   void Propagate(int var_index) {
     DCHECK_EQ(var_index, active_var_.Value());
@@ -416,8 +417,8 @@ class Lex : public Constraint {
       return;
     }
     if (position != var_index) {
-      Demon* const demon = MakeConstraintDemon1(
-          solver(), this, &Lex::Propagate, "Propagate", position);
+      Demon* const demon = MakeConstraintDemon1(solver(), this, &Lex::Propagate,
+                                                "Propagate", position);
       left_[position]->WhenRange(demon);
       right_[position]->WhenRange(demon);
       active_var_.SetValue(solver(), position);
@@ -436,10 +437,9 @@ class Lex : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Lex([%s], [%s]%s)",
-                        DebugStringVector(left_, ", ").c_str(),
-                        DebugStringVector(right_, ", ").c_str(),
-                        strict_ ? ", strict" : "");
+    return StringPrintf(
+        "Lex([%s], [%s]%s)", DebugStringVector(left_, ", ").c_str(),
+        DebugStringVector(right_, ", ").c_str(), strict_ ? ", strict" : "");
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -475,9 +475,13 @@ class Lex : public Constraint {
 class Inverse : public Constraint {
  public:
   Inverse(Solver* const s, const std::vector<IntVar*>& left,
-      const std::vector<IntVar*>& right)
-      : Constraint(s), left_(left), right_(right), left_holes_(left.size()),
-        right_holes_(right_.size()), left_iterators_(left_.size()),
+          const std::vector<IntVar*>& right)
+      : Constraint(s),
+        left_(left),
+        right_(right),
+        left_holes_(left.size()),
+        left_iterators_(left_.size()),
+        right_holes_(right_.size()),
         right_iterators_(right_.size()) {
     CHECK_EQ(left_.size(), right_.size());
     for (int i = 0; i < left_.size(); ++i) {
@@ -560,7 +564,7 @@ class Inverse : public Constraint {
                        IntVarIterator* const domain,
                        const std::vector<IntVar*>& inverse,
                        std::vector<int64>* const remove) {
-    remove->clear();
+     remove->clear();
     for (domain->Init(); domain->Ok(); domain->Next()) {
       const int64 value = domain->Value();
       if (!inverse[value]->Contains(index)) {
@@ -586,8 +590,8 @@ class Inverse : public Constraint {
 
 class VariableCumulativeTask : public BaseObject {
  public:
-  VariableCumulativeTask(
-      IntVar* const start, IntVar* const duration, IntVar* const demand)
+  VariableCumulativeTask(IntVar* const start, IntVar* const duration,
+                         IntVar* const demand)
       : start_(start), duration_(duration), demand_(demand) {}
   // Copy constructor. Cannot be explicit, because we want to pass instances of
   // VariableCumulativeTask by copy.
@@ -606,6 +610,7 @@ class VariableCumulativeTask : public BaseObject {
                         duration_->DebugString().c_str(),
                         demand_->DebugString().c_str());
   }
+
  private:
   IntVar* const start_;
   IntVar* const duration_;
@@ -663,7 +668,9 @@ class VariableCumulativeTimeTable : public Constraint {
   }
 
   virtual string DebugString() const {
-    return "VariableCumulativeTimeTable";
+    return StringPrintf("VariableCumulativeTimeTable([%s], capacity = %s)",
+                        DebugStringVector(by_start_min_, ", ").c_str(),
+                        capacity_->DebugString().c_str());
   }
 
  private:
@@ -675,16 +682,16 @@ class VariableCumulativeTimeTable : public Constraint {
       const VariableCumulativeTask* task = by_start_min_[i];
       const int64 start_max = task->StartMax();
       const int64 end_min = task->EndMin();
-      if (start_max < end_min) {
-        const int64 demand_min = task->demand()->Min();
+      const int64 demand_min = task->demand()->Min();
+      if (start_max < end_min && demand_min > 0) {
         profile_non_unique_time_.push_back(
             ProfileDelta(start_max, +demand_min));
-        profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand_min));
+        profile_non_unique_time_.push_back(
+            ProfileDelta(end_min, -demand_min));
       }
     }
     // Sort
-    std::sort(profile_non_unique_time_.begin(),
-              profile_non_unique_time_.end(),
+    std::sort(profile_non_unique_time_.begin(), profile_non_unique_time_.end(),
               TimeLessThan);
     // Build profile with unique times
     int64 usage = 0;
@@ -696,12 +703,12 @@ class VariableCumulativeTimeTable : public Constraint {
       if (profile_delta.time == profile_unique_time_.back().time) {
         profile_unique_time_.back().delta += profile_delta.delta;
       } else {
-        if (usage > capacity_->Max()) {
-          solver()->Fail();
-        }
         profile_unique_time_.push_back(profile_delta);
       }
       usage += profile_delta.delta;
+      if (usage > capacity_->Max()) {
+        solver()->Fail();
+      }
       min_usage = std::max(min_usage, usage);
     }
     DCHECK_EQ(0, usage);
@@ -716,27 +723,30 @@ class VariableCumulativeTimeTable : public Constraint {
     std::sort(by_start_min_.begin(), by_start_min_.end(), TaskStartMinLessThan);
     int64 usage = 0;
     int profile_index = 0;
-    for (int task_index = 0 ; task_index < NumTasks(); ++task_index) {
+    for (int task_index = 0; task_index < NumTasks(); ++task_index) {
       VariableCumulativeTask* const task = by_start_min_[task_index];
-      while (task->StartMin() > profile_unique_time_[profile_index].time) {
-        DCHECK(profile_index < profile_unique_time_.size());
-        ++profile_index;
-        usage += profile_unique_time_[profile_index].delta;
+      if (task->duration()->Min() > 0) {
+        while (task->StartMin() > profile_unique_time_[profile_index].time) {
+          DCHECK(profile_index < profile_unique_time_.size());
+          ++profile_index;
+          usage += profile_unique_time_[profile_index].delta;
+        }
+        PushTask(task, profile_index, usage);
       }
-      PushTask(task, profile_index, usage);
     }
   }
 
   // Push the given task to new_start_min, defined as the smallest integer such
   // that the profile usage for all tasks, excluding the current one, does not
-  // exceed capacity_ - task->demand() on the interval
+  // exceed capacity_ - task->demand()->Min() on the interval
   // [new_start_min, new_start_min + task->interval()->DurationMin() ).
-  void PushTask(VariableCumulativeTask* const task,
-                int profile_index,
+  void PushTask(VariableCumulativeTask* const task, int profile_index,
                 int64 usage) {
     // Init
     const int64 demand_min = task->demand()->Min();
-    const int64 residual_capacity = capacity_->Max() - demand_min;
+    const int64 adjusted_demand = demand_min == 0 ? 1 : demand_min;
+    const bool is_adjusted = demand_min == 0;
+    const int64 residual_capacity = capacity_->Max() - adjusted_demand;
     const int64 duration_min = task->duration()->Min();
     const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
 
@@ -762,6 +772,7 @@ class VariableCumulativeTimeTable : public Constraint {
     // Influence of current task
     const int64 start_max = task->StartMax();
     const int64 end_min = task->EndMin();
+    // TODO(user): remove delta_start and delta_end.
     ProfileDelta delta_start(start_max, 0);
     ProfileDelta delta_end(end_min, 0);
     if (start_max < end_min) {
@@ -788,7 +799,13 @@ class VariableCumulativeTimeTable : public Constraint {
       }
       usage += profile_unique_time_[profile_index].delta;
     }
-    task->start()->SetMin(new_start_min);
+    if (is_adjusted) {
+      if (new_start_min > task->StartMax()) {
+        task->demand()->SetMax(0);
+      }
+    } else {
+      task->start()->SetMin(new_start_min);
+    }
   }
 
   typedef std::vector<ProfileDelta> Profile;
@@ -802,10 +819,18 @@ class VariableCumulativeTimeTable : public Constraint {
 };
 }  // namespace
 
+Constraint* MakeIsBooleanSumInRange(Solver* const solver,
+                                    const std::vector<IntVar*>& variables,
+                                    int64 range_min, int64 range_max,
+                                    IntVar* const target) {
+  return solver->RevAlloc(
+      new IsBooleanSumInRange(solver, variables.data(), variables.size(),
+                              range_min, range_max, target));
+}
+
 void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max,
-                             IntVar* const target) {
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* const target) {
   Solver* const solver = model->solver();
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
@@ -839,17 +864,23 @@ void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
              AddBoolOrArrayEqVar(model->Sat(), variables, target)) {
     VLOG(2) << "  - posted to sat";
   } else {
-    Constraint* const ct = solver->RevAlloc(
-        new IsBooleanSumInRange(solver, variables.data(), variables.size(),
-                                range_min, range_max, target));
+    Constraint* const ct = MakeIsBooleanSumInRange(solver, variables, range_min,
+                                                   range_max, target);
     VLOG(2) << "  - posted " << ct->DebugString();
     model->AddConstraint(spec, ct);
   }
 }
 
+Constraint* MakeBooleanSumInRange(Solver* const solver,
+                                  const std::vector<IntVar*>& variables,
+                                  int64 range_min, int64 range_max) {
+  return solver->RevAlloc(
+      new BooleanSumInRange(solver, variables.data(), variables.size(),
+                            range_min, range_max));
+}
 void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max) {
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max) {
   Solver* const solver = model->solver();
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
@@ -886,20 +917,17 @@ void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
              AddAtMostOne(model->Sat(), alt)) {
     VLOG(2) << "  - posted to sat";
   } else {
-    Constraint* const ct = solver->RevAlloc(new BooleanSumInRange(
-        solver, alt.data(), alt.size(), range_min, range_max));
+    Constraint* const ct =
+        MakeBooleanSumInRange(solver, alt, range_min, range_max);
     VLOG(2) << "  - posted " << ct->DebugString();
     model->AddConstraint(spec, ct);
   }
 }
 
-void PostBooleanSumOdd(FlatZincModel* const model, CtSpec* const spec,
-                       const std::vector<IntVar*>& variables) {
-  Solver* const solver = model->solver();
-  Constraint* const ct = solver->RevAlloc(
+Constraint* MakeBooleanSumOdd(
+    Solver* const solver, const std::vector<IntVar*>& variables) {
+  return solver->RevAlloc(
       new BooleanSumOdd(solver, variables.data(), variables.size()));
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
 }
 
 Constraint* MakeStrongScalProdEquality(Solver* const solver,
@@ -933,38 +961,30 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
   return solver->MakeAllowedAssignments(variables, tuples);
 }
 
-void PostLexLess(FlatZincModel* const model, CtSpec* const spec,
-                 const std::vector<IntVar*>& left,
-                 const std::vector<IntVar*>& right, bool strict) {
-  Solver* const solver = model->solver();
-  Constraint* const ct = solver->RevAlloc(new Lex(solver, left, right, strict));
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
+Constraint* MakeLexLess(Solver* const solver,
+                        const std::vector<IntVar*>& left,
+                        const std::vector<IntVar*>& right,
+                        bool strict) {
+  return solver->RevAlloc(new Lex(solver, left, right, strict));
 }
 
-void PostInverse(FlatZincModel* const model, CtSpec* const spec,
-                 const std::vector<IntVar*>& left,
-                 const std::vector<IntVar*>& right) {
-  Solver* const solver = model->solver();
-  Constraint* const ct = solver->RevAlloc(new Inverse(solver, left, right));
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
+Constraint* MakeInverse(Solver* const solver,
+                        const std::vector<IntVar*>& left,
+                        const std::vector<IntVar*>& right) {
+  return solver->RevAlloc(new Inverse(solver, left, right));
 }
 
-void PostVariableCumulative(FlatZincModel* const model, CtSpec* const spec,
-                            const std::vector<IntVar*>& starts,
-                            const std::vector<IntVar*>& durations,
-                            const std::vector<IntVar*>& usages,
-                            IntVar* const capacity) {
-  Solver* const solver = model->solver();
+Constraint* MakeVariableCumulative(Solver* const solver,
+                                   const std::vector<IntVar*>& starts,
+                                   const std::vector<IntVar*>& durations,
+                                   const std::vector<IntVar*>& usages,
+                                   IntVar* const capacity) {
   std::vector<VariableCumulativeTask*> tasks(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
-    tasks[i] = solver->RevAlloc(new VariableCumulativeTask(
-        starts[i], durations[i], usages[i]));
+    tasks[i] = solver->RevAlloc(
+        new VariableCumulativeTask(starts[i], durations[i], usages[i]));
   }
-  Constraint* const ct = solver->RevAlloc(new VariableCumulativeTimeTable(
-      solver, tasks, capacity));
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
+  return solver->RevAlloc(
+      new VariableCumulativeTimeTable(solver, tasks, capacity));
 }
 }  // namespace operations_research

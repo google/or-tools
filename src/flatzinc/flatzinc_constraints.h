@@ -71,29 +71,36 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        const std::vector<int64>& coefficients,
                                        int64 rhs);
 
-void PostBooleanSumOdd(FlatZincModel* const model, CtSpec* const spec,
-                       const std::vector<IntVar*>& variables);
+Constraint* MakeIsBooleanSumInRange(Solver* const solver,
+                                    const std::vector<IntVar*>& variables,
+                                    int64 range_min, int64 range_max,
+                                    IntVar* const target);
+
+Constraint* MakeBooleanSumInRange(Solver* const solver,
+                                  const std::vector<IntVar*>& variables,
+                                  int64 range_min, int64 range_max);
+
+Constraint* MakeBooleanSumOdd(Solver* const solver,
+                              const std::vector<IntVar*>& variables);
+
+Constraint* MakeLexLess(Solver* const solver, const std::vector<IntVar*>& left,
+                        const std::vector<IntVar*>& right, bool strict);
+
+Constraint* MakeInverse(Solver* const solver, const std::vector<IntVar*>& left,
+                        const std::vector<IntVar*>& right);
+
+Constraint* MakeVariableCumulative(Solver* const solver,
+                                   const std::vector<IntVar*>& starts,
+                                   const std::vector<IntVar*>& durations,
+                                   const std::vector<IntVar*>& usages,
+                                   IntVar* const capacity);
+
 void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max,
-                             IntVar* const target);
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* const target);
 
 void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max);
-
-void PostLexLess(FlatZincModel* const model, CtSpec* const spec,
-                 const std::vector<IntVar*>& left,
-                 const std::vector<IntVar*>& right, bool strict);
-
-void PostInverse(FlatZincModel* const model, CtSpec* const spec,
-                 const std::vector<IntVar*>& left,
-                 const std::vector<IntVar*>& right);
-
-void PostVariableCumulative(FlatZincModel* const model, CtSpec* const spec,
-                            const std::vector<IntVar*>& starts,
-                            const std::vector<IntVar*>& durations,
-                            const std::vector<IntVar*>& usages,
-                            IntVar* const capacity);
-}  // namespace operations_research
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max);
+}       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_

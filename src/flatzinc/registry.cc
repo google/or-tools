@@ -1737,7 +1737,9 @@ void p_array_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   if (FLAGS_use_sat && AddArrayXor(model->Sat(), variables)) {
     VLOG(2) << "  - posted to sat";
   } else {
-    PostBooleanSumOdd(model, spec, variables);
+    Constraint* const ct = MakeBooleanSumOdd(solver, variables);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
   }
 }
 
@@ -2161,7 +2163,6 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
   AstNode* const node_boolvar = spec->Arg(3);
   if (spec->Arg(1)->isInt()) {
     const int64 value = spec->Arg(1)->getInt();
-    IntVar* const expected_count = model->GetIntExpr(spec->Arg(2))->Var();
     std::vector<IntVar*> tmp_sum;
     for (int i = 0; i < size; ++i) {
       IntVar* const var = solver->MakeIsEqualCstVar(
@@ -2511,9 +2512,9 @@ void p_variable_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
-  std::vector<IntVar*> start_variables(size);
+  std::vector<IntVar*> starts(size);
   for (int i = 0; i < size; ++i) {
-    start_variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+    starts[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
   AstArray* const array_durations = spec->Arg(1)->getArray();
   const int dsize = array_durations->a.size();
@@ -2538,13 +2539,13 @@ void p_variable_cumulative(FlatZincModel* const model, CtSpec* const spec) {
     if (AreAllOnes(fdurations) &&
         AreAllGreaterOrEqual(fusages, fcapacity / 2 + 1)) {
       // Hidden alldifferent.
-      Constraint* const ct = solver->MakeAllDifferent(start_variables);
+      Constraint* const ct = solver->MakeAllDifferent(starts);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
 
     } else {
       std::vector<IntervalVar*> intervals;
-      solver->MakeFixedDurationIntervalVarArray(start_variables, fdurations, "",
+      solver->MakeFixedDurationIntervalVarArray(starts, fdurations, "",
                                                 &intervals);
       if (AreAllGreaterOrEqual(fusages, fcapacity / 2 + 1)) {
         Constraint* const ct = solver->MakeDisjunctiveConstraint(intervals, "");
@@ -2558,8 +2559,10 @@ void p_variable_cumulative(FlatZincModel* const model, CtSpec* const spec) {
       }
     }
   } else {
-    PostVariableCumulative(
-        model, spec, start_variables, durations, usages, capacity);
+    Constraint* const ct =
+        MakeVariableCumulative(solver, starts, durations, usages, capacity);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
   }
 }
 
@@ -2665,7 +2668,6 @@ void p_regular(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_lex_less_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-
   AstArray* const array_left = spec->Arg(0)->getArray();
   const int size = array_left->a.size();
   std::vector<IntVar*> left(size);
@@ -2678,12 +2680,13 @@ void p_lex_less_int(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  PostLexLess(model, spec, left, right, true);
+  Constraint* const ct = MakeLexLess(solver, left, right, true);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
 }
 
 void p_lex_lesseq_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-
   AstArray* const array_left = spec->Arg(0)->getArray();
   const int size = array_left->a.size();
   std::vector<IntVar*> left(size);
@@ -2696,7 +2699,9 @@ void p_lex_lesseq_int(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  PostLexLess(model, spec, left, right, false);
+  Constraint* const ct = MakeLexLess(solver, left, right, false);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
 }
 
 void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
@@ -2717,7 +2722,9 @@ void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i + 1] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  PostInverse(model, spec, left, right);
+  Constraint* const ct = MakeInverse(solver, left, right);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
 }
 
 class IntBuilder {

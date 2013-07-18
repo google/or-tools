@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <iostream>  // NOLINT
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -100,6 +101,7 @@ class Solver {
   Variable NewVariable() {
     Variable v = IncrementVariableCounter();
     watches_.resize(2 * v.value() + 2);
+    implies_.resize(2 * v.value() + 2);
     assignment_.push_back(kUndefined);
     return v;
   }
@@ -210,6 +212,9 @@ class Solver {
   // 'watches_[lit]' is a list of constraints watching 'lit'(will go
   // there if literal becomes true).
   ITIVector<Literal, std::vector<Watcher>> watches_;
+
+  // implies_[lit] is a list of literals to set to true if 'lit' becomes true.
+  ITIVector<Literal, std::vector<Literal>> implies_;
   // The current assignments.
   ITIVector<Variable, Boolean> assignment_;
   // Assignment stack; stores all assigments made in the order they
@@ -246,15 +251,26 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
   }
   ps->resize(j);
 
-  if (ps->size() == 0) {
-    return (ok_ = false);
-  } else if (ps->size() == 1) {
-    UncheckedEnqueue((*ps)[0]);
-    return (ok_ = Propagate());
-  } else {
-    Clause* const cr = new Clause(ps);
-    clauses.push_back(cr);
-    AttachClause(cr);
+  switch (ps->size()) {
+    case 0: {
+      return (ok_ = false);
+    }
+    case 1: {
+      UncheckedEnqueue((*ps)[0]);
+      return (ok_ = Propagate());
+    }
+    case 2: {
+      Literal l0 = (*ps)[0];
+      Literal l1 = (*ps)[1];
+      implies_[Negated(l0)].push_back(l1);
+      implies_[Negated(l1)].push_back(l0);
+      break;
+    }
+    default: {
+      Clause* const cr = new Clause(ps);
+      clauses.push_back(cr);
+      AttachClause(cr);
+    }
   }
   return true;
 }
@@ -262,8 +278,17 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
 bool Solver::Propagate() {
   bool result = true;
   while (qhead_ < trail_.size()) {
-    Literal p = trail_[qhead_++];
+    const Literal p = trail_[qhead_++];
     // 'p' is enqueued fact to propagate.
+    // Propagate the implies first.
+    const std::vector<Literal>& to_add = implies_[p];
+    for (int i = 0; i < to_add.size(); ++i) {
+      if (!Enqueue(to_add[i])) {
+        return false;
+      }
+    }
+
+    // Propagate watched clauses.
     std::vector<Watcher>& ws = watches_[p];
 
     int i = 0;

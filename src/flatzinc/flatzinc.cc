@@ -32,6 +32,7 @@
  *
  */
 
+#include <iostream>  // NOLINT
 #include <string>
 
 #include "base/stringprintf.h"
