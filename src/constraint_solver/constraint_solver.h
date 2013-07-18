@@ -2944,6 +2944,7 @@ class Solver {
   friend class PropagationBaseObject;
   friend class Queue;
   friend class SearchMonitor;
+  friend class SearchLimit;
 
 #ifndef SWIG
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
@@ -4178,6 +4179,8 @@ class SearchLimit : public SearchMonitor {
   }
 
  private:
+  void TopPeriodicCheck();
+
   bool crossed_;
   DISALLOW_COPY_AND_ASSIGN(SearchLimit);
 };

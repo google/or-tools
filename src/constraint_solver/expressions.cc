@@ -4635,8 +4635,9 @@ class IntAbs : public BaseIntExpr {
   }
 
   virtual IntVar* CastToVar() {
-    const int64 min_value = Min();
-    const int64 max_value = Max();
+    int64 min_value = 0;
+    int64 max_value = 0;
+    Range(&min_value, &max_value);
     Solver* const s = solver();
     const string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
     IntVar* const target = s->MakeIntVar(min_value, max_value, name);

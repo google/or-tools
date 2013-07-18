@@ -3944,16 +3944,24 @@ void SearchLimit::EnterSearch()  {
 
 void SearchLimit::BeginNextDecision(DecisionBuilder* const b) {
   PeriodicCheck();
+  TopPeriodicCheck();
 }
 
 void SearchLimit::RefuteDecision(Decision* const d) {
   PeriodicCheck();
+  TopPeriodicCheck();
 }
 
 void SearchLimit::PeriodicCheck() {
   if (crossed_ || Check()) {
     crossed_ = true;
     solver()->Fail();
+  }
+}
+
+void SearchLimit::TopPeriodicCheck() {
+  if (solver()->TopLevelSearch() != solver()->ActiveSearch()) {
+    solver()->TopPeriodicCheck();
   }
 }
 
@@ -4004,7 +4012,7 @@ class RegularLimit : public SearchLimit {
  private:
   bool CheckTime();
   int64 TimeDelta();
-  static int64 GetPercent(int value, int offset, int total) {
+  static int64 GetPercent(int64 value, int64 offset, int64 total) {
     return (total > 0 && total < kint64max) ?
         100 * (value - offset) / total : -1;
   }

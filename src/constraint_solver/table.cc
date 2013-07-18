@@ -567,7 +567,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       IntVarIterator* it = iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {
         const int64 value = it->Value();
-        UpdateTempMask(var_index, it->Value() - omin);
+        UpdateTempMask(var_index, value - omin);
       }
       // Then we apply this mask to active_tuples_.
       for (int offset = 0; offset < length_; ++offset) {
