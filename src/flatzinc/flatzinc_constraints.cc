@@ -598,8 +598,8 @@ class VariableCumulativeTask : public BaseObject {
   VariableCumulativeTask(const VariableCumulativeTask& task)
       : start_(task.start_), duration_(task.duration_), demand_(task.demand_) {}
 
-  IntVar* start() { return start_; }
-  IntVar* duration() { return duration_; }
+  IntVar* start() const { return start_; }
+  IntVar* duration() const { return duration_; }
   IntVar* demand() const { return demand_; }
   int64 StartMin() const { return start_->Min(); }
   int64 StartMax() const { return start_->Max(); }
@@ -694,8 +694,6 @@ class VariableCumulativeTimeTable : public Constraint {
     std::sort(profile_non_unique_time_.begin(), profile_non_unique_time_.end(),
               TimeLessThan);
     // Build profile with unique times
-    int64 usage = 0;
-    int64 min_usage = 0;
     profile_unique_time_.clear();
     profile_unique_time_.push_back(ProfileDelta(kint64min, 0));
     for (int i = 0; i < profile_non_unique_time_.size(); ++i) {
@@ -705,17 +703,25 @@ class VariableCumulativeTimeTable : public Constraint {
       } else {
         profile_unique_time_.push_back(profile_delta);
       }
+    }
+    // Re-scan profile to compute min usage, max usage, and check
+    // final usage to be 0.
+    int64 usage = 0;
+    int64 max_required_usage = 0;
+    const int64 max_capacity = capacity_->Max();
+    for (int i = 0; i < profile_unique_time_.size(); ++i) {
+      const ProfileDelta& profile_delta = profile_unique_time_[i];
       usage += profile_delta.delta;
-      if (usage > capacity_->Max()) {
+      max_required_usage = std::max(max_required_usage, usage);
+      if (usage > max_capacity) {
         solver()->Fail();
       }
-      min_usage = std::max(min_usage, usage);
     }
     DCHECK_EQ(0, usage);
     profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
 
     // Propagate on capacity.
-    capacity_->SetMin(min_usage);
+    capacity_->SetMin(max_required_usage);
   }
 
   // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
