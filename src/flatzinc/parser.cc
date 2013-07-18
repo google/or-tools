@@ -462,6 +462,20 @@ void ParserState::Presolve() {
        !it.at_end(); ++it) {
     FZLOG << "  - " << it->first << ": " << it->second.size() << std::endl;
   }
+  switch (model_->ProblemType()) {
+    case FlatZincModel::SAT:
+      FZLOG << "  - Satisfaction problem" << std::endl;
+      break;
+    case FlatZincModel::MIN:
+      FZLOG << "  - Minimization problem" << std::endl;
+      break;
+    case FlatZincModel::MAX:
+      FZLOG << "  - Maximization problem" << std::endl;
+      break;
+    default:
+      FZLOG << "  - Unkown problem" << std::endl;
+      break;
+  }
 }
 
 void ParserState::BuildStatistics() {

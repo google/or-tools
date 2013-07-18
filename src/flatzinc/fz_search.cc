@@ -490,7 +490,7 @@ void FlatZincModel::ParseSearchAnnotations(
     }
   }
 
-  FZLOG << "Create decision builders from search annotations" << std::endl;
+  FZLOG << "  - using search annotations" << std::endl;
   hash_set<IntVar*> added;
   for (unsigned int i = 0; i < flat_annotations.size(); i++) {
     try {
@@ -553,7 +553,7 @@ void FlatZincModel::ParseSearchAnnotations(
         vstr = Solver::SPLIT_UPPER_HALF;
       }
       DecisionBuilder* const db = solver_->MakePhase(int_vars, str, vstr);
-      if (satisfy || i != flat_annotations.size() - 1) {
+      if ((satisfy || i != flat_annotations.size() - 1) && !int_vars.empty()) {
         defined->push_back(db);
       } else {
         *obj_db = db;
@@ -592,7 +592,9 @@ void FlatZincModel::ParseSearchAnnotations(
         if (args->hasAtom("indomain_random")) {
           vstr = Solver::ASSIGN_RANDOM_VALUE;
         }
-        defined->push_back(solver_->MakePhase(bool_vars, str, vstr));
+        if (!bool_vars.empty()) {
+          defined->push_back(solver_->MakePhase(bool_vars, str, vstr));
+        }
       }
       catch (AstTypeError & e) {
         (void) e;
@@ -654,7 +656,7 @@ void FlatZincModel::AddCompletionDecisionBuilders(
 
 DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     const FlatZincSearchParameters& p) {
-  FZLOG << "Create decision builders" << std::endl;
+  FZLOG << "Defining search" << std::endl;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
@@ -770,7 +772,6 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   } else if (method_ == SAT && p.num_solutions == 0) {
     p.num_solutions = 1;
   } else if (method_ != SAT && !p.all_solutions && p.num_solutions > 0) {
-    p.num_solutions = kint32max;
     print_last = true;
   }
 
@@ -805,8 +806,16 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
 
   SearchLimit* const limit =
       p.time_limit_in_ms > 0 ? solver_->MakeTimeLimit(p.time_limit_in_ms)
-                             : NULL;
+                             : nullptr;
+  if (limit != nullptr) {
+    FZLOG << "  - adding a time limit of " << p.time_limit_in_ms << " ms"
+          << std::endl;
+  }
   monitors.push_back(limit);
+
+  if (p.num_solutions > 0) {
+    FZLOG << "  - adding a solution limit of " << p.num_solutions << std::endl;
+  }
 
   if (p.simplex_frequency > 0) {
     monitors.push_back(solver_->MakeSimplexConstraint(p.simplex_frequency));

@@ -246,6 +246,7 @@ class FlatZincModel {
   const std::vector<IntVar*>& PrimaryVariables() const;
   const std::vector<IntVar*>& SecondaryVariables() const;
   const int objective_variable_index() const { return objective_variable_; }
+  Meth ProblemType() const { return method_; }
 
  private:
   string DebugString(AstNode* const ai) const;
