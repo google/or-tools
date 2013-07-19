@@ -3099,6 +3099,11 @@ class PlusIntExpr : public BaseIntExpr {
 
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
 
+  virtual void Range(int64* const mi, int64* const ma) const {
+    *mi = left_->Min() + right_->Min();
+    *ma = left_->Max() + right_->Max();
+  }
+
   virtual string name() const {
     return StringPrintf("(%s + %s)", left_->name().c_str(),
                         right_->name().c_str());

@@ -133,10 +133,14 @@ void p_int_ne(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   if (spec->Arg(1)->isInt()) {
-    Constraint* const ct =
-        solver->MakeNonEquality(left, spec->Arg(1)->getInt());
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (left->IsVar()) {
+      left->Var()->RemoveValue(spec->Arg(1)->getInt());
+    } else {
+      Constraint* const ct =
+          solver->MakeNonEquality(left, spec->Arg(1)->getInt());
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     Constraint* const ct = solver->MakeNonEquality(left, right);
