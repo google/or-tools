@@ -2635,24 +2635,24 @@ template<class T> Constraint* MakeScalProdEqualityFct(
         neg_terms.push_back(solver->MakeIntConst(rhs));
       }
       return solver->MakeEquality(
-          solver->MakeSum(pos_terms)->Var(),
-          solver->MakeSum(neg_terms)->Var());
+          solver->MakeSum(pos_terms),
+          solver->MakeSum(neg_terms));
     }
   } else if (positives == 1) {
-    IntVar* pos_term = NULL;
+    IntExpr* pos_term = NULL;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefficients[i] == 0 || vars[i]->Bound()) {
         rhs -= coefficients[i] * vars[i]->Min();
       } else if (coefficients[i] > 0) {
-        pos_term = solver->MakeProd(vars[i], coefficients[i])->Var();
+        pos_term = solver->MakeProd(vars[i], coefficients[i]);
       } else {
         LOG(FATAL) << "Should not be here";
       }
     }
     return solver->MakeEquality(pos_term, rhs);
   } else if (negatives == 1) {
-    IntVar* neg_term = NULL;
+    IntExpr* neg_term = NULL;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefficients[i] == 0 || vars[i]->Bound()) {
@@ -2660,7 +2660,7 @@ template<class T> Constraint* MakeScalProdEqualityFct(
       } else if (coefficients[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_term = solver->MakeProd(vars[i], -coefficients[i])->Var();
+        neg_term = solver->MakeProd(vars[i], -coefficients[i]);
       }
     }
     return solver->MakeEquality(neg_term, -rhs);
@@ -2813,36 +2813,33 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(
       }
     }
     if (negatives == 1) {
-      IntVar* const neg_term = solver->MakeSum(neg_terms[0], rhs)->Var();
-      return solver->MakeLessOrEqual(
-          solver->MakeSum(pos_terms)->Var(), neg_term);
+      IntExpr* const neg_term = solver->MakeSum(neg_terms[0], rhs);
+      return solver->MakeLessOrEqual(solver->MakeSum(pos_terms), neg_term);
     } else if (positives == 1) {
-      IntVar* const pos_term = solver->MakeSum(pos_terms[0], -rhs)->Var();
-      return solver->MakeGreaterOrEqual(
-          solver->MakeSum(neg_terms)->Var(), pos_term);
+      IntExpr* const pos_term = solver->MakeSum(pos_terms[0], -rhs);
+      return solver->MakeGreaterOrEqual(solver->MakeSum(neg_terms), pos_term);
     } else {
       if (rhs != 0) {
         neg_terms.push_back(solver->MakeIntConst(rhs));
       }
       return solver->MakeLessOrEqual(
-          solver->MakeSum(pos_terms)->Var(),
-          solver->MakeSum(neg_terms)->Var());
+          solver->MakeSum(pos_terms), solver->MakeSum(neg_terms));
     }
   } else if (positives == 1) {
-    IntVar* pos_term = NULL;
+    IntExpr* pos_term = NULL;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefficients[i] == 0 || vars[i]->Bound()) {
         rhs -= coefficients[i] * vars[i]->Min();
       } else if (coefficients[i] > 0) {
-        pos_term = solver->MakeProd(vars[i], coefficients[i])->Var();
+        pos_term = solver->MakeProd(vars[i], coefficients[i]);
       } else {
         LOG(FATAL) << "Should not be here";
       }
     }
     return solver->MakeLessOrEqual(pos_term, rhs);
   } else if (negatives == 1) {
-    IntVar* neg_term = NULL;
+    IntExpr* neg_term = NULL;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefficients[i] == 0 || vars[i]->Bound()) {
@@ -2850,7 +2847,7 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(
       } else if (coefficients[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_term = solver->MakeProd(vars[i], -coefficients[i])->Var();
+        neg_term = solver->MakeProd(vars[i], -coefficients[i]);
       }
     }
     return solver->MakeGreaterOrEqual(neg_term, -rhs);
@@ -2973,7 +2970,7 @@ IntExpr* MakeScalProdAux(Solver* solver,
         if (!positive_coef_vars.empty()) {
           IntExpr* const positives = MakeScalProdAux(solver, positive_coef_vars,
                                                      positive_coefs, constant);
-          return solver->MakeDifference(positives->Var(), negatives->Var());
+          return solver->MakeDifference(positives, negatives);
         } else {
           return solver->MakeDifference(constant, negatives);
         }
@@ -3060,7 +3057,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
     IntExpr* const cache =
         model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
     if (cache != NULL) {
-      return cache->Var();
+      return cache;
     } else {
       int64 new_min = 0;
       int64 new_max = 0;
@@ -3107,7 +3104,7 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
     IntExpr* const cache =
         model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
     if (cache != NULL) {
-      return cache->Var();
+      return cache;
     } else {
       if (AreAllBooleans(vars)) {
         IntVar* const new_var = MakeBoolVar();
@@ -3144,7 +3141,7 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
     IntExpr* const cache =
         model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
     if (cache != NULL) {
-      return cache->Var();
+      return cache;
     } else {
       if (AreAllBooleans(vars)) {
         IntVar* const new_var = MakeBoolVar();
@@ -3179,7 +3176,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
       return RevAlloc(new MinConstraint(this, vars, min_var));
     }
   } else if (size == 2) {
-    return MakeEquality(MakeMin(vars[0], vars[1])->Var(), min_var);
+    return MakeEquality(MakeMin(vars[0], vars[1]), min_var);
   } else if (size == 1) {
     return MakeEquality(vars[0], min_var);
   } else {
@@ -3197,7 +3194,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
       return RevAlloc(new MaxConstraint(this, vars, max_var));
     }
   } else if (size == 2) {
-    return MakeEquality(MakeMax(vars[0], vars[1])->Var(), max_var);
+    return MakeEquality(MakeMax(vars[0], vars[1]), max_var);
   } else if (size == 1) {
     return MakeEquality(vars[0], max_var);
   } else {
@@ -3244,7 +3241,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
     if (vars.size() == 1) {
       return MakeEquality(vars[0], cst);
     } else if (vars.size() == 2) {
-      return MakeEquality(vars[0], MakeDifference(cst, vars[1])->Var());
+      return MakeEquality(vars[0], MakeDifference(cst, vars[1]));
     }
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
@@ -3267,7 +3264,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return MakeEquality(vars[0], var);
   } else if (size == 2) {
-    return MakeEquality(MakeSum(vars[0], vars[1])->Var(), var);
+    return MakeEquality(MakeSum(vars[0], vars[1]), var);
   } else {
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, var));

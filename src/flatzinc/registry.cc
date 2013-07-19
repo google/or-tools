@@ -427,28 +427,66 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
       model->SetIntegerExpression(defined, target);
     }
   } else {
-    std::vector<int64> coefficients;
-    std::vector<IntVar*> variables;
-    for (int i = 0; i < size; ++i) {
-      const int64 coef = array_coefficients->a[i]->getInt();
-      IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
-      if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
-        coefficients.push_back(coef);
-        variables.push_back(var);
+    Constraint* ct = NULL;
+    switch (size) {
+      case 0: {
+        ct = rhs == 0 ? solver->MakeTrueConstraint()
+                      : solver->MakeFalseConstraint();
+        break;
+      }
+      case 1: {
+        IntExpr* const e1 = model->GetIntExpr(array_variables->a[0]);
+        const int64 c1 = array_coefficients->a[0]->getInt();
+        ct = solver->MakeEquality(solver->MakeProd(e1, c1), rhs);
+        break;
+      }
+      case 2: {
+        IntExpr* const e1 = model->GetIntExpr(array_variables->a[0]);
+        IntExpr* const e2 = model->GetIntExpr(array_variables->a[1]);
+        const int64 c1 = array_coefficients->a[0]->getInt();
+        const int64 c2 = array_coefficients->a[1]->getInt();
+        if (IsBoolean(e1) && IsBoolean(e2) && c1 == 1 && c2 == 1 &&
+            rhs == 1 && AddBoolNot(model->Sat(), e1, e2)) {
+          // Simple case b1 + b2 == 1, or b1 = not(b2).
+          VLOG(2) << "  - posted to sat";
+        } else {
+          ct = solver->MakeEquality(
+              solver->MakeProd(e1, c1),
+              solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
+          break;
+        }
+        break;
+      }
+      case 3: {
+        IntExpr* const e1 = model->GetIntExpr(array_variables->a[0]);
+        IntExpr* const e2 = model->GetIntExpr(array_variables->a[1]);
+        IntExpr* const e3 = model->GetIntExpr(array_variables->a[2]);
+        const int64 c1 = array_coefficients->a[0]->getInt();
+        const int64 c2 = array_coefficients->a[1]->getInt();
+        const int64 c3 = array_coefficients->a[2]->getInt();
+        ct = solver->MakeEquality(
+            solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e2, c2)),
+            solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+        break;
+      }
+      default: {
+        std::vector<int64> coefficients;
+        std::vector<IntVar*> variables;
+        for (int i = 0; i < size; ++i) {
+          const int64 coef = array_coefficients->a[i]->getInt();
+          IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+          if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+            coefficients.push_back(coef);
+            variables.push_back(var);
+          }
+        }
+        ct = strong_propagation
+            ? MakeStrongScalProdEquality(solver, variables, coefficients, rhs)
+            : solver->MakeScalProdEquality(variables, coefficients, rhs);
       }
     }
-    if (size == 2 && AreAllBooleans(variables) && AreAllOnes(coefficients) &&
-        rhs == 1 && AddBoolNot(model->Sat(), variables[0], variables[1])) {
-      // Simple case b1 + b2 == 1, or b1 = not(b2).
-      VLOG(2) << "  - posted to sat";
-    } else {
-      Constraint* const ct =
-          strong_propagation
-              ? MakeStrongScalProdEquality(solver, variables, coefficients, rhs)
-              : solver->MakeScalProdEquality(variables, coefficients, rhs);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
   }
 }
 
