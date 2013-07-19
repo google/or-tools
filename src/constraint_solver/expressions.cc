@@ -3064,6 +3064,76 @@ class PlusIntExpr : public BaseIntExpr {
 
   virtual ~PlusIntExpr() {}
 
+  virtual int64 Min() const { return left_->Min() + right_->Min(); }
+
+  virtual void SetMin(int64 m) {
+    if (m > left_->Min() + right_->Min()) {
+      left_->SetMin(m - right_->Max());
+      right_->SetMin(m - left_->Max());
+    }
+  }
+
+  virtual void SetRange(int64 l, int64 u) {
+    const int64 left_min = left_->Min();
+    const int64 right_min = right_->Min();
+    const int64 left_max = left_->Max();
+    const int64 right_max = right_->Max();
+    if (l > left_min + right_min) {
+      left_->SetMin(l - right_max);
+      right_->SetMin(l - left_max);
+    }
+    if (u < left_max + right_max) {
+      left_->SetMax(u - right_min);
+      right_->SetMax(u - left_min);
+    }
+  }
+
+  virtual int64 Max() const { return left_->Max() + right_->Max(); }
+
+  virtual void SetMax(int64 m) {
+    if (m < left_->Max() + right_->Max()) {
+      left_->SetMax(m - right_->Min());
+      right_->SetMax(m - left_->Min());
+    }
+  }
+
+  virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
+
+  virtual string name() const {
+    return StringPrintf("(%s + %s)", left_->name().c_str(),
+                        right_->name().c_str());
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("(%s + %s)", left_->DebugString().c_str(),
+                        right_->DebugString().c_str());
+  }
+
+  virtual void WhenRange(Demon* d) {
+    left_->WhenRange(d);
+    right_->WhenRange(d);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSum, this);
+  }
+
+ private:
+  IntExpr* const left_;
+  IntExpr* const right_;
+};
+
+class SafePlusIntExpr : public BaseIntExpr {
+ public:
+  SafePlusIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+      : BaseIntExpr(s), left_(l), right_(r) {}
+
+  virtual ~SafePlusIntExpr() {}
+
   virtual int64 Min() const { return CapAdd(left_->Min(), right_->Min()); }
 
   virtual void SetMin(int64 m) {
@@ -5865,6 +5935,8 @@ IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
     return cache;
   } else {
     IntExpr* const result =
+        AddOverflows(l->Max(), r->Max()) || AddUnderflows(l->Min(), r->Min()) ?
+        RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, l, r))) :
         RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
     model_cache_->InsertExprExprExpression(result, l, r,
                                            ModelCache::EXPR_EXPR_SUM);

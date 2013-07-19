@@ -464,9 +464,27 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
         const int64 c1 = array_coefficients->a[0]->getInt();
         const int64 c2 = array_coefficients->a[1]->getInt();
         const int64 c3 = array_coefficients->a[2]->getInt();
-        ct = solver->MakeEquality(
-            solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e2, c2)),
-            solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+        if (c1 < 0 && c2 > 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e2, c2),
+                              solver->MakeProd(e3, c3)),
+              solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+        } else if (c1 > 0 && c2 < 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e3, c3)),
+              solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+        } else if (c1 > 0 && c2 > 0 && c3 < 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e2, c2)),
+              solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
+        } else {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e2, c2)),
+              solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+        }
         break;
       }
       default: {
