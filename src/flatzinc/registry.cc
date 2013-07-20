@@ -453,6 +453,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
             rhs == 1 && AddBoolNot(model->Sat(), e1, e2)) {
           // Simple case b1 + b2 == 1, or b1 = not(b2).
           VLOG(2) << "  - posted to sat";
+          return;
         } else {
           ct = solver->MakeEquality(
               solver->MakeProd(e1, c1),
