@@ -1063,7 +1063,7 @@ class ParserState {
   void AddConstraint(const string& id, AstArray* const args,
                      AstNode* const annotations);
   void InitModel();
-  void FillOutput(operations_research::FlatZincModel* const m);
+  void InitOutput(operations_research::FlatZincModel* const m);
   void Presolve();
   bool IsBound(AstNode* const node) const;
   int64 GetBound(AstNode* const node) const;

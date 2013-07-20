@@ -240,6 +240,7 @@ class FlatZincModel {
                               std::vector<IntVar*>* const active_vars,
                               DecisionBuilder** obj_db);
   void AddCompletionDecisionBuilders(
+      const std::vector<IntVar*>& defined_variables,
       const std::vector<IntVar*>& active_variables,
       std::vector<DecisionBuilder*>* const builders);
 
@@ -250,6 +251,8 @@ class FlatZincModel {
 
  private:
   string DebugString(AstNode* const ai) const;
+
+  void CollectOutputVariables(AstNode* const node);
 
   // Number of integer variables
   int int_var_count;
@@ -279,6 +282,7 @@ class FlatZincModel {
   std::vector<IntVar*> active_variables_;
   std::vector<IntVar*> one_constraint_variables_;
   std::vector<IntVar*> introduced_variables_;
+  std::vector<IntVar*> output_variables_;
   bool parsed_ok_;
   string search_name_;
   string filename_;

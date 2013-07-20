@@ -1636,7 +1636,7 @@ void ParserState::InitModel() {
   }
 }
 
-void ParserState::FillOutput(operations_research::FlatZincModel* const m) {
+void ParserState::InitOutput(operations_research::FlatZincModel* const m) {
   m->InitOutput(Output());
 }
 
@@ -1683,7 +1683,7 @@ bool FlatZincModel::Parse(const string& filename) {
   orfz_set_extra(&pp, pp.yyscanner);
   // yydebug = 1;
   orfz_parse(&pp);
-  pp.FillOutput(this);
+  pp.InitOutput(this);
 
   if (pp.yyscanner) orfz_lex_destroy(pp.yyscanner);
   parsed_ok_ = !pp.hadError;
@@ -1700,7 +1700,7 @@ bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
   orfz_set_extra(&pp, pp.yyscanner);
   // yydebug = 1;
   orfz_parse(&pp);
-  pp.FillOutput(this);
+  pp.InitOutput(this);
 
   if (pp.yyscanner) orfz_lex_destroy(pp.yyscanner);
   parsed_ok_ = !pp.hadError;

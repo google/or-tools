@@ -823,6 +823,41 @@ class VariableCumulativeTimeTable : public Constraint {
 
   DISALLOW_COPY_AND_ASSIGN(VariableCumulativeTimeTable);
 };
+
+// ----- NValue -----
+
+class NValue : public Constraint {
+ public:
+  NValue(Solver* const s, const std::vector<IntVar*>& vars, int64 card)
+      : Constraint(s), vars_(vars), card_(card) {}
+
+  virtual ~NValue() {}
+
+  virtual void Post() {
+
+  }
+
+  virtual void InitialPropagate() {
+
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("NValue([%s], %" GG_LL_FORMAT "d)",
+                        DebugStringVector(vars_, ", ").c_str(), card_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint("NValue", this);
+    visitor->VisitIntegerVariableArrayArgument(
+        ModelVisitor::kVarsArgument, vars_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, card_);
+    visitor->EndVisitConstraint("NValue", this);
+  }
+
+ private:
+  std::vector<IntVar*> vars_;
+  int64 card_;
+};
 }  // namespace
 
 Constraint* MakeIsBooleanSumInRange(Solver* const solver,
@@ -979,6 +1014,12 @@ Constraint* MakeInverse(Solver* const solver,
                         const std::vector<IntVar*>& right) {
   return solver->RevAlloc(new Inverse(solver, left, right));
 }
+
+Constraint* MakeNValue(
+    Solver* const solver, const std::vector<IntVar*>& vars, int64 card) {
+  return solver->RevAlloc(new NValue(solver, vars, card));
+}
+
 
 Constraint* MakeVariableCumulative(Solver* const solver,
                                    const std::vector<IntVar*>& starts,

@@ -2787,6 +2787,21 @@ void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
   model->AddConstraint(spec, ct);
 }
 
+void p_nvalue(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+
+  AstArray* const array_vars = spec->Arg(0)->getArray();
+  const int size = array_vars->a.size();
+  std::vector<IntVar*> vars(size);
+  for (int i = 0; i < size; ++i) {
+    vars[i] = model->GetIntExpr(array_vars->a[i])->Var();
+  }
+  const int64 card = spec->Arg(1)->getInt();
+  Constraint* const ct = MakeNValue(solver, vars, card);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -2888,6 +2903,7 @@ class IntBuilder {
     global_model_builder.Register("lex_lesseq_int", &p_lex_less_int);
     global_model_builder.Register("lex_lesseq_bool", &p_lex_less_int);
     global_model_builder.Register("inverse", &p_inverse);
+    global_model_builder.Register("nvalue", &p_nvalue);
   }
 };
 IntBuilder __int_Builder;

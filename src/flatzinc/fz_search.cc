@@ -638,14 +638,24 @@ void FlatZincModel::ParseSearchAnnotations(
 
 // Add completion goals to be robust to incomplete search specifications.
 void FlatZincModel::AddCompletionDecisionBuilders(
+    const std::vector<IntVar*>& defined_variables,
     const std::vector<IntVar*>& active_variables,
     std::vector<DecisionBuilder*>* const builders) {
-  const bool has_solve_annotations = HasSolveAnnotations();
-  std::vector<IntVar*> secondary_vars(active_variables);
-  if (!has_solve_annotations) {
-    secondary_vars.insert(secondary_vars.end(),
-                          introduced_variables_.begin(),
-                          introduced_variables_.end());
+  hash_set<IntVar*> already_defined(
+      defined_variables.begin(), defined_variables.end());
+  CollectOutputVariables(output_);
+  //  const bool has_solve_annotations = HasSolveAnnotations();
+  std::vector<IntVar*> secondary_vars;
+  // if (!has_solve_annotations) {
+  //   secondary_vars.insert(secondary_vars.end(),
+  //                         introduced_variables_.begin(),
+  //                         introduced_variables_.end());
+  // }
+  for (int i = 0; i < output_variables_.size(); ++i) {
+    IntVar* const var = output_variables_[i];
+    if (!ContainsKey(already_defined, var)) {
+      secondary_vars.push_back(var);
+    }
   }
   if (!secondary_vars.empty()) {
     builders->push_back(solver_->MakeSolveOnce(solver_->MakePhase(
@@ -742,7 +752,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     builders.push_back(obj_db);
   }
   // Add completion decision builders to be more robust.
-  AddCompletionDecisionBuilders(active_variables, &builders);
+  AddCompletionDecisionBuilders(defined_variables, active_variables, &builders);
   // Reporting
   for (int i = 0; i < builders.size(); ++i) {
     FZLOG << "  - adding decision builder = " << builders[i]->DebugString()

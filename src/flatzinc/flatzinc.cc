@@ -208,6 +208,23 @@ FlatZincModel::~FlatZincModel(void) {
 
 void FlatZincModel::InitOutput(AstArray* const output) { output_ = output; }
 
+void FlatZincModel::CollectOutputVariables(AstNode* const node) {
+  int k;
+  if (node->isArray()) {
+    AstArray* element = node->getArray();
+    int size = element->a.size();
+    for (int j = 0; j < size; j++) {
+      CollectOutputVariables(element->a[j]);
+    }
+  } else if (node->isIntVar()) {
+    IntVar* const var = integer_variables_[node->getIntVar()]->Var();
+    output_variables_.push_back(var);
+  } else if (node->isBoolVar()) {
+    IntVar* const var = boolean_variables_[node->getBoolVar()]->Var();
+    output_variables_.push_back(var);
+  }
+}
+
 string FlatZincModel::DebugString(AstNode* const ai) const {
   string output;
   int k;
