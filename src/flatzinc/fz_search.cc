@@ -133,7 +133,7 @@ class SequentialSupport : public FzParallelSupport {
   virtual void OptimizeSolution(int worker_id, int64 value,
                                 const string& solution_string) {
     best_solution_ = value;
-    if (print_all_ || num_solutions_ > 0) {
+    if (print_all_ || num_solutions_ > 1) {
       std::cout << solution_string << std::endl;
     } else {
       last_solution_ = solution_string + "\n";
@@ -233,7 +233,7 @@ class MtSupport : public FzParallelSupport {
           if (value < best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
-            if (print_all_ || num_solutions_ > 0) {
+            if (print_all_ || num_solutions_ > 1) {
               LogNoLock(
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
@@ -250,7 +250,7 @@ class MtSupport : public FzParallelSupport {
           if (value > best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
-            if (print_all_ || num_solutions_ > 0) {
+            if (print_all_ || num_solutions_ > 1) {
               LogNoLock(
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
