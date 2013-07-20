@@ -123,16 +123,17 @@ class SequentialSupport : public FzParallelSupport {
   }
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
-    if (NumSolutions() == 0) {
-      IncrementSolutions();
+    if (NumSolutions() < num_solutions_ || print_all_ ||
+        (num_solutions_ == 0 && NumSolutions() == 0)) {
       std::cout << solution_string << std::endl;
     }
+    IncrementSolutions();
   }
 
   virtual void OptimizeSolution(int worker_id, int64 value,
                                 const string& solution_string) {
     best_solution_ = value;
-    if (print_all_) {
+    if (print_all_ || num_solutions_ > 0) {
       std::cout << solution_string << std::endl;
     } else {
       last_solution_ = solution_string + "\n";
@@ -180,8 +181,9 @@ class SequentialSupport : public FzParallelSupport {
 
 class MtSupport : public FzParallelSupport {
  public:
-  MtSupport(bool print_all, bool verbose)
+  MtSupport(bool print_all, int num_solutions, bool verbose)
       : print_all_(print_all),
+        num_solutions_(num_solutions),
         verbose_(verbose),
         type_(UNDEF),
         last_worker_(-1),
@@ -213,12 +215,13 @@ class MtSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     MutexLock lock(&mutex_);
-    if (NumSolutions() == 0) {
-      IncrementSolutions();
+    if (NumSolutions() < num_solutions_ || print_all_ ||
+        (NumSolutions() == 0 && num_solutions_ == 0)) {
       LogNoLock(worker_id, "solution found");
       std::cout << solution_string << std::endl;
       should_finish_ = true;
     }
+    IncrementSolutions();
   }
 
   virtual void OptimizeSolution(int worker_id, int64 value,
@@ -230,7 +233,7 @@ class MtSupport : public FzParallelSupport {
           if (value < best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
-            if (print_all_) {
+            if (print_all_ || num_solutions_ > 0) {
               LogNoLock(
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
@@ -247,7 +250,7 @@ class MtSupport : public FzParallelSupport {
           if (value > best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
-            if (print_all_) {
+            if (print_all_ || num_solutions_ > 0) {
               LogNoLock(
                   worker_id,
                   StringPrintf("solution found with value %" GG_LL_FORMAT "d",
@@ -317,6 +320,7 @@ class MtSupport : public FzParallelSupport {
 
  private:
   const bool print_all_;
+  const int num_solutions_;
   const bool verbose_;
   Mutex mutex_;
   Type type_;
@@ -776,13 +780,10 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 
   DecisionBuilder* const db = CreateDecisionBuilders(p);
-  bool print_last = false;
   if (p.all_solutions && p.num_solutions == 0) {
     p.num_solutions = kint32max;
   } else if (method_ == SAT && p.num_solutions == 0) {
     p.num_solutions = 1;
-  } else if (method_ != SAT && !p.all_solutions && p.num_solutions > 0) {
-    print_last = true;
   }
 
   std::vector<SearchMonitor*> monitors;
@@ -952,7 +953,8 @@ FzParallelSupport* MakeSequentialSupport(bool print_all, int num_solutions,
   return new SequentialSupport(print_all, num_solutions, verbose);
 }
 
-FzParallelSupport* MakeMtSupport(bool print_all, bool verbose) {
-  return new MtSupport(print_all, verbose);
+FzParallelSupport* MakeMtSupport(bool print_all, int num_solutions,
+                                 bool verbose) {
+  return new MtSupport(print_all, num_solutions, verbose);
 }
 }  // namespace operations_research

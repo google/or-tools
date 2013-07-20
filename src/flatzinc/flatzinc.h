@@ -111,7 +111,7 @@ class FzParallelSupport {
     MAXIMIZE,
   };
 
-  FzParallelSupport() : num_solutions_(0) {}
+  FzParallelSupport() : num_solutions_found_(0) {}
   virtual ~FzParallelSupport() {}
   virtual void Init(int worker_id, const string& init_string) = 0;
   virtual void StartSearch(int worker_id, Type type) = 0;
@@ -129,17 +129,18 @@ class FzParallelSupport {
   virtual void Log(int worker_id, const string& message) = 0;
   virtual bool Interrupted() const = 0;
 
-  void IncrementSolutions() { num_solutions_++; }
+  void IncrementSolutions() { num_solutions_found_++; }
 
-  int NumSolutions() const { return num_solutions_; }
+  int NumSolutions() const { return num_solutions_found_; }
 
  private:
-  int num_solutions_;
+  int num_solutions_found_;
 };
 
-FzParallelSupport* MakeSequentialSupport(bool print_all, int num_solutions,
-                                         bool verbose);
-FzParallelSupport* MakeMtSupport(bool print_all, bool verbose);
+FzParallelSupport* MakeSequentialSupport(
+    bool print_last, int num_solutions, bool verbose);
+FzParallelSupport* MakeMtSupport(
+    bool print_last, int num_solutions, bool verbose);
 
 class FlatZincModel {
  public:

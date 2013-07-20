@@ -212,7 +212,8 @@ int main(int argc, char** argv) {
     operations_research::SequentialRun(argv[1]);
   } else {
     scoped_ptr<operations_research::FzParallelSupport> parallel_support(
-        operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt));
+        operations_research::MakeMtSupport(
+            FLAGS_all, FLAGS_num_solutions, FLAGS_verbose_mt));
     {
       ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
       pool.StartWorkers();
