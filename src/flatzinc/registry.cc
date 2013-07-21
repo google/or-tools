@@ -2791,16 +2791,63 @@ void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
 void p_nvalue(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
 
-  AstArray* const array_vars = spec->Arg(0)->getArray();
+  AstArray* const array_vars = spec->Arg(1)->getArray();
   const int size = array_vars->a.size();
   std::vector<IntVar*> vars(size);
   for (int i = 0; i < size; ++i) {
     vars[i] = model->GetIntExpr(array_vars->a[i])->Var();
   }
-  const int64 card = spec->Arg(1)->getInt();
-  Constraint* const ct = MakeNValue(solver, vars, card);
-  VLOG(2) << "  - posted " << ct->DebugString();
-  model->AddConstraint(spec, ct);
+  int64 lb = kint64max;
+  int64 ub = kint64min;
+  for (int i = 0; i < size; ++i) {
+    lb = std::min(lb, vars[i]->Min());
+    ub = std::max(ub, vars[i]->Max());
+  }
+  int csize = ub - lb + 1;
+  int64 always_true_cards = 0;
+  std::vector<IntVar*> cards;
+  for (int b = 0; b < csize; ++b) {
+    const int value = lb + b;
+    std::vector<IntVar*> contributors;
+    bool always_true = false;
+    for (int i = 0; i < size; ++i) {
+      if (vars[i]->Contains(value)) {
+        if (vars[i]->Bound()) {
+          always_true = true;
+          break;
+        } else {
+          contributors.push_back(vars[i]->IsEqual(value));
+        }
+      }
+    }
+    if (always_true) {
+      always_true_cards++;
+    } else if (contributors.size() == 1) {
+      cards.push_back(contributors.back());
+    } else if (contributors.size() > 1) {
+      IntVar* const contribution = solver->MakeBoolVar();
+      if (FLAGS_use_sat &&
+          AddBoolOrArrayEqVar(model->Sat(), contributors, contribution)) {
+        VLOG(2) << "  - posted to sat";
+      } else {
+        Constraint* const ct =
+            solver->MakeMaxEquality(contributors, contribution);
+        VLOG(2) << "  - posted " << ct->DebugString();
+        model->AddConstraint(spec, ct);
+      }
+      cards.push_back(contribution);
+    }
+  }
+  if (spec->Arg(0)->isInt()) {
+    const int64 card = spec->Arg(0)->getInt() - always_true_cards;
+    PostBooleanSumInRange(model, spec, cards, card, card);
+  } else {
+    IntVar* const card = model->GetIntExpr(spec->Arg(0))->Var();
+    Constraint* const ct = solver->MakeSumEquality(
+        cards, solver->MakeSum(card, -always_true_cards)->Var());
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+  }
 }
 
 class IntBuilder {

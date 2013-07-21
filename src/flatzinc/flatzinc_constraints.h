@@ -89,10 +89,6 @@ Constraint* MakeLexLess(Solver* const solver, const std::vector<IntVar*>& left,
 Constraint* MakeInverse(Solver* const solver, const std::vector<IntVar*>& left,
                         const std::vector<IntVar*>& right);
 
-Constraint* MakeNValue(
-    Solver* const solver, const std::vector<IntVar*>& vars, int64 n);
-
-
 Constraint* MakeVariableCumulative(Solver* const solver,
                                    const std::vector<IntVar*>& starts,
                                    const std::vector<IntVar*>& durations,
