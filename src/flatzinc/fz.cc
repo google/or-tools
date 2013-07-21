@@ -208,6 +208,11 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
+  // Fix the number of solutions.
+  if (FLAGS_num_solutions == 0) {  // not specified
+    FLAGS_num_solutions = FLAGS_all ? kint32max : 1;
+  }
+
   if (FLAGS_workers == 0) {
     operations_research::SequentialRun(argv[1]);
   } else {

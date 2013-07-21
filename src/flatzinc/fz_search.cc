@@ -123,8 +123,7 @@ class SequentialSupport : public FzParallelSupport {
   }
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
-    if (NumSolutions() < num_solutions_ || print_all_ ||
-        (num_solutions_ == 0 && NumSolutions() == 0)) {
+    if (NumSolutions() < num_solutions_ || print_all_) {
       std::cout << solution_string << std::endl;
     }
     IncrementSolutions();
@@ -215,8 +214,7 @@ class MtSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     MutexLock lock(&mutex_);
-    if (NumSolutions() < num_solutions_ || print_all_ ||
-        (NumSolutions() == 0 && num_solutions_ == 0)) {
+    if (NumSolutions() < num_solutions_ || print_all_) {
       LogNoLock(worker_id, "solution found");
       std::cout << solution_string << std::endl;
       should_finish_ = true;
@@ -780,12 +778,6 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 
   DecisionBuilder* const db = CreateDecisionBuilders(p);
-  if (p.all_solutions && p.num_solutions == 0) {
-    p.num_solutions = kint32max;
-  } else if (method_ == SAT && p.num_solutions == 0) {
-    p.num_solutions = 1;
-  }
-
   std::vector<SearchMonitor*> monitors;
   switch (method_) {
     case MIN:
@@ -824,8 +816,15 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
   monitors.push_back(limit);
 
-  if (p.num_solutions > 0) {
-    FZLOG << "  - adding a solution limit of " << p.num_solutions << std::endl;
+  if (p.all_solutions && p.num_solutions == kint32max) {
+    FZLOG << "  - searching for all solutions" << std::endl;
+  } else if (p.all_solutions && p.num_solutions > 1) {
+    FZLOG << "  - searching for " << p.num_solutions << " solutions"
+          << std::endl;
+  } else if (method_ == SAT || (p.all_solutions && p.num_solutions == 1)) {
+    FZLOG << "  - searching for the first solution" << std::endl;
+  } else {
+    FZLOG << "  - search for the best solution" << std::endl;
   }
 
   if (p.simplex_frequency > 0) {
@@ -853,16 +852,24 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
           const int64 best = objective_ != NULL ? objective_->best() : 0;
           parallel_support->OptimizeSolution(p.worker_id, best,
                                              solution_string);
+          if ((p.num_solutions != 1 &&
+               parallel_support->NumSolutions() >= p.num_solutions) ||
+              (p.all_solutions && p.num_solutions == 1 &&
+               parallel_support->NumSolutions() >= 1)) {
+            breaked = true;
+          }
           break;
         }
         case SAT: {
           parallel_support->SatSolution(p.worker_id, solution_string);
+          if (parallel_support->NumSolutions() >= p.num_solutions) {
+            breaked = true;
+          }
+          break;
         }
       }
     }
-    if (p.num_solutions > 0 &&
-        parallel_support->NumSolutions() >= p.num_solutions) {
-      breaked = true;
+    if (breaked) {
       break;
     }
   }
