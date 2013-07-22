@@ -504,7 +504,7 @@ void FlatZincModel::ParseSearchAnnotations(
         if (vars->a[j]->isIntVar()) {
           IntVar* const to_add =
               integer_variables_[vars->a[j]->getIntVar()]->Var();
-          if (!ContainsKey(added, to_add)) {
+          if (!ContainsKey(added, to_add) && !to_add->Bound()) {
             added.insert(to_add);
             int_vars.push_back(to_add);
             // Ignore the variable defined in the objective.
@@ -572,7 +572,7 @@ void FlatZincModel::ParseSearchAnnotations(
           if (vars->a[j]->isBoolVar()) {
             IntVar* const to_add =
                 boolean_variables_[vars->a[j]->getBoolVar()]->Var();
-            if (!ContainsKey(added, to_add)) {
+            if (!ContainsKey(added, to_add) && !to_add->Bound()) {
               added.insert(to_add);
               bool_vars.push_back(to_add);
               defined_variables->push_back(to_add);
@@ -646,16 +646,10 @@ void FlatZincModel::AddCompletionDecisionBuilders(
   hash_set<IntVar*> already_defined(
       defined_variables.begin(), defined_variables.end());
   CollectOutputVariables(output_);
-  //  const bool has_solve_annotations = HasSolveAnnotations();
   std::vector<IntVar*> secondary_vars;
-  // if (!has_solve_annotations) {
-  //   secondary_vars.insert(secondary_vars.end(),
-  //                         introduced_variables_.begin(),
-  //                         introduced_variables_.end());
-  // }
   for (int i = 0; i < output_variables_.size(); ++i) {
     IntVar* const var = output_variables_[i];
-    if (!ContainsKey(already_defined, var)) {
+    if (!ContainsKey(already_defined, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
