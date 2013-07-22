@@ -570,6 +570,9 @@ IntExpr* BuildElement(Solver* const solver,
 IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
+  if (index->Bound()) {
+    return MakeIntConst(vals[index->Min()]);
+  }
   ConstIntArray values(vals);
   return BuildElement(this, &values, index);
 }
@@ -577,6 +580,9 @@ IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index
 IntExpr* Solver::MakeElement(const std::vector<int>& vals, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
+  if (index->Bound()) {
+    return MakeIntConst(vals[index->Min()]);
+  }
   ConstIntArray values(vals);
   return BuildElement(this, &values, index);
 }
