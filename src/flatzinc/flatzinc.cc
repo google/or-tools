@@ -151,6 +151,7 @@ void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
 }
 
 void FlatZincModel::AddConstraint(CtSpec* const spec, Constraint* const ct) {
+  DCHECK(ct != nullptr);
   if (spec->Ignored()) {
     VLOG(2) << "Ignore " << spec->DebugString() << " ----> "
               << ct->DebugString();

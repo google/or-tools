@@ -1707,6 +1707,7 @@ void Solver::clear_queue_action_on_fail() {
 }
 
 void Solver::AddConstraint(Constraint* const c) {
+  DCHECK(c != nullptr);
   if (c == true_constraint_) {
     return;
   }
