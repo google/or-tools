@@ -2661,17 +2661,17 @@ class TimesCstIntVar : public IntVar {
     if (cst_ > 0) {
       return var_->IsGreaterOrEqual(PosIntDivUp(constant, cst_));
     } else {
-      return var_->IsLessOrEqual(PosIntDivUp(-constant, -cst_));
+      return var_->IsLessOrEqual(PosIntDivDown(-constant, -cst_));
     }
-  }  // CHECK ME
+  }
 
   virtual IntVar* IsLessOrEqual(int64 constant) {
     if (cst_ > 0) {
       return var_->IsLessOrEqual(PosIntDivDown(constant, cst_));
     } else {
-      return var_->IsGreaterOrEqual(PosIntDivDown(-constant, -cst_));
+      return var_->IsGreaterOrEqual(PosIntDivUp(-constant, -cst_));
     }
-  }  // CHECK ME
+  }
 
   virtual string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
