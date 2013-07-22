@@ -2565,14 +2565,6 @@ class ExprLinearizer : public ModelParser {
 };
 #undef IS_TYPE
 
-string Show(const std::vector<int64>& v) {
-  return Int64VectorToString(v, " ");
-}
-
-string Show(const std::vector<int>& v) {
-  return IntVectorToString(v, " ");
-}
-
 // ----- Factory functions -----
 
 template<class T> Constraint* MakeScalProdEqualityFct(
