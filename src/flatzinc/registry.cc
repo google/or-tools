@@ -1936,12 +1936,15 @@ void p_bool_lin_le(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index = model->GetIntExpr(spec->Arg(0));
-  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
   AstArray* const array_coefficients = spec->Arg(1)->getArray();
-  const int size = array_coefficients->a.size();
+  const int64 imin = std::max(index->Min(), 1LL);
+  const int64 imax = std::min(
+      index->Max(), static_cast<int64>(array_coefficients->a.size()) + 1LL);
+  IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
+  const int64 size = imax - imin + 1;
   std::vector<int64> coefficients(size);
   for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
+    coefficients[i] = array_coefficients->a[i + imin - 1]->getInt();
   }
   if (spec->IsDefined(spec->Arg(2))) {
     IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
