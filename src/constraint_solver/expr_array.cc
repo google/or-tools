@@ -2404,9 +2404,13 @@ class ExprLinearizer : public ModelParser {
                                           int size) {}
 
   void Visit(const IntExpr* const expr, int64 multiplier) {
-    PushMultiplier(multiplier);
-    expr->Accept(this);
-    PopMultiplier();
+    if (expr->Min() == expr->Max()) {
+      constant_ += expr->Min() * multiplier;
+    } else {
+      PushMultiplier(multiplier);
+      expr->Accept(this);
+      PopMultiplier();
+    }
   }
 
   int64 Constant() const { return constant_; }
@@ -2561,6 +2565,14 @@ class ExprLinearizer : public ModelParser {
 };
 #undef IS_TYPE
 
+string Show(const std::vector<int64>& v) {
+  return Int64VectorToString(v, " ");
+}
+
+string Show(const std::vector<int>& v) {
+  return IntVectorToString(v, " ");
+}
+
 // ----- Factory functions -----
 
 template<class T> Constraint* MakeScalProdEqualityFct(
@@ -2594,6 +2606,7 @@ template<class T> Constraint* MakeScalProdEqualityFct(
                                          coefficients.data(),
                                          cst));
   }
+
   // Simplications.
   int constants = 0;
   int positives = 0;
