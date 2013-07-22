@@ -852,13 +852,11 @@ void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
     }
   }
   if (true_vars > range_max || possible_vars < range_min) {
-    Constraint* const ct = solver->MakeEquality(target, Zero());
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    target->SetValue(0);
+    VLOG(2) << "  - set target to 0";
   } else if (true_vars >= range_min && possible_vars <= range_max) {
-    Constraint* const ct = solver->MakeEquality(target, 1);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    target->SetValue(1);
+    VLOG(2) << "  - set target to 1";
   } else if (FLAGS_use_sat && range_min == size &&
              AddBoolAndArrayEqVar(model->Sat(), variables, target)) {
     VLOG(2) << "  - posted to sat";
