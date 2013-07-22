@@ -1061,6 +1061,75 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       return ok;
     }
   }
+  if (id == "int_lt") {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(1)) - 1;
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString()
+              << " with kint32min.." << bound;
+      const bool ok = var_spec->MergeBounds(kint32min, bound);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(0)) + 1;
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString() << " with "
+              << bound << "..kint32max";
+      const bool ok = var_spec->MergeBounds(bound, kint32max);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
+  if (id == "int_ge") {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(1));
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString()
+              << " with " << bound << "..kint32max" << bound;
+      const bool ok = var_spec->MergeBounds(bound, kint32max);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(0));
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString()
+              << " with kint32min.." << bound;
+      const bool ok = var_spec->MergeBounds(kint32min, bound);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
+  if (id == "int_gt") {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(1)) + 1;
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString()
+              << " with " << bound << "..kint32max" << bound;
+      const bool ok = var_spec->MergeBounds(bound, kint32max);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(0)) - 1;
+      VLOG(2) << "  - presolve:  merge " << var_spec->DebugString()
+              << " with kint32min.." << bound;
+      const bool ok = var_spec->MergeBounds(kint32min, bound);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
   if (id == "int_eq") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
