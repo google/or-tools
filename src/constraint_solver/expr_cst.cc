@@ -566,32 +566,32 @@ class IsGreaterEqualCstCt : public CastConstraint {
  public:
   IsGreaterEqualCstCt(Solver* const s, IntExpr* const v, int64 c,
                       IntVar* const b)
-      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), expr_(v), cst_(c), demon_(NULL) {}
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    var_->WhenRange(demon_);
+    expr_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
   virtual void InitialPropagate() {
     bool inhibit = false;
-    int64 u = var_->Max() >= cst_;
-    int64 l = var_->Min() >= cst_;
+    int64 u = expr_->Max() >= cst_;
+    int64 l = expr_->Min() >= cst_;
     target_var_->SetRange(l, u);
     if (target_var_->Bound()) {
       inhibit = true;
       if (target_var_->Min() == 0) {
-        var_->SetMax(cst_ - 1);
+        expr_->SetMax(cst_ - 1);
       } else {
-        var_->SetMin(cst_);
+        expr_->SetMin(cst_);
       }
     }
-    if (inhibit) {
+    if (inhibit && expr_->IsVar()) {
       demon_->inhibit(solver());
     }
   }
   virtual string DebugString() const {
     return StringPrintf("IsGreaterEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        var_->DebugString().c_str(),
+                        expr_->DebugString().c_str(),
                         cst_,
                         target_var_->DebugString().c_str());
   }
@@ -599,7 +599,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            var_);
+                                            expr_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             target_var_);
@@ -607,7 +607,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
   }
 
  private:
-  IntExpr* const var_;
+  IntExpr* const expr_;
   int64 cst_;
   Demon* demon_;
 };
@@ -667,35 +667,35 @@ namespace {
 class IsLessEqualCstCt : public CastConstraint {
  public:
   IsLessEqualCstCt(Solver* const s, IntExpr* const v, int64 c, IntVar* const b)
-      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), expr_(v), cst_(c), demon_(NULL) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    var_->WhenRange(demon_);
+    expr_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
 
   virtual void InitialPropagate() {
     bool inhibit = false;
-    int64 u = var_->Min() <= cst_;
-    int64 l = var_->Max() <= cst_;
+    int64 u = expr_->Min() <= cst_;
+    int64 l = expr_->Max() <= cst_;
     target_var_->SetRange(l, u);
     if (target_var_->Bound()) {
       inhibit = true;
       if (target_var_->Min() == 0) {
-        var_->SetMin(cst_ + 1);
+        expr_->SetMin(cst_ + 1);
       } else {
-        var_->SetMax(cst_);
+        expr_->SetMax(cst_);
       }
     }
-    if (inhibit) {
+    if (inhibit && expr_->IsVar()) {
       demon_->inhibit(solver());
     }
   }
 
   virtual string DebugString() const {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        var_->DebugString().c_str(),
+                        expr_->DebugString().c_str(),
                         cst_,
                         target_var_->DebugString().c_str());
   }
@@ -703,7 +703,7 @@ class IsLessEqualCstCt : public CastConstraint {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            var_);
+                                            expr_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             target_var_);
@@ -711,7 +711,7 @@ class IsLessEqualCstCt : public CastConstraint {
   }
 
  private:
-  IntExpr* const var_;
+  IntExpr* const expr_;
   int64 cst_;
   Demon* demon_;
 };
