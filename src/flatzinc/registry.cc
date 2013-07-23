@@ -2197,7 +2197,7 @@ void p_all_different_int(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
     var_size += variables[i]->Size();
   }
-  Constraint* const ct = solver->MakeAllDifferent(variables, var_size < 10000);
+  Constraint* const ct = solver->MakeAllDifferent(variables, var_size < 1000);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
@@ -2212,15 +2212,12 @@ void p_alldifferent_except_0(FlatZincModel* const model, CtSpec* const spec) {
     IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
     if (!var->Bound() || var->Min() != 0) {
       variables.push_back(var);
-      non_zero += !var->Contains(0);
     }
   }
   if (variables.empty()) {
     return;
   }
-  Constraint* const ct = non_zero == variables.size() ?
-      solver->MakeAllDifferentExcept(variables, 0) :
-      solver->MakeAllDifferentExcept(variables, 0);
+  Constraint* const ct = solver->MakeAllDifferentExcept(variables, 0);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
