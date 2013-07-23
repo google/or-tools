@@ -2206,11 +2206,21 @@ void p_alldifferent_except_0(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
+  std::vector<IntVar*> variables;
+  int non_zero = 0;
   for (int i = 0; i < size; ++i) {
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+    IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+    if (!var->Bound() || var->Min() != 0) {
+      variables.push_back(var);
+      non_zero += !var->Contains(0);
+    }
   }
-  Constraint* const ct = solver->MakeAllDifferentExcept(variables, 0);
+  if (variables.empty()) {
+    return;
+  }
+  Constraint* const ct = non_zero == variables.size() ?
+      solver->MakeAllDifferentExcept(variables, 0) :
+      solver->MakeAllDifferentExcept(variables, 0);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
@@ -2327,6 +2337,10 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   Constraint* const ct = solver->MakeDistribute(variables, values, cards);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
+  Constraint* const ct2 =
+      solver->MakeSumLessOrEqual(cards, variables.size());
+  VLOG(2) << "  - posted " << ct2->DebugString();
+  model->AddConstraint(spec, ct2);
 }
 
 void p_global_cardinality_closed(FlatZincModel* const model,
@@ -2360,6 +2374,10 @@ void p_global_cardinality_closed(FlatZincModel* const model,
       model->AddConstraint(spec, ct2);
     }
   }
+  Constraint* const ct3 =
+      solver->MakeSumEquality(cards, variables.size());
+  VLOG(2) << "  - posted " << ct3->DebugString();
+  model->AddConstraint(spec, ct3);
 }
 
 void p_global_cardinality_low_up(FlatZincModel* const model,
