@@ -998,22 +998,22 @@ class IsMemberCt : public Constraint {
             demon_->inhibit(solver());
             boolvar_->SetValue(1);
           }
-          // //We have found a positive support. Let's check the
-          // // negative support.
-          // if (!var_->Contains(neg_support_)) {
-          //   // Look for a new negative support.
-          //   for (domain_->Init(); domain_->Ok(); domain_->Next()) {
-          //     const int64 value = domain_->Value();
-          //     if (!ContainsKey(values_as_set_, value) &&
-          //         var_->Contains(value)) {
-          //       solver()->SaveAndSetValue(&neg_support_, value);
-          //       return;
-          //     }
-          //   }
-          // }
+          //We have found a positive support. Let's check the
+          // negative support.
+          if (!var_->Contains(neg_support_)) {
+            // Look for a new negative support.
+            for (domain_->Init(); domain_->Ok(); domain_->Next()) {
+              const int64 value = domain_->Value();
+              if (!ContainsKey(values_as_set_, value) &&
+                  var_->Contains(value)) {
+                solver()->SaveAndSetValue(&neg_support_, value);
+                return;
+              }
+            }
+          }
           // No negative support, setting boolvar to true.
-          // demon_->inhibit(solver());
-          // boolvar_->SetValue(1);
+          demon_->inhibit(solver());
+          boolvar_->SetValue(1);
           return;
         }
       }
