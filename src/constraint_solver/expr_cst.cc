@@ -975,7 +975,6 @@ class IsMemberCt : public Constraint {
     DCHECK(v != NULL);
     DCHECK(s != NULL);
     DCHECK(b != NULL);
-    DCHECK(sorted_values != NULL);
   }
 
   virtual void Post() {
@@ -1032,7 +1031,9 @@ class IsMemberCt : public Constraint {
           }
           //We have found a positive support. Let's check the
           // negative support.
-          if (!var_->Contains(neg_support_)) {
+          if (var_->Contains(neg_support_)) {
+            return;
+          } else {
             // Look for a new negative support.
             for (domain_->Init(); domain_->Ok(); domain_->Next()) {
               const int64 value = domain_->Value();
