@@ -58,21 +58,27 @@ bool IsBoolean(IntExpr* const expr) {
   return expr->Min() >= 0 && expr->Max() <= 1;
 }
 
-void BuildNonNullVarsCoefs(FlatZincModel* const model,
-                           const AstArray* const array_coefficients,
-                           const AstArray* const array_variables,
-                           std::vector<int64>* const coefficients,
-                           std::vector<IntVar*>* const variables) {
+int64 BuildNonNullVarsCoefs(FlatZincModel* const model,
+                            const AstArray* const array_coefficients,
+                            const AstArray* const array_variables,
+                            std::vector<int64>* const coefficients,
+                            std::vector<IntVar*>* const variables) {
   coefficients->clear();
   variables->clear();
+  int64 constant = 0;
   for (int i = 0; i < array_coefficients->a.size(); ++i) {
     const int64 coef = array_coefficients->a[i]->getInt();
     IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
     if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
-      coefficients->push_back(coef);
-      variables->push_back(var);
+      if (var->Bound()) {
+        constant += var->Min() * coef;
+      } else {
+        coefficients->push_back(coef);
+        variables->push_back(var);
+      }
     }
   }
+  return constant;
 }
 
 // Map from constraint identifier to constraint posting functions
@@ -363,7 +369,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   AstArray* const array_coefficients = spec->Arg(0)->getArray();
   AstArray* const array_variables = spec->Arg(1)->getArray();
   AstNode* const node_rhs = spec->Arg(2);
-  const int64 rhs = node_rhs->getInt();
+  int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
   if (spec->DefinedArg() != NULL) {
@@ -499,8 +505,12 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
           const int64 coef = array_coefficients->a[i]->getInt();
           IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
           if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
-            coefficients.push_back(coef);
-            variables.push_back(var);
+            if (var->Bound()) {
+              rhs -= var->Min() * coef;
+            } else {
+              coefficients.push_back(coef);
+              variables.push_back(var);
+            }
           }
         }
         ct = strong_propagation
@@ -624,8 +634,8 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
+    rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
+                                 &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
       IntVar* boolvar = NULL;
       if (define) {
@@ -787,8 +797,8 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
+    rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
+                                 &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
       IntVar* boolvar = NULL;
       if (define) {
@@ -959,8 +969,8 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
+    rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
+                                 &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
       IntVar* boolvar = NULL;
       if (define) {
@@ -972,6 +982,19 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
         boolvar = model->GetIntExpr(node_boolvar)->Var();
       }
       PostIsBooleanSumInRange(model, spec, variables, 0, rhs, boolvar);
+    } else if (AreAllBooleans(variables) && rhs > 0 &&
+               AreAllGreaterOrEqual(coefficients, rhs + 1)) {
+      // We can simplify to sum smaller than one.
+      IntVar* boolvar = NULL;
+      if (define) {
+        boolvar = solver->MakeBoolVar();
+        VLOG(2) << "  - creating " << node_boolvar->DebugString();
+        model->CheckIntegerVariableIsNull(node_boolvar);
+        model->SetIntegerExpression(node_boolvar, boolvar);
+      } else {
+        boolvar = model->GetIntExpr(node_boolvar)->Var();
+      }
+      PostIsBooleanSumInRange(model, spec, variables, 0, 0, boolvar);
     } else {
       IntExpr* const var = solver->MakeScalProd(variables, coefficients);
       if (define) {
@@ -1130,8 +1153,8 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     std::vector<IntVar*> variables;
-    BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
-                          &coefficients, &variables);
+    rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
+                                 &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
       IntVar* boolvar = NULL;
       if (define) {
@@ -1143,6 +1166,20 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
         boolvar = model->GetIntExpr(node_boolvar)->Var();
       }
       PostIsBooleanSumInRange(model, spec, variables, rhs, size, boolvar);
+    } else if (AreAllBooleans(variables) && rhs > 0 &&
+               AreAllGreaterOrEqual(coefficients, rhs + 1)) {
+      // We can simplify to sum greater or equal than one.
+      IntVar* boolvar = NULL;
+      if (define) {
+        boolvar = solver->MakeBoolVar();
+        VLOG(2) << "  - creating " << node_boolvar->DebugString();
+        model->CheckIntegerVariableIsNull(node_boolvar);
+        model->SetIntegerExpression(node_boolvar, boolvar);
+      } else {
+        boolvar = model->GetIntExpr(node_boolvar)->Var();
+      }
+      PostIsBooleanSumInRange(
+          model, spec, variables, 1, variables.size(), boolvar);
     } else {
       IntExpr* const var = solver->MakeScalProd(variables, coefficients);
       if (define) {
