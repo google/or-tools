@@ -188,9 +188,9 @@ class RangeBipartiteMatching {
   bool Propagate() {
     SortArray();
 
-    bool modified = PropagateMin();
-    modified |= PropagateMax();
-    return modified;
+    const bool modified1 = PropagateMin();
+    const bool modified2 = PropagateMax();
+    return modified1 | modified2;
   }
 
   int64 Min(int index) const {
