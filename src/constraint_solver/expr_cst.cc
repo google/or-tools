@@ -19,12 +19,15 @@
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
+#include "base/concise_iterator.h"
+#include "base/hash.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/const_int_array.h"
+#include "util/string_array.h"
 
 DEFINE_int32(cache_initial_size, 1024, "Initial size of the array of the hash "
              "table of caches for objects of type Var(x == 3)");
@@ -958,11 +961,11 @@ class IsMemberCt : public Constraint {
  public:
   IsMemberCt(Solver* const s,
              IntVar* const v,
-             std::vector<int64>* const sorted_values,
+             const std::vector<int64>& sorted_values,
              IntVar* const b)
       : Constraint(s),
         var_(v),
-        values_as_set_(sorted_values->begin(), sorted_values->end()),
+        values_as_set_(sorted_values.begin(), sorted_values.end()),
         values_(sorted_values),
         boolvar_(b),
         support_(0),
@@ -1000,7 +1003,7 @@ class IsMemberCt : public Constraint {
   virtual string DebugString() const {
     return StringPrintf("IsMemberCt(%s, %s, %s)",
                         var_->DebugString().c_str(),
-                        values_.DebugString().c_str(),
+                        Int64VectorToString(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());
   }
 
@@ -1008,8 +1011,7 @@ class IsMemberCt : public Constraint {
     visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
-                                        values_);
+    visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument, values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsMember, this);
@@ -1036,7 +1038,7 @@ class IsMemberCt : public Constraint {
               const int64 value = domain_->Value();
               if (!ContainsKey(values_as_set_, value) &&
                   var_->Contains(value)) {
-                solver()->SaveAndSetValue(&neg_support_, value);
+                neg_support_ = value;
                 return;
               }
             }
@@ -1057,54 +1059,62 @@ class IsMemberCt : public Constraint {
     DCHECK(boolvar_->Bound());
     if (boolvar_->Min() == 1LL) {
       demon_->inhibit(solver());
-      var_->SetValues(values_.RawData(), values_.size());
+      var_->SetValues(values_);
     } else {
       demon_->inhibit(solver());
-      var_->RemoveValues(values_.RawData(), values_.size());
+      var_->RemoveValues(values_);
     }
   }
 
   IntVar* const var_;
   hash_set<int64> values_as_set_;
-  ConstIntArray values_;
+  std::vector<int64> values_;
   IntVar* const boolvar_;
   int support_;
   Demon* demon_;
   IntVarIterator* const domain_;
   int64 neg_support_;
 };
+
+template <class T> Constraint* BuildIsMemberCt(
+    Solver* const solver, IntVar* const var, const std::vector<T>& values,
+    IntVar* const boolvar) {
+  hash_set<T> set_of_values(values.begin(), values.end());
+  std::vector<int64> filtered_values;
+  for (ConstIter<hash_set<T>> it(set_of_values); !it.at_end(); ++it) {
+    const int64 value = *it;
+    if (var->Contains(value)) {
+      filtered_values.push_back(value);
+    }
+  }
+  if (filtered_values.empty()) {
+    return solver->MakeEquality(boolvar, Zero());
+  } else if (filtered_values.size() == var->Size()) {
+    return solver->MakeEquality(boolvar, 1);
+  } else if (filtered_values.size() == 1) {
+    return solver->MakeIsEqualCstCt(var, filtered_values.back(), boolvar);
+  } else if (filtered_values.back() ==
+             filtered_values.front() + filtered_values.size() - 1) {
+    // Contiguous
+    return solver->MakeIsBetweenCt(
+        var, filtered_values.front(), filtered_values.back(), boolvar);
+  } else {
+    return solver->RevAlloc(
+        new IsMemberCt(solver, var, filtered_values, boolvar));
+  }
+}
 }  // namespace
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int64>& values,
                                    IntVar* const boolvar) {
-  if (values.size() == 0) {
-    return MakeFalseConstraint();
-  } else {
-    ConstIntArray ar1(values);
-    ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
-    if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
-      return MakeIsBetweenCt(var, ar2[0], ar2[ar2.size() - 1], boolvar);
-    } else {
-      return RevAlloc(new IsMemberCt(this, var, ar2.Release(), boolvar));
-    }
-  }
+  return BuildIsMemberCt(this, var, values, boolvar);
 }
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int>& values,
                                    IntVar* const boolvar) {
-  if (values.size() == 0) {
-    return MakeFalseConstraint();
-  } else {
-    ConstIntArray ar1(values);
-    ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
-    if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
-      return MakeIsBetweenCt(var, ar2[0], ar2[ar2.size() - 1], boolvar);
-    } else {
-      return RevAlloc(new IsMemberCt(this, var, ar2.Release(), boolvar));
-    }
-  }
+  return BuildIsMemberCt(this, var, values, boolvar);
 }
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var,
