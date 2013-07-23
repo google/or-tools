@@ -988,6 +988,9 @@ class IsMemberCt : public Constraint {
       var_->SetValues(values_.RawData(), values_.size());
     } else if (boolvar_->Max() == 1LL) {
       int support = support_pos_.Value();
+      if (var_->Contains(values_[support])) {
+        return;
+      }
       const int64 vmin = var_->Min();
       const int64 vmax = var_->Max();
       while (support < values_.size() &&
