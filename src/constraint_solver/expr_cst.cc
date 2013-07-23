@@ -962,10 +962,13 @@ class IsMemberCt : public Constraint {
              IntVar* const b)
       : Constraint(s),
         var_(v),
+        values_as_set_(sorted_values->begin(), sorted_values->end()),
         values_(sorted_values),
         boolvar_(b),
-        support_pos_(0),
-        demon_(NULL) {
+        support_(0),
+        demon_(NULL),
+        domain_(var_->MakeDomainIterator(true)),
+        neg_support_(kint64min) {
     DCHECK(v != NULL);
     DCHECK(s != NULL);
     DCHECK(b != NULL);
@@ -987,29 +990,37 @@ class IsMemberCt : public Constraint {
       demon_->inhibit(solver());
       var_->SetValues(values_.RawData(), values_.size());
     } else if (boolvar_->Max() == 1LL) {
-      int support = support_pos_.Value();
-      if (var_->Contains(values_[support])) {
-        return;
-      }
-      const int64 vmin = var_->Min();
-      const int64 vmax = var_->Max();
-      while (support < values_.size() &&
-             (values_[support] < vmin ||
-              !var_->Contains(values_[support]))) {
-        if (values_[support] <= vmax) {
-          support++;
-        } else {
-          support = values_.size();
+      for (int offset = 0; offset < values_.size(); ++offset) {
+        const int candidate = (support_ + offset) % values_.size();
+        if (var_->Contains(values_[candidate])) {
+          support_ = candidate;
+          if (var_->Bound()) {
+            demon_->inhibit(solver());
+            boolvar_->SetValue(1);
+          }
+          return;
+          // We have found a positive support. Let's check the
+          // negative support.
+          // if (!var_->Contains(neg_support_)) {
+          //   // Look for a new negative support.
+          //   for (domain_->Init(); domain_->Ok(); domain_->Next()) {
+          //     const int64 value = domain_->Value();
+          //     if (!ContainsKey(values_as_set_, value) &&
+          //         var_->Contains(value)) {
+          //       neg_support_ = value;
+          //       return;
+          //     }
+          //   }
+          // }
+          // // No negative support, setting boolvar to true.
+          // demon_->inhibit(solver());
+          // boolvar_->SetValue(1);
+          // return;
         }
       }
-      support_pos_.SetValue(solver(), support);
-      if (support >= values_.size()) {
-        demon_->inhibit(solver());
-        boolvar_->SetValue(0LL);
-      } else if (var_->Bound()) {
-        demon_->inhibit(solver());
-        boolvar_->SetValue(1LL);
-      }
+      // No positive support, setting boolvar to false.
+      demon_->inhibit(solver());
+      boolvar_->SetValue(0);
     } else {  // boolvar_ set to 0.
       demon_->inhibit(solver());
       var_->RemoveValues(values_.RawData(), values_.size());
@@ -1036,10 +1047,13 @@ class IsMemberCt : public Constraint {
 
  private:
   IntVar* const var_;
+  hash_set<int64> values_as_set_;
   ConstIntArray values_;
   IntVar* const boolvar_;
-  Rev<int> support_pos_;
+  int support_;
   Demon* demon_;
+  IntVarIterator* const domain_;
+  int64 neg_support_;
 };
 }  // namespace
 
