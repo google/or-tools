@@ -2910,6 +2910,7 @@ void p_circuit(FlatZincModel* const model, CtSpec* const spec) {
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
+    // Create variables. Account for 1-based array indexing.
     variables[i] =
         solver->MakeSum(model->GetIntExpr(array_variables->a[i]), -1)->Var();
   }
