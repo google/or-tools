@@ -536,8 +536,10 @@ string NoCycle::DebugString() const {
 
 class Circuit : public Constraint {
  public:
+  static const int kRoot = 0;
   Circuit(Solver* const s, const std::vector<IntVar*>& nexts)
-      : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0) {}
+      : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
+        starts_(size_, -1), ends_(size_, -1) {}
 
   virtual ~Circuit() {}
 
@@ -546,6 +548,9 @@ class Circuit : public Constraint {
       Demon* const d = MakeDelayedConstraintDemon0(
           solver(), this, &Circuit::CheckSupports, "CheckSupports");
       nexts_[i]->WhenDomain(d);
+      Demon* const bound_demon = MakeConstraintDemon1(
+          solver(), this, &Circuit::NextBound, "NextBound", i);
+      nexts_[i]->WhenBound(bound_demon);
     }
     solver()->AddConstraint(solver()->MakeAllDifferent(nexts_));
   }
@@ -554,6 +559,15 @@ class Circuit : public Constraint {
     for (int i = 0; i < size_; ++i) {
       nexts_[i]->SetRange(0, size_ - 1);
       nexts_[i]->RemoveValue(i);
+    }
+    for (int i = 0; i < size_; ++i) {
+      starts_.SetValue(solver(), i, i);
+      ends_.SetValue(solver(), i, i);
+    }
+    for (int i = 0; i < size_; ++i) {
+      if (nexts_[i]->Bound()) {
+        NextBound(i);
+      }
     }
     CheckSupports();
   }
@@ -570,6 +584,21 @@ class Circuit : public Constraint {
   }
 
  private:
+  void NextBound(int index) {
+    Solver* const s = solver();
+    const int destination = nexts_[index]->Value();
+    const int new_end = ends_.Value(destination);
+    const int new_start = starts_.Value(index);
+    for (int current = new_start; current != new_end;
+         current = nexts_[current]->Value()) {
+      starts_.SetValue(s, current, new_start);
+      ends_.SetValue(s, current, new_end);
+    }
+    if (new_start != kRoot && new_end != kRoot) {
+      nexts_[new_end]->RemoveValue(new_start);
+    }
+  }
+
   // Can we build a spanning tree routed on 0. If no, we have cycles.
   void CheckSupports() {
     insertion_queue_.clear();
@@ -604,6 +633,8 @@ class Circuit : public Constraint {
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
   int processed_;
+  RevArray<int> starts_;
+  RevArray<int> ends_;
 };
 
 bool GreaterThan(int64 x, int64 y) {
