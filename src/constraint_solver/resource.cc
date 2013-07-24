@@ -1719,7 +1719,6 @@ class CumulativeTimeTable : public Constraint {
     DCHECK_EQ(0, usage);
     profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
   }
-
   // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
   void PushTasks() {
     Sort(&by_start_min_, TaskStartMinLessThan);

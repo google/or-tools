@@ -2207,7 +2207,6 @@ void p_alldifferent_except_0(FlatZincModel* const model, CtSpec* const spec) {
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables;
-  int non_zero = 0;
   for (int i = 0; i < size; ++i) {
     IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
     if (!var->Bound() || var->Min() != 0) {
@@ -2905,6 +2904,20 @@ void p_nvalue(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_circuit(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] =
+        solver->MakeSum(model->GetIntExpr(array_variables->a[i]), -1)->Var();
+  }
+  Constraint* const ct = solver->MakeCircuit(variables);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -3007,6 +3020,7 @@ class IntBuilder {
     global_model_builder.Register("lex_lesseq_bool", &p_lex_less_int);
     global_model_builder.Register("inverse", &p_inverse);
     global_model_builder.Register("nvalue", &p_nvalue);
+    global_model_builder.Register("circuit", &p_circuit);
   }
 };
 IntBuilder __int_Builder;

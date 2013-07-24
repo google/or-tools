@@ -22,6 +22,7 @@
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -531,6 +532,80 @@ string NoCycle::DebugString() const {
   return out;
 }
 
+// ----- Circuit constraint -----
+
+class Circuit : public Constraint {
+ public:
+  Circuit(Solver* const s, const std::vector<IntVar*>& nexts)
+      : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0) {}
+
+  virtual ~Circuit() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const d = MakeDelayedConstraintDemon0(
+          solver(), this, &Circuit::CheckSupports, "CheckSupports");
+      nexts_[i]->WhenDomain(d);
+    }
+    solver()->AddConstraint(solver()->MakeAllDifferent(nexts_));
+  }
+
+  virtual void InitialPropagate() {
+    for (int i = 0; i < size_; ++i) {
+      nexts_[i]->SetRange(0, size_ - 1);
+      nexts_[i]->RemoveValue(i);
+    }
+    CheckSupports();
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("Circuit(%s)", DebugStringVector(nexts_, " ").c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
+    visitor->VisitIntegerVariableArrayArgument(
+        ModelVisitor::kNextsArgument, nexts_);
+    visitor->EndVisitConstraint(ModelVisitor::kCircuit, this);
+  }
+
+ private:
+  // Can we build a spanning tree routed on 0. If no, we have cycles.
+  void CheckSupports() {
+    insertion_queue_.clear();
+    insertion_queue_.push_back(0);
+    processed_ = 0;
+    to_visit_.clear();
+    for (int i = 1; i < size_; ++i) {
+      to_visit_.push_back(i);
+    }
+    while (processed_ < insertion_queue_.size() &&
+           insertion_queue_.size() < size_) {
+      const int inserted = insertion_queue_[processed_++];
+      std::vector<int> rejected;
+      for (int index = 0; index < to_visit_.size(); ++index) {
+        const int candidate = to_visit_[index];
+        if (nexts_[candidate]->Contains(inserted)) {
+          insertion_queue_.push_back(candidate);
+        } else {
+          rejected.push_back(candidate);
+        }
+      }
+      to_visit_.clear();
+      to_visit_.swap(rejected);
+    }
+    if (insertion_queue_.size() < size_) {
+      solver()->Fail();
+    }
+  }
+
+  std::vector<IntVar*> nexts_;
+  const int size_;
+  std::vector<int> insertion_queue_;
+  std::vector<int> to_visit_;
+  int processed_;
+};
+
 bool GreaterThan(int64 x, int64 y) {
   return y >= x;
 }
@@ -558,6 +633,10 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 ResultCallback1<bool, int64>* sink_handler) {
   return MakeNoCycle(nexts, active, sink_handler, true);
+}
+
+Constraint* Solver::MakeCircuit(const std::vector<IntVar*>& nexts) {
+  return RevAlloc(new Circuit(this, nexts));
 }
 
 // ----- Path cumul constraints -----

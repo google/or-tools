@@ -2660,6 +2660,7 @@ const char ModelVisitor::kAbsEqual[] = "AbsEqual";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";
 const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
 const char ModelVisitor::kBetween[] = "Between";
+const char ModelVisitor::kCircuit[] = "Circuit";
 const char ModelVisitor::kConvexPiecewise[] = "ConvexPiecewise";
 const char ModelVisitor::kCountEqual[] = "CountEqual";
 const char ModelVisitor::kCover[] = "Cover";

@@ -1072,6 +1072,15 @@ Constraint* BuildBetween(CPModelLoader* const builder,
   return builder->solver()->MakeBetweenCt(expr->Var(), value_min, value_max);
 }
 
+// ----- kCircuit -----
+
+Constraint* BuildCircuit(CPModelLoader* const builder,
+                         const CPConstraintProto& proto) {
+  std::vector<IntVar*> vars;
+  VERIFY(builder->ScanArguments(ModelVisitor::kNextsArgument, proto, &vars));
+  return builder->solver()->MakeCircuit(vars);
+}
+
 // ----- kConvexPiecewise -----
 IntExpr* BuildConvexPiecewise(CPModelLoader* const builder,
                               const CPIntegerExpressionProto& proto) {
@@ -2647,6 +2656,7 @@ void Solver::InitBuilders() {
   REGISTER(kAllDifferent, BuildAllDifferent);
   REGISTER(kAllowedAssignments, BuildAllowedAssignments);
   REGISTER(kBetween, BuildBetween);
+  REGISTER(kCircuit, BuildCircuit);
   REGISTER(kConvexPiecewise, BuildConvexPiecewise);
   REGISTER(kCountEqual, BuildCountEqual);
   REGISTER(kCover, BuildCover);

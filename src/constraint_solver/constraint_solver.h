@@ -1668,6 +1668,9 @@ class Solver {
                           ResultCallback1<bool, int64>* sink_handler,
                           bool assume_paths);
 
+  // Force the nexts() variable to create an complete hamiltonian path.
+  Constraint* MakeCircuit(const std::vector<IntVar*>& nexts);
+
   // Creates a constraint which accumulates values along a path such that:
   // cumuls[next[i]] = cumuls[i] + transits[i].
   // Active variables indicate if the corresponding next variable is active;
@@ -3332,6 +3335,7 @@ class ModelVisitor : public BaseObject {
   static const char kAllowedAssignments[];
   static const char kIndexOf[];
   static const char kBetween[];
+  static const char kCircuit[];
   static const char kConvexPiecewise[];
   static const char kCountEqual[];
   static const char kCover[];

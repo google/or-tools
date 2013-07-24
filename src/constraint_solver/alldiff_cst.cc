@@ -786,7 +786,7 @@ Constraint* Solver::MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
     escape_candidates += (vars[i]->Contains(escape_value));
   }
   if (escape_candidates <= 1) {
-    return MakeAllDifferent(vars, true);
+    return MakeAllDifferent(vars);
   } else {
     return RevAlloc(new AllDifferentExcept(this, vars, escape_value));
   }

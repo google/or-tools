@@ -210,7 +210,6 @@ FlatZincModel::~FlatZincModel(void) {
 void FlatZincModel::InitOutput(AstArray* const output) { output_ = output; }
 
 void FlatZincModel::CollectOutputVariables(AstNode* const node) {
-  int k;
   if (node->isArray()) {
     AstArray* element = node->getArray();
     int size = element->a.size();

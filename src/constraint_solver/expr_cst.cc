@@ -588,7 +588,10 @@ class IsGreaterEqualCstCt : public CastConstraint {
         expr_->SetMin(cst_);
       }
     }
-    if (inhibit && expr_->IsVar()) {
+    if (inhibit && ((target_var_->Max() == 0 && expr_->Max() < cst_) ||
+                    (target_var_->Min() == 1 && expr_->Min() >= cst_))) {
+      // Can we safely inhibit? Sometimes an expression is not
+      // persistent, just monotonic.
       demon_->inhibit(solver());
     }
   }
@@ -691,7 +694,10 @@ class IsLessEqualCstCt : public CastConstraint {
         expr_->SetMax(cst_);
       }
     }
-    if (inhibit && expr_->IsVar()) {
+    if (inhibit && ((target_var_->Max() == 0 && expr_->Min() > cst_) ||
+                    (target_var_->Min() == 1 && expr_->Max() <= cst_))) {
+      // Can we safely inhibit? Sometimes an expression is not
+      // persistent, just monotonic.
       demon_->inhibit(solver());
     }
   }
@@ -1028,8 +1034,9 @@ class IsMemberCt : public Constraint {
           if (var_->Bound()) {
             demon_->inhibit(solver());
             boolvar_->SetValue(1);
+            return;
           }
-          //We have found a positive support. Let's check the
+          // We have found a positive support. Let's check the
           // negative support.
           if (var_->Contains(neg_support_)) {
             return;
