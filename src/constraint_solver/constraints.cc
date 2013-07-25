@@ -18,6 +18,7 @@
 
 #include "base/callback.h"
 #include "base/integral_types.h"
+#include "base/hash.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
@@ -536,10 +537,14 @@ string NoCycle::DebugString() const {
 
 class Circuit : public Constraint {
  public:
-  static const int kRoot = 0;
+  static const int kRoot;
   Circuit(Solver* const s, const std::vector<IntVar*>& nexts)
       : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
-        starts_(size_, -1), ends_(size_, -1) {}
+        starts_(size_, -1), ends_(size_, -1), domains_(size_) {
+    for (int i = 0; i < size_; ++i) {
+      domains_[i] = nexts_[i]->MakeDomainIterator(true);
+    }
+  }
 
   virtual ~Circuit() {}
 
@@ -591,16 +596,44 @@ class Circuit : public Constraint {
     const int new_start = starts_.Value(index);
     for (int current = new_start; current != new_end;
          current = nexts_[current]->Value()) {
-      starts_.SetValue(s, current, new_start);
-      ends_.SetValue(s, current, new_end);
+      if (current != kRoot) {
+        starts_.SetValue(s, current, new_start);
+        ends_.SetValue(s, current, new_end);
+      }
     }
     if (new_start != kRoot && new_end != kRoot) {
       nexts_[new_end]->RemoveValue(new_start);
     }
   }
 
-  // Can we build a spanning tree routed on 0. If no, we have cycles.
   void CheckSupports() {
+    CheckReachabilityFromRoot();
+    CheckReachabilityToRoot();
+  }
+
+  void CheckReachabilityFromRoot() {
+    reached_.clear();
+    reached_.insert(kRoot);
+    processed_ = 0;
+    insertion_queue_.clear();
+    insertion_queue_.push_back(kRoot);
+    while (processed_ < insertion_queue_.size() &&
+           reached_.size() < size_) {
+      IntVarIterator* const domain = domains_[insertion_queue_[processed_++]];
+      for (domain->Init(); domain->Ok(); domain->Next()) {
+        const int64 after = domain->Value();
+        if (!ContainsKey(reached_, after)) {
+          reached_.insert(after);
+          insertion_queue_.push_back(after);
+        }
+      }
+    }
+    if (insertion_queue_.size() < size_) {
+      solver()->Fail();
+    }
+  }
+
+  void CheckReachabilityToRoot() {
     insertion_queue_.clear();
     insertion_queue_.push_back(0);
     processed_ = 0;
@@ -632,10 +665,14 @@ class Circuit : public Constraint {
   const int size_;
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
+  hash_set<int> reached_;
   int processed_;
   RevArray<int> starts_;
   RevArray<int> ends_;
+  std::vector<IntVarIterator*> domains_;
 };
+
+const int Circuit::kRoot = 0;
 
 bool GreaterThan(int64 x, int64 y) {
   return y >= x;
