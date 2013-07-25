@@ -63,6 +63,8 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   integer_variables_.resize(intVars);
   bool_var_count = 0;
   boolean_variables_.resize(boolVars);
+  integer_occurrences_.resize(intVars);
+  boolean_occurrences_.resize(boolVars);
 }
 
 void FlatZincModel::InitSolver() {

@@ -359,19 +359,12 @@ struct VarDegreeIndex {
   }
 };
 
-void SortVariableByDegree(Solver* const solver,
+void SortVariableByDegree(const std::vector<int>& occurrences,
                           std::vector<IntVar*>* const int_vars) {
-  hash_map<IntVar*, int> degree_map;
-  for (int i = 0; i < int_vars->size(); ++i) {
-    degree_map[ (*int_vars)[i]] = 0;
-  }
-  ModelVisitor* const degree_visitor =
-      solver->MakeVariableDegreeVisitor(&degree_map);
-  solver->Accept(degree_visitor);
   std::vector<VarDegreeIndex> to_sort;
   for (int i = 0; i < int_vars->size(); ++i) {
     IntVar* const var = (*int_vars)[i];
-    to_sort.push_back(VarDegreeIndex(var, degree_map[var], i));
+    to_sort.push_back(VarDegreeIndex(var, occurrences[i], i));
   }
   std::sort(to_sort.begin(), to_sort.end());
   for (int i = 0; i < int_vars->size(); ++i) {
@@ -500,13 +493,15 @@ void FlatZincModel::ParseSearchAnnotations(
       AstArray* args = call->getArgs(4);
       AstArray* vars = args->a[0]->getArray();
       std::vector<IntVar*> int_vars;
+      std::vector<int> occurrences;
       for (int j = 0; j < vars->a.size(); ++j) {
         if (vars->a[j]->isIntVar()) {
-          IntVar* const to_add =
-              integer_variables_[vars->a[j]->getIntVar()]->Var();
+          const int var_index = vars->a[j]->getIntVar();
+          IntVar* const to_add = integer_variables_[var_index]->Var();
           if (!ContainsKey(added, to_add) && !to_add->Bound()) {
             added.insert(to_add);
             int_vars.push_back(to_add);
+            occurrences.push_back(integer_occurrences_[var_index]);
             // Ignore the variable defined in the objective.
             if (satisfy || i != flat_annotations.size() - 1) {
               defined_variables->push_back(to_add);
@@ -534,7 +529,7 @@ void FlatZincModel::ParseSearchAnnotations(
         str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
       }
       if (args->hasAtom("occurrence")) {
-        SortVariableByDegree(solver_.get(), &int_vars);
+        SortVariableByDegree(occurrences, &int_vars);
         str = Solver::CHOOSE_FIRST_UNBOUND;
       }
       Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
@@ -568,13 +563,15 @@ void FlatZincModel::ParseSearchAnnotations(
         AstArray* args = call->getArgs(4);
         AstArray* vars = args->a[0]->getArray();
         std::vector<IntVar*> bool_vars;
+        std::vector<int> occurrences;
         for (int j = 0; j < vars->a.size(); ++j) {
           if (vars->a[j]->isBoolVar()) {
-            IntVar* const to_add =
-                boolean_variables_[vars->a[j]->getBoolVar()]->Var();
+            const int var_index = vars->a[j]->getBoolVar();
+            IntVar* const to_add = boolean_variables_[var_index]->Var();
             if (!ContainsKey(added, to_add) && !to_add->Bound()) {
               added.insert(to_add);
               bool_vars.push_back(to_add);
+              occurrences.push_back(boolean_occurrences_[var_index]);
               defined_variables->push_back(to_add);
             }
           }
@@ -584,7 +581,7 @@ void FlatZincModel::ParseSearchAnnotations(
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
         if (args->hasAtom("occurrence")) {
-          SortVariableByDegree(solver_.get(), &bool_vars);
+          SortVariableByDegree(occurrences, &bool_vars);
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
         Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;

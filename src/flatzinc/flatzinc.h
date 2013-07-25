@@ -206,6 +206,14 @@ class FlatZincModel {
     }
   }
 
+  void SetIntegerOccurences(int var_index, int occurences) {
+    integer_occurrences_[var_index] = occurences;
+  }
+
+  void SetBooleanOccurences(int var_index, int occurences) {
+    boolean_occurrences_[var_index] = occurences;
+  }
+
   // Post a constraint specified by \a ce
   void PostConstraint(CtSpec* const spec);
 
@@ -289,6 +297,8 @@ class FlatZincModel {
   string filename_;
   SatPropagator* sat_;
   std::vector<Constraint*> postponed_constraints_;
+  std::vector<int> integer_occurrences_;
+  std::vector<int> boolean_occurrences_;
 };
 
 // %Exception class for %FlatZinc errors

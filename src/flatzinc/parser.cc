@@ -516,6 +516,13 @@ void ParserState::BuildStatistics() {
       }
     }
   }
+  // Export occurences.
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    model_->SetIntegerOccurences(i, constraints_per_int_variables_[i].size());
+  }
+  for (int i = 0; i < bool_variables_.size(); ++i) {
+    model_->SetBooleanOccurences(i, constraints_per_bool_variables_[i].size());
+  }
 }
 
 void ParserState::SortConstraints(NodeSet* const candidates,
