@@ -125,6 +125,61 @@ class BooleanSumOdd : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
+class VariableParity : public Constraint {
+ public:
+  VariableParity(Solver* const s, IntVar* const var, bool odd)
+      : Constraint(s), var_(var), odd_(odd) {}
+
+  virtual ~VariableParity() {}
+
+  virtual void Post() {
+    if (!var_->Bound()) {
+      Demon* const u = solver()->MakeConstraintInitialPropagateCallback(this);
+      var_->WhenRange(u);
+    }
+  }
+
+  virtual void InitialPropagate() {
+    const int64 vmax = var_->Max();
+    const int64 vmin = var_->Min();
+    int64 new_vmax = vmax;
+    int64 new_vmin = vmin;
+    if (odd_) {
+      if (vmax % 2 == 0) {
+        new_vmax--;
+      }
+      if (vmin % 2 == 0) {
+        new_vmin++;
+      }
+    } else {
+      if (vmax % 2 == 1) {
+        new_vmax--;
+      }
+      if (vmin % 2 == 1) {
+        new_vmin++;
+      }
+    }
+    var_->SetRange(new_vmin, new_vmax);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf(
+        "VarParity(%s, %d)", var_->DebugString().c_str(), odd_ );
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint("VarParity", this);
+    visitor->VisitIntegerExpressionArgument(
+        ModelVisitor::kVariableArgument, var_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValuesArgument, odd_);
+    visitor->EndVisitConstraint("VarParity", this);
+  }
+
+ private:
+  IntVar* const var_;
+  const bool odd_;
+};
+
 class IsBooleanSumInRange : public Constraint {
  public:
   IsBooleanSumInRange(Solver* const s, IntVar* const* bool_vars, int size,
@@ -990,5 +1045,13 @@ Constraint* MakeVariableCumulative(Solver* const solver,
   }
   return solver->RevAlloc(
       new VariableCumulativeTimeTable(solver, tasks, capacity));
+}
+
+Constraint* MakeVariableOdd(Solver* const s, IntVar* const var) {
+  return s->RevAlloc(new VariableParity(s, var, true));
+}
+
+Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
+  return s->RevAlloc(new VariableParity(s, var, false));
 }
 }  // namespace operations_research

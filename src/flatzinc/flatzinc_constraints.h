@@ -95,6 +95,9 @@ Constraint* MakeVariableCumulative(Solver* const solver,
                                    const std::vector<IntVar*>& usages,
                                    IntVar* const capacity);
 
+Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
+Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
+
 void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
                              const std::vector<IntVar*>& variables, int64 range_min,
                              int64 range_max, IntVar* const target);

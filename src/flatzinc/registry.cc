@@ -1332,8 +1332,25 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     } else {
       const int64 mod = spec->Arg(1)->getInt();
-      Constraint* const ct =
-          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      Constraint* ct = NULL;
+      if (mod == 2 && target->Bound()) {
+        switch (target->Min()) {
+          case 0: {
+            ct = MakeVariableEven(solver, left->Var());
+            break;
+          }
+          case 1: {
+            ct = MakeVariableOdd(solver, left->Var());
+            break;
+          }
+          default: {
+            ct = solver->MakeFalseConstraint();
+            break;
+          }
+        }
+      } else {
+        ct = solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      }
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
     }
