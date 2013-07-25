@@ -490,6 +490,11 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
               solver->MakeSum(solver->MakeProd(e1, c1),
                               solver->MakeProd(e2, c2)),
               solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
+        } else if (c1 < 0 && c2 < 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, -c1),
+                              solver->MakeProd(e2, -c2)),
+              solver->MakeSum(solver->MakeProd(e3, c3), -rhs));
         } else {
           ct = solver->MakeEquality(
               solver->MakeSum(solver->MakeProd(e1, c1),

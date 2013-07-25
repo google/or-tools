@@ -1453,6 +1453,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   }
   if (id == "int_lin_eq") {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(1)->getArray();
     AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
@@ -1461,6 +1462,36 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       if (array_coefficients->a[i]->getInt() > 0) {
         one_positive = true;
         break;
+      }
+    }
+    int num_bounds = 0;
+    int not_bound_index = -1;
+    int64 new_rhs = rhs;
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() == 0 ||
+          IntSpec(array_variables->a[i])->IsBound()) {
+        num_bounds++;
+        new_rhs -= IntSpec(array_variables->a[i])->GetBound() *
+            array_coefficients->a[i]->getInt();
+      } else {
+        not_bound_index = i;
+      }
+    }
+    if (num_bounds == size - 1) {
+      DCHECK_NE(not_bound_index, -1);
+      IntVarSpec* const var_spec = IntSpec(array_variables->a[not_bound_index]);
+      const int64 coefficient =
+          array_coefficients->a[not_bound_index]->getInt();
+      DCHECK_NE(coefficient, 0);
+      if (new_rhs % coefficient == 0) {
+        const int64 bound = new_rhs / coefficient;
+        VLOG(2) << "  - presolve:  assign " << var_spec->DebugString() << " to "
+                << bound;
+        const bool ok = var_spec->MergeBounds(bound, bound);
+        if (ok) {
+          spec->Nullify();
+          return ok;
+        }
       }
     }
     if (!one_positive && !HasDefineAnnotation(spec->annotations()) &&
@@ -1476,7 +1507,6 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
     // Check for all positive to do bound propagation.
     bool all_positive = true;
-    AstArray* const array_variables = spec->Arg(1)->getArray();
     for (int i = 0; i < size; ++i) {
       if (array_coefficients->a[i]->getInt() < 0) {
         all_positive = false;
