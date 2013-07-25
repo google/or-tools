@@ -594,14 +594,16 @@ class Circuit : public Constraint {
     const int destination = nexts_[index]->Value();
     const int new_end = ends_.Value(destination);
     const int new_start = starts_.Value(index);
+    int chain_length = 0;
     for (int current = new_start; current != new_end;
          current = nexts_[current]->Value()) {
       if (current != kRoot) {
         starts_.SetValue(s, current, new_start);
         ends_.SetValue(s, current, new_end);
+        chain_length++;
       }
     }
-    if (new_start != kRoot && new_end != kRoot) {
+    if (chain_length < size_ - 1) {
       nexts_[new_end]->RemoveValue(new_start);
     }
   }
