@@ -540,7 +540,10 @@ class Circuit : public Constraint {
   static const int kRoot;
   Circuit(Solver* const s, const std::vector<IntVar*>& nexts)
       : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
-        starts_(size_, -1), ends_(size_, -1), domains_(size_) {
+        starts_(size_, -1), ends_(size_, -1), domains_(size_),
+        outbound_support_(size_, -1), inbound_support_(size_, -1),
+        inbound_demon_(nullptr), outbound_demon_(nullptr),
+        temp_support_(size_, -1) {
     for (int i = 0; i < size_; ++i) {
       domains_[i] = nexts_[i]->MakeDomainIterator(true);
     }
@@ -549,10 +552,16 @@ class Circuit : public Constraint {
   virtual ~Circuit() {}
 
   virtual void Post() {
+    inbound_demon_ = MakeDelayedConstraintDemon0(
+        solver(), this, &Circuit::CheckReachabilityToRoot,
+        "CheckReachabilityToRoot");
+    outbound_demon_ = MakeDelayedConstraintDemon0(
+        solver(), this, &Circuit::CheckReachabilityFromRoot,
+        "CheckReachabilityFromRoot");
     for (int i = 0; i < size_; ++i) {
-      Demon* const d = MakeDelayedConstraintDemon0(
-          solver(), this, &Circuit::CheckSupports, "CheckSupports");
-      nexts_[i]->WhenDomain(d);
+      Demon* const domain_demon = MakeConstraintDemon1(
+          solver(), this, &Circuit::NextDomain, "NextDomain", i);
+      nexts_[i]->WhenDomain(domain_demon);
       Demon* const bound_demon = MakeConstraintDemon1(
           solver(), this, &Circuit::NextBound, "NextBound", i);
       nexts_[i]->WhenBound(bound_demon);
@@ -574,7 +583,8 @@ class Circuit : public Constraint {
         NextBound(i);
       }
     }
-    CheckSupports();
+    CheckReachabilityFromRoot();
+    CheckReachabilityToRoot();
   }
 
   virtual string DebugString() const {
@@ -608,9 +618,13 @@ class Circuit : public Constraint {
     }
   }
 
-  void CheckSupports() {
-    CheckReachabilityFromRoot();
-    CheckReachabilityToRoot();
+  void NextDomain(int index) {
+    if (!nexts_[index]->Contains(outbound_support_[index])) {
+      EnqueueDelayedDemon(outbound_demon_);
+    }
+    if (!nexts_[index]->Contains(inbound_support_[index])) {
+      EnqueueDelayedDemon(inbound_demon_);
+    }
   }
 
   void CheckReachabilityFromRoot() {
@@ -621,23 +635,28 @@ class Circuit : public Constraint {
     insertion_queue_.push_back(kRoot);
     while (processed_ < insertion_queue_.size() &&
            reached_.size() < size_) {
-      IntVarIterator* const domain = domains_[insertion_queue_[processed_++]];
+      const int candidate = insertion_queue_[processed_++];
+      IntVarIterator* const domain = domains_[candidate];
       for (domain->Init(); domain->Ok(); domain->Next()) {
         const int64 after = domain->Value();
         if (!ContainsKey(reached_, after)) {
           reached_.insert(after);
           insertion_queue_.push_back(after);
+          temp_support_[candidate] = after;
         }
       }
     }
     if (insertion_queue_.size() < size_) {
       solver()->Fail();
+    } else {
+      outbound_support_.swap(temp_support_);
     }
   }
 
   void CheckReachabilityToRoot() {
     insertion_queue_.clear();
-    insertion_queue_.push_back(0);
+    insertion_queue_.push_back(kRoot);
+    temp_support_[kRoot] = nexts_[kRoot]->Min();
     processed_ = 0;
     to_visit_.clear();
     for (int i = 1; i < size_; ++i) {
@@ -651,6 +670,7 @@ class Circuit : public Constraint {
         const int candidate = to_visit_[index];
         if (nexts_[candidate]->Contains(inserted)) {
           insertion_queue_.push_back(candidate);
+          temp_support_[candidate] = inserted;
         } else {
           rejected.push_back(candidate);
         }
@@ -660,6 +680,8 @@ class Circuit : public Constraint {
     }
     if (insertion_queue_.size() < size_) {
       solver()->Fail();
+    } else {
+      temp_support_.swap(inbound_support_);
     }
   }
 
@@ -672,6 +694,11 @@ class Circuit : public Constraint {
   RevArray<int> starts_;
   RevArray<int> ends_;
   std::vector<IntVarIterator*> domains_;
+  std::vector<int> outbound_support_;
+  std::vector<int> inbound_support_;
+  std::vector<int> temp_support_;
+  Demon* inbound_demon_;
+  Demon* outbound_demon_;
 };
 
 const int Circuit::kRoot = 0;
