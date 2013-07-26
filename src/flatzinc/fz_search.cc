@@ -195,7 +195,7 @@ class MtSupport : public FzParallelSupport {
   virtual void Init(int worker_id, const string& init_string) {
     MutexLock lock(&mutex_);
     if (worker_id == 0) {
-      std::cout << init_string;
+      std::cout << init_string << std::endl;
     }
     LogNoLock(worker_id, "starting");
   }
@@ -841,6 +841,17 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   bool timeout = false;
   string final_output;
   if (p.worker_id <= 0) {
+    if (p.worker_id == 0) {
+      // Recompute the breaked variable.
+      if (method_ == SAT) {
+        breaked = parallel_support->NumSolutions() >= p.num_solutions;
+      } else {
+        breaked = (p.num_solutions != 1 &&
+                   parallel_support->NumSolutions() >= p.num_solutions) ||
+            (p.all_solutions && p.num_solutions == 1 &&
+             parallel_support->NumSolutions() >= 1);
+      }
+    }
     if (parallel_support->Interrupted()) {
       final_output.append("%% TIMEOUT\n");
       timeout = true;
@@ -888,8 +899,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
                          best, (proven ? " (proven)" : "")));
       }
     }
-    const int num_solutions_found = solver_->solutions();
-    const bool no_solutions = num_solutions_found == 0;
+    const bool no_solutions = num_solutions == 0;
     const string status_string =
         (no_solutions
              ? (timeout ? "**timeout**" : "**unsat**")
@@ -905,7 +915,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
         "d, %" GG_LL_FORMAT "d, %s, %s",
         filename_.c_str(), status_string.c_str(), obj_string.c_str(),
-        num_solutions_found, solve_time, build_time, solver_->branches(),
+        num_solutions, solve_time, build_time, solver_->branches(),
         solver_->failures(), solver_->constraints(),
         solver_->demon_runs(Solver::NORMAL_PRIORITY),
         solver_->demon_runs(Solver::DELAYED_PRIORITY),
