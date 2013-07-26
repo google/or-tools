@@ -532,6 +532,10 @@ void FlatZincModel::ParseSearchAnnotations(
         SortVariableByDegree(occurrences, &int_vars);
         str = Solver::CHOOSE_FIRST_UNBOUND;
       }
+      if (args->hasAtom("most_constrained")) {
+        SortVariableByDegree(occurrences, &int_vars);
+        str = Solver::CHOOSE_MIN_SIZE;
+      }
       Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
       if (args->hasAtom("indomain_max")) {
         vstr = Solver::ASSIGN_MAX_VALUE;
