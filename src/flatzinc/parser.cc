@@ -516,12 +516,12 @@ void ParserState::BuildStatistics() {
       }
     }
   }
-  // Export occurences.
+  // Export occurrences.
   for (int i = 0; i < int_variables_.size(); ++i) {
-    model_->SetIntegerOccurences(i, constraints_per_int_variables_[i].size());
+    model_->SetIntegerOccurrences(i, constraints_per_int_variables_[i].size());
   }
   for (int i = 0; i < bool_variables_.size(); ++i) {
-    model_->SetBooleanOccurences(i, constraints_per_bool_variables_[i].size());
+    model_->SetBooleanOccurrences(i, constraints_per_bool_variables_[i].size());
   }
 }
 
@@ -696,8 +696,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
       if (!ContainsKey(candidates, var) && !ContainsKey(int_aliases_, i)) {
         const bool active =
             !IsIntroduced(var) && !ContainsKey(computed_variables, var);
-        model_->NewIntVar(name, int_variables_[i], active,
-                          ContainsKey(one_constraint_variables_, i));
+        model_->NewIntVar(name, int_variables_[i], active);
         created++;
       } else {
         model_->SkipIntVar();

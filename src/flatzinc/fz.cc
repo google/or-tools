@@ -112,29 +112,38 @@ void ParallelRun(char* const file, int worker_id,
       break;
     }
     case 1: {
-      parameters.free_search = false;
+      parameters.free_search = true;
       parameters.search_type =
           operations_research::FlatZincSearchParameters::MIN_SIZE;
       parameters.restart_log_size = -1.0;
       break;
     }
     case 2: {
-      parameters.free_search = false;
+      parameters.free_search = true;
       parameters.search_type =
           operations_research::FlatZincSearchParameters::IBS;
       parameters.restart_log_size = FLAGS_restart_log_size;
       break;
     }
     case 3: {
-      parameters.free_search = false;
+      parameters.free_search = true;
       parameters.search_type =
           operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
       parameters.restart_log_size = -1.0;
       parameters.heuristic_period = 10000000;
       break;
     }
+    case 4: {
+      parameters.free_search = true;
+      parameters.search_type =
+          operations_research::FlatZincSearchParameters::DEFAULT;
+      parameters.restart_log_size = -1.0;
+      parameters.heuristic_period = 30;
+      parameters.run_all_heuristics = true;
+      break;
+    }
     default: {
-      parameters.free_search = false;
+      parameters.free_search = true;
       parameters.search_type =
           worker_id % 2 == 0
               ? operations_research::FlatZincSearchParameters::RANDOM_MIN

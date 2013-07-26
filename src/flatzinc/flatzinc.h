@@ -63,6 +63,7 @@ struct FlatZincSearchParameters {
         ignore_unknown(true),
         use_log(false),
         verbose_impact(false),
+        run_all_heuristics(false),
         restart_log_size(-1.0),
         log_period(1000000),
         luby_restart(0),
@@ -89,6 +90,7 @@ struct FlatZincSearchParameters {
   bool ignore_unknown;
   bool use_log;
   bool verbose_impact;
+  bool run_all_heuristics;
   double restart_log_size;
   int heuristic_period;
   int log_period;
@@ -166,8 +168,7 @@ class FlatZincModel {
   void InitOutput(AstArray* const output);
 
   // Creates a new integer variable from specification.
-  void NewIntVar(const string& name, IntVarSpec* const vs, bool active,
-                 bool appears_in_one_constraint);
+  void NewIntVar(const string& name, IntVarSpec* const vs, bool active);
   // Skips the creation of the variable.
   void SkipIntVar();
   // Creates a new boolean variable from specification.
@@ -206,12 +207,12 @@ class FlatZincModel {
     }
   }
 
-  void SetIntegerOccurences(int var_index, int occurences) {
-    integer_occurrences_[var_index] = occurences;
+  void SetIntegerOccurrences(int var_index, int occurrences) {
+    integer_occurrences_[var_index] = occurrences;
   }
 
-  void SetBooleanOccurences(int var_index, int occurences) {
-    boolean_occurrences_[var_index] = occurences;
+  void SetBooleanOccurrences(int var_index, int occurrences) {
+    boolean_occurrences_[var_index] = occurrences;
   }
 
   // Post a constraint specified by \a ce
@@ -247,6 +248,8 @@ class FlatZincModel {
                               std::vector<DecisionBuilder*>* const defined,
                               std::vector<IntVar*>* const defined_vars,
                               std::vector<IntVar*>* const active_vars,
+                              std::vector<int>* const defined_occurrences,
+                              std::vector<int>* const active_occurrences,
                               DecisionBuilder** obj_db);
   void AddCompletionDecisionBuilders(
       const std::vector<IntVar*>& defined_variables,
@@ -289,6 +292,7 @@ class FlatZincModel {
   std::vector<IntExpr*> boolean_variables_;
   // Useful for search.
   std::vector<IntVar*> active_variables_;
+  std::vector<int> active_occurrences_;
   std::vector<IntVar*> one_constraint_variables_;
   std::vector<IntVar*> introduced_variables_;
   std::vector<IntVar*> output_variables_;

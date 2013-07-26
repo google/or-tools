@@ -79,7 +79,7 @@ void FlatZincModel::InitSolver() {
 }
 
 void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
-                              bool active, bool appears_in_one_constraint) {
+                              bool active) {
   IntVar* var = NULL;
   if (vs->alias) {
     var = integer_variables_[vs->i]->Var();
@@ -100,6 +100,7 @@ void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
     if (!var->Bound()) {
       if (active) {
         active_variables_.push_back(var);
+        active_occurrences_.push_back(integer_occurrences_[int_var_count]);
         VLOG(2) << "  - add as active";
       } else {
         introduced_variables_.push_back(var);
@@ -124,6 +125,7 @@ void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
     if (!var->Bound()) {
       if (!vs->introduced) {
         active_variables_.push_back(var);
+        active_occurrences_.push_back(boolean_occurrences_[bool_var_count]);
       } else {
         introduced_variables_.push_back(var);
       }

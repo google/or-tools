@@ -389,55 +389,6 @@ string FlatZincMemoryUsage() {
     return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
   }
 }
-
-// Assign to bound decision builder
-class AssignToBounds : public DecisionBuilder {
- public:
-  explicit AssignToBounds(const std::vector<IntVar*>& vars)
-      : vars_(vars), mins_(vars.size()), max_(vars.size()), init_(false) {}
-  virtual ~AssignToBounds() {}
-
-  virtual Decision* Next(Solver* const solver) {
-    if (!init_) {
-      solver->SaveAndSetValue(&init_, true);
-      for (int i = 0; i < vars_.size(); ++i) {
-        mins_[i] = vars_[i]->Min();
-        max_[i] = vars_[i]->Max();
-      }
-    }
-    for (int i = 0; i < vars_.size(); ++i) {
-      if (vars_[i]->Bound()) {
-        continue;
-      }
-      if (vars_[i]->Min() == mins_[i]) {
-        return solver->MakeAssignVariableValue(vars_[i], mins_[i]);
-      } else if (vars_[i]->Max() == max_[i]) {
-        return solver->MakeAssignVariableValue(vars_[i], max_[i]);
-      }
-    }
-    for (int i = 0; i < vars_.size(); ++i) {
-      if (!vars_[i]->Bound()) {
-        return solver->MakeAssignVariableValue(vars_[i], vars_[i]->Min());
-      }
-    }
-    return NULL;
-  }
-
-  virtual string DebugString() const { return "AssignToBounds"; }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(), vars_.size());
-    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
-  }
-
- private:
-  std::vector<IntVar*> vars_;
-  std::vector<int64> mins_;
-  std::vector<int64> max_;
-  bool init_;
-};
 }  // namespace
 
 bool FlatZincModel::HasSolveAnnotations() const {
@@ -472,7 +423,9 @@ bool FlatZincModel::HasSolveAnnotations() const {
 void FlatZincModel::ParseSearchAnnotations(
     bool ignore_unknown, std::vector<DecisionBuilder*>* const defined,
     std::vector<IntVar*>* const defined_variables,
-    std::vector<IntVar*>* const active_variables, DecisionBuilder** obj_db) {
+    std::vector<IntVar*>* const active_variables,
+    std::vector<int>* const defined_occurrences,
+    std::vector<int>* const active_occurrences, DecisionBuilder** obj_db) {
   const bool has_solve_annotations = HasSolveAnnotations();
   const bool satisfy = method_ == SAT;
   std::vector<AstNode*> flat_annotations;
@@ -498,13 +451,15 @@ void FlatZincModel::ParseSearchAnnotations(
         if (vars->a[j]->isIntVar()) {
           const int var_index = vars->a[j]->getIntVar();
           IntVar* const to_add = integer_variables_[var_index]->Var();
+          const int occ = integer_occurrences_[var_index];
           if (!ContainsKey(added, to_add) && !to_add->Bound()) {
             added.insert(to_add);
             int_vars.push_back(to_add);
-            occurrences.push_back(integer_occurrences_[var_index]);
+            occurrences.push_back(occ);
             // Ignore the variable defined in the objective.
             if (satisfy || i != flat_annotations.size() - 1) {
               defined_variables->push_back(to_add);
+              defined_occurrences->push_back(occ);
             }
           }
         }
@@ -572,11 +527,13 @@ void FlatZincModel::ParseSearchAnnotations(
           if (vars->a[j]->isBoolVar()) {
             const int var_index = vars->a[j]->getBoolVar();
             IntVar* const to_add = boolean_variables_[var_index]->Var();
+            const int occ = boolean_occurrences_[var_index];
             if (!ContainsKey(added, to_add) && !to_add->Bound()) {
               added.insert(to_add);
               bool_vars.push_back(to_add);
-              occurrences.push_back(boolean_occurrences_[var_index]);
+              occurrences.push_back(occ);
               defined_variables->push_back(to_add);
+              defined_occurrences->push_back(occ);
             }
           }
         }
@@ -625,6 +582,7 @@ void FlatZincModel::ParseSearchAnnotations(
       if (var->Size() < 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
+        active_occurrences->push_back(active_occurrences_[i]);
       }
     }
   }
@@ -634,6 +592,7 @@ void FlatZincModel::ParseSearchAnnotations(
       if (var->Size() >= 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
+        active_occurrences->push_back(active_occurrences_[i]);
       }
     }
   }
@@ -667,10 +626,13 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
+  std::vector<int> defined_occurrences;
   std::vector<IntVar*> active_variables;
+  std::vector<int> active_occurrences;
   DecisionBuilder* obj_db = NULL;
   ParseSearchAnnotations(p.ignore_unknown, &defined, &defined_variables,
-                         &active_variables, &obj_db);
+                         &active_variables, &defined_occurrences,
+                         &active_occurrences, &obj_db);
 
   search_name_ =
       defined.empty() ? "automatic" : (p.free_search ? "free" : "defined");
@@ -683,12 +645,14 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     if (defined_variables.empty()) {
       CHECK(defined.empty());
       defined_variables.swap(active_variables);
+      defined_occurrences.swap(active_occurrences);
     }
     DefaultPhaseParameters parameters;
     DecisionBuilder* inner_builder = NULL;
     switch (p.search_type) {
       case FlatZincSearchParameters::DEFAULT: {
         if (defined.empty()) {
+          SortVariableByDegree(defined_occurrences, &defined_variables);
           inner_builder =
               solver_->MakePhase(defined_variables, Solver::CHOOSE_MIN_SIZE,
                                  Solver::ASSIGN_MIN_VALUE);
@@ -719,7 +683,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
             defined_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE);
       }
     }
-    parameters.run_all_heuristics = false;
+    parameters.run_all_heuristics = p.run_all_heuristics;
     parameters.heuristic_period =
         method_ != SAT || (!p.all_solutions && p.num_solutions == 1)
             ? p.heuristic_period
