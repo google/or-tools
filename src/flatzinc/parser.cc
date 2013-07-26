@@ -894,6 +894,12 @@ bool ParserState::IsBound(AstNode* const node) const {
          (node->isBoolVar() && bool_variables_[node->getBoolVar()]->IsBound());
 }
 
+bool ParserState::IsPositive(AstNode* const node) const {
+  return (node->isInt() && node->getInt() >= 0) ||
+      (node->isIntVar() && IntSpec(node)->IsPositive()) ||
+         node->isBool() || node->isBoolVar();
+}
+
 bool ParserState::IsIntroduced(AstNode* const node) const {
   return (node->isIntVar() && int_variables_[node->getIntVar()]->introduced) ||
          (node->isBoolVar() && bool_variables_[node->getBoolVar()]->introduced);
@@ -1475,9 +1481,9 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     int64 new_rhs = rhs;
     for (int i = 0; i < size; ++i) {
       if (array_coefficients->a[i]->getInt() == 0 ||
-          IntSpec(array_variables->a[i])->IsBound()) {
+          IsBound(array_variables->a[i])) {
         num_bounds++;
-        new_rhs -= IntSpec(array_variables->a[i])->GetBound() *
+        new_rhs -= GetBound(array_variables->a[i]) *
             array_coefficients->a[i]->getInt();
       } else {
         not_bound_index = i;
@@ -1518,26 +1524,28 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         all_positive = false;
         break;
       }
-      IntVarSpec* const spec =
-          int_variables_[array_variables->a[i]->getIntVar()];
-      if (!spec->HasDomain() || !spec->Domain()->interval ||
-          spec->Domain()->imin < 0) {
+      if (!IsPositive(array_variables->a[i])) {
         all_positive = false;
         break;
       }
     }
     if (all_positive && rhs >= 0) {
       for (int i = 0; i < size; ++i) {
-        IntVarSpec* const spec =
-            int_variables_[array_variables->a[i]->getIntVar()];
-        const int64 vmax = spec->Domain()->imax;
-        const int64 vcoeff = array_coefficients->a[i]->getInt();
-        if (vcoeff > 0) {
-          const int64 bound = rhs / vcoeff;
-          if (vmax > bound) {
-            VLOG(2) << "  - presolve:  merge " << spec->DebugString()
-                    << " with 0.." << bound;
-            spec->MergeBounds(0, bound);
+        AstNode* const node = array_variables->a[i];
+        if (node->isIntVar()) {
+          IntVarSpec* const spec =
+              int_variables_[array_variables->a[i]->getIntVar()];
+          if (spec->HasDomain()) {
+            const int64 vmax = spec->Domain()->imax;
+            const int64 vcoeff = array_coefficients->a[i]->getInt();
+            if (vcoeff > 0) {
+              const int64 bound = rhs / vcoeff;
+              if (vmax > bound) {
+                VLOG(2) << "  - presolve:  merge " << spec->DebugString()
+                        << " with 0.." << bound;
+                spec->MergeBounds(0, bound);
+              }
+            }
           }
         }
       }

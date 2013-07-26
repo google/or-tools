@@ -653,6 +653,12 @@ class IntVarSpec : public VarSpec {
                         domain_.value()->imin == domain_.value()->imax);
   }
 
+  bool IsPositive() const {
+    return (assigned && i >= 0) ||
+        (domain_.defined() && domain_.value()->interval &&
+         domain_.value()->imin >= 0);
+  }
+
   int GetBound() const {
     CHECK(IsBound());
     if (assigned) {
@@ -1067,6 +1073,7 @@ class ParserState {
   void Presolve();
   bool IsBound(AstNode* const node) const;
   int64 GetBound(AstNode* const node) const;
+  bool IsPositive(AstNode* const node) const;
   bool IsAllDifferent(AstNode* const node) const;
   bool MergeIntDomain(IntVarSpec* const source, IntVarSpec* const dest);
 
