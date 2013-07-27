@@ -231,11 +231,11 @@ class MtSupport : public FzParallelSupport {
           if (value < best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
+            LogNoLock(
+                worker_id,
+                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
+                             value));
             if (print_all_ || num_solutions_ > 1) {
-              LogNoLock(
-                  worker_id,
-                  StringPrintf("solution found with value %" GG_LL_FORMAT "d",
-                               value));
               std::cout << solution_string << std::endl;
             } else {
               last_solution_ = solution_string + "\n";
@@ -248,11 +248,11 @@ class MtSupport : public FzParallelSupport {
           if (value > best_solution_) {
             best_solution_ = value;
             IncrementSolutions();
+            LogNoLock(
+                worker_id,
+                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
+                             value));
             if (print_all_ || num_solutions_ > 1) {
-              LogNoLock(
-                  worker_id,
-                  StringPrintf("solution found with value %" GG_LL_FORMAT "d",
-                               value));
               std::cout << solution_string << std::endl;
             } else {
               last_solution_ = solution_string + "\n";
