@@ -13,12 +13,12 @@
 
 #include <string.h>
 #include <algorithm>
+#include "base/hash.h"
 #include <string>
 #include <vector>
 
 #include "base/callback.h"
 #include "base/integral_types.h"
-#include "base/hash.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
@@ -542,8 +542,8 @@ class Circuit : public Constraint {
       : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
         starts_(size_, -1), ends_(size_, -1), domains_(size_),
         outbound_support_(size_, -1), inbound_support_(size_, -1),
-        inbound_demon_(nullptr), outbound_demon_(nullptr),
-        temp_support_(size_, -1) {
+        temp_support_(size_, -1), inbound_demon_(nullptr),
+        outbound_demon_(nullptr) {
     for (int i = 0; i < size_; ++i) {
       domains_[i] = nexts_[i]->MakeDomainIterator(true);
     }

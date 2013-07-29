@@ -1752,10 +1752,10 @@ class Solver {
   }
 #endif
 
-  // This constraint states that all the rectangles must not overlap.
-  // The coordinates of rectangle i are :
+  // This constraint states that all the boxes must not overlap.
+  // The coordinates of box i are :
   //   (x_vars[i], y_vars[i]),
-  //   (x_vars[i], y_vars[i] +y_size[i]),
+  //   (x_vars[i], y_vars[i] + y_size[i]),
   //   (x_vars[i] + x_size[i], y_vars[i]),
   //   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
   // The sizes must be strictly positive.
@@ -1764,6 +1764,16 @@ class Solver {
       const std::vector<IntVar*>& y_vars,
       const std::vector<IntVar*>& x_size,
       const std::vector<IntVar*>& y_size);
+  Constraint* MakeNonOverlappingBoxesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<int64>& x_size,
+      const std::vector<int64>& y_size);
+  Constraint* MakeNonOverlappingBoxesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<int>& x_size,
+      const std::vector<int>& y_size);
 
   // ----- Packing constraint -----
 

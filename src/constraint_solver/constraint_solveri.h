@@ -2272,6 +2272,8 @@ inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
   return IsArrayInRange(vars, 0, 1);
 }
 
+// Returns true if all the variables are assigned to a single value,
+// or if their corresponding value is null.
 template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
                                           const std::vector<T>& values) {
   for (int i = 0; i < vars.size(); ++i) {
@@ -2282,6 +2284,7 @@ template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
   return true;
 }
 
+// Returns true if all variables are assigned to 'value'.
 inline bool AreAllBoundTo(const std::vector<IntVar*>& vars, int64 value) {
   for (int i = 0; i < vars.size(); ++i) {
     if (!vars[i]->Bound() || vars[i]->Min() != value) {
@@ -2292,6 +2295,7 @@ inline bool AreAllBoundTo(const std::vector<IntVar*>& vars, int64 value) {
 }
 
 inline int64 MaxVarArray(const std::vector<IntVar*>& vars) {
+  DCHECK(!vars.empty());
   int64 result = kint64min;
   for (int i = 0; i < vars.size(); ++i) {
     result = std::max(result, vars[i]->Max());
@@ -2300,6 +2304,7 @@ inline int64 MaxVarArray(const std::vector<IntVar*>& vars) {
 }
 
 inline int64 MinVarArray(const std::vector<IntVar*>& vars) {
+  DCHECK(!vars.empty());
   int64 result = kint64max;
   for (int i = 0; i < vars.size(); ++i) {
     result = std::min(result, vars[i]->Min());
@@ -2307,7 +2312,8 @@ inline int64 MinVarArray(const std::vector<IntVar*>& vars) {
   return result;
 }
 
-inline void FillValues(const std::vector<IntVar*>& vars, std::vector<int64>* const values) {
+inline void FillValues(
+    const std::vector<IntVar*>& vars, std::vector<int64>* const values) {
   values->clear();
   values->resize(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
