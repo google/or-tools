@@ -563,7 +563,8 @@ void ParserState::SortConstraints(NodeSet* const candidates,
 
   FZLOG << "  - defines only          : " << defines_only.size() << std::endl;
   FZLOG << "  - no defines            : " << no_defines.size() << std::endl;
-  FZLOG << "  - defines and require   : " << defines_and_require.size() << std::endl;
+  FZLOG << "  - defines and require   : " << defines_and_require.size()
+        << std::endl;
   FZLOG << "  - nullified constraints : " << nullified << std::endl;
 
   const int size = constraints_.size();
@@ -1621,6 +1622,71 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         if (var_spec->MergeBounds(div, div)) {
           spec->Nullify();
           return true;
+        }
+      }
+    }
+  }
+  if (id == "regular") {
+    if (spec->Arg(1)->getInt() == 1) {
+      // One state, this is a constant table.
+      AstArray* const array_variables = spec->Arg(0)->getArray();
+      const int size = array_variables->a.size();
+      const int64 num_states = spec->Arg(1)->getInt();
+      const int64 num_values = spec->Arg(2)->getInt();
+      const AstArray* const array_transitions = spec->Arg(3)->getArray();
+      const int64 initial_state = spec->Arg(4)->getInt();
+      // Find the value that is stable w.r.t. the transitions.
+      int count = 0;
+      bool value_defined = false;
+      int64 value = 0;
+      for (int q = 1; q <= num_states; ++q) {
+        for (int s = 1; s <= num_values; ++s) {
+          const int64 next = array_transitions->a[count++]->getInt();
+          if (next == initial_state && q == initial_state) {
+            if (value_defined) {
+              // Many value are stables. We abort.
+              return false;
+            } else {
+              value = s;
+              value_defined = true;
+            }
+          }
+        }
+      }
+      if (!value_defined) {
+        return false;
+      }
+
+      AstSetLit* const final_set = spec->Arg(5)->getSet();
+      std::vector<int64> final_states;
+      if (final_set->interval) {
+        for (int v = final_set->imin; v <= final_set->imax; ++v) {
+          final_states.push_back(v);
+        }
+      } else {
+        final_states.insert(
+            final_states.end(), final_set->s.begin(), final_set->s.end());
+      }
+      if (final_states.size() == 1 && final_states.back() == initial_state) {
+        VLOG(2) << "  - presolve:  regular, one state and one stable value: "
+                << value << " for " << spec->DebugString();
+        // All variables should be set to the stable value w.r.t transisions.
+        bool all_succeed = true;
+        for (int i = 0; i < size; ++i) {
+          AstNode* var_node = array_variables->a[i];
+          if (var_node->isIntVar()) {
+            IntVarSpec* const var_spec = int_variables_[var_node->getIntVar()];
+            VLOG(2) << "               assign " << var_spec->DebugString()
+                    << " to " << value;
+            if (!var_spec->MergeBounds(value, value)) {
+              all_succeed = false;
+            }
+          } else if (!var_node->isInt() || var_node->getInt() != value) {
+            all_succeed = false;
+          }
+        }
+        if (all_succeed) {
+          spec->Nullify();
         }
       }
     }
