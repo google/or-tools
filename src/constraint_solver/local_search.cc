@@ -287,7 +287,7 @@ void SequenceVarLocalSearchOperator::Start(const Assignment* assignment) {
       element = &(container.Element(vars_[i]));
     }
     const std::vector<int>& value = element->ForwardSequence();
-    CHECK_EQ(vars_[i]->size(), value.size());
+    CHECK_GE(vars_[i]->size(), value.size());
     values_[i] = value;
     backward_values_[i].clear();
     old_values_[i] = value;

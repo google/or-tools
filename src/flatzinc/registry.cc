@@ -2742,7 +2742,7 @@ void p_diffn(FlatZincModel* const model, CtSpec* const spec) {
     y_sizes[i] = model->GetIntExpr(ay_sizes->a[i])->Var();
   }
   Constraint* const ct =
-      solver->MakeNonOverlappingRectanglesConstraint(
+      solver->MakeNonOverlappingBoxesConstraint(
           x_variables, y_variables, x_sizes, y_sizes);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);

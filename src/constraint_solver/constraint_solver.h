@@ -1759,7 +1759,7 @@ class Solver {
   //   (x_vars[i] + x_size[i], y_vars[i]),
   //   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
   // The sizes must be strictly positive.
-  Constraint* MakeNonOverlappingRectanglesConstraint(
+  Constraint* MakeNonOverlappingBoxesConstraint(
       const std::vector<IntVar*>& x_vars,
       const std::vector<IntVar*>& y_vars,
       const std::vector<IntVar*>& x_size,

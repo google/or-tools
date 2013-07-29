@@ -256,7 +256,7 @@ class Diffn : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeNonOverlappingRectanglesConstraint(
+Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar*>& x_vars,
     const std::vector<IntVar*>& y_vars,
     const std::vector<IntVar*>& x_size,
