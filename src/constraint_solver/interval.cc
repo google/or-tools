@@ -919,17 +919,25 @@ void FixedDurationIntervalVar::Push() {
 }
 
 string FixedDurationIntervalVar::DebugString() const {
-  string out;
   const string& var_name = name();
-  if (!var_name.empty()) {
-    out = var_name + "(start = ";
+  if (!performed_.MayBeTrue()) {
+    if (!var_name.empty()) {
+      return StringPrintf("%s(performed = false)", var_name.c_str());
+    } else {
+      return "IntervalVar(performed = false)";
+    }
   } else {
-    out = "IntervalVar(start = ";
+    string out;
+    if (!var_name.empty()) {
+      out = var_name + "(start = ";
+    } else {
+      out = "IntervalVar(start = ";
+    }
+    StringAppendF(&out, "%s, duration = %" GG_LL_FORMAT "d, performed = %s)",
+                  start_.DebugString().c_str(), duration_,
+                  performed_.DebugString().c_str());
+    return out;
   }
-  StringAppendF(&out, "%s, duration = %" GG_LL_FORMAT "d, performed = %s)",
-                start_.DebugString().c_str(), duration_,
-                performed_.DebugString().c_str());
-  return out;
 }
 
 // ----- FixedDurationPerformedIntervalVar -----
@@ -1681,18 +1689,28 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual string DebugString() const {
-    string out;
     const string& var_name = name();
-    if (!var_name.empty()) {
-      out = var_name + "(start = ";
+    if (!performed_.MayBeTrue()) {
+      if (!var_name.empty()) {
+        return StringPrintf("%s(performed = false)", var_name.c_str());
+      } else {
+        return "IntervalVar(performed = false)";
+      }
     } else {
-      out = "IntervalVar(start = ";
-    }
+      string out;
+      if (!var_name.empty()) {
+        out = var_name + "(start = ";
+      } else {
+        out = "IntervalVar(start = ";
+      }
 
-    StringAppendF(&out, "%s, duration = %s, end = %s, performed = %s)",
-                  start_.DebugString().c_str(), duration_.DebugString().c_str(),
-                  end_.DebugString().c_str(), performed_.DebugString().c_str());
-    return out;
+      StringAppendF(&out, "%s, duration = %s, end = %s, performed = %s)",
+                    start_.DebugString().c_str(),
+                    duration_.DebugString().c_str(),
+                    end_.DebugString().c_str(),
+                    performed_.DebugString().c_str());
+      return out;
+    }
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -1936,8 +1954,8 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
                                                   const string& name) {
   CHECK_NOTNULL(start_variable);
   CHECK_GE(duration, 0);
-  return RegisterIntervalVar(
-      new StartVarPerformedIntervalVar(this, start_variable, duration, name));
+  return RegisterIntervalVar(RevAlloc(
+      new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(

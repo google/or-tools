@@ -14,6 +14,7 @@
 //  Expression constraints
 
 #include <stddef.h>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -981,6 +982,9 @@ class IsMemberCt : public Constraint {
     DCHECK(v != NULL);
     DCHECK(s != NULL);
     DCHECK(b != NULL);
+    while (ContainsKey(values_as_set_, neg_support_)) {
+      neg_support_++;
+    }
   }
 
   virtual void Post() {
@@ -1044,8 +1048,7 @@ class IsMemberCt : public Constraint {
             // Look for a new negative support.
             for (domain_->Init(); domain_->Ok(); domain_->Next()) {
               const int64 value = domain_->Value();
-              if (!ContainsKey(values_as_set_, value) &&
-                  var_->Contains(value)) {
+              if (!ContainsKey(values_as_set_, value)) {
                 neg_support_ = value;
                 return;
               }
@@ -1087,9 +1090,9 @@ class IsMemberCt : public Constraint {
 template <class T> Constraint* BuildIsMemberCt(
     Solver* const solver, IntVar* const var, const std::vector<T>& values,
     IntVar* const boolvar) {
-  hash_set<T> set_of_values(values.begin(), values.end());
+  std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
-  for (ConstIter<hash_set<T>> it(set_of_values); !it.at_end(); ++it) {
+  for (ConstIter<std::set<T>> it(set_of_values); !it.at_end(); ++it) {
     const int64 value = *it;
     if (var->Contains(value)) {
       filtered_values.push_back(value);

@@ -190,7 +190,7 @@ class RangeBipartiteMatching {
 
     const bool modified1 = PropagateMin();
     const bool modified2 = PropagateMax();
-    return modified1 | modified2;
+    return modified1 || modified2;
   }
 
   int64 Min(int index) const {

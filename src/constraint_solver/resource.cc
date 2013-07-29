@@ -1016,7 +1016,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   }
 
   virtual string DebugString() const {
-    return "FullDisjunctiveConstraint";
+    return StringPrintf(
+        "FullDisjunctiveConstraint([%s])",
+        DebugStringArray(intervals_.get(), size_, ",").c_str());;
   }
 
  private:
@@ -1026,7 +1028,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     const int num_nodes = size_ + 1;
     int64 horizon = 0;
     for (int i = 0; i < size_; ++i) {
-      horizon = std::max(horizon, intervals_[i]->EndMax());
+      if (intervals_[i]->MayBePerformed()) {
+        horizon = std::max(horizon, intervals_[i]->EndMax());
+      }
     }
 
     s->MakeIntVarArray(num_nodes, 1, num_nodes, ct_name + "_nexts", &nexts_);
@@ -1054,15 +1058,23 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     int64 max_transit = kint64min;
     for (int64 i = 0; i < size_; ++i) {
       IntervalVar* const var = intervals_[i];
-      const int64 fixed_transit = var->DurationMin();
-      time_transits_[i + 1] =
-          s->MakeIntVar(fixed_transit,
-                        horizon,
-                        StringPrintf("time_transit(%" GG_LL_FORMAT "d)",
-                                     i + 1));
-      max_transit = std::max(max_transit, time_transits_[i + 1]->Max());
-      // TODO(user): Check SafeStartExpr();
-      time_cumuls_[i + 1] = var->SafeStartExpr(var->StartMin())->Var();
+      if (var->MayBePerformed()) {
+        const int64 fixed_transit = var->DurationMin();
+        time_transits_[i + 1] =
+            s->MakeIntVar(fixed_transit,
+                          horizon,
+                          StringPrintf("time_transit(%" GG_LL_FORMAT "d)",
+                                       i + 1));
+        max_transit = std::max(max_transit, time_transits_[i + 1]->Max());
+        // TODO(user): Check SafeStartExpr();
+        time_cumuls_[i + 1] = var->SafeStartExpr(var->StartMin())->Var();
+      } else {
+        time_transits_[i + 1] =
+            s->MakeIntVar(0, horizon,
+                          StringPrintf("time_transit(%" GG_LL_FORMAT "d)",
+                                       i + 1));
+        time_cumuls_[i + 1] = s->MakeIntConst(horizon);
+      }
     }
     time_cumuls_[size_ + 1] =
         s->MakeIntVar(0, horizon + max_transit, ct_name + "_ect");
@@ -2025,16 +2037,9 @@ class CumulativeConstraint : public Constraint {
 DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
     const std::vector<IntervalVar*>& intervals,
     const string& name) {
-  // Finds all intervals that may be performed
-  std::vector<IntervalVar*> may_be_performed;
-  for (int i = 0; i < intervals.size(); ++i) {
-    if (intervals[i]->MayBePerformed()) {
-      may_be_performed.push_back(intervals[i]);
-    }
-  }
   return RevAlloc(new FullDisjunctiveConstraint(this,
-                                                may_be_performed.data(),
-                                                may_be_performed.size(),
+                                                intervals.data(),
+                                                intervals.size(),
                                                 name));
 }
 

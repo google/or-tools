@@ -285,21 +285,22 @@ class TraceIntervalVar : public IntervalVar {
   }
 
   virtual void SetStartMin(int64 m) {
-    if (m > inner_->StartMin()) {
+    if (inner_->MayBePerformed() && (m > inner_->StartMin())) {
       solver()->GetPropagationMonitor()->SetStartMin(inner_, m);
       inner_->SetStartMin(m);
     }
   }
 
   virtual void SetStartMax(int64 m) {
-    if (m < inner_->StartMax()) {
+    if (inner_->MayBePerformed() && (m < inner_->StartMax())) {
       solver()->GetPropagationMonitor()->SetStartMax(inner_, m);
       inner_->SetStartMax(m);
     }
   }
 
   virtual void SetStartRange(int64 mi, int64 ma) {
-    if (mi > inner_->StartMin() || ma < inner_->StartMax()) {
+    if (inner_->MayBePerformed() &&
+        (mi > inner_->StartMin() || ma < inner_->StartMax())) {
       solver()->GetPropagationMonitor()->SetStartRange(inner_, mi, ma);
       inner_->SetStartRange(mi, ma);
     }
@@ -330,21 +331,22 @@ class TraceIntervalVar : public IntervalVar {
   }
 
   virtual void SetEndMin(int64 m) {
-    if (m > inner_->EndMin()) {
+    if (inner_->MayBePerformed() && (m > inner_->EndMin())) {
       solver()->GetPropagationMonitor()->SetEndMin(inner_, m);
       inner_->SetEndMin(m);
     }
   }
 
   virtual void SetEndMax(int64 m) {
-    if (m < inner_->EndMax()) {
+    if (inner_->MayBePerformed() && (m < inner_->EndMax())) {
       solver()->GetPropagationMonitor()->SetEndMax(inner_, m);
       inner_->SetEndMax(m);
     }
   }
 
   virtual void SetEndRange(int64 mi, int64 ma) {
-    if (mi > inner_->EndMin() || ma < inner_->EndMax()) {
+    if (inner_->MayBePerformed() &&
+        (mi > inner_->EndMin() || ma < inner_->EndMax())) {
       solver()->GetPropagationMonitor()->SetEndRange(inner_, mi, ma);
       inner_->SetEndRange(mi, ma);
     }
@@ -375,21 +377,22 @@ class TraceIntervalVar : public IntervalVar {
   }
 
   virtual void SetDurationMin(int64 m) {
-    if (m > inner_->DurationMin()) {
+    if (inner_->MayBePerformed() && (m > inner_->DurationMin())) {
       solver()->GetPropagationMonitor()->SetDurationMin(inner_, m);
       inner_->SetDurationMin(m);
     }
   }
 
   virtual void SetDurationMax(int64 m) {
-    if (m < inner_->DurationMax()) {
+    if (inner_->MayBePerformed() && (m < inner_->DurationMax())) {
       solver()->GetPropagationMonitor()->SetDurationMax(inner_, m);
       inner_->SetDurationMax(m);
     }
   }
 
   virtual void SetDurationRange(int64 mi, int64 ma) {
-    if (mi > inner_->DurationMin() || ma < inner_->DurationMax()) {
+    if (inner_->MayBePerformed() &&
+        (mi > inner_->DurationMin() || ma < inner_->DurationMax())) {
       solver()->GetPropagationMonitor()->SetDurationRange(inner_, mi, ma);
       inner_->SetDurationRange(mi, ma);
     }

@@ -1190,9 +1190,19 @@ IntExpr* BuildDifference(CPModelLoader* const builder,
 Constraint* BuildDisjunctive(CPModelLoader* const builder,
                              const CPConstraintProto& proto) {
   std::vector<IntervalVar*> vars;
-  VERIFY(
-      builder->ScanArguments(ModelVisitor::kIntervalsArgument, proto, &vars));
-  return builder->solver()->MakeDisjunctiveConstraint(vars, proto.name());
+  if (builder->ScanArguments(ModelVisitor::kIntervalsArgument, proto, &vars)) {
+    return builder->solver()->MakeDisjunctiveConstraint(vars, proto.name());
+  } else {
+    std::vector<IntVar*> x;
+    std::vector<IntVar*> dx;
+    std::vector<IntVar*> y;
+    std::vector<IntVar*> dy;
+    VERIFY(builder->ScanArguments(ModelVisitor::kPositionXArgument, proto, &x));
+    VERIFY(builder->ScanArguments(ModelVisitor::kPositionYArgument, proto, &y));
+    VERIFY(builder->ScanArguments(ModelVisitor::kSizeXArgument, proto, &dx));
+    VERIFY(builder->ScanArguments(ModelVisitor::kSizeYArgument, proto, &dy));
+    return builder->solver()->MakeNonOverlappingBoxesConstraint(x, y, dx, dy);
+  }
 }
 
 // ----- kDistribute -----
