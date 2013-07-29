@@ -87,10 +87,11 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
       const FlexibleJobShopData::Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
       jobs_to_tasks[job_id].push_back(TaskAlternative(job_id));
+      const bool optional = task.machines.size() > 1;
+      std::vector<IntVar*> active_variables;
       for (int alt = 0; alt < task.machines.size(); ++alt) {
         const int machine_id = task.machines[alt];
         const int duration = task.durations[alt];
-        const bool optional = task.machines.size() > 1;
         const string name = StringPrintf("J%dI%dA%dM%dD%d",
                                          task.job_id,
                                          task_index,
@@ -101,14 +102,19 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
             0, horizon, duration, optional, name);
         jobs_to_tasks[job_id].back().intervals.push_back(interval);
         machines_to_tasks[machine_id].push_back(interval);
+        if (optional) {
+          active_variables.push_back(interval->PerformedExpr()->Var());
+        }
       }
       string alternative_name = StringPrintf("J%dI%d", job_id, task_index);
-      jobs_to_tasks[job_id].back().alternative_variable =
+      IntVar* alt_var =
           solver.MakeIntVar(0, task.machines.size() - 1, alternative_name);
+      jobs_to_tasks[job_id].back().alternative_variable = alt_var;
+      if (optional) {
+        solver.AddConstraint(solver.MakeMapDomain(alt_var, active_variables));
+      }
     }
   }
-
-  // ----- Creates model -----
 
   // Creates precedences inside jobs.
   for (int job_id = 0; job_id < job_count; ++job_id) {

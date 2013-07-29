@@ -143,14 +143,14 @@ class FlexibleJobShopData {
     static const char kWordDelimiters[] = " ";
     std::vector<string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
-    if (machine_count_ == -1) {
+    if (machine_count_ == -1 && words.size() > 1) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);
       CHECK_GT(machine_count_, 0);
       CHECK_GT(job_count_, 0);
       LOG(INFO) << machine_count_ << " machines and " << job_count_ << " jobs";
       all_tasks_.resize(job_count_);
-    } else {
+    } else if (words.size() > 1) {
       const int operations_count = atoi32(words[0]);
       int index = 1;
       for (int operation = 0; operation < operations_count; ++operation) {
