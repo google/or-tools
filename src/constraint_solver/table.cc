@@ -442,7 +442,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       IntVar* const var = vars_[var_index];
       const int64 original_min = original_min_[var_index];
-      switch (var->Size()) {
+      const int64 var_size = var->Size();
+      switch (var_size) {
         case 1: {
           if (!Supported(var_index, var->Min() - original_min)) {
             solver()->Fail();
@@ -471,7 +472,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           const int64 var_max = var->Max();
           int64 new_min = kint64max;
           int64 new_max = kint64min;
-          if (var_max - var_min + 1 == var->Size()) {
+          if (var_max - var_min + 1 == var_size) {
             // Continous case, a simple loop is enough.
             for (int64 value = var_min; value <= var_max; ++value) {
               if (!Supported(var_index, value - original_min)) {
@@ -564,7 +565,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         const int64 old_max = var->OldMax();
         const int64 var_min = var->Min();
         const int64 var_max = var->Max();
-        if (count + var_min - old_min + old_max - var_max < var->Size()) {
+        if (count + var_min - old_min + old_max - var_max < var_size) {
           for (int64 value = old_min; value < var_min; ++value) {
             OrTempMask(var_index, value - omin);
           }
@@ -820,10 +821,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       if (var_index == touched_var_) {
         continue;
       }
+      IntVar* const var = vars_[var_index];
       const uint64* const var_mask = masks_[var_index];
       const int64 original_min = original_min_[var_index];
-      IntVar* const var = vars_[var_index];
-      switch (var->Size()) {
+      const int64 var_size = var->Size();
+      switch (var_size) {
         case 1: {
           if ((var_mask[var->Min() - original_min] & actives) == 0) {
             solver()->Fail();
@@ -853,7 +855,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.clear();
           const int64 var_min = var->Min();
           const int64 var_max = var->Max();
-          if (var_max - var_min + 1 == var->Size()) {
+          if (var_max - var_min + 1 == var_size) {
             // Continous case, a simple loop is enough.
             for (int64 value = var_min; value <= var_max; ++value) {
               if ((var_mask[value - original_min] & actives) == 0) {
@@ -869,12 +871,21 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
           }
-          if (to_remove_.size() == var->Size()) {
-            solver()->Fail();
-          } else if (to_remove_.size() == 1) {
-            var->RemoveValue(to_remove_.back());
-          } else if (to_remove_.size() > 0) {
-            var->RemoveValues(to_remove_);
+          switch (to_remove_.size()) {
+            case 0: {
+              break;
+            }
+            case 1: {
+              var->RemoveValue(to_remove_.back());
+              break;
+            }
+            default: {
+              if (to_remove_.size() == var_size) {
+                solver()->Fail();
+              } else {
+                var->RemoveValues(to_remove_);
+              }
+            }
           }
         }
       }
