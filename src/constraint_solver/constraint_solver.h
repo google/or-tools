@@ -1836,7 +1836,7 @@ class Solver {
       std::vector<IntervalVar*>* const array);
 
 
-  // Creates an fixed and performed interval.
+  // Creates a fixed and performed interval.
   IntervalVar* MakeFixedInterval(int64 start,
                                  int64 duration,
                                  const string& name);

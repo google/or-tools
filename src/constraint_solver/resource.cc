@@ -796,11 +796,13 @@ class RankedPropagator : public Constraint {
     int first = 0;
     int counter = 0;
     while (nexts_[first]->Bound()) {
+      DCHECK_NE(first, nexts_[first]->Min());
       first = nexts_[first]->Min();
       if (first == sentinel) {
         return;
       }
       if (++counter > ranked_first) {
+        DCHECK(intervals_[first - 1]->MayBePerformed());
         partial_sequence_.RankFirst(s, first - 1);
         VLOG(1) << "RankFirst " << first - 1
                 << " -> " << partial_sequence_.DebugString();
@@ -824,7 +826,7 @@ class RankedPropagator : public Constraint {
                 << " -> " << partial_sequence_.DebugString();
       }
     }
-    VLOG(1) << "PropagateNext("
+    VLOG(1) << "PropagateNexts("
             << DebugStringArray(nexts_.get(), size_ + 1, ", ")
             << ", " << partial_sequence_.DebugString() << ")";
   }
@@ -930,8 +932,11 @@ class RankedPropagator : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("RankedPropagator([%s])",
-                        partial_sequence_.DebugString().c_str());
+    return StringPrintf(
+        "RankedPropagator([%s], nexts = [%s], intervals = [%s])",
+        partial_sequence_.DebugString().c_str(),
+        DebugStringArray(nexts_.get(), size_ +  1, ", ").c_str(),
+        DebugStringArray(intervals_.get(), size_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -1039,7 +1044,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
     actives_.resize(num_nodes);
     for (int i = 0; i < size_; ++i) {
-      actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
+      actives_[i + 1] = s->MakeIsDifferentCstVar(nexts_[i + 1], i + 1);
+      s->AddConstraint(
+          s->MakeEquality(actives_[i + 1], intervals_[i]->PerformedExpr()));
     }
     // TODO(user): Only if at least one activity is always performed.
     actives_[0] = s->MakeIntConst(1);

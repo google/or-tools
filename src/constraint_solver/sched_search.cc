@@ -77,14 +77,15 @@ string SequenceVar::DebugString() const {
                       "d..%" GG_LL_FORMAT
                       "d, duration = %" GG_LL_FORMAT
                       "d..%" GG_LL_FORMAT
-                      "d, not ranked = %d, ranked = %d)",
+                      "d, not ranked = %d, ranked = %d, nexts = [%s])",
                       name().c_str(),
                       hmin,
                       hmax,
                       dmin,
                       dmax,
                       not_ranked,
-                      ranked);
+                      ranked,
+                      DebugStringArray(nexts_.get(), next_size_, ", ").c_str());
 }
 
 void SequenceVar::Accept(ModelVisitor* const visitor) const {
@@ -182,13 +183,15 @@ void SequenceVar::ComputeStatistics(int* const ranked,
       last = previous_[last];
       (*ranked)++;
     }
+  } else {  // We counted the sentinel.
+    (*ranked)--;
   }
   *not_ranked = size_ - *ranked - *unperformed;
 }
 
 int SequenceVar::ComputeForwardFrontier() {
   int first = 0;
-  while (nexts_[first]->Bound() && first != next_size_) {
+  while (first != next_size_ && nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
   }
   return first;
@@ -206,6 +209,8 @@ int SequenceVar::ComputeBackwardFrontier() {
 void SequenceVar::ComputePossibleFirstsAndLasts(
     std::vector<int>* const possible_firsts,
     std::vector<int>* const possible_lasts) {
+  possible_firsts->clear();
+  possible_lasts->clear();
   hash_set<int> to_check;
   for (int i = 0; i < size_; ++i) {
     if (intervals_[i]->MayBePerformed()) {
@@ -215,10 +220,10 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int first = 0;
   while (nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
-    to_check.erase(ValueToIndex(first));
     if (first == next_size_) {
       return;
     }
+    to_check.erase(ValueToIndex(first));
   }
 
   IntVar* const forward_var = nexts_[first];
@@ -311,7 +316,14 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
 void SequenceVar::RankFirst(int index) {
   solver()->GetPropagationMonitor()->RankFirst(this, index);
   intervals_[index]->SetPerformed(true);
-  const int forward_frontier = ComputeForwardFrontier();
+  int forward_frontier = 0;
+  while (forward_frontier != next_size_ && nexts_[forward_frontier]->Bound()) {
+    forward_frontier = nexts_[forward_frontier]->Min();
+    if (forward_frontier == IndexToValue(index)) {
+      return;
+    }
+  }
+  DCHECK_LT(forward_frontier, next_size_);
   nexts_[forward_frontier]->SetValue(IndexToValue(index));
 }
 
@@ -320,15 +332,21 @@ void SequenceVar::RankNotFirst(int index) {
   const int forward_frontier = ComputeForwardFrontier();
   if (forward_frontier < next_size_) {
     nexts_[forward_frontier]->RemoveValue(IndexToValue(index));
-  } else {
-    solver()->Fail();
   }
 }
 
 void SequenceVar::RankLast(int index) {
   solver()->GetPropagationMonitor()->RankLast(this, index);
   intervals_[index]->SetPerformed(true);
-  const int backward_frontier = ComputeBackwardFrontier();
+  UpdatePrevious();
+  int backward_frontier = next_size_;
+  while (previous_[backward_frontier] != -1) {
+    backward_frontier = previous_[backward_frontier];
+    if (backward_frontier == IndexToValue(index)) {
+      return;
+    }
+  }
+  DCHECK_NE(backward_frontier, 0);
   nexts_[IndexToValue(index)]->SetValue(backward_frontier);
 }
 
@@ -695,8 +713,8 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   bool FindSequenceVarRandomly(Solver* const s,
                                SequenceVar** const best_sequence) {
-    std::vector<int> all_candidates;
-    std::vector<std::vector<int> > all_possible_firsts;
+    std::vector<SequenceVar*> all_candidates;
+    std::vector<std::vector<int>> all_possible_firsts;
     for (int i = 0; i < size_; ++i) {
       SequenceVar* const candidate_sequence = sequences_[i];
       int ranked = 0;
@@ -722,7 +740,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
           return true;
         }
 
-        all_candidates.push_back(i);
+        all_candidates.push_back(candidate_sequence);
         all_possible_firsts.push_back(candidate_possible_firsts_);
       }
     }
@@ -730,7 +748,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
       return false;
     }
     const int chosen = s->Rand32(all_candidates.size());
-    *best_sequence = sequences_[all_candidates[chosen]];
+    *best_sequence = all_candidates[chosen];
     best_possible_firsts_ = all_possible_firsts[chosen];
     return true;
   }
