@@ -811,21 +811,21 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
 
-    // // Count the number of masks to collect to compare the deduction
-    // // vs the construction of the new active bitset.
-    // int count = 0;
-    // for (int64 value = oldmin; value < vmin; ++value) {
-    //   count += var_mask[value - original_min] != 0;
-    // }
-    // IntVarIterator* const hole = holes_[var_index];
-    // for (hole->Init(); hole->Ok(); hole->Next()) {
-    //   count++;
-    // }
-    // for (int64 value = vmax + 1; value <= oldmax; ++value) {
-    //   count += var_mask[value - original_min] != 0;
-    // }
+    // Count the number of masks to collect to compare the deduction
+    // vs the construction of the new active bitset.
+    int count = 0;
+    for (int64 value = oldmin; value < vmin; ++value) {
+      count += var_mask[value - original_min] != 0;
+    }
+    IntVarIterator* const hole = holes_[var_index];
+    for (hole->Init(); hole->Ok(); hole->Next()) {
+      count++;
+    }
+    for (int64 value = vmax + 1; value <= oldmax; ++value) {
+      count += var_mask[value - original_min] != 0;
+    }
 
-    // if (count < var->Size()) {
+    if (count < var->Size()) {
       for (int64 value = var->OldMin(); value < vmin; ++value) {
         temp_mask |= var_mask[value - original_min];
       }
@@ -845,22 +845,22 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           solver()->Fail();
         }
       }
-    // } else {
-    //   IntVarIterator* it = iterators_[var_index];
-    //   for (it->Init(); it->Ok(); it->Next()) {
-    //     const int64 value = it->Value();
-    //     temp_mask |= var_mask[value - original_min];
-    //   }
-    //   // Then we apply this mask to active_tuples_.
-    //   if ((~temp_mask & active_tuples_) != 0) {
-    //     AndActiveTuples(temp_mask);
-    //     if (active_tuples_) {
-    //       EnqueueDelayedDemon(demon_);
-    //     } else {
-    //       solver()->Fail();
-    //     }
-    //   }
-    // }
+    } else {
+      IntVarIterator* it = iterators_[var_index];
+      for (it->Init(); it->Ok(); it->Next()) {
+        const int64 value = it->Value();
+        temp_mask |= var_mask[value - original_min];
+      }
+      // Then we apply this mask to active_tuples_.
+      if ((~temp_mask & active_tuples_) != 0) {
+        AndActiveTuples(temp_mask);
+        if (active_tuples_) {
+          EnqueueDelayedDemon(demon_);
+        } else {
+          solver()->Fail();
+        }
+      }
+    }
   }
 
  private:
