@@ -482,26 +482,53 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         continue;
       }
       IntVar* const var = vars_[var_index];
-      to_remove_.clear();
-      int64 new_min = kint64max;
-      int64 new_max = kint64min;
-      IntVarIterator* const it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
-        const int64 value_index = value - original_min_[var_index];
-        if (!Supported(var_index, value_index)) {
-          to_remove_.push_back(value);
-        } else {
-          if (new_min == kint64max) {
-            new_min = value;
+      const int64 original_min = original_min_[var_index];
+      switch (var->Size()) {
+        case 1: {
+          if (!Supported(var_index, var->Min() - original_min)) {
+            solver()->Fail();
           }
-          new_max = value;
+          break;
         }
-      }
-      if (!to_remove_.empty()) {
-        var->SetRange(new_min, new_max);
-        if (new_min != new_max) {
-          var->RemoveValues(to_remove_);
+        case 2: {
+          const int64 var_min = var->Min();
+          const int64 var_max = var->Max();
+          const bool min_support = Supported(var_index, var_min - original_min);
+          const bool max_support = Supported(var_index, var_max - original_min);
+          if (!min_support) {
+            if (!max_support) {
+              solver()->Fail();
+            } else {
+              var->SetValue(var_max);
+            }
+          } else if (!max_support) {
+            var->SetValue(var_min);
+          }
+          break;
+        }
+        default: {
+          to_remove_.clear();
+          int64 new_min = kint64max;
+          int64 new_max = kint64min;
+          IntVarIterator* const it = iterators_[var_index];
+          for (it->Init(); it->Ok(); it->Next()) {
+            const int64 value = it->Value();
+            const int64 value_index = value - original_min_[var_index];
+            if (!Supported(var_index, value_index)) {
+              to_remove_.push_back(value);
+            } else {
+              if (new_min == kint64max) {
+                new_min = value;
+              }
+              new_max = value;
+            }
+          }
+          if (!to_remove_.empty()) {
+            var->SetRange(new_min, new_max);
+            if (new_min != new_max) {
+              var->RemoveValues(to_remove_);
+            }
+          }
         }
       }
     }
@@ -790,13 +817,18 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         case 2: {
           const int64 var_min = var->Min();
           const int64 var_max = var->Max();
-          if ((var_mask[var_min - original_min] & actives) == 0) {
-            if ((var_mask[var_max - original_min] & actives) == 0) {
+          const bool min_support =
+              (var_mask[var_min - original_min] & actives) != 0;
+          const bool max_support =
+              (var_mask[var_max - original_min] & actives) != 0;
+
+          if (!min_support) {
+            if (!max_support) {
               solver()->Fail();
             } else {
               var->SetValue(var_max);
             }
-          } else if ((var_mask[var_max - original_min] & actives) == 0) {
+          } else if (!max_support) {
             var->SetValue(var_min);
           }
           break;
