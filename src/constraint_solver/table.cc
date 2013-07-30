@@ -646,7 +646,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         stamp_(0),
         masks_(new uint64*[arity_]),
         original_min_(new int64[arity_]),
-        demon_(NULL) {
+        demon_(NULL),
+        touched_var_(-1) {
     CHECK_GE(tuple_count_, 0);
     CHECK_GE(arity_, 0);
     CHECK_LE(tuples.NumTuples(), kBitsInUint64);
@@ -756,31 +757,53 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
     // We scan all variables and check their domains.
     for (int var_index = 0; var_index < arity_; ++var_index) {
+      if (var_index == touched_var_) {
+        continue;
+      }
       const uint64* const var_mask = masks_[var_index];
       const int64 original_min = original_min_[var_index];
       IntVar* const var = vars_[var_index];
-      if (var->Bound()) {
-        if ((var_mask[var->Min() - original_min] & actives) == 0) {
-          solver()->Fail();
-        }
-      } else {
-        to_remove_.clear();
-        IntVarIterator* const it = iterators_[var_index];
-        for (it->Init(); it->Ok(); it->Next()) {
-          const int64 value = it->Value();
-          if ((var_mask[value - original_min] & actives) == 0) {
-            to_remove_.push_back(value);
+      switch (var->Size()) {
+        case 1: {
+          if ((var_mask[var->Min() - original_min] & actives) == 0) {
+            solver()->Fail();
           }
+          break;
         }
-        if (to_remove_.size() == var->Size()) {
-          solver()->Fail();
-        } else if (to_remove_.size() == 1) {
-          var->RemoveValue(to_remove_.back());
-        } else if (to_remove_.size() > 0) {
-          var->RemoveValues(to_remove_);
+        case 2: {
+          const int64 var_min = var->Min();
+          const int64 var_max = var->Max();
+          if ((var_mask[var_min - original_min] & actives) == 0) {
+            if ((var_mask[var_max - original_min] & actives) == 0) {
+              solver()->Fail();
+            } else {
+              var->SetValue(var_max);
+            }
+          } else if ((var_mask[var_max - original_min] & actives) == 0) {
+            var->SetValue(var_min);
+          }
+          break;
+        }
+        default: {
+          to_remove_.clear();
+          IntVarIterator* const it = iterators_[var_index];
+          for (it->Init(); it->Ok(); it->Next()) {
+            const int64 value = it->Value();
+            if ((var_mask[value - original_min] & actives) == 0) {
+              to_remove_.push_back(value);
+            }
+          }
+          if (to_remove_.size() == var->Size()) {
+            solver()->Fail();
+          } else if (to_remove_.size() == 1) {
+            var->RemoveValue(to_remove_.back());
+          } else if (to_remove_.size() > 0) {
+            var->RemoveValues(to_remove_);
+          }
         }
       }
     }
+    touched_var_ = -1;
   }
 
   void Update(int var_index) {
@@ -794,9 +817,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       if ((~temp_mask & active_tuples_) != 0) {
         AndActiveTuples(temp_mask);
         if (active_tuples_ != 0) {
+          UpdateTouchedVar(var_index);
           EnqueueDelayedDemon(demon_);
           return;
         } else {
+          ClearTouchedVar();
           solver()->Fail();
         }
       }
@@ -840,8 +865,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       if (temp_mask & active_tuples_) {
         AndActiveTuples(~temp_mask);
         if (active_tuples_) {
+          UpdateTouchedVar(var_index);
           EnqueueDelayedDemon(demon_);
         } else {
+          ClearTouchedVar();
           solver()->Fail();
         }
       }
@@ -855,8 +882,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       if ((~temp_mask & active_tuples_) != 0) {
         AndActiveTuples(temp_mask);
         if (active_tuples_) {
+          UpdateTouchedVar(var_index);
           EnqueueDelayedDemon(demon_);
         } else {
+          ClearTouchedVar();
           solver()->Fail();
         }
       }
@@ -864,6 +893,18 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
+  void UpdateTouchedVar(int var_index) {
+    if (touched_var_ == -1) {
+      touched_var_ = var_index;
+    } else {
+      touched_var_ = -2;  // more than one var.
+    }
+  }
+
+  void ClearTouchedVar() {
+    touched_var_ = -1;
+  }
+
   void AndActiveTuples(uint64 mask) {
     const uint64 current_stamp = solver()->stamp();
     if (stamp_ < current_stamp) {
@@ -882,6 +923,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // The min on the vars at creation time.
   scoped_array<int64> original_min_;
   Demon* demon_;
+  int touched_var_;
 };
 
 
