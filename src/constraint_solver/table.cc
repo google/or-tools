@@ -508,7 +508,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     touched_var_ = -1;
   }
 
-  void UpdateTempMask(int var_index, int64 value_index) {
+  void OrTempMask(int var_index, int64 value_index) {
     const uint64* const mask = masks_[var_index][value_index];
     const int start = starts_[var_index][value_index];
     const int end = ends_[var_index][value_index];
@@ -529,54 +529,71 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
     // We first collect the complete set of tuples to blank out in temp_mask_.
     IntVar* const var = vars_[var_index];
-    const int64 omin = original_min_[var_index];
     bool changed = false;
-    if (var->Bound()) {  // Fast path for bound variables.
-      ClearTempMask();
-      UpdateTempMask(var_index, var->Min() - omin);
-      // Then we apply this mask to active_tuples_.
-      for (int offset = 0; offset < length_; ++offset) {
-        if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
-          AndActiveTuples(offset, temp_mask_[offset]);
-          changed = true;
-        }
-      }
-    } else {
-      ClearTempMask();
-      const int64 count = var_sizes_.Value(var_index) - var->Size();
-      if (count < 2 * var->Size()) {
-        const int64 oldmin = var->OldMin();
-        const int64 oldmax = var->OldMax();
-        const int64 vmin = var->Min();
-        const int64 vmax = var->Max();
-        for (int64 value = oldmin; value < vmin; ++value) {
-          UpdateTempMask(var_index, value - omin);
-        }
-        IntVarIterator* const hole = holes_[var_index];
-        for (hole->Init(); hole->Ok(); hole->Next()) {
-          UpdateTempMask(var_index, hole->Value() - omin);
-        }
-        for (int64 value = vmax + 1; value <= oldmax; ++value) {
-          UpdateTempMask(var_index, value - omin);
-        }
-        // Then we apply this mask to active_tuples_.
-        for (int offset = 0; offset < length_; ++offset) {
-          if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
-            AndActiveTuples(offset, ~temp_mask_[offset]);
-            changed = true;
-          }
-        }
-      } else {
-        IntVarIterator* it = iterators_[var_index];
-        for (it->Init(); it->Ok(); it->Next()) {
-          const int64 value = it->Value();
-          UpdateTempMask(var_index, value - omin);
-        }
+    const int64 omin = original_min_[var_index];
+    switch (var->Size()) {
+      case 1: {
+        ClearTempMask();
+        OrTempMask(var_index, var->Min() - omin);
         // Then we apply this mask to active_tuples_.
         for (int offset = 0; offset < length_; ++offset) {
           if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
             AndActiveTuples(offset, temp_mask_[offset]);
             changed = true;
+          }
+        }
+        break;
+      }
+      case 2: {
+        ClearTempMask();
+        OrTempMask(var_index, var->Min() - omin);
+        OrTempMask(var_index, var->Max() - omin);
+        // Then we apply this mask to active_tuples_.
+        for (int offset = 0; offset < length_; ++offset) {
+          if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
+            AndActiveTuples(offset, temp_mask_[offset]);
+            changed = true;
+          }
+        }
+        break;
+      }
+      default: {
+        ClearTempMask();
+        const int64 count = var_sizes_.Value(var_index) - var->Size();
+        if (count < 2 * var->Size()) {
+          const int64 oldmin = var->OldMin();
+          const int64 oldmax = var->OldMax();
+          const int64 vmin = var->Min();
+          const int64 vmax = var->Max();
+          for (int64 value = oldmin; value < vmin; ++value) {
+            OrTempMask(var_index, value - omin);
+          }
+          IntVarIterator* const hole = holes_[var_index];
+          for (hole->Init(); hole->Ok(); hole->Next()) {
+            OrTempMask(var_index, hole->Value() - omin);
+          }
+          for (int64 value = vmax + 1; value <= oldmax; ++value) {
+            OrTempMask(var_index, value - omin);
+          }
+          // Then we apply this mask to active_tuples_.
+          for (int offset = 0; offset < length_; ++offset) {
+            if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
+              AndActiveTuples(offset, ~temp_mask_[offset]);
+              changed = true;
+            }
+          }
+        } else {
+          IntVarIterator* it = iterators_[var_index];
+          for (it->Init(); it->Ok(); it->Next()) {
+            const int64 value = it->Value();
+            OrTempMask(var_index, value - omin);
+          }
+          // Then we apply this mask to active_tuples_.
+          for (int offset = 0; offset < length_; ++offset) {
+            if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
+              AndActiveTuples(offset, temp_mask_[offset]);
+              changed = true;
+            }
           }
         }
       }
