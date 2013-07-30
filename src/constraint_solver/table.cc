@@ -1045,8 +1045,13 @@ class TransitionConstraint : public Constraint {
       tmp_vars.push_back(states[var_index]);
       tmp_vars.push_back(vars_[var_index]);
       tmp_vars.push_back(states[var_index + 1]);
-      s->AddConstraint(
-          s->MakeAllowedAssignments(tmp_vars, transition_table_));
+      if (transition_table_.NumTuples() < kBitsInUint64) {
+        s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
+            s, tmp_vars, transition_table_)));
+      } else {
+        s->AddConstraint(s->RevAlloc(new CompactPositiveTableConstraint(
+            s, tmp_vars, transition_table_)));
+      }
     }
   }
 
