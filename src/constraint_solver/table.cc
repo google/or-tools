@@ -811,82 +811,102 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // tuples attached to values of the variables that have been removed.
 
     IntVar* const var = vars_[var_index];
-    if (var->Bound()) {  // Fast path for bound variables.
-      const uint64 temp_mask =
-          masks_[var_index][var->Min() - original_min_[var_index]];
-      if ((~temp_mask & active_tuples_) != 0) {
-        AndActiveTuples(temp_mask);
-        if (active_tuples_ != 0) {
-          UpdateTouchedVar(var_index);
-          EnqueueDelayedDemon(demon_);
-          return;
-        } else {
-          ClearTouchedVar();
-          solver()->Fail();
+    switch (var->Size()) {
+      case 1: {
+        const uint64 temp_mask =
+            masks_[var_index][var->Min() - original_min_[var_index]];
+        if ((~temp_mask & active_tuples_) != 0) {
+          AndActiveTuples(temp_mask);
+          if (active_tuples_ != 0) {
+            UpdateTouchedVar(var_index);
+            EnqueueDelayedDemon(demon_);
+          } else {
+            ClearTouchedVar();
+            solver()->Fail();
+          }
         }
+        break;
       }
-    }
-
-    // We first collect the complete set of tuples to blank out in temp_mask.
-    const int64 original_min = original_min_[var_index];
-    uint64 temp_mask = 0;
-    const uint64* const var_mask = masks_[var_index];
-    const int64 oldmin = var->OldMin();
-    const int64 oldmax = var->OldMax();
-    const int64 vmin = var->Min();
-    const int64 vmax = var->Max();
-
-    // Count the number of masks to collect to compare the deduction
-    // vs the construction of the new active bitset.
-    int count = 0;
-    for (int64 value = oldmin; value < vmin; ++value) {
-      count += var_mask[value - original_min] != 0;
-    }
-    IntVarIterator* const hole = holes_[var_index];
-    for (hole->Init(); hole->Ok(); hole->Next()) {
-      count++;
-    }
-    for (int64 value = vmax + 1; value <= oldmax; ++value) {
-      count += var_mask[value - original_min] != 0;
-    }
-
-    if (count < var->Size()) {
-      for (int64 value = var->OldMin(); value < vmin; ++value) {
-        temp_mask |= var_mask[value - original_min];
-      }
-      IntVarIterator* const hole = holes_[var_index];
-      for (hole->Init(); hole->Ok(); hole->Next()) {
-        temp_mask |= var_mask[hole->Value() - original_min];
-      }
-      for (int64 value = vmax + 1; value <= oldmax; ++value) {
-        temp_mask |= var_mask[value - original_min];
-      }
-      // Then we apply this mask to active_tuples_.
-      if (temp_mask & active_tuples_) {
-        AndActiveTuples(~temp_mask);
-        if (active_tuples_) {
-          UpdateTouchedVar(var_index);
-          EnqueueDelayedDemon(demon_);
-        } else {
-          ClearTouchedVar();
-          solver()->Fail();
+      case 2: {
+        const uint64 temp_mask =
+            masks_[var_index][var->Min() - original_min_[var_index]] |
+            masks_[var_index][var->Max() - original_min_[var_index]];
+        if ((~temp_mask & active_tuples_) != 0) {
+          AndActiveTuples(temp_mask);
+          if (active_tuples_ != 0) {
+            UpdateTouchedVar(var_index);
+            EnqueueDelayedDemon(demon_);
+          } else {
+            ClearTouchedVar();
+            solver()->Fail();
+          }
         }
+        break;
       }
-    } else {
-      IntVarIterator* it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
-        temp_mask |= var_mask[value - original_min];
-      }
-      // Then we apply this mask to active_tuples_.
-      if ((~temp_mask & active_tuples_) != 0) {
-        AndActiveTuples(temp_mask);
-        if (active_tuples_) {
-          UpdateTouchedVar(var_index);
-          EnqueueDelayedDemon(demon_);
+      default: {
+        // We first collect the complete set of tuples to blank out in
+        // temp_mask.
+        const int64 original_min = original_min_[var_index];
+        uint64 temp_mask = 0;
+        const uint64* const var_mask = masks_[var_index];
+        const int64 oldmin = var->OldMin();
+        const int64 oldmax = var->OldMax();
+        const int64 vmin = var->Min();
+        const int64 vmax = var->Max();
+
+        // Count the number of masks to collect to compare the deduction
+        // vs the construction of the new active bitset.
+        int count = 0;
+        for (int64 value = oldmin; value < vmin; ++value) {
+          count += var_mask[value - original_min] != 0;
+        }
+        IntVarIterator* const hole = holes_[var_index];
+        for (hole->Init(); hole->Ok(); hole->Next()) {
+          count++;
+        }
+        for (int64 value = vmax + 1; value <= oldmax; ++value) {
+          count += var_mask[value - original_min] != 0;
+        }
+
+        if (count < var->Size()) {
+          for (int64 value = var->OldMin(); value < vmin; ++value) {
+            temp_mask |= var_mask[value - original_min];
+          }
+          IntVarIterator* const hole = holes_[var_index];
+          for (hole->Init(); hole->Ok(); hole->Next()) {
+            temp_mask |= var_mask[hole->Value() - original_min];
+          }
+          for (int64 value = vmax + 1; value <= oldmax; ++value) {
+            temp_mask |= var_mask[value - original_min];
+          }
+          // Then we apply this mask to active_tuples_.
+          if (temp_mask & active_tuples_) {
+            AndActiveTuples(~temp_mask);
+            if (active_tuples_) {
+              UpdateTouchedVar(var_index);
+              EnqueueDelayedDemon(demon_);
+            } else {
+              ClearTouchedVar();
+              solver()->Fail();
+            }
+          }
         } else {
-          ClearTouchedVar();
-          solver()->Fail();
+          IntVarIterator* it = iterators_[var_index];
+          for (it->Init(); it->Ok(); it->Next()) {
+            const int64 value = it->Value();
+            temp_mask |= var_mask[value - original_min];
+          }
+          // Then we apply this mask to active_tuples_.
+          if ((~temp_mask & active_tuples_) != 0) {
+            AndActiveTuples(temp_mask);
+            if (active_tuples_) {
+              UpdateTouchedVar(var_index);
+              EnqueueDelayedDemon(demon_);
+            } else {
+              ClearTouchedVar();
+              solver()->Fail();
+            }
+          }
         }
       }
     }
