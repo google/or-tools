@@ -506,6 +506,12 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
             var->SetRange(new_min, new_max);
+            // Trim the to_remove vector.
+            int index = to_remove_.size() - 1;
+            while (index >= 0 && to_remove_[index] > new_max) {
+              index--;
+            }
+            to_remove_.resize(index + 1);
           }
           switch (to_remove_.size()) {
             case 0: { break; }
@@ -895,6 +901,12 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
             var->SetRange(new_min, new_max);
+            // Trim the to_remove vector.
+            int index = to_remove_.size() - 1;
+            while (index >= 0 && to_remove_[index] > new_max) {
+              index--;
+            }
+            to_remove_.resize(index + 1);
           }
           switch (to_remove_.size()) {
             case 0: {
