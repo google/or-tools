@@ -885,8 +885,16 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               const int64 value = it->Value();
               if ((var_mask[value - original_min] & actives) == 0) {
                 to_remove_.push_back(value);
+              } else {
+                if (new_min == kint64max) {
+                  new_min = value;
+                  // This will be covered by the SetRange.
+                  to_remove_.clear();
+                }
+                new_max = value;
               }
             }
+            var->SetRange(new_min, new_max);
           }
           switch (to_remove_.size()) {
             case 0: {
