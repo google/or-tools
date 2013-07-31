@@ -6544,31 +6544,48 @@ int IntVar::VarType() const { return UNSPECIFIED; }
 
 void IntVar::RemoveValues(const int64* const values, int size) {
   DCHECK_GE(size, 0);
-  if (size == 0) {
-    return;
-  }
-  // TODO(user) : Sort values!
-  int start_index = 0;
-  int64 new_min = Min();
-  if (values[start_index] <= new_min) {
-    while (start_index < size - 1 &&
-           values[start_index + 1] == values[start_index] + 1) {
-      new_min = values[start_index + 1] + 1;
-      start_index++;
+  switch (size) {
+    case 0: { return; }
+    case 1: {
+      RemoveValue(values[0]);
+      return;
     }
-  }
-  int end_index = size - 1;
-  int64 new_max = Max();
-  if (values[end_index] >= new_max) {
-    while (end_index > start_index + 1 &&
-           values[end_index - 1] == values[end_index] - 1) {
-      new_max = values[end_index - 1] - 1;
-      end_index--;
+    case 2: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      return;
     }
-  }
-  SetRange(new_min, new_max);
-  for (int i = start_index; i <= end_index; ++i) {
-    RemoveValue(values[i]);
+    case 3: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      RemoveValue(values[2]);
+      return;
+    }
+    default: {
+      // TODO(user) : Sort values!
+      int start_index = 0;
+      int64 new_min = Min();
+      if (values[start_index] <= new_min) {
+        while (start_index < size - 1 &&
+               values[start_index + 1] == values[start_index] + 1) {
+          new_min = values[start_index + 1] + 1;
+          start_index++;
+        }
+      }
+      int end_index = size - 1;
+      int64 new_max = Max();
+      if (values[end_index] >= new_max) {
+        while (end_index > start_index + 1 &&
+               values[end_index - 1] == values[end_index] - 1) {
+          new_max = values[end_index - 1] - 1;
+          end_index--;
+        }
+      }
+      SetRange(new_min, new_max);
+      for (int i = start_index; i <= end_index; ++i) {
+        RemoveValue(values[i]);
+      }
+    }
   }
 }
 
