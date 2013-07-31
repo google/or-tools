@@ -470,23 +470,27 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.clear();
           const int64 var_min = var->Min();
           const int64 var_max = var->Max();
-          int64 new_min = kint64max;
-          int64 new_max = kint64min;
+          int64 new_min = var_min;
+          int64 new_max = var_max;
           if (var_max - var_min + 1 == var_size) {
-            // Continous case, a simple loop is enough.
-            for (int64 value = var_min; value <= var_max; ++value) {
+            for (; new_min <= var_max; ++new_min) {
+              if (Supported(var_index, new_min - original_min)) {
+                break;
+              }
+            }
+            for (; new_max >= new_min; --new_max) {
+              if (Supported(var_index, new_max - original_min)) {
+                break;
+              }
+            }
+            var->SetRange(new_min, new_max);
+            for (int64 value = new_min + 1; value < new_max; ++value) {
               if (!Supported(var_index, value - original_min)) {
                 to_remove_.push_back(value);
-              } else {
-                if (new_min == kint64max) {
-                  new_min = value;
-                  // This will be covered by the SetRange.
-                  to_remove_.clear();
-                }
-                new_max = value;
               }
             }
           } else {
+            new_min = kint64max;  // escape value.
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
               const int64 value = it->Value();
@@ -501,8 +505,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                 new_max = value;
               }
             }
+            var->SetRange(new_min, new_max);
           }
-          var->SetRange(new_min, new_max);
           switch (to_remove_.size()) {
             case 0: { break; }
             case 1: {
@@ -855,14 +859,27 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.clear();
           const int64 var_min = var->Min();
           const int64 var_max = var->Max();
+          int64 new_min = var_min;
+          int64 new_max = var_max;
           if (var_max - var_min + 1 == var_size) {
-            // Continous case, a simple loop is enough.
-            for (int64 value = var_min; value <= var_max; ++value) {
+            for (; new_min <= var_max; ++new_min) {
+              if ((var_mask[new_min - original_min] & actives) != 0) {
+                break;
+              }
+            }
+            for (; new_max >= new_min; --new_max) {
+              if ((var_mask[new_max - original_min] & actives) != 0) {
+                break;
+              }
+            }
+            var->SetRange(new_min, new_max);
+            for (int64 value = new_min + 1; value < new_max; ++value) {
               if ((var_mask[value - original_min] & actives) == 0) {
                 to_remove_.push_back(value);
               }
             }
           } else {
+            new_min = kint64max;  // escape value.
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
               const int64 value = it->Value();
