@@ -605,7 +605,16 @@ class MinConstraint : public TreeArrayConstraint {
   void LeafChanged(int term_index) {
     IntVar* const var = vars_[term_index];
     SetRange(MaxDepth(), term_index, var->Min(), var->Max());
-    PushUp(term_index);
+    const int parent_depth = MaxDepth() - 1;
+    const int parent = Parent(term_index);
+    const int64 old_min = var->OldMin();
+    const int64 var_min = var->Min();
+    const int64 var_max = var->Max();
+    if ((old_min == Min(parent_depth, parent) && old_min != var_min) ||
+        var_max < Max(parent_depth, parent)) {
+      // Can influence the parent bounds.
+      PushUp(term_index);
+    }
   }
 
   void PushUp(int position) {
@@ -750,7 +759,16 @@ class MaxConstraint : public TreeArrayConstraint {
   void LeafChanged(int term_index) {
     IntVar* const var = vars_[term_index];
     SetRange(MaxDepth(), term_index, var->Min(), var->Max());
-    PushUp(term_index);
+    const int parent_depth = MaxDepth() - 1;
+    const int parent = Parent(term_index);
+    const int64 old_max = var->OldMax();
+    const int64 var_min = var->Min();
+    const int64 var_max = var->Max();
+    if ((old_max == Max(parent_depth, parent) && old_max != var_max) ||
+        var_min > Min(parent_depth, parent)) {
+      // Can influence the parent bounds.
+      PushUp(term_index);
+    }
   }
 
   void PushUp(int position) {
@@ -2694,7 +2712,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver,
   IntExpr* const cache = solver->Cache()->FindVarArrayExpression(
       vars, ModelCache::VAR_ARRAY_SUM);
   if (cache != NULL) {
-    return cache;
+    return solver()->MakeSum(cache, constant);
   } else {
     const string name =
         StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
@@ -2789,23 +2807,7 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }
-  int64 new_min = 0;
-  int64 new_max = 0;
-  for (int i = 0; i < size; ++i) {
-    if (new_min != kint64min) {
-      new_min = CapAdd(terms[i]->Min(), new_min);
-    }
-    if (new_max != kint64max) {
-      new_max = CapAdd(terms[i]->Max(), new_max);
-    }
-  }
-  const string name =
-      StringPrintf("ScalProd([%s], [%s])", NameVector(vars, ", ").c_str(),
-                   Int64VectorToString(coefs, ", ").c_str());
-  IntVar* const scal_prod_var = solver->MakeIntVar(new_min, new_max, name);
-  solver->AddConstraint(
-      solver->RevAlloc(new SumConstraint(solver, terms, scal_prod_var)));
-  return solver->MakeSum(scal_prod_var, constant);
+  return MakeSumArrayAux(solver, terms, constant);
 }
 
 template <class T>
