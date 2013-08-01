@@ -42,6 +42,103 @@ DEFINE_int32(cp_ac4r_table_threshold, 2048,
 
 namespace operations_research {
 namespace {
+// ----- Presolve helpers -----
+struct AffineTransformation {  // y == a*x + b.
+  AffineTransformation() : a(1), b(0) {}
+  AffineTransformation(int64 aa, int64 bb) : a(aa), b(bb) { CHECK_NE(a, 0); }
+  int64 a;
+  int64 b;
+
+  bool Identity() const { return a == 1 && b == 0; }
+
+  bool Reverse(int64 value, int64* const reverse) const {
+    const int64 temp = value - b;
+    if (temp % a == 0) {
+      *reverse = temp / a;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  int64 Forward(int64 value) {
+    return value * a + b;
+  }
+
+  void Clear() {
+    a = 1;
+    b = 0;
+  }
+
+  string DebugString() const {
+    return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)",
+                        a, b);
+  }
+};
+
+class VarLinearizer : public ModelParser {
+ public:
+  VarLinearizer() : target_var_(nullptr), transformation_(nullptr) {}
+  virtual ~VarLinearizer() {}
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation, int64 value,
+                                    const IntVar* const delegate) {
+    if (operation == ModelVisitor::kSumOperation) {
+      AddConstant(value);
+      delegate->Accept(this);
+    } else if (operation == ModelVisitor::kDifferenceOperation) {
+      AddConstant(value);
+      PushMultiplier(-1);
+      delegate->Accept(this);
+      PopMultiplier();
+    } else if (operation == ModelVisitor::kProductOperation) {
+      PushMultiplier(value);
+      delegate->Accept(this);
+      PopMultiplier();
+    } else if (operation == ModelVisitor::kTraceOperation) {
+      delegate->Accept(this);
+    }
+  }
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate) {
+    *target_var_ = const_cast<IntVar*>(variable);
+    transformation_->a = multipliers_.back();
+  }
+
+  void Visit(const IntVar* const var, IntVar** const target_var,
+             AffineTransformation* const transformation) {
+    target_var_ = target_var;
+    transformation_ = transformation;
+    transformation->Clear();
+    PushMultiplier(1);
+    var->Accept(this);
+    PopMultiplier();
+    CHECK(multipliers_.empty());
+  }
+
+  virtual string DebugString() const { return "VarLinearizer"; }
+
+ private:
+  void AddConstant(int64 constant) {
+    transformation_->b += constant * multipliers_.back();
+  }
+
+  void PushMultiplier(int64 multiplier) {
+    if (multipliers_.empty()) {
+      multipliers_.push_back(multiplier);
+    } else {
+      multipliers_.push_back(multiplier * multipliers_.back());
+    }
+  }
+
+  void PopMultiplier() { multipliers_.pop_back(); }
+
+  std::vector<int64> multipliers_;
+  IntVar** target_var_;
+  AffineTransformation* transformation_;
+};
 
 // TODO(user): Implement ConstIntMatrix to share/manage tuple sets.
 
@@ -65,14 +162,49 @@ class BasePositiveTableConstraint : public Constraint {
   BasePositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                               const IntTupleSet& tuples)
       : Constraint(s),
-        tuple_count_(tuples.NumTuples()),
+        tuple_count_(0),
         arity_(vars.size()),
         vars_(new IntVar* [arity_]),
-        tuples_(tuples),
+        tuples_(arity_),
         holes_(new IntVarIterator* [arity_]),
         iterators_(new IntVarIterator* [arity_]) {
-    // Copy vars.
-    memcpy(vars_.get(), vars.data(), arity_ * sizeof(*vars.data()));
+    // This constraint is intensive on domain and holes iterations on
+    // variables.  Thus we can visit all variables to get to the
+    // boolean or domain int var beneath it. Then we can reverse
+    // process the tupleset to move in parallel to the simplifications
+    // of the variables. At the same time, we remove all tuples
+    // incompatible with the initial domains of the variables.
+    std::vector<AffineTransformation> transformations(arity_);
+    bool all_identities = true;
+    VarLinearizer linearizer;
+    for (int i = 0; i < arity_; ++i) {
+      linearizer.Visit(vars[i], &vars_[i], &transformations[i]);
+      if (!transformations[i].Identity()) {
+        all_identities = false;
+      }
+    }
+    std::vector<int64> one_tuple;
+    for (int t = 0; t < tuples.NumTuples(); ++t) {
+      one_tuple.clear();
+      one_tuple.resize(arity_);
+      bool skip = false;
+      for (int i = 0; i < arity_; ++i) {
+        int64 reverse = 0;
+        if (transformations[i].Reverse(tuples.Value(t, i), &reverse) &&
+            vars_[i]->Contains(reverse)) {
+          one_tuple[i] = reverse;
+        } else {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) {
+        continue;
+      } else {
+        tuples_.Insert(one_tuple);
+      }
+    }
+    tuple_count_ = tuples_.NumTuples();
     // Create hole iterators
     for (int i = 0; i < arity_; ++i) {
       holes_[i] = vars_[i]->MakeHoleIterator(true);
@@ -96,11 +228,11 @@ class BasePositiveTableConstraint : public Constraint {
   }
 
  protected:
-  const int tuple_count_;
+  int tuple_count_;
   const int arity_;
   const scoped_array<IntVar*> vars_;
   // All allowed tuples.
-  const IntTupleSet tuples_;
+  IntTupleSet tuples_;
   scoped_array<IntVarIterator*> holes_;
   scoped_array<IntVarIterator*> iterators_;
   std::vector<int64> to_remove_;
@@ -542,6 +674,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     bool changed = false;
     const int64 omin = original_min_[var_index];
     const int64 var_size = var->Size();
+
     if (var_size <= 2) {
       SetTempMask(var_index, var->Min() - omin);
       if (var_size == 2) {
@@ -903,7 +1036,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
               // The iterator is not safe w.r.t. deletion. Thus we
-              // postpone all value removal.
+              // postpone all value removals.
               const int64 value = it->Value();
               if ((var_mask[value - original_min] & actives) == 0) {
                 if (min_set) {
@@ -929,8 +1062,17 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
             to_remove_.resize(index + 1);
           }
-          if (!to_remove_.empty()) {
-            var->RemoveValues(to_remove_);
+          switch (to_remove_.size()) {
+            case 0: {
+              break;
+            }
+            case 1: {
+              var->RemoveValue(to_remove_.back());
+              break;
+            }
+            default: {
+              var->RemoveValues(to_remove_);
+            }
           }
         }
       }
@@ -944,18 +1086,18 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     IntVar* const var = vars_[var_index];
     const int64 original_min = original_min_[var_index];
     const int64 var_size = var->Size();
-    uint64 mask = 0;
     switch (var_size) {
       case 1: {
-        mask = masks_[var_index][var->Min() - original_min];
+        ApplyMask(var_index, masks_[var_index][var->Min() - original_min]);
         break;
       }
       case 2: {
-        mask = (masks_[var_index][var->Min() - original_min] |
-                masks_[var_index][var->Max() - original_min]);
+        ApplyMask(var_index, masks_[var_index][var->Min() - original_min] |
+                  masks_[var_index][var->Max() - original_min]);
         break;
       }
       default: {
+        uint64 mask = 0;
         // We first collect the complete set of tuples to blank out in
         // temp_mask.
         const uint64* const var_mask = masks_[var_index];
@@ -980,9 +1122,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           for (int64 value = old_min; value < var_min; ++value) {
             mask |= var_mask[value - original_min];
           }
-          IntVarIterator* const hole = holes_[var_index];
-          for (hole->Init(); hole->Ok(); hole->Next()) {
-            mask |= var_mask[hole->Value() - original_min];
+          if (count != 0) {
+            IntVarIterator* const hole = holes_[var_index];
+            for (hole->Init(); hole->Ok(); hole->Next()) {
+              mask |= var_mask[hole->Value() - original_min];
+            }
           }
           for (int64 value = var_max + 1; value <= old_max; ++value) {
             mask |= var_mask[value - original_min];
@@ -1002,9 +1146,14 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
           }
         }
+        ApplyMask(var_index, mask);
+        break;
       }
     }
-    // Then we apply this mask to active_tuples_.
+  }
+
+ private:
+  void ApplyMask(int var_index, uint64 mask) {
     if ((~mask & active_tuples_) != 0) {
       AndActiveTuples(mask);
       if (active_tuples_) {
@@ -1017,7 +1166,6 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
- private:
   void UpdateTouchedVar(int var_index) {
     if (touched_var_ == -1 || touched_var_ == var_index) {
       touched_var_ = var_index;
