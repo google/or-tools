@@ -631,6 +631,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             // value as this can easily and more rapidly be taken care
             // of by a SetRange() call.
             bool min_set = false;
+            int last_index = 0;
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
               const int64 value = it->Value();
@@ -644,6 +645,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                   min_set = true;
                 }
                 new_max = value;
+                last_index = to_remove_.size();
               }
             }
             if (min_set) {
@@ -651,12 +653,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             } else {
               solver()->Fail();
             }
-            // Trim the to_remove vector.
-            int index = to_remove_.size() - 1;
-            while (index >= 0 && to_remove_[index] > new_max) {
-              index--;
-            }
-            to_remove_.resize(index + 1);
+            to_remove_.resize(last_index);
           }
           if (!to_remove_.empty()) {
             var->RemoveValues(to_remove_);
@@ -991,20 +988,12 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               (var_mask[var_min - original_min] & actives) != 0;
           const bool max_support =
               (var_mask[var_max - original_min] & actives) != 0;
-          switch (min_support + 2 * max_support) {
-            case 0: {
-              solver()->Fail();
-              break;
-            }
-            case 1: {
-              var->SetValue(var_min);
-              break;
-            }
-            case 2: {
-              var->SetValue(var_max);
-              break;
-            }
-            default: {}
+          if (!min_support && !max_support) {
+            solver()->Fail();
+          } else if (!min_support) {
+            var->SetValue(var_max);
+          } else if (!max_support) {
+            var->SetValue(var_min);
           }
           break;
         }
@@ -1034,6 +1023,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
           } else {
             bool min_set = false;
+            int last_size = 0;
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
               // The iterator is not safe w.r.t. deletion. Thus we
@@ -1049,6 +1039,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
                   min_set = true;
                 }
                 new_max = value;
+                last_size = to_remove_.size();
               }
             }
             if (min_set) {
@@ -1056,12 +1047,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             } else {
               solver()->Fail();
             }
-            // Trim the to_remove vector from the end.
-            int index = to_remove_.size() - 1;
-            while (index >= 0 && to_remove_[index] > new_max) {
-              index--;
-            }
-            to_remove_.resize(index + 1);
+            to_remove_.resize(last_size);
           }
           switch (to_remove_.size()) {
             case 0: {
@@ -1090,12 +1076,12 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     switch (var_size) {
       case 1: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min]);
-        break;
+        return;
       }
       case 2: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min] |
                   masks_[var_index][var->Max() - original_min]);
-        break;
+        return;
       }
       default: {
         uint64 mask = 0;
@@ -1148,7 +1134,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           }
         }
         ApplyMask(var_index, mask);
-        break;
+        return;
       }
     }
   }
@@ -1156,34 +1142,24 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
  private:
   void ApplyMask(int var_index, uint64 mask) {
     if ((~mask & active_tuples_) != 0) {
-      AndActiveTuples(mask);
+      const uint64 current_stamp = solver()->stamp();
+      if (stamp_ < current_stamp) {
+        stamp_ = current_stamp;
+        solver()->SaveValue(&active_tuples_);
+      }
+      active_tuples_ &= mask;
       if (active_tuples_) {
-        UpdateTouchedVar(var_index);
+        if (touched_var_ == -1 || touched_var_ == var_index) {
+          touched_var_ = var_index;
+        } else {
+          touched_var_ = -2;  // more than one var.
+        }
         EnqueueDelayedDemon(demon_);
       } else {
-        ClearTouchedVar();
+        touched_var_ = -1;
         solver()->Fail();
       }
     }
-  }
-
-  void UpdateTouchedVar(int var_index) {
-    if (touched_var_ == -1 || touched_var_ == var_index) {
-      touched_var_ = var_index;
-    } else {
-      touched_var_ = -2;  // more than one var.
-    }
-  }
-
-  void ClearTouchedVar() { touched_var_ = -1; }
-
-  void AndActiveTuples(uint64 mask) {
-    const uint64 current_stamp = solver()->stamp();
-    if (stamp_ < current_stamp) {
-      stamp_ = current_stamp;
-      solver()->SaveValue(&active_tuples_);
-    }
-    active_tuples_ &= mask;
   }
 
   // Bitset of active tuples.
