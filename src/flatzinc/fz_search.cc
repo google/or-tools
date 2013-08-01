@@ -846,10 +846,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       if (method_ == SAT) {
         breaked = parallel_support->NumSolutions() >= p.num_solutions;
       } else {
-        breaked = (p.num_solutions != 1 &&
-                   parallel_support->NumSolutions() >= p.num_solutions) ||
-            (p.all_solutions && p.num_solutions == 1 &&
-             parallel_support->NumSolutions() >= 1);
+        breaked = (p.num_solutions != 1 && num_solutions >= p.num_solutions) ||
+            (p.all_solutions && p.num_solutions == 1 && num_solutions >= 1);
       }
     }
     if (parallel_support->Interrupted()) {
@@ -889,11 +887,11 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
                                      FlatZincMemoryUsage().c_str()));
     const int64 best = parallel_support->BestSolution();
     if (objective_ != NULL) {
-      if (method_ == MIN && solver_->solutions() > 0) {
+      if (method_ == MIN && num_solutions > 0) {
         final_output.append(
             StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
                          best, (proven ? " (proven)" : "")));
-      } else if (solver_->solutions() > 0) {
+      } else if (num_solutions > 0) {
         final_output.append(
             StringPrintf("%%%%  max objective:        %" GG_LL_FORMAT "d%s\n",
                          best, (proven ? " (proven)" : "")));
