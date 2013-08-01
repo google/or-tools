@@ -1137,6 +1137,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
  private:
   void ApplyMask(int var_index, uint64 mask) {
     if ((~mask & active_tuples_) != 0) {
+      // Check if we need to save the active_tuples in this node.
       const uint64 current_stamp = solver()->stamp();
       if (stamp_ < current_stamp) {
         stamp_ = current_stamp;
@@ -1144,6 +1145,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       active_tuples_ &= mask;
       if (active_tuples_) {
+        // Maintain touched_var_.
         if (touched_var_ == -1 || touched_var_ == var_index) {
           touched_var_ = var_index;
         } else {
@@ -1151,6 +1153,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
         EnqueueDelayedDemon(demon_);
       } else {
+        // Clean it before failing.
         touched_var_ = -1;
         solver()->Fail();
       }
