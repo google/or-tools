@@ -2677,6 +2677,42 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
   return solver->MakeLessOrEqual(solver->MakeSum(terms), upper_bound);
 }
 
+IntExpr* MakeSumArrayAux(Solver* const solver,
+                         const std::vector<IntVar*>& vars, int64 constant) {
+  const int size = vars.size();
+  DCHECK_GT(size, 2);
+  int64 new_min = 0;
+  int64 new_max = 0;
+  for (int i = 0; i < size; ++i) {
+    if (new_min != kint64min) {
+      new_min = CapAdd(vars[i]->Min(), new_min);
+    }
+    if (new_max != kint64max) {
+      new_max = CapAdd(vars[i]->Max(), new_max);
+    }
+  }
+  IntExpr* const cache = solver->Cache()->FindVarArrayExpression(
+      vars, ModelCache::VAR_ARRAY_SUM);
+  if (cache != NULL) {
+    return cache;
+  } else {
+    const string name =
+        StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+    IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
+    if (AreAllBooleans(vars)) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumBooleanEqualToVar(
+              solver, vars.data(), vars.size(), sum_var)));
+    } else {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
+    }
+    solver->Cache()->InsertVarArrayExpression(sum_var, vars,
+                                              ModelCache::VAR_ARRAY_SUM);
+    return solver->MakeSum(sum_var, constant);
+  }
+}
+
 IntExpr* MakeSumAux(Solver* const solver, const std::vector<IntVar*> vars,
                     int64 constant) {
   const int size = vars.size();
@@ -2687,22 +2723,7 @@ IntExpr* MakeSumAux(Solver* const solver, const std::vector<IntVar*> vars,
   } else if (size == 2) {
     return solver->MakeSum(solver->MakeSum(vars[0], vars[1]), constant);
   } else {
-    int64 new_min = 0;
-    int64 new_max = 0;
-    for (int i = 0; i < size; ++i) {
-      if (new_min != kint64min) {
-        new_min = CapAdd(vars[i]->Min(), new_min);
-      }
-      if (new_max != kint64max) {
-        new_max = CapAdd(vars[i]->Max(), new_max);
-      }
-    }
-    const string name =
-        StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
-    IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
-    solver->AddConstraint(
-        solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
-    return solver->MakeSum(sum_var, constant);
+    return MakeSumArrayAux(solver, vars, constant);
   }
 }
 
