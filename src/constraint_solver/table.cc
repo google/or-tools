@@ -1084,7 +1084,6 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         return;
       }
       default: {
-        uint64 mask = 0;
         // We first collect the complete set of tuples to blank out in
         // temp_mask.
         const uint64* const var_mask = masks_[var_index];
@@ -1092,48 +1091,44 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         const int64 old_max = var->OldMax();
         const int64 var_min = var->Min();
         const int64 var_max = var->Max();
+        const bool contiguous = var_size == var_max - var_min + 1;
 
         // Count the number of masks to collect to compare the deduction
         // vs the construction of the new active bitset.
         // TODO(user): Implement HolesSize() on IntVar* and use it
         // to remove this code and the var_sizes in the non_small
         // version.
-        int count = 0;
+        uint64 hole_mask = 0;
         IntVarIterator* const hole = holes_[var_index];
         for (hole->Init(); hole->Ok(); hole->Next()) {
-          count++;
+          hole_mask |= var_mask[hole->Value() - original_min];
         }
-        const int64 number_of_operations =
-            count + var_min - old_min + old_max - var_max;
-        if (number_of_operations < var_size) {
+        const int64 hole_operations =
+            var_min - old_min + old_max - var_max;
+        const int64 domain_operations = contiguous ? var_size : 4 * var_size;
+        if (hole_operations < domain_operations) {
           for (int64 value = old_min; value < var_min; ++value) {
-            mask |= var_mask[value - original_min];
-          }
-          if (count != 0) {
-            IntVarIterator* const hole = holes_[var_index];
-            for (hole->Init(); hole->Ok(); hole->Next()) {
-              mask |= var_mask[hole->Value() - original_min];
-            }
+            hole_mask |= var_mask[value - original_min];
           }
           for (int64 value = var_max + 1; value <= old_max; ++value) {
-            mask |= var_mask[value - original_min];
+            hole_mask |= var_mask[value - original_min];
           }
           // We reverse the mask as this was negative information.
-          mask = ~mask;
+          ApplyMask(var_index, ~hole_mask);
         } else {
-          if (var_max - var_min + 1 == var_size) {  // Contiguous.
+          uint64 domain_mask = 0;
+          if (contiguous) {
             for (int64 value = var_min; value <= var_max; ++value) {
-              mask |= var_mask[value - original_min];
+              domain_mask |= var_mask[value - original_min];
             }
           } else {
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
-              const int64 value = it->Value();
-              mask |= var_mask[value - original_min];
+              domain_mask |= var_mask[it->Value() - original_min];
             }
           }
+          ApplyMask(var_index, domain_mask);
         }
-        ApplyMask(var_index, mask);
         return;
       }
     }
