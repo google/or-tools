@@ -82,11 +82,11 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 -?0o[0-7]+        {
     yylval->iValue = atoi64(yytext); return FZ_INT_LIT;
   }
--?[0-9]+\.[0-9]+  { yylval->dValue = strtod(yytext,NULL);
+-?[0-9]+\.[0-9]+  { yylval->dValue = strtod(yytext,nullptr);
                     return FZ_FLOAT_LIT; }
--?[0-9]+\.[0-9]+[Ee][+-]?[0-9]+  { yylval->dValue = strtod(yytext,NULL);
+-?[0-9]+\.[0-9]+[Ee][+-]?[0-9]+  { yylval->dValue = strtod(yytext,nullptr);
                                    return FZ_FLOAT_LIT; }
--?[0-9]+[Ee][+-]?[0-9]+  { yylval->dValue = strtod(yytext,NULL);
+-?[0-9]+[Ee][+-]?[0-9]+  { yylval->dValue = strtod(yytext,nullptr);
                            return FZ_FLOAT_LIT; }
 [=:;{}(),\[\]\.]    { return *yytext; }
 \.\.              { return FZ_DOTDOT; }

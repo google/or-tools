@@ -186,9 +186,9 @@ class FlatZincModel {
   void CheckIntegerVariableIsNull(AstNode* const node) const {
     CHECK_NOTNULL(node);
     if (node->isIntVar()) {
-      CHECK(integer_variables_[node->getIntVar()] == NULL);
+      CHECK(integer_variables_[node->getIntVar()] == nullptr);
     } else if (node->isBoolVar()) {
-      CHECK(boolean_variables_[node->getBoolVar()] == NULL);
+      CHECK(boolean_variables_[node->getBoolVar()] == nullptr);
     } else {
       LOG(FATAL) << "Wrong CheckIntegerVariableIsNull with "
                  << node->DebugString();

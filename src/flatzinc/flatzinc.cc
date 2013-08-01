@@ -51,12 +51,12 @@ SatPropagator* MakeSatPropagator(Solver* const solver);
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
       bool_var_count(-1),
-      objective_(NULL),
+      objective_(nullptr),
       objective_variable_(-1),
-      solve_annotations_(NULL),
-      output_(NULL),
+      solve_annotations_(nullptr),
+      output_(nullptr),
       parsed_ok_(true),
-      sat_(NULL) {}
+      sat_(nullptr) {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
@@ -74,13 +74,13 @@ void FlatZincModel::InitSolver() {
     sat_ = MakeSatPropagator(solver_.get());
     solver_->AddConstraint(reinterpret_cast<Constraint*>(sat_));
   } else {
-    sat_ = NULL;
+    sat_ = nullptr;
   }
 }
 
 void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
                               bool active) {
-  IntVar* var = NULL;
+  IntVar* var = nullptr;
   if (vs->alias) {
     var = integer_variables_[vs->i]->Var();
   } else if (vs->assigned) {
@@ -111,10 +111,10 @@ void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
   integer_variables_[int_var_count++] = var;
 }
 
-void FlatZincModel::SkipIntVar() { integer_variables_[int_var_count++] = NULL; }
+void FlatZincModel::SkipIntVar() { integer_variables_[int_var_count++] = nullptr; }
 
 void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
-  IntVar* var = NULL;
+  IntVar* var = nullptr;
   if (vs->alias) {
     var = boolean_variables_[vs->i]->Var();
   } else if (vs->assigned) {
@@ -135,7 +135,7 @@ void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
 }
 
 void FlatZincModel::SkipBoolVar() {
-  boolean_variables_[bool_var_count++] = NULL;
+  boolean_variables_[bool_var_count++] = nullptr;
 }
 
 void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
@@ -307,7 +307,7 @@ IntExpr* FlatZincModel::GetIntExpr(AstNode* const node) {
     return solver_->MakeIntConst(node->getBool());
   } else {
     LOG(FATAL) << "Cannot build an IntVar from " << node->DebugString();
-    return NULL;
+    return nullptr;
   }
 }
 }  // namespace operations_research

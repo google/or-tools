@@ -43,14 +43,14 @@ DECLARE_bool(logging);
 namespace operations_research {
 // ----- Misc -----
 bool HasDomainAnnotation(AstNode* const annotations) {
-  if (annotations != NULL) {
+  if (annotations != nullptr) {
     return annotations->hasAtom("domain");
   }
   return false;
 }
 
 bool HasDefineAnnotation(AstNode* const annotations) {
-  if (annotations != NULL) {
+  if (annotations != nullptr) {
     if (annotations->isArray()) {
       AstArray* const ann_array = annotations->getArray();
       if (ann_array->a[0]->isCall("defines_var")) {
@@ -108,7 +108,7 @@ AstArray* ParserState::Output(void) {
       AstArray* const oa = output_[i].second->getArray();
       for (unsigned int j = 0; j < oa->a.size(); j++) {
         a->a.push_back(oa->a[j]);
-        oa->a[j] = NULL;
+        oa->a[j] = nullptr;
       }
       delete output_[i].second;
     } else {
@@ -120,17 +120,17 @@ AstArray* ParserState::Output(void) {
 }
 
 AstNode* ParserState::FindTarget(AstNode* const annotations) const {
-  if (annotations != NULL) {
+  if (annotations != nullptr) {
     if (annotations->isArray()) {
       AstArray* const ann_array = annotations->getArray();
-      if (ann_array->a[0]->isCall("defines_var")) {
+      if (!ann_array->a.empty() && ann_array->a[0]->isCall("defines_var")) {
         AstCall* const call = ann_array->a[0]->getCall();
         AstNode* const args = call->args;
         return Copy(args);
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void ParserState::CollectRequired(AstArray* const args,
@@ -142,7 +142,7 @@ void ParserState::CollectRequired(AstArray* const args,
       CollectRequired(node->getArray(), candidates, require);
     } else {
       AstNode* const copy = Copy(node);
-      if (copy != NULL && ContainsKey(candidates, copy)) {
+      if (copy != nullptr && ContainsKey(candidates, copy)) {
         require->insert(copy);
       }
     }
@@ -160,7 +160,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       id == "int_max" || id == "int_min" || id == "int_mod" || id == "int_eq") {
     // Defines an int var.
     AstNode* const define = FindTarget(spec->annotations());
-    if (define != NULL) {
+    if (define != nullptr) {
       //      CHECK(IsIntroduced(define));
       candidates->insert(define);
       VLOG(3) << id << " -> insert " << define->DebugString();
@@ -170,7 +170,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       VLOG(3) << "Not marking " << spec->DebugString();
     } else {
       AstNode* const define = FindTarget(spec->annotations());
-      if (define != NULL) {
+      if (define != nullptr) {
         candidates->insert(define);
         VLOG(3) << id << " -> insert " << define->DebugString();
       }
@@ -190,7 +190,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
              (id == "bool_ge_reif" && !FLAGS_use_sat) || id == "bool_not") {
     // Defines a bool var.
     AstNode* const bool_define = FindTarget(spec->annotations());
-    if (bool_define != NULL) {
+    if (bool_define != nullptr) {
       CHECK(IsIntroduced(bool_define));
       candidates->insert(bool_define);
       VLOG(3) << id << " -> insert " << bool_define->DebugString();
@@ -204,14 +204,14 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
 void ParserState::ComputeDependencies(
     const NodeSet& candidates, CtSpec* const spec) const {
   AstNode* const define =
-      spec->DefinedArg() == NULL ? FindTarget(spec->annotations())
+      spec->DefinedArg() == nullptr ? FindTarget(spec->annotations())
                                  : spec->DefinedArg();
   if (ContainsKey(candidates, define)) {
     spec->SetDefinedArg(define);
   }
   NodeSet* const requires = spec->mutable_require_map();
   CollectRequired(spec->Args(), candidates, requires);
-  if (define != NULL) {
+  if (define != nullptr) {
     requires->erase(define);
   }
 }
@@ -241,15 +241,15 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
     MarkAllVariables(spec->Arg(2), computed);
   }
   if (id == "maximum_int" && spec->Arg(0)->isIntVar() &&
-      spec->DefinedArg() == NULL) {
+      spec->DefinedArg() == nullptr) {
     computed->insert(Copy(spec->Arg(0)));
   }
   if (id == "minimum_int" && spec->Arg(0)->isIntVar() &&
-      spec->DefinedArg() == NULL) {
+      spec->DefinedArg() == nullptr) {
     computed->insert(Copy(spec->Arg(0)));
   }
 
-  if (id == "int_lin_eq" && spec->DefinedArg() == NULL) {
+  if (id == "int_lin_eq" && spec->DefinedArg() == nullptr) {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
     const int size = array_coefficients->a.size();
     bool todo = true;
@@ -322,6 +322,61 @@ void ParserState::Sanitize(CtSpec* const spec) {
   }
 }
 
+void ParserState::CollectIgnored(NodeSet* const ignored) {
+  if (!FLAGS_use_sat) {
+    return;
+  }
+  for (int i = 0; i < constraints_.size(); ++i) {
+    CtSpec* const spec = constraints_[i];
+    const string& id = spec->Id();
+    if (id == "array_bool_and" || id == "array_bool_or" ||
+        id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
+        id == "bool_ge_reif") {
+      AstNode* const bool_define = FindTarget(spec->annotations());
+      if (bool_define != nullptr) {
+        VLOG(2) << "Remove target from " << spec->DebugString();
+        ignored->insert(bool_define);
+        spec->RemoveDefines();
+      }
+    }
+  }
+}
+
+void ParserState::ReuseIgnored(NodeSet* const ignored) {
+  if (ignored->empty()) {
+    return;
+  }
+  for (int i = 0; i < constraints_.size(); ++i) {
+    CtSpec* const spec = constraints_[i];
+    const string& id = spec->Id();
+    AstNode* const bool_define = FindTarget(spec->annotations());
+    AstNode* const last_arg = Copy(spec->LastArg());
+    if (bool_define == nullptr && last_arg != nullptr &&
+        ContainsKey(*ignored, last_arg) &&(id == "int_lin_eq_reif" ||
+                                           id == "int_lin_ne_reif" ||
+                                           id == "int_lin_ge_reif" ||
+                                           id == "int_lin_le_reif" ||
+                                           id == "int_lin_gt_reif" ||
+                                           id == "int_lin_lt_reif" ||
+                                           id == "int_eq_reif" ||
+                                           id == "int_ne_reif" ||
+                                           id == "int_le_reif" ||
+                                           id == "int_ge_reif" ||
+                                           id == "int_lt_reif" ||
+                                           id == "int_gt_reif")) {
+      AstCall* const call =
+          new AstCall("defines_var", new AstBoolVar(last_arg->getBoolVar()));
+      spec->AddAnnotation(call);
+      VLOG(2) << "Reusing " << last_arg->DebugString() << " in "
+              << spec->DebugString();
+      ignored->erase(last_arg);
+      if (ignored->empty()) {
+        return;
+      }
+    }
+  }
+}
+
 void ParserState::Presolve() {
   // Sanity.
   VLOG(2) << "Sanitize";
@@ -343,7 +398,7 @@ void ParserState::Presolve() {
   VLOG(2) << "Search for orphans";
   for (int i = 0; i < constraints_.size(); ++i) {
     AstNode* const target = FindTarget(constraints_[i]->annotations());
-    if (target != NULL) {
+    if (target != nullptr) {
       VLOG(2) << "  - presolve:  mark " << target->DebugString()
               << " as defined";
       targets_.insert(target);
@@ -357,6 +412,10 @@ void ParserState::Presolve() {
       VLOG(2) << "  - presolve:  mark " << var->DebugString() << " as orphan";
     }
   }
+  // Collect booleans that will not be used as defined and try to reuse them.
+  NodeSet ignored;
+  CollectIgnored(&ignored);
+  ReuseIgnored(&ignored);
 
   // Collect aliases.
   VLOG(2) << "Collect aliases";
@@ -450,7 +509,7 @@ void ParserState::Presolve() {
       args->a[0] = new AstBoolVar(spec->i);
       args->a[1] = new AstBoolVar(i);
       CtSpec* const alias_ct =
-          new CtSpec(constraints_.size(), "bool2bool", args, NULL);
+          new CtSpec(constraints_.size(), "bool2bool", args, nullptr);
       alias_ct->SetDefinedArg(BoolCopy(i));
       constraints_.push_back(alias_ct);
     }
@@ -537,7 +596,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     ComputeDependencies(*candidates, spec);
-    if (spec->DefinedArg() != NULL || !spec->require_map().empty()) {
+    if (spec->DefinedArg() != nullptr || !spec->require_map().empty()) {
       VLOG(3) << spec->DebugString();
     }
   }
@@ -552,9 +611,9 @@ void ParserState::SortConstraints(NodeSet* const candidates,
     CtSpec* const spec = constraints_[i];
     if (spec->Nullified()) {
       nullified++;
-    } else if (spec->DefinedArg() != NULL && spec->require_map().empty()) {
+    } else if (spec->DefinedArg() != nullptr && spec->require_map().empty()) {
       defines_only.push_back(spec);
-    } else if (spec->DefinedArg() == NULL) {
+    } else if (spec->DefinedArg() == nullptr) {
       no_defines.push_back(spec);
     } else {
       defines_and_require.push_back(spec);
@@ -610,7 +669,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
       if (ok) {
         inserted.push_back(spec);
         constraints_[index++] = spec;
-        if (spec->DefinedArg() != NULL) {
+        if (spec->DefinedArg() != nullptr) {
           defined.insert(Copy(spec->DefinedArg()));
           VLOG(3) << "inserted.push_back " << spec->DebugString();
           VLOG(3) << "defined.insert " << spec->DefinedArg()->DebugString();
@@ -620,7 +679,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
     if (inserted.empty()) {
       // Recovery mode. We have a cycle!.  Let's find the one
       // with the smallest number of unsatisfied dependencies.
-      CtSpec* to_correct = NULL;
+      CtSpec* to_correct = nullptr;
       int best_unsatisfied = kint32max;
       for (ConstIter<ConstraintSet> it(to_insert); !it.at_end(); ++it) {
         CtSpec* const spec = *it;
@@ -780,7 +839,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
   for (int i = 0; i < int_variables_.size(); ++i) {
     if (ContainsKey(int_aliases_, i)) {
       IntExpr* const expr = model_->GetIntExpr(IntCopy(int_aliases_[i]));
-      CHECK(expr != NULL);
+      CHECK(expr != nullptr);
       model_->CheckIntegerVariableIsNull(IntCopy(i));
       model_->SetIntegerExpression(IntCopy(i), expr);
       VLOG(2) << "  - setting x(" << i << ") to be " << expr->DebugString();
@@ -856,7 +915,7 @@ AstNode* ParserState::VarRefArg(string id, bool annotation) {
 }
 
 void ParserState::AddIntVarDomainConstraint(int var_id, AstSetLit* const dom) {
-  if (dom != NULL) {
+  if (dom != nullptr) {
     VLOG(2) << "  - adding int var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     int_domain_constraints_.push_back(
@@ -865,7 +924,7 @@ void ParserState::AddIntVarDomainConstraint(int var_id, AstSetLit* const dom) {
 }
 
 void ParserState::AddBoolVarDomainConstraint(int var_id, AstSetLit* const dom) {
-  if (dom != NULL) {
+  if (dom != nullptr) {
     VLOG(2) << "  - adding bool var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     int_domain_constraints_.push_back(
@@ -874,7 +933,7 @@ void ParserState::AddBoolVarDomainConstraint(int var_id, AstSetLit* const dom) {
 }
 
 void ParserState::AddSetVarDomainConstraint(int var_id, AstSetLit* const dom) {
-  if (dom != NULL) {
+  if (dom != nullptr) {
     VLOG(2) << "  - adding set var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     set_domain_constraints_.push_back(std::make_pair(var_id, dom));
@@ -1001,7 +1060,7 @@ bool ParserState::DiscoverAliases(CtSpec* const spec) {
       IntVarSpec* const spec1 = IntSpec(var1);
       MergeIntDomain(spec0, spec1);
       MergeIntDomain(spec1, spec0);
-      if (spec->annotations() == NULL &&
+      if (spec->annotations() == nullptr &&
           (ContainsKey(orphans_, Copy(spec->Arg(0))) ||
            ContainsKey(orphans_, Copy(spec->Arg(1))))) {
         if (ContainsKey(orphans_, var0)) {
@@ -1023,7 +1082,7 @@ bool ParserState::DiscoverAliases(CtSpec* const spec) {
           targets_.insert(var1);
           return true;
         }
-      } else if (spec->annotations() == NULL &&
+      } else if (spec->annotations() == nullptr &&
                  (!ContainsKey(targets_, Copy(spec->Arg(0))) ||
                   !ContainsKey(targets_, Copy(spec->Arg(1))))) {
         if (!ContainsKey(targets_, var0)) {
@@ -1726,7 +1785,7 @@ void ParserState::RegroupAux(const string& ct_id, int start_index,
     }
     max_args.push_back(new AstArray(max_array));
     AstArray* const args = new AstArray(max_args);
-    constraints_[start_index] = new CtSpec(start_index, ct_id, args, NULL);
+    constraints_[start_index] = new CtSpec(start_index, ct_id, args, nullptr);
     VLOG(2) << "    + created " << constraints_[start_index]->DebugString();
   }
 }
@@ -1744,7 +1803,7 @@ void ParserState::Regroup(const string& ct_id, const std::vector<int>& ct_indice
     }
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isIntVar() &&
         spec->Arg(0)->getIntVar() == spec->Arg(1)->getIntVar() &&
-        FindTarget(spec->annotations()) != NULL &&
+        FindTarget(spec->annotations()) != nullptr &&
         IsIntroduced(FindTarget(spec->annotations()))) {
       if (start_index != -1) {
         RegroupAux(ct_id, start_index, end_index, carry_over, variables);
@@ -1755,7 +1814,7 @@ void ParserState::Regroup(const string& ct_id, const std::vector<int>& ct_indice
       carry_over = spec->Arg(2)->getIntVar();
       end_index = constraint_index;
     } else if (spec->Arg(1)->isIntVar() && spec->Arg(1)->getIntVar() ==
-               carry_over && FindTarget(spec->annotations()) != NULL &&
+               carry_over && FindTarget(spec->annotations()) != nullptr &&
                IsIntroduced(FindTarget(spec->annotations()))) {
       variables.push_back(spec->Arg(0)->getIntVar());
       carry_over = spec->Arg(2)->getIntVar();
@@ -1887,7 +1946,7 @@ bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
 }
 
 AstNode* ArrayOutput(AstCall* ann) {
-  AstArray* a = NULL;
+  AstArray* a = nullptr;
 
   if (ann->args->isArray()) {
     a = ann->args->getArray();
@@ -1918,7 +1977,7 @@ AstNode* ArrayOutput(AstCall* ann) {
   }
 
   if (!ann->args->isArray()) {
-    a->a[0] = NULL;
+    a->a[0] = nullptr;
     delete a;
   }
   return new AstString(out);

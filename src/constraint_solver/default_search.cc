@@ -955,7 +955,7 @@ class RunHeuristicsAsDives : public Decision {
 
     const bool result =
         solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
-    if (result && display_level_ != DefaultPhaseParameters::NONE) {
+    if (result && display_level_ == DefaultPhaseParameters::VERBOSE) {
       LOG(INFO) << "  --- solution found by heuristic " << wrapper->name
                 << " --- ";
     }

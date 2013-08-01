@@ -372,7 +372,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  if (spec->DefinedArg() != NULL) {
+  if (spec->DefinedArg() != nullptr) {
     if (size == 2) {
       IntExpr* other = nullptr;
       int64 other_coef = 0;
@@ -405,13 +405,13 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
       std::vector<int64> coefficients;
       std::vector<IntVar*> variables;
       int64 constant = 0;
-      AstNode* defined = NULL;
+      AstNode* defined = nullptr;
       for (int i = 0; i < size; ++i) {
         if (array_variables->a[i]->isInt()) {
           constant += array_coefficients->a[i]->getInt() *
                       array_variables->a[i]->getInt();
         } else if (spec->IsDefined(array_variables->a[i])) {
-          CHECK(defined == NULL);
+          CHECK(defined == nullptr);
           defined = array_variables->a[i];
           if (array_coefficients->a[i]->getInt() != -1) {
             throw FzError(
@@ -437,7 +437,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
       model->SetIntegerExpression(defined, target);
     }
   } else {
-    Constraint* ct = NULL;
+    Constraint* ct = nullptr;
     switch (size) {
       case 0: {
         ct = rhs == 0 ? solver->MakeTrueConstraint()
@@ -461,9 +461,25 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
           VLOG(2) << "  - posted to sat";
           return;
         } else {
-          ct = solver->MakeEquality(
-              solver->MakeProd(e1, c1),
-              solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
+          if (c1 > 0) {
+            if (c2 > 0) {
+              ct = solver->MakeEquality(
+                  solver->MakeProd(e1, c1),
+                  solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
+            } else {
+              ct = solver->MakeEquality(
+                  solver->MakeProd(e1, c1),
+                  solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+            }
+          } else if (c2 > 0) {
+            ct = solver->MakeEquality(
+                solver->MakeProd(e2, c2),
+                solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+          } else {
+            ct = solver->MakeEquality(
+                solver->MakeProd(e1, -c1),
+                solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2)));
+          }
           break;
         }
         break;
@@ -564,8 +580,8 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
+    IntExpr* pos = nullptr;
+    IntExpr* other = nullptr;
     if (negative == 2) {
       std::vector<IntExpr*> neg_exprs;
       for (int i = 0; i < size; ++i) {
@@ -607,8 +623,8 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
+    IntExpr* neg = nullptr;
+    IntExpr* other = nullptr;
     if (positive == 2) {
       std::vector<IntExpr*> pos_exprs;
       for (int i = 0; i < size; ++i) {
@@ -654,7 +670,7 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
                                  &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -727,8 +743,8 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
+    IntExpr* pos = nullptr;
+    IntExpr* other = nullptr;
     if (negative == 2) {
       std::vector<IntExpr*> neg_exprs;
       for (int i = 0; i < size; ++i) {
@@ -770,8 +786,8 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
+    IntExpr* neg = nullptr;
+    IntExpr* other = nullptr;
     if (positive == 2) {
       std::vector<IntExpr*> pos_exprs;
       for (int i = 0; i < size; ++i) {
@@ -817,7 +833,7 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
     rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
                                  &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -898,8 +914,8 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
+    IntExpr* pos = nullptr;
+    IntExpr* other = nullptr;
     if (negative == 2) {
       std::vector<IntExpr*> neg_exprs;
       for (int i = 0; i < size; ++i) {
@@ -941,8 +957,8 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
+    IntExpr* neg = nullptr;
+    IntExpr* other = nullptr;
     if (positive == 2) {
       std::vector<IntExpr*> pos_exprs;
       for (int i = 0; i < size; ++i) {
@@ -989,7 +1005,7 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
     rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
                                  &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -1002,7 +1018,7 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
     } else if (AreAllBooleans(variables) && rhs > 0 &&
                AreAllGreaterOrEqual(coefficients, rhs + 1)) {
       // We can simplify to sum smaller than one.
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -1082,8 +1098,8 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
-    IntExpr* pos = NULL;
-    IntExpr* other = NULL;
+    IntExpr* pos = nullptr;
+    IntExpr* other = nullptr;
     if (negative == 2) {
       std::vector<IntExpr*> neg_exprs;
       for (int i = 0; i < size; ++i) {
@@ -1126,8 +1142,8 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else if (negative == 1) {
-    IntExpr* neg = NULL;
-    IntExpr* other = NULL;
+    IntExpr* neg = nullptr;
+    IntExpr* other = nullptr;
     if (positive == 2) {
       std::vector<IntExpr*> pos_exprs;
       for (int i = 0; i < size; ++i) {
@@ -1173,7 +1189,7 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
     rhs -= BuildNonNullVarsCoefs(model, array_coefficients, array_variables,
                                  &coefficients, &variables);
     if (AreAllOnes(coefficients) && AreAllBooleans(variables)) {
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -1186,7 +1202,7 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
     } else if (AreAllBooleans(variables) && rhs > 0 &&
                AreAllGreaterOrEqual(coefficients, rhs + 1)) {
       // We can simplify to sum greater or equal than one.
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (define) {
         boolvar = solver->MakeBoolVar();
         VLOG(2) << "  - creating " << node_boolvar->DebugString();
@@ -1344,7 +1360,7 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     } else {
       const int64 mod = spec->Arg(1)->getInt();
-      Constraint* ct = NULL;
+      Constraint* ct = nullptr;
       if (mod == 2 && target->Bound()) {
         switch (target->Min()) {
           case 0: {

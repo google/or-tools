@@ -90,7 +90,7 @@ class MtCustomLimit : public SearchLimit {
 
   virtual void Copy(const SearchLimit* const limit) {}
 
-  virtual SearchLimit* MakeClone() const { return NULL; }
+  virtual SearchLimit* MakeClone() const { return nullptr; }
 
  private:
   FzParallelSupport* const support_;
@@ -160,7 +160,7 @@ class SequentialSupport : public FzParallelSupport {
     return s->MakeOptimize(maximize, var, step);
   }
 
-  virtual SearchLimit* Limit(Solver* const s, int worker_id) { return NULL; }
+  virtual SearchLimit* Limit(Solver* const s, int worker_id) { return nullptr; }
 
   virtual void Log(int worker_id, const string& message) {
     std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
@@ -629,7 +629,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
   std::vector<int> defined_occurrences;
   std::vector<IntVar*> active_variables;
   std::vector<int> active_occurrences;
-  DecisionBuilder* obj_db = NULL;
+  DecisionBuilder* obj_db = nullptr;
   ParseSearchAnnotations(p.ignore_unknown, &defined, &defined_variables,
                          &active_variables, &defined_occurrences,
                          &active_occurrences, &obj_db);
@@ -648,7 +648,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
       defined_occurrences.swap(active_occurrences);
     }
     DefaultPhaseParameters parameters;
-    DecisionBuilder* inner_builder = NULL;
+    DecisionBuilder* inner_builder = nullptr;
     switch (p.search_type) {
       case FlatZincSearchParameters::DEFAULT: {
         if (defined.empty()) {
@@ -699,9 +699,9 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
     parameters.value_selection_schema =
         DefaultPhaseParameters::SELECT_MIN_IMPACT;
     parameters.random_seed = p.random_seed;
-    if (inner_builder == NULL) {
+    if (inner_builder == nullptr) {
       CHECK_EQ(FlatZincSearchParameters::IBS, p.search_type);
-      parameters.decision_builder = NULL;
+      parameters.decision_builder = nullptr;
     } else {
       parameters.decision_builder = inner_builder;
     }
@@ -709,7 +709,7 @@ DecisionBuilder* FlatZincModel::CreateDecisionBuilders(
         solver_->MakeDefaultPhase(defined_variables, parameters));
   }
   // Add the objective decision builder.
-  if (obj_db != NULL) {
+  if (obj_db != nullptr) {
     builders.push_back(obj_db);
   }
   // Add completion decision builders to be more robust.
@@ -746,7 +746,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
           integer_variables_[objective_variable_]->Var(), 1, p.worker_id);
       SearchMonitor* const log =
           p.use_log ? solver_->RevAlloc(new FzLog(
-              solver_.get(), objective_, p.log_period)) : NULL;
+              solver_.get(), objective_, p.log_period)) : nullptr;
       monitors.push_back(log);
       monitors.push_back(objective_);
       parallel_support->StartSearch(
@@ -757,7 +757,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     case SAT: {
       SearchMonitor* const log =
           p.use_log ? solver_->RevAlloc(new FzLog(
-              solver_.get(), NULL, p.log_period)) : NULL;
+              solver_.get(), nullptr, p.log_period)) : nullptr;
       monitors.push_back(log);
       parallel_support->StartSearch(p.worker_id, FzParallelSupport::SATISFY);
       break;
@@ -799,7 +799,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   const int64 build_time = solver_->wall_time();
   solver_->NewSearch(db, monitors);
   while (solver_->NextSolution()) {
-    if (output_ != NULL && !parallel_support->ShouldFinish()) {
+    if (output_ != nullptr && !parallel_support->ShouldFinish()) {
       solution_string.clear();
       for (unsigned int i = 0; i < output_->a.size(); i++) {
         solution_string.append(DebugString(output_->a[i]));
@@ -808,7 +808,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       switch (method_) {
         case MIN:
         case MAX: {
-          const int64 best = objective_ != NULL ? objective_->best() : 0;
+          const int64 best = objective_ != nullptr ? objective_->best() : 0;
           parallel_support->OptimizeSolution(p.worker_id, best,
                                              solution_string);
           if ((p.num_solutions != 1 &&
@@ -834,7 +834,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
   solver_->EndSearch();
   parallel_support->EndSearch(p.worker_id,
-                              limit != NULL ? limit->crossed() : false);
+                              limit != nullptr ? limit->crossed() : false);
   const int64 solve_time = solver_->wall_time() - build_time;
   const int num_solutions = parallel_support->NumSolutions();
   bool proven = false;
@@ -886,7 +886,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     final_output.append(StringPrintf("%%%%  memory:               %s\n",
                                      FlatZincMemoryUsage().c_str()));
     const int64 best = parallel_support->BestSolution();
-    if (objective_ != NULL) {
+    if (objective_ != nullptr) {
       if (method_ == MIN && num_solutions > 0) {
         final_output.append(
             StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
@@ -900,10 +900,10 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     const bool no_solutions = num_solutions == 0;
     const string status_string =
         (no_solutions
-             ? (timeout ? "**timeout**" : "**unsat**")
-             : (objective_ == NULL ? "**sat**" : (timeout ? "**feasible**"
-                                                          : "**proven**")));
-    const string obj_string = (objective_ != NULL && !no_solutions
+         ? (timeout ? "**timeout**" : "**unsat**")
+         : (objective_ == nullptr ? "**sat**" : (timeout ? "**feasible**"
+                                                 : "**proven**")));
+    const string obj_string = (objective_ != nullptr && !no_solutions
                                    ? StringPrintf("%" GG_LL_FORMAT "d", best)
                                    : "");
     final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "

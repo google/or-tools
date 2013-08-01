@@ -384,7 +384,7 @@ class SatPropagator : public Constraint {
   ~SatPropagator() {}
 
   bool Check(IntExpr* const expr) const {
-    IntVar* expr_var = NULL;
+    IntVar* expr_var = nullptr;
     bool expr_negated = false;
     return solver()->IsBooleanVar(expr, &expr_var, &expr_negated);
   }
@@ -399,13 +399,15 @@ class SatPropagator : public Constraint {
   }
 
   Sat::Literal Literal(IntExpr* const expr) {
-    IntVar* expr_var = NULL;
+    IntVar* expr_var = nullptr;
     bool expr_negated = false;
     if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
       return Sat::kErrorLiteral;
     }
+#ifdef SAT_DEBUG
     VLOG(2) << "  - SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated;
+#endif
     if (ContainsKey(indices_, expr_var)) {
       return Sat::MakeLiteral(indices_[expr_var], !expr_negated);
     } else {
@@ -414,28 +416,38 @@ class SatPropagator : public Constraint {
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
       Sat::Literal lit = Sat::MakeLiteral(var, !expr_negated);
+#ifdef SAT_DEBUG
       VLOG(2) << "    - created var = " << var.value()
               << ", lit = " << lit.value();
+#endif
       return lit;
     }
   }
 
   void VariableBound(int index) {
     if (sat_trail_.Value() < sat_.TrailMarker()) {
+#ifdef SAT_DEBUG
       VLOG(2) << "After failure, sat_trail = " << sat_trail_.Value()
               << ", sat decision level = " << sat_.TrailMarker();
+#endif
       sat_.cancelUntil(sat_trail_.Value());
       DCHECK_EQ(sat_trail_.Value(), sat_.TrailMarker());
     }
     const Sat::Variable var = Sat::Variable(index);
+#ifdef SAT_DEBUG
     VLOG(2) << "VariableBound: " << vars_[index]->DebugString()
             << " with sat variable " << var;
+#endif
     const bool new_value = vars_[index]->Value() != 0;
     Sat::Literal lit = Sat::MakeLiteral(var, new_value);
+#ifdef SAT_DEBUG
     VLOG(2) << " - enqueue lit = " << lit.value() << " at depth "
             << sat_trail_.Value();
+#endif
     if (!sat_.PropagateOneLiteral(lit)) {
+#ifdef SAT_DEBUG
       VLOG(2) << " - failure detected, should backtrack";
+#endif
       solver()->Fail();
     } else {
       sat_trail_.SetValue(solver(), sat_.TrailMarker());
@@ -443,8 +455,10 @@ class SatPropagator : public Constraint {
         const Sat::Literal lit = sat_.touched_variables_[i];
         const Sat::Variable var = Sat::Var(lit);
         const bool assigned_bool = Sat::Sign(lit);
+#ifdef SAT_DEBUG
         VLOG(2) << " - var " << var << " was assigned to " << assigned_bool
                 << " from literal " << lit.value();
+#endif
         demons_[var.value()]->inhibit(solver());
         vars_[var.value()]->SetValue(assigned_bool);
       }
@@ -461,7 +475,9 @@ class SatPropagator : public Constraint {
   }
 
   virtual void InitialPropagate() {
+#ifdef SAT_DEBUG
     VLOG(2) << "Initial propagation on sat solver";
+#endif
     sat_.InitPropagator();
     ApplyEarlyDeductions();
     for (int i = 0; i < vars_.size(); ++i) {
@@ -470,7 +486,9 @@ class SatPropagator : public Constraint {
         VariableBound(i);
       }
     }
+#ifdef SAT_DEBUG
     VLOG(2) << " - done";
+#endif
   }
 
   // Add a clause to the solver, clears the vector.
@@ -514,7 +532,9 @@ class SatPropagator : public Constraint {
   void StoreEarlyDeductions() {
     for (int i = 0; i < sat_.touched_variables_.size(); ++i) {
       const Sat::Literal lit = sat_.touched_variables_[i];
+#ifdef SAT_DEBUG
       VLOG(2) << "Postponing deduction " << lit.value();
+#endif
       early_deductions_.push_back(lit);
     }
     sat_.touched_variables_.clear();
@@ -525,9 +545,11 @@ class SatPropagator : public Constraint {
       const Sat::Literal lit = early_deductions_[i];
       const Sat::Variable var = Sat::Var(lit);
       const bool assigned_bool = Sat::Sign(lit);
+#ifdef SAT_DEBUG
       VLOG(2) << " - var " << var << " (" << vars_[var.value()]->DebugString()
               << ") was early assigned to " << assigned_bool
               << " from literal " << lit.value();
+#endif
       demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
     }

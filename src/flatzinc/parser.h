@@ -430,38 +430,38 @@ inline string AstNode::getString() {
   throw AstTypeError("string literal expected");
 }
 inline bool AstNode::isIntVar() {
-  return (dynamic_cast<AstIntVar*>(this) != NULL);
+  return (dynamic_cast<AstIntVar*>(this) != nullptr);
 }
 inline bool AstNode::isBoolVar() {
-  return (dynamic_cast<AstBoolVar*>(this) != NULL);
+  return (dynamic_cast<AstBoolVar*>(this) != nullptr);
 }
 inline bool AstNode::isSetVar() {
-  return (dynamic_cast<AstSetVar*>(this) != NULL);
+  return (dynamic_cast<AstSetVar*>(this) != nullptr);
 }
 inline bool AstNode::isInt() {
-  return (dynamic_cast<AstIntLit*>(this) != NULL);
+  return (dynamic_cast<AstIntLit*>(this) != nullptr);
 }
 inline bool AstNode::isBool() {
-  return (dynamic_cast<AstBoolLit*>(this) != NULL);
+  return (dynamic_cast<AstBoolLit*>(this) != nullptr);
 }
 inline bool AstNode::isSet() {
-  return (dynamic_cast<AstSetLit*>(this) != NULL);
+  return (dynamic_cast<AstSetLit*>(this) != nullptr);
 }
 inline bool AstNode::isString() {
-  return (dynamic_cast<AstString*>(this) != NULL);
+  return (dynamic_cast<AstString*>(this) != nullptr);
 }
 inline bool AstNode::isArray() {
-  return (dynamic_cast<AstArray*>(this) != NULL);
+  return (dynamic_cast<AstArray*>(this) != nullptr);
 }
 inline bool AstNode::isAtom() {
-  return (dynamic_cast<AstAtom*>(this) != NULL);
+  return (dynamic_cast<AstAtom*>(this) != nullptr);
 }
 
 inline AstNode* AstExtractSingleton(AstNode* n) {
   if (AstArray* const a = dynamic_cast<AstArray*>(n)) {
     if (a->a.size() == 1) {
       AstNode* const ret = a->a[0];
-      a->a[0] = NULL;
+      a->a[0] = nullptr;
       delete a;
       return ret;
     }
@@ -695,7 +695,7 @@ class IntVarSpec : public VarSpec {
   AstSetLit* Domain() const { return domain_.value(); }
 
   bool HasDomain() const {
-    return domain_.defined() && domain_.value() != NULL;
+    return domain_.defined() && domain_.value() != nullptr;
   }
 
  private:
@@ -854,7 +854,7 @@ class CtSpec {
         args_(args),
         annotations_(annotations),
         nullified_(false),
-        defined_arg_(NULL),
+        defined_arg_(nullptr),
         ignored_(false) {}
 
   ~CtSpec() {
@@ -883,7 +883,7 @@ class CtSpec {
   }
 
   bool IsDefined(AstNode* const arg) {
-    if (defined_arg_ != NULL) {
+    if (defined_arg_ != nullptr) {
       return ((arg->isIntVar() && defined_arg_->isIntVar() &&
                arg->getIntVar() == defined_arg_->getIntVar()) ||
               (arg->isBoolVar() && defined_arg_->isBoolVar() &&
@@ -904,11 +904,11 @@ class CtSpec {
   string DebugString() const {
     string output = StringPrintf("CtSpec(no = %d, id = %s, args = %s", index_,
                                  id_.c_str(), args_->DebugString().c_str());
-    if (annotations_ != NULL) {
+    if (annotations_ != nullptr) {
       output += StringPrintf(", annotations = %s",
                              annotations_->DebugString().c_str());
     }
-    if (defined_arg_ != NULL) {
+    if (defined_arg_ != nullptr) {
       output +=
           StringPrintf(", target = %s", defined_arg_->DebugString().c_str());
     }
@@ -935,7 +935,7 @@ class CtSpec {
   void Unreify() {
     id_.resize(id_.size() - 5);
     delete annotations_;
-    annotations_ = NULL;
+    annotations_ = nullptr;
     delete args_->a.back();
     args_->a.pop_back();
   }
@@ -952,7 +952,7 @@ class CtSpec {
   bool Ignored() const { return ignored_; }
 
   void AddAnnotation(AstNode* const node) {
-    if (annotations_ == NULL) {
+    if (annotations_ == nullptr) {
       annotations_ = new AstArray(node);
     } else {
       annotations_->getArray()->a.push_back(node);
@@ -960,7 +960,7 @@ class CtSpec {
   }
 
   void RemoveDefines() {
-    if (annotations_ != NULL) {
+    if (annotations_ != nullptr) {
       AstArray* const ann_array = annotations_->getArray();
       if (ann_array->a[0]->isCall("defines_var")) {
         delete ann_array->a[0];
@@ -969,12 +969,16 @@ class CtSpec {
         }
         ann_array->a.pop_back();
       }
+      if (ann_array->a.empty()) {
+        delete annotations_;
+        annotations_ = nullptr;
+      }
     }
-    defined_arg_ = NULL;
+    defined_arg_ = nullptr;
   }
 
   void RemoveDomain() {
-    if (annotations_ != NULL) {
+    if (annotations_ != nullptr) {
       if (AstArray* a = dynamic_cast<AstArray*>(annotations_)) {
         for (int i = a->a.size(); i--;) {
           if (AstAtom* at = dynamic_cast<AstAtom*>(a->a[i])) {
@@ -1085,7 +1089,7 @@ class ParserState {
     } else if (node->isBoolVar()) {
       return bool_args_[node->getBoolVar()];
     }
-    return NULL;
+    return nullptr;
   }
 
   AstNode* IntCopy(int index) const {
@@ -1110,6 +1114,8 @@ class ParserState {
   AstNode* FindTarget(AstNode* const annotations) const;
   void CollectRequired(AstArray* const args, const NodeSet& candidates,
                        NodeSet* const require) const;
+  void CollectIgnored(NodeSet* const ignored);
+  void ReuseIgnored(NodeSet* const ignored);
   void ComputeDependencies(const NodeSet& candidates, CtSpec* const spec) const;
   void ComputeViableTarget(CtSpec* const spec, NodeSet* const candidates) const;
   void Sanitize(CtSpec* const spec);

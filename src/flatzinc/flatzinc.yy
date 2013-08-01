@@ -1135,7 +1135,7 @@ FZ_MINIMIZE
 
 annotations :
 /* empty */
-{ $$ = NULL; }
+{ $$ = nullptr; }
 | annotations_head
 { $$ = $1; }
 
