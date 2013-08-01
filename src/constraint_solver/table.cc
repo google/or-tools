@@ -97,7 +97,8 @@ class VarLinearizer : public ModelParser {
       delegate->Accept(this);
       PopMultiplier();
     } else if (operation == ModelVisitor::kTraceOperation) {
-      delegate->Accept(this);
+      *target_var_ = const_cast<IntVar*>(variable);
+      transformation_->a = multipliers_.back();
     }
   }
 
