@@ -2712,7 +2712,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver,
   IntExpr* const cache = solver->Cache()->FindVarArrayExpression(
       vars, ModelCache::VAR_ARRAY_SUM);
   if (cache != NULL) {
-    return solver()->MakeSum(cache, constant);
+    return solver->MakeSum(cache, constant);
   } else {
     const string name =
         StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
