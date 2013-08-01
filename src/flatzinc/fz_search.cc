@@ -887,7 +887,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
                      solver_->failures()));
     final_output.append(StringPrintf("%%%%  memory:               %s\n",
                                      FlatZincMemoryUsage().c_str()));
-    const int64 best = objective_ != NULL ? objective_->best() : 0;
+    const int64 best = parallel_support->BestSolution();
     if (objective_ != NULL) {
       if (method_ == MIN && solver_->solutions() > 0) {
         final_output.append(
