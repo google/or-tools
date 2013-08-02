@@ -942,9 +942,9 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
       PostHiddenOr(model, spec, variables, coefficients)) {
     VLOG(2) << "  - posted to sat";
-  // } else if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
-  //            PostSumGreaterVar(model, spec, variables, coefficients)) {
-  //   VLOG(2) << "  - posted to sat";
+  } else if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
+             PostSumGreaterVar(model, spec, variables, coefficients)) {
+    VLOG(2) << "  - posted to sat";
   } else if (FLAGS_use_sat && AreAllBooleans(variables) &&
              AreAllOnes(coefficients) &&
              ((rhs == 1 && AddAtMostOne(model->Sat(), variables)) ||

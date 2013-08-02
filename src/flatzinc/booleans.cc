@@ -142,7 +142,7 @@ class Solver {
   }
 
   // Backtrack until a certain level.
-  void cancelUntil(int level) {
+  void BacktrackTo(int level) {
     if (TrailMarker() > level) {
       for (int c = trail_.size() - 1; c >= trail_markers_[level]; c--) {
         Variable x = Var(trail_[c]);
@@ -165,8 +165,10 @@ class Solver {
     const Boolean b = assignment_[Var(p)];
     return b == kUndefined ? kUndefined : Xor(b, Sign(p));
   }
-  // The current number of original clauses.
-  int nClauses() const { return clauses.size(); }
+  // Number of clauses.
+  int NumClauses() const { return clauses.size(); }
+  // Number of sat variables.
+  int NumVariables() const { return num_vars_; }
   // Propagates one literal, returns true if successful, false in case
   // of failure.
   bool PropagateOneLiteral(Literal lit);
@@ -430,7 +432,7 @@ class SatPropagator : public Constraint {
       VLOG(2) << "After failure, sat_trail = " << sat_trail_.Value()
               << ", sat decision level = " << sat_.TrailMarker();
 #endif
-      sat_.cancelUntil(sat_trail_.Value());
+      sat_.BacktrackTo(sat_trail_.Value());
       DCHECK_EQ(sat_trail_.Value(), sat_.TrailMarker());
     }
     const Sat::Variable var = Sat::Variable(index);
@@ -522,7 +524,10 @@ class SatPropagator : public Constraint {
     return result;
   }
 
-  virtual string DebugString() const { return "SatConstraint"; }
+  virtual string DebugString() const {
+    return StringPrintf("SatConstraint(%d variables, %d clauses)",
+                        sat_.NumVariables(), sat_.NumClauses());
+  }
 
   void Accept(ModelVisitor* const visitor) const {
     VLOG(1) << "Should Not Be Visited";
@@ -647,13 +652,12 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* const sat,
     return false;
   }
   Sat::Literal target_lit = sat->Literal(target);
-  std::vector<Sat::Literal> lits(vars.size());
+  std::vector<Sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = Negated(sat->Literal(vars[i]));
+    lits[i] = sat->Literal(vars[i]);
   }
-  for (int i = 0; i < vars.size(); ++i) {
-    sat->AddClause(lits[i], target_lit);
-  }
+  lits[vars.size()] = Negated(target_lit);
+  sat->AddClause(&lits);
   return true;
 }
 
