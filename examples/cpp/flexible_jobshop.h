@@ -74,10 +74,10 @@ class FlexibleJobShopData {
 
   FlexibleJobShopData()
       : name_(""),
-      machine_count_(-1),
-      job_count_(-1),
-      horizon_(0),
-      current_job_index_(0) {}
+        machine_count_(-1),
+        job_count_(-1),
+        horizon_(0),
+        current_job_index_(0) {}
 
   ~FlexibleJobShopData() {}
 
@@ -93,9 +93,8 @@ class FlexibleJobShopData {
     } else {
       name_ = filename;
     }
-    reader.set_line_callback(NewPermanentCallback(
-        this,
-        &FlexibleJobShopData::ProcessNewLine));
+    reader.set_line_callback(
+        NewPermanentCallback(this, &FlexibleJobShopData::ProcessNewLine));
     reader.Reload();
     if (!reader.loaded_successfully()) {
       LOG(ERROR) << "Could not open flexible jobshop file";
@@ -192,5 +191,5 @@ class FlexibleJobShopData {
   std::vector<std::vector<Task> > all_tasks_;
   int current_job_index_;
 };
-}  // namespace operations_research
-#endif // OR_TOOLS_EXAMPLES_FLEXIBLE_JOBSHOP_H_
+}       // namespace operations_research
+#endif  // OR_TOOLS_EXAMPLES_FLEXIBLE_JOBSHOP_H_
