@@ -2362,17 +2362,24 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AstArray* const array_variables = spec->Arg(0)->getArray();
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
   AstArray* const array_coefficients = spec->Arg(1)->getArray();
   const int vsize = array_coefficients->a.size();
   std::vector<int64> values(vsize);
   for (int i = 0; i < vsize; ++i) {
     values[i] = array_coefficients->a[i]->getInt();
+  }
+
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables;
+  for (int i = 0; i < size; ++i) {
+    IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+    for (int v = 0; v < values.size(); ++v) {
+      if (var->Contains(values[v])) {
+        variables.push_back(var);
+        break;
+      }
+    }
   }
   AstArray* const array_cards = spec->Arg(2)->getArray();
   const int csize = array_cards->a.size();
@@ -2429,17 +2436,23 @@ void p_global_cardinality_closed(FlatZincModel* const model,
 void p_global_cardinality_low_up(FlatZincModel* const model,
                                  CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AstArray* const array_variables = spec->Arg(0)->getArray();
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
   AstArray* const array_coefficients = spec->Arg(1)->getArray();
   const int vsize = array_coefficients->a.size();
   std::vector<int64> values(vsize);
   for (int i = 0; i < vsize; ++i) {
     values[i] = array_coefficients->a[i]->getInt();
+  }
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables;
+  for (int i = 0; i < size; ++i) {
+    IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+    for (int v = 0; v < values.size(); ++v) {
+      if (var->Contains(values[v])) {
+        variables.push_back(var);
+        break;
+      }
+    }
   }
   AstArray* const array_low = spec->Arg(2)->getArray();
   const int lsize = array_low->a.size();
