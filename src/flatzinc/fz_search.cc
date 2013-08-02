@@ -362,13 +362,21 @@ struct VarDegreeIndex {
 void SortVariableByDegree(const std::vector<int>& occurrences,
                           std::vector<IntVar*>* const int_vars) {
   std::vector<VarDegreeIndex> to_sort;
+  std::vector<IntVar*> large_variables;
   for (int i = 0; i < int_vars->size(); ++i) {
     IntVar* const var = (*int_vars)[i];
-    to_sort.push_back(VarDegreeIndex(var, occurrences[i], i));
+    if (var->Size() < 0xFFFFFF) {
+      to_sort.push_back(VarDegreeIndex(var, occurrences[i], i));
+    } else {
+      large_variables.push_back(var);
+    }
   }
   std::sort(to_sort.begin(), to_sort.end());
-  for (int i = 0; i < int_vars->size(); ++i) {
+  for (int i = 0; i < to_sort.size(); ++i) {
     (*int_vars)[i] = to_sort[i].v;
+  }
+  for (int i = 0; i < large_variables.size(); ++i) {
+    (*int_vars)[to_sort.size() + i] = large_variables[i];
   }
 }
 
