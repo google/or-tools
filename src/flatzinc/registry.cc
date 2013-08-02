@@ -902,7 +902,7 @@ bool PostHiddenOr(FlatZincModel* const model, CtSpec* const spec,
   for (int i = 1; i < vars.size(); ++i) {
     others[i - 1] = vars[i];
   }
-  return AddBoolOrArrayEqVar(model->Sat(), others, vars[0]);
+  return AddSumBoolArrayLessEqKVar(model->Sat(), others, vars[0]);
 }
 
 bool PostSumGreaterVar(FlatZincModel* const model, CtSpec* const spec,
@@ -2340,13 +2340,13 @@ void p_alldifferent_except_0(FlatZincModel* const model, CtSpec* const spec) {
   model->AddConstraint(spec, ct);
 }
 
-void p_count(FlatZincModel* const model, CtSpec* const spec) {
+void p_count_eq(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
   if (spec->Arg(1)->isInt()) {
     const int64 value = spec->Arg(1)->getInt();
-    std::vector<IntVar*> tmp_sum;
     for (int i = 0; i < size; ++i) {
       IntVar* const var = solver->MakeIsEqualCstVar(
           model->GetIntExpr(array_variables->a[i]), value);
@@ -2354,27 +2354,25 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
         tmp_sum.push_back(var);
       }
     }
-    if (spec->Arg(2)->isInt()) {
-      const int64 count = spec->Arg(2)->getInt();
-      PostBooleanSumInRange(model, spec, tmp_sum, count, count);
-    } else {
-      IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
-      Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
-      VLOG(2) << "  - posted " << ct->DebugString();
-      model->AddConstraint(spec, ct);
-    }
   } else {
     IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
-    std::vector<IntVar*> tmp_sum;
     for (int i = 0; i < size; ++i) {
-      tmp_sum.push_back(solver->MakeIsEqualVar(
-          model->GetIntExpr(array_variables->a[i]), value));
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
     }
-    if (spec->Arg(2)->isInt()) {
-      const int64 count = spec->Arg(2)->getInt();
-      PostBooleanSumInRange(model, spec, tmp_sum, count, count);
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    PostBooleanSumInRange(model, spec, tmp_sum, count, count);
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(model, spec, tmp_sum, fcount, fcount);
     } else {
-      IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
       Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
@@ -2382,14 +2380,13 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
-void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
+void p_count_leq(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
-  AstNode* const node_boolvar = spec->Arg(3);
+  std::vector<IntVar*> tmp_sum;
   if (spec->Arg(1)->isInt()) {
     const int64 value = spec->Arg(1)->getInt();
-    std::vector<IntVar*> tmp_sum;
     for (int i = 0; i < size; ++i) {
       IntVar* const var = solver->MakeIsEqualCstVar(
           model->GetIntExpr(array_variables->a[i]), value);
@@ -2397,32 +2394,236 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
         tmp_sum.push_back(var);
       }
     }
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (spec->Arg(2)->isInt()) {
-      const int64 value = spec->Arg(2)->getInt();
-      PostIsBooleanSumInRange(model, spec, tmp_sum, value, value, boolvar);
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    PostBooleanSumInRange(model, spec, tmp_sum, 0, count);
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(model, spec, tmp_sum, 0, fcount);
     } else {
       Constraint* const ct =
-          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
-                                model->GetIntExpr(spec->Arg(2)), boolvar);
+          solver->MakeLessOrEqual(solver->MakeSum(tmp_sum), count);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
+  }
+}
+
+void p_count_lt(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  if (spec->Arg(1)->isInt()) {
+    const int64 value = spec->Arg(1)->getInt();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    PostBooleanSumInRange(model, spec, tmp_sum, 0, count - 1);
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(model, spec, tmp_sum, 0, fcount - 1);
+    } else {
+      Constraint* const ct = solver->MakeLess(solver->MakeSum(tmp_sum), count);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
+  }
+}
+
+void p_count_geq(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  if (spec->Arg(1)->isInt()) {
+    const int64 value = spec->Arg(1)->getInt();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    PostBooleanSumInRange(model, spec, tmp_sum, count, tmp_sum.size());
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(model, spec, tmp_sum, fcount, tmp_sum.size());
+    } else {
+      Constraint* const ct =
+          solver->MakeGreaterOrEqual(solver->MakeSum(tmp_sum), count);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
+  }
+}
+
+void p_count_gt(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  if (spec->Arg(1)->isInt()) {
+    const int64 value = spec->Arg(1)->getInt();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    PostBooleanSumInRange(model, spec, tmp_sum, count + 1, tmp_sum.size());
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(model, spec, tmp_sum, fcount + 1, tmp_sum.size());
+    } else {
+      Constraint* const ct =
+          solver->MakeGreater(solver->MakeSum(tmp_sum), count);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
+  }
+}
+
+void p_count_neq(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  if (spec->Arg(1)->isInt()) {
+    const int64 value = spec->Arg(1)->getInt();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (spec->Arg(2)->isInt()) {
+    const int64 count = spec->Arg(2)->getInt();
+    if (count == 0) {
+      PostBooleanSumInRange(model, spec, tmp_sum, 1, tmp_sum.size());
+    } else if (count == tmp_sum.size()) {
+      PostBooleanSumInRange(model, spec, tmp_sum, 0, tmp_sum.size() - 1);
+    } else {
+      Constraint* const ct =
+          solver->MakeNonEquality(solver->MakeSum(tmp_sum), count);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
     }
   } else {
-    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
-    std::vector<IntVar*> tmp_sum;
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    Constraint* const ct =
+        solver->MakeNonEquality(solver->MakeSum(tmp_sum), count);
+    VLOG(2) << "  - posted " << ct->DebugString();
+    model->AddConstraint(spec, ct);
+  }
+}
+
+void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  if (spec->Arg(1)->isInt()) {
+    const int64 value = spec->Arg(1)->getInt();
     for (int i = 0; i < size; ++i) {
-      tmp_sum.push_back(solver->MakeIsEqualVar(
-          model->GetIntExpr(array_variables->a[i]), value));
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
     }
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    if (spec->Arg(2)->isInt()) {
-      const int64 value = spec->Arg(2)->getInt();
-      PostIsBooleanSumInRange(model, spec, tmp_sum, value, value, boolvar);
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          model->GetIntExpr(array_variables->a[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  IntVar* const boolvar = model->GetIntExpr(spec->Arg(3))->Var();
+  if (spec->Arg(2)->isInt()) {
+    const int64 fcount = spec->Arg(2)->getInt();
+    PostIsBooleanSumInRange(model, spec, tmp_sum, fcount, fcount, boolvar);
+  } else {
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostIsBooleanSumInRange(model, spec, tmp_sum, fcount, fcount, boolvar);
     } else {
       Constraint* const ct =
-          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
-                                model->GetIntExpr(spec->Arg(2)), boolvar);
+          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum), count, boolvar);
       VLOG(2) << "  - posted " << ct->DebugString();
       model->AddConstraint(spec, ct);
     }
@@ -3122,8 +3323,12 @@ class IntBuilder {
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("alldifferent_except_0",
                                   &p_alldifferent_except_0);
-    global_model_builder.Register("count", &p_count);
-    global_model_builder.Register("count_eq", &p_count);
+    global_model_builder.Register("count_eq", &p_count_eq);
+    global_model_builder.Register("count_leq", &p_count_leq);
+    global_model_builder.Register("count_lt", &p_count_lt);
+    global_model_builder.Register("count_geq", &p_count_geq);
+    global_model_builder.Register("count_gt", &p_count_gt);
+    global_model_builder.Register("count_neq", &p_count_neq);
     global_model_builder.Register("count_reif", &p_count_reif);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
     global_model_builder.Register("global_cardinality_closed",

@@ -661,6 +661,12 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* const sat,
   return true;
 }
 
+bool AddSumBoolArrayLessEqKVar(SatPropagator* const sat,
+                               const std::vector<IntVar*>& vars,
+                               IntExpr* const target) {
+  return false;
+}
+
 bool AddBoolOrEqVar(SatPropagator* const sat, IntExpr* const left,
                     IntExpr* const right, IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
