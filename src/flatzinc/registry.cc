@@ -129,9 +129,14 @@ void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    Constraint* const ct = solver->MakeEquality(left, right);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (FLAGS_use_sat && IsBoolean(left) && IsBoolean(right) &&
+        AddBoolEq(model->Sat(), left, right)) {
+      VLOG(2) << "  - posted to sat";
+    } else {
+      Constraint* const ct = solver->MakeEquality(left, right);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   }
 }
 
@@ -149,9 +154,14 @@ void p_int_ne(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    Constraint* const ct = solver->MakeNonEquality(left, right);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (FLAGS_use_sat && IsBoolean(left) && IsBoolean(right) &&
+        AddBoolNot(model->Sat(), left, right)) {
+      VLOG(2) << "  - posted to sat";
+    } else {
+      Constraint* const ct = solver->MakeNonEquality(left, right);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   }
 }
 
@@ -165,9 +175,14 @@ void p_int_ge(FlatZincModel* const model, CtSpec* const spec) {
     model->AddConstraint(spec, ct);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (FLAGS_use_sat && IsBoolean(left) && IsBoolean(right) &&
+        AddBoolLe(model->Sat(), right, left)) {
+      VLOG(2) << "  - posted to sat";
+    } else {
+      Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   }
 }
 
@@ -196,9 +211,14 @@ void p_int_le(FlatZincModel* const model, CtSpec* const spec) {
     model->AddConstraint(spec, ct);
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    Constraint* const ct = solver->MakeLessOrEqual(left, right);
-    VLOG(2) << "  - posted " << ct->DebugString();
-    model->AddConstraint(spec, ct);
+    if (FLAGS_use_sat && IsBoolean(left) && IsBoolean(right) &&
+        AddBoolLe(model->Sat(), left, right)) {
+      VLOG(2) << "  - posted to sat";
+    } else {
+      Constraint* const ct = solver->MakeLessOrEqual(left, right);
+      VLOG(2) << "  - posted " << ct->DebugString();
+      model->AddConstraint(spec, ct);
+    }
   }
 }
 
@@ -546,9 +566,14 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
             }
           }
         }
-        ct = strong_propagation
-            ? MakeStrongScalProdEquality(solver, variables, coefficients, rhs)
-            : solver->MakeScalProdEquality(variables, coefficients, rhs);
+        if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
+          PostBooleanSumInRange(model, spec, variables, rhs, rhs);
+          return;
+        } else {
+          ct = strong_propagation
+              ? MakeStrongScalProdEquality(solver, variables, coefficients, rhs)
+              : solver->MakeScalProdEquality(variables, coefficients, rhs);
+        }
       }
     }
     VLOG(2) << "  - posted " << ct->DebugString();
