@@ -475,8 +475,8 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
         IntExpr* const e2 = model->GetIntExpr(array_variables->a[1]);
         const int64 c1 = array_coefficients->a[0]->getInt();
         const int64 c2 = array_coefficients->a[1]->getInt();
-        if (IsBoolean(e1) && IsBoolean(e2) && c1 == 1 && c2 == 1 &&
-            rhs == 1 && AddBoolNot(model->Sat(), e1, e2)) {
+        if (FLAGS_use_sat && IsBoolean(e1) && IsBoolean(e2) && c1 == 1 &&
+            c2 == 1 && rhs == 1 && AddBoolNot(model->Sat(), e1, e2)) {
           // Simple case b1 + b2 == 1, or b1 = not(b2).
           VLOG(2) << "  - posted to sat";
           return;
