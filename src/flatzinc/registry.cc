@@ -890,19 +890,37 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
 bool PostHiddenOr(FlatZincModel* const model, CtSpec* const spec,
                   const std::vector<IntVar*>& vars,
                   const std::vector<int64>& coefs) {
+  if (coefs[0] > 1 - vars.size()) {
+    return false;
+  }
   for (int i = 1; i < coefs.size(); ++i) {
     if (coefs[i] != 1) {
       return false;
     }
-  }
-  if (coefs[0] > 1 - vars.size()) {
-    return false;
   }
   std::vector<IntVar*> others(vars.size() - 1);
   for (int i = 1; i < vars.size(); ++i) {
     others[i - 1] = vars[i];
   }
   return AddBoolOrArrayEqVar(model->Sat(), others, vars[0]);
+}
+
+bool PostSumGreaterVar(FlatZincModel* const model, CtSpec* const spec,
+                       const std::vector<IntVar*>& vars,
+                       const std::vector<int64>& coefs) {
+  if (coefs[0] != 1) {
+    return false;
+  }
+  for (int i = 1; i < coefs.size(); ++i) {
+    if (coefs[i] != -1) {
+      return false;
+    }
+  }
+  std::vector<IntVar*> others(vars.size() - 1);
+  for (int i = 1; i < vars.size(); ++i) {
+    others[i - 1] = vars[i];
+  }
+  return AddSumBoolArrayGreaterEqVar(model->Sat(), others, vars[0]);
 }
 
 void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
@@ -924,6 +942,9 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
       PostHiddenOr(model, spec, variables, coefficients)) {
     VLOG(2) << "  - posted to sat";
+  // } else if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
+  //            PostSumGreaterVar(model, spec, variables, coefficients)) {
+  //   VLOG(2) << "  - posted to sat";
   } else if (FLAGS_use_sat && AreAllBooleans(variables) &&
              AreAllOnes(coefficients) &&
              ((rhs == 1 && AddAtMostOne(model->Sat(), variables)) ||
