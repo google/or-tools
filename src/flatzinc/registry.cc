@@ -38,7 +38,6 @@
  *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 #include "base/commandlineflags.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/flatzinc_constraints.h"
@@ -2630,6 +2629,33 @@ void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_among(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  const int64 count = spec->Arg(0)->getInt();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> tmp_sum;
+  AstSetLit* const domain = spec->Arg(2)->getSet();
+  if (domain->interval) {
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsBetweenVar(
+          model->GetIntExpr(array_variables->a[i]), domain->imin, domain->imax);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsMemberVar(
+          model->GetIntExpr(array_variables->a[i]), domain->s);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  PostBooleanSumInRange(model, spec, tmp_sum, count, count);
+}
+
 void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_coefficients = spec->Arg(1)->getArray();
@@ -3359,6 +3385,7 @@ class IntBuilder {
     global_model_builder.Register("inverse", &p_inverse);
     global_model_builder.Register("nvalue", &p_nvalue);
     global_model_builder.Register("circuit", &p_circuit);
+    global_model_builder.Register("among", &p_among);
   }
 };
 IntBuilder __int_Builder;
