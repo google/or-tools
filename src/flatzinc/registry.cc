@@ -2638,18 +2638,19 @@ void p_among(FlatZincModel* const model, CtSpec* const spec) {
   AstSetLit* const domain = spec->Arg(2)->getSet();
   if (domain->interval) {
     for (int i = 0; i < size; ++i) {
-      IntVar* const var = solver->MakeIsBetweenVar(
-          model->GetIntExpr(array_variables->a[i]), domain->imin, domain->imax);
-      if (var->Max() == 1) {
-        tmp_sum.push_back(var);
+      IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+      IntVar* const is_var =
+          solver->MakeIsBetweenVar(var, domain->imin, domain->imax);
+      if (is_var->Max() == 1) {
+        tmp_sum.push_back(is_var);
       }
     }
   } else {
     for (int i = 0; i < size; ++i) {
-      IntVar* const var = solver->MakeIsMemberVar(
-          model->GetIntExpr(array_variables->a[i]), domain->s);
-      if (var->Max() == 1) {
-        tmp_sum.push_back(var);
+      IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
+      IntVar* const is_var = solver->MakeIsMemberVar(var, domain->s);
+      if (is_var->Max() == 1) {
+        tmp_sum.push_back(is_var);
       }
     }
   }
