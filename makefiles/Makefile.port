@@ -97,7 +97,7 @@ ifeq ("$(SYSTEM)","win")
     PTRLENGTH = 32
     PLATFORM = Win32
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
-    CBC_PLATFORM = Win32\\Release
+    CBC_PLATFORM = Win32-$(VS_RELEASE)-Release
     NETPLATFORM = x86
   endif
   OS = Windows
