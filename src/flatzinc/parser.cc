@@ -481,26 +481,6 @@ void ParserState::Presolve() {
     }
   }
 
-  // Detect free variables.
-  VLOG(2) << "Detect variables appearing in only one constraint";
-  BuildStatistics();
-  std::vector<int> free_variables;
-  for (int var_index = 0; var_index < int_variables_.size(); ++var_index) {
-    const std::vector<int>& ct_indices = constraints_per_int_variables_[var_index];
-    if (ct_indices.size() == 1 &&
-        var_index != model_->objective_variable_index()) {
-      free_variables.push_back(var_index);
-      CtSpec* const spec = constraints_[ct_indices[0]];
-      VLOG(2) << "  - variable xi(" << var_index << ") appears only in "
-              << spec->DebugString();
-      one_constraint_variables_.insert(var_index);
-      if (int_variables_[var_index]->introduced) {
-        VLOG(2) << "Ignore " << spec->DebugString();
-        spec->Ignore();
-      }
-    }
-  }
-
   // Add aliasing constraints.
   for (int i = 0; i < bool_variables_.size(); ++i) {
     BoolVarSpec* const spec = bool_variables_[i];

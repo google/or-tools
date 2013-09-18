@@ -293,7 +293,6 @@ class FlatZincModel {
   // Useful for search.
   std::vector<IntVar*> active_variables_;
   std::vector<int> active_occurrences_;
-  std::vector<IntVar*> one_constraint_variables_;
   std::vector<IntVar*> introduced_variables_;
   std::vector<IntVar*> output_variables_;
   bool parsed_ok_;
