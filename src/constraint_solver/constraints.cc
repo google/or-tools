@@ -685,7 +685,7 @@ class Circuit : public Constraint {
     }
   }
 
-  std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> nexts_;
   const int size_;
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
@@ -901,7 +901,7 @@ class SubCircuit : public Constraint {
     temp_support_.swap(inbound_support_);
   }
 
-  std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> nexts_;
   const int size_;
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
