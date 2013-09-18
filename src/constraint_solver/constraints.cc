@@ -731,9 +731,9 @@ class SubCircuit : public Constraint {
       Demon* const bound_demon = MakeConstraintDemon1(
           solver(), this, &SubCircuit::NextBound, "NextBound", i);
       nexts_[i]->WhenBound(bound_demon);
-      // Demon* const domain_demon = MakeConstraintDemon1(
-      //     solver(), this, &SubCircuit::NextDomain, "NextDomain", i);
-      // nexts_[i]->WhenDomain(domain_demon);
+      Demon* const domain_demon = MakeConstraintDemon1(
+          solver(), this, &SubCircuit::NextDomain, "NextDomain", i);
+      nexts_[i]->WhenDomain(domain_demon);
     }
     solver()->AddConstraint(solver()->MakeAllDifferent(nexts_));
   }
@@ -817,18 +817,29 @@ class SubCircuit : public Constraint {
     }
   }
 
+  void AddReached(int index) {
+    reached_.insert(index);
+    insertion_queue_.push_back(index);
+  }
+
   void CheckReachabilityFromRoot() {
-    if (root_.Value() == -1) {
+    if (root_.Value() == -1) {  // Root is not yet defined. Nothing to deduce.
       return;
     }
 
     const int inactive = NumberOfInactiveNodes();
 
-    reached_.clear();
-    reached_.insert(root_.Value());
+    // Assign temp_support_ to a dummy value.
+    for (int i = 0; i < size_; ++i) {
+      temp_support_[i] = -1;
+    }
+    // Clear the spanning tree.
     processed_ = 0;
+    reached_.clear();
     insertion_queue_.clear();
-    insertion_queue_.push_back(root_.Value());
+    // Add the root node.
+    AddReached(root_.Value());
+    // Compute reachable nodes.
     while (processed_ < insertion_queue_.size() &&
            reached_.size() + inactive < size_) {
       const int candidate = insertion_queue_[processed_++];
@@ -836,17 +847,19 @@ class SubCircuit : public Constraint {
       for (domain->Init(); domain->Ok(); domain->Next()) {
         const int64 after = domain->Value();
         if (!ContainsKey(reached_, after)) {
-          reached_.insert(after);
-          insertion_queue_.push_back(after);
+          AddReached(after);
           temp_support_[candidate] = after;
         }
       }
     }
-    if (insertion_queue_.size() + inactive < size_) {
-      solver()->Fail();
-    } else {
-      outbound_support_.swap(temp_support_);
+    // All non reachable nodes should point to themselves.
+    for (int i = 0; i < size_; ++i) {
+      if (!ContainsKey(reached_, i)) {
+        nexts_[i]->SetValue(i);
+      }
     }
+    // Update the outbound_support_ vector.
+    outbound_support_.swap(temp_support_);
   }
 
   void CheckReachabilityToRoot() {
@@ -881,11 +894,11 @@ class SubCircuit : public Constraint {
       to_visit_.clear();
       to_visit_.swap(rejected);
     }
-    if (insertion_queue_.size() + inactive < size_) {
-      solver()->Fail();
-    } else {
-      temp_support_.swap(inbound_support_);
+    for (int i = 0; i < to_visit_.size(); ++i) {
+      const int node = to_visit_[i];
+      nexts_[node]->SetValue(node);
     }
+    temp_support_.swap(inbound_support_);
   }
 
   std::vector<IntVar*> nexts_;
