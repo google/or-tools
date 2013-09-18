@@ -2827,6 +2827,22 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
       coefs.push_back(iter->second);
     }
   }
+  // Are all coefficients equal or abs equals.
+  int64 abs_coef = std::abs(coefs[0]);
+  for (int i = 1; i < coefs.size(); ++i) {
+    int64 new_abs_coef = std::abs(coefs[i]);
+    if (new_abs_coef != abs_coef) {
+      abs_coef = 0;
+      break;
+    }
+  }
+  if (abs_coef > 1 && constant % abs_coef == 0) {
+    for (int i = 0; i < coefs.size(); ++i) {
+      coefs[i] /= abs_coef;
+    }
+    return solver->MakeProd(
+        MakeScalProdAux(solver, vars, coefs, constant / abs_coef), abs_coef);
+  }
   return MakeScalProdAux(solver, vars, coefs, constant);
 }
 
