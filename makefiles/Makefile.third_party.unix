@@ -5,7 +5,7 @@ GOOGLE_APPUTILS_TAG = 13 # 0.3.0
 SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.8.3
 SWIG_TAG = rel-2.0.9
-PCRE_TAG = 800 # version 8.21
+PCRE_TAG = 1336 # version 8.33
 MONO_TAG = 2.10.9
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
@@ -171,7 +171,7 @@ dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
 	cd dependencies/sources/swig && ./autogen.sh
 
 dependencies/sources/swig/autogen.sh:
-	svn co https://swig.svn.sourceforge.net/svnroot/swig/tags/$(SWIG_TAG) dependencies/sources/swig
+	svn co https://svn.code.sf.net/p/swig/code/tags/$(SWIG_TAG) dependencies/sources/swig
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
