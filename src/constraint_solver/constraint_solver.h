@@ -1671,6 +1671,11 @@ class Solver {
   // Force the nexts() variable to create an complete hamiltonian path.
   Constraint* MakeCircuit(const std::vector<IntVar*>& nexts);
 
+
+  // Force the nexts() variable to create an complete hamiltonian path
+  // for those that do not loop upon themselves.
+  Constraint* MakeSubCircuit(const std::vector<IntVar*>& nexts);
+
   // Creates a constraint which accumulates values along a path such that:
   // cumuls[next[i]] = cumuls[i] + transits[i].
   // Active variables indicate if the corresponding next variable is active;

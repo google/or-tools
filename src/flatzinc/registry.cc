@@ -3279,6 +3279,21 @@ void p_circuit(FlatZincModel* const model, CtSpec* const spec) {
   model->AddConstraint(spec, ct);
 }
 
+void p_subcircuit(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    // Create variables. Account for 1-based array indexing.
+    variables[i] =
+        solver->MakeSum(model->GetIntExpr(array_variables->a[i]), -1)->Var();
+  }
+  Constraint* const ct = solver->MakeSubCircuit(variables);
+  VLOG(2) << "  - posted " << ct->DebugString();
+  model->AddConstraint(spec, ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -3386,6 +3401,7 @@ class IntBuilder {
     global_model_builder.Register("inverse", &p_inverse);
     global_model_builder.Register("nvalue", &p_nvalue);
     global_model_builder.Register("circuit", &p_circuit);
+    global_model_builder.Register("subcircuit", &p_subcircuit);
     global_model_builder.Register("among", &p_among);
   }
 };
