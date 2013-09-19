@@ -30,6 +30,14 @@
 #include "constraint_solver/demon_profiler.pb.h"
 
 namespace operations_research {
+namespace {
+struct Container {
+  const Constraint* ct;
+  int64 value;
+  Container(const Constraint* ct_, int64 value_) : ct(ct_), value(value_) {}
+  bool operator<(const Container& c) const { return (value > c.value); }
+};
+}  // namespace
 
 // DemonProfiler manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information
@@ -265,11 +273,30 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                                       solver->model_name().c_str());
     if (file) {
       file->Write(model.c_str(), model.length());
+      vector<Container> to_sort;
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end();
            ++it) {
         const Constraint* const ct = it->first;
+        int64 fails = 0;
+        int64 demon_invocations = 0;
+        int64 initial_propagation_runtime = 0;
+        int64 total_demon_runtime = 0;
+        int demon_count = 0;
+        ExportInformation(ct,
+                          &fails,
+                          &initial_propagation_runtime,
+                          &demon_invocations,
+                          &total_demon_runtime,
+                          &demon_count);
+        to_sort.push_back(
+            Container(ct, total_demon_runtime + initial_propagation_runtime));
+      }
+      std::sort(to_sort.begin(), to_sort.end());
+
+      for (int i = 0; i < to_sort.size(); ++i) {
+        const Constraint* const ct = to_sort[i].ct;
         int64 fails = 0;
         int64 demon_invocations = 0;
         int64 initial_propagation_runtime = 0;
