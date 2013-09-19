@@ -2978,6 +2978,12 @@ class Solver {
                     IntVar** sub_var,
                     bool* is_negated) const;
 
+  // Returns true if expr represents a product of a expr and a
+  // constant.  In that case, it fills sub_expr and coefficient with
+  // these, and returns true. In the other case, it fills sub_expr
+  // with expr, coefficient with 1, and returns false.
+  bool IsProduct(IntExpr* const expr, IntExpr** sub_expr, int64* coefficient);
+
   // Internal. If the variables is the result of expr->Var(), this
   // method returns expr, NULL otherwise.
   IntExpr* CastExpression(IntVar* const var) const;
@@ -5289,5 +5295,17 @@ ParallelSolveSupport* MakeMtSolveSupport(
 
 #endif  // SWIG
 
+// ----- GCD -----
+
+inline int64 Gcd(int64 a, int64 b) {
+  int64 small = std::min(a, b);
+  int64 big = std::max(a, b);
+  while (small != 0) {
+    const int64 tmp = big % small;
+    big = small;
+    small = tmp;
+  }
+  return big;
+}
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

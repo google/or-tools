@@ -28,6 +28,7 @@
 
 namespace operations_research {
 namespace {
+
 // ----- Tree Array Constraint -----
 
 class TreeArrayConstraint : public CastConstraint {
@@ -2757,9 +2758,22 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return solver->MakeSum(solver->MakeProd(vars[0], coefs[0]), constant);
   } else if (size == 2) {
-    return solver->MakeSum(solver->MakeSum(solver->MakeProd(vars[0], coefs[0]),
-                                           solver->MakeProd(vars[1], coefs[1])),
-                           constant);
+    if (coefs[0] > 0 && coefs[1] < 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[0], coefs[0]),
+                                 solver->MakeProd(vars[1], -coefs[1])),
+          constant);
+    } else if (coefs[0] < 0 && coefs[1] > 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[1], coefs[1]),
+                                 solver->MakeProd(vars[0], -coefs[0])),
+          constant);
+    } else {
+      return solver->MakeSum(
+          solver->MakeSum(solver->MakeProd(vars[0], coefs[0]),
+                          solver->MakeProd(vars[1], coefs[1])),
+          constant);
+    }
   } else {
     if (AreAllBooleans(vars)) {
       if (AreAllPositive<int64>(coefs)) {
@@ -2827,21 +2841,23 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
       coefs.push_back(iter->second);
     }
   }
-  // Are all coefficients equal or abs equals.
-  int64 abs_coef = std::abs(coefs[0]);
+  // Can we simplify using some gcd computation.
+  int64 gcd = std::abs(coefs[0]);
   for (int i = 1; i < coefs.size(); ++i) {
-    int64 new_abs_coef = std::abs(coefs[i]);
-    if (new_abs_coef != abs_coef) {
-      abs_coef = 0;
+    gcd = Gcd(gcd, std::abs(coefs[i]));
+    if (gcd == 1) {
       break;
     }
   }
-  if (abs_coef > 1 && constant % abs_coef == 0) {
+  if (constant != 0 && gcd != 1) {
+    gcd = Gcd(gcd, std::abs(constant));
+  }
+  if (gcd > 1) {
     for (int i = 0; i < coefs.size(); ++i) {
-      coefs[i] /= abs_coef;
+      coefs[i] /= gcd;
     }
     return solver->MakeProd(
-        MakeScalProdAux(solver, vars, coefs, constant / abs_coef), abs_coef);
+        MakeScalProdAux(solver, vars, coefs, constant / gcd), gcd );
   }
   return MakeScalProdAux(solver, vars, coefs, constant);
 }

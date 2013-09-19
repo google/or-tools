@@ -6348,12 +6348,10 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
   if (result == NULL) {
-    const int64 max_value = std::max(-e->Min(), e->Max());
-    if (e->IsVar() && max_value < 0xFFFF) {
-      const string name = StringPrintf("AbsVar(%s)", e->name().c_str());
-      IntVar* const target = MakeIntVar(0, max_value, name);
-      AddConstraint(RevAlloc(new IntAbsConstraint(this, e->Var(), target)));
-      result = target;
+    int64 coefficient = 1;
+    IntExpr* expr = nullptr;
+    if (IsProduct(e, &expr, &coefficient)) {
+      result = MakeProd(MakeAbs(expr), std::abs(coefficient));
     } else {
       result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
     }
@@ -6740,6 +6738,24 @@ bool Solver::IsBooleanVar(IntExpr* const expr, IntVar** inner_var,
       return true;
     }
   }
+  return false;
+}
+
+bool Solver::IsProduct(IntExpr* const expr, IntExpr** inner_expr,
+                       int64* coefficient) {
+  if (dynamic_cast<TimesCstIntVar*>(expr) != NULL) {
+    TimesCstIntVar* const var = dynamic_cast<TimesCstIntVar*>(expr);
+    *coefficient = var->Constant();
+    *inner_expr = var->SubVar();
+    return true;
+  } else if (dynamic_cast<TimesIntCstExpr*>(expr) != NULL) {
+    TimesIntCstExpr* const prod = dynamic_cast<TimesIntCstExpr*>(expr);
+    *coefficient = prod->Constant();
+    *inner_expr = prod->Expr();
+    return true;
+  }
+  *inner_expr = expr;
+  *coefficient = 1;
   return false;
 }
 

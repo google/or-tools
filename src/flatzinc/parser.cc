@@ -833,16 +833,33 @@ void ParserState::BuildModel(const NodeSet& candidates,
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {
       AstNode* const var_node = int_domain_constraints_[i].first;
-      IntVar* const var = model_->GetIntExpr(var_node)->Var();
-      AstSetLit* const dom = int_domain_constraints_[i].second;
-      if (dom->interval && (dom->imin > var->Min() || dom->imax < var->Max())) {
-        VLOG(2) << "Reduce integer variable " << var->DebugString() << " to "
-                << dom->DebugString();
-        var->SetRange(dom->imin, dom->imax);
-      } else if (!dom->interval) {
-        VLOG(2) << "Reduce integer variable " << var->DebugString() << " to "
-                << dom->DebugString();
-        var->SetValues(dom->s);
+      IntExpr* const expr = model_->GetIntExpr(var_node);
+      if (expr->IsVar()) {
+        IntVar* const var = expr->Var();
+        AstSetLit* const dom = int_domain_constraints_[i].second;
+        if (dom->interval &&
+            (dom->imin > var->Min() || dom->imax < var->Max())) {
+          VLOG(2) << "Reduce integer variable " << var->DebugString() << " to "
+                  << dom->DebugString();
+          var->SetRange(dom->imin, dom->imax);
+        } else if (!dom->interval) {
+          VLOG(2) << "Reduce integer variable " << var->DebugString() << " to "
+                  << dom->DebugString();
+          var->SetValues(dom->s);
+        }
+      } else {
+        AstSetLit* const dom = int_domain_constraints_[i].second;
+        Solver* const s = expr->solver();
+        if (dom->interval &&
+            (dom->imin > expr->Min() || dom->imax < expr->Max())) {
+          VLOG(2) << "Reduce integer expression " << expr->DebugString()
+                  << " to " << dom->DebugString();
+          s->AddConstraint(s->MakeBetweenCt(expr->Var(), dom->imin, dom->imax));
+        } else if (!dom->interval) {
+          VLOG(2) << "Reduce integer expression " << expr->DebugString()
+                  << " to " << dom->DebugString();
+          s->AddConstraint(s->MakeMemberCt(expr->Var(), dom->s));
+        }
       }
     }
   }

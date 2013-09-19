@@ -930,29 +930,86 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int64> coefficients(size);
-  std::vector<IntVar*> variables(size);
+  Constraint* ct = nullptr;
+  switch (size) {
+    case 0: {
+      ct = rhs >= 0 ? solver->MakeTrueConstraint()
+                    : solver->MakeFalseConstraint();
+      break;
+    }
+    case 1: {
+      IntExpr* const e1 = model->GetIntExpr(array_variables->a[0]);
+      const int64 c1 = array_coefficients->a[0]->getInt();
+      ct = solver->MakeLessOrEqual(solver->MakeProd(e1, c1), rhs);
+      break;
+    }
+    case 2: {
+      IntExpr* e1 = model->GetIntExpr(array_variables->a[0]);
+      int64 cc1 = 1;
+      solver->IsProduct(e1, &e1, &cc1);
+      IntExpr* e2 = model->GetIntExpr(array_variables->a[1]);
+      int64 cc2 = 1;
+      solver->IsProduct(e2, &e2, &cc2);
+      int64 c1 = array_coefficients->a[0]->getInt() * cc1;
+      int64 c2 = array_coefficients->a[1]->getInt() * cc2;
+      const int64 gcd = Gcd(std::abs(c1), std::abs(c2));
+      c1 /= gcd;
+      c2 /= gcd;
+      // if (FLAGS_use_sat && IsBoolean(e1) && IsBoolean(e2) && c1 == 1 &&
+      //     c2 == 1 && rhs == 1 && AddBoolNot(model->Sat(), e1, e2)) {
+      //   // Simple case b1 + b2 == 1, or b1 = not(b2).
+      //   VLOG(2) << "  - posted to sat";
+      //   return;
+      // } else {
+        if (c1 > 0) {
+          if (c2 > 0) {
+            ct = solver->MakeLessOrEqual(
+                solver->MakeProd(e1, c1),
+                solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
+            } else {
+              ct = solver->MakeLessOrEqual(
+                  solver->MakeProd(e1, c1),
+                  solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+            }
+          } else if (c2 > 0) {
+            ct = solver->MakeLessOrEqual(
+                solver->MakeProd(e2, c2),
+                solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+          } else {
+            ct = solver->MakeGreaterOrEqual(
+                solver->MakeProd(e1, -c1),
+                solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2)));
+        }
+        //    }
+      break;
+    }
+    default: {
+      std::vector<int64> coefficients(size);
+      std::vector<IntVar*> variables(size);
 
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = array_coefficients->a[i]->getInt();
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+      for (int i = 0; i < size; ++i) {
+        coefficients[i] = array_coefficients->a[i]->getInt();
+        variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+      }
+
+      if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
+          PostHiddenOr(model, spec, variables, coefficients)) {
+        VLOG(2) << "  - posted to sat";
+      } else if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
+                 PostSumGreaterVar(model, spec, variables, coefficients)) {
+        VLOG(2) << "  - posted to sat";
+      } else if (FLAGS_use_sat && AreAllBooleans(variables) &&
+                 AreAllOnes(coefficients) &&
+                 ((rhs == 1 && AddAtMostOne(model->Sat(), variables)) ||
+                  (rhs == variables.size() - 1 &&
+                   AddAtMostNMinusOne(model->Sat(), variables)))) {
+        VLOG(2) << "  - posted to sat";
+      } else {
+        ct = solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+      }
+    }
   }
-
-  if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
-      PostHiddenOr(model, spec, variables, coefficients)) {
-    VLOG(2) << "  - posted to sat";
-  } else if (FLAGS_use_sat && AreAllBooleans(variables) && rhs == 0 &&
-             PostSumGreaterVar(model, spec, variables, coefficients)) {
-    VLOG(2) << "  - posted to sat";
-  } else if (FLAGS_use_sat && AreAllBooleans(variables) &&
-             AreAllOnes(coefficients) &&
-             ((rhs == 1 && AddAtMostOne(model->Sat(), variables)) ||
-              (rhs == variables.size() - 1 &&
-               AddAtMostNMinusOne(model->Sat(), variables)))) {
-    VLOG(2) << "  - posted to sat";
-  } else {
-    Constraint* const ct =
-        solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+  if (ct != nullptr) {
     VLOG(2) << "  - posted " << ct->DebugString();
     model->AddConstraint(spec, ct);
   }
