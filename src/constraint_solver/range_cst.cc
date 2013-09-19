@@ -415,10 +415,6 @@ class IsEqualCt : public CastConstraint {
   }
 
  private:
-  bool IsInteresting(IntExpr* const e) const {
-    return e->IsVar() && e->Var()->Max() - e->Var()->Min() >= e->Var()->Size();
-  }
-
   IntExpr* const left_;
   IntExpr* const right_;
   Demon* range_demon_;
@@ -457,33 +453,6 @@ class IsDifferentCt : public CastConstraint {
 
   virtual void InitialPropagate() {
     PropagateRange();
-    if (!target_var_->Bound() &&
-        IsInteresting(left_) &&
-        IsInteresting(right_) &&
-        std::max(left_->Var()->Size(), right_->Var()->Size()) < 32) {
-      IntVar* const lv = left_->Var();
-      IntVar* const rv = right_->Var();
-      // Search for a support.
-      if (lv->Size() < rv->Size()) {
-        IntVarIterator* const it = lv->MakeDomainIterator(true);
-        for (it->Init(); it->Ok(); it->Next()) {
-          if (rv->Contains(it->Value())) {
-            return;
-          }
-        }
-        range_demon_->inhibit(solver());
-        target_var_->SetValue(1);
-      } else {
-        IntVarIterator* const it = rv->MakeDomainIterator(true);
-        for (it->Init(); it->Ok(); it->Next()) {
-          if (lv->Contains(it->Value())) {
-            return;
-          }
-        }
-        range_demon_->inhibit(solver());
-        target_var_->SetValue(1);
-      }
-    }
   }
 
   void PropagateRange() {
@@ -544,10 +513,6 @@ class IsDifferentCt : public CastConstraint {
   }
 
  private:
-  bool IsInteresting(IntExpr* const e) const {
-    return e->IsVar() && e->Var()->Max() - e->Var()->Min() >= e->Var()->Size();
-  }
-
   IntExpr* const left_;
   IntExpr* const right_;
   Demon* range_demon_;
