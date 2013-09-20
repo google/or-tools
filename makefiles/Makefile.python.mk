@@ -163,11 +163,3 @@ else
 	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
 	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 endif
-
-python_upload: python_archive
-ifeq ($(SYSTEM),win)
-	$(WINDOWS_PYTHON_PATH)\python.exe dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Python archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.python.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
-else
-	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Python archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz -u $(USER) -w $(PASSWORD)
-endif
-

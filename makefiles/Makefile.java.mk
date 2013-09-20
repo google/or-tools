@@ -431,11 +431,3 @@ else
 	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp
-
-java_upload: java_archive
-ifeq ("$(SYSTEM)","win")
-	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
-else
-	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz -u $(USER) -w $(PASSWORD)
-endif
-
