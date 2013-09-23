@@ -72,8 +72,7 @@ public class KenKen2
                      x[cc[2]-1,cc[3]-1] *
                      x[cc[4]-1,cc[5]-1]) == res;
       } else {
-        this_prod = (
-                     x[cc[0]-1,cc[1]-1] *
+        this_prod = (x[cc[0]-1,cc[1]-1] *
                      x[cc[2]-1,cc[3]-1] *
                      x[cc[4]-1,cc[5]-1] *
                      x[cc[6]-1,cc[7]-1]) == res;
