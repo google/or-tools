@@ -100,11 +100,14 @@ ifeq ("$(SYSTEM)","win")
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
+  CLP_INC = -DUSE_CLP
+  CBC_INC = -DUSE_CBC
   CFLAGS= -nologo $(DEBUG) $(CBC_INC) $(CLP_INC)\
       /D__WIN32__ /I$(INC_DIR)\\src\\windows /DGFLAGS_DLL_DECL= \
       /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
       /I$(INC_DIR) /I$(EX_DIR)
   LD_FLAGS = psapi.lib ws2_32.lib
+  ORTOOLS_LIB = lib\\ortools.lib
   O=obj
   E=.exe
   OBJ_OUT = /Fo
