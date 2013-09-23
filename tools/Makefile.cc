@@ -45,10 +45,10 @@ ifeq ("$(SYSTEM)","unix")
   OR_TOOLS_TOP ?= $(shell pwd)
   OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
-  LD_FLAGS = -lz -lrt -lpthread
   OS = $(shell uname -s)
   ifeq ($(OS),Linux)
     CCC = g++ -fPIC -std=c++0x
+    LD_FLAGS = lz -lrt -lpthread
     ORTOOLS_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -lortools
     PLATFORM = LINUX
     LBITS = $(shell getconf LONG_BIT)
@@ -63,6 +63,7 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     CCC = clang++ -fPIC -std=c++11
+    LD_FLAGS = -lz
     ORTOOLS_LIB = -L$(OR_ROOT)lib -lortools
     PLATFORM = MACOSX
     PTRLENGTH = 64

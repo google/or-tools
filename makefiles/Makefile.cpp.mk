@@ -1045,7 +1045,7 @@ $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programm
 
 
 $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(BASE_LIB_OBJS)
-	$(DYNAMIC_LD) \
+	$(DYNAMIC_LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX) \
 	  $(ALGORITHMS_LIB_OBJS) \
 	  $(BASE_LIB_OBJS) \
@@ -1088,6 +1088,7 @@ else
 	cp src/gen/constraint_solver/*.pb.h temp/or-tools.$(PORT)/include/constraint_solver
 	cp src/graph/*.h temp/or-tools.$(PORT)/include/graph
 	cp src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
+	cp src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver
 	cp src/util/*.h temp/or-tools.$(PORT)/include/util
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
