@@ -1043,7 +1043,45 @@ $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programm
 # Target for archives
 
 
+ifeq "$(SYSTEM)" "win"
+$(LIB_DIR)/ortools.lib: $(STATIC_ROUTING_DEPS)
+	lib /out:$(LIB_DIR)/ortools.lib  $(STATIC_ROUTING_LNK)
 
+cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
+	-$(DELREC) temp
+	mkdir temp
+	mkdir temp\\or-tools.$(PORT)
+	mkdir temp\\or-tools.$(PORT)\\bin
+	mkdir temp\\or-tools.$(PORT)\\examples
+	mkdir temp\\or-tools.$(PORT)\\include
+	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
+	mkdir temp\\or-tools.$(PORT)\\include\\base
+	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
+	mkdir temp\\or-tools.$(PORT)\\include\\gflags
+	mkdir temp\\or-tools.$(PORT)\\include\\graph
+	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
+	mkdir temp\\or-tools.$(PORT)\\include\\util
+	mkdir temp\\or-tools.$(PORT)\\lib
+	mkdir temp\\or-tools.$(PORT)\\objs
+	cp LICENSE-2.0.txt temp\\or-tools.$(PORT)
+	cp tools\\README.cc temp\\or-tools.$(PORT)\\README
+	cp tools\\Makefile.cc temp\\or-tools.$(PORT)\\Makefile
+	cp lib\\libortools.$(DYNAMIC_LIB_SUFFIX) temp\\or-tools.$(PORT)\\lib
+	cp examples\\cpp\\*.cc examples\\cpp\\*.h temp\\or-tools.$(PORT)\\examples
+	cp src\\algorithms\\*.h temp\\or-tools.$(PORT)\\include\\algorithms
+	cp src\\base\\*.h temp\\or-tools.$(PORT)\\include\\base
+	cp src\\constraint_solver\\*.h temp\\or-tools.$(PORT)\\include\\constraint_solver
+	cp src\\gen\\constraint_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\constraint_solver
+	cp src\\graph\\*.h temp\\or-tools.$(PORT)\\include\\graph
+	cp src\\linear_solver\\*.h temp\\or-tools.$(PORT)\\include\\linear_solver
+	cp src\\gen\\linear_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\linear_solver
+	cp src\\util\\*.h temp\\or-tools.$(PORT)\\include\\util
+	cd temp\\or-tools.$(PORT)\\include && tar -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | tar xvm
+	cd temp\\or-tools.$(PORT)\\include && tar -C ..\\..\\..\\dependencies\\install\\include -c -v google | tar xvm
+	cd temp\\or-tools.$(PORT)\\include && tar -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | tar xvm
+	cd temp && tar cvzf ..\\Google.OrTools.cc.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+	-$(DELREC) temp
+else
 $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX) \
@@ -1059,9 +1097,6 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OB
 	  $(STATIC_LD_FLAGS)
 
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
-ifeq "$(SYSTEM)" "win"
-	echo make cc_archive not yet supported on windows.
-else
 	-$(DELREC) temp
 	mkdir temp
 	mkdir temp/or-tools.$(PORT)
@@ -1077,19 +1112,20 @@ else
 	mkdir temp/or-tools.$(PORT)/include/util
 	mkdir temp/or-tools.$(PORT)/lib
 	mkdir temp/or-tools.$(PORT)/objs
-	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
-	cp tools/README.cc temp/or-tools.$(PORT)/README
-	cp tools/Makefile.cc temp/or-tools.$(PORT)/Makefile
-	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/or-tools.$(PORT)/lib
-	cp examples/cpp/*.cc examples/cpp/*.h temp/or-tools.$(PORT)/examples
-	cp src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
-	cp src/base/*.h temp/or-tools.$(PORT)/include/base
-	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
-	cp src/gen/constraint_solver/*.pb.h temp/or-tools.$(PORT)/include/constraint_solver
-	cp src/graph/*.h temp/or-tools.$(PORT)/include/graph
-	cp src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
-	cp src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver
-	cp src/util/*.h temp/or-tools.$(PORT)/include/util
+	copy LICENSE-2.0.txt temp/or-tools.$(PORT)
+	copy tools/README.cc temp/or-tools.$(PORT)/README
+	copy tools/Makefile.cc temp/or-tools.$(PORT)/Makefile
+	copy lib/ortools.lib temp/or-tools.$(PORT)/lib
+	copy examples/cpp/*.cc temp/or-tools.$(PORT)/examples
+	copy examples/cpp/*.h temp/or-tools.$(PORT)/examples
+	copy src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
+	copy src/base/*.h temp/or-tools.$(PORT)/include/base
+	copy src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
+	copy src/gen/constraint_solver/*.pb.h temp/or-tools.$(PORT)/include/constraint_solver
+	copy src/graph/*.h temp/or-tools.$(PORT)/include/graph
+	copy src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
+	copy src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver
+	copy src/util/*.h temp/or-tools.$(PORT)/include/util
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm

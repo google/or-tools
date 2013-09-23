@@ -273,7 +273,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                                       solver->model_name().c_str());
     if (file) {
       file->Write(model.c_str(), model.length());
-      vector<Container> to_sort;
+      std::vector<Container> to_sort;
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end();
