@@ -20,7 +20,7 @@ import random
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_string('data',
-                     'python/data/steel_mill/steel_mill_slab.txt',
+                     'data/steel_mill/steel_mill_slab.txt',
                      'path to data file')
 gflags.DEFINE_integer('lns_fragment_size',
                       10,
@@ -149,6 +149,9 @@ class SteelLns(object):
   def __init__(self, rand, size):
     self.__random = rand
     self.__size = size
+
+  def InitFragments(self):
+    pass
 
   def NextFragment(self, fragment, values):
     counter = 0

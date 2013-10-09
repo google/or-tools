@@ -42,18 +42,11 @@ def BuildPairs(rows, cols):
     rows: the number of rows in the grid
     cols: the number of columns in the grid
   """
-  results = []
-  for x in range(rows):
-    for y in range(cols):
-      for dx in (-1, 0, 1):
-        for dy in (-1, 0, 1):
-          if (x + dx >= 0 and
-              x + dx < rows and
-              y + dy >= 0 and
-              y + dy < cols and
-              (dx != 0 or dy != 0)):
-            results.append((x * cols + y, (x + dx) * cols + (y + dy)))
-  return results
+  return [(x * cols + y, (x + dx) * cols + (y + dy))
+          for x in range(rows) for y in range(cols)
+          for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+          if (x + dx >= 0 and x + dx < rows and
+              y + dy >= 0 and y + dy < cols and (dx != 0 or dy != 0))]
 
 
 def main(unused_argv):

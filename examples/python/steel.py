@@ -18,7 +18,7 @@ from constraint_solver import pywrapcp
 
 FLAGS = gflags.FLAGS
 
-gflags.DEFINE_string('data', 'python/data/steel_mill/steel_mill_slab.txt',
+gflags.DEFINE_string('data', 'data/steel_mill/steel_mill_slab.txt',
                      'path to data file')
 
 #----------------helper for binpacking posting----------------
