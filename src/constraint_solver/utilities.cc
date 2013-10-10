@@ -20,11 +20,12 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -45,9 +46,7 @@ void SmallRevBitSet::SetToZero(Solver* const solver, int64 pos) {
   bits_.SetValue(solver, bits_.Value() & ~OneBit64(pos));
 }
 
-int64 SmallRevBitSet::Cardinality() const {
-  return BitCount64(bits_.Value());
-}
+int64 SmallRevBitSet::Cardinality() const { return BitCount64(bits_.Value()); }
 
 int64 SmallRevBitSet::GetFirstOne() const {
   if (bits_.Value() == 0) {
@@ -69,8 +68,8 @@ RevBitSet::RevBitSet(int64 size)
 }
 
 RevBitSet::~RevBitSet() {
-  delete [] bits_;
-  delete [] stamps_;
+  delete[] bits_;
+  delete[] stamps_;
 }
 
 void RevBitSet::Save(Solver* const solver, int offset) {
@@ -266,13 +265,11 @@ class PrintModelVisitor : public ModelVisitor {
     Increase();
   }
 
-  virtual void EndVisitExtension(const string& type_name) {
-    Decrease();
-  }
+  virtual void EndVisitExtension(const string& type_name) { Decrease(); }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
-    if (delegate != NULL) {
+                                    IntExpr* const delegate) {
+    if (delegate != nullptr) {
       delegate->Accept(this);
     } else {
       if (variable->Bound() && variable->name().empty()) {
@@ -284,9 +281,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate) {
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate) {
     LOG(INFO) << Spaces() << "IntVar";
     Increase();
     LOG(INFO) << Spaces() << value;
@@ -296,10 +292,9 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate) {
-    if (delegate != NULL) {
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate) {
+    if (delegate != nullptr) {
       LOG(INFO) << Spaces() << operation << " <" << value << ", ";
       Increase();
       delegate->Accept(this);
@@ -308,19 +303,6 @@ class PrintModelVisitor : public ModelVisitor {
     } else {
       LOG(INFO) << Spaces() << variable->DebugString();
     }
-  }
-
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegates,
-                                     int size) {
-    LOG(INFO) << Spaces() << operation << " <";
-    Increase();
-    for (int i = 0; i < size; ++i) {
-      delegates[i]->Accept(this);
-    }
-    Decrease();
-    LOG(INFO) << Spaces() << ">";
   }
 
   virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
@@ -333,17 +315,9 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerArrayArgument(const string& arg_name,
-                                         const int64* const values,
-                                         int size) {
-    string array = "[";
-    for (int i = 0; i < size; ++i) {
-      if (i != 0) {
-        array.append(", ");
-      }
-      StringAppendF(&array, "%lld", values[i]);
-    }
-    array.append("]");
-    LOG(INFO) << Spaces() << arg_name << ": " << array;
+                                         const std::vector<int64>& values) {
+    LOG(INFO) << Spaces() << arg_name << ": ["
+              << IntVectorToString(values, ", ") << "]";
   }
 
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
@@ -368,9 +342,8 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument) {
+  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+                                              IntExpr* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
@@ -378,12 +351,10 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
+      const string& arg_name, const std::vector<IntVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < arguments.size(); ++i) {
       arguments[i]->Accept(this);
     }
     Decrease();
@@ -392,19 +363,18 @@ class PrintModelVisitor : public ModelVisitor {
 
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument) {
+                                     IntervalVar* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
     Decrease();
   }
 
-  virtual void VisitIntervalArgumentArray(const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size) {
+  virtual void VisitIntervalArgumentArray(
+      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < arguments.size(); ++i) {
       arguments[i]->Accept(this);
     }
     Decrease();
@@ -413,37 +383,30 @@ class PrintModelVisitor : public ModelVisitor {
 
   // Visit sequence argument.
   virtual void VisitSequenceArgument(const string& arg_name,
-                                     const SequenceVar* const argument) {
+                                     SequenceVar* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
     Decrease();
   }
 
-  virtual void VisitSequenceArgumentArray(const string& arg_name,
-                                          const SequenceVar* const * arguments,
-                                          int size) {
+  virtual void VisitSequenceArgumentArray(
+      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < arguments.size(); ++i) {
       arguments[i]->Accept(this);
     }
     Decrease();
     LOG(INFO) << Spaces() << "]";
   }
 
-  virtual string DebugString() const {
-    return "PrintModelVisitor";
-  }
+  virtual string DebugString() const { return "PrintModelVisitor"; }
 
  private:
-  void Increase() {
-    indent_ += 2;
-  }
+  void Increase() { indent_ += 2; }
 
-  void Decrease() {
-    indent_ -= 2;
-  }
+  void Decrease() { indent_ -= 2; }
 
   string Spaces() {
     string result;
@@ -457,9 +420,7 @@ class PrintModelVisitor : public ModelVisitor {
     return result;
   }
 
-  void set_prefix(const string& prefix) {
-    prefix_ = prefix;
-  }
+  void set_prefix(const string& prefix) { prefix_ = prefix; }
 
   int indent_;
   string prefix_;
@@ -470,13 +431,13 @@ class PrintModelVisitor : public ModelVisitor {
 class ModelStatisticsVisitor : public ModelVisitor {
  public:
   ModelStatisticsVisitor()
-  : num_constraints_(0),
-    num_variables_(0),
-    num_expressions_(0),
-    num_casts_(0),
-    num_intervals_(0),
-    num_sequences_(0),
-    num_extensions_(0) {}
+      : num_constraints_(0),
+        num_variables_(0),
+        num_expressions_(0),
+        num_casts_(0),
+        num_intervals_(0),
+        num_sequences_(0),
+        num_extensions_(0) {}
 
   virtual ~ModelStatisticsVisitor() {}
 
@@ -500,15 +461,13 @@ class ModelStatisticsVisitor : public ModelVisitor {
     // Display statistics.
     LOG(INFO) << "Model has:";
     LOG(INFO) << "  - " << num_constraints_ << " constraints.";
-    for (ConstIter<hash_map<string, int> > it(constraint_types_);
-         !it.at_end();
+    for (ConstIter<hash_map<string, int> > it(constraint_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
     LOG(INFO) << "  - " << num_variables_ << " integer variables.";
     LOG(INFO) << "  - " << num_expressions_ << " integer expressions.";
-    for (ConstIter<hash_map<string, int> > it(expression_types_);
-         !it.at_end();
+    for (ConstIter<hash_map<string, int> > it(expression_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
@@ -516,8 +475,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
     LOG(INFO) << "  - " << num_sequences_ << " sequence variables.";
     LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
-    for (ConstIter<hash_map<string, int> > it(extension_types_);
-         !it.at_end();
+    for (ConstIter<hash_map<string, int> > it(extension_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
@@ -541,7 +499,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
+                                    IntExpr* const delegate) {
     num_variables_++;
     Register(variable);
     if (delegate) {
@@ -551,9 +509,8 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate) {
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate) {
     num_variables_++;
     Register(variable);
     num_casts_++;
@@ -561,22 +518,11 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate) {
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate) {
     num_intervals_++;
     if (delegate) {
       VisitSubArgument(delegate);
-    }
-  }
-
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegates,
-                                     int size) {
-    num_intervals_++;
-    for (int i = 0; i < size; ++i) {
-      VisitSubArgument(delegates[i]);
     }
   }
 
@@ -588,52 +534,45 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument) {
+  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+                                              IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
-    for (int i = 0; i < size; ++i) {
+      const string& arg_name, const std::vector<IntVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument) {
+                                     IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size) {
-    for (int i = 0; i < size; ++i) {
+  virtual void VisitIntervalArrayArgument(
+      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
   virtual void VisitSequenceArgument(const string& arg_name,
-                                     const SequenceVar* const argument) {
+                                     SequenceVar* const argument) {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitSequenceArrayArgument(const string& arg_name,
-                                          const SequenceVar* const * arguments,
-                                          int size) {
-    for (int i = 0; i < size; ++i) {
+  virtual void VisitSequenceArrayArgument(
+      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual string DebugString() const {
-    return "ModelStatisticsVisitor";
-  }
+  virtual string DebugString() const { return "ModelStatisticsVisitor"; }
 
  private:
   void Register(const BaseObject* const object) {
@@ -645,13 +584,13 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // T should derive from BaseObject
-  template<typename T> void VisitSubArgument(T* object) {
+  template <typename T>
+  void VisitSubArgument(T* object) {
     if (!AlreadyVisited(object)) {
       Register(object);
       object->Accept(this);
     }
   }
-
 
   void AddConstraintType(const string& constraint_type) {
     constraint_types_[constraint_type]++;
@@ -682,14 +621,13 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
 class VariableDegreeVisitor : public ModelVisitor {
  public:
-  VariableDegreeVisitor(hash_map<IntVar*, int>* const map)
-      : map_(map) {}
+  VariableDegreeVisitor(hash_map<IntVar*, int>* const map) : map_(map) {}
 
   virtual ~VariableDegreeVisitor() {}
 
   // Begin/End visit element.
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
+                                    IntExpr* const delegate) {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (ContainsKey(*map_, var)) {
       (*map_)[var]++;
@@ -700,9 +638,8 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate) {
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate) {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (ContainsKey(*map_, var)) {
       (*map_)[var]++;
@@ -711,20 +648,10 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate) {
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate) {
     if (delegate) {
       VisitSubArgument(delegate);
-    }
-  }
-
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegates,
-                                     int size) {
-    for (int i = 0; i < size; ++i) {
-      VisitSubArgument(delegates[i]);
     }
   }
 
@@ -735,60 +662,54 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument) {
+  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+                                              IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
-    for (int i = 0; i < size; ++i) {
+      const string& arg_name, const std::vector<IntVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument) {
+                                     IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size) {
-    for (int i = 0; i < size; ++i) {
+  virtual void VisitIntervalArrayArgument(
+      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
   virtual void VisitSequenceArgument(const string& arg_name,
-                                     const SequenceVar* const argument) {
+                                     SequenceVar* const argument) {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitSequenceArrayArgument(const string& arg_name,
-                                          const SequenceVar* const * arguments,
-                                          int size) {
-    for (int i = 0; i < size; ++i) {
+  virtual void VisitSequenceArrayArgument(
+      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+    for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual string DebugString() const {
-    return "VariableDegreeVisitor";
-  }
+  virtual string DebugString() const { return "VariableDegreeVisitor"; }
 
  private:
   // T should derive from BaseObject
-  template<typename T> void VisitSubArgument(T* object) {
+  template <typename T>
+  void VisitSubArgument(T* object) {
     object->Accept(this);
   }
 
-  hash_map<IntVar*, int> * const map_;
+  hash_map<IntVar*, int>* const map_;
 };
 }  // namespace
 
@@ -803,5 +724,23 @@ ModelVisitor* Solver::MakeStatisticsModelVisitor() {
 ModelVisitor* Solver::MakeVariableDegreeVisitor(
     hash_map<IntVar*, int>* const map) {
   return RevAlloc(new VariableDegreeVisitor(map));
+}
+
+// ----- Vector manipulations -----
+
+std::vector<int64> ToInt64Vector(const std::vector<int>& input) {
+  std::vector<int64> result(input.size());
+  for (int i = 0; i < input.size(); ++i) {
+    result[i] = input[i];
+  }
+  return result;
+}
+
+std::vector<int64> SortedNoDuplicates(const std::vector<int64>& input) {
+  std::vector<int64> result(input);
+  std::sort(result.begin(), result.end());
+  std::vector<int64>::iterator it = std::unique(result.begin(), result.end());
+  result.resize(std::distance(result.begin(), it));
+  return result;
 }
 }  // namespace operations_research

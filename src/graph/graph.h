@@ -1588,7 +1588,7 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>
   this->ComputeCumulativeSum(&reverse_start_);
 
   // Computes the reverse arcs of the forward arcs.
-  // Note that this sort the reverse arcs with the same tail by head.
+  // Note that this std::sort the reverse arcs with the same tail by head.
   opposite_.reserve(num_arcs_);
   for (int i = 0; i < num_arcs_; ++i) {
     // TODO(user): the 0 is wasted here, but minor optimisation.
@@ -1607,22 +1607,11 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>
   for (int i = 0; i < num_arcs_; ++i) {
     opposite_[opposite_[i]] = i;
   }
-#if defined(_MSC_VER)
-  for (IntegerRangeIterator<NodeIndex> node_iter = Base::AllNodes().begin();
-       node_iter != Base::AllNodes().end(); ++node_iter) {
-    for (IntegerRangeIterator<ArcIndexType> arc_iter =
-	   OutgoingArcs(*node_iter).begin(); 
-	 arc_iter != OutgoingArcs(*node_iter).end(); ++arc_iter) {
-      head_[opposite_[*arc_iter]] = *node_iter;
-    }
-  }
-#else
   for (const NodeIndexType node : Base::AllNodes()) {
     for (const ArcIndexType arc : OutgoingArcs(node)) {
       head_[opposite_[arc]] = node;
     }
   }
-#endif
 }
 
 template<typename NodeIndexType, typename ArcIndexType>

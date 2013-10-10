@@ -50,7 +50,7 @@ void AssignmentOn4x4Matrix() {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
   return 0;
 }

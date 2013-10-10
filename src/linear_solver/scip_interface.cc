@@ -289,10 +289,9 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
   if (constraint_index != kNoIndex) {
-    for (ConstIter<hash_map<const MPVariable*, double> >
-             it(constraint->coefficients_); !it.at_end(); ++it) {
-      const int var_index = it->first->index();
-      const double old_coef_value = it->second;
+    for (CoeffEntry entry : constraint->coefficients_) {
+      const int var_index = entry.first->index();
+      const double old_coef_value = entry.second;
       DCHECK_NE(kNoIndex, var_index);
       ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
       // Set coefficient to zero by substracting the old coefficient value.
@@ -319,10 +318,8 @@ void SCIPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Clear linear terms
-  for (ConstIter<hash_map<const MPVariable*, double> >
-           it(solver_->objective_->coefficients_);
-       !it.at_end(); ++it) {
-    const int var_index = it->first->index();
+  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+    const int var_index = entry.first->index();
     // Variable may have not been extracted yet.
     if (var_index == kNoIndex) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
@@ -366,10 +363,8 @@ void SCIPInterface::ExtractNewVariables() {
     // Add new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
-      for (ConstIter<hash_map<const MPVariable*, double> > it(
-               ct->coefficients_);
-           !it.at_end(); ++it) {
-        const int var_index = it->first->index();
+      for (CoeffEntry entry : ct->coefficients_) {
+        const int var_index = entry.first->index();
         DCHECK_NE(kNoIndex, var_index);
         if (var_index >= last_variable_index_ + 1) {
           // The variable is new (index offset by 1 because of the
@@ -377,7 +372,7 @@ void SCIPInterface::ExtractNewVariables() {
           // value was 0 and we can directly add the coefficient.
           ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
               scip_, scip_constraints_[i],
-              scip_variables_[var_index], it->second));
+              scip_variables_[var_index], entry.second));
         }
       }
     }
@@ -399,39 +394,42 @@ void SCIPInterface::ExtractNewConstraints() {
         max_row_length = ct->coefficients_.size();
       }
     }
-    scoped_array<SCIP_VAR*> vars(new SCIP_VAR*[max_row_length]);
-    scoped_array<double> coefs(new double[max_row_length]);
+    scoped_ptr<SCIP_VAR * []> vars(new SCIP_VAR* [max_row_length]);
+    scoped_ptr<double[]> coefs(new double[max_row_length]);
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       DCHECK_NE(kNoIndex, ct->index());
       int size = ct->coefficients_.size();
       int j = 0;
-      for (ConstIter<hash_map<const MPVariable*, double> > it(
-               ct->coefficients_);
-           !it.at_end(); ++it) {
-        const int index = it->first->index();
+      for (CoeffEntry entry : ct->coefficients_) {
+        const int index = entry.first->index();
         DCHECK_NE(kNoIndex, index);
         vars[j] = scip_variables_[index];
-        coefs[j] = it->second;
+        coefs[j] = entry.second;
         j++;
       }
       SCIP_CONS* scip_constraint = NULL;
-#if (SCIP_VERSION < 300)
+      const bool is_lazy = ct->is_lazy();
+      // See
+      // http://scip.zib.de/doc/html/cons__linear_8h.shtml#aa7aed137a4130b35b168812414413481
+      // for an explanation of the parameters.
       ORTOOLS_SCIP_CALL(SCIPcreateConsLinear(
           scip_, &scip_constraint,
           ct->name().empty() ? "" : ct->name().c_str(),
           size, vars.get(), coefs.get(),
           ct->lb(), ct->ub(),
-          true, true, true, true, true, false, false, false, false, false));
-#else
-      ORTOOLS_SCIP_CALL(SCIPcreateConsBasicLinear(
-          scip_, &scip_constraint,
-          ct->name().empty() ? "" : ct->name().c_str(),
-          size, vars.get(), coefs.get(),
-          ct->lb(), ct->ub()));
+          !is_lazy,  // 'initial' parameter.
+          true,      // 'separate' parameter.
+          true,      // 'enforce' parameter.
+          true,      // 'check' parameter.
+          true,      // 'propagate' parameter.
+          false,     // 'local' parameter.
+          false,     // 'modifiable' parameter.
+          false,     // 'dynamic' parameter.
+          is_lazy,   // 'removable' parameter.
+          false));   // 'stickingatnode' parameter.
       ORTOOLS_SCIP_CALL(SCIPaddCons(scip_, scip_constraint));
-#endif
       scip_constraints_.push_back(scip_constraint);
     }
   }
@@ -441,11 +439,9 @@ void SCIPInterface::ExtractObjective() {
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (ConstIter<hash_map<const MPVariable*, double> >
-           it(solver_->objective_->coefficients_);
-       !it.at_end(); ++it) {
-    int var_index = it->first->index();
-    double obj_coef = it->second;
+  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+    int var_index = entry.first->index();
+    double obj_coef = entry.second;
     ORTOOLS_SCIP_CALL(SCIPchgVarObj(
         scip_, scip_variables_[var_index], obj_coef));
   }
@@ -467,16 +463,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Set log level.
-#if (SCIP_VERSION >= 300)
   SCIPsetMessagehdlrQuiet(scip_, quiet_);
-#else
-  if (quiet_) {
-    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
-  } else {
-    ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
-  }
-#endif
-
 
   // Special case if the model is empty since SCIP expects a non-empty model
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
@@ -490,14 +477,19 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
   // Time limit.
-  if (solver_->time_limit()) {
+  if (solver_->time_limit() != 0) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    ORTOOLS_SCIP_CALL(SCIPsetRealParam(
-        scip_, "limits/time", solver_->time_limit() / 1000.0));
+    ORTOOLS_SCIP_CALL(SCIPsetRealParam(scip_,
+                                       "limits/time",
+                                       solver_->time_limit_in_secs()));
   } else {
     ORTOOLS_SCIP_CALL(SCIPresetParam(scip_, "limits/time"));
   }
 
+  // TODO(user): clarify the differences and the precedence between the two
+  // SetParameter*() API (file-based and generic, parameter-based).
+  solver_->SetSolverSpecificParametersAsString(
+      solver_->solver_specific_parameter_string_);
   SetParameters(param);
 
   // Solve.

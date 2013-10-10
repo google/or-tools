@@ -22,12 +22,12 @@
 #ifndef OR_TOOLS_UTIL_FP_UTILS_H_
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
-#if defined(__GNUC__) && defined(__linux__)
 #include <fenv.h>  // NOLINT
+#if !defined(__ANDROID__) && !defined(__APPLE__)
 #include <fpu_control.h>
+#endif
 #ifdef __SSE__
 #include <xmmintrin.h>
-#endif
 #endif
 
 #include <cmath>
@@ -65,7 +65,7 @@ inline void SetFPPrecision(fpu_control_t precision) {
   _FPU_SETCW(status);
   DCHECK_EQ(precision, GetFPPrecision());
 }
-#endif
+#endif  // defined(__linux__)
 #endif  // defined(__i386__) || defined(__x86_64__)
 
 #undef TOUCH
@@ -118,13 +118,13 @@ template<typename FloatType> bool AreWithinAbsoluteTolerance(
 // instead of relative tolerance only, and with a proper support for infinity.
 // TODO(user): investigate moving this to util/math/ or some other place.
 #define EXPECT_COMPARABLE(expected, obtained, epsilon)                      \
-  EXPECT_TRUE(AreWithinAbsoluteOrRelativeTolerances(                        \
+  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances(   \
       expected, obtained, epsilon, epsilon))                                \
       << obtained << " != expected value " << expected                      \
       << " within epsilon = " << epsilon;
 
 #define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                   \
-  EXPECT_FALSE(AreWithinAbsoluteOrRelativeTolerances(                       \
+  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances(  \
       expected, obtained, epsilon, epsilon))                                \
       << obtained << " == expected value " << expected                      \
       << " within epsilon = " << epsilon;

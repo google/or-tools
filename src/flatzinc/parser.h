@@ -62,7 +62,7 @@ extern "C" int isatty(int t);
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 
 using std::string;

@@ -32,37 +32,23 @@ class IntervalVarStartExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   virtual ~IntervalVarStartExpr() {}
 
-  virtual int64 Min() const {
-    return interval_->StartMin();
-  }
+  virtual int64 Min() const { return interval_->StartMin(); }
 
-  virtual void SetMin(int64 m) {
-    interval_->SetStartMin(m);
-  }
+  virtual void SetMin(int64 m) { interval_->SetStartMin(m); }
 
-  virtual int64 Max() const {
-    return interval_->StartMax();
-  }
+  virtual int64 Max() const { return interval_->StartMax(); }
 
-  virtual void SetMax(int64 m) {
-    interval_->SetStartMax(m);
-  }
+  virtual void SetMax(int64 m) { interval_->SetStartMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetStartRange(l, u);
-  }
+  virtual void SetRange(int64 l, int64 u) { interval_->SetStartRange(l, u); }
 
-  virtual void SetValue(int64 v) {
-    interval_->SetStartRange(v, v);
-  }
+  virtual void SetValue(int64 v) { interval_->SetStartRange(v, v); }
 
   virtual bool Bound() const {
     return interval_->StartMin() == interval_->StartMax();
   }
 
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenStartRange(d);
-  }
+  virtual void WhenRange(Demon* d) { interval_->WhenStartRange(d); }
 
   virtual string DebugString() const {
     return StringPrintf("start(%s)", interval_->DebugString().c_str());
@@ -70,8 +56,7 @@ class IntervalVarStartExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
   }
 
@@ -86,37 +71,23 @@ class IntervalVarEndExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   virtual ~IntervalVarEndExpr() {}
 
-  virtual int64 Min() const {
-    return interval_->EndMin();
-  }
+  virtual int64 Min() const { return interval_->EndMin(); }
 
-  virtual void SetMin(int64 m) {
-    interval_->SetEndMin(m);
-  }
+  virtual void SetMin(int64 m) { interval_->SetEndMin(m); }
 
-  virtual int64 Max() const {
-    return interval_->EndMax();
-  }
+  virtual int64 Max() const { return interval_->EndMax(); }
 
-  virtual void SetMax(int64 m) {
-    interval_->SetEndMax(m);
-  }
+  virtual void SetMax(int64 m) { interval_->SetEndMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetEndRange(l, u);
-  }
+  virtual void SetRange(int64 l, int64 u) { interval_->SetEndRange(l, u); }
 
-  virtual void SetValue(int64 v) {
-    interval_->SetEndRange(v, v);
-  }
+  virtual void SetValue(int64 v) { interval_->SetEndRange(v, v); }
 
   virtual bool Bound() const {
     return interval_->EndMin() == interval_->EndMax();
   }
 
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenEndRange(d);
-  }
+  virtual void WhenRange(Demon* d) { interval_->WhenEndRange(d); }
 
   virtual string DebugString() const {
     return StringPrintf("end(%s)", interval_->DebugString().c_str());
@@ -124,8 +95,7 @@ class IntervalVarEndExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
   }
 
@@ -140,37 +110,23 @@ class IntervalVarDurationExpr : public BaseIntExpr {
       : BaseIntExpr(i->solver()), interval_(i) {}
   virtual ~IntervalVarDurationExpr() {}
 
-  virtual int64 Min() const {
-    return interval_->DurationMin();
-  }
+  virtual int64 Min() const { return interval_->DurationMin(); }
 
-  virtual void SetMin(int64 m) {
-    interval_->SetDurationMin(m);
-  }
+  virtual void SetMin(int64 m) { interval_->SetDurationMin(m); }
 
-  virtual int64 Max() const {
-    return interval_->DurationMax();
-  }
+  virtual int64 Max() const { return interval_->DurationMax(); }
 
-  virtual void SetMax(int64 m) {
-    interval_->SetDurationMax(m);
-  }
+  virtual void SetMax(int64 m) { interval_->SetDurationMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetDurationRange(l, u);
-  }
+  virtual void SetRange(int64 l, int64 u) { interval_->SetDurationRange(l, u); }
 
-  virtual void SetValue(int64 v) {
-    interval_->SetDurationRange(v, v);
-  }
+  virtual void SetValue(int64 v) { interval_->SetDurationRange(v, v); }
 
   virtual bool Bound() const {
     return interval_->DurationMin() == interval_->DurationMax();
   }
 
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenDurationRange(d);
-  }
+  virtual void WhenRange(Demon* d) { interval_->WhenDurationRange(d); }
 
   virtual string DebugString() const {
     return StringPrintf("duration(%s)", interval_->DebugString().c_str());
@@ -178,8 +134,7 @@ class IntervalVarDurationExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
   }
 
@@ -225,17 +180,11 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
     SetMax(u);
   }
 
-  virtual void SetValue(int64 v) {
-    SetRange(v, v);
-  }
+  virtual void SetValue(int64 v) { SetRange(v, v); }
 
-  virtual bool Bound() const {
-    return interval_->IsPerformedBound();
-  }
+  virtual bool Bound() const { return interval_->IsPerformedBound(); }
 
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenPerformedBound(d);
-  }
+  virtual void WhenRange(Demon* d) { interval_->WhenPerformedBound(d); }
 
   virtual string DebugString() const {
     return StringPrintf("performed(%s)", interval_->DebugString().c_str());
@@ -243,8 +192,7 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
   }
 
@@ -255,8 +203,7 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
 
 class IntervalVarSafeStartExpr : public BaseIntExpr {
  public:
-  IntervalVarSafeStartExpr(IntervalVar* const i,
-                           int64 unperformed_value)
+  IntervalVarSafeStartExpr(IntervalVar* const i, int64 unperformed_value)
       : BaseIntExpr(i->solver()),
         interval_(i),
         unperformed_value_(unperformed_value) {}
@@ -312,23 +259,22 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
 
   virtual bool Bound() const {
     return !interval_->MustBePerformed() ||
-        interval_->StartMin() == interval_->StartMax();
+           interval_->StartMin() == interval_->StartMax();
   }
 
   virtual void WhenRange(Demon* d) {
     interval_->WhenStartRange(d);
+    interval_->WhenPerformedBound(d);
   }
 
   virtual string DebugString() const {
     return StringPrintf("safe_start(%s, %" GG_LL_FORMAT "d)",
-                        interval_->DebugString().c_str(),
-                        unperformed_value_);
+                        interval_->DebugString().c_str(), unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   unperformed_value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
@@ -342,8 +288,7 @@ class IntervalVarSafeStartExpr : public BaseIntExpr {
 
 class IntervalVarSafeDurationExpr : public BaseIntExpr {
  public:
-  IntervalVarSafeDurationExpr(IntervalVar* const i,
-                              int64 unperformed_value)
+  IntervalVarSafeDurationExpr(IntervalVar* const i, int64 unperformed_value)
       : BaseIntExpr(i->solver()),
         interval_(i),
         unperformed_value_(unperformed_value) {}
@@ -399,23 +344,22 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
 
   virtual bool Bound() const {
     return !interval_->MustBePerformed() ||
-        interval_->DurationMin() == interval_->DurationMax();
+           interval_->DurationMin() == interval_->DurationMax();
   }
 
   virtual void WhenRange(Demon* d) {
     interval_->WhenDurationRange(d);
+    interval_->WhenPerformedBound(d);
   }
 
   virtual string DebugString() const {
     return StringPrintf("safe_duration(%s, %" GG_LL_FORMAT "d)",
-                        interval_->DebugString().c_str(),
-                        unperformed_value_);
+                        interval_->DebugString().c_str(), unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   unperformed_value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
@@ -429,8 +373,7 @@ class IntervalVarSafeDurationExpr : public BaseIntExpr {
 
 class IntervalVarSafeEndExpr : public BaseIntExpr {
  public:
-  IntervalVarSafeEndExpr(IntervalVar* const i,
-                         int64 unperformed_value)
+  IntervalVarSafeEndExpr(IntervalVar* const i, int64 unperformed_value)
       : BaseIntExpr(i->solver()),
         interval_(i),
         unperformed_value_(unperformed_value) {}
@@ -486,23 +429,22 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
 
   virtual bool Bound() const {
     return !interval_->MustBePerformed() ||
-        interval_->EndMin() == interval_->EndMax();
+           interval_->EndMin() == interval_->EndMax();
   }
 
   virtual void WhenRange(Demon* d) {
     interval_->WhenEndRange(d);
+    interval_->WhenPerformedBound(d);
   }
 
   virtual string DebugString() const {
     return StringPrintf("safe_end(%s, %" GG_LL_FORMAT "d)",
-                        interval_->DebugString().c_str(),
-                        unperformed_value_);
+                        interval_->DebugString().c_str(), unperformed_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   unperformed_value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
@@ -518,7 +460,7 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
 // ----- API -----
 
 IntExpr* IntervalVar::StartExpr() {
-  if (start_expr_ == NULL) {
+  if (start_expr_ == nullptr) {
     solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
     start_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarStartExpr(this)));
@@ -530,7 +472,7 @@ IntExpr* IntervalVar::StartExpr() {
 }
 
 IntExpr* IntervalVar::DurationExpr() {
-  if (duration_expr_ == NULL) {
+  if (duration_expr_ == nullptr) {
     solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
     duration_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarDurationExpr(this)));
@@ -542,7 +484,7 @@ IntExpr* IntervalVar::DurationExpr() {
 }
 
 IntExpr* IntervalVar::EndExpr() {
-  if (end_expr_ == NULL) {
+  if (end_expr_ == nullptr) {
     solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
     end_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarEndExpr(this)));
@@ -554,7 +496,7 @@ IntExpr* IntervalVar::EndExpr() {
 }
 
 IntExpr* IntervalVar::PerformedExpr() {
-  if (performed_expr_ == NULL) {
+  if (performed_expr_ == nullptr) {
     solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
     performed_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarPerformedExpr(this)));

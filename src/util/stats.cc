@@ -41,24 +41,35 @@ void StatsGroup::Reset() {
   }
 }
 
-string StatsGroup::StatString() const {
-  string result(name_ + " {\n");
+namespace {
+bool CompareStatPointerByName(Stat* s1, Stat *s2) {
+  return s1->Name() < s2->Name();
+}
+}  // namespace
 
+string StatsGroup::StatString() const {
   // Computes the longest name of all the stats we want to display.
+  // Also create a temporary vector so we can std::sort the stats by names.
   int longest_name_size = 0;
+  std::vector<Stat*> sorted_stats;
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
     const int size = static_cast<int>(stats_[i]->Name().size());
     longest_name_size = std::max(longest_name_size, size);
+    sorted_stats.push_back(stats_[i]);
   }
+  std::sort(sorted_stats.begin(), sorted_stats.end(), CompareStatPointerByName);
+
+  // Do not display groups without print-worthy stats.
+  if (sorted_stats.empty()) return "";
 
   // Pretty-print all the stats.
-  for (int i = 0; i < stats_.size(); ++i) {
-    if (!stats_[i]->WorthPrinting()) continue;
+  string result(name_ + " {\n");
+  for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
-    result += stats_[i]->Name();
-    result.append(longest_name_size - stats_[i]->Name().size() , ' ');
-    result += " : " + stats_[i]->ValueAsString();
+    result += sorted_stats[i]->Name();
+    result.append(longest_name_size - sorted_stats[i]->Name().size() , ' ');
+    result += " : " + sorted_stats[i]->ValueAsString();
   }
   result += "}\n";
   return result;

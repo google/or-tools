@@ -62,7 +62,7 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/int-type.h"
+#include "base/int_type.h"
 
 // STL vector ------------------------------------------------------------------
 template<typename IntType, typename T, typename Alloc = std::allocator<T> >

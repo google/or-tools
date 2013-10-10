@@ -24,9 +24,9 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
-#include "base/int-type-indexed-vector.h"
-#include "base/int-type.h"
-#include "base/map-util.h"
+#include "base/int_type_indexed_vector.h"
+#include "base/int_type.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -151,8 +151,8 @@ class PartialSum {
   string DebugString() const {
     return StringPrintf(
         "PartialSum(offset=%lld, last_value = %lld, sum = %s, ds = %s)",
-        offset_, last_value_, Int64VectorToString(sum_, ", ").c_str(),
-        Int64VectorToString(ds_, ", ").c_str());
+        offset_, last_value_, IntVectorToString(sum_, ", ").c_str(),
+        IntVectorToString(ds_, ", ").c_str());
   }
 
  private:

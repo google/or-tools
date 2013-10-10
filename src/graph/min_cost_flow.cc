@@ -253,7 +253,7 @@ bool GenericMinCostFlow<
   DCHECK_GE(node_excess_[node], 0);
   for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
     const ArcIndex arc = it.Index();
-    DCHECK(!IsAdmissible(arc));
+    DCHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
   }
   return true;
 }
@@ -468,8 +468,8 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastReducedCost(
   DCHECK_EQ(node_potential_[Tail(arc)], tail_potential);
   DCHECK(graph_->IsNodeValid(Tail(arc)));
   DCHECK(graph_->IsNodeValid(Head(arc)));
-  DCHECK_LE(node_potential_[Tail(arc)], 0);
-  DCHECK_LE(node_potential_[Head(arc)], 0);
+  DCHECK_LE(node_potential_[Tail(arc)], 0) << DebugString("ReducedCost:", arc);
+  DCHECK_LE(node_potential_[Head(arc)], 0) << DebugString("ReducedCost:", arc);
   return scaled_arc_unit_cost_[arc] + tail_potential -
          node_potential_[Head(arc)];
 }

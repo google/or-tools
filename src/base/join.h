@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include "base/basictypes.h"
+#include "base/integral_types.h"
 #include "base/stringpiece.h"
 
 namespace operations_research {

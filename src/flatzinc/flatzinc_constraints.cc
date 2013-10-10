@@ -26,19 +26,16 @@ namespace operations_research {
 namespace {
 class BooleanSumOdd : public Constraint {
  public:
-  BooleanSumOdd(Solver* const s, IntVar* const* bool_vars, int size)
+  BooleanSumOdd(Solver* const s, const std::vector<IntVar*>& bool_vars)
       : Constraint(s),
-        vars_(new IntVar* [size]),
-        size_(size),
+        vars_(bool_vars),
         num_possible_true_vars_(0),
-        num_always_true_vars_(0) {
-    memcpy(vars_.get(), bool_vars, size_ * sizeof(*bool_vars));
-  }
+        num_always_true_vars_(0) {}
 
   virtual ~BooleanSumOdd() {}
 
   virtual void Post() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
             solver(), this, &BooleanSumOdd::Update, "Update", i);
@@ -51,7 +48,7 @@ class BooleanSumOdd : public Constraint {
     int num_always_true = 0;
     int num_possible_true = 0;
     int possible_true_index = -1;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       const IntVar* const var = vars_[i];
       if (var->Min() == 1) {
         num_always_true++;
@@ -90,7 +87,7 @@ class BooleanSumOdd : public Constraint {
     } else if (num_possible_true_vars_.Value() ==
                num_always_true_vars_.Value() + 1) {
       int possible_true_index = -1;
-      for (int i = 0; i < size_; ++i) {
+      for (int i = 0; i < vars_.size(); ++i) {
         if (!vars_[i]->Bound()) {
           possible_true_index = i;
           break;
@@ -108,22 +105,23 @@ class BooleanSumOdd : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("BooleanSumOdd([%s])",
-                        DebugStringArray(vars_.get(), size_, ", ").c_str());
+                        DebugStringVector(vars_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(), size_);
+                                               vars_);
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
  private:
-  const scoped_array<IntVar*> vars_;
-  const int size_;
+  const std::vector<IntVar*> vars_;
   NumericalRev<int> num_possible_true_vars_;
   NumericalRev<int> num_always_true_vars_;
 };
+
+
 
 class VariableParity : public Constraint {
  public:
@@ -182,23 +180,20 @@ class VariableParity : public Constraint {
 
 class IsBooleanSumInRange : public Constraint {
  public:
-  IsBooleanSumInRange(Solver* const s, IntVar* const* bool_vars, int size,
+  IsBooleanSumInRange(Solver* const s, const std::vector<IntVar*>& bool_vars,
                       int64 range_min, int64 range_max, IntVar* const target)
       : Constraint(s),
-        vars_(new IntVar* [size]),
-        size_(size),
+        vars_(bool_vars),
         range_min_(range_min),
         range_max_(range_max),
         target_(target),
         num_possible_true_vars_(0),
-        num_always_true_vars_(0) {
-    memcpy(vars_.get(), bool_vars, size_ * sizeof(*bool_vars));
-  }
+        num_always_true_vars_(0) {}
 
   virtual ~IsBooleanSumInRange() {}
 
   virtual void Post() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
             solver(), this, &IsBooleanSumInRange::Update, "Update", i);
@@ -216,7 +211,7 @@ class IsBooleanSumInRange : public Constraint {
     int num_always_true = 0;
     int num_possible_true = 0;
     int possible_true_index = -1;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       const IntVar* const var = vars_[i];
       if (var->Min() == 1) {
         num_always_true++;
@@ -274,14 +269,14 @@ class IsBooleanSumInRange : public Constraint {
   virtual string DebugString() const {
     return StringPrintf(
         "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
-        DebugStringArray(vars_.get(), size_, ", ").c_str(), range_min_,
+        DebugStringVector(vars_, ", ").c_str(), range_min_,
         range_max_, target_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(), size_);
+                                               vars_);
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
@@ -289,7 +284,7 @@ class IsBooleanSumInRange : public Constraint {
   void PushAllUnboundToZero() {
     inactive_.Switch(solver());
     int true_vars = 0;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min() == 0) {
         vars_[i]->SetValue(0);
       } else {
@@ -302,7 +297,7 @@ class IsBooleanSumInRange : public Constraint {
   void PushAllUnboundToOne() {
     inactive_.Switch(solver());
     int true_vars = 0;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Max() == 1) {
         vars_[i]->SetValue(1);
         true_vars++;
@@ -311,8 +306,7 @@ class IsBooleanSumInRange : public Constraint {
     target_->SetValue(true_vars >= range_min_ && true_vars <= range_max_);
   }
 
-  const scoped_array<IntVar*> vars_;
-  const int size_;
+  const std::vector<IntVar*> vars_;
   const int64 range_min_;
   const int64 range_max_;
   IntVar* const target_;
@@ -323,22 +317,19 @@ class IsBooleanSumInRange : public Constraint {
 
 class BooleanSumInRange : public Constraint {
  public:
-  BooleanSumInRange(Solver* const s, IntVar* const* bool_vars, int size,
+  BooleanSumInRange(Solver* const s, const std::vector<IntVar*>& vars,
                     int64 range_min, int64 range_max)
       : Constraint(s),
-        vars_(new IntVar* [size]),
-        size_(size),
+        vars_(vars),
         range_min_(range_min),
         range_max_(range_max),
         num_possible_true_vars_(0),
-        num_always_true_vars_(0) {
-    memcpy(vars_.get(), bool_vars, size_ * sizeof(*bool_vars));
-  }
+        num_always_true_vars_(0) {}
 
   virtual ~BooleanSumInRange() {}
 
   virtual void Post() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
             solver(), this, &BooleanSumInRange::Update, "Update", i);
@@ -351,7 +342,7 @@ class BooleanSumInRange : public Constraint {
     int num_always_true = 0;
     int num_possible_true = 0;
     int possible_true_index = -1;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       const IntVar* const var = vars_[i];
       if (var->Min() == 1) {
         num_always_true++;
@@ -396,20 +387,20 @@ class BooleanSumInRange : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        DebugStringVector(vars_, ", ").c_str(),
                         range_min_, range_max_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(), size_);
+                                               vars_);
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
  private:
   void PushAllUnboundToZero() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min() == 0) {
         vars_[i]->SetValue(0);
       } else {
@@ -418,15 +409,14 @@ class BooleanSumInRange : public Constraint {
   }
 
   void PushAllUnboundToOne() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); i++) {
       if (vars_[i]->Max() == 1) {
         vars_[i]->SetValue(1);
       }
     }
   }
 
-  const scoped_array<IntVar*> vars_;
-  const int size_;
+  const std::vector<IntVar*> vars_;
   const int64 range_min_;
   const int64 range_max_;
   NumericalRev<int> num_possible_true_vars_;
@@ -885,8 +875,7 @@ Constraint* MakeIsBooleanSumInRange(Solver* const solver,
                                     int64 range_min, int64 range_max,
                                     IntVar* const target) {
   return solver->RevAlloc(
-      new IsBooleanSumInRange(solver, variables.data(), variables.size(),
-                              range_min, range_max, target));
+      new IsBooleanSumInRange(solver, variables, range_min, range_max, target));
 }
 
 void PostIsBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
@@ -934,8 +923,7 @@ Constraint* MakeBooleanSumInRange(Solver* const solver,
                                   const std::vector<IntVar*>& variables,
                                   int64 range_min, int64 range_max) {
   return solver->RevAlloc(
-      new BooleanSumInRange(solver, variables.data(), variables.size(),
-                            range_min, range_max));
+      new BooleanSumInRange(solver, variables, range_min, range_max));
 }
 void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
                            const std::vector<IntVar*>& variables, int64 range_min,
@@ -985,8 +973,7 @@ void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
 
 Constraint* MakeBooleanSumOdd(
     Solver* const solver, const std::vector<IntVar*>& variables) {
-  return solver->RevAlloc(
-      new BooleanSumOdd(solver, variables.data(), variables.size()));
+  return solver->RevAlloc(new BooleanSumOdd(solver, variables));
 }
 
 Constraint* MakeStrongScalProdEquality(Solver* const solver,

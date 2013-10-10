@@ -25,34 +25,18 @@ namespace operations_research {
 // ----- interval <unary relation> date -----
 
 namespace {
-const char* kUnaryNames[] = {
-  "ENDS_AFTER",
-  "ENDS_AT",
-  "ENDS_BEFORE",
-  "STARTS_AFTER",
-  "STARTS_AT",
-  "STARTS_BEFORE",
-  "CROSS_DATE",
-  "AVOID_DATE",
-};
+const char* kUnaryNames[] = {"ENDS_AFTER", "ENDS_AT", "ENDS_BEFORE",
+                             "STARTS_AFTER", "STARTS_AT", "STARTS_BEFORE",
+                             "CROSS_DATE", "AVOID_DATE", };
 
 const char* kBinaryNames[] = {
-  "ENDS_AFTER_END",
-  "ENDS_AFTER_START",
-  "ENDS_AT_END",
-  "ENDS_AT_START",
-  "STARTS_AFTER_END",
-  "STARTS_AFTER_START",
-  "STARTS_AT_END",
-  "STARTS_AT_START",
-  "STAYS_IN_SYNC"
-};
+    "ENDS_AFTER_END", "ENDS_AFTER_START", "ENDS_AT_END", "ENDS_AT_START",
+    "STARTS_AFTER_END", "STARTS_AFTER_START", "STARTS_AT_END",
+    "STARTS_AT_START", "STAYS_IN_SYNC"};
 
 class IntervalUnaryRelation : public Constraint {
  public:
-  IntervalUnaryRelation(Solver* const s,
-                        IntervalVar* const t,
-                        int64 d,
+  IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64 d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
   virtual ~IntervalUnaryRelation() {}
@@ -62,8 +46,8 @@ class IntervalUnaryRelation : public Constraint {
   virtual void InitialPropagate();
 
   virtual string DebugString() const {
-    return StringPrintf("(%s %s %" GG_LL_FORMAT "d)",
-                        t_->DebugString().c_str(), kUnaryNames[rel_], d_);
+    return StringPrintf("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString().c_str(),
+                        kUnaryNames[rel_], d_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -136,8 +120,7 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
 namespace {
 class IntervalBinaryRelation : public Constraint {
  public:
-  IntervalBinaryRelation(Solver* const s,
-                         IntervalVar* const t1,
+  IntervalBinaryRelation(Solver* const s, IntervalVar* const t1,
                          IntervalVar* const t2,
                          Solver::BinaryIntervalRelation rel)
       : Constraint(s), t1_(t1), t2_(t2), rel_(rel) {}
@@ -148,10 +131,8 @@ class IntervalBinaryRelation : public Constraint {
   virtual void InitialPropagate();
 
   virtual string DebugString() const {
-    return StringPrintf("(%s %s %s)",
-                        t1_->DebugString().c_str(),
-                        kBinaryNames[rel_],
-                        t2_->DebugString().c_str());
+    return StringPrintf("(%s %s %s)", t1_->DebugString().c_str(),
+                        kBinaryNames[rel_], t2_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -268,12 +249,14 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
 namespace {
 class TemporalDisjunction : public Constraint {
  public:
-  enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
+  enum State {
+    ONE_BEFORE_TWO,
+    TWO_BEFORE_ONE,
+    UNDECIDED
+  };
 
-  TemporalDisjunction(Solver* const s,
-                      IntervalVar* const t1,
-                      IntervalVar* const t2,
-                      IntVar* const alt)
+  TemporalDisjunction(Solver* const s, IntervalVar* const t1,
+                      IntervalVar* const t2, IntVar* const alt)
       : Constraint(s), t1_(t1), t2_(t2), alt_(alt), state_(UNDECIDED) {}
   virtual ~TemporalDisjunction() {}
 
@@ -305,30 +288,24 @@ class TemporalDisjunction : public Constraint {
 
 void TemporalDisjunction::Post() {
   Solver* const s = solver();
-  Demon* d = MakeConstraintDemon0(s,
-                                  this,
-                                  &TemporalDisjunction::RangeDemon1,
+  Demon* d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeDemon1,
                                   "RangeDemon1");
   t1_->WhenAnything(d);
-  d = MakeConstraintDemon0(s,
-                           this,
-                           &TemporalDisjunction::RangeDemon2,
+  d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeDemon2,
                            "RangeDemon2");
   t2_->WhenAnything(d);
-  if (alt_ != NULL) {
-    d = MakeConstraintDemon0(s,
-                             this,
-                             &TemporalDisjunction::RangeAlt,
+  if (alt_ != nullptr) {
+    d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeAlt,
                              "RangeAlt");
     alt_->WhenRange(d);
   }
 }
 
 void TemporalDisjunction::InitialPropagate() {
-  if (alt_ != NULL) {
+  if (alt_ != nullptr) {
     alt_->SetRange(0, 1);
   }
-  if (alt_ != NULL && alt_->Bound()) {
+  if (alt_ != nullptr && alt_->Bound()) {
     RangeAlt();
   } else {
     RangeDemon1();
@@ -338,9 +315,9 @@ void TemporalDisjunction::InitialPropagate() {
 
 string TemporalDisjunction::DebugString() const {
   string out;
-  SStringPrintf(&out, "TemporalDisjunction(%s, %s",
-                t1_->DebugString().c_str(), t2_->DebugString().c_str());
-  if (alt_ != NULL) {
+  SStringPrintf(&out, "TemporalDisjunction(%s, %s", t1_->DebugString().c_str(),
+                t2_->DebugString().c_str());
+  if (alt_ != nullptr) {
     StringAppendF(&out, " => %s", alt_->DebugString().c_str());
   }
   out += ") ";
@@ -373,9 +350,7 @@ void TemporalDisjunction::RangeDemon1() {
       }
       break;
     }
-    case UNDECIDED: {
-      TryToDecide();
-    }
+    case UNDECIDED: { TryToDecide(); }
   }
 }
 
@@ -394,15 +369,13 @@ void TemporalDisjunction::RangeDemon2() {
         }
         break;
       }
-      case UNDECIDED: {
-        TryToDecide();
-      }
+      case UNDECIDED: { TryToDecide(); }
     }
   }
 }
 
 void TemporalDisjunction::RangeAlt() {
-  DCHECK(alt_ != NULL);
+  DCHECK(alt_ != nullptr);
   if (alt_->Value() == 0) {
     Decide(ONE_BEFORE_TWO);
   } else {
@@ -418,7 +391,7 @@ void TemporalDisjunction::Decide(State s) {
   }
   solver()->SaveValue(reinterpret_cast<int*>(&state_));
   state_ = s;
-  if (alt_ != NULL) {
+  if (alt_ != nullptr) {
     if (s == ONE_BEFORE_TWO) {
       alt_->SetValue(0);
     } else {
@@ -438,7 +411,7 @@ Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
 
 Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
                                             IntervalVar* const t2) {
-  return RevAlloc(new TemporalDisjunction(this, t1, t2, NULL));
+  return RevAlloc(new TemporalDisjunction(this, t1, t2, nullptr));
 }
 
 }  // namespace operations_research

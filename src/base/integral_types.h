@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 #define OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 
+#include <iostream>  // NOLINT
+
 #ifndef SWIG
 // Standard typedefs
 typedef signed char         schar;
@@ -103,5 +105,23 @@ static const  int64 kint64min  =
     static_cast<int64>(GG_LONGLONG(0x8000000000000000));
 static const  int64 kint64max  =
     static_cast<int64>(GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
+
+#ifdef STLPORT
+#include <cstdio>
+// int64 output not present in STL port.
+inline std::ostream& operator<<(std::ostream& os, int64 i) {
+  char buffer[20];
+  snprintf(buffer, sizeof(buffer), "%lld", i);
+  os << buffer;
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, uint64 i) {
+  char buffer[20];
+  snprintf(buffer, sizeof(buffer), "%llu", i);
+  os << buffer;
+  return os;
+}
+#endif  // STLPORT
 
 #endif  // OR_TOOLS_BASE_INTEGRAL_TYPES_H_

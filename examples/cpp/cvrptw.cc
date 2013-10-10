@@ -39,10 +39,11 @@ using operations_research::Solver;
 using operations_research::ACMRandom;
 using operations_research::StringAppendF;
 using operations_research::StringPrintf;
-using operations_research::scoped_array;
 using operations_research::scoped_ptr;
 
 
+DECLARE_string(routing_first_solution);
+DECLARE_bool(routing_no_lns);
 DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(vrp_use_deterministic_random_seed, false,
@@ -130,7 +131,7 @@ class RandomDemand {
   }
 
  private:
-  scoped_array<int64> demand_;
+  scoped_ptr<int64[]> demand_;
   const int size_;
   const RoutingModel::NodeIndex depot_;
 };
@@ -208,7 +209,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
 }
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
   // VRP of size FLAGS_vrp_size.
@@ -218,9 +219,9 @@ int main(int argc, char **argv) {
   RoutingModel routing(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles);
   routing.SetDepot(kDepot);
   // Setting first solution heuristic (cheapest addition).
-  routing.SetCommandLineOption("routing_first_solution", "PathCheapestArc");
+  FLAGS_routing_first_solution = "PathCheapestArc";
   // Disabling Large Neighborhood Search, comment out to activate it.
-  routing.SetCommandLineOption("routing_no_lns", "true");
+  FLAGS_routing_no_lns = true;
 
   // Setting up locations.
   const int64 kXMax = 100000;

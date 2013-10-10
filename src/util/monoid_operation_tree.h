@@ -43,7 +43,7 @@ namespace operations_research {
 // The parameter class T represents an element of the set S.
 // It must:
 //   * Have a public no-argument constructor producing the identity element.
-//   * Have a Set(const T& value) method that sets its value to the given one.
+//   * Have a = operator method that sets its value to the given one.
 //   * Have a Compute(const T& left, const T& right) method that sets its value
 //        to the result of the binary operation for the two given operands.
 //   * Have a string DebugString() const method.
@@ -58,7 +58,6 @@ class MonoidOperationTree {
  public:
   // Constructs a MonoidOperationTree able to store 'size' operands.
   explicit MonoidOperationTree(int size);
-  virtual ~MonoidOperationTree() {}
 
   // Returns the root of the tree, containing the result of the operation.
   const T& result() const { return *result_; }
@@ -79,7 +78,7 @@ class MonoidOperationTree {
 
   // Dive down a branch of the operation tree, and then come back up.
   template <class Diver>
-  void DiveInTree(Diver* diver) const {
+  void DiveInTree(Diver* const diver) const {
     DiveInTree(0, diver);
   }
 
@@ -130,7 +129,7 @@ class MonoidOperationTree {
   const int num_nodes_;
 
   // All the nodes, both non-leaves and leaves.
-  scoped_array<T> nodes_;
+  std::vector<T> nodes_;
 
   // A pointer to the root node
   T const * result_;
@@ -169,13 +168,13 @@ MonoidOperationTree<T>::MonoidOperationTree(int size)
   : size_(size),
     leaf_offset_(ComputeLeafOffset(size)),
     num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
-    nodes_(new T[num_nodes_]),
-    result_(& (nodes_[0])),
+    nodes_(num_nodes_),
+    result_(&(nodes_[0])),
     // The default constructor of T is required to produce the identity
     identity_() {
   // Clear all nodes, including unused leaves
   for (int i = 0; i < num_nodes_; ++i) {
-    nodes_[i].Set(identity_);
+    nodes_[i] = identity_;
   }
 }
 
@@ -184,7 +183,7 @@ void MonoidOperationTree<T>::Clear() {
   // No need to reset the unused leaves
   const int num_used_nodes = leaf_offset_ + size_;
   for (int i = 0; i < num_used_nodes; ++i) {
-    nodes_[i].Set(identity_);
+    nodes_[i] = identity_;
   }
 }
 
@@ -197,7 +196,7 @@ template<class T>
 void MonoidOperationTree<T>::Set(int argument_index, const T& argument) {
   CHECK_LT(argument_index, size_);
   const int position = leaf_offset_ + argument_index;
-  nodes_[position].Set(argument);
+  nodes_[position] = argument;
   ComputeAbove(position);
 }
 

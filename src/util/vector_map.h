@@ -18,7 +18,7 @@
 
 #include "base/hash.h"
 #include <vector>
-#include "base/map-util.h"
+#include "base/map_util.h"
 
 namespace operations_research {
 

@@ -14,6 +14,8 @@
 
 #include "linear_solver/linear_solver.h"
 
+#include <unistd.h>
+
 #include <cmath>
 #include <cstddef>
 #include <utility>
@@ -34,12 +36,12 @@ using std::isnan;
 #include "base/timer.h"
 #include "base/file.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
+#include "base/accurate_sum.h"
 #include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/model_exporter.h"
-#include "util/accurate_sum.h"
 #include "util/fp_utils.h"
 
 DEFINE_bool(verify_solution, false,
@@ -135,9 +137,8 @@ double MPConstraint::activity() const {
 
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
-  for (ConstIter<hash_map<const MPVariable*, double> > it(coefficients_);
-       !it.at_end(); ++it) {
-    const int variable_index = it->first->index();
+  for (CoeffEntry entry : coefficients_) {
+    const int variable_index = entry.first->index();
     if (variable_index >= last_variable_index ||
         variable_index == MPSolverInterface::kNoIndex) {
       return true;
@@ -216,6 +217,11 @@ double MPObjective::BestBound() const {
 // ----- MPVariable -----
 
 double MPVariable::solution_value() const {
+  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
+  return integer_ ? round(solution_value_) : solution_value_;
+}
+
+double MPVariable::unrounded_solution_value() const {
   if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
   return solution_value_;
 }
@@ -310,6 +316,51 @@ void* MPSolver::underlying_solver() {
   return interface_->underlying_solver();
 }
 
+// ---- Solver-specific parameters ----
+
+bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
+  if (parameters.empty()) return true;
+  solver_specific_parameter_string_ = parameters;
+
+  // Note(user): this method needs to return a success/failure boolean
+  // immediately, so we also perform the actual parameter parsing right away.
+  // Some implementations will keep them forever and won't need to re-parse
+  // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
+  // they do Solve(). We just store the parameters string anyway.
+  string extension = interface_->ValidFileExtensionForParameterFile();
+#if defined(__linux)
+  int32 tid = static_cast<int32>(pthread_self());
+#else  // defined(__linux__)
+  int32 tid = 123;
+#endif  // defined(__linux__)
+  int32 pid = static_cast<int32>(getpid());
+  int64 now = WallTimer::GetTimeInMicroSeconds();
+  string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
+      tid, pid, now, extension.c_str());
+  bool no_error_so_far = true;
+  if (no_error_so_far) {
+    no_error_so_far =
+        file::SetContents(filename, parameters, file::Defaults()).ok();
+  }
+  if (no_error_so_far) {
+    no_error_so_far = interface_->ReadParameterFile(filename);
+    // We need to clean up the file even if ReadParameterFile() returned
+    // false. In production we can continue even if the deletion failed.
+    if (!File::Delete(filename.c_str())) {
+      LOG(DFATAL) << "Couldn't delete temporary parameters file: "
+                  << filename;
+    }
+  }
+  if (!no_error_so_far) {
+    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
+        << "for solver type: "
+        << MPModelRequest::OptimizationProblemType_Name(
+               static_cast<MPModelRequest::OptimizationProblemType>(
+                   ProblemType()));
+  }
+  return no_error_so_far;
+}
+
 // ----- Solver -----
 
 #if defined(USE_CLP) || defined(USE_CBC)
@@ -328,7 +379,8 @@ extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildSLMInterface(MPSolver* const solver, bool mip);
 #endif
 #if defined(USE_GUROBI)
-extern MPSolverInterface* BuildGurobiInterface(MPSolver* const solver, bool mip);
+extern MPSolverInterface* BuildGurobiInterface(MPSolver* const solver,
+                                               bool mip);
 #endif
 
 
@@ -379,9 +431,9 @@ int NumDigits(int n) {
   // Number of digits needed to write a non-negative integer in base 10.
   // Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
 #if defined(_MSC_VER)
-  return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
+  return static_cast<int>(std::max(1.0, log(1.0L * n) / log(10.0L) + 1.0));
 #else
-  return static_cast<int>(std::max(1.0, log10(n) + 1));
+  return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif
 }
 }  // namespace
@@ -597,17 +649,16 @@ void OutputTermsToProto(
   // Vector linear_term will contain pairs (variable index, coeff), that will
   // be sorted by variable index.
   std::vector<std::pair<int, double> > linear_term;
-  for (CoeffMap::const_iterator entry = var_coeff_map.begin(); 
-       entry != var_coeff_map.end(); ++entry) {
-    const MPVariable* const var = entry->first;
-    const double coef = entry->second;
+  for (CoeffEntry entry : var_coeff_map) {
+    const MPVariable* const var = entry.first;
+    const double coef = entry.second;
     const int var_index = FindWithDefault(var_name_to_index, var, -1);
     DCHECK_NE(-1, var_index);
     linear_term.push_back(std::pair<int, double>(var_index, coef));
   }
-  // The cost of sort is expected to be low as constraints usually have very
+  // The cost of std::sort is expected to be low as constraints usually have very
   // few terms.
-  sort(linear_term.begin(), linear_term.end());
+  std::sort(linear_term.begin(), linear_term.end());
   // Now use linear term.
   for (int k = 0; k < linear_term.size(); ++k) {
     const std::pair<int, double>& p = linear_term[k];
@@ -681,6 +732,7 @@ void MPSolver::ExportModel(MPModelProto* output_model) const {
   output_model->set_maximize(Objective().maximization());
   output_model->set_objective_offset(Objective().offset());
 }
+
 
 bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   interface_->result_status_ =
@@ -923,21 +975,20 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters &param) {
   }
 
 
-  const MPSolver::ResultStatus status = interface_->Solve(param);
-  if (!FLAGS_verify_solution) return status;
-  if (status != MPSolver::OPTIMAL) {
-    VLOG(1)
-        << "--verify_solution enabled, but the solver did not find an"
-        << " optimal solution: skipping the verification.";
-    return status;
+  MPSolver::ResultStatus status = interface_->Solve(param);
+  if (FLAGS_verify_solution) {
+    if (status != MPSolver::OPTIMAL) {
+      VLOG(1) << "--verify_solution enabled, but the solver did not find an"
+              << " optimal solution: skipping the verification.";
+    } else if (!VerifySolution(
+        param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
+        FLAGS_log_verification_errors)) {
+      status = MPSolver::ABNORMAL;
+      interface_->result_status_ = status;
+    }
   }
-  if (VerifySolution(
-      param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
-      FLAGS_log_verification_errors)) {
-    return status;
-  } else {
-    return MPSolver::ABNORMAL;
-  }
+  DCHECK_EQ(interface_->result_status_, status);
+  return status;
 }
 
 namespace {
@@ -1056,10 +1107,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
     // Re-compute the actual activity with a safe summing algorithm.
     AccurateSum<double> activity_sum;
     double inaccurate_activity = 0;
-    for (hash_map<const MPVariable*, double>::const_iterator
-         it = constraint.coefficients_.begin();
-         it != constraint.coefficients_.end(); ++it) {
-      const double term = it->first->solution_value() * it->second;
+    for (CoeffEntry entry : constraint.coefficients_) {
+      const double term = entry.first->solution_value() * entry.second;
       activity_sum.Add(term);
       inaccurate_activity += term;
     }
@@ -1088,7 +1137,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
             << PrettyPrintConstraint(constraint);
       }
     }
-    if (constraint.ub() != -infinity()) {
+    if (constraint.ub() != infinity()) {
       if (activity > constraint.ub() + tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error,
@@ -1110,10 +1159,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   AccurateSum<double> objective_sum;
   objective_sum.Add(objective.offset());
   double inaccurate_objective_value = objective.offset();
-  for (hash_map<const MPVariable*, double>::const_iterator
-       it = objective.coefficients_.begin();
-       it != objective.coefficients_.end(); ++it) {
-    const double term = it->first->solution_value() * it->second;
+  for (CoeffEntry entry : objective.coefficients_) {
+    const double term = entry.first->solution_value() * entry.second;
     objective_sum.Add(term);
     inaccurate_objective_value += term;
   }
@@ -1328,12 +1375,12 @@ void MPSolverInterface::SetUnsupportedIntegerParam(
   LOG(WARNING) << "Trying to set an unsupported parameter: " << param << ".";
 }
 void MPSolverInterface::SetDoubleParamToUnsupportedValue(
-    MPSolverParameters::DoubleParam param, int value) const {
+    MPSolverParameters::DoubleParam param, double value) const {
   LOG(WARNING) << "Trying to set a supported parameter: " << param
                << " to an unsupported value: " << value;
 }
 void MPSolverInterface::SetIntegerParamToUnsupportedValue(
-    MPSolverParameters::IntegerParam param, double value) const {
+    MPSolverParameters::IntegerParam param, int value) const {
   LOG(WARNING) << "Trying to set a supported parameter: " << param
                << " to an unsupported value: " << value;
 }

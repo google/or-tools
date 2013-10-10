@@ -102,9 +102,9 @@ class RecordReader {
     if (file_->Read(&csize, sizeof(csize)) != sizeof(csize)) {
       return false;
     }
-    scoped_array<char> buffer(new char[usize + 1]);
+    scoped_ptr<char[]> buffer(new char[usize + 1]);
     if (csize != 0) {  // The data is compressed.
-      scoped_array<char> compressed_buffer(new char[csize + 1]);
+      scoped_ptr<char[]> compressed_buffer(new char[csize + 1]);
       if (file_->Read(compressed_buffer.get(), csize) != csize) {
         return false;
       }

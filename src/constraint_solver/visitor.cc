@@ -23,7 +23,7 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -31,9 +31,7 @@
 namespace operations_research {
 // ---------- ArgumentHolder ----------
 
-const string& ArgumentHolder::TypeName() const {
-  return type_name_;
-}
+const string& ArgumentHolder::TypeName() const { return type_name_; }
 
 void ArgumentHolder::SetTypeName(const string& type_name) {
   type_name_ = type_name;
@@ -43,65 +41,45 @@ void ArgumentHolder::SetIntegerArgument(const string& arg_name, int64 value) {
   integer_argument_[arg_name] = value;
 }
 
-void ArgumentHolder::SetIntegerArrayArgument(
-    const string& arg_name,
-    const int64* const values,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    integer_array_argument_[arg_name].push_back(values[i]);
-  }
+void ArgumentHolder::SetIntegerArrayArgument(const string& arg_name,
+                                             const std::vector<int64>& values) {
+  integer_array_argument_[arg_name] = values;
 }
 
-void ArgumentHolder::SetIntegerMatrixArgument(
-    const string& arg_name,
-    const IntTupleSet& values) {
-  std::pair<string, IntTupleSet> to_insert= std::make_pair(arg_name, values);
+void ArgumentHolder::SetIntegerMatrixArgument(const string& arg_name,
+                                              const IntTupleSet& values) {
+  std::pair<string, IntTupleSet> to_insert = std::make_pair(arg_name, values);
   matrix_argument_.insert(to_insert);
 }
 
-void ArgumentHolder::SetIntegerExpressionArgument(
-    const string& arg_name,
-    const IntExpr* const expr) {
+void ArgumentHolder::SetIntegerExpressionArgument(const string& arg_name,
+                                                  IntExpr* const expr) {
   integer_expression_argument_[arg_name] = expr;
 }
 
 void ArgumentHolder::SetIntegerVariableArrayArgument(
-    const string& arg_name,
-    const IntVar* const * const vars,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    integer_variable_array_argument_[arg_name].push_back(vars[i]);
-  }
+    const string& arg_name, const std::vector<IntVar*>& vars) {
+  integer_variable_array_argument_[arg_name] = vars;
 }
 
-void ArgumentHolder::SetIntervalArgument(
-    const string& arg_name,
-    const IntervalVar* const var) {
+void ArgumentHolder::SetIntervalArgument(const string& arg_name,
+                                         IntervalVar* const var) {
   interval_argument_[arg_name] = var;
 }
 
 void ArgumentHolder::SetIntervalArrayArgument(
-    const string& arg_name,
-    const IntervalVar* const * const vars,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    interval_array_argument_[arg_name].push_back(vars[i]);
-  }
+    const string& arg_name, const std::vector<IntervalVar*>& vars) {
+  interval_array_argument_[arg_name] = vars;
 }
 
-void ArgumentHolder::SetSequenceArgument(
-    const string& arg_name,
-    const SequenceVar* const var) {
+void ArgumentHolder::SetSequenceArgument(const string& arg_name,
+                                         SequenceVar* const var) {
   sequence_argument_[arg_name] = var;
 }
 
 void ArgumentHolder::SetSequenceArrayArgument(
-    const string& arg_name,
-    const SequenceVar* const * const vars,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    sequence_array_argument_[arg_name].push_back(vars[i]);
-  }
+    const string& arg_name, const std::vector<SequenceVar*>& vars) {
+  sequence_array_argument_[arg_name] = vars;
 }
 
 bool ArgumentHolder::HasIntegerExpressionArgument(
@@ -114,10 +92,8 @@ bool ArgumentHolder::HasIntegerVariableArrayArgument(
   return ContainsKey(integer_variable_array_argument_, arg_name);
 }
 
-
-int64 ArgumentHolder::FindIntegerArgumentWithDefault(
-    const string& arg_name,
-    int64 def) const {
+int64 ArgumentHolder::FindIntegerArgumentWithDefault(const string& arg_name,
+                                                     int64 def) const {
   return FindWithDefault(integer_argument_, arg_name, def);
 }
 
@@ -130,14 +106,12 @@ const std::vector<int64>& ArgumentHolder::FindIntegerArrayArgumentOrDie(
   return FindOrDie(integer_array_argument_, arg_name);
 }
 
-
-const IntExpr* ArgumentHolder::FindIntegerExpressionArgumentOrDie(
+IntExpr* ArgumentHolder::FindIntegerExpressionArgumentOrDie(
     const string& arg_name) const {
   return FindOrDie(integer_expression_argument_, arg_name);
 }
 
-const std::vector<const IntVar*>&
-ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
+const std::vector<IntVar*>& ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
     const string& arg_name) const {
   return FindOrDie(integer_variable_array_argument_, arg_name);
 }
@@ -151,9 +125,7 @@ const IntTupleSet& ArgumentHolder::FindIntegerMatrixArgumentOrDie(
 
 ModelParser::ModelParser() {}
 
-ModelParser::~ModelParser() {
-  CHECK(holders_.empty());
-}
+ModelParser::~ModelParser() { CHECK(holders_.empty()); }
 
 void ModelParser::BeginVisitModel(const string& solver_name) {
   PushArgumentHolder();
@@ -186,34 +158,22 @@ void ModelParser::EndVisitIntegerExpression(const string& type_name,
 }
 
 void ModelParser::VisitIntegerVariable(const IntVar* const variable,
-                                       const IntExpr* const delegate) {
+                                       IntExpr* const delegate) {
   // Usual place for parsing.
 }
 
 void ModelParser::VisitIntegerVariable(const IntVar* const variable,
-                                       const string& operation,
-                                       int64 value,
-                                       const IntVar* const delegate) {
+                                       const string& operation, int64 value,
+                                       IntVar* const delegate) {
   delegate->Accept(this);
   // Usual place for parsing.
 }
 
 void ModelParser::VisitIntervalVariable(const IntervalVar* const variable,
-                                        const string& operation,
-                                        int64 value,
-                                        const IntervalVar* const delegate) {
-  if (delegate != NULL) {
+                                        const string& operation, int64 value,
+                                        IntervalVar* const delegate) {
+  if (delegate != nullptr) {
     delegate->Accept(this);
-  }
-  // Usual place for parsing.
-}
-
-void ModelParser::VisitIntervalVariable(const IntervalVar* const variable,
-                                        const string& operation,
-                                        const IntervalVar* const * delegates,
-                                        int size) {
-  for (int i = 0; i < size; ++i) {
-    delegates[i]->Accept(this);
   }
   // Usual place for parsing.
 }
@@ -228,9 +188,8 @@ void ModelParser::VisitIntegerArgument(const string& arg_name, int64 value) {
 }
 
 void ModelParser::VisitIntegerArrayArgument(const string& arg_name,
-                                            const int64* const values,
-                                            int size) {
-  Top()->SetIntegerArrayArgument(arg_name, values, size);
+                                            const std::vector<int64>& values) {
+  Top()->SetIntegerArrayArgument(arg_name, values);
 }
 
 void ModelParser::VisitIntegerMatrixArgument(const string& arg_name,
@@ -239,55 +198,46 @@ void ModelParser::VisitIntegerMatrixArgument(const string& arg_name,
 }
 
 // Variables.
-void ModelParser::VisitIntegerExpressionArgument(
-    const string& arg_name,
-    const IntExpr* const argument) {
+void ModelParser::VisitIntegerExpressionArgument(const string& arg_name,
+                                                 IntExpr* const argument) {
   Top()->SetIntegerExpressionArgument(arg_name, argument);
   argument->Accept(this);
 }
 
 void ModelParser::VisitIntegerVariableArrayArgument(
-    const string& arg_name,
-    const IntVar* const * arguments,
-    int size) {
-  Top()->SetIntegerVariableArrayArgument(arg_name, arguments, size);
-  for (int i = 0; i < size; ++i) {
+    const string& arg_name, const std::vector<IntVar*>& arguments) {
+  Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
+  for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
 }
 
 // Visit interval argument.
-void ModelParser::VisitIntervalArgument(
-    const string& arg_name,
-    const IntervalVar* const argument) {
+void ModelParser::VisitIntervalArgument(const string& arg_name,
+                                        IntervalVar* const argument) {
   Top()->SetIntervalArgument(arg_name, argument);
   argument->Accept(this);
 }
 
 void ModelParser::VisitIntervalArrayArgument(
-    const string& arg_name,
-    const IntervalVar* const * arguments,
-    int size) {
-  Top()->SetIntervalArrayArgument(arg_name, arguments, size);
-  for (int i = 0; i < size; ++i) {
+    const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+  Top()->SetIntervalArrayArgument(arg_name, arguments);
+  for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
 }
 
 // Visit sequence argument.
-void ModelParser::VisitSequenceArgument(
-    const string& arg_name,
-    const SequenceVar* const argument) {
+void ModelParser::VisitSequenceArgument(const string& arg_name,
+                                        SequenceVar* const argument) {
   Top()->SetSequenceArgument(arg_name, argument);
   argument->Accept(this);
 }
 
 void ModelParser::VisitSequenceArrayArgument(
-    const string& arg_name,
-    const SequenceVar* const * arguments,
-    int size) {
-  Top()->SetSequenceArrayArgument(arg_name, arguments, size);
-  for (int i = 0; i < size; ++i) {
+    const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+  Top()->SetSequenceArrayArgument(arg_name, arguments);
+  for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
 }

@@ -89,7 +89,7 @@ bool CheckCostas(const std::vector<int64>& vars) {
 class OrderedLNS: public BaseLNS {
  public:
   OrderedLNS(const std::vector<IntVar*>& vars, int free_elements) :
-    BaseLNS(vars.data(), vars.size()),
+    BaseLNS(vars),
     free_elements_(free_elements) {
     index_ = 0;
 
@@ -143,7 +143,7 @@ class OrderedLNS: public BaseLNS {
 class RandomLNS: public BaseLNS {
  public:
   RandomLNS(const std::vector<IntVar*>& vars, int free_elements) :
-    BaseLNS(vars.data(), vars.size()),
+    BaseLNS(vars),
     free_elements_(free_elements),
     rand_(ACMRandom::HostnamePidTimeSeed()) {
   }
@@ -436,7 +436,7 @@ void CostasHard(const int dim) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   int min = 1;
   int max = 10;
 

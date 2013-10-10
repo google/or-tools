@@ -84,7 +84,7 @@
     $1 = &temp;
   } else {
     PyErr_SetString(PyExc_TypeError, "not a list");
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -120,7 +120,7 @@ const std::vector<operations_research::RoutingModel::NodeIndex>& {
     const int size = jenv->GetArrayLength($input);
     temp.clear();
     temp.reserve(size);
-    jint* values = jenv->GetIntArrayElements((jintArray)$input, NULL);
+    jint* values = jenv->GetIntArrayElements((jintArray)$input, nullptr);
     for (int i = 0; i < size; ++i) {
       const int value = values[i];
       temp.push_back(operations_research::RoutingModel::NodeIndex(value));
@@ -148,7 +148,7 @@ const std::vector<operations_research::RoutingModel::NodeIndex>& {
       jintArray values =
           (jintArray)jenv->GetObjectArrayElement((jobjectArray)$input, i);
       const int inner_size = jenv->GetArrayLength(values);
-      jint* inner_values = jenv->GetIntArrayElements(values, NULL);
+      jint* inner_values = jenv->GetIntArrayElements(values, nullptr);
       for (int j = 0; j < inner_size; ++j) {
         const int value = inner_values[j];
         temp[i].push_back(operations_research::RoutingModel::NodeIndex(value));

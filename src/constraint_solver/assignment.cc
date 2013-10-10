@@ -22,7 +22,7 @@
 #include "base/file.h"
 #include "base/recordio.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
@@ -34,13 +34,9 @@ namespace operations_research {
 
 // ----- IntVarElement -----
 
-IntVarElement::IntVarElement() {
-  Reset(NULL);
-}
+IntVarElement::IntVarElement() { Reset(nullptr); }
 
-IntVarElement::IntVarElement(IntVar* const var) {
-  Reset(var);
-}
+IntVarElement::IntVarElement(IntVar* const var) { Reset(var); }
 
 void IntVarElement::Reset(IntVar* const var) {
   var_ = var;
@@ -67,9 +63,8 @@ void IntVarElement::Copy(const IntVarElement& element) {
 void IntVarElement::LoadFromProto(
     const IntVarAssignmentProto& int_var_assignment_proto) {
   min_ = int_var_assignment_proto.min();
-  max_ = int_var_assignment_proto.has_max() ?
-      int_var_assignment_proto.max() :
-      min_;
+  max_ = int_var_assignment_proto.has_max() ? int_var_assignment_proto.max()
+                                            : min_;
   if (int_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -92,7 +87,6 @@ bool IntVarElement::operator==(const IntVarElement& element) const {
   return min_ == element.min_ && max_ == element.max_;
 }
 
-
 void IntVarElement::WriteToProto(
     IntVarAssignmentProto* int_var_assignment_proto) const {
   int_var_assignment_proto->set_var_id(var_->name());
@@ -108,8 +102,8 @@ string IntVarElement::DebugString() const {
     if (min_ == max_) {
       return StringPrintf("(%" GG_LL_FORMAT "d)", min_);
     } else {
-      return StringPrintf("(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d)",
-                          min_, max_);
+      return StringPrintf("(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d)", min_,
+                          max_);
     }
   } else {
     return "(...)";
@@ -118,13 +112,9 @@ string IntVarElement::DebugString() const {
 
 // ----- IntervalVarElement -----
 
-IntervalVarElement::IntervalVarElement() {
-  Reset(NULL);
-}
+IntervalVarElement::IntervalVarElement() { Reset(nullptr); }
 
-IntervalVarElement::IntervalVarElement(IntervalVar* const var) {
-  Reset(var);
-}
+IntervalVarElement::IntervalVarElement(IntervalVar* const var) { Reset(var); }
 
 void IntervalVarElement::Reset(IntervalVar* const var) {
   var_ = var;
@@ -184,21 +174,21 @@ void IntervalVarElement::Restore() {
 void IntervalVarElement::LoadFromProto(
     const IntervalVarAssignmentProto& interval_var_assignment_proto) {
   start_min_ = interval_var_assignment_proto.start_min();
-  start_max_ = interval_var_assignment_proto.has_start_max() ?
-      interval_var_assignment_proto.start_max() :
-      start_min_;
+  start_max_ = interval_var_assignment_proto.has_start_max()
+                   ? interval_var_assignment_proto.start_max()
+                   : start_min_;
   duration_min_ = interval_var_assignment_proto.duration_min();
-  duration_max_ = interval_var_assignment_proto.has_duration_max() ?
-      interval_var_assignment_proto.duration_max() :
-      duration_min_;
+  duration_max_ = interval_var_assignment_proto.has_duration_max()
+                      ? interval_var_assignment_proto.duration_max()
+                      : duration_min_;
   end_min_ = interval_var_assignment_proto.end_min();
-  end_max_ = interval_var_assignment_proto.has_end_max() ?
-      interval_var_assignment_proto.end_max() :
-      end_min_;
+  end_max_ = interval_var_assignment_proto.has_end_max()
+                 ? interval_var_assignment_proto.end_max()
+                 : end_min_;
   performed_min_ = interval_var_assignment_proto.performed_min();
-  performed_max_ = interval_var_assignment_proto.has_performed_max() ?
-      interval_var_assignment_proto.performed_max() :
-      performed_min_;
+  performed_max_ = interval_var_assignment_proto.has_performed_max()
+                       ? interval_var_assignment_proto.performed_max()
+                       : performed_min_;
   if (interval_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -261,26 +251,19 @@ bool IntervalVarElement::operator==(const IntervalVarElement& element) const {
     // their other fields.
     return true;
   }
-  return start_min_ == element.start_min_
-      && start_max_ == element.start_max_
-      && duration_min_ == element.duration_min_
-      && duration_max_ == element.duration_max_
-      && end_min_ == element.end_min_
-      && end_max_ == element.end_max_
-      && performed_min_ == element.performed_min_
-      && performed_max_ == element.performed_max_
-      && var_ == element.var_;
+  return start_min_ == element.start_min_ && start_max_ == element.start_max_ &&
+         duration_min_ == element.duration_min_ &&
+         duration_max_ == element.duration_max_ &&
+         end_min_ == element.end_min_ && end_max_ == element.end_max_ &&
+         performed_min_ == element.performed_min_ &&
+         performed_max_ == element.performed_max_ && var_ == element.var_;
 }
 
 // ----- SequenceVarElement -----
 
-SequenceVarElement::SequenceVarElement() {
-  Reset(NULL);
-}
+SequenceVarElement::SequenceVarElement() { Reset(nullptr); }
 
-SequenceVarElement::SequenceVarElement(SequenceVar* const var) {
-  Reset(var);
-}
+SequenceVarElement::SequenceVarElement(SequenceVar* const var) { Reset(var); }
 
 void SequenceVarElement::Reset(SequenceVar* const var) {
   var_ = var;
@@ -317,23 +300,18 @@ void SequenceVarElement::Restore() {
 
 void SequenceVarElement::LoadFromProto(
     const SequenceVarAssignmentProto& sequence_var_assignment_proto) {
-  for (int i = 0;
-       i < sequence_var_assignment_proto.forward_sequence_size();
+  for (int i = 0; i < sequence_var_assignment_proto.forward_sequence_size();
        ++i) {
     forward_sequence_.push_back(
         sequence_var_assignment_proto.forward_sequence(i));
   }
-  for (int i = 0;
-       i < sequence_var_assignment_proto.backward_sequence_size();
+  for (int i = 0; i < sequence_var_assignment_proto.backward_sequence_size();
        ++i) {
     backward_sequence_.push_back(
         sequence_var_assignment_proto.backward_sequence(i));
   }
-  for (int i = 0;
-       i < sequence_var_assignment_proto.unperformed_size();
-       ++i) {
-    unperformed_.push_back(
-        sequence_var_assignment_proto.unperformed(i));
+  for (int i = 0; i < sequence_var_assignment_proto.unperformed_size(); ++i) {
+    unperformed_.push_back(sequence_var_assignment_proto.unperformed(i));
   }
   if (sequence_var_assignment_proto.active()) {
     Activate();
@@ -382,8 +360,8 @@ bool SequenceVarElement::operator==(const SequenceVarElement& element) const {
     return true;
   }
   return forward_sequence_ == element.forward_sequence_ &&
-      backward_sequence_ == element.backward_sequence_ &&
-      unperformed_ == element.unperformed_;
+         backward_sequence_ == element.backward_sequence_ &&
+         unperformed_ == element.unperformed_;
 }
 
 const std::vector<int>& SequenceVarElement::ForwardSequence() const {
@@ -454,13 +432,12 @@ Assignment::Assignment(const Assignment* const copy)
       objective_element_(copy->objective_element_) {}
 
 Assignment::Assignment(Solver* const s)
-  : PropagationBaseObject(s),
-    objective_element_(NULL) {}
+    : PropagationBaseObject(s), objective_element_(nullptr) {}
 
 Assignment::~Assignment() {}
 
 void Assignment::Clear() {
-  objective_element_.Reset(NULL);
+  objective_element_.Reset(nullptr);
   int_var_container_.Clear();
   interval_var_container_.Clear();
   sequence_var_container_.Clear();
@@ -488,7 +465,7 @@ namespace {
 template <class V, class E>
 void IdToElementMap(AssignmentContainer<V, E>* container,
                     hash_map<string, E*>* id_to_element_map) {
-  CHECK(id_to_element_map != NULL);
+  CHECK(id_to_element_map != nullptr);
   id_to_element_map->clear();
   for (int i = 0; i < container->Size(); ++i) {
     E& element = container->MutableElement(i);
@@ -511,7 +488,7 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
                  const P& proto) {
   const string& var_id = proto.var_id();
   CHECK(!var_id.empty());
-  E* element = NULL;
+  E* element = nullptr;
   if (FindCopy(id_to_element_map, var_id, &element)) {
     element->LoadFromProto(proto);
   } else {
@@ -525,7 +502,7 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
 bool Assignment::Load(const string& filename) {
   File::Init();
   File* file = File::Open(filename, "r");
-  if (file == NULL) {
+  if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }
@@ -533,7 +510,7 @@ bool Assignment::Load(const string& filename) {
 }
 
 bool Assignment::Load(File* file) {
-  CHECK(file != NULL);
+  CHECK(file != nullptr);
   AssignmentProto assignment_proto;
   RecordReader reader(file);
   if (!reader.ReadProtocolMessage(&assignment_proto)) {
@@ -570,27 +547,18 @@ void RealLoad(const AssignmentProto& assignment_proto,
 }
 
 void Assignment::Load(const AssignmentProto& assignment_proto) {
-  RealLoad<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer> (
-      assignment_proto,
-      &int_var_container_,
+  RealLoad<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer>(
+      assignment_proto, &int_var_container_,
       &AssignmentProto::int_var_assignment_size,
       &AssignmentProto::int_var_assignment);
-  RealLoad<IntervalVar,
-      IntervalVarElement,
-      IntervalVarAssignmentProto,
-      IntervalContainer> (
-          assignment_proto,
-          &interval_var_container_,
-          &AssignmentProto::interval_var_assignment_size,
-          &AssignmentProto::interval_var_assignment);
-  RealLoad<SequenceVar,
-      SequenceVarElement,
-      SequenceVarAssignmentProto,
-      SequenceContainer> (
-          assignment_proto,
-          &sequence_var_container_,
-          &AssignmentProto::sequence_var_assignment_size,
-          &AssignmentProto::sequence_var_assignment);
+  RealLoad<IntervalVar, IntervalVarElement, IntervalVarAssignmentProto,
+           IntervalContainer>(assignment_proto, &interval_var_container_,
+                              &AssignmentProto::interval_var_assignment_size,
+                              &AssignmentProto::interval_var_assignment);
+  RealLoad<SequenceVar, SequenceVarElement, SequenceVarAssignmentProto,
+           SequenceContainer>(assignment_proto, &sequence_var_container_,
+                              &AssignmentProto::sequence_var_assignment_size,
+                              &AssignmentProto::sequence_var_assignment);
   if (assignment_proto.has_objective()) {
     const IntVarAssignmentProto& objective = assignment_proto.objective();
     const string objective_id = objective.var_id();
@@ -611,7 +579,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
 bool Assignment::Save(const string& filename) const {
   File::Init();
   File* file = File::Open(filename, "w");
-  if (file == NULL) {
+  if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }
@@ -619,7 +587,7 @@ bool Assignment::Save(const string& filename) const {
 }
 
 bool Assignment::Save(File* file) const {
-  CHECK(file != NULL);
+  CHECK(file != nullptr);
   AssignmentProto assignment_proto;
   Save(&assignment_proto);
   RecordWriter writer(file);
@@ -628,8 +596,7 @@ bool Assignment::Save(File* file) const {
 
 template <class Var, class Element, class Proto, class Container>
 void RealSave(AssignmentProto* const assignment_proto,
-              const Container& container,
-              Proto* (AssignmentProto::*Add)()) {
+              const Container& container, Proto* (AssignmentProto::*Add)()) {
   for (int i = 0; i < container.Size(); ++i) {
     const Element& element = container.Element(i);
     const Var* const var = element.Var();
@@ -644,23 +611,14 @@ void RealSave(AssignmentProto* const assignment_proto,
 void Assignment::Save(AssignmentProto* const assignment_proto) const {
   assignment_proto->Clear();
   RealSave<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer>(
-      assignment_proto,
-      int_var_container_,
+      assignment_proto, int_var_container_,
       &AssignmentProto::add_int_var_assignment);
-  RealSave<IntervalVar,
-      IntervalVarElement,
-      IntervalVarAssignmentProto,
-      IntervalContainer>(
-          assignment_proto,
-          interval_var_container_,
-          &AssignmentProto::add_interval_var_assignment);
-  RealSave<SequenceVar,
-      SequenceVarElement,
-      SequenceVarAssignmentProto,
-      SequenceContainer>(
-          assignment_proto,
-          sequence_var_container_,
-          &AssignmentProto::add_sequence_var_assignment);
+  RealSave<IntervalVar, IntervalVarElement, IntervalVarAssignmentProto,
+           IntervalContainer>(assignment_proto, interval_var_container_,
+                              &AssignmentProto::add_interval_var_assignment);
+  RealSave<SequenceVar, SequenceVarElement, SequenceVarAssignmentProto,
+           SequenceContainer>(assignment_proto, sequence_var_container_,
+                              &AssignmentProto::add_sequence_var_assignment);
   if (HasObjective()) {
     const IntVar* objective = Objective();
     const string& name = objective->name();
@@ -682,8 +640,7 @@ template <class Container, class Element>
 void RealDebugString(const Container& container, string* const out) {
   for (int i = 0; i < container.Size(); ++i) {
     const Element& element = container.Element(i);
-    StringAppendF(out, "%s %s | ",
-                  element.Var()->name().c_str(),
+    StringAppendF(out, "%s %s | ", element.Var()->name().c_str(),
                   element.DebugString().c_str());
   }
 }
@@ -704,13 +661,6 @@ string Assignment::DebugString() const {
 
 IntVarElement& Assignment::Add(IntVar* const v) {
   return int_var_container_.Add(v);
-}
-
-void Assignment::Add(IntVar* const* v, int s) {
-  DCHECK_GE(s, 0);
-  for (int i = 0; i < s; ++i) {
-    Add(v[i]);
-  }
 }
 
 void Assignment::Add(const std::vector<IntVar*>& v) {
@@ -759,13 +709,6 @@ void Assignment::SetValue(const IntVar* const v, int64 value) {
 
 IntervalVarElement& Assignment::Add(IntervalVar* const v) {
   return interval_var_container_.Add(v);
-}
-
-void Assignment::Add(IntervalVar* const * vars, int size) {
-  DCHECK_GE(size, 0);
-  for (int i = 0; i < size; ++i) {
-    Add(vars[i]);
-  }
 }
 
 void Assignment::Add(const std::vector<IntervalVar*>& vars) {
@@ -850,8 +793,8 @@ void Assignment::SetDurationMax(const IntervalVar* const v, int64 m) {
   interval_var_container_.MutableElement(v).SetDurationMax(m);
 }
 
-void Assignment::SetDurationRange(const IntervalVar* const v,
-                                  int64 mi, int64 ma) {
+void Assignment::SetDurationRange(const IntervalVar* const v, int64 mi,
+                                  int64 ma) {
   interval_var_container_.MutableElement(v).SetDurationRange(mi, ma);
 }
 
@@ -883,8 +826,8 @@ void Assignment::SetPerformedMax(const IntervalVar* const v, int64 m) {
   interval_var_container_.MutableElement(v).SetPerformedMax(m);
 }
 
-void Assignment::SetPerformedRange(const IntervalVar* const v,
-                                   int64 mi, int64 ma) {
+void Assignment::SetPerformedRange(const IntervalVar* const v, int64 mi,
+                                   int64 ma) {
   interval_var_container_.MutableElement(v).SetPerformedRange(mi, ma);
 }
 
@@ -896,13 +839,6 @@ void Assignment::SetPerformedValue(const IntervalVar* const v, int64 value) {
 
 SequenceVarElement& Assignment::Add(SequenceVar* const v) {
   return sequence_var_container_.Add(v);
-}
-
-void Assignment::Add(SequenceVar* const * vars, int size) {
-  DCHECK_GE(size, 0);
-  for (int i = 0; i < size; ++i) {
-    Add(vars[i]);
-  }
 }
 
 void Assignment::Add(const std::vector<SequenceVar*>& vars) {
@@ -925,8 +861,7 @@ const std::vector<int>& Assignment::BackwardSequence(
   return sequence_var_container_.Element(v).BackwardSequence();
 }
 
-const std::vector<int>& Assignment::Unperformed(
-    const SequenceVar* const v) const {
+const std::vector<int>& Assignment::Unperformed(const SequenceVar* const v) const {
   return sequence_var_container_.Element(v).Unperformed();
 }
 
@@ -934,21 +869,20 @@ void Assignment::SetSequence(const SequenceVar* const v,
                              const std::vector<int>& forward_sequence,
                              const std::vector<int>& backward_sequence,
                              const std::vector<int>& unperformed) {
-  sequence_var_container_.MutableElement(v).SetSequence(forward_sequence,
-                                                        backward_sequence,
-                                                        unperformed);
+  sequence_var_container_.MutableElement(v)
+      .SetSequence(forward_sequence, backward_sequence, unperformed);
 }
 
 void Assignment::SetForwardSequence(const SequenceVar* const v,
                                     const std::vector<int>& forward_sequence) {
-  sequence_var_container_.MutableElement(v).SetForwardSequence(
-      forward_sequence);
+  sequence_var_container_.MutableElement(v)
+      .SetForwardSequence(forward_sequence);
 }
 
 void Assignment::SetBackwardSequence(const SequenceVar* const v,
                                      const std::vector<int>& backward_sequence) {
-  sequence_var_container_.MutableElement(v).SetBackwardSequence(
-      backward_sequence);
+  sequence_var_container_.MutableElement(v)
+      .SetBackwardSequence(backward_sequence);
 }
 
 void Assignment::SetUnperformed(const SequenceVar* const v,
@@ -964,9 +898,7 @@ void Assignment::AddObjective(IntVar* const v) {
   objective_element_.Reset(v);
 }
 
-IntVar* Assignment::Objective() const {
-  return objective_element_.Var();
-}
+IntVar* Assignment::Objective() const { return objective_element_.Var(); }
 
 int64 Assignment::ObjectiveMin() const {
   if (HasObjective()) {
@@ -1094,9 +1026,7 @@ void Assignment::Copy(const Assignment* assignment) {
   objective_element_ = assignment->objective_element_;
 }
 
-Assignment* Solver::MakeAssignment() {
-  return RevAlloc(new Assignment(this));
-}
+Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }
 
 Assignment* Solver::MakeAssignment(const Assignment* const a) {
   return RevAlloc(new Assignment(a));
@@ -1113,12 +1043,10 @@ class RestoreAssignment : public DecisionBuilder {
 
   virtual Decision* Next(Solver* const solver) {
     assignment_->Restore();
-    return NULL;
+    return nullptr;
   }
 
-  virtual string DebugString() const {
-    return "RestoreAssignment";
-  }
+  virtual string DebugString() const { return "RestoreAssignment"; }
 
  private:
   Assignment* const assignment_;
@@ -1130,14 +1058,12 @@ class StoreAssignment : public DecisionBuilder {
 
   virtual ~StoreAssignment() {}
 
-  virtual Decision* Next(Solver* const solver)  {
+  virtual Decision* Next(Solver* const solver) {
     assignment_->Store();
-    return NULL;
+    return nullptr;
   }
 
-  virtual string DebugString() const {
-    return "StoreAssignment";
-  }
+  virtual string DebugString() const { return "StoreAssignment"; }
 
  private:
   Assignment* const assignment_;

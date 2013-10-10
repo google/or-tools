@@ -39,7 +39,7 @@ void FileLineReader::Reload() {
     return;
   }
 
-  scoped_array<char> line(new char[kMaxLineLength]);
+  scoped_ptr<char[]> line(new char[kMaxLineLength]);
   for (;;) {
     char* const result = data_file->ReadLine(line.get(), kMaxLineLength);
     if (result == NULL) {

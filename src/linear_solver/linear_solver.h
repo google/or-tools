@@ -137,16 +137,10 @@
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/macros.h"
-#include "base/mutex.h"
 #include "base/scoped_ptr.h"
 #include "base/timer.h"
-#include "base/strutil.h"
-#include "base/hash.h"
 
 
 using std::string;
@@ -207,6 +201,7 @@ class MPSolver {
 
   MPSolver(const string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
+
 
   string Name() const {
     return name_;  // Set at construction.
@@ -375,6 +370,7 @@ class MPSolver {
   // Exports model to protocol buffer.
   void ExportModel(MPModelProto* output_model) const;
 
+
   // Load a solution encoded in a protocol buffer onto this solver.
   //
   // IMPORTANT: This may only be used in conjunction with ExportModel(),
@@ -415,6 +411,15 @@ class MPSolver {
 
   // ----- Misc -----
 
+  // Advanced usage: pass solver specific parameters in text format. The format
+  // is solver-specific and is the same as the corresponding solver
+  // configuration file format. Returns true if the operation was successful.
+  //
+  // TODO(user): Currently SCIP will always return true even if the format is
+  // wrong (you can check the log if you suspect an issue there). This seems to
+  // be a bug in SCIP though.
+  bool SetSolverSpecificParametersAsString(const string& parameters);
+
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
   enum BasisStatus {
@@ -448,6 +453,14 @@ class MPSolver {
   int64 time_limit() const {
     return time_limit_;
   }
+
+  // In seconds. Note that this returns a double.
+  double time_limit_in_secs() const {
+    // static_cast<double> avoids a warning with -Wreal-conversion. This
+    // helps catching bugs with unwanted conversions from double to ints.
+    return static_cast<double>(time_limit_) / 1000.0;
+  }
+
 
   // Returns wall_time() in milliseconds since the creation of the solver.
   int64 wall_time() const {
@@ -626,6 +639,11 @@ class MPObjective {
   // Returns the objective value of the best solution found so far. It
   // is the optimal objective value if the problem has been solved to
   // optimality.
+  //
+  // Note: the objective value may be slightly different than what you
+  // could compute yourself using MPVariable::solution_value();
+  // please use the --verify_solution flag to gain confidence about the
+  // numerical stability of your solution.
   double Value() const;
 
   // Returns the best objective bound. In case of minimization, it is
@@ -678,6 +696,9 @@ class MPVariable {
   bool integer() const { return integer_; }
 
   // Returns the value of the variable in the current solution.
+  // If the variable is integer, then the value will always be an integer
+  // (the underlying solver handles floating-point values only, but this
+  // function automatically rounds it to the nearest integer; see: man 3 round).
   double solution_value() const;
 
   // Returns the index of the variable in the MPSolver::variables_.
@@ -694,6 +715,9 @@ class MPVariable {
   // Sets both the lower and upper bounds.
   void SetBounds(double lb, double ub);
 
+  // Advanced usage: unrounded solution value, i.e. it won't be rounded to the
+  // nearest integer even if the variable is integer.
+  double unrounded_solution_value() const;
   // Advanced usage: returns the reduced cost of the variable in the
   // current solution (only available for continuous problems).
   double reduced_cost() const;
@@ -711,6 +735,7 @@ class MPVariable {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class MPVariableSolutionValueTest;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -1228,10 +1253,10 @@ class MPSolverInterface {
   void SetUnsupportedIntegerParam(MPSolverParameters::IntegerParam param) const;
   // Sets a supported double parameter to an unsupported value.
   void SetDoubleParamToUnsupportedValue(MPSolverParameters::DoubleParam param,
-                                        int value) const;
+                                        double value) const;
   // Sets a supported integer parameter to an unsupported value.
   void SetIntegerParamToUnsupportedValue(MPSolverParameters::IntegerParam param,
-                                        double value) const;
+                                         int value) const;
   // Sets each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value) = 0;
   virtual void SetPrimalTolerance(double value) = 0;

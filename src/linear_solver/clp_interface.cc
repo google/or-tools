@@ -218,9 +218,8 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
   if (constraint_index != kNoIndex) {
-    for (ConstIter<hash_map<const MPVariable*, double> >
-             it(constraint->coefficients_); !it.at_end(); ++it) {
-      const int var_index = it->first->index();
+    for (CoeffEntry entry : constraint->coefficients_) {
+      const int var_index = entry.first->index();
       DCHECK_NE(kNoIndex, var_index);
       clp_->modifyCoefficient(constraint_index, var_index, 0.0);
     }
@@ -250,10 +249,8 @@ void CLPInterface::SetObjectiveOffset(double offset) {
 void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
-  for (ConstIter<hash_map<const MPVariable*, double> >
-           it(solver_->objective_->coefficients_);
-       !it.at_end(); ++it) {
-    const int var_index = it->first->index();
+  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+    const int var_index = entry.first->index();
     // Variable may have not been extracted yet.
     if (var_index == kNoIndex) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
@@ -324,13 +321,11 @@ void CLPInterface::ExtractNewVariables() {
       for (int i = 0; i < last_constraint_index_; i++) {
         MPConstraint* const ct = solver_->constraints_[i];
         const int ct_index = ct->index();
-        for (ConstIter<hash_map<const MPVariable*, double> > it(
-                 ct->coefficients_);
-             !it.at_end(); ++it) {
-          const int var_index = it->first->index();
+        for (CoeffEntry entry : ct->coefficients_) {
+          const int var_index = entry.first->index();
           DCHECK_NE(kNoIndex, var_index);
           if (var_index >= last_variable_index_ + 1) {  // + 1 because of dummy.
-            clp_->modifyCoefficient(ct_index, var_index, it->second);
+            clp_->modifyCoefficient(ct_index, var_index, entry.second);
           }
         }
       }
@@ -354,8 +349,8 @@ void CLPInterface::ExtractNewConstraints() {
     }
     // Make space for dummy variable.
     max_row_length = std::max(1, max_row_length);
-    scoped_array<int> indices(new int[max_row_length]);
-    scoped_array<double> coefs(new double[max_row_length]);
+    scoped_ptr<int[]> indices(new int[max_row_length]);
+    scoped_ptr<double[]> coefs(new double[max_row_length]);
     CoinBuild build_object;
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
@@ -369,13 +364,11 @@ void CLPInterface::ExtractNewConstraints() {
         size = 1;
       }
       int j = 0;
-      for (ConstIter<hash_map<const MPVariable*, double> >
-               it(ct->coefficients_);
-           !it.at_end(); ++it) {
-        const int index = it->first->index();
+      for (CoeffEntry entry : ct->coefficients_) {
+        const int index = entry.first->index();
         DCHECK_NE(kNoIndex, index);
         indices[j] = index;
-        coefs[j] = it->second;
+        coefs[j] = entry.second;
         j++;
       }
       build_object.addRow(size,
@@ -399,10 +392,8 @@ void CLPInterface::ExtractNewConstraints() {
 void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (ConstIter<hash_map<const MPVariable*, double> >
-           it(solver_->objective_->coefficients_);
-       !it.at_end(); ++it) {
-    clp_->setObjectiveCoefficient(it->first->index(), it->second);
+  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+    clp_->setObjectiveCoefficient(entry.first->index(), entry.second);
   }
 
   // Constant term. Use -offset instead of +offset because CLP does
@@ -444,9 +435,9 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
   // Time limit.
-  if (solver_->time_limit()) {
+  if (solver_->time_limit() != 0) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    clp_->setMaximumSeconds(solver_->time_limit() / 1000.0);
+    clp_->setMaximumSeconds(solver_->time_limit_in_secs());
   } else {
     clp_->setMaximumSeconds(-1.0);
   }

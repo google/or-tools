@@ -52,8 +52,8 @@ namespace operations_research {
 
 class SwapIntervals : public SequenceVarLocalSearchOperator {
  public:
-  SwapIntervals(const SequenceVar* const* vars, int size)
-      : SequenceVarLocalSearchOperator(vars, size),
+  explicit SwapIntervals(const std::vector<SequenceVar*>& vars)
+      : SequenceVarLocalSearchOperator(vars),
         current_var_(-1),
         current_first_(-1),
         current_second_(-1) {}
@@ -112,8 +112,8 @@ class SwapIntervals : public SequenceVarLocalSearchOperator {
 
 class ShuffleIntervals : public SequenceVarLocalSearchOperator {
  public:
-  ShuffleIntervals(const SequenceVar* const* vars, int size, int max_length)
-      : SequenceVarLocalSearchOperator(vars, size),
+  ShuffleIntervals(const std::vector<SequenceVar*>& vars, int max_length)
+      : SequenceVarLocalSearchOperator(vars),
         max_length_(max_length),
         current_var_(-1),
         current_first_(-1),
@@ -179,7 +179,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
     return true;
   }
 
-  const int max_length_;
+  const int64 max_length_;
   int current_var_;
   int current_first_;
   int current_index_;
@@ -191,11 +191,10 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
 
 class SequenceLns : public SequenceVarLocalSearchOperator {
  public:
-  SequenceLns(const SequenceVar* const* vars,
-              int size,
+  SequenceLns(const std::vector<SequenceVar*>& vars,
               int seed,
               int max_length)
-      : SequenceVarLocalSearchOperator(vars, size),
+      : SequenceVarLocalSearchOperator(vars),
         random_(seed),
         max_length_(max_length) {}
 

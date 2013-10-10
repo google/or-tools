@@ -294,21 +294,18 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
           max_row_length = ct->coefficients_.size();
         }
       }
-      scoped_array<int> indices(new int[max_row_length]);
-      scoped_array<double> coefs(new double[max_row_length]);
+      scoped_ptr<int[]> indices(new int[max_row_length]);
+      scoped_ptr<double[]> coefs(new double[max_row_length]);
 
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* const  ct = solver_->constraints_[i];
         const int size = ct->coefficients_.size();
         int j = 0;
-        for (hash_map<const MPVariable*, double>::const_iterator it =
-                 ct->coefficients_.begin();
-             it != ct->coefficients_.end();
-             ++it) {
-          const int index = it->first->index();
+        for (CoeffEntry entry : ct->coefficients_) {
+          const int index = entry.first->index();
           DCHECK_NE(kNoIndex, index);
           indices[j] = index;
-          coefs[j] = it->second;
+          coefs[j] = entry.second;
           j++;
         }
         if (ct->name().empty()) {
@@ -357,9 +354,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Time limit.
-  if (solver_->time_limit()) {
+  if (solver_->time_limit() != 0) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    model.setMaximumSeconds(solver_->time_limit() / 1000.0);
+    model.setMaximumSeconds(solver_->time_limit_in_secs());
   }
 
   // And solve.

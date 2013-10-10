@@ -18,19 +18,11 @@
 #include <stdlib.h>
 #include <iostream>  // NOLINT
 #include "base/commandlineflags.h"
+#include "base/integral_types.h"
 #include "base/macros.h"
 
 DECLARE_int32(log_level);
 DECLARE_bool(log_prefix);
-
-// Debug-only checking.
-#define DCHECK(condition) assert(condition)
-#define DCHECK_EQ(val1, val2) assert((val1) == (val2))
-#define DCHECK_NE(val1, val2) assert((val1) != (val2))
-#define DCHECK_LE(val1, val2) assert((val1) <= (val2))
-#define DCHECK_LT(val1, val2) assert((val1) < (val2))
-#define DCHECK_GE(val1, val2) assert((val1) >= (val2))
-#define DCHECK_GT(val1, val2) assert((val1) > (val2))
 
 // Always-on checking
 #define CHECK(x) \
@@ -42,6 +34,25 @@ DECLARE_bool(log_prefix);
 #define CHECK_EQ(x, y) CHECK((x) == (y))
 #define CHECK_NE(x, y) CHECK((x) != (y))
 #define CHECK_NOTNULL(x) CHECK((x) != NULL)
+
+// Debug-only checking.
+#ifdef NDEBUG
+#define DCHECK(x)       while (false) CHECK(x)
+#define DCHECK_LT(x, y) while (false) CHECK((x) < (y))
+#define DCHECK_GT(x, y) while (false) CHECK((x) > (y))
+#define DCHECK_LE(x, y) while (false) CHECK((x) <= (y))
+#define DCHECK_GE(x, y) while (false) CHECK((x) >= (y))
+#define DCHECK_EQ(x, y) while (false) CHECK((x) == (y))
+#define DCHECK_NE(x, y) while (false) CHECK((x) != (y))
+#else
+#define DCHECK(x)       CHECK(x)
+#define DCHECK_LT(x, y) CHECK((x) < (y))
+#define DCHECK_GT(x, y) CHECK((x) > (y))
+#define DCHECK_LE(x, y) CHECK((x) <= (y))
+#define DCHECK_GE(x, y) CHECK((x) >= (y))
+#define DCHECK_EQ(x, y) CHECK((x) == (y))
+#define DCHECK_NE(x, y) CHECK((x) != (y))
+#endif  // NDEBUG
 
 #define LOG_INFO LogMessage(__FILE__, __LINE__)
 #define LOG_ERROR LOG_INFO
@@ -57,7 +68,6 @@ DECLARE_bool(log_prefix);
   !(condition) ? (void) 0 : LogMessageVoidify() & LOG(severity)
 
 #ifdef NDEBUG
-#define DEBUG_MODE 0
 #define LOG_DFATAL LOG_ERROR
 #define DFATAL ERROR
 #define DLOG(severity) \
@@ -65,7 +75,6 @@ DECLARE_bool(log_prefix);
 #define DLOG_IF(severity, condition) \
   (true || !(condition)) ? (void) 0 : LogMessageVoidify() & LOG(severity)
 #else
-#define DEBUG_MODE 1
 #define LOG_DFATAL LOG_FATAL
 #define DFATAL FATAL
 #define DLOG(severity) LOG(severity)
@@ -84,15 +93,24 @@ class DateLogger {
 
 class LogMessage {
  public:
-  LogMessage(const char* file, int line) {
+  LogMessage(const char* file, int line) :
+#ifdef __ANDROID__
+    log_stream_(std::cout)
+#else
+    log_stream_(std::cerr)
+#endif
+  {
     if (FLAGS_log_prefix) {
-      std::cerr << "[" << pretty_date_.HumanDate() << "] "
-                << file << ":" << line << ": ";
+       log_stream_ << "[" << pretty_date_.HumanDate() << "] "
+                           << file << ":" << line << ": ";
     }
   }
-  ~LogMessage() { std::cerr << "\n"; }
-  std::ostream& stream() { return std::cerr; }
-
+  ~LogMessage() {
+    log_stream_ << "\n";
+  }
+  std::ostream& stream() { return log_stream_; }
+ protected:
+  std::ostream& log_stream_;
  private:
   operations_research::DateLogger pretty_date_;
   DISALLOW_COPY_AND_ASSIGN(LogMessage);
@@ -103,7 +121,7 @@ class LogMessageFatal : public LogMessage {
   LogMessageFatal(const char* file, int line)
     : LogMessage(file, line) { }
   ~LogMessageFatal() {
-    std::cerr << "\n";
+    log_stream_ << "\n";
     abort();
   }
  private:

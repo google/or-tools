@@ -275,7 +275,7 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
   DCHECK(IsActive(node));
   for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
     const ArcIndex arc = it.Index();
-    DCHECK(!IsAdmissible(arc));
+    DCHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
   }
   return true;
 }

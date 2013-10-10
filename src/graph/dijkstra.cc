@@ -71,7 +71,7 @@ class DijkstraSP {
   const int start_node_;
   scoped_ptr<ResultCallback2<int64, int, int> > graph_;
   const int64 disconnected_distance_;
-  scoped_array<int> predecessor_;
+  scoped_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
   hash_set<int> not_visited_;

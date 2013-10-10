@@ -42,7 +42,7 @@ struct FailureProtect {
 
 class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
  public:
-  CallPyDecisionBuilder(PyObject* pydb) : pysolver_(NULL), pyarg_(NULL) {
+  CallPyDecisionBuilder(PyObject* pydb) : pysolver_(nullptr), pyarg_(nullptr) {
     Py_INCREF(pydb);
     pydb_ = pydb;
     func_ = PyObject_GetAttrString(pydb_, "NextWrapper");
@@ -53,26 +53,26 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
 
   virtual ~CallPyDecisionBuilder() {
     Py_DECREF(pydb_);
-    pydb_ = NULL;
+    pydb_ = nullptr;
     Py_XDECREF(func_);
-    func_ = NULL;
+    func_ = nullptr;
     Py_XDECREF(str_func_);
-    str_func_ = NULL;
+    str_func_ = nullptr;
     Py_XDECREF(pysolver_);
-    pysolver_ = NULL;
+    pysolver_ = nullptr;
     Py_XDECREF(pyarg_);
-    pyarg_ = NULL;
+    pyarg_ = nullptr;
   }
 
   virtual operations_research::Decision* Next(
       operations_research::Solver* const s) {
-    if (pysolver_ == NULL) {
+    if (pysolver_ == nullptr) {
       pysolver_ = SWIG_NewPointerObj(s,
                                      SWIGTYPE_p_operations_research__Solver,
                                      SWIG_POINTER_EXCEPTION);
       pyarg_ = Py_BuildValue((char*)"(O)", pysolver_);
     }
-    operations_research::Decision* result = NULL;
+    operations_research::Decision* result = nullptr;
     PyObject* pyresult = PyEval_CallObject(func_, pyarg_);
     if (pyresult) {
       if (SWIG_ConvertPtr(pyresult,
@@ -91,7 +91,7 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
   virtual string DebugString() const {
     string result = "PyDecisionBuilder";
     if (str_func_) {
-      PyObject* pyresult = PyEval_CallObject(str_func_, NULL);
+      PyObject* pyresult = PyEval_CallObject(str_func_, nullptr);
       if (pyresult) {
         result = PyString_AsString(pyresult);
         Py_DECREF(pyresult);
@@ -110,7 +110,7 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
 class PyLNSNoValues : public operations_research::BaseLNS {
  public:
   PyLNSNoValues(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars.data(), vars.size()), op_(op) {
+      : BaseLNS(vars), op_(op) {
     Py_INCREF(op_);
     init_func_ = PyObject_GetAttrString(op_, "InitFragments");
     Py_XINCREF(init_func_);
@@ -120,16 +120,16 @@ class PyLNSNoValues : public operations_research::BaseLNS {
 
   virtual ~PyLNSNoValues() {
     Py_DECREF(op_);
-    op_ = NULL;
+    op_ = nullptr;
     Py_XDECREF(init_func_);
-    init_func_ = NULL;
+    init_func_ = nullptr;
     Py_XDECREF(fragment_func_);
-    fragment_func_ = NULL;
+    fragment_func_ = nullptr;
   }
 
   virtual void InitFragments() {
     if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, NULL);
+      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
       Py_XDECREF(pyresult);
     }
   }
@@ -165,7 +165,7 @@ class PyLNSNoValues : public operations_research::BaseLNS {
 class PyLNS : public operations_research::BaseLNS {
  public:
   PyLNS(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars.data(), vars.size()), op_(op) {
+      : BaseLNS(vars), op_(op) {
     Py_INCREF(op_);
     init_func_ = PyObject_GetAttrString(op_, "InitFragments");
     Py_XINCREF(init_func_);
@@ -178,18 +178,18 @@ class PyLNS : public operations_research::BaseLNS {
   }
   virtual ~PyLNS() {
     Py_DECREF(op_);
-    op_ = NULL;
+    op_ = nullptr;
     Py_XDECREF(init_func_);
-    init_func_ = NULL;
+    init_func_ = nullptr;
     Py_XDECREF(fragment_func_);
-    fragment_func_ = NULL;
+    fragment_func_ = nullptr;
     Py_DECREF(base_lns_);
-    base_lns_ = NULL;
+    base_lns_ = nullptr;
   }
 
   virtual void InitFragments() {
     if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, NULL);
+      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
       Py_XDECREF(pyresult);
     }
   }
@@ -253,6 +253,9 @@ class PyDecisionBuilder(object):
     except Exception:
       return solver.FailDecision()
     return result
+
+  def DebugString(self):
+    return "PyDecisionBuilder"
 }
 }  // namespace operations_research
 
@@ -299,7 +302,7 @@ namespace operations_research {
                         $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1) {
       operations_research::IntVar* const v = c->Var();
-      if (v == NULL) {
+      if (v == nullptr) {
         SWIG_fail;
       } else {
         $1 = v;
@@ -339,12 +342,12 @@ namespace operations_research {
                         (void**)&c,
                         $descriptor(operations_research::Constraint*),
                         SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-      if (c == NULL) {
+      if (c == nullptr) {
         PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
         SWIG_fail;
       }
       operations_research::IntVar* const v = c->Var();
-      if (v == NULL) {
+      if (v == nullptr) {
         SWIG_fail;
       } else {
         $1 = v;
@@ -418,12 +421,12 @@ namespace operations_research {
                           (void**)&c,
                           $descriptor(operations_research::Constraint*),
                           SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-        if (c == NULL) {
+        if (c == nullptr) {
           PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
           SWIG_fail;
         }
         operations_research::IntVar* const v = c->Var();
-        if (v == NULL) {
+        if (v == nullptr) {
           SWIG_fail;
         } else {
           temp[i] = v;
@@ -432,7 +435,7 @@ namespace operations_research {
         SWIG_fail;
       }
     } else {
-      if (t == NULL) {
+      if (t == nullptr) {
         PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
         SWIG_fail;
       }
@@ -490,7 +493,7 @@ namespace operations_research {
       PyErr_Clear();
       t = new CallPyDecisionBuilder(obj);
     }
-    if (t == NULL) {
+    if (t == nullptr) {
       PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
       SWIG_fail;
     }
@@ -515,7 +518,7 @@ namespace operations_research {
                            SWIG_POINTER_EXCEPTION | 0 )) == -1) {
         PyErr_Clear();
         PyObject* next_func = PyObject_GetAttrString(obj, "Next");
-        failed = next_func == NULL;
+        failed = next_func == nullptr;
         if (failed) {
           break;
         }
@@ -543,7 +546,7 @@ namespace operations_research {
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       SWIG_fail;
     }
-    if (t == NULL) {
+    if (t == nullptr) {
       PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
       SWIG_fail;
     }
@@ -603,7 +606,7 @@ CONVERT_VECTOR(LocalSearchFilter);
                       SWIG_POINTER_EXCEPTION | 0) == -1) {
     PyErr_Clear();
     PyObject* next_func = PyObject_GetAttrString($input, "Next");
-    $1 =  next_func != NULL;
+    $1 =  next_func != nullptr;
   } else {
     $1 = 1;
   }
@@ -776,7 +779,7 @@ static void SetPythonFlags(bool trace_propagation,
 
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
-                          ResultCallback1<bool, int64>* callback = NULL) {
+                          ResultCallback1<bool, int64>* callback = nullptr) {
     return self->MakeNoCycle(nexts, active, callback, false);
   }
 
@@ -873,7 +876,7 @@ static void SetPythonFlags(bool trace_propagation,
   LocalSearchFilter* LocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars,
       ResultCallback2<int64, int64, int64>* values,
-      const IntVar* const objective,
+      IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
     return self->MakeLocalSearchObjectiveFilter(vars,
@@ -1309,14 +1312,14 @@ namespace operations_research {
   jclass object_class =
     jenv->FindClass("com/google/ortools/"
                     "constraintsolver/type");
-  if (NULL == object_class)
+  if (nullptr == object_class)
     return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class,
                               "getCPtr",
                               "(Lcom/google/ortools/"
                               "constraintsolver/type;)J");
-  assert(method_id != NULL);
+  assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
     jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);

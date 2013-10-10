@@ -107,7 +107,7 @@ bool InsertIfNotPresent(Collection * const collection,
   return ret.second;
 }
 
-// Inserts a new pair<key,value> into a map or hash_map.
+// Inserts a new std::pair<key,value> into a map or hash_map.
 // Insert a new key into a set or hash_set.
 // Dies if the key is already present.
 template<class Collection>

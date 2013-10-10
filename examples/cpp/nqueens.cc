@@ -25,7 +25,7 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "constraint_solver/constraint_solveri.h"
 
 DEFINE_bool(print, false, "If true, print one of the solution.");
@@ -263,7 +263,7 @@ void NQueens(int size) {
 }   // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_size != 0) {
     operations_research::NQueens(FLAGS_size);
   } else {

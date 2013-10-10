@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_HASH_H_
 
 // Hash maps and hash sets are compiler dependant.
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(STLPORT)
 #include <ext/hash_map>
 #include <ext/hash_set>
 namespace operations_research {
@@ -25,10 +25,14 @@ namespace operations_research {
 #include <hash_map>
 #include <hash_set>
 #endif
+
 #include <string>
 #include <utility>
 
 #include "base/basictypes.h"
+
+// In SWIG mode, we don't want anything besides these top-level includes.
+#ifndef SWIG
 
 namespace operations_research {
 // 32 bit version.
@@ -60,55 +64,12 @@ static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
   c -= a; c -= b; c ^= (b >> 22);
 }
 }  // namespace operations_research
-#if !defined(SWIG)
-#if !defined(_MSC_VER)
-namespace __gnu_cxx {
-template<class T> struct hash<T*> {
-  size_t operator()(T *x) const { return reinterpret_cast<size_t>(x); }
-};
 
-template<> struct hash<int64> {
-  size_t operator()(int64 x) const { return static_cast<size_t>(x); }
-};
-
-template<> struct hash<std::string> {
-  size_t operator()(const std::string& x) const {
-    size_t hash = 0;
-    int c;
-    const char* s = x.c_str();
-    while ((c = *s++)) {  // Extra () to remove a warning on windows.
-      hash = ((hash << 5) + hash) ^ c;
-    }
-    return hash;
-  }
-};
-
-inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
-  uint32 b = 0x9e3779b9UL;            // the golden ratio; an arbitrary value
-  operations_research::mix(num, b, c);
-  return c;
-}
-
-inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);   // more of the golden ratio
-  operations_research::mix(num, b, c);
-  return c;
-}
-
-template<class First, class Second>
-struct hash<std::pair<First, Second> > {
-  size_t operator()(const std::pair<First, Second>& p) const {
-    size_t h1 = hash<First>()(p.first);
-    size_t h2 = hash<Second>()(p.second);
-    // The decision below is at compile time
-    return (sizeof(h1) <= sizeof(uint32)) ?  // NOLINT
-        Hash32NumWithSeed(h1, h2)
-        : Hash64NumWithSeed(h1, h2);
-  }
-};
-}  // namespace __gnu_cxx
-#else  // !defined(_MSC_VER)
-// The following class defines a hash function for pair<int64, int64>.
+// --------------------------------------------------------------------------
+// Microsoft Visual C++ port
+// --------------------------------------------------------------------------
+# ifdef _MSC_VER
+// The following class defines a hash function for std::pair<int64, int64>.
 class PairInt64Hasher : public stdext::hash_compare <std::pair<int64, int64> > {
  public:
   size_t operator() (const std::pair<int64, int64>& a) const {
@@ -140,22 +101,80 @@ class PairIntHasher : public stdext::hash_compare <std::pair<int, int> > {
         (a1.first == a2.first && a1.second < a2.second);
   }
 };
-#endif  // defined(_MSC_VER)
-#endif  // defined(SWIG)
 
-#if !defined(SWIG)
-# if defined(__GNUC__)
-using __gnu_cxx::hash;
-using __gnu_cxx::hash_set;
-# elif defined(_MSC_VER)
 using std::hash;
 using stdext::hash_map;
 using stdext::hash_set;
-# else
-using std::hash;
-using std::hash_map;
-using std::hash_set;
-# endif
-#endif
+# endif  // _MSC_VER
+
+// --------------------------------------------------------------------------
+// GNU C++ port, with or without STLport.
+// --------------------------------------------------------------------------
+# ifdef __GNUC__
+// hash namespace
+#  if defined(__GNUC__) && defined(STLPORT)
+#  define HASH_NAMESPACE std
+#  elif defined(__GNUC__) && !defined(STLPORT)
+#  define HASH_NAMESPACE __gnu_cxx
+#  endif
+
+// Support a few hash<> operators, in the hash namespace.
+inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
+  uint32 b = 0x9e3779b9UL;            // The golden ratio; an arbitrary value.
+  operations_research::mix(num, b, c);
+  return c;
+}
+
+inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);   // More of the golden ratio.
+  operations_research::mix(num, b, c);
+  return c;
+}
+
+namespace HASH_NAMESPACE {
+template<class First, class Second>
+struct hash<std::pair<First, Second> > {
+  size_t operator()(const std::pair<First, Second>& p) const {
+    size_t h1 = hash<First>()(p.first);
+    size_t h2 = hash<Second>()(p.second);
+    // The decision below is at compile time
+    return (sizeof(h1) <= sizeof(uint32)) ?  // NOLINT
+        Hash32NumWithSeed(h1, h2)
+        : Hash64NumWithSeed(h1, h2);
+  }
+};
+
+template<class T> struct hash<T*> {
+  size_t operator()(T *x) const { return reinterpret_cast<size_t>(x); }
+};
+
+// hash<int64> and hash<string> are already defined with STLport.
+#  ifndef STLPORT
+template<> struct hash<int64> {
+  size_t operator()(int64 x) const { return static_cast<size_t>(x); }
+};
+
+template<> struct hash<std::string> {
+  size_t operator()(const std::string& x) const {
+    size_t hash = 0;
+    int c;
+    const char* s = x.c_str();
+    while ((c = *s++)) {  // Extra () to remove a warning on Windows.
+      hash = ((hash << 5) + hash) ^ c;
+    }
+    return hash;
+  }
+};
+#  endif  // STLPORT
+}  // namespace HASH_NAMESPACE
+
+using HASH_NAMESPACE::hash;
+using HASH_NAMESPACE::hash_map;
+using HASH_NAMESPACE::hash_set;
+# endif  // __GNUC__
+
+#undef HASH_NAMESPACE
+
+#endif  // SWIG
 
 #endif  // OR_TOOLS_BASE_HASH_H_

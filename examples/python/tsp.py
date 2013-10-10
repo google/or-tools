@@ -24,8 +24,6 @@
    (forbidden arcs).
 """
 
-
-
 import random
 
 from google.apputils import app
@@ -35,11 +33,11 @@ from constraint_solver import pywraprouting
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_integer('tsp_size', 10,
-                     'Size of Traveling Salesman Problem instance.')
+                      'Size of Traveling Salesman Problem instance.')
 gflags.DEFINE_boolean('tsp_use_random_matrix', True,
-                     'Use random cost matrix.')
+                      'Use random cost matrix.')
 gflags.DEFINE_integer('tsp_random_forbidden_connections', 0,
-                     'Number of random forbidden connections.')
+                      'Number of random forbidden connections.')
 gflags.DEFINE_integer('tsp_random_seed', 0, 'Random seed.')
 
 
@@ -82,10 +80,12 @@ def main(_):
     # Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     # the route is node 0.
     routing = pywraprouting.RoutingModel(FLAGS.tsp_size, 1)
+
+    parameters = pywraprouting.RoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
-    routing.SetCommandLineOption('routing_first_solution', 'PathCheapestArc')
+    parameters.first_solution = 'PathCheapestArc'
     # Disabling Large Neighborhood Search, comment out to activate it.
-    routing.SetCommandLineOption('routing_no_lns', 'true')
+    parameters.no_lns = True
 
     # Setting the cost function.
     # Put a callback to the distance accessor here. The callback takes two
@@ -110,7 +110,7 @@ def main(_):
         forbidden_connections += 1
 
     # Solve, returns a solution if any.
-    assignment = routing.Solve()
+    assignment = routing.SolveWithParameters(parameters, None)
     if assignment:
       # Solution cost.
       print assignment.ObjectiveValue()

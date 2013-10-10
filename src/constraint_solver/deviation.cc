@@ -32,10 +32,8 @@ namespace operations_research {
 namespace {
 class Deviation : public Constraint {
  public:
-  Deviation(Solver* const solver,
-            const std::vector<IntVar*>& vars,
-            IntVar* const deviation_var,
-            int64 total_sum)
+  Deviation(Solver* const solver, const std::vector<IntVar*>& vars,
+            IntVar* const deviation_var, int64 total_sum)
       : Constraint(solver),
         vars_(vars),
         size_(vars.size()),
@@ -52,7 +50,7 @@ class Deviation : public Constraint {
         active_sum_rounded_down_(0),
         active_sum_rounded_up_(0),
         active_sum_nearest_(0) {
-    CHECK_NOTNULL(deviation_var);
+    CHECK(deviation_var != nullptr);
   }
 
   virtual ~Deviation() {}
@@ -76,19 +74,16 @@ class Deviation : public Constraint {
   virtual string DebugString() const {
     return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
                         DebugStringVector(vars_, ", ").c_str(),
-                        deviation_var_->DebugString().c_str(),
-                        total_sum_);
+                        deviation_var_->DebugString().c_str(), total_sum_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(),
-                                               vars_.size());
+                                               vars_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             deviation_var_);
-    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
-                                  total_sum_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, total_sum_);
     visitor->EndVisitConstraint(ModelVisitor::kDeviation, this);
   }
 
@@ -111,7 +106,7 @@ class Deviation : public Constraint {
   //   - min deviation smaller than max allowed deviation
   //  min_delta is the minimum possible deviation
   void PropagateBounds(int64 min_delta) {
-    PropagateBounds(min_delta, true);  // Filter upper bounds.
+    PropagateBounds(min_delta, true);   // Filter upper bounds.
     PropagateBounds(min_delta, false);  // Filter lower bounds.
   }
 
@@ -147,11 +142,10 @@ class Deviation : public Constraint {
         size_ * MathUtil::FloorOfRatio<int64>(active_sum_, size_);
     // up is > sum, always.
     active_sum_rounded_up_ = active_sum_rounded_down_ + size_;
-    active_sum_nearest_ =
-        (active_sum_rounded_up_ - active_sum_ <=
-         active_sum_ - active_sum_rounded_down_) ?
-        active_sum_rounded_up_ :
-        active_sum_rounded_down_;
+    active_sum_nearest_ = (active_sum_rounded_up_ - active_sum_ <=
+                           active_sum_ - active_sum_rounded_down_)
+                              ? active_sum_rounded_up_
+                              : active_sum_rounded_down_;
   }
 
   // Builds an approximate sum in a greedy way.
@@ -190,7 +184,7 @@ class Deviation : public Constraint {
 
   bool Overlap(int var_index) const {
     return scaled_vars_min_[var_index] < active_sum_ &&
-        scaled_vars_max_[var_index] > active_sum_;
+           scaled_vars_max_[var_index] > active_sum_;
   }
 
   // Repairs the greedy sum obtained above to get the correct sum.
@@ -203,8 +197,7 @@ class Deviation : public Constraint {
     // Change overlapping variables as long as the sum is not
     // satisfied and there are overlapping vars, we use that ones to
     // repair.
-    for (int j = 0;
-         j < overlaps_.size() && greedy_sum != scaled_total_sum;
+    for (int j = 0; j < overlaps_.size() && greedy_sum != scaled_total_sum;
          j++) {
       scaled_vars_assigned_value_[overlaps_[j]] += delta;
       greedy_sum += delta;
@@ -239,8 +232,7 @@ class Deviation : public Constraint {
     }
     for (int i = 0; i < size_; ++i) {
       maximum_[i] = scaled_vars_assigned_value_[i];
-      if (Overlap(i) &&
-          active_sum_nearest_ == active_sum_rounded_up_ &&
+      if (Overlap(i) && active_sum_nearest_ == active_sum_rounded_up_ &&
           active_sum_ % size_ != 0) {
         overlaps_sup_[i] = num_overlap_sum_rounded_up - 1;
       } else {
@@ -272,8 +264,8 @@ class Deviation : public Constraint {
   bool CanPushSumAcrossMean(int64 greedy_sum, int64 scaled_total_sum) const {
     return (greedy_sum > scaled_total_sum &&
             active_sum_nearest_ == active_sum_rounded_up_) ||
-        (greedy_sum < scaled_total_sum &&
-         active_sum_nearest_ == active_sum_rounded_down_);
+           (greedy_sum < scaled_total_sum &&
+            active_sum_nearest_ == active_sum_rounded_down_);
   }
 
   // Repairs the sum and store intermediate information to be used
@@ -289,8 +281,7 @@ class Deviation : public Constraint {
       // Try to repair the sum greedily.
       if (CanPushSumAcrossMean(greedy_sum, scaled_total_sum)) {
         const int64 delta = greedy_sum > scaled_total_sum ? -size_ : size_;
-        for (int j = 0;
-             j < overlaps_.size() && greedy_sum != scaled_total_sum;
+        for (int j = 0; j < overlaps_.size() && greedy_sum != scaled_total_sum;
              ++j) {
           scaled_vars_assigned_value_[overlaps_[j]] += delta;
           greedy_sum += delta;
@@ -342,29 +333,26 @@ class Deviation : public Constraint {
   void PruneVars(int64 min_delta, bool upper_bound) {
     // Pruning of upper bound of vars_[i] for var_index in [1..n].
     const int64 increase_down_up = (active_sum_rounded_up_ - active_sum_) -
-        (active_sum_ - active_sum_rounded_down_);
+                                   (active_sum_ - active_sum_rounded_down_);
     for (int var_index = 0; var_index < size_; ++var_index) {
       // Not bound, and a compatible new max.
       if (scaled_vars_max_[var_index] != scaled_vars_min_[var_index] &&
           maximum_[var_index] < scaled_vars_max_[var_index]) {
-        const int64 new_max = ComputeNewMax(var_index,
-                                            min_delta,
-                                            increase_down_up);
+        const int64 new_max =
+            ComputeNewMax(var_index, min_delta, increase_down_up);
         PruneBound(var_index, new_max, upper_bound);
       }
     }
   }
 
   // Computes new max for a variable.
-  int64 ComputeNewMax(int var_index,
-                      int64 min_delta,
-                      int64 increase_down_up) {
+  int64 ComputeNewMax(int var_index, int64 min_delta, int64 increase_down_up) {
     int64 maximum_value = maximum_[var_index];
     int64 current_min_delta = min_delta;
 
     if (overlaps_sup_[var_index] > 0 &&
         (current_min_delta +
-         overlaps_sup_[var_index] * (size_ - increase_down_up) >=
+             overlaps_sup_[var_index] * (size_ - increase_down_up) >=
          deviation_var_->Max())) {
       const int64 delta = deviation_var_->Max() - current_min_delta;
       maximum_value += (size_ * delta) / (size_ - increase_down_up);
@@ -385,7 +373,7 @@ class Deviation : public Constraint {
       maximum_value += size_ * overlaps_sup_[var_index];
       // Slope of 2 x n.
       const int64 delta = deviation_var_->Max() - current_min_delta;
-      maximum_value +=  delta / 2;  // n * delta / (2 * n);
+      maximum_value += delta / 2;  // n * delta / (2 * n);
       return MathUtil::FloorOfRatio<int64>(maximum_value, size_);
     }
   }
@@ -403,15 +391,15 @@ class Deviation : public Constraint {
   const int size_;
   IntVar* const deviation_var_;
   const int64 total_sum_;
-  scoped_array<int64> scaled_vars_assigned_value_;
-  scoped_array<int64> scaled_vars_min_;
-  scoped_array<int64> scaled_vars_max_;
+  scoped_ptr<int64[]> scaled_vars_assigned_value_;
+  scoped_ptr<int64[]> scaled_vars_min_;
+  scoped_ptr<int64[]> scaled_vars_max_;
   int64 scaled_sum_max_;
   int64 scaled_sum_min_;
   // Stores the variables overlapping the mean value.
   std::vector<int> overlaps_;
-  scoped_array<int64> maximum_;
-  scoped_array<int64> overlaps_sup_;
+  scoped_ptr<int64[]> maximum_;
+  scoped_ptr<int64[]> overlaps_sup_;
   // These values are updated by ComputeData().
   int64 active_sum_;
   int64 active_sum_rounded_down_;

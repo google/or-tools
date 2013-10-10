@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Linear solver Stubby services
+// Linear solver protocol buffers.
 
 syntax = "proto2";
 option java_package = "com.google.ortools.linearsolver";

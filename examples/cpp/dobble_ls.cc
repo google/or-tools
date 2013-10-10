@@ -36,11 +36,10 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "base/random.h"
-#include "util/string_array.h"
 
 DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
 DEFINE_int32(ls_seed, 1, "Seed for the random number generator (used by "
@@ -178,32 +177,6 @@ class SymbolsSharedByTwoCardsConstraint : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
-    return StringPrintf(
-        "SymbolsSharedByTwoCardsConstraint([%s], [%s], %d, %s)",
-        DebugStringVector(card1_symbol_vars_, ", ").c_str(),
-        DebugStringVector(card2_symbol_vars_, ", ").c_str(),
-        num_symbols_,
-        num_symbols_in_common_var_->DebugString().c_str());
-  }
-
-  void Accept(ModelVisitor* const visitor) const {
-    const string id = "SymbolsSharedByTwoCardsConstraint";
-    visitor->BeginVisitConstraint(id, this);
-    visitor->VisitIntegerVariableArrayArgument(
-        ModelVisitor::kLeftArgument,
-        card1_symbol_vars_.data(),
-        card1_symbol_vars_.size());
-    visitor->VisitIntegerVariableArrayArgument(
-        ModelVisitor::kRightArgument,
-        card2_symbol_vars_.data(),
-        card2_symbol_vars_.size());
-    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, num_symbols_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            num_symbols_in_common_var_);
-    visitor->EndVisitConstraint(id, this);
-  }
-
  private:
   std::vector<IntVar*> card1_symbol_vars_;
   std::vector<IntVar*> card2_symbol_vars_;
@@ -264,18 +237,16 @@ IntVar* CreateViolationVar(Solver* const solver,
 // compact representation of which symbols appeal on each cards.
 class DobbleOperator : public IntVarLocalSearchOperator {
  public:
-  DobbleOperator(const IntVar* const* card_symbol_vars,
-                 int num_vars,
+  DobbleOperator(const std::vector<IntVar*>& card_symbol_vars,
                  int num_cards,
                  int num_symbols,
                  int num_symbols_per_card)
-      : IntVarLocalSearchOperator(card_symbol_vars, num_vars),
+      : IntVarLocalSearchOperator(card_symbol_vars),
         num_cards_(num_cards),
         num_symbols_(num_symbols),
         num_symbols_per_card_(num_symbols_per_card),
         symbols_per_card_(num_cards) {
     CHECK_GT(num_cards, 0);
-    CHECK_GT(num_vars, 0);
     CHECK_GT(num_symbols, 0);
     CHECK_GT(num_symbols_per_card, 0);
     for (int card = 0; card < num_cards; ++card) {
@@ -335,13 +306,11 @@ class DobbleOperator : public IntVarLocalSearchOperator {
 // below to see how we filter those out.
 class SwapSymbols : public DobbleOperator {
  public:
-  SwapSymbols(const IntVar* const* card_symbol_vars,
-                int num_vars,
+  SwapSymbols(const std::vector<IntVar*>& card_symbol_vars,
                 int num_cards,
                 int num_symbols,
                 int num_symbols_per_card)
       : DobbleOperator(card_symbol_vars,
-                       num_vars,
                        num_cards,
                        num_symbols,
                        num_symbols_per_card),
@@ -412,14 +381,12 @@ class SwapSymbols : public DobbleOperator {
 // one.
 class SwapSymbolsOnCardPairs : public DobbleOperator {
  public:
-  SwapSymbolsOnCardPairs(const IntVar* const* card_symbol_vars,
-                         int num_vars,
+  SwapSymbolsOnCardPairs(const std::vector<IntVar*>& card_symbol_vars,
                          int num_cards,
                          int num_symbols,
                          int num_symbols_per_card,
                          int max_num_swaps)
       : DobbleOperator(card_symbol_vars,
-                       num_vars,
                        num_cards,
                        num_symbols,
                        num_symbols_per_card),
@@ -481,12 +448,11 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
 // of symbols per card to 8.
 class DobbleFilter : public IntVarLocalSearchFilter {
  public:
-  DobbleFilter(const IntVar* const* card_symbol_vars,
-               int num_vars,
+  DobbleFilter(const std::vector<IntVar*>& card_symbol_vars,
                int num_cards,
                int num_symbols,
                int num_symbols_per_card)
-      : IntVarLocalSearchFilter(card_symbol_vars, num_vars),
+      : IntVarLocalSearchFilter(card_symbol_vars),
         num_cards_(num_cards),
         num_symbols_(num_symbols),
         num_symbols_per_card_(num_symbols_per_card),
@@ -761,8 +727,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // Creates local search operators.
   std::vector<LocalSearchOperator*> operators;
   LocalSearchOperator* const switch_operator =
-      solver.RevAlloc(new SwapSymbols(all_card_symbol_vars.data(),
-                                      all_card_symbol_vars.size(),
+      solver.RevAlloc(new SwapSymbols(all_card_symbol_vars,
                                       num_cards,
                                       num_symbols,
                                       num_symbols_per_card));
@@ -770,8 +735,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   LOG(INFO) << "  - add switch operator";
   if (FLAGS_num_swaps > 0) {
     LocalSearchOperator* const swaps_operator =
-        solver.RevAlloc(new SwapSymbolsOnCardPairs(all_card_symbol_vars.data(),
-                                                   all_card_symbol_vars.size(),
+        solver.RevAlloc(new SwapSymbolsOnCardPairs(all_card_symbol_vars,
                                                    num_cards,
                                                    num_symbols,
                                                    num_symbols_per_card,
@@ -785,8 +749,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   std::vector<LocalSearchFilter*> filters;
   if (FLAGS_use_filter) {
     filters.push_back(solver.RevAlloc(
-        new DobbleFilter(all_card_symbol_vars.data(),
-                         all_card_symbol_vars.size(),
+        new DobbleFilter(all_card_symbol_vars,
                          num_cards,
                          num_symbols,
                          num_symbols_per_card)));
@@ -828,7 +791,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = FLAGS_symbols_per_card;

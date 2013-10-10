@@ -20,17 +20,15 @@
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
-#include "base/concise_iterator.h"
-#include "base/hash.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/const_int_array.h"
 #include "util/string_array.h"
 
-DEFINE_int32(cache_initial_size, 1024, "Initial size of the array of the hash "
+DEFINE_int32(cache_initial_size, 1024,
+             "Initial size of the array of the hash "
              "table of caches for objects of type Var(x == 3)");
 
 namespace operations_research {
@@ -64,7 +62,7 @@ class EqualityExprCst : public Constraint {
 };
 
 EqualityExprCst::EqualityExprCst(Solver* const s, IntExpr* const e, int64 v)
-  : Constraint(s), expr_(e), value_(v) {}
+    : Constraint(s), expr_(e), value_(v) {}
 
 void EqualityExprCst::Post() {
   if (!expr_->IsVar()) {
@@ -73,9 +71,7 @@ void EqualityExprCst::Post() {
   }
 }
 
-void EqualityExprCst::InitialPropagate() {
-  expr_->SetValue(value_);
-}
+void EqualityExprCst::InitialPropagate() { expr_->SetValue(value_); }
 
 string EqualityExprCst::DebugString() const {
   return StringPrintf("(%s == %" GG_LL_FORMAT "d)",
@@ -85,8 +81,8 @@ string EqualityExprCst::DebugString() const {
 
 Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(e, &left, &right)) {
     return MakeEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
@@ -100,8 +96,8 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
 
 Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(e, &left, &right)) {
     return MakeEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
@@ -142,7 +138,7 @@ class GreaterEqExprCst : public Constraint {
 };
 
 GreaterEqExprCst::GreaterEqExprCst(Solver* const s, IntExpr* const e, int64 v)
-  : Constraint(s), expr_(e), value_(v) {}
+    : Constraint(s), expr_(e), value_(v) {}
 
 void GreaterEqExprCst::Post() {
   if (!expr_->IsVar()) {
@@ -151,9 +147,7 @@ void GreaterEqExprCst::Post() {
   }
 }
 
-void GreaterEqExprCst::InitialPropagate() {
-  expr_->SetMin(value_);
-}
+void GreaterEqExprCst::InitialPropagate() { expr_->SetMin(value_); }
 
 string GreaterEqExprCst::DebugString() const {
   return StringPrintf("(%s >= %" GG_LL_FORMAT "d)",
@@ -202,13 +196,14 @@ class LessEqExprCst : public Constraint {
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
   }
+
  private:
   IntExpr* const expr_;
   int64 value_;
 };
 
 LessEqExprCst::LessEqExprCst(Solver* const s, IntExpr* const e, int64 v)
-  : Constraint(s), expr_(e), value_(v) {}
+    : Constraint(s), expr_(e), value_(v) {}
 
 void LessEqExprCst::Post() {
   if (!expr_->IsVar()) {
@@ -217,9 +212,7 @@ void LessEqExprCst::Post() {
   }
 }
 
-void LessEqExprCst::InitialPropagate() {
-  expr_->SetMax(value_);
-}
+void LessEqExprCst::InitialPropagate() { expr_->SetMax(value_); }
 
 string LessEqExprCst::DebugString() const {
   return StringPrintf("(%s <= %" GG_LL_FORMAT "d)",
@@ -269,6 +262,7 @@ class DiffCst : public Constraint {
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
   }
+
  private:
   IntVar* const var_;
   int64 value_;
@@ -276,13 +270,11 @@ class DiffCst : public Constraint {
 };
 
 DiffCst::DiffCst(Solver* const s, IntVar* const var, int64 value)
-    : Constraint(s), var_(var), value_(value), demon_(NULL) {}
+    : Constraint(s), var_(var), value_(value), demon_(nullptr) {}
 
 void DiffCst::InitialPropagate() {
   if (var_->Size() >= 0xFFFFFF) {
-    demon_ = MakeConstraintDemon0(solver(),
-                                  this,
-                                  &DiffCst::BoundPropagate,
+    demon_ = MakeConstraintDemon0(solver(), this, &DiffCst::BoundPropagate,
                                   "BoundPropagate");
     var_->WhenRange(demon_);
   } else {
@@ -306,15 +298,15 @@ void DiffCst::BoundPropagate() {
 }
 
 string DiffCst::DebugString() const {
-  return StringPrintf("(%s != %" GG_LL_FORMAT "d)",
-                      var_->DebugString().c_str(), value_);
+  return StringPrintf("(%s != %" GG_LL_FORMAT "d)", var_->DebugString().c_str(),
+                      value_);
 }
 }  // namespace
 
 Constraint* Solver::MakeNonEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(e, &left, &right)) {
     return MakeNonEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
@@ -328,8 +320,8 @@ Constraint* Solver::MakeNonEquality(IntExpr* const e, int64 v) {
 
 Constraint* Solver::MakeNonEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(e, &left, &right)) {
     return MakeNonEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
@@ -346,7 +338,7 @@ namespace {
 class IsEqualCstCt : public CastConstraint {
  public:
   IsEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
-      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
@@ -371,8 +363,7 @@ class IsEqualCstCt : public CastConstraint {
   }
   string DebugString() const {
     return StringPrintf("IsEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        var_->DebugString().c_str(),
-                        cst_,
+                        var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
@@ -394,8 +385,8 @@ class IsEqualCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
     return MakeIsEqualVar(left, MakeSum(right, value));
   }
@@ -411,17 +402,14 @@ IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
   if (var->IsVar()) {
     return var->Var()->IsEqual(value);
   } else {
-    IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s == %" GG_LL_FORMAT "d)",
-                                 var->DebugString().c_str(),
-                                 value));
+    IntVar* const boolvar = MakeBoolVar(StringPrintf(
+        "Is(%s == %" GG_LL_FORMAT "d)", var->DebugString().c_str(), value));
     AddConstraint(MakeIsEqualCstCt(var, value, boolvar));
     return boolvar;
   }
 }
 
-Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var,
-                                     int64 value,
+Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var, int64 value,
                                      IntVar* const boolvar) {
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
@@ -447,12 +435,9 @@ Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var,
   // TODO(user) : what happens if the constraint is not posted?
   // The cache becomes tainted.
   model_cache_->InsertExprConstantExpression(
-      boolvar,
-      var,
-      value,
-      ModelCache::EXPR_CONSTANT_IS_EQUAL);
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
     return MakeIsEqualCt(left, MakeSum(right, value), boolvar);
   } else {
@@ -466,7 +451,7 @@ namespace {
 class IsDiffCstCt : public CastConstraint {
  public:
   IsDiffCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
-      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -494,8 +479,7 @@ class IsDiffCstCt : public CastConstraint {
 
   virtual string DebugString() const {
     return StringPrintf("IsDiffCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        var_->DebugString().c_str(),
-                        cst_,
+                        var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
@@ -517,16 +501,15 @@ class IsDiffCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsDifferentCstVar(IntExpr* const var, int64 value) {
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
     return MakeIsDifferentVar(left, MakeSum(right, value));
   }
   return var->Var()->IsDifferent(value);
 }
 
-Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var,
-                                         int64 value,
+Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var, int64 value,
                                          IntVar* const boolvar) {
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
@@ -550,12 +533,9 @@ Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var,
     }
   }
   model_cache_->InsertExprConstantExpression(
-      boolvar,
-      var,
-      value,
-      ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
-  IntExpr* left = NULL;
-  IntExpr* right = NULL;
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
     return MakeIsDifferentCt(left, MakeSum(right, value), boolvar);
   } else {
@@ -570,7 +550,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
  public:
   IsGreaterEqualCstCt(Solver* const s, IntExpr* const v, int64 c,
                       IntVar* const b)
-      : CastConstraint(s, b), expr_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
@@ -598,8 +578,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
   }
   virtual string DebugString() const {
     return StringPrintf("IsGreaterEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        expr_->DebugString().c_str(),
-                        cst_,
+                        expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
@@ -630,10 +609,8 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->IsVar()) {
     return var->Var()->IsGreaterOrEqual(value);
   } else {
-    IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s >= %" GG_LL_FORMAT "d)",
-                                 var->DebugString().c_str(),
-                                 value));
+    IntVar* const boolvar = MakeBoolVar(StringPrintf(
+        "Is(%s >= %" GG_LL_FORMAT "d)", var->DebugString().c_str(), value));
     AddConstraint(MakeIsGreaterOrEqualCstCt(var, value, boolvar));
     return boolvar;
   }
@@ -643,8 +620,7 @@ IntVar* Solver::MakeIsGreaterCstVar(IntExpr* const var, int64 value) {
   return MakeIsGreaterOrEqualCstVar(var, value + 1);
 }
 
-Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var,
-                                              int64 value,
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var, int64 value,
                                               IntVar* const boolvar) {
   if (boolvar->Bound()) {
     if (boolvar->Min() == 0) {
@@ -656,10 +632,7 @@ Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var,
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   model_cache_->InsertExprConstantExpression(
-      boolvar,
-      var,
-      value,
-      ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
   return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
 }
 
@@ -674,7 +647,7 @@ namespace {
 class IsLessEqualCstCt : public CastConstraint {
  public:
   IsLessEqualCstCt(Solver* const s, IntExpr* const v, int64 c, IntVar* const b)
-      : CastConstraint(s, b), expr_(v), cst_(c), demon_(NULL) {}
+      : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -705,8 +678,7 @@ class IsLessEqualCstCt : public CastConstraint {
 
   virtual string DebugString() const {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
-                        expr_->DebugString().c_str(),
-                        cst_,
+                        expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
@@ -727,7 +699,6 @@ class IsLessEqualCstCt : public CastConstraint {
 };
 }  // namespace
 
-
 IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->Max() <= value) {
     return MakeIntConst(1LL);
@@ -738,10 +709,8 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->IsVar()) {
     return var->Var()->IsLessOrEqual(value);
   } else {
-    IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s <= %" GG_LL_FORMAT "d)",
-                                 var->DebugString().c_str(),
-                                 value));
+    IntVar* const boolvar = MakeBoolVar(StringPrintf(
+        "Is(%s <= %" GG_LL_FORMAT "d)", var->DebugString().c_str(), value));
     AddConstraint(MakeIsLessOrEqualCstCt(var, value, boolvar));
     return boolvar;
   }
@@ -751,8 +720,7 @@ IntVar* Solver::MakeIsLessCstVar(IntExpr* const var, int64 value) {
   return MakeIsLessOrEqualCstVar(var, value - 1);
 }
 
-Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var,
-                                           int64 value,
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var, int64 value,
                                            IntVar* const boolvar) {
   if (boolvar->Bound()) {
     if (boolvar->Min() == 0) {
@@ -764,10 +732,7 @@ Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var,
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   model_cache_->InsertExprConstantExpression(
-      boolvar,
-      var,
-      value,
-      ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
   return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
 }
 
@@ -786,9 +751,7 @@ class BetweenCt : public Constraint {
 
   virtual void Post() {}
 
-  virtual void InitialPropagate() {
-    var_->SetRange(min_, max_);
-  }
+  virtual void InitialPropagate() { var_->SetRange(min_, max_); }
 
   virtual string DebugString() const {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
@@ -827,7 +790,12 @@ class IsBetweenCt : public Constraint {
  public:
   IsBetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u,
               IntVar* const b)
-      : Constraint(s), var_(v), min_(l), max_(u), boolvar_(b), demon_(NULL) {}
+      : Constraint(s),
+        var_(v),
+        min_(l),
+        max_(u),
+        boolvar_(b),
+        demon_(nullptr) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -854,10 +822,10 @@ class IsBetweenCt : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %s)",
-        var_->DebugString().c_str(), min_, max_,
-        boolvar_->DebugString().c_str());
+    return StringPrintf("IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
+                        "d, %s)",
+                        var_->DebugString().c_str(), min_, max_,
+                        boolvar_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -880,9 +848,7 @@ class IsBetweenCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeIsBetweenCt(IntVar* const v,
-                                    int64 l,
-                                    int64 u,
+Constraint* Solver::MakeIsBetweenCt(IntVar* const v, int64 l, int64 u,
                                     IntVar* const b) {
   CHECK_EQ(this, v->solver());
   CHECK_EQ(this, b->solver());
@@ -903,61 +869,51 @@ IntVar* Solver::MakeIsBetweenVar(IntVar* const v, int64 l, int64 u) {
 namespace {
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s,
-           IntVar* const v,
-           std::vector<int64>* const sorted_values)
+  MemberCt(Solver* const s, IntVar* const v, const std::vector<int64>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
-    DCHECK(v != NULL);
-    DCHECK(s != NULL);
-    DCHECK(sorted_values != NULL);
+    DCHECK(v != nullptr);
+    DCHECK(s != nullptr);
   }
 
   virtual void Post() {}
 
-  virtual void InitialPropagate() {
-    var_->SetValues(values_.RawData(), values_.size());
-  }
+  virtual void InitialPropagate() { var_->SetValues(values_); }
 
   virtual string DebugString() const {
-    return StringPrintf("Member(%s, %s)",
-                        var_->DebugString().c_str(),
-                        values_.DebugString().c_str());
+    return StringPrintf("Member(%s, %s)", var_->DebugString().c_str(),
+                        IntVectorToString(values_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
-                                        values_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
     visitor->EndVisitConstraint(ModelVisitor::kMember, this);
   }
 
  private:
   IntVar* const var_;
-  ConstIntArray values_;
+  const std::vector<int64> values_;
 };
 }  // namespace
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int64>& values) {
-  ConstIntArray ar1(values);
-  ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
-  if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
-    return MakeBetweenCt(var, ar2[0], ar2[ar2.size() - 1]);
+  std::vector<int64> sorted = SortedNoDuplicates(values);
+  if (IsIncreasingContiguous(sorted)) {
+    return MakeBetweenCt(var, sorted.front(), sorted.back());
   } else {
-    return RevAlloc(new MemberCt(this, var, ar2.Release()));
+    return RevAlloc(new MemberCt(this, var, sorted));
   }
 }
 
-Constraint* Solver::MakeMemberCt(IntVar* const var,
-                                 const std::vector<int>& values) {
-  ConstIntArray ar1(values);
-  ConstIntArray ar2(ar1.SortedCopyWithoutDuplicates(true));
-  if (ar2.HasProperty(ConstIntArray::IS_CONTIGUOUS)) {
-    return MakeBetweenCt(var, ar2[0], ar2[ar2.size() - 1]);
+Constraint* Solver::MakeMemberCt(IntVar* const var, const std::vector<int>& values) {
+  std::vector<int64> sorted = SortedNoDuplicates(ToInt64Vector(values));
+  if (IsIncreasingContiguous(sorted)) {
+    return MakeBetweenCt(var, sorted.front(), sorted.back());
   } else {
-    return RevAlloc(new MemberCt(this, var, ar2.Release()));
+    return RevAlloc(new MemberCt(this, var, sorted));
   }
 }
 
@@ -966,30 +922,28 @@ Constraint* Solver::MakeMemberCt(IntVar* const var,
 namespace {
 class IsMemberCt : public Constraint {
  public:
-  IsMemberCt(Solver* const s,
-             IntVar* const v,
-             const std::vector<int64>& sorted_values,
-             IntVar* const b)
+  IsMemberCt(Solver* const s, IntVar* const v,
+             const std::vector<int64>& sorted_values, IntVar* const b)
       : Constraint(s),
         var_(v),
         values_as_set_(sorted_values.begin(), sorted_values.end()),
         values_(sorted_values),
         boolvar_(b),
         support_(0),
-        demon_(NULL),
+        demon_(nullptr),
         domain_(var_->MakeDomainIterator(true)),
         neg_support_(kint64min) {
-    DCHECK(v != NULL);
-    DCHECK(s != NULL);
-    DCHECK(b != NULL);
+    DCHECK(v != nullptr);
+    DCHECK(s != nullptr);
+    DCHECK(b != nullptr);
     while (ContainsKey(values_as_set_, neg_support_)) {
       neg_support_++;
     }
   }
 
   virtual void Post() {
-    demon_ = MakeConstraintDemon0(
-        solver(), this, &IsMemberCt::VarDomain, "VarDomain");
+    demon_ = MakeConstraintDemon0(solver(), this, &IsMemberCt::VarDomain,
+                                  "VarDomain");
     if (!var_->Bound()) {
       var_->WhenDomain(demon_);
     }
@@ -1010,9 +964,8 @@ class IsMemberCt : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("IsMemberCt(%s, %s, %s)",
-                        var_->DebugString().c_str(),
-                        Int64VectorToString(values_, ", ").c_str(),
+    return StringPrintf("IsMemberCt(%s, %s, %s)", var_->DebugString().c_str(),
+                        IntVectorToString(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());
   }
 
@@ -1020,7 +973,7 @@ class IsMemberCt : public Constraint {
     visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument, values_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsMember, this);
@@ -1087,9 +1040,9 @@ class IsMemberCt : public Constraint {
   int64 neg_support_;
 };
 
-template <class T> Constraint* BuildIsMemberCt(
-    Solver* const solver, IntVar* const var, const std::vector<T>& values,
-    IntVar* const boolvar) {
+template <class T>
+Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
+                            const std::vector<T>& values, IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
   for (ConstIter<std::set<T>> it(set_of_values); !it.at_end(); ++it) {
@@ -1107,8 +1060,8 @@ template <class T> Constraint* BuildIsMemberCt(
   } else if (filtered_values.back() ==
              filtered_values.front() + filtered_values.size() - 1) {
     // Contiguous
-    return solver->MakeIsBetweenCt(
-        var, filtered_values.front(), filtered_values.back(), boolvar);
+    return solver->MakeIsBetweenCt(var, filtered_values.front(),
+                                   filtered_values.back(), boolvar);
   } else {
     return solver->RevAlloc(
         new IsMemberCt(solver, var, filtered_values, boolvar));
@@ -1122,8 +1075,7 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
   return BuildIsMemberCt(this, var, values, boolvar);
 }
 
-Constraint* Solver::MakeIsMemberCt(IntVar* const var,
-                                   const std::vector<int>& values,
+Constraint* Solver::MakeIsMemberCt(IntVar* const var, const std::vector<int>& values,
                                    IntVar* const boolvar) {
   return BuildIsMemberCt(this, var, values, boolvar);
 }

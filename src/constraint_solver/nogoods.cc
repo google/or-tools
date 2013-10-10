@@ -26,22 +26,16 @@ namespace operations_research {
 
 // ----- Base Class -----
 
-void NoGoodManager::EnterSearch() {
-  Init();
-}
+void NoGoodManager::EnterSearch() { Init(); }
 
-void NoGoodManager::BeginNextDecision(DecisionBuilder* const db) {
-  Apply();
-}
+void NoGoodManager::BeginNextDecision(DecisionBuilder* const db) { Apply(); }
 
 bool NoGoodManager::AcceptSolution() {
   Apply();
   return true;
 }
 
-NoGood* NoGoodManager::MakeNoGood() {
-  return new NoGood();
-}
+NoGood* NoGoodManager::MakeNoGood() { return new NoGood(); }
 
 // ----- Base class for NoGood terms -----
 
@@ -58,6 +52,7 @@ class NoGoodTerm {
   virtual TermStatus Evaluate() const = 0;
   virtual void Refute() = 0;
   virtual string DebugString() const = 0;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(NoGoodTerm);
 };
@@ -70,7 +65,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
  public:
   IntegerVariableNoGoodTerm(IntVar* const var, int64 value, bool assign)
       : integer_variable_(var), value_(value), assign_(assign) {
-    CHECK_NOTNULL(integer_variable_);
+    CHECK(integer_variable_ != nullptr);
   }
 
   virtual TermStatus Evaluate() const {
@@ -92,10 +87,8 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("(%s %s %lld)",
-                        integer_variable_->name().c_str(),
-                        assign_ ? "==" : "!=",
-                        value_);
+    return StringPrintf("(%s %s %lld)", integer_variable_->name().c_str(),
+                        assign_ ? "==" : "!=", value_);
   }
 
   IntVar* integer_variable() const { return integer_variable_; }
@@ -112,9 +105,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
 
 // ----- NoGood -----
 
-NoGood::~NoGood() {
-  STLDeleteElements(&terms_);
-}
+NoGood::~NoGood() { STLDeleteElements(&terms_); }
 
 void NoGood::AddIntegerVariableEqualValueTerm(IntVar* const var, int64 value) {
   terms_.push_back(new IntegerVariableNoGoodTerm(var, value, true));
@@ -126,17 +117,13 @@ void NoGood::AddIntegerVariableNotEqualValueTerm(IntVar* const var,
 }
 
 bool NoGood::Apply(Solver* const solver) {
-  NoGoodTerm* first_undecided = NULL;
+  NoGoodTerm* first_undecided = nullptr;
   for (int i = 0; i < terms_.size(); ++i) {
     switch (terms_[i]->Evaluate()) {
-      case NoGoodTerm::ALWAYS_TRUE: {
-        break;
-      }
-      case NoGoodTerm::ALWAYS_FALSE: {
-        return false;
-      }
+      case NoGoodTerm::ALWAYS_TRUE: { break; }
+      case NoGoodTerm::ALWAYS_FALSE: { return false; }
       case NoGoodTerm::UNDECIDED: {
-        if (first_undecided == NULL) {
+        if (first_undecided == nullptr) {
           first_undecided = terms_[i];
         } else {
           // more than one undecided, we cannot deduce anything.
@@ -146,13 +133,13 @@ bool NoGood::Apply(Solver* const solver) {
       }
     }
   }
-  if (first_undecided == NULL && terms_.size() > 0) {
+  if (first_undecided == nullptr && terms_.size() > 0) {
     VLOG(2) << "No Good " << DebugString() << " -> Fail";
     solver->Fail();
   }
-  if (first_undecided != NULL) {
+  if (first_undecided != nullptr) {
     VLOG(2) << "No Good " << DebugString() << " -> Refute "
-            << first_undecided->DebugString();;
+            << first_undecided->DebugString();
     first_undecided->Refute();
     return false;
   }
@@ -172,23 +159,15 @@ namespace {
 class NaiveNoGoodManager : public NoGoodManager {
  public:
   explicit NaiveNoGoodManager(Solver* const solver) : NoGoodManager(solver) {}
-  virtual ~NaiveNoGoodManager() {
-    Clear();
-  }
+  virtual ~NaiveNoGoodManager() { Clear(); }
 
-  virtual void Clear() {
-    STLDeleteElements(&nogoods_);
-  }
+  virtual void Clear() { STLDeleteElements(&nogoods_); }
 
   virtual void Init() {}
 
-  virtual void AddNoGood(NoGood* const nogood) {
-    nogoods_.push_back(nogood);
-  }
+  virtual void AddNoGood(NoGood* const nogood) { nogoods_.push_back(nogood); }
 
-  virtual int NoGoodCount() const {
-    return nogoods_.size();
-  }
+  virtual int NoGoodCount() const { return nogoods_.size(); }
 
   virtual void Apply() {
     Solver* const s = solver();

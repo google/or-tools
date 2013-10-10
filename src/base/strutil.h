@@ -15,7 +15,10 @@
 #ifndef OR_TOOLS_BASE_STRUTIL_H_
 #define OR_TOOLS_BASE_STRUTIL_H_
 
+#include <string>
 #include "base/stringpiece.h"
+
+using std::string;
 
 namespace operations_research {
 // ----------------------------------------------------------------------
@@ -26,6 +29,33 @@ namespace operations_research {
 inline bool HasSuffixString(const StringPiece& str,
                             const StringPiece& suffix) {
   return str.ends_with(suffix);
+}
+
+inline string StrCat(const string& str1, const string& str2) {
+  return str1 + str2;
+}
+
+inline string StrCat(const string& str1, const string& str2,
+                     const string& str3) {
+  return str1 + str2 + str3;
+}
+
+inline string StrCat(const string& str1, const string& str2,
+                     const string& str3, const string& str4) {
+  return str1 + str2 + str3 + str4;
+}
+
+inline void StrAppend(string* str1, const string& str2) {
+  *str1 += str2;
+}
+
+inline void StrAppend(string* str1, const string& str2, const string& str3) {
+  *str1 += str2 + str3;
+}
+
+inline void StrAppend(string* str1, const string& str2, const string& str3,
+                      const string& str4) {
+  *str1 += str2 + str3 + str4;
 }
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_STRUTIL_H_

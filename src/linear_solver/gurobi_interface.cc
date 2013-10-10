@@ -25,7 +25,7 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "linear_solver/linear_solver.h"
 
 
@@ -450,11 +450,11 @@ void GurobiInterface::ExtractNewVariables() {
   int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
     int num_new_variables = total_num_vars - last_variable_index_;
-    scoped_array<double> obj_coefs(new double[num_new_variables]);
-    scoped_array<double> lb(new double[num_new_variables]);
-    scoped_array<double> ub(new double[num_new_variables]);
-    scoped_array<char> ctype(new char[num_new_variables]);
-    scoped_array<const char*> colname(new const char*[num_new_variables]);
+    scoped_ptr<double[]> obj_coefs(new double[num_new_variables]);
+    scoped_ptr<double[]> lb(new double[num_new_variables]);
+    scoped_ptr<double[]> ub(new double[num_new_variables]);
+    scoped_ptr<char[]> ctype(new char[num_new_variables]);
+    scoped_ptr<const char * []> colname(new const char* [num_new_variables]);
 
     for (int j = 0; j < num_new_variables; ++j) {
       MPVariable* const var = solver_->variables_[last_variable_index_+j];
@@ -465,8 +465,7 @@ void GurobiInterface::ExtractNewVariables() {
       if (!var->name().empty()) {
         colname[j] = var->name().c_str();
       }
-      obj_coefs[j] =
-          FindWithDefault(solver_->objective_->coefficients_, var, 0.0);
+      obj_coefs[j] = solver_->objective_->GetCoefficient(var);
     }
 
     CHECKED_GUROBI_CALL(GRBaddvars(model_,
@@ -503,8 +502,8 @@ void GurobiInterface::ExtractNewConstraints() {
     }
 
     max_row_length = std::max(1, max_row_length);
-    scoped_array<int> col_indices(new int[max_row_length]);
-    scoped_array<double> coefs(new double[max_row_length]);
+    scoped_ptr<int[]> col_indices(new int[max_row_length]);
+    scoped_ptr<double[]> coefs(new double[max_row_length]);
 
     // Add each new constraint.
     for (int row = last_constraint_index_; row < total_num_rows; ++row) {
@@ -512,13 +511,11 @@ void GurobiInterface::ExtractNewConstraints() {
       DCHECK_NE(kNoIndex, ct->index());
       const int size = ct->coefficients_.size();
       int col = 0;
-      for (ConstIter<hash_map<const MPVariable*, double> > it(
-               ct->coefficients_);
-           !it.at_end(); ++it) {
-        const int index = it->first->index();
+      for (CoeffEntry entry : ct->coefficients_) {
+        const int index = entry.first->index();
         DCHECK_NE(kNoIndex, index);
         col_indices[col] = index;
-        coefs[col] = it->second;
+        coefs[col] = entry.second;
         col++;
       }
       char* const name =
@@ -669,11 +666,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   VLOG(1) << StringPrintf("Model build in %.3f seconds.", timer.Get());
 
   // Time limit.
-  if (solver_->time_limit()) {
+  if (solver_->time_limit() != 0) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     CHECKED_GUROBI_CALL(GRBsetdblparam(GRBgetenv(model_),
                                        GRB_DBL_PAR_TIMELIMIT,
-                                       solver_->time_limit() / 1000.0));
+                                       solver_->time_limit_in_secs()));
   }
 
   solver_->SetSolverSpecificParametersAsString(
@@ -735,11 +732,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     const int total_num_rows = solver_->constraints_.size();
     const int total_num_cols = solver_->variables_.size();
 
-    scoped_array<double> values(new double[total_num_cols]);
-    scoped_array<double> dual_values(new double[total_num_rows]);
-    scoped_array<double> slacks(new double[total_num_rows]);
-    scoped_array<double> rhs(new double[total_num_rows]);
-    scoped_array<double> reduced_costs(new double[total_num_cols]);
+    scoped_ptr<double[]> values(new double[total_num_cols]);
+    scoped_ptr<double[]> dual_values(new double[total_num_rows]);
+    scoped_ptr<double[]> slacks(new double[total_num_rows]);
+    scoped_ptr<double[]> rhs(new double[total_num_rows]);
+    scoped_ptr<double[]> reduced_costs(new double[total_num_cols]);
 
     CHECKED_GUROBI_CALL(GRBgetdblattr(model_,
                                       GRB_DBL_ATTR_OBJVAL,

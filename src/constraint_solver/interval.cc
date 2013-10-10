@@ -20,6 +20,7 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/saturated_arithmetic.h"
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355 4804 4805)
@@ -35,9 +36,13 @@ const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
 const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
 
 namespace {
-enum IntervalField { START, DURATION, END};
+enum IntervalField {
+  START,
+  DURATION,
+  END
+};
 
-IntervalVar* NullInterval() { return NULL; }
+IntervalVar* NullInterval() { return nullptr; }
 // ----- MirrorIntervalVar -----
 
 class MirrorIntervalVar : public IntervalVar {
@@ -194,7 +199,7 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
 
  protected:
-  const IntervalVar* const underlying() const { return t_; }
+  IntervalVar* const underlying() const { return t_; }
   bool MayUnderlyingBePerformed() const {
     return underlying()->MayBePerformed();
   }
@@ -1412,7 +1417,7 @@ string FixedInterval::DebugString() const {
     out = "IntervalVar(start = ";
   }
   StringAppendF(&out, "%" GG_LL_FORMAT "d, duration = %" GG_LL_FORMAT
-                "d, performed = true)",
+                      "d, performed = true)",
                 start_, duration_);
   return out;
 }
@@ -1706,8 +1711,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
 
       StringAppendF(&out, "%s, duration = %s, end = %s, performed = %s)",
                     start_.DebugString().c_str(),
-                    duration_.DebugString().c_str(),
-                    end_.DebugString().c_str(),
+                    duration_.DebugString().c_str(), end_.DebugString().c_str(),
                     performed_.DebugString().c_str());
       return out;
     }
@@ -1808,8 +1812,8 @@ class FixedDurationSyncedIntervalVar : public IntervalVar {
 
 // ----- Fixed duration interval var synced on start -----
 
-class FixedDurationIntervalVarStartSyncedOnStart :
-    public FixedDurationSyncedIntervalVar {
+class FixedDurationIntervalVarStartSyncedOnStart
+    : public FixedDurationSyncedIntervalVar {
  public:
   FixedDurationIntervalVarStartSyncedOnStart(IntervalVar* const t,
                                              int64 duration, int64 offset)
@@ -1849,8 +1853,8 @@ class FixedDurationIntervalVarStartSyncedOnStart :
 
 // ----- Fixed duration interval start synced on end -----
 
-class FixedDurationIntervalVarStartSyncedOnEnd :
-    public FixedDurationSyncedIntervalVar {
+class FixedDurationIntervalVarStartSyncedOnEnd
+    : public FixedDurationSyncedIntervalVar {
  public:
   FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar* const t, int64 duration,
                                            int64 offset)
@@ -1940,7 +1944,7 @@ void Solver::MakeFixedDurationIntervalVarArray(int count, int64 start_min,
                                                const string& name,
                                                std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
-  CHECK_NOTNULL(array);
+  CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < count; ++i) {
     const string var_name = StringPrintf("%s%i", name.c_str(), i);
@@ -1952,7 +1956,7 @@ void Solver::MakeFixedDurationIntervalVarArray(int count, int64 start_min,
 IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
                                                   int64 duration,
                                                   const string& name) {
-  CHECK_NOTNULL(start_variable);
+  CHECK(start_variable != nullptr);
   CHECK_GE(duration, 0);
   return RegisterIntervalVar(RevAlloc(
       new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
@@ -1961,7 +1965,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, int64 duration, const string& name,
     std::vector<IntervalVar*>* array) {
-  CHECK_NOTNULL(array);
+  CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
     const string var_name = StringPrintf("%s%i", name.c_str(), i);
@@ -1975,7 +1979,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, const std::vector<int64>& durations,
     const string& name, std::vector<IntervalVar*>* array) {
-  CHECK_NOTNULL(array);
+  CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
@@ -1988,7 +1992,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, const std::vector<int>& durations,
     const string& name, std::vector<IntervalVar*>* array) {
-  CHECK_NOTNULL(array);
+  CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
@@ -2015,13 +2019,13 @@ void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
                                   const string& name,
                                   std::vector<IntervalVar*>* const array) {
   CHECK_GT(count, 0);
-  CHECK_NOTNULL(array);
+  CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < count; ++i) {
     const string var_name = StringPrintf("%s%i", name.c_str(), i);
-    array->push_back(
-        MakeIntervalVar(start_min, start_max, duration_min, duration_max,
-                        end_min, end_max, optional, var_name));
+    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
+                                     duration_max, end_min, end_max, optional,
+                                     var_name));
   }
 }
 

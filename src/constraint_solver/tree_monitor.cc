@@ -26,7 +26,7 @@
 #include "base/stringprintf.h"
 #include "base/file.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -45,7 +45,7 @@ struct NaturalLess {
     while (start < length) {
       // Ignore common characters at the beginning.
       while (start < length && s1[start] == s2[start] &&
-          (s1[start] < '0' || s1[start] > '9')) {
+             (s1[start] < '0' || s1[start] > '9')) {
         ++start;
       }
 
@@ -59,8 +59,7 @@ struct NaturalLess {
       int number_s2 = 0;
 
       // Extract a number if we have one.
-      for (int i = start;
-           i < s1.length() && s1[i] >= '0' && s1[i] <= '9';
+      for (int i = start; i < s1.length() && s1[i] >= '0' && s1[i] <= '9';
            ++i) {
         number_s1 = number_s1 * 10 + (s1[i] - '0');
       }
@@ -117,8 +116,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
-  virtual void VisitSplitVariableDomain(IntVar* const var,
-                                        int64 value,
+  virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                         bool start_with_lower_half) {
     name_ = var->name();
     value_ = value;
@@ -143,9 +141,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
-  virtual void VisitUnknownDecision() {
-    valid_ = false;
-  }
+  virtual void VisitUnknownDecision() { valid_ = false; }
 
   // Indicates whether name and value can be called.
   bool valid() { return valid_; }
@@ -162,9 +158,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     return value_;
   }
 
-  virtual string DebugString() const {
-    return "TreeDecisionVisitor";
-  }
+  virtual string DebugString() const { return "TreeDecisionVisitor"; }
 
  private:
   string name_;
@@ -183,7 +177,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
 // in CPViz. A dummy node is automatically added as a search root to allow a
 // change of the root variable during the search, as CPViz currently does
 // not support this.
-class TreeMonitor: public SearchMonitor {
+class TreeMonitor : public SearchMonitor {
  public:
   typedef hash_map<string, IntVar const*> IntVarMap;
 
@@ -257,18 +251,17 @@ class TreeMonitor: public SearchMonitor {
 class TreeNode {
  public:
   typedef std::map<string, std::vector<int64>, NaturalLess> DomainMap;
-  enum TreeNodeType { ROOT, TRY, FAIL, SOLUTION };
+  enum TreeNodeType {
+    ROOT,
+    TRY,
+    FAIL,
+    SOLUTION
+  };
 
   TreeNode(TreeNode* parent, int id)
-    : cycles_(1),
-      id_(id),
-      name_(""),
-      node_type_(TRY),
-      parent_(parent) {}
+      : cycles_(1), id_(id), name_(""), node_type_(TRY), parent_(parent) {}
 
-  ~TreeNode() {
-    STLDeleteElements(&children_);
-  }
+  ~TreeNode() { STLDeleteElements(&children_); }
 
   // Gets the value of a decision's branch.
   int64 branch_value(int branch) const { return branch_values_[branch]; }
@@ -312,21 +305,17 @@ class TreeNode {
   // Sets the node type.
   void set_node_type(TreeNodeType node_type) { node_type_ = node_type; }
 
-  // Returns the parent node or NULL if node has no parent.
-  TreeNode* Parent() {
-    return --cycles_ ? this : parent_;
-  }
+  // Returns the parent node or nullptr if node has no parent.
+  TreeNode* Parent() { return --cycles_ ? this : parent_; }
 
   // Adds a cycle instead of duplicate nodes.
-  void AddCycle() {
-    cycles_++;
-  }
+  void AddCycle() { cycles_++; }
 
   // Adds a new child, initializes it and returns the corresponding pointer.
   bool AddChild(int id, const string& name,
                 hash_map<string, int64> const& last_value, bool is_final_node,
                 TreeMonitor::IntVarMap const& vars, TreeNode** child) {
-    CHECK_NOTNULL(child);
+    CHECK(child != nullptr);
 
     if (!is_final_node) {
       for (int i = 0; i < children_.size(); ++i) {
@@ -352,7 +341,7 @@ class TreeNode {
 
   // Starting at this node, prints the complete Visualization XML for cpviz.
   void GenerateVisualizationXML(XmlHelper* const visualization_writer) {
-    CHECK_NOTNULL(visualization_writer);
+    CHECK(visualization_writer != nullptr);
 
     // There currently is only support for one visualizer.
     const int kVisualizerState = 0;
@@ -368,22 +357,20 @@ class TreeNode {
 
     for (ConstIter<DomainMap> it(domain_); !it.at_end(); ++it) {
       std::vector<int64> current = it->second;
-      visualization_writer->StartElement(current.size() == 1 ?
-                                         "integer" :
-                                         "dvar");
+      visualization_writer->StartElement(current.size() == 1 ? "integer"
+                                                             : "dvar");
       visualization_writer->AddAttribute("index", ++index);
 
       if (it->first == name_) {
         name = index;
       }
 
-      if (current.size() > 1
-          && current.size() == (current.back() - current[0] + 1)) {
+      if (current.size() > 1 &&
+          current.size() == (current.back() - current[0] + 1)) {
         // Use %d .. %d format.
         visualization_writer->AddAttribute(
-            "domain",
-            StringPrintf("%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d",
-                         current[0], current.back()));
+            "domain", StringPrintf("%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d",
+                                   current[0], current.back()));
       } else {
         // Use list of integers
         string domain;
@@ -392,9 +379,8 @@ class TreeNode {
           StringAppendF(&domain, " %" GG_LL_FORMAT "d", current[j]);
         }
 
-        visualization_writer->AddAttribute(current.size() == 1 ?
-                                           "value" :
-                                           "domain", domain.substr(1));
+        visualization_writer->AddAttribute(
+            current.size() == 1 ? "value" : "domain", domain.substr(1));
       }
 
       visualization_writer->EndElement();  // dvar or integer
@@ -423,10 +409,10 @@ class TreeNode {
 
   // Starting at this node, prints the complete Tree XML for cpviz.
   void GenerateTreeXML(XmlHelper* const tree_writer) {
-    CHECK_NOTNULL(tree_writer);
+    CHECK(tree_writer != nullptr);
 
     // The solution element is preceeded by a try element.
-    const char* kElementName[] = { "root", "try", "fail", "try" };
+    const char* kElementName[] = {"root", "try", "fail", "try"};
 
     if (node_type_ == ROOT) {
       tree_writer->StartElement(kElementName[node_type_]);
@@ -447,9 +433,9 @@ class TreeNode {
         tree_writer->AddAttribute("value", "0");
       } else {
         // Use the original size of the first child if available
-        const DomainMap& domain = parent_ && parent_->children_.size() ?
-            parent_->children_[0]->domain() :
-            domain_;
+        const DomainMap& domain = parent_ && parent_->children_.size()
+                                      ? parent_->children_[0]->domain()
+                                      : domain_;
 
         const std::vector<int64>* const domain_values = FindOrNull(domain, name_);
         if (domain_values) {
@@ -458,8 +444,8 @@ class TreeNode {
         } else {
           tree_writer->AddAttribute("size", "unknown");
         }
-        tree_writer->AddAttribute("value", StringPrintf("%" GG_LL_FORMAT "d",
-                                                        branch_values_[i]));
+        tree_writer->AddAttribute(
+            "value", StringPrintf("%" GG_LL_FORMAT "d", branch_values_[i]));
       }
 
       tree_writer->EndElement();
@@ -490,16 +476,16 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          int size, const string& filename_tree,
                          const string& filename_visualizer)
     : SearchMonitor(solver),
-      config_xml_(NULL),
-      current_node_(NULL),
+      config_xml_(nullptr),
+      current_node_(nullptr),
       filename_config_(""),
       filename_tree_(filename_tree),
       filename_visualizer_(filename_visualizer),
       search_level_(0),
-      tree_xml_(NULL),
-      visualization_xml_(NULL) {
-  CHECK_NOTNULL(solver);
-  CHECK_NOTNULL(vars);
+      tree_xml_(nullptr),
+      visualization_xml_(nullptr) {
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
 
   Init(vars, size);
 }
@@ -508,18 +494,18 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          int size, string* const tree_xml,
                          string* const visualization_xml)
     : SearchMonitor(solver),
-      config_xml_(NULL),
-      current_node_(NULL),
+      config_xml_(nullptr),
+      current_node_(nullptr),
       filename_config_(""),
       filename_tree_(""),
       filename_visualizer_(""),
       search_level_(0),
       tree_xml_(tree_xml),
       visualization_xml_(visualization_xml) {
-  CHECK_NOTNULL(solver);
-  CHECK_NOTNULL(vars);
-  CHECK_NOTNULL(tree_xml);
-  CHECK_NOTNULL(visualization_xml);
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
+  CHECK(tree_xml != nullptr);
+  CHECK(visualization_xml != nullptr);
 
   Init(vars, size);
 }
@@ -529,16 +515,16 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          const string& filename_tree,
                          const string& filename_visualizer)
     : SearchMonitor(solver),
-      config_xml_(NULL),
-      current_node_(NULL),
+      config_xml_(nullptr),
+      current_node_(nullptr),
       filename_config_(filename_config),
       filename_tree_(filename_tree),
       filename_visualizer_(filename_visualizer),
       search_level_(0),
-      tree_xml_(NULL),
-      visualization_xml_(NULL) {
-  CHECK_NOTNULL(solver);
-  CHECK_NOTNULL(vars);
+      tree_xml_(nullptr),
+      visualization_xml_(nullptr) {
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
 
   Init(vars, size);
 }
@@ -549,18 +535,18 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          string* const visualization_xml)
     : SearchMonitor(solver),
       config_xml_(config_xml),
-      current_node_(NULL),
+      current_node_(nullptr),
       filename_config_(""),
       filename_tree_(""),
       filename_visualizer_(""),
       search_level_(0),
       tree_xml_(tree_xml),
       visualization_xml_(visualization_xml) {
-  CHECK_NOTNULL(solver);
-  CHECK_NOTNULL(vars);
-  CHECK_NOTNULL(config_xml);
-  CHECK_NOTNULL(tree_xml);
-  CHECK_NOTNULL(visualization_xml);
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
+  CHECK(config_xml != nullptr);
+  CHECK(tree_xml != nullptr);
+  CHECK(visualization_xml != nullptr);
 
   Init(vars, size);
 }
@@ -589,7 +575,7 @@ void TreeMonitor::Init(const IntVar* const* vars, int size) {
 void TreeMonitor::EnterSearch() {
   if (!root_node_.get()) {
     id_counter_ = 0;
-    root_node_.reset(new TreeNode(NULL, id_counter_++));
+    root_node_.reset(new TreeNode(nullptr, id_counter_++));
     root_node_->set_node_type(TreeNode::ROOT);
     root_node_->SetDomain(vars_);
     current_node_ = root_node_.get();
@@ -615,7 +601,7 @@ void TreeMonitor::EndNextDecision(DecisionBuilder* const decision_builder,
 
   if (!decision || decision->DebugString() != last_decision_) {
     if (current_node_->AddChild(id_counter_, last_variable_, last_value_,
-                                !decision , vars_, &current_node_)) {
+                                !decision, vars_, &current_node_)) {
       ++id_counter_;
     }
   } else {
@@ -633,7 +619,7 @@ void TreeMonitor::RefuteDecision(Decision* const decision) {
   // Called when the solver goes up one level in the tree and undos a
   // change in the tree. As we have added multiple levels for both 'fail'
   // and 'success', we have to go up two levels in some cases.
-  CHECK_NOTNULL(decision);
+  CHECK(decision != nullptr);
 
   if (current_node_->node_type() == TreeNode::SOLUTION) {
     // Solver calls RefuteDecision even on success if it looks for
@@ -645,8 +631,8 @@ void TreeMonitor::RefuteDecision(Decision* const decision) {
     // decision.
     current_node_->set_node_type(TreeNode::TRY);
 
-    if (current_node_->AddChild(id_counter_, last_variable_,
-                                last_value_, true, vars_, &current_node_)) {
+    if (current_node_->AddChild(id_counter_, last_variable_, last_value_, true,
+                                vars_, &current_node_)) {
       ++id_counter_;
     }
 
@@ -746,10 +732,10 @@ void TreeMonitor::ExitSearch() {
         }
       }
     } else {
-      CHECK_NOTNULL(tree_xml_);
+      CHECK(tree_xml_ != nullptr);
       *tree_xml_ = GenerateTreeXML();
 
-      CHECK_NOTNULL(visualization_xml_);
+      CHECK(visualization_xml_ != nullptr);
       *visualization_xml_ = GenerateVisualizationXML();
 
       if (config_xml_) {

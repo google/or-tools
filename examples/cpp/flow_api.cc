@@ -83,7 +83,7 @@ void MaxFeasibleFlow() {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::MinCostFlowOn4x4Matrix();
   operations_research::MaxFeasibleFlow();
   return 0;

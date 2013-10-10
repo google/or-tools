@@ -24,7 +24,7 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
@@ -66,9 +66,7 @@ class TraceIntVar : public IntVar {
     }
   }
 
-  virtual void Range(int64* l, int64* u) {
-    inner_->Range(l, u);
-  }
+  virtual void Range(int64* l, int64* u) { inner_->Range(l, u); }
 
   virtual void SetRange(int64 l, int64 u) {
     if (l > inner_->Min() || u < inner_->Max()) {
@@ -82,17 +80,13 @@ class TraceIntVar : public IntVar {
     }
   }
 
-  virtual bool Bound() const {
-    return inner_->Bound();
-  }
+  virtual bool Bound() const { return inner_->Bound(); }
 
   virtual bool IsVar() const { return true; }
 
   virtual IntVar* Var() { return this; }
 
-  virtual int64 Value() const {
-    return inner_->Value();
-  }
+  virtual int64 Value() const { return inner_->Value(); }
 
   virtual void RemoveValue(int64 v) {
     if (inner_->Contains(v)) {
@@ -111,35 +105,25 @@ class TraceIntVar : public IntVar {
     inner_->RemoveInterval(l, u);
   }
 
-  virtual void RemoveValues(const int64* const values, int size) {
-    solver()->GetPropagationMonitor()->RemoveValues(inner_, values, size);
-    inner_->RemoveValues(values, size);
+  virtual void RemoveValues(const std::vector<int64>& values) {
+    solver()->GetPropagationMonitor()->RemoveValues(inner_, values);
+    inner_->RemoveValues(values);
   }
 
-  virtual void SetValues(const int64* const values, int size) {
-    solver()->GetPropagationMonitor()->SetValues(inner_, values, size);
-    inner_->SetValues(values, size);
+  virtual void SetValues(const std::vector<int64>& values) {
+    solver()->GetPropagationMonitor()->SetValues(inner_, values);
+    inner_->SetValues(values);
   }
 
-  virtual void WhenRange(Demon* d) {
-    inner_->WhenRange(d);
-  }
+  virtual void WhenRange(Demon* d) { inner_->WhenRange(d); }
 
-  virtual void WhenBound(Demon* d) {
-    inner_->WhenBound(d);
-  }
+  virtual void WhenBound(Demon* d) { inner_->WhenBound(d); }
 
-  virtual void WhenDomain(Demon* d) {
-    inner_->WhenDomain(d);
-  }
+  virtual void WhenDomain(Demon* d) { inner_->WhenDomain(d); }
 
-  virtual uint64 Size() const {
-    return inner_->Size();
-  }
+  virtual uint64 Size() const { return inner_->Size(); }
 
-  virtual bool Contains(int64 v) const {
-    return inner_->Contains(v);
-  }
+  virtual bool Contains(int64 v) const { return inner_->Contains(v); }
 
   virtual IntVarIterator* MakeHoleIterator(bool reversible) const {
     return inner_->MakeHoleIterator(reversible);
@@ -149,36 +133,26 @@ class TraceIntVar : public IntVar {
     return inner_->MakeDomainIterator(reversible);
   }
 
-  virtual int64 OldMin() const {
-    return inner_->OldMin();
-  }
+  virtual int64 OldMin() const { return inner_->OldMin(); }
 
-  virtual int64 OldMax() const {
-    return inner_->OldMax();
-  }
+  virtual int64 OldMax() const { return inner_->OldMax(); }
 
-  virtual int VarType() const {
-    return TRACE_VAR;
-  }
+  virtual int VarType() const { return TRACE_VAR; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     IntExpr* const cast_expr =
         solver()->CastExpression(const_cast<TraceIntVar*>(this));
-    if (cast_expr != NULL) {
+    if (cast_expr != nullptr) {
       visitor->VisitIntegerVariable(this, cast_expr);
     } else {
-      visitor->VisitIntegerVariable(
-          this, ModelVisitor::kTraceOperation, 0, inner_);
+      visitor->VisitIntegerVariable(this, ModelVisitor::kTraceOperation, 0,
+                                    inner_);
     }
   }
 
-  virtual string DebugString() const {
-    return inner_->DebugString();
-  }
+  virtual string DebugString() const { return inner_->DebugString(); }
 
-  virtual IntVar* IsEqual(int64 constant) {
-    return inner_->IsEqual(constant);
-  }
+  virtual IntVar* IsEqual(int64 constant) { return inner_->IsEqual(constant); }
 
   virtual IntVar* IsDifferent(int64 constant) {
     return inner_->IsDifferent(constant);
@@ -195,7 +169,6 @@ class TraceIntVar : public IntVar {
  private:
   IntVar* const inner_;
 };
-
 
 class TraceIntExpr : public IntExpr {
  public:
@@ -223,9 +196,7 @@ class TraceIntExpr : public IntExpr {
     inner_->SetMax(m);
   }
 
-  virtual void Range(int64* l, int64* u) {
-    inner_->Range(l, u);
-  }
+  virtual void Range(int64* l, int64* u) { inner_->Range(l, u); }
 
   virtual void SetRange(int64 l, int64 u) {
     if (l > inner_->Min() || u < inner_->Max()) {
@@ -234,33 +205,25 @@ class TraceIntExpr : public IntExpr {
     }
   }
 
-  virtual bool Bound() const {
-    return inner_->Bound();
-  }
+  virtual bool Bound() const { return inner_->Bound(); }
 
   virtual bool IsVar() const {
     DCHECK(!inner_->IsVar());
     return false;
   }
 
-  virtual IntVar* Var() {
-    return solver()->RegisterIntVar(inner_->Var());
-  }
+  virtual IntVar* Var() { return solver()->RegisterIntVar(inner_->Var()); }
 
-  virtual void WhenRange(Demon* d) {
-    inner_->WhenRange(d);
-  }
+  virtual void WhenRange(Demon* d) { inner_->WhenRange(d); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kTrace, this);
-    visitor->VisitIntegerExpressionArgument(
-        ModelVisitor::kExpressionArgument, inner_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            inner_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kTrace, this);
   }
 
-  virtual string DebugString() const {
-    return inner_->DebugString();
-  }
+  virtual string DebugString() const { return inner_->DebugString(); }
 
  private:
   IntExpr* const inner_;
@@ -276,13 +239,9 @@ class TraceIntervalVar : public IntervalVar {
   }
   virtual ~TraceIntervalVar() {}
 
-  virtual int64 StartMin() const {
-    return inner_->StartMin();
-  }
+  virtual int64 StartMin() const { return inner_->StartMin(); }
 
-  virtual int64 StartMax() const  {
-    return inner_->StartMax();
-  }
+  virtual int64 StartMax() const { return inner_->StartMax(); }
 
   virtual void SetStartMin(int64 m) {
     if (inner_->MayBePerformed() && (m > inner_->StartMin())) {
@@ -306,29 +265,17 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  virtual int64 OldStartMin() const {
-    return inner_->OldStartMin();
-  }
+  virtual int64 OldStartMin() const { return inner_->OldStartMin(); }
 
-  virtual int64 OldStartMax() const  {
-    return inner_->OldStartMax();
-  }
+  virtual int64 OldStartMax() const { return inner_->OldStartMax(); }
 
-  virtual void WhenStartRange(Demon* const d) {
-    inner_->WhenStartRange(d);
-  }
+  virtual void WhenStartRange(Demon* const d) { inner_->WhenStartRange(d); }
 
-  virtual void WhenStartBound(Demon* const d) {
-    inner_->WhenStartBound(d);
-  }
+  virtual void WhenStartBound(Demon* const d) { inner_->WhenStartBound(d); }
 
-  virtual int64 EndMin() const {
-    return inner_->EndMin();
-  }
+  virtual int64 EndMin() const { return inner_->EndMin(); }
 
-  virtual int64 EndMax() const  {
-    return inner_->EndMax();
-  }
+  virtual int64 EndMax() const { return inner_->EndMax(); }
 
   virtual void SetEndMin(int64 m) {
     if (inner_->MayBePerformed() && (m > inner_->EndMin())) {
@@ -352,29 +299,17 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  virtual int64 OldEndMin() const {
-    return inner_->OldEndMin();
-  }
+  virtual int64 OldEndMin() const { return inner_->OldEndMin(); }
 
-  virtual int64 OldEndMax() const  {
-    return inner_->OldEndMax();
-  }
+  virtual int64 OldEndMax() const { return inner_->OldEndMax(); }
 
-  virtual void WhenEndRange(Demon* const d) {
-    inner_->WhenEndRange(d);
-  }
+  virtual void WhenEndRange(Demon* const d) { inner_->WhenEndRange(d); }
 
-  virtual void WhenEndBound(Demon* const d) {
-    inner_->WhenStartBound(d);
-  }
+  virtual void WhenEndBound(Demon* const d) { inner_->WhenStartBound(d); }
 
-  virtual int64 DurationMin() const {
-    return inner_->DurationMin();
-  }
+  virtual int64 DurationMin() const { return inner_->DurationMin(); }
 
-  virtual int64 DurationMax() const  {
-    return inner_->DurationMax();
-  }
+  virtual int64 DurationMax() const { return inner_->DurationMax(); }
 
   virtual void SetDurationMin(int64 m) {
     if (inner_->MayBePerformed() && (m > inner_->DurationMin())) {
@@ -398,13 +333,9 @@ class TraceIntervalVar : public IntervalVar {
     }
   }
 
-  virtual int64 OldDurationMin() const {
-    return inner_->OldDurationMin();
-  }
+  virtual int64 OldDurationMin() const { return inner_->OldDurationMin(); }
 
-  virtual int64 OldDurationMax() const  {
-    return inner_->OldDurationMax();
-  }
+  virtual int64 OldDurationMax() const { return inner_->OldDurationMax(); }
 
   virtual void WhenDurationRange(Demon* const d) {
     inner_->WhenDurationRange(d);
@@ -414,13 +345,9 @@ class TraceIntervalVar : public IntervalVar {
     inner_->WhenDurationBound(d);
   }
 
-  virtual bool MustBePerformed() const {
-    return inner_->MustBePerformed();
-  }
+  virtual bool MustBePerformed() const { return inner_->MustBePerformed(); }
 
-  virtual bool MayBePerformed() const {
-    return inner_->MayBePerformed();
-  }
+  virtual bool MayBePerformed() const { return inner_->MayBePerformed(); }
 
   virtual void SetPerformed(bool value) {
     if ((value && !inner_->MustBePerformed()) ||
@@ -440,9 +367,7 @@ class TraceIntervalVar : public IntervalVar {
     inner_->Accept(visitor);
   }
 
-  virtual string DebugString() const {
-    return inner_->DebugString();
-  }
+  virtual string DebugString() const { return inner_->DebugString(); }
 
  private:
   IntervalVar* const inner_;
@@ -477,9 +402,7 @@ class PrintTrace : public PropagationMonitor {
           in_decision(false),
           in_objective(false) {}
 
-    bool TopLevel() const {
-      return initial_indent == indent;
-    }
+    bool TopLevel() const { return initial_indent == indent; }
 
     void Clear() {
       indent = initial_indent;
@@ -520,8 +443,8 @@ class PrintTrace : public PropagationMonitor {
   }
 
   virtual void BeginNextDecision(DecisionBuilder* const b) {
-    DisplaySearch(StringPrintf("DecisionBuilder(%s)",
-                               b->DebugString().c_str()));
+    DisplaySearch(
+        StringPrintf("DecisionBuilder(%s)", b->DebugString().c_str()));
     IncreaseIndent();
     contexes_.top().in_decision_builder = true;
   }
@@ -542,14 +465,14 @@ class PrintTrace : public PropagationMonitor {
   }
 
   virtual bool AtSolution() {
-    DisplaySearch(StringPrintf("Solution found at depth %d",
-                               solver()->SearchDepth()));
+    DisplaySearch(
+        StringPrintf("Solution found at depth %d", solver()->SearchDepth()));
     return false;
   }
 
   virtual void ApplyDecision(Decision* const decision) {
-    DisplaySearch(StringPrintf("ApplyDecision(%s)",
-                               decision->DebugString().c_str()));
+    DisplaySearch(
+        StringPrintf("ApplyDecision(%s)", decision->DebugString().c_str()));
     IncreaseIndent();
     contexes_.top().in_decision = true;
   }
@@ -559,8 +482,8 @@ class PrintTrace : public PropagationMonitor {
       DecreaseIndent();
       contexes_.top().in_objective = false;
     }
-    DisplaySearch(StringPrintf("RefuteDecision(%s)",
-                               decision->DebugString().c_str()));
+    DisplaySearch(
+        StringPrintf("RefuteDecision(%s)", decision->DebugString().c_str()));
     IncreaseIndent();
     contexes_.top().in_decision = true;
   }
@@ -589,256 +512,212 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  virtual void RestartSearch() {
-    CHECK(contexes_.top().TopLevel());
-  }
+  virtual void RestartSearch() { CHECK(contexes_.top().TopLevel()); }
 
   // ----- Propagation events -----
 
-  virtual void BeginConstraintInitialPropagation(
-      const Constraint* const constraint) {
-    PushDelayedInfo(StringPrintf("Constraint(%s)",
-                                     constraint->DebugString().c_str()));
-    contexes_.top().in_constraint= true;
+  virtual void BeginConstraintInitialPropagation(Constraint* const constraint) {
+    PushDelayedInfo(
+        StringPrintf("Constraint(%s)", constraint->DebugString().c_str()));
+    contexes_.top().in_constraint = true;
   }
 
-  virtual void EndConstraintInitialPropagation(const Constraint* const) {
+  virtual void EndConstraintInitialPropagation(Constraint* const constraint) {
     PopDelayedInfo();
     contexes_.top().in_constraint = false;
   }
 
   virtual void BeginNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) {
-    PushDelayedInfo(StringPrintf("Constraint(%s)",
-                                     nested->DebugString().c_str()));
+      Constraint* const parent, Constraint* const nested) {
+    PushDelayedInfo(
+        StringPrintf("Constraint(%s)", nested->DebugString().c_str()));
     contexes_.top().in_constraint = true;
   }
-  virtual void EndNestedConstraintInitialPropagation(const Constraint* const,
-                                                     const Constraint* const) {
+  virtual void EndNestedConstraintInitialPropagation(Constraint* const,
+                                                     Constraint* const) {
     PopDelayedInfo();
     contexes_.top().in_constraint = false;
   }
 
-  virtual void RegisterDemon(const Demon* const demon) {}
+  virtual void RegisterDemon(Demon* const demon) {}
 
-  virtual void BeginDemonRun(const Demon* const demon) {
+  virtual void BeginDemonRun(Demon* const demon) {
     if (demon->priority() != Solver::VAR_PRIORITY) {
       contexes_.top().in_demon = true;
-      PushDelayedInfo(StringPrintf("Demon(%s)",
-                                       demon->DebugString().c_str()));
+      PushDelayedInfo(StringPrintf("Demon(%s)", demon->DebugString().c_str()));
     }
   }
 
-  virtual void EndDemonRun(const Demon* const demon) {
+  virtual void EndDemonRun(Demon* const demon) {
     if (demon->priority() != Solver::VAR_PRIORITY) {
       contexes_.top().in_demon = false;
       PopDelayedInfo();
     }
   }
 
-  virtual void StartProcessingIntegerVariable(const IntVar* const var) {
-    PushDelayedInfo(StringPrintf("StartProcessing(%s)",
-                                 var->DebugString().c_str()));
+  virtual void StartProcessingIntegerVariable(IntVar* const var) {
+    PushDelayedInfo(
+        StringPrintf("StartProcessing(%s)", var->DebugString().c_str()));
   }
 
-  virtual void EndProcessingIntegerVariable(const IntVar* const var) {
+  virtual void EndProcessingIntegerVariable(IntVar* const var) {
     PopDelayedInfo();
   }
 
-  virtual void PushContext(const string& context) {
-    PushDelayedInfo(context);
-  }
+  virtual void PushContext(const string& context) { PushDelayedInfo(context); }
 
-  virtual void PopContext() {
-    PopDelayedInfo();
-  }
+  virtual void PopContext() { PopDelayedInfo(); }
 
   // ----- IntExpr modifiers -----
 
   virtual void SetMin(IntExpr* const expr, int64 new_min) {
-    DisplayModification(StringPrintf("SetMin(%s, %lld)",
-                                     expr->DebugString().c_str(),
-                                     new_min));
+    DisplayModification(
+        StringPrintf("SetMin(%s, %lld)", expr->DebugString().c_str(), new_min));
   }
 
   virtual void SetMax(IntExpr* const expr, int64 new_max) {
-    DisplayModification(StringPrintf("SetMax(%s, %lld)",
-                                     expr->DebugString().c_str(),
-                                     new_max));
+    DisplayModification(
+        StringPrintf("SetMax(%s, %lld)", expr->DebugString().c_str(), new_max));
   }
 
   virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
     DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
-                                     expr->DebugString().c_str(),
-                                     new_min,
+                                     expr->DebugString().c_str(), new_min,
                                      new_max));
   }
 
   // ----- IntVar modifiers -----
 
   virtual void SetMin(IntVar* const var, int64 new_min) {
-    DisplayModification(StringPrintf("SetMin(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_min));
+    DisplayModification(
+        StringPrintf("SetMin(%s, %lld)", var->DebugString().c_str(), new_min));
   }
 
   virtual void SetMax(IntVar* const var, int64 new_max) {
-    DisplayModification(StringPrintf("SetMax(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_max));
+    DisplayModification(
+        StringPrintf("SetMax(%s, %lld)", var->DebugString().c_str(), new_max));
   }
 
   virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
     DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(),
-                                     new_min,
+                                     var->DebugString().c_str(), new_min,
                                      new_max));
   }
 
   virtual void RemoveValue(IntVar* const var, int64 value) {
     DisplayModification(StringPrintf("RemoveValue(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     value));
+                                     var->DebugString().c_str(), value));
   }
 
   virtual void SetValue(IntVar* const var, int64 value) {
-    DisplayModification(StringPrintf("SetValue(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     value));
+    DisplayModification(
+        StringPrintf("SetValue(%s, %lld)", var->DebugString().c_str(), value));
   }
 
   virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
     DisplayModification(StringPrintf("RemoveInterval(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(), imin, imax));
+  }
+
+  virtual void SetValues(IntVar* const var, const std::vector<int64>& values) {
+    DisplayModification(StringPrintf("SetValues(%s, %s)",
                                      var->DebugString().c_str(),
-                                     imin,
-                                     imax));
+                                     IntVectorToString(values, ", ").c_str()));
   }
 
-  virtual void SetValues(IntVar* const var,
-                         const int64* const values,
-                         int size) {
-    DisplayModification(
-        StringPrintf("SetValues(%s, %s)",
-                     var->DebugString().c_str(),
-                     Int64ArrayToString(values, size, ", ").c_str()));
-  }
-
-  virtual void RemoveValues(IntVar* const var,
-                            const int64* const values,
-                            int size) {
-    DisplayModification(
-        StringPrintf("RemoveValues(%s, %s)",
-                     var->DebugString().c_str(),
-                     Int64ArrayToString(values, size, ", ").c_str()));
+  virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) {
+    DisplayModification(StringPrintf("RemoveValues(%s, %s)",
+                                     var->DebugString().c_str(),
+                                     IntVectorToString(values, ", ").c_str()));
   }
 
   // ----- IntervalVar modifiers -----
 
   virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
     DisplayModification(StringPrintf("SetStartMin(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_min));
+                                     var->DebugString().c_str(), new_min));
   }
 
   virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
     DisplayModification(StringPrintf("SetStartMax(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_max));
+                                     var->DebugString().c_str(), new_max));
   }
 
-  virtual void SetStartRange(IntervalVar* const var,
-                             int64 new_min,
+  virtual void SetStartRange(IntervalVar* const var, int64 new_min,
                              int64 new_max) {
     DisplayModification(StringPrintf("SetStartRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(),
-                                     new_min,
+                                     var->DebugString().c_str(), new_min,
                                      new_max));
   }
 
   virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
     DisplayModification(StringPrintf("SetEndMin(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_min));
+                                     var->DebugString().c_str(), new_min));
   }
 
   virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
     DisplayModification(StringPrintf("SetEndMax(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_max));
+                                     var->DebugString().c_str(), new_max));
   }
 
-  virtual void SetEndRange(IntervalVar* const var,
-                           int64 new_min,
+  virtual void SetEndRange(IntervalVar* const var, int64 new_min,
                            int64 new_max) {
     DisplayModification(StringPrintf("SetEndRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(),
-                                     new_min,
+                                     var->DebugString().c_str(), new_min,
                                      new_max));
   }
 
   virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
     DisplayModification(StringPrintf("SetDurationMin(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_min));
+                                     var->DebugString().c_str(), new_min));
   }
 
   virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
     DisplayModification(StringPrintf("SetDurationMax(%s, %lld)",
-                                     var->DebugString().c_str(),
-                                     new_max));
+                                     var->DebugString().c_str(), new_max));
   }
 
-  virtual void SetDurationRange(IntervalVar* const var,
-                                int64 new_min,
+  virtual void SetDurationRange(IntervalVar* const var, int64 new_min,
                                 int64 new_max) {
     DisplayModification(StringPrintf("SetDurationRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(),
-                                     new_min,
+                                     var->DebugString().c_str(), new_min,
                                      new_max));
   }
 
   virtual void SetPerformed(IntervalVar* const var, bool value) {
     DisplayModification(StringPrintf("SetPerformed(%s, %d)",
-                                     var->DebugString().c_str(),
-                                     value));
+                                     var->DebugString().c_str(), value));
   }
 
   virtual void RankFirst(SequenceVar* const var, int index) {
-    DisplayModification(StringPrintf("RankFirst(%s, %d)",
-                                     var->DebugString().c_str(),
-                                     index));
+    DisplayModification(
+        StringPrintf("RankFirst(%s, %d)", var->DebugString().c_str(), index));
   }
 
   virtual void RankNotFirst(SequenceVar* const var, int index) {
     DisplayModification(StringPrintf("RankNotFirst(%s, %d)",
-                                     var->DebugString().c_str(),
-                                     index));
+                                     var->DebugString().c_str(), index));
   }
 
   virtual void RankLast(SequenceVar* const var, int index) {
-    DisplayModification(StringPrintf("RankLast(%s, %d)",
-                                     var->DebugString().c_str(),
-                                     index));
+    DisplayModification(
+        StringPrintf("RankLast(%s, %d)", var->DebugString().c_str(), index));
   }
 
   virtual void RankNotLast(SequenceVar* const var, int index) {
-    DisplayModification(StringPrintf("RankNotLast(%s, %d)",
-                                     var->DebugString().c_str(),
-                                     index));
+    DisplayModification(
+        StringPrintf("RankNotLast(%s, %d)", var->DebugString().c_str(), index));
   }
 
   virtual void RankSequence(SequenceVar* const var,
                             const std::vector<int>& rank_first,
                             const std::vector<int>& rank_last,
                             const std::vector<int>& unperformed) {
-    DisplayModification(
-        StringPrintf(
-            "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
-            var->DebugString().c_str(),
-            IntVectorToString(rank_first, ", ").c_str(),
-            IntVectorToString(rank_last, ", ").c_str(),
-            IntVectorToString(unperformed, ", ").c_str()));
+    DisplayModification(StringPrintf(
+        "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
+        var->DebugString().c_str(), IntVectorToString(rank_first, ", ").c_str(),
+        IntVectorToString(rank_last, ", ").c_str(),
+        IntVectorToString(unperformed, ", ").c_str()));
   }
 
   virtual void Install() {
@@ -848,9 +727,7 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  virtual string DebugString() const {
-    return "PrintTrace";
-  }
+  virtual string DebugString() const { return "PrintTrace"; }
 
  private:
   void PushDelayedInfo(const string& delayed) {
@@ -878,9 +755,7 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  void CheckNoDelayed() {
-    CHECK(contexes_.top().delayed_info.empty());
-  }
+  void CheckNoDelayed() { CHECK(contexes_.top().delayed_info.empty()); }
 
   void PrintDelayedString() {
     const std::vector<Info>& infos = contexes_.top().delayed_info;
@@ -900,10 +775,8 @@ class PrintTrace : public PropagationMonitor {
       LOG(INFO) << Indent() << to_print;
     } else {
       PrintDelayedString();
-      if (contexes_.top().in_demon ||
-          contexes_.top().in_constraint ||
-          contexes_.top().in_decision_builder ||
-          contexes_.top().in_decision ||
+      if (contexes_.top().in_demon || contexes_.top().in_constraint ||
+          contexes_.top().in_decision_builder || contexes_.top().in_decision ||
           contexes_.top().in_objective) {
         // Inside a demon, constraint, decision builder -> normal print.
         LOG(INFO) << Indent() << to_print;
@@ -944,9 +817,7 @@ class PrintTrace : public PropagationMonitor {
     return output;
   }
 
-  void IncreaseIndent() {
-    contexes_.top().indent++;
-  }
+  void IncreaseIndent() { contexes_.top().indent++; }
 
   void DecreaseIndent() {
     if (contexes_.top().indent > 0) {
@@ -976,8 +847,8 @@ IntExpr* Solver::RegisterIntExpr(IntExpr* const expr) {
 }
 
 IntVar* Solver::RegisterIntVar(IntVar* const var) {
-  if (InstrumentsVariables() &&
-      var->VarType() != TRACE_VAR) {  // Not already a trace var.
+  if (InstrumentsVariables() && var->VarType() != TRACE_VAR) {  // Not already a
+                                                                // trace var.
     return RevAlloc(new TraceIntVar(this, var));
   } else {
     return var;

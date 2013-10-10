@@ -131,7 +131,7 @@
 //   routing):
 //
 //    const Assignment* solution = routing.Solve();
-//    CHECK(solution != NULL);
+//    CHECK(solution != nullptr);
 //
 // - Inspect the solution cost and route (only one route here:
 //
@@ -158,13 +158,13 @@
 #include <utility>
 #include <vector>
 
-#include "base/callback-types.h"
+#include "base/callback_types.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
-#include "base/int-type-indexed-vector.h"
-#include "base/int-type.h"
+#include "base/int_type_indexed_vector.h"
+#include "base/int_type.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 
@@ -186,6 +186,100 @@ DEFINE_INT_TYPE(_RoutingModel_NodeIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
 
+// This class
+struct RoutingSearchParameters {
+  RoutingSearchParameters() {
+    no_lns = false;
+    no_fullpathlns = true;
+    no_relocate = false;
+    no_relocate_neighbors = true;
+    no_exchange = false;
+    no_cross = false;
+    no_2opt = false;
+    no_oropt = false;
+    no_make_active = false;
+    no_lkh = false;
+    no_tsp = true;
+    no_tsplns = true;
+    use_chain_make_inactive = false;
+    use_extended_swap_active = false;
+    solution_limit = kint64max;
+    time_limit = kint64max;
+    lns_time_limit = 100;
+    guided_local_search = false;
+    guided_local_search_lamda_coefficient = 0.1;
+    simulated_annealing = false;
+    tabu_search = false;
+    dfs = false;
+    first_solution = "";
+    use_first_solution_dive = false;
+    optimization_step = 1;
+  }
+
+  // ----- Neighborhood deactivation -----
+
+  // Routing: forbids use of Large Neighborhood Search.
+  bool no_lns;
+  // Routing: forbids use of Full-path Large Neighborhood Search.
+  bool no_fullpathlns;
+  // Routing: forbids use of Relocate neighborhood.
+  bool no_relocate;
+  // Routing: forbids use of RelocateNeighbors neighborhood.
+  bool no_relocate_neighbors;
+  // Routing: forbids use of Exchange neighborhood.
+  bool no_exchange;
+  // Routing: forbids use of Cross neighborhood.
+  bool no_cross;
+  // Routing: forbids use of 2Opt neighborhood.
+  bool no_2opt;
+  // Routing: forbids use of OrOpt neighborhood.
+  bool no_oropt;
+  // Routing: forbids use of MakeActive/SwapActive/MakeInactive neighborhoods.
+  bool no_make_active;
+  // Routing: forbids use of LKH neighborhood.
+  bool no_lkh;
+  // Routing: forbids use of TSPOpt neighborhood.
+  bool no_tsp;
+  // Routing: forbids use of TSPLNS neighborhood.
+  bool no_tsplns;
+  // Routing: use chain version of MakeInactive neighborhood.
+  bool use_chain_make_inactive;
+  // Routing: use extended version of SwapActive neighborhood.
+  bool use_extended_swap_active;
+
+  // ----- Search limits -----
+
+  // Routing: number of solutions limit.
+  int64 solution_limit;
+  // Routing: time limit in ms.
+  int64 time_limit;
+  // Routing: time limit in ms for LNS sub-decision builder.
+  int64 lns_time_limit;
+
+  // Meta-heuristics
+
+  // Routing: use GLS.
+  bool guided_local_search;
+  // Lambda coefficient in GLS.
+  double guided_local_search_lamda_coefficient;
+  // Routing: use simulated annealing.
+  bool simulated_annealing;
+  // Routing: use tabu search.
+  bool tabu_search;
+
+  // ----- Search control ------
+
+  // Routing: use a complete depth-first search.
+  bool dfs;
+  // Routing: first solution heuristic. See RoutingStrategyName() in
+  // the code to get a full list.
+  string first_solution;
+  // Dive (left-branch) for first solution.
+  bool use_first_solution_dive;
+  // Optimization step.
+  int64 optimization_step;
+};
+
 class RoutingModel {
  public:
   // First solution strategies, used as starting point of local search.
@@ -204,6 +298,10 @@ class RoutingModel {
     // the cheapest route segment, then extend the route by iterating on the
     // last node added to the route.
     ROUTING_PATH_CHEAPEST_ARC,
+    // Same as ROUTING_PATH_CHEAPEST_ARC, but arcs are evaluated with a
+    // comparison-based selector which will favor the most constrained arc
+    // first. See ArcIsMoreConstrainedThanArc() for details.
+    ROUTING_PATH_MOST_CONSTRAINED_ARC,
     // Same as ROUTING_PATH_CHEAPEST_ARC, except that arc costs are evaluated
     // using the function passed to RoutingModel::SetFirstSolutionEvaluator().
     ROUTING_EVALUATOR_STRATEGY,
@@ -282,16 +380,13 @@ class RoutingModel {
   RoutingModel(int nodes, int vehicles);
   // Constructor taking a vector of (start node, end node) pairs for each
   // vehicle route. Used to model multiple depots.
-  RoutingModel(int nodes,
-               int vehicles,
+  RoutingModel(int nodes, int vehicles,
                const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
   // TODO(user): added to simplify SWIG wrapping. Remove when swigging
   // std::vector<std::pair<int, int> > is ok.
-  RoutingModel(int nodes,
-               int vehicles,
-               const std::vector<NodeIndex>& starts,
+  RoutingModel(int nodes, int vehicles, const std::vector<NodeIndex>& starts,
                const std::vector<NodeIndex>& ends);
   ~RoutingModel();
 
@@ -317,11 +412,8 @@ class RoutingModel {
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
   // Takes ownership of the callback 'evaluator'.
-  bool AddDimension(NodeEvaluator2* evaluator,
-                    int64 slack_max,
-                    int64 capacity,
-                    bool fix_start_cumul_to_zero,
-                    const string& name);
+  bool AddDimension(NodeEvaluator2* evaluator, int64 slack_max, int64 capacity,
+                    bool fix_start_cumul_to_zero, const string& name);
   // Takes ownership of both 'evaluator' and 'vehicle_capacity' callbacks.
   bool AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
                                        int64 slack_max,
@@ -334,10 +426,8 @@ class RoutingModel {
   // get cumul and transit variables from the routing model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddConstantDimension(int64 value,
-                            int64 capacity,
-                            bool fix_start_cumul_to_zero,
-                            const string& name);
+  bool AddConstantDimension(int64 value, int64 capacity,
+                            bool fix_start_cumul_to_zero, const string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i]' for node i; 'capacity' is the upper bound of
   // the cumul variables. 'name' is the name used to reference the dimension;
@@ -345,10 +435,8 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddVectorDimension(const int64* values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
-                          const string& name);
+  bool AddVectorDimension(const int64* values, int64 capacity,
+                          bool fix_start_cumul_to_zero, const string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
   // the cumul variables. 'name' is the name used to reference the dimension;
@@ -356,19 +444,29 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddMatrixDimension(const int64* const* values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
-                          const string& name);
+  bool AddMatrixDimension(const int64* const* values, int64 capacity,
+                          bool fix_start_cumul_to_zero, const string& name);
   // Outputs the names of all dimensions added to the routing engine.
   void GetAllDimensions(std::vector<string>* dimension_names) const;
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
   const RoutingDimension& GetDimensionOrDie(const string& dimension_name) const;
-  // Returns a dimension from its name. Returns NULL if the dimension does
+  // Returns a dimension from its name. Returns nullptr if the dimension does
   // not exist.
   RoutingDimension* GetMutableDimension(const string& dimension_name) const;
+  // Set the given dimension as "primary constrained". As of August 2013, this
+  // is only used by ArcIsMoreConstrainedThanArc().
+  // "dimension" must be the name of an existing dimension, or be empty, in
+  // which case there will not be a primary dimension after this call.
+  void SetPrimaryConstrainedDimension(const string& dimension_name) {
+    DCHECK(dimension_name.empty() || HasDimension(dimension_name));
+    primary_constrained_dimension_ = dimension_name;
+  }
+  // Get the primary constrained dimension, or an empty string if it is unset.
+  const string& GetPrimaryConstrainedDimension() const {
+    return primary_constrained_dimension_;
+  }
   // Constrains all nodes to be active (to belong to a route).
   void AddAllActive();
   // Adds a disjunction constraint on the nodes: exactly one of the nodes is
@@ -395,8 +493,7 @@ class RoutingModel {
                                                 disjunction_index);
   }
   bool GetDisjunctionIndexFromVariableIndex(
-      int64 index,
-      DisjunctionIndex* disjunction_index) const {
+      int64 index, DisjunctionIndex* disjunction_index) const {
     if (index < node_to_disjunction_.size()) {
       *disjunction_index = node_to_disjunction_[index];
       return *disjunction_index != kNoDisjunction;
@@ -440,9 +537,14 @@ class RoutingModel {
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
-    pickup_delivery_pairs_.push_back(std::make_pair(NodeToIndex(node1),
-                                                    NodeToIndex(node2)));
+    pickup_delivery_pairs_.push_back(
+        std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
   }
+  // Get the "unperformed" penalty of a node. This is only well defined if the
+  // node is only part of a single Disjunction involving only itself, and that
+  // disjunction has a penalty. In all other cases, including forced active
+  // nodes, this returns 0.
+  int64 UnperformedPenalty(int64 var_index);
   // Returns the variable index of the first starting or ending node of all
   // routes. If all routes start  and end at the same node (single depot), this
   // is the node returned.
@@ -495,10 +597,8 @@ class RoutingModel {
   // cumulVar > upper_bound -> cost = coefficient * (cumulVar - upper_bound).
   // This is also handy to model tardiness costs when the dimension represents
   // time.
-  void SetCumulVarSoftUpperBound(NodeIndex node,
-                                 const string& dimension_name,
-                                 int64 upper_bound,
-                                 int64 coefficient);
+  void SetCumulVarSoftUpperBound(NodeIndex node, const string& dimension_name,
+                                 int64 upper_bound, int64 coefficient);
   // Returns true if a soft upper bound has been set for a given node and a
   // given dimension.
   bool HasCumulVarSoftUpperBound(NodeIndex node,
@@ -512,8 +612,7 @@ class RoutingModel {
   // for a given node and dimension. If no soft upper bound has been set, 0 is
   // returned.
   int64 GetCumulVarSoftUpperBoundCoefficient(
-      NodeIndex node,
-      const string& dimension_name) const;
+      NodeIndex node, const string& dimension_name) const;
   // Search
   // Returns the strategy used to build a first solution.
   RoutingStrategy first_solution_strategy() const {
@@ -525,7 +624,7 @@ class RoutingModel {
   }
   // Gets/sets the evaluator used when the first solution heuristic is set to
   // ROUTING_EVALUATOR_STRATEGY (variant of ROUTING_PATH_CHEAPEST_ARC using
-  // 'evaluator' to sort node segments).
+  // 'evaluator' to std::sort node segments).
 #ifndef SWIG
   Solver::IndexEvaluator2* first_solution_evaluator() const {
     return first_solution_evaluator_.get();
@@ -559,7 +658,12 @@ class RoutingModel {
   // other methods that produce solution.
   void CloseModel();
   // Solves the current routing model; closes the current model.
-  const Assignment* Solve(const Assignment* assignment = NULL);
+  const Assignment* Solve(const Assignment* assignment = nullptr);
+  // Solves the current routing model with the given parameters.
+  // Closes the current model.
+  const Assignment* SolveWithParameters(
+      const RoutingSearchParameters& parameters,
+      const Assignment* assignment);
   // Computes a lower bound to the routing problem solving a linear assignment
   // problem. The routing model must be closed before calling this method.
   // Note that problems with node disjunction constraints (including optional
@@ -597,38 +701,39 @@ class RoutingModel {
   // solution.
   bool WriteAssignment(const string& file_name) const;
   // Reads an assignment from a file and returns the current solution.
-  // Returns NULL if the file cannot be opened or if the assignment is not
+  // Returns nullptr if the file cannot be opened or if the assignment is not
   // valid.
   Assignment* ReadAssignment(const string& file_name);
   // Restores an assignment as a solution in the routing model and returns the
-  // new solution. Returns NULL if the assignment is not valid.
+  // new solution. Returns nullptr if the assignment is not valid.
   Assignment* RestoreAssignment(const Assignment& solution);
-  // Restores the routes as the current solution. Returns NULL if the solution
-  // cannot be restored (routes do not contain a valid solution).
-  // Note that calling this method will run the solver to assign values to the
-  // dimension variables; this may take considerable amount of time, especially
-  // when using dimensions with slack.
+  // Restores the routes as the current solution. Returns nullptr if
+  // the solution cannot be restored (routes do not contain a valid
+  // solution).  Note that calling this method will run the solver to
+  // assign values to the dimension variables; this may take
+  // considerable amount of time, especially when using dimensions
+  // with slack.
   Assignment* ReadAssignmentFromRoutes(const std::vector<std::vector<NodeIndex> >& routes,
                                        bool ignore_inactive_nodes);
-  // Fills an assignment from a specification of the routes of the vehicles. The
-  // routes are specified as lists of nodes that appear on the routes of the
-  // vehicles. The indices of the outer vector in 'routes' correspond to
-  // vehicles IDs, the inner vector contain the nodes on the routes for the
-  // given vehicle. The inner vectors must not contain the start and end nodes,
-  // as these are determined by the routing model.
-  // Sets the value of NextVars in the assignment, adding the variables to the
-  // assignment if necessary. The method does not touch other variables in the
-  // assignment. The method can only be called after the model is closed.
-  // With ignore_inactive_nodes set to false, this method will fail (return
-  // NULL) in case some of the route contain nodes that are deactivated in the
-  // model; when set to true, these nodes will be skipped.
-  // Returns true if routes were successfully loaded. However, such assignment
-  // still might not be a valid solution to the routing problem due to more
-  // complex constraints; it is advisible to call solver()->CheckSolution()
-  // afterwards.
+  // Fills an assignment from a specification of the routes of the
+  // vehicles. The routes are specified as lists of nodes that appear
+  // on the routes of the vehicles. The indices of the outer vector in
+  // 'routes' correspond to vehicles IDs, the inner vector contain the
+  // nodes on the routes for the given vehicle. The inner vectors must
+  // not contain the start and end nodes, as these are determined by
+  // the routing model.  Sets the value of NextVars in the assignment,
+  // adding the variables to the assignment if necessary. The method
+  // does not touch other variables in the assignment. The method can
+  // only be called after the model is closed.  With
+  // ignore_inactive_nodes set to false, this method will fail (return
+  // nullptr) in case some of the route contain nodes that are
+  // deactivated in the model; when set to true, these nodes will be
+  // skipped.  Returns true if routes were successfully
+  // loaded. However, such assignment still might not be a valid
+  // solution to the routing problem due to more complex constraints;
+  // it is advisible to call solver()->CheckSolution() afterwards.
   bool RoutesToAssignment(const std::vector<std::vector<NodeIndex> >& routes,
-                          bool ignore_inactive_nodes,
-                          bool close_routes,
+                          bool ignore_inactive_nodes, bool close_routes,
                           Assignment* const assignment) const;
   // Converts the solution in the given assignment to routes for all vehicles.
   // Expects that assignment contains a valid solution (i.e. routes for all
@@ -641,7 +746,7 @@ class RoutingModel {
   // returned object.
   // If found, the cost of the compact assignment is the same as in the
   // original assignment and it preserves the values of 'active' variables.
-  // Returns NULL if a compact assignment was not found.
+  // Returns nullptr if a compact assignment was not found.
   // This method only works in homogenous mode, and it only swaps equivalent
   // vehicles (vehicles with the same start and end nodes). When creating the
   // compact assignment, the empty plan is replaced by the route assigned to the
@@ -652,7 +757,7 @@ class RoutingModel {
   // While compacting the solution, only basic checks on vehicle variables are
   // performed; the complete solution is checked at the end and if it is not
   // valid, no attempts to repair it are made (instead, the method returns
-  // NULL).
+  // nullptr).
   Assignment* CompactAssignment(const Assignment& assignment) const;
   // Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
@@ -662,9 +767,7 @@ class RoutingModel {
     sweep_arranger_.reset(sweep_arranger);
   }
   // Returns the sweep arranger to be used by routing heuristics.
-  SweepArranger* sweep_arranger() const {
-    return sweep_arranger_.get();
-  }
+  SweepArranger* sweep_arranger() const { return sweep_arranger_.get(); }
 #endif
 
   // Model inspection.
@@ -684,7 +787,7 @@ class RoutingModel {
   int64 Next(const Assignment& assignment, int64 index) const;
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
-  // Variables
+// Variables
 #if !defined(SWIG)
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
@@ -714,18 +817,35 @@ class RoutingModel {
   int64 GetCost(int64 from_index, int64 to_index, int64 vehicle);
   // Returns the cost of the segment between two nodes supposing all vehicle
   // costs are the same (returns the cost for the first vehicle otherwise).
-  int64 GetHomogeneousCost(int64 i, int64 j) {
-    return GetCost(i, j, 0);
-  }
+  int64 GetHomogeneousCost(int64 i, int64 j) { return GetCost(i, j, 0); }
   // Returns the number of different vehicle cost callbacks in the model.
-  int GetVehicleCostCount() const { return  costs_.size(); }
+  int GetVehicleCostCount() const { return costs_.size(); }
   // Returns the different types of vehicles in the model.
   void GetVehicleClasses(std::vector<VehicleClass>* vehicle_classes) const;
   // Returns a transition value given a dimension and a pair of nodes; this
   // value is the one taken by the corresponding transit variable when the
   // 'next' variable for 'from_index' is bound to 'to_index'.
-  int64 GetTransitValue(const string& dimension_name,
-                        int64 from_index, int64 to_index) const;
+  int64 GetTransitValue(const string& dimension_name, int64 from_index,
+                        int64 to_index) const;
+  // Returns whether the arc from->to1 is more constrained than from->to2,
+  // taking into account, in order:
+  // - whether the destination node isn't an end node
+  // - whether the destination node is mandatory
+  // - whether the destination node is bound to the same vehicle as the source
+  // - the "primary constrained" dimension (see SetPrimaryConstrainedDimension)
+  // It then breaks ties using, in order:
+  // - the arc cost (taking unperformed penalties into account)
+  // - the size of the vehicle vars of "to1" and "to2" (lowest size wins)
+  // - the value: the lowest value of the indices to1 and to2 wins.
+  // See the .cc for details.
+  // The more constrained arc is typically preferable when building a
+  // first solution. This method is intended to be used as a callback for the
+  // BestValueByComparisonSelector value selector.
+  // Args:
+  //   from: the variable index of the source node
+  //   to1: the variable index of the first candidate destination node.
+  //   to2: the variable index of the second candidate destination node.
+  bool ArcIsMoreConstrainedThanArc(int64 from, int64 to1, int64 to2);
   // Print some debugging information about an assignment, including the
   // feasible intervals of the CumulVar for dimension "dimension_to_print"
   // at each step of the routes.
@@ -764,11 +884,8 @@ class RoutingModel {
   // Updates the time limit used in the Large Neighborhood search tree.
   void UpdateLNSTimeLimit(int64 limit_ms);
 
-  // Utilities for swig to set flags in python or java.
-  void SetCommandLineOption(const string& name, const string& value);
-
   // Conversion between enums and strings; the Parse*() conversions return true
-  // on success and the *Name() conversions return NULL when given unknown
+  // on success and the *Name() conversions return nullptr when given unknown
   // values. See the .cc for the name conversions. The rule of thumb is:
   // RoutingModel::ROUTING_PATH_CHEAPEST_ARC <-> "PathCheapestArc".
   static const char* RoutingStrategyName(RoutingStrategy strategy);
@@ -801,8 +918,7 @@ class RoutingModel {
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(NodeEvaluator2* evaluator,
-                                        int64 slack_max,
-                                        int64 capacity,
+                                        int64 slack_max, int64 capacity,
                                         VehicleEvaluator* vehicle_capacity,
                                         bool fix_start_cumul_to_zero,
                                         const string& dimension_name);
@@ -828,15 +944,14 @@ class RoutingModel {
     vehicle_cost_classes_[vehicle] = cost_class;
   }
   int64 GetDimensionTransitCostSum(int64 i, int64 j) const;
-  // Returns NULL if no penalty cost, otherwise returns penalty variable.
+  // Returns nullptr if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   // Returns the first active node in nodes starting from index + 1.
   int FindNextActive(int index, const std::vector<int>& nodes) const;
 
   // Checks that all nodes on the route starting at start_index (using the
   // solution stored in assignment) can be visited by the given vehicle.
-  bool RouteCanBeUsedByVehicle(const Assignment& assignment,
-                               int start_index,
+  bool RouteCanBeUsedByVehicle(const Assignment& assignment, int start_index,
                                int vehicle) const;
   // Replaces the route of unused_vehicle with the route of active_vehicle in
   // compact_assignment. Expects that unused_vehicle is a vehicle with an empty
@@ -845,8 +960,7 @@ class RoutingModel {
   // compact_assignment was created.
   // Returns true if the vehicles were successfully swapped; otherwise, returns
   // false.
-  bool ReplaceUnusedVehicle(int unused_vehicle,
-                            int active_vehicle,
+  bool ReplaceUnusedVehicle(int unused_vehicle, int active_vehicle,
                             Assignment* compact_assignment) const;
 
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
@@ -894,6 +1008,7 @@ class RoutingModel {
   // Dimensions
   hash_map<string, DimensionIndex> dimension_name_to_index_;
   ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
+  string primary_constrained_dimension_;
   // Costs
   std::vector<NodeEvaluator2*> costs_;
   std::vector<NodeEvaluator2*> vehicle_costs_;
@@ -1008,7 +1123,7 @@ class RoutingDimension {
 
  private:
   struct SoftBound {
-    SoftBound() : var(NULL), bound(0), coefficient(0) {}
+    SoftBound() : var(nullptr), bound(0), coefficient(0) {}
     IntVar* var;
     int64 bound;
     int64 coefficient;
@@ -1046,8 +1161,7 @@ class RoutingDimension {
   // This is also handy to model tardiness costs when the dimension represents
   // time.
   void SetCumulVarSoftUpperBound(RoutingModel::NodeIndex node,
-                                 int64 upper_bound,
-                                 int64 coefficient);
+                                 int64 upper_bound, int64 coefficient);
   // Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to span costs.
@@ -1077,9 +1191,8 @@ class RoutingDimension {
 // depot. Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(
-     const ITIVector<RoutingModel::NodeIndex,
-                     std::pair<int64, int64> >& points);
+  explicit SweepArranger(const ITIVector<RoutingModel::NodeIndex,
+                                         std::pair<int64, int64> >& points);
   virtual ~SweepArranger() {}
   void ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes);
   void SetSectors(int sectors) { sectors_ = sectors; }

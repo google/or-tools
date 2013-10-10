@@ -46,6 +46,7 @@
 #include "base/mathutil.h"
 #include "constraint_solver/routing.h"
 
+DECLARE_bool(routing_no_lns);
 DEFINE_string(pdp_file, "",
               "File containing the Pickup and Delivery Problem to solve.");
 DEFINE_int32(pdp_force_vehicles, 0,
@@ -177,7 +178,7 @@ bool LoadAndSolve(const string& pdp_file) {
   std::vector<string> lines;
   {
     const int64 kMaxInputFileSize = 1 << 30;  // 1GB
-    File* data_file = File::OpenOrDie(pdp_file.c_str(), "r");
+    File* data_file = File::OpenOrDie(pdp_file, "r");
     string contents;
     data_file->ReadToString(&contents, kMaxInputFileSize);
     data_file->Close();
@@ -299,7 +300,7 @@ bool LoadAndSolve(const string& pdp_file) {
 
   // Set up search parameters.
   routing.set_first_solution_strategy(RoutingModel::ROUTING_ALL_UNPERFORMED);
-  routing.SetCommandLineOption("routing_no_lns", "true");
+  FLAGS_routing_no_lns = true;
 
   // Solve pickup and delivery problem.
   const Assignment* assignment =  routing.Solve(NULL);
@@ -314,7 +315,7 @@ bool LoadAndSolve(const string& pdp_file) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
     LOG(INFO) << "Error solving " << FLAGS_pdp_file;
   }

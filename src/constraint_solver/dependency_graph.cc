@@ -17,7 +17,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -37,9 +37,13 @@ typedef std::vector<Arc> Arcs;
 // A node in the dependency graph.
 class DependencyGraphNode {
  public:
-  enum PerformedState { UNPERFORMED, PERFORMED, UNDECIDED };
+  enum PerformedState {
+    UNPERFORMED,
+    PERFORMED,
+    UNDECIDED
+  };
   explicit DependencyGraphNode(DependencyGraph* const graph) : graph_(graph) {
-    CHECK_NOTNULL(graph_);
+    CHECK(graph_ != nullptr);
   }
   virtual ~DependencyGraphNode() {}
   virtual int64 Min() const = 0;
@@ -71,25 +75,19 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
  public:
   IntervalVarStartAdapter(DependencyGraph* const graph, IntervalVar* const var)
       : DependencyGraphNode(graph), interval_var_(var) {
-    CHECK_NOTNULL(graph);
-    CHECK_NOTNULL(var);
+    CHECK(graph != nullptr);
+    CHECK(var != nullptr);
     Demon* const demon =
-        interval_var_->solver()->MakeCallbackDemon(
-            NewPermanentCallback(
-                this,
-                &IntervalVarStartAdapter::WhenIntervalChanged));
+        interval_var_->solver()->MakeCallbackDemon(NewPermanentCallback(
+            this, &IntervalVarStartAdapter::WhenIntervalChanged));
     interval_var_->WhenAnything(demon);
   }
 
   virtual ~IntervalVarStartAdapter() {}
 
-  virtual int64 Min() const {
-    return interval_var_->StartMin();
-  }
+  virtual int64 Min() const { return interval_var_->StartMin(); }
 
-  virtual int64 Max() const {
-    return interval_var_->StartMax();
-  }
+  virtual int64 Max() const { return interval_var_->StartMax(); }
 
   virtual void SetMinInternal(int64 new_min) {
     interval_var_->SetStartMin(new_min);
@@ -119,7 +117,7 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
   }
 
   virtual void WhenIntervalChanged() {
-    graph()->Enqueue(this, true);  // min may have changed.
+    graph()->Enqueue(this, true);   // min may have changed.
     graph()->Enqueue(this, false);  // max may have changed.
   }
 
@@ -142,15 +140,13 @@ class NonReversibleDependencyGraph : public DependencyGraph {
   virtual ~NonReversibleDependencyGraph() {}
 
   virtual void AddEquality(DependencyGraphNode* const left,
-                           DependencyGraphNode* const right,
-                           int64 offset) {
+                           DependencyGraphNode* const right, int64 offset) {
     AddInequality(left, right, offset);
     AddInequality(right, left, -offset);
   }
 
   virtual void AddInequality(DependencyGraphNode* const left,
-                             DependencyGraphNode* const right,
-                             int64 offset) {
+                             DependencyGraphNode* const right, int64 offset) {
     right->AddMinDependency(left, offset);
     left->AddMaxDependency(right, offset);
     Freeze();
@@ -172,14 +168,12 @@ class NonReversibleDependencyGraph : public DependencyGraph {
     ProcessQueue();
   }
 
-  virtual string DebugString() const {
-    return "NonReversibleDependencyGraph";
-  }
+  virtual string DebugString() const { return "NonReversibleDependencyGraph"; }
 
  private:
   bool Dequeue(DependencyGraphNode** const node, bool* const changed_min) {
-    DCHECK(node != NULL);
-    DCHECK(changed_min != NULL);
+    DCHECK(node != nullptr);
+    DCHECK(changed_min != nullptr);
     if (actives_.empty()) {
       return false;
     }
@@ -193,7 +187,7 @@ class NonReversibleDependencyGraph : public DependencyGraph {
   void ProcessQueue() {
     if (in_process_ == 0) {
       ++in_process_;
-      DependencyGraphNode* node = NULL;
+      DependencyGraphNode* node = nullptr;
       bool changed_min = false;
       while (Dequeue(&node, &changed_min)) {
         if (changed_min) {
@@ -281,14 +275,12 @@ void DependencyGraphNode::PropagateMax() {
 
 // Dependency Graph internal API.
 
-DependencyGraph::~DependencyGraph() {
-  STLDeleteElements(&managed_nodes_);
-}
+DependencyGraph::~DependencyGraph() { STLDeleteElements(&managed_nodes_); }
 
 DependencyGraphNode* DependencyGraph::BuildStartNode(IntervalVar* const var) {
   DependencyGraphNode* const already_there =
       FindPtrOrNull(start_node_map_, var);
-  if (already_there != NULL) {
+  if (already_there != nullptr) {
     return already_there;
   }
   DependencyGraphNode* const newly_created =
@@ -340,7 +332,5 @@ DependencyGraph* BuildDependencyGraph(Solver* const solver) {
   return new NonReversibleDependencyGraph(solver);
 }
 
-DependencyGraph* Solver::Graph() const {
-  return dependency_graph_.get();
-}
+DependencyGraph* Solver::Graph() const { return dependency_graph_.get(); }
 }  // namespace operations_research

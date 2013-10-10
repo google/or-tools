@@ -77,7 +77,7 @@ class DomainWatcher {
 
 class FindVar : public DecisionVisitor {
  public:
-  FindVar() : var_(NULL), value_(0), valid_(false) {}
+  FindVar() : var_(nullptr), value_(0), valid_(false) {}
 
   virtual ~FindVar() {}
 
@@ -137,15 +137,15 @@ class InitVarImpacts : public DecisionBuilder {
  public:
   // ----- main -----
   InitVarImpacts()
-      : var_(NULL),
-        update_impact_callback_(NULL),
+      : var_(nullptr),
+        update_impact_callback_(nullptr),
         new_start_(false),
         var_index_(0),
         value_index_(-1),
         update_impact_closure_(
             NewPermanentCallback(this, &InitVarImpacts::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_);
+    CHECK(update_impact_closure_ != nullptr);
   }
 
   virtual ~InitVarImpacts() {}
@@ -164,8 +164,8 @@ class InitVarImpacts : public DecisionBuilder {
   }
 
   virtual Decision* Next(Solver* const solver) {
-    CHECK_NOTNULL(var_);
-    CHECK_NOTNULL(iterator_);
+    CHECK(var_ != nullptr);
+    CHECK(iterator_ != nullptr);
     if (new_start_) {
       active_values_.clear();
       for (iterator_->Init(); iterator_->Ok(); iterator_->Next()) {
@@ -174,7 +174,7 @@ class InitVarImpacts : public DecisionBuilder {
       new_start_ = false;
     }
     if (value_index_ == active_values_.size()) {
-      return NULL;
+      return nullptr;
     }
     updater_.var_ = var_;
     updater_.value_ = active_values_[value_index_];
@@ -191,12 +191,14 @@ class InitVarImpacts : public DecisionBuilder {
   class AssignCallFail : public Decision {
    public:
     explicit AssignCallFail(Closure* const update_impact_closure)
-        : var_(NULL), value_(0), update_impact_closure_(update_impact_closure) {
-      CHECK_NOTNULL(update_impact_closure_);
+        : var_(nullptr),
+          value_(0),
+          update_impact_closure_(update_impact_closure) {
+      CHECK(update_impact_closure_ != nullptr);
     }
     virtual ~AssignCallFail() {}
     virtual void Apply(Solver* const solver) {
-      CHECK_NOTNULL(var_);
+      CHECK(var_ != nullptr);
       var_->SetValue(value_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_->Run();
@@ -232,15 +234,15 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   class AssignIntervalCallFail : public Decision {
    public:
     explicit AssignIntervalCallFail(Closure* const update_impact_closure)
-        : var_(NULL),
+        : var_(nullptr),
           value_min_(0),
           value_max_(0),
           update_impact_closure_(update_impact_closure) {
-      CHECK_NOTNULL(update_impact_closure_);
+      CHECK(update_impact_closure_ != nullptr);
     }
     virtual ~AssignIntervalCallFail() {}
     virtual void Apply(Solver* const solver) {
-      CHECK_NOTNULL(var_);
+      CHECK(var_ != nullptr);
       var_->SetRange(value_min_, value_max_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_->Run();
@@ -261,8 +263,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   // ----- main -----
 
   explicit InitVarImpactsWithSplits(int split_size)
-      : var_(NULL),
-        update_impact_callback_(NULL),
+      : var_(nullptr),
+        update_impact_callback_(nullptr),
         new_start_(false),
         var_index_(0),
         min_value_(0),
@@ -272,7 +274,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
         update_impact_closure_(NewPermanentCallback(
             this, &InitVarImpactsWithSplits::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_);
+    CHECK(update_impact_closure_ != nullptr);
   }
 
   virtual ~InitVarImpactsWithSplits() {}
@@ -303,7 +305,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
       new_start_ = false;
     }
     if (split_index_ == split_size_) {
-      return NULL;
+      return nullptr;
     }
     updater_.var_ = var_;
     updater_.value_min_ = IntervalStart(split_index_);
@@ -460,18 +462,18 @@ class ImpactRecorder : public SearchMonitor {
         continue;
       }
       IntVarIterator* const iterator = domain_iterators_[var_index];
-      DecisionBuilder* init_decision_builder = NULL;
+      DecisionBuilder* init_decision_builder = nullptr;
       if (var->Max() - var->Min() < splits) {
         // The domain is small enough, we scan it completely.
-        container->without_split()
-            ->set_update_impact_callback(container->update_impact_callback());
+        container->without_split()->set_update_impact_callback(
+            container->update_impact_callback());
         container->without_split()->Init(var, iterator, var_index);
         init_decision_builder = container->without_split();
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        container->with_splits()
-            ->set_update_impact_callback(container->update_impact_callback());
+        container->with_splits()->set_update_impact_callback(
+            container->update_impact_callback());
         container->with_splits()->Init(var, iterator, var_index);
         init_decision_builder = container->with_splits();
       }
@@ -501,10 +503,10 @@ class ImpactRecorder : public SearchMonitor {
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
-        LOG(INFO)
-            << "  - init done, time = " << s->wall_time() - init_time << " ms, "
-            << removed_counter
-            << " values removed, log2(SearchSpace) = " << current_log_space_;
+        LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
+                  << " ms, " << removed_counter
+                  << " values removed, log2(SearchSpace) = "
+                  << current_log_space_;
       } else {
         LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
                   << " ms";
@@ -520,8 +522,8 @@ class ImpactRecorder : public SearchMonitor {
                       double* const var_impacts,
                       DefaultPhaseParameters::VariableSelection var_select,
                       DefaultPhaseParameters::ValueSelection value_select) {
-    CHECK_NOTNULL(best_impact_value);
-    CHECK_NOTNULL(var_impacts);
+    CHECK(best_impact_value != nullptr);
+    CHECK(var_impacts != nullptr);
     double max_impact = -std::numeric_limits<double>::max();
     double min_impact = std::numeric_limits<double>::max();
     double sum_var_impact = 0.0;
@@ -613,7 +615,7 @@ class ImpactRecorder : public SearchMonitor {
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
   std::vector<int64> original_min_;
-  scoped_array<IntVarIterator*> domain_iterators_;
+  scoped_ptr<IntVarIterator * []> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;
@@ -643,7 +645,7 @@ int64 ComputeBranchRestart(int64 log) {
 // This structure stores 'var[index] (left?==:!=) value'.
 class ChoiceInfo {
  public:
-  ChoiceInfo() : value_(0), var_(NULL), left_(false) {}
+  ChoiceInfo() : value_(0), var_(nullptr), left_(false) {}
 
   ChoiceInfo(IntVar* const var, int64 value, bool left)
       : value_(value), var_(var), left_(left) {}
@@ -679,7 +681,7 @@ class RestartMonitor : public SearchMonitor {
         no_good_manager_(parameters_.restart_log_size >= 0 &&
                                  parameters_.use_no_goods
                              ? solver->MakeNoGoodManager()
-                             : NULL),
+                             : nullptr),
         branches_between_restarts_(0),
         min_restart_period_(ComputeBranchRestart(parameters_.restart_log_size)),
         maximum_restart_depth_(kint64max),
@@ -702,7 +704,7 @@ class RestartMonitor : public SearchMonitor {
   }
 
   virtual void RefuteDecision(Decision* const d) {
-    CHECK_NOTNULL(d);
+    CHECK(d != nullptr);
     Solver* const s = solver();
     branches_between_restarts_++;
     d->Accept(&find_var_);
@@ -728,7 +730,7 @@ class RestartMonitor : public SearchMonitor {
 
   virtual void ExitSearch() {
     if (parameters_.display_level != DefaultPhaseParameters::NONE &&
-        no_good_manager_ != NULL) {
+        no_good_manager_ != nullptr) {
       LOG(INFO) << "Default search has generated "
                 << no_good_manager_->NoGoodCount() << " no goods, and "
                 << num_restarts_ << " restarts";
@@ -753,7 +755,7 @@ class RestartMonitor : public SearchMonitor {
 
   void Install() {
     SearchMonitor::Install();
-    if (no_good_manager_ != NULL) {
+    if (no_good_manager_ != nullptr) {
       no_good_manager_->Install();
     }
   }
@@ -789,11 +791,11 @@ class RestartMonitor : public SearchMonitor {
 
       // Some verbose display.
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(2)
-            << "search_depth = " << search_depth
-            << ", branches between restarts = " << branches_between_restarts_
-            << ", log_search_space_size = " << log_search_space_size
-            << ", min_log_search_space = " << min_log_search_space_;
+        VLOG(2) << "search_depth = " << search_depth
+                << ", branches between restarts = "
+                << branches_between_restarts_
+                << ", log_search_space_size = " << log_search_space_size
+                << ", min_log_search_space = " << min_log_search_space_;
       }
       bool all_rights = true;
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
@@ -854,7 +856,7 @@ class RestartMonitor : public SearchMonitor {
           all_rights = false;
         }
       }
-      DCHECK(no_good_manager_ != NULL);
+      DCHECK(no_good_manager_ != nullptr);
 
       // Reverse the last no good if need be. If we have finished the
       // apply branch, then the subtree below the left branch is
@@ -923,7 +925,7 @@ class RunHeuristicsAsDives : public Decision {
                        DefaultPhaseParameters::DisplayLevel level,
                        bool run_all_heuristics, int random_seed,
                        int heuristic_period, int heuristic_num_failures_limit)
-      : heuristic_limit_(NULL),
+      : heuristic_limit_(nullptr),
         display_level_(level),
         run_all_heuristics_(run_all_heuristics),
         random_(random_seed),
@@ -955,7 +957,7 @@ class RunHeuristicsAsDives : public Decision {
 
     const bool result =
         solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
-    if (result && display_level_ == DefaultPhaseParameters::VERBOSE) {
+    if (result && display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  --- solution found by heuristic " << wrapper->name
                 << " --- ";
     }
@@ -1083,16 +1085,16 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
-    return parameters_.decision_builder != NULL
+    return parameters_.decision_builder != nullptr
                ? parameters_.decision_builder->Next(solver)
                : ImpactNext(solver);
   }
 
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const extras) {
-    CHECK_NOTNULL(solver);
-    CHECK_NOTNULL(extras);
-    if (parameters_.decision_builder == NULL) {
+    CHECK(solver != nullptr);
+    CHECK(extras != nullptr);
+    if (parameters_.decision_builder == nullptr) {
       extras->push_back(&impact_recorder_);
     }
     if (parameters_.restart_log_size >= 0) {
@@ -1103,14 +1105,14 @@ class DefaultIntegerSearch : public DecisionBuilder {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(), vars_.size());
+                                               vars_);
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
   virtual string DebugString() const {
     string out = "DefaultIntegerSearch(";
 
-    if (parameters_.decision_builder == NULL) {
+    if (parameters_.decision_builder == nullptr) {
       out.append("Impact Based Search, ");
     } else {
       out.append(parameters_.decision_builder->DebugString());
@@ -1126,7 +1128,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     if (init_done_) {
       return;
     }
-    if (parameters_.decision_builder == NULL) {
+    if (parameters_.decision_builder == nullptr) {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
@@ -1134,8 +1136,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
             LOG(INFO) << "Domains are too large, switching to simple "
                       << "heuristics";
           }
-          solver->SaveValue(reinterpret_cast<void**>(
-              &parameters_.decision_builder));
+          solver->SaveValue(
+              reinterpret_cast<void**>(&parameters_.decision_builder));
           parameters_.decision_builder =
               solver->MakePhase(vars_, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                                 Solver::ASSIGN_MIN_VALUE);
@@ -1149,8 +1151,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
         }
-        solver->SaveValue(reinterpret_cast<void**>(
-            &parameters_.decision_builder));
+        solver->SaveValue(
+            reinterpret_cast<void**>(&parameters_.decision_builder));
         parameters_.decision_builder = solver->MakePhase(
             vars_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
         solver->SaveAndSetValue(&init_done_, true);
@@ -1180,7 +1182,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   // per value in its domain, and then select the value with the
   // minimal impact.
   Decision* ImpactNext(Solver* const solver) {
-    IntVar* var = NULL;
+    IntVar* var = nullptr;
     int64 value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1197,8 +1199,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
         }
       }
     }
-    if (var == NULL) {
-      return NULL;
+    if (var == nullptr) {
+      return nullptr;
     } else {
       return solver->MakeAssignVariableValue(var, value);
     }

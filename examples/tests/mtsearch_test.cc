@@ -28,8 +28,8 @@ DEFINE_int32(workers, 4, "Number of workers for tests");
 namespace operations_research {
 class UpVar : public BaseLNS {
  public:
-  UpVar(const IntVar* const* vars, int size, int worker)
-      : BaseLNS(vars, size),  worker_(worker) {}
+  UpVar(const std::vector<IntVar*>& vars, int worker)
+      : BaseLNS(vars),  worker_(worker) {}
 
   virtual ~UpVar() {}
 
@@ -142,7 +142,7 @@ void BuildModelWithSearch(int workers,
   monitors.push_back(s.MakeMaximize(objective, 1));
 
   UpVar* const local_search_operator =
-      s.RevAlloc(new UpVar(vars.data(), workers, worker));
+      s.RevAlloc(new UpVar(vars, worker));
 
   DecisionBuilder* db = s.MakePhase(vars,
                                     Solver::CHOOSE_FIRST_UNBOUND,

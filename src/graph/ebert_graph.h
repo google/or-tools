@@ -671,7 +671,7 @@ class ForwardStaticGraph
     }
     DCHECK_EQ(num_arcs, next_arc);
     head_.Reserve(kFirstArc, kFirstArc + num_arcs - 1);
-    scoped_array<ArcIndexType> arc_permutation;
+    scoped_ptr<ArcIndexType[]> arc_permutation;
     if (client_cycle_handler != NULL) {
       arc_permutation.reset(new ArcIndexType[end_arc_index()]);
       for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
@@ -1050,8 +1050,8 @@ class EbertGraphBase
   void GroupForwardArcsByFunctor(
       const ArcIndexTypeStrictWeakOrderingFunctor& compare,
       PermutationCycleHandler<ArcIndexType>* annotation_handler) {
-    scoped_array<ArcIndexType>
-        arc_permutation(new ArcIndexType[end_arc_index()]);
+    scoped_ptr<ArcIndexType[]> arc_permutation(
+        new ArcIndexType[end_arc_index()]);
 
     // Determine the permutation that groups arcs by their tail nodes.
     for (ArcIndexType i = 0; i < end_arc_index(); ++i) {

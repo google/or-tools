@@ -46,8 +46,8 @@ class BellmanFord {
   const int start_node_;
   scoped_ptr<ResultCallback2<int64, int, int> > graph_;
   const int64 disconnected_distance_;
-  scoped_array<int64> distance_;
-  scoped_array<int> predecessor_;
+  scoped_ptr<int64[]> distance_;
+  scoped_ptr<int[]> predecessor_;
 };
 
 void BellmanFord::Initialize() {

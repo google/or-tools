@@ -33,17 +33,16 @@ class SoftGCC : public Constraint{
   SoftGCC(Solver* const solver,
           const std::vector<IntVar*>& vars,
           int64 min_value,
-          const int64* const card_mins,
-          const int64* const card_max,
-          int64 num_values,
+          const std::vector<int64>& card_mins,
+          const std::vector<int64>& card_max,
           IntVar* const violation_var)
       : Constraint(solver),
         vars_(vars),
         min_value_(min_value),
-        max_value_(min_value + num_values - 1),
-        num_values_(num_values),
-        card_mins_(new int64[num_values]),
-        card_max_(new int64[num_values]),
+        max_value_(min_value + card_max.size() - 1),
+        num_values_(card_mins.size()),
+        card_mins_(card_mins),
+        card_max_(card_max),
         violation_var_(violation_var),
         sum_card_min_(0),
         underflow_(NULL),
@@ -74,63 +73,6 @@ class SoftGCC : public Constraint{
         is_var_always_matched_in_overflow_(NULL),
         stack_(NULL),
         type_(NULL) {
-    memcpy(card_mins_.get(), card_mins, num_values_ * sizeof(*card_mins));
-    memcpy(card_max_.get(), card_max, num_values_ * sizeof(*card_max));
-    for (int64 i = 0; i < num_values_; i++) {
-      CHECK_GE(card_mins_[i], 0);
-      CHECK_GE(card_max_[i], 0);
-      CHECK_LE(card_mins_[i], card_max_[i]);
-    }
-  }
-
-  SoftGCC(Solver* const solver,
-          const std::vector<IntVar*>& vars,
-          int64 min_value,
-          const int* const card_mins,
-          const int* const card_max,
-          int64 num_values,
-          IntVar* const violation_var)
-      : Constraint(solver),
-        vars_(vars),
-        min_value_(min_value),
-        max_value_(min_value + num_values - 1),
-        num_values_(num_values),
-        card_mins_(new int64[num_values]),
-        card_max_(new int64[num_values]),
-        violation_var_(violation_var),
-        sum_card_min_(0),
-        underflow_(NULL),
-        under_variable_match_(NULL),
-        under_value_match_(NULL),
-        under_total_flow_(0),
-        under_next_match_(NULL),
-        under_previous_match_(NULL),
-        overflow_(NULL),
-        over_variable_match_(NULL),
-        over_value_match_(NULL),
-        over_total_flow_(0),
-        over_next_match_(NULL),
-        over_previous_match_(NULL),
-        magic_(0),
-        dfs_(0),
-        component_(0),
-        variable_component_(NULL),
-        variable_dfs_(NULL),
-        variable_high_(NULL),
-        value_component_(NULL),
-        value_dfs_(NULL),
-        value_high_(NULL),
-        sink_component_(0),
-        sink_dfs_(0),
-        sink_high_(0),
-        is_var_always_matched_in_underflow_(NULL),
-        is_var_always_matched_in_overflow_(NULL),
-        stack_(NULL),
-        type_(NULL) {
-    for (int i = 0; i < num_values_; ++i) {
-      card_mins_[i] = card_mins[i];
-      card_max_[i] = card_max[i];
-    }
     for (int64 i = 0; i < num_values_; i++) {
       CHECK_GE(card_mins_[i], 0);
       CHECK_GE(card_max_[i], 0);
@@ -206,10 +148,10 @@ class SoftGCC : public Constraint{
       num_values_ = max_value_ - min_value_ + 1;
 
       // low
-      int64* const new_card_mins = NewIntArray(num_values_);
+      vector<int64> new_card_mins(num_values_);
 
       // up
-      int64* const new_card_max = NewIntArray(num_values_);
+      vector<int64> new_card_max(num_values_);
       for (int64 k = 0; k < num_values_; k++) {
         new_card_max[k] = vars_.size();
       }
@@ -228,8 +170,8 @@ class SoftGCC : public Constraint{
           new_card_max[i + delta] = card_max_[i] ;
         }
       }
-      card_mins_.reset(new_card_mins);
-      card_max_.reset(new_card_max);
+      card_mins_.swap(new_card_mins);
+      card_max_.swap(new_card_max);
     } else {
       sum_card_min_ = 0;
       for (int64 i = 0 ; i < num_values_; i++) {
@@ -510,12 +452,12 @@ class SoftGCC : public Constraint{
       flow = underflow_.get();
       next = under_next_match_.get();
       value_match = under_value_match_.get();
-      capa = card_mins_.get();
+      capa = card_mins_.data();
     } else { // OF
       flow = overflow_.get();
       next = over_next_match_.get();
       value_match = over_value_match_.get();
-      capa = card_max_.get();
+      capa = card_max_.data();
     }
 
     if (value_seen_[v - min_value_] != magic_) {
@@ -708,7 +650,7 @@ class SoftGCC : public Constraint{
         under_value_match_.get() :
         over_value_match_.get();
     // First variable matched to the value.
-    const int64* const capa = (ft == UF) ? card_mins_.get() : card_max_.get();
+    const int64* const capa = (ft == UF) ? card_mins_.data() : card_max_.data();
     // First variable matched to the value.
     int64* next = (ft == UF) ? under_next_match_.get() : over_next_match_.get();
     // First variable matched to the value.
@@ -937,15 +879,10 @@ class SoftGCC : public Constraint{
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGlobalCardinality, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(),
-                                               vars_.size());
+                                               vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, min_value_);
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kMinArgument,
-                                       card_mins_.get(),
-                                       num_values_);
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kMaxArgument,
-                                       card_max_.get(),
-                                       num_values_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kMinArgument, card_mins_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kMaxArgument, card_max_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             violation_var_);
     visitor->EndVisitConstraint(ModelVisitor::kGlobalCardinality, this);
@@ -962,62 +899,62 @@ class SoftGCC : public Constraint{
   int64 min_value_;
   int64 max_value_;
   int64 num_values_;
-  scoped_array<int64> card_mins_;
-  scoped_array<int64> card_max_;
+  std::vector<int64> card_mins_;
+  std::vector<int64> card_max_;
   IntVar* const violation_var_;
   int64 sum_card_min_;
 
   //for each value, the quantity of flow into this value
-  scoped_array<int64> underflow_;
+  scoped_ptr<int64[]> underflow_;
  //for each variable, the value it is matched to
-  scoped_array<int64> under_variable_match_;
+  scoped_ptr<int64[]> under_variable_match_;
   //first variable matched to the value
-  scoped_array<int64> under_value_match_;
+  scoped_ptr<int64[]> under_value_match_;
   //total flow
   int64 under_total_flow_;
   //next variable matched
-  scoped_array<int64> under_next_match_;
+  scoped_ptr<int64[]> under_next_match_;
   //previous variable matched
-  scoped_array<int64> under_previous_match_;
+  scoped_ptr<int64[]> under_previous_match_;
 
   //for each value, the quantity of flow into this value
-  scoped_array<int64> overflow_;
+  scoped_ptr<int64[]> overflow_;
   //for each variable, the value it is matched to
-  scoped_array<int64> over_variable_match_;
+  scoped_ptr<int64[]> over_variable_match_;
   //first variable matched to the value
-  scoped_array<int64> over_value_match_;
+  scoped_ptr<int64[]> over_value_match_;
   //total flow
   int64 over_total_flow_;
   //next variable matched
-  scoped_array<int64> over_next_match_;
+  scoped_ptr<int64[]> over_next_match_;
   //previous variable matched
-  scoped_array<int64> over_previous_match_;
+  scoped_ptr<int64[]> over_previous_match_;
 
   //flags for the dfs_ if the var nodes have been visited
-  scoped_array<int64> variable_seen_;
+  scoped_ptr<int64[]> variable_seen_;
   //flags for the dfs_ if the val nodes have been visited
-  scoped_array<int64> value_seen_;
+  scoped_ptr<int64[]> value_seen_;
   //magic_ used for the flag in _variable_seen_ and _value_seen_
   int64 magic_;
   int64 dfs_;
   int64 component_;
-  scoped_array<int64> variable_component_;
-  scoped_array<int64> variable_dfs_;
-  scoped_array<int64> variable_high_;
-  scoped_array<int64> value_component_;
-  scoped_array<int64> value_dfs_;
-  scoped_array<int64> value_high_;
+  scoped_ptr<int64[]> variable_component_;
+  scoped_ptr<int64[]> variable_dfs_;
+  scoped_ptr<int64[]> variable_high_;
+  scoped_ptr<int64[]> value_component_;
+  scoped_ptr<int64[]> value_dfs_;
+  scoped_ptr<int64[]> value_high_;
   int64 sink_component_;
   int64 sink_dfs_;
   int64 sink_high_;
-  scoped_array<bool> is_var_always_matched_in_underflow_;
-  scoped_array<bool> is_var_always_matched_in_overflow_;
-  scoped_array<int64> stack_;
-  scoped_array<int64> type_;
+  scoped_ptr<bool[]> is_var_always_matched_in_underflow_;
+  scoped_ptr<bool[]> is_var_always_matched_in_overflow_;
+  scoped_ptr<int64[]> stack_;
+  scoped_ptr<int64[]> type_;
   int64 top_;
   std::vector<int64> num_vars_in_component_;
-  scoped_array<int64> under_variable_component_;
-  scoped_array<int64> under_value_component_;
+  scoped_ptr<int64[]> under_variable_component_;
+  scoped_ptr<int64[]> under_value_component_;
 };
 }  // namespace
 
@@ -1031,9 +968,8 @@ Constraint* MakeSoftGcc(Solver* const solver,
   return solver->RevAlloc(new SoftGCC(solver,
                                       vars,
                                       min_value,
-                                      card_mins.data(),
-                                      card_max.data(),
-                                      card_mins.size(),
+                                      card_mins,
+                                      card_max,
                                       violation_var));
 }
 
@@ -1046,9 +982,8 @@ Constraint* MakeSoftGcc(Solver* const solver,
   return solver->RevAlloc(new SoftGCC(solver,
                                       vars,
                                       min_value,
-                                      card_mins.data(),
-                                      card_max.data(),
-                                      card_mins.size(),
+                                      ToInt64Vector(card_mins),
+                                      ToInt64Vector(card_max),
                                       violation_var));
 }
 }  // namespace operations_research

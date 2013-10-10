@@ -24,11 +24,12 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
-#include "util/const_int_array.h"
+#include "util/saturated_arithmetic.h"
+#include "util/string_array.h"
 
 DEFINE_bool(cp_disable_expression_optimization, false,
             "Disable special optimization when creating expressions.");
@@ -39,36 +40,6 @@ DEFINE_bool(cp_share_int_consts, true, "Share IntConst's with the same value.");
 #endif
 
 namespace operations_research {
-
-// ---------- Overflow utility functions ----------
-
-int64 CapProd(int64 left, int64 right) {
-  if (left == 0 || right == 0) {
-    return 0;
-  }
-  if (left > 0) {   /* left is positive */
-    if (right > 0) {/* left and right are positive */
-      if (left > (kint64max / right)) {
-        return kint64max;
-      }
-    } else {/* left positive, right non-positive */
-      if (right < (kint64min / left)) {
-        return kint64min;
-      }
-    }               /* left positive, right non-positive */
-  } else {          /* left is non-positive */
-    if (right > 0) {/* left is non-positive, right is positive */
-      if (left < (kint64min / right)) {
-        return kint64min;
-      }
-    } else {/* left and right are non-positive */
-      if (right < (kint64max / left)) {
-        return kint64max;
-      }
-    } /* end if left and right are non-positive */
-  }   /* end if left is non-positive */
-  return left * right;
-}
 
 // ---------- IntExpr ----------
 
@@ -87,46 +58,6 @@ IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
 }
 
 namespace {
-template <class T>
-int64* NewUniqueSortedArray(const T* const values, int* size) {
-  int64* new_array = new int64[*size];
-  for (int i = 0; i < *size; ++i) {
-    new_array[i] = values[i];
-  }
-  std::sort(new_array, new_array + (*size));
-  int non_unique = 0;
-  for (int i = 0; i < (*size) - 1; ++i) {
-    if (new_array[i] == new_array[i + 1]) {
-      non_unique++;
-    }
-  }
-  if (non_unique > 0) {
-    scoped_array<int64> sorted(new_array);
-    DCHECK_GE(*size, non_unique);
-    new_array = new int64[(*size) - non_unique];
-    new_array[0] = sorted[0];
-    int pos = 1;
-    for (int i = 1; i < (*size); ++i) {
-      if (sorted[i] != sorted[i - 1]) {
-        new_array[pos++] = sorted[i];
-      }
-    }
-    DCHECK_EQ((*size) - non_unique, pos);
-    *size = pos;
-  }
-  return new_array;
-}
-
-template <class T>
-bool IsArrayActuallySorted(const T* const values, int size) {
-  for (int i = 0; i < size - 1; ++i) {
-    if (values[i + 1] < values[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 // ---------- Subclasses of IntVar ----------
 
 // ----- Domain Int Var: base class for variables -----
@@ -264,7 +195,7 @@ class DomainIntVar : public IntVar {
           watchers_(16),
           min_range_(kint64max),
           max_range_(kint64min),
-          var_demon_(NULL),
+          var_demon_(nullptr),
           active_watchers_(0) {}
 
     ValueWatcher(Solver* const solver, DomainIntVar* const variable,
@@ -275,7 +206,7 @@ class DomainIntVar : public IntVar {
           watchers_(16),
           min_range_(kint64max),
           max_range_(kint64min),
-          var_demon_(NULL),
+          var_demon_(nullptr),
           active_watchers_(0) {
       CHECK_EQ(vars.size(), values.size());
       for (int i = 0; i < values.size(); ++i) {
@@ -287,10 +218,10 @@ class DomainIntVar : public IntVar {
 
     IntVar* GetOrMakeValueWatcher(int64 value) {
       IntVar* const watcher = watchers_.At(value);
-      if (watcher != NULL) {
+      if (watcher != nullptr) {
         return watcher;
       }
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (variable_->Contains(value)) {
         if (variable_->Bound()) {
           boolvar = solver()->MakeIntConst(1);
@@ -315,7 +246,7 @@ class DomainIntVar : public IntVar {
     }
 
     void SetValueWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_.At(value) == NULL);
+      CHECK(watchers_.At(value) == nullptr);
       active_watchers_.Incr(solver());
       min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
       max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
@@ -332,7 +263,7 @@ class DomainIntVar : public IntVar {
       const int64 min_r = min_range_.Value();
       for (int64 value = min_r; value <= max_r; ++value) {
         IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != NULL && !boolvar->Bound()) {
+        if (boolvar != nullptr && !boolvar->Bound()) {
           boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
         }
       }
@@ -347,7 +278,7 @@ class DomainIntVar : public IntVar {
         if (!variable_->Contains(value)) {
           Zero(value);
         }
-        if (boolvar != NULL && boolvar->Bound()) {
+        if (boolvar != nullptr && boolvar->Bound()) {
           if (boolvar->Min() == 0) {
             variable_->RemoveValue(value);
           } else {
@@ -362,7 +293,7 @@ class DomainIntVar : public IntVar {
 
     void ProcessValueWatcher(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      DCHECK(boolvar != NULL);
+      DCHECK(boolvar != nullptr);
       if (boolvar->Min() == 0) {
         if (variable_->Size() < 0xFFFFFF) {
           variable_->RemoveValue(index);
@@ -421,15 +352,15 @@ class DomainIntVar : public IntVar {
       const int64 min_r = min_range_.Value();
       for (int64 i = min_r; i <= max_r; ++i) {
         IntVar* const boolvar = watchers_.At(i);
-        if (boolvar != NULL) {
+        if (boolvar != nullptr) {
           all_coefficients.push_back(i);
           all_bool_vars.push_back(boolvar);
         }
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
-      visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument,
-                                          all_coefficients);
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                         all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarValueWatcher, this);
     }
 
@@ -440,7 +371,7 @@ class DomainIntVar : public IntVar {
    private:
     void Zero(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != NULL) {
+      if (boolvar != nullptr) {
         if (boolvar->Max() == 1) {
           boolvar->SetValue(0);
           active_watchers_.Decr(solver());
@@ -453,7 +384,7 @@ class DomainIntVar : public IntVar {
 
     void One(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != NULL) {
+      if (boolvar != nullptr) {
         boolvar->SetValue(1);
       }
     }
@@ -507,7 +438,7 @@ class DomainIntVar : public IntVar {
           watchers_(16),
           min_range_(kint64max),
           max_range_(kint64min),
-          var_demon_(NULL),
+          var_demon_(nullptr),
           active_watchers_(0) {}
 
     BoundWatcher(Solver* const solver, DomainIntVar* const variable,
@@ -518,7 +449,7 @@ class DomainIntVar : public IntVar {
           watchers_(16),
           min_range_(kint64max),
           max_range_(kint64min),
-          var_demon_(NULL),
+          var_demon_(nullptr),
           active_watchers_(0) {
       CHECK_EQ(vars.size(), values.size());
       for (int i = 0; i < values.size(); ++i) {
@@ -530,10 +461,10 @@ class DomainIntVar : public IntVar {
 
     IntVar* GetOrMakeBoundWatcher(int64 value) {
       IntVar* const watcher = watchers_.At(value);
-      if (watcher != NULL) {
+      if (watcher != nullptr) {
         return watcher;
       }
-      IntVar* boolvar = NULL;
+      IntVar* boolvar = nullptr;
       if (variable_->Max() >= value) {
         if (variable_->Min() >= value) {
           boolvar = solver()->MakeIntConst(1);
@@ -558,7 +489,7 @@ class DomainIntVar : public IntVar {
     }
 
     void SetBoundWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_.At(value) == NULL);
+      CHECK(watchers_.At(value) == nullptr);
       active_watchers_.Incr(solver());
       min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
       max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
@@ -576,7 +507,7 @@ class DomainIntVar : public IntVar {
       const int64 min_r = min_range_.Value();
       for (int64 value = min_r; value <= max_r; ++value) {
         IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != NULL && !boolvar->Bound()) {
+        if (boolvar != nullptr && !boolvar->Bound()) {
           boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
         }
       }
@@ -588,7 +519,7 @@ class DomainIntVar : public IntVar {
       const int64 max_r = max_range_.Value();
       for (int value = min_r; value <= max_r; ++value) {
         IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != NULL && boolvar->Bound()) {
+        if (boolvar != nullptr && boolvar->Bound()) {
           if (boolvar->Min() == 0) {
             variable_->SetMax(value - 1);
           } else {
@@ -608,7 +539,7 @@ class DomainIntVar : public IntVar {
 
     void ProcessBoundWatcher(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      DCHECK(boolvar != NULL);
+      DCHECK(boolvar != nullptr);
       if (boolvar->Min() == 0) {
         variable_->SetMax(index - 1);
       } else {
@@ -653,15 +584,15 @@ class DomainIntVar : public IntVar {
       const int64 min_r = min_range_.Value();
       for (int64 i = min_r; i <= max_r; ++i) {
         IntVar* const boolvar = watchers_.At(i);
-        if (boolvar != NULL) {
+        if (boolvar != nullptr) {
           all_coefficients.push_back(i);
           all_bool_vars.push_back(boolvar);
         }
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
-      visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument,
-                                          all_coefficients);
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                         all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
     }
 
@@ -672,7 +603,7 @@ class DomainIntVar : public IntVar {
    private:
     void Zero(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != NULL) {
+      if (boolvar != nullptr) {
         if (boolvar->Max() == 1) {
           boolvar->SetValue(0);
           active_watchers_.Decr(solver());
@@ -685,7 +616,7 @@ class DomainIntVar : public IntVar {
 
     void One(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != NULL) {
+      if (boolvar != nullptr) {
         boolvar->SetValue(1);
       }
     }
@@ -754,10 +685,10 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsEqual(int64 constant) {
     Solver* const s = solver();
-    if (constant == min_.Value() && value_watcher_ == NULL) {
+    if (constant == min_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsLessOrEqualCstVar(this, constant);
     }
-    if (constant == max_.Value() && value_watcher_ == NULL) {
+    if (constant == max_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsGreaterOrEqualCstVar(this, constant);
     }
     if (!Contains(constant)) {
@@ -768,10 +699,10 @@ class DomainIntVar : public IntVar {
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_EQUAL);
-    if (cache != NULL) {
+    if (cache != nullptr) {
       return cache->Var();
     } else {
-      if (value_watcher_ == NULL) {
+      if (value_watcher_ == nullptr) {
         solver()->SaveAndSetValue(reinterpret_cast<void**>(&value_watcher_),
                                   reinterpret_cast<void*>(solver()->RevAlloc(
                                       new ValueWatcher(solver(), this))));
@@ -786,7 +717,7 @@ class DomainIntVar : public IntVar {
 
   Constraint* SetIsEqual(const std::vector<int64>& values,
                          const std::vector<IntVar*>& vars) {
-    if (value_watcher_ == NULL) {
+    if (value_watcher_ == nullptr) {
       solver()->SaveAndSetValue(
           reinterpret_cast<void**>(&value_watcher_),
           reinterpret_cast<void*>(solver()->RevAlloc(
@@ -797,10 +728,10 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsDifferent(int64 constant) {
     Solver* const s = solver();
-    if (constant == min_.Value() && value_watcher_ == NULL) {
+    if (constant == min_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsGreaterOrEqualCstVar(this, constant + 1);
     }
-    if (constant == max_.Value() && value_watcher_ == NULL) {
+    if (constant == max_.Value() && value_watcher_ == nullptr) {
       return s->MakeIsLessOrEqualCstVar(this, constant - 1);
     }
     if (!Contains(constant)) {
@@ -811,7 +742,7 @@ class DomainIntVar : public IntVar {
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
-    if (cache != NULL) {
+    if (cache != nullptr) {
       return cache->Var();
     } else {
       IntVar* const boolvar = s->MakeDifference(1, IsEqual(constant))->Var();
@@ -831,10 +762,10 @@ class DomainIntVar : public IntVar {
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
-    if (cache != NULL) {
+    if (cache != nullptr) {
       return cache->Var();
     } else {
-      if (bound_watcher_ == NULL) {
+      if (bound_watcher_ == nullptr) {
         solver()->SaveAndSetValue(reinterpret_cast<void**>(&bound_watcher_),
                                   reinterpret_cast<void*>(solver()->RevAlloc(
                                       new BoundWatcher(solver(), this))));
@@ -850,7 +781,7 @@ class DomainIntVar : public IntVar {
 
   Constraint* SetIsGreaterOrEqual(const std::vector<int64>& values,
                                   const std::vector<IntVar*>& vars) {
-    if (bound_watcher_ == NULL) {
+    if (bound_watcher_ == nullptr) {
       solver()->SaveAndSetValue(
           reinterpret_cast<void**>(&bound_watcher_),
           reinterpret_cast<void*>(solver()->RevAlloc(
@@ -863,7 +794,7 @@ class DomainIntVar : public IntVar {
     Solver* const s = solver();
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
-    if (cache != NULL) {
+    if (cache != nullptr) {
       return cache->Var();
     } else {
       IntVar* const boolvar =
@@ -878,12 +809,12 @@ class DomainIntVar : public IntVar {
   void Push();
   void ClearInProcess();
   virtual uint64 Size() const {
-    if (bits_ != NULL) return bits_->Size();
+    if (bits_ != nullptr) return bits_->Size();
     return (max_.Value() - min_.Value() + 1);
   }
   virtual bool Contains(int64 v) const {
     if (v < min_.Value() || v > max_.Value()) return false;
-    return (bits_ == NULL ? true : bits_->Contains(v));
+    return (bits_ == nullptr ? true : bits_->Contains(v));
   }
   virtual IntVarIterator* MakeHoleIterator(bool reversible) const;
   virtual IntVarIterator* MakeDomainIterator(bool reversible) const;
@@ -948,8 +879,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
  public:
   SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
       : BitSet(s),
-        bits_(NULL),
-        stamps_(NULL),
+        bits_(nullptr),
+        stamps_(nullptr),
         omin_(vmin),
         omax_(vmax),
         size_(vmax - vmin + 1),
@@ -969,8 +900,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values, int64 vmin,
                int64 vmax)
       : BitSet(s),
-        bits_(NULL),
-        stamps_(NULL),
+        bits_(nullptr),
+        stamps_(nullptr),
         omin_(vmin),
         omax_(vmax),
         size_(sorted_values.size()),
@@ -1070,9 +1001,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual string DebugString() const {
     string out;
-    SStringPrintf(
-        &out, "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ", omin_,
-        omax_);
+    SStringPrintf(&out,
+                  "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ",
+                  omin_, omax_);
     for (int i = 0; i < bsize_; ++i) {
       StringAppendF(&out, "%llx", bits_[i]);
     }
@@ -1083,7 +1014,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   virtual void DelayRemoveValue(int64 val) { removed_.push_back(val); }
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
-    sort(removed_.begin(), removed_.end());
+    std::sort(removed_.begin(), removed_.end());
     for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
          ++it) {
       var->RemoveValue(*it);
@@ -1286,9 +1217,9 @@ class SmallBitSet : public DomainIntVar::BitSet {
   virtual uint64 Size() const { return size_.Value(); }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : %llx)", omin_,
-        omax_, bits_);
+    return StringPrintf("SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                        "d : %llx)",
+                        omin_, omax_, bits_);
   }
 
   virtual void DelayRemoveValue(int64 val) {
@@ -1298,7 +1229,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   }
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
-    sort(removed_.begin(), removed_.end());
+    std::sort(removed_.begin(), removed_.end());
     for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
          ++it) {
       var->RemoveValue(*it);
@@ -1406,7 +1337,7 @@ class RangeIterator : public IntVarIterator {
 class DomainIntVarHoleIterator : public IntVarIterator {
  public:
   explicit DomainIntVarHoleIterator(const DomainIntVar* const v)
-      : var_(v), bits_(NULL), values_(NULL), size_(0), index_(0) {}
+      : var_(v), bits_(nullptr), values_(nullptr), size_(0), index_(0) {}
 
   ~DomainIntVarHoleIterator() {}
 
@@ -1417,7 +1348,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
       values_ = bits_->Holes().data();
       size_ = bits_->Holes().size();
     } else {
-      values_ = NULL;
+      values_ = nullptr;
       size_ = 0;
     }
     index_ = 0;
@@ -1426,7 +1357,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
   virtual bool Ok() const { return index_ < size_; }
 
   virtual int64 Value() const {
-    DCHECK(bits_ != NULL);
+    DCHECK(bits_ != nullptr);
     DCHECK(index_ < size_);
     return values_[index_];
   }
@@ -1446,7 +1377,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
   explicit DomainIntVarDomainIterator(const DomainIntVar* const v,
                                       bool reversible)
       : var_(v),
-        bitset_iterator_(NULL),
+        bitset_iterator_(nullptr),
         min_(kint64max),
         max_(kint64min),
         current_(-1),
@@ -1459,7 +1390,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
   }
 
   virtual void Init() {
-    if (var_->bitset() != NULL && !var_->Bound()) {
+    if (var_->bitset() != nullptr && !var_->Bound()) {
       if (reversible_) {
         if (!bitset_iterator_) {
           Solver* const solver = var_->solver();
@@ -1477,12 +1408,11 @@ class DomainIntVarDomainIterator : public IntVarIterator {
       if (bitset_iterator_) {
         if (reversible_) {
           Solver* const solver = var_->solver();
-          solver->SaveAndSetValue(reinterpret_cast<void**>(&bitset_iterator_),
-                                  reinterpret_cast<void*>(NULL));
+          solver->SaveValue(reinterpret_cast<void**>(&bitset_iterator_));
         } else {
           delete bitset_iterator_;
-          bitset_iterator_ = NULL;
         }
+        bitset_iterator_ = nullptr;
       }
       min_ = var_->Min();
       max_ = var_->Max();
@@ -1550,9 +1480,9 @@ DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
       new_max_(vmax),
       handler_(this),
       in_process_(false),
-      bits_(NULL),
-      value_watcher_(NULL),
-      bound_watcher_(NULL) {}
+      bits_(nullptr),
+      value_watcher_(nullptr),
+      bound_watcher_(nullptr) {}
 
 DomainIntVar::DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
                            const string& name)
@@ -1565,9 +1495,9 @@ DomainIntVar::DomainIntVar(Solver* const s, const std::vector<int64>& sorted_val
       new_max_(kint64min),
       handler_(this),
       in_process_(false),
-      bits_(NULL),
-      value_watcher_(NULL),
-      bound_watcher_(NULL) {
+      bits_(nullptr),
+      value_watcher_(nullptr),
+      bound_watcher_(nullptr) {
   CHECK_GE(sorted_values.size(), 1);
   // We know that the vector is sorted and does not have duplicate values.
   const int64 vmin = sorted_values.front();
@@ -1607,7 +1537,7 @@ void DomainIntVar::SetMin(int64 m) {
   } else {
     CheckOldMin();
     const int64 new_min =
-        (bits_ == NULL ? m
+        (bits_ == nullptr ? m
                        : bits_->ComputeNewMin(m, min_.Value(), max_.Value()));
     min_.SetValue(solver(), new_min);
     if (min_.Value() > max_.Value()) {
@@ -1630,7 +1560,7 @@ void DomainIntVar::SetMax(int64 m) {
   } else {
     CheckOldMax();
     const int64 new_max =
-        (bits_ == NULL ? m
+        (bits_ == nullptr ? m
                        : bits_->ComputeNewMax(m, min_.Value(), max_.Value()));
     max_.SetValue(solver(), new_max);
     if (min_.Value() > max_.Value()) {
@@ -1660,7 +1590,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       if (mi > min_.Value()) {
         CheckOldMin();
         const int64 new_min =
-            (bits_ == NULL ? mi : bits_->ComputeNewMin(mi, min_.Value(),
+            (bits_ == nullptr ? mi : bits_->ComputeNewMin(mi, min_.Value(),
                                                        max_.Value()));
         min_.SetValue(solver(), new_min);
       }
@@ -1670,7 +1600,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       if (ma < max_.Value()) {
         CheckOldMax();
         const int64 new_max =
-            (bits_ == NULL ? ma : bits_->ComputeNewMax(ma, min_.Value(),
+            (bits_ == nullptr ? ma : bits_->ComputeNewMax(ma, min_.Value(),
                                                        max_.Value()));
         max_.SetValue(solver(), new_max);
       }
@@ -1713,7 +1643,7 @@ void DomainIntVar::RemoveValue(int64 v) {
   } else if (v == max_.Value()) {
     SetMax(v - 1);
   } else {
-    if (bits_ == NULL) {
+    if (bits_ == nullptr) {
       CreateBits();
     }
     if (in_process_) {
@@ -1753,7 +1683,7 @@ void DomainIntVar::CreateBits() {
 
 void DomainIntVar::ClearInProcess() {
   in_process_ = false;
-  if (bits_ != NULL) {
+  if (bits_ != nullptr) {
     bits_->ClearHoles();
   }
 }
@@ -1767,7 +1697,7 @@ void DomainIntVar::Push() {
 void DomainIntVar::Process() {
   CHECK(!in_process_);
   in_process_ = true;
-  if (bits_ != NULL) {
+  if (bits_ != nullptr) {
     bits_->ClearRemovedValues();
   }
   SetQueueCleanerOnFail(solver(), this);
@@ -1802,7 +1732,7 @@ void DomainIntVar::Process() {
   if (max_.Value() > new_max_) {
     SetMax(new_max_);
   }
-  if (bits_ != NULL) {
+  if (bits_ != nullptr) {
     bits_->ApplyRemovedValues(this);
   }
 }
@@ -1828,7 +1758,7 @@ string DomainIntVar::DebugString() const {
   }
   if (min_.Value() == max_.Value()) {
     StringAppendF(&out, "%" GG_LL_FORMAT "d", min_.Value());
-  } else if (bits_ != NULL) {
+  } else if (bits_ != nullptr) {
     StringAppendF(&out, "%s", bits_->pretty_DebugString(min_.Value(),
                                                         max_.Value()).c_str());
   } else {
@@ -3240,7 +3170,7 @@ class PlusIntCstExpr : public BaseIntExpr {
 IntVar* PlusIntCstExpr::CastToVar() {
   Solver* const s = solver();
   IntVar* const var = expr_->Var();
-  IntVar* cast = NULL;
+  IntVar* cast = nullptr;
   if (AddOverflows(value_, expr_->Max()) ||
       AddUnderflows(value_, expr_->Min())) {
     return BaseIntExpr::CastToVar();
@@ -3524,7 +3454,7 @@ class TimesPosIntCstExpr : public TimesIntCstExpr {
 
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
-    IntVar* var = NULL;
+    IntVar* var = nullptr;
     if (expr_->IsVar() &&
         reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
       var = s->RegisterIntVar(s->RevAlloc(new TimesPosCstBoolVar(
@@ -3566,7 +3496,7 @@ class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
 
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
-    IntVar* var = NULL;
+    IntVar* var = nullptr;
     if (expr_->IsVar() &&
         reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
       var = s->RegisterIntVar(s->RevAlloc(new TimesPosCstBoolVar(
@@ -3609,7 +3539,7 @@ class TimesIntNegCstExpr : public TimesIntCstExpr {
 
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
-    IntVar* var = NULL;
+    IntVar* var = nullptr;
     var = s->RegisterIntVar(
         s->RevAlloc(new TimesNegCstIntVar(s, expr_->Var(), value_)));
     return var;
@@ -4316,9 +4246,7 @@ class DivPosPosIntExpr : public BaseIntExpr {
 
   virtual ~DivPosPosIntExpr() {}
 
-  virtual int64 Min() const {
-    return num_->Min() / denom_->Max();
-  }
+  virtual int64 Min() const { return num_->Min() / denom_->Max(); }
 
   virtual int64 Max() const {
     if (denom_->Min() == 0) {
@@ -4397,13 +4325,11 @@ class DivIntExpr : public BaseIntExpr {
     if (denom_min >= 0) {  // Denominator strictly positive.
       DCHECK_GT(denom_max, 0);
       const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
-      return num_min >= 0 ? num_min / denom_max
-                          : num_min / adjusted_denom_min;
+      return num_min >= 0 ? num_min / denom_max : num_min / adjusted_denom_min;
     } else if (denom_max <= 0) {  // Denominator strictly negative.
       DCHECK_LT(denom_min, 0);
       const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
-      return num_max >= 0 ? num_max / adjusted_denom_max
-                          : num_max / denom_min;
+      return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_min;
     } else {  // Denominator across 0.
       return std::min(num_min, -num_max);
     }
@@ -4422,13 +4348,12 @@ class DivIntExpr : public BaseIntExpr {
     if (denom_min >= 0) {  // Denominator strictly positive.
       DCHECK_GT(denom_max, 0);
       const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
-      return num_max >= 0 ? num_max / adjusted_denom_min
-                          : num_max / denom_max;
+      return num_max >= 0 ? num_max / adjusted_denom_min : num_max / denom_max;
     } else if (denom_max <= 0) {  // Denominator strictly negative.
       DCHECK_LT(denom_min, 0);
       const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
       return num_min >= 0 ? num_min / denom_min
-          : -num_min / -adjusted_denom_max;
+                          : -num_min / -adjusted_denom_max;
     } else {  // Denominator across 0.
       return std::max(num_max, -num_min);
     }
@@ -4533,8 +4458,7 @@ class DivIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDivide, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument,
-                                            num_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, num_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             denom_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDivide, this);
@@ -4852,10 +4776,7 @@ int64 OverflowLimit(int64 power) {
 class BasePower : public BaseIntExpr {
  public:
   BasePower(Solver* const s, IntExpr* const e, int64 n)
-      : BaseIntExpr(s),
-        expr_(e),
-        pow_(n),
-        limit_(OverflowLimit(n)) {
+      : BaseIntExpr(s), expr_(e), pow_(n), limit_(OverflowLimit(n)) {
     CHECK_GT(n, 0);
   }
 
@@ -5043,8 +4964,7 @@ class PosIntEvenPower : public BasePower {
 
 class IntOddPower : public BasePower {
  public:
-  IntOddPower(Solver* const s, IntExpr* const e, int64 n)
-      : BasePower(s, e, n) {
+  IntOddPower(Solver* const s, IntExpr* const e, int64 n) : BasePower(s, e, n) {
     CHECK_EQ(1, n % 2);
   }
 
@@ -5369,19 +5289,19 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   }
 
   virtual string name() const {
-    return StringPrintf(
-        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
-        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
-        expr_->name().c_str(), early_cost_, early_date_, late_date_,
-        late_cost_);
+    return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
+                        "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
+                        "d, lc = %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), early_cost_, early_date_,
+                        late_date_, late_cost_);
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
-        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
-        expr_->DebugString().c_str(), early_cost_, early_date_, late_date_,
-        late_cost_);
+    return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
+                        "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
+                        "d, lc = %" GG_LL_FORMAT "d)",
+                        expr_->DebugString().c_str(), early_cost_, early_date_,
+                        late_date_, late_cost_);
   }
 
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
@@ -5732,12 +5652,12 @@ class LinkExprAndDomainIntVar : public CastConstraint {
 // a clean state after a failure occuring during its process() method.
 class VariableQueueCleaner : public Action {
  public:
-  VariableQueueCleaner() : var_(NULL) {}
+  VariableQueueCleaner() : var_(nullptr) {}
 
   virtual ~VariableQueueCleaner() {}
 
   virtual void Run(Solver* const solver) {
-    DCHECK(var_ != NULL);
+    DCHECK(var_ != nullptr);
     var_->ClearInProcess();
   }
 
@@ -5754,14 +5674,14 @@ Action* NewDomainIntVarCleaner() { return new VariableQueueCleaner; }
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
                        const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
-  CHECK_NOTNULL(dvar);
+  CHECK(dvar != nullptr);
   return dvar->SetIsEqual(values, vars);
 }
 
 Constraint* SetIsGreaterOrEqual(IntVar* const var, const std::vector<int64>& values,
                                 const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
-  CHECK_NOTNULL(dvar);
+  CHECK(dvar != nullptr);
   return dvar->SetIsGreaterOrEqual(values, vars);
 }
 
@@ -5810,12 +5730,8 @@ IntVar* Solver::MakeBoolVar() {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
-  ConstIntArray domain(values);
-  scoped_ptr<std::vector<int64> > sorted_values(
-      domain.SortedCopyWithoutDuplicates(true));
-  IntVar* const var = RegisterIntVar(
-      RevAlloc(new DomainIntVar(this, *sorted_values.get(), name)));
-  return var;
+  return RegisterIntVar(
+      RevAlloc(new DomainIntVar(this, SortedNoDuplicates(values), name)));
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
@@ -5823,12 +5739,8 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int>& values, const string& name) {
-  ConstIntArray domain(values);
-  scoped_ptr<std::vector<int64> > sorted_values(
-      domain.SortedCopyWithoutDuplicates(true));
-  IntVar* const var = RegisterIntVar(
-      RevAlloc(new DomainIntVar(this, *sorted_values.get(), name)));
-  return var;
+  return RegisterIntVar(RevAlloc(
+      new DomainIntVar(this, SortedNoDuplicates(ToInt64Vector(values)), name)));
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
@@ -5932,17 +5844,17 @@ IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
   }
   IntExpr* cache =
       model_cache_->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_SUM);
-  if (cache == NULL) {
+  if (cache == nullptr) {
     cache =
         model_cache_->FindExprExprExpression(r, l, ModelCache::EXPR_EXPR_SUM);
   }
-  if (cache != NULL) {
+  if (cache != nullptr) {
     return cache;
   } else {
     IntExpr* const result =
-        AddOverflows(l->Max(), r->Max()) || AddUnderflows(l->Min(), r->Min()) ?
-        RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, l, r))) :
-        RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
+        AddOverflows(l->Max(), r->Max()) || AddUnderflows(l->Min(), r->Min())
+            ? RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, l, r)))
+            : RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
     model_cache_->InsertExprExprExpression(result, l, r,
                                            ModelCache::EXPR_EXPR_SUM);
     return result;
@@ -5959,7 +5871,7 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
   }
   IntExpr* result =
       Cache()->FindExprConstantExpression(e, v, ModelCache::EXPR_CONSTANT_SUM);
-  if (result == NULL) {
+  if (result == nullptr) {
     if (e->IsVar() && !AddOverflows(v, e->Max()) &&
         !AddUnderflows(v, e->Min())) {
       IntVar* const var = e->Var();
@@ -5996,9 +5908,8 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
           SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
           const int64 new_constant = v + add_var->Constant();
-          result =
-              RegisterIntExpr(RevAlloc(
-                  new SubCstIntVar(this, sub_var, new_constant)));
+          result = RegisterIntExpr(
+              RevAlloc(new SubCstIntVar(this, sub_var, new_constant)));
           break;
         }
         case OPP_VAR: {
@@ -6031,7 +5942,7 @@ IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
   }
   IntExpr* result =
       Cache()->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
-  if (result == NULL) {
+  if (result == nullptr) {
     if (!SubOverflows(l->Min(), r->Max()) &&
         !SubUnderflows(l->Min(), r->Max()) &&
         !SubOverflows(l->Max(), r->Min()) &&
@@ -6057,7 +5968,7 @@ IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
   }
   IntExpr* result = Cache()->FindExprConstantExpression(
       e, v, ModelCache::EXPR_CONSTANT_DIFFERENCE);
-  if (result == NULL) {
+  if (result == nullptr) {
     if (e->IsVar() && e->Min() != kint64min && !SubOverflows(v, e->Min()) &&
         !SubUnderflows(v, e->Max())) {
       IntVar* const var = e->Var();
@@ -6105,7 +6016,7 @@ IntExpr* Solver::MakeOpposite(IntExpr* const e) {
     return MakeIntConst(-e->Min());
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_OPPOSITE);
-  if (result == NULL) {
+  if (result == nullptr) {
     if (e->IsVar()) {
       result = RegisterIntVar(RevAlloc(new OppIntExpr(this, e))->Var());
     } else {
@@ -6120,7 +6031,7 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
   IntExpr* result =
       Cache()->FindExprConstantExpression(e, v, ModelCache::EXPR_CONSTANT_PROD);
-  if (result != NULL) {
+  if (result != nullptr) {
     return result;
   } else {
     if (e->Bound()) {
@@ -6152,12 +6063,12 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
 
 namespace {
 void ExtractPower(IntExpr** const expr, int64* const exponant) {
-  if (dynamic_cast<BasePower*>(*expr) != NULL) {
+  if (dynamic_cast<BasePower*>(*expr) != nullptr) {
     BasePower* const power = dynamic_cast<BasePower*>(*expr);
     *expr = power->expr();
     *exponant = power->exponant();
   }
-  if (dynamic_cast<IntSquare*>(*expr) != NULL) {
+  if (dynamic_cast<IntSquare*>(*expr) != nullptr) {
     IntSquare* const power = dynamic_cast<IntSquare*>(*expr);
     *expr = power->expr();
     *exponant = 2;
@@ -6165,12 +6076,12 @@ void ExtractPower(IntExpr** const expr, int64* const exponant) {
   if ((*expr)->IsVar()) {
     IntVar* const var = (*expr)->Var();
     IntExpr* const sub = var->solver()->CastExpression(var);
-    if (sub != NULL && dynamic_cast<BasePower*>(sub) != NULL) {
+    if (sub != nullptr && dynamic_cast<BasePower*>(sub) != nullptr) {
       BasePower* const power = dynamic_cast<BasePower*>(sub);
       *expr = power->expr();
       *exponant = power->exponant();
     }
-    if (sub != NULL && dynamic_cast<IntSquare*>(sub) != NULL) {
+    if (sub != nullptr && dynamic_cast<IntSquare*>(sub) != nullptr) {
       IntSquare* const power = dynamic_cast<IntSquare*>(sub);
       *expr = power->expr();
       *exponant = 2;
@@ -6180,12 +6091,12 @@ void ExtractPower(IntExpr** const expr, int64* const exponant) {
 
 void ExtractProduct(IntExpr** const expr, int64* const coefficient,
                     bool* modified) {
-  if (dynamic_cast<TimesCstIntVar*>(*expr) != NULL) {
+  if (dynamic_cast<TimesCstIntVar*>(*expr) != nullptr) {
     TimesCstIntVar* const left_prod = dynamic_cast<TimesCstIntVar*>(*expr);
     *coefficient *= left_prod->Constant();
     *expr = left_prod->SubVar();
     *modified = true;
-  } else if (dynamic_cast<TimesIntCstExpr*>(*expr) != NULL) {
+  } else if (dynamic_cast<TimesIntCstExpr*>(*expr) != nullptr) {
     TimesIntCstExpr* const left_prod = dynamic_cast<TimesIntCstExpr*>(*expr);
     *coefficient *= left_prod->Constant();
     *expr = left_prod->Expr();
@@ -6235,11 +6146,11 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   CHECK_EQ(this, r->solver());
   IntExpr* result =
       model_cache_->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_PROD);
-  if (result == NULL) {
+  if (result == nullptr) {
     result =
         model_cache_->FindExprExprExpression(r, l, ModelCache::EXPR_EXPR_PROD);
   }
-  if (result != NULL) {
+  if (result != nullptr) {
     return result;
   }
   if (l->IsVar() && l->Var()->VarType() == BOOLEAN_VAR) {
@@ -6274,14 +6185,14 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
 }
 
 IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
-  CHECK_NOTNULL(numerator);
-  CHECK_NOTNULL(denominator);
+  CHECK(numerator != nullptr);
+  CHECK(denominator != nullptr);
   if (denominator->Bound()) {
     return MakeDiv(numerator, denominator->Min());
   }
   IntExpr* result = model_cache_->FindExprExprExpression(
       numerator, denominator, ModelCache::EXPR_EXPR_DIV);
-  if (result != NULL) {
+  if (result != nullptr) {
     return result;
   }
 
@@ -6312,7 +6223,7 @@ IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
 }
 
 IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
-  CHECK_NOTNULL(e);
+  CHECK(e != nullptr);
   CHECK_EQ(this, e->solver());
   if (e->Bound()) {
     return MakeIntConst(e->Min() / v);
@@ -6324,7 +6235,7 @@ IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
     return RegisterIntExpr(RevAlloc(new DivPosIntCstExpr(this, e, v)));
   } else if (v == 0) {
     LOG(FATAL) << "Cannot divide by 0";
-    return NULL;
+    return nullptr;
   } else {
     return RegisterIntExpr(
         MakeOpposite(RevAlloc(new DivPosIntCstExpr(this, e, -v))));
@@ -6333,7 +6244,7 @@ IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
 }
 
 Constraint* Solver::MakeAbsEquality(IntVar* const sub, IntVar* const abs_var) {
-  if (Cache()->FindExprExpression(sub, ModelCache::EXPR_ABS) == NULL) {
+  if (Cache()->FindExprExpression(sub, ModelCache::EXPR_ABS) == nullptr) {
     Cache()->InsertExprExpression(abs_var, sub, ModelCache::EXPR_ABS);
   }
   return RevAlloc(new IntAbsConstraint(this, sub, abs_var));
@@ -6347,7 +6258,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
     return MakeOpposite(e);
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
-  if (result == NULL) {
+  if (result == nullptr) {
     int64 coefficient = 1;
     IntExpr* expr = nullptr;
     if (IsProduct(e, &expr, &coefficient)) {
@@ -6367,7 +6278,7 @@ IntExpr* Solver::MakeSquare(IntExpr* const e) {
     return MakeIntConst(v * v);
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_SQUARE);
-  if (result == NULL) {
+  if (result == nullptr) {
     if (e->Min() >= 0) {
       result = RegisterIntExpr(RevAlloc(new PosIntSquare(this, e)));
     } else {
@@ -6396,7 +6307,7 @@ IntExpr* Solver::MakePower(IntExpr* const e, int64 n) {
     case 2:
       return MakeSquare(e);
     default: {
-      IntExpr* result = NULL;
+      IntExpr* result = nullptr;
       if (n % 2 == 0) {  // even.
         if (e->Min() >= 0) {
           result = RegisterIntExpr(RevAlloc(new PosIntEvenPower(this, e, n)));
@@ -6540,7 +6451,9 @@ IntExpr* Solver::MakeModulo(IntExpr* const x, IntExpr* const mod) {
 
 int IntVar::VarType() const { return UNSPECIFIED; }
 
-void IntVar::RemoveValues(const int64* const values, int size) {
+void IntVar::RemoveValues(const std::vector<int64>& values) {
+  // TODO(user): Check and maybe inline this code.
+  const int size = values.size();
   DCHECK_GE(size, 0);
   switch (size) {
     case 0: { return; }
@@ -6560,6 +6473,7 @@ void IntVar::RemoveValues(const int64* const values, int size) {
       return;
     }
     default: {
+      // 4 values, let's start doing some more clever things.
       // TODO(user) : Sort values!
       int start_index = 0;
       int64 new_min = Min();
@@ -6588,92 +6502,79 @@ void IntVar::RemoveValues(const int64* const values, int size) {
 }
 
 void IntVar::Accept(ModelVisitor* const visitor) const {
-  const IntExpr* casted = NULL;
-  const Solver::IntegerCastInfo* const cast_info =
-      FindOrNull(solver()->cast_information_, this);
-  if (cast_info != NULL) {
-    casted = cast_info->expression;
-  }
+  IntExpr* const casted = solver()->CastExpression(this);
   visitor->VisitIntegerVariable(this, casted);
 }
 
-void IntVar::SetValues(const std::vector<int>& values) {
-  // TODO(user): reimplement all this!!
-  // TODO(user): This code leaks if the array is not sorted.
-  int size = values.size();
-  const int64* const new_array = NewUniqueSortedArray(values.data(), &size);
-  const int64 vmin = Min();
-  const int64 vmax = Max();
-  const int64* first_pos = new_array;
-  const int64* last_pos = first_pos + size - 1;
-  if (*first_pos > vmax || *last_pos < vmin) {
-    solver()->Fail();
-  }
-  // TODO(user) : We could find the first position >= vmin by dichotomy.
-  while (first_pos <= last_pos &&
-         (*first_pos < vmin || !Contains(*first_pos))) {
-    if (*first_pos > vmax) {
+void IntVar::SetValues(const std::vector<int64>& values) {
+  switch (values.size()) {
+    case 0: {
       solver()->Fail();
+      break;
     }
-    first_pos++;
-  }
-  if (first_pos > last_pos) {
-    solver()->Fail();
-  }
-  while (last_pos >= first_pos && (*last_pos > vmax || !Contains(*last_pos))) {
-    last_pos--;
-  }
-  DCHECK_GE(last_pos, first_pos);
-  SetRange(*first_pos, *last_pos);
-  while (first_pos < last_pos) {
-    const int64 start = (*first_pos) + 1;
-    const int64 end = *(first_pos + 1) - 1;
-    if (start <= end) {
-      RemoveInterval(start, end);
+    case 1: {
+      SetValue(values.back());
+      break;
     }
-    first_pos++;
+    case 2: {
+      if (Contains(values[0])) {
+        if (Contains(values[1])) {
+          const int64 l = std::min(values[0], values[1]);
+          const int64 u = std::max(values[0], values[1]);
+          SetRange(l, u);
+          RemoveInterval(l + 1, u - 1);
+        } else {
+          SetValue(values[0]);
+        }
+      } else {
+        SetValue(values[1]);
+      }
+      break;
+    }
+    default: {
+      // TODO(user): use a clean and safe SortedUniqueCopy() class
+      // that uses a global, static shared (and locked) storage.
+      // TODO(user): [optional] consider porting
+      // STLSortAndRemoveDuplicates from base/stl_util.h to the
+      // existing open_source/base/stl_util.h and using it here.
+      // TODO(user): We could filter out values not in the var.
+      std::vector<int64>& tmp = solver()->tmp_vector_;  // NOLINT
+      tmp.clear();
+      tmp.insert(tmp.end(), values.begin(), values.end());
+      std::sort(tmp.begin(), tmp.end());
+      tmp.erase(std::unique(tmp.begin(), tmp.end()), tmp.end());
+      const int size = tmp.size();
+      const int64 vmin = Min();
+      const int64 vmax = Max();
+      int first = 0;
+      int last = size - 1;
+      if (tmp.front() > vmax || tmp.back() < vmin) {
+        solver()->Fail();
+      }
+      // TODO(user) : We could find the first position >= vmin by dichotomy.
+      while (tmp[first] < vmin || !Contains(tmp[first])) {
+        ++first;
+        if (first > last || tmp[first] > vmax) {
+          solver()->Fail();
+        }
+      }
+      while (last > first && (tmp[last] > vmax || !Contains(tmp[last]))) {
+        // Note that last >= first implies tmp[last] >= vmin.
+        --last;
+      }
+      DCHECK_GE(last, first);
+      SetRange(tmp[first], tmp[last]);
+      while (first < last) {
+        const int64 start = tmp[first] + 1;
+        const int64 end = tmp[first + 1] - 1;
+        if (start <= end) {
+          RemoveInterval(start, end);
+        }
+        first++;
+      }
+    }
   }
 }
-
-void IntVar::SetValues(const int64* const values, int size) {
-  // TODO(user): reimplement all this!!
-  // TODO(user): This code leaks if the array is not sorted.
-  const int64* const new_array =
-      IsArrayActuallySorted(values, size) ? values
-                                          : NewUniqueSortedArray(values, &size);
-  const int64 vmin = Min();
-  const int64 vmax = Max();
-  const int64* first_pos = new_array;
-  const int64* last_pos = first_pos + size - 1;
-  if (*first_pos > vmax || *last_pos < vmin) {
-    solver()->Fail();
-  }
-  // TODO(user) : We could find the first position >= vmin by dichotomy.
-  while (first_pos <= last_pos &&
-         (*first_pos < vmin || !Contains(*first_pos))) {
-    if (*first_pos > vmax) {
-      solver()->Fail();
-    }
-    first_pos++;
-  }
-  if (first_pos > last_pos) {
-    solver()->Fail();
-  }
-  while (last_pos >= first_pos && (*last_pos > vmax || !Contains(*last_pos))) {
-    last_pos--;
-  }
-  DCHECK_GE(last_pos, first_pos);
-  SetRange(*first_pos, *last_pos);
-  while (first_pos < last_pos) {
-    const int64 start = (*first_pos) + 1;
-    const int64 end = *(first_pos + 1) - 1;
-    if (start <= end) {
-      RemoveInterval(start, end);
-    }
-    first_pos++;
-  }
-}
-
 // ---------- BaseIntExpr ---------
 
 void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
@@ -6690,7 +6591,7 @@ void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
 }
 
 IntVar* BaseIntExpr::Var() {
-  if (var_ == NULL) {
+  if (var_ == nullptr) {
     solver()->SaveValue(reinterpret_cast<void**>(&var_));
     var_ = CastToVar();
   }
@@ -6713,9 +6614,9 @@ bool Solver::IsADifference(IntExpr* expr, IntExpr** const left,
     expr = CastExpression(expr_var);
   }
   // This is a dynamic cast to check the type of expr.
-  // It returns NULL is expr is not a subclass of SubIntExpr.
+  // It returns nullptr is expr is not a subclass of SubIntExpr.
   SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);  // NOLINT
-  if (sub_expr != NULL) {
+  if (sub_expr != nullptr) {
     *left = sub_expr->left();
     *right = sub_expr->right();
     return true;
@@ -6731,7 +6632,7 @@ bool Solver::IsBooleanVar(IntExpr* const expr, IntVar** inner_var,
     return true;
   } else if (expr->IsVar() && expr->Var()->VarType() == CST_SUB_VAR) {
     SubCstIntVar* const sub_var = reinterpret_cast<SubCstIntVar*>(expr);
-    if (sub_var != NULL && sub_var->Constant() == 1 &&
+    if (sub_var != nullptr && sub_var->Constant() == 1 &&
         sub_var->SubVar()->VarType() == BOOLEAN_VAR) {
       *is_negated = true;
       *inner_var = sub_var->SubVar();

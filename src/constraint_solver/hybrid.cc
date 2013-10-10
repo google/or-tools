@@ -34,27 +34,25 @@ namespace operations_research {
 namespace {
 MPSolver::OptimizationProblemType GetType(bool use_clp) {
   if (use_clp) {
-#if defined(USE_CLP)
+    #if defined(USE_CLP)
     return MPSolver::CLP_LINEAR_PROGRAMMING;
-#else
+    #else
     LOG(FATAL) << "CLP not defined";
-#endif  // USE_CLP
+    #endif  // USE_CLP
   } else {
-#if defined(USE_GLPK)
+    #if defined(USE_GLPK)
     return MPSolver::GLPK_LINEAR_PROGRAMMING;
-#else
+    #else
     LOG(FATAL) << "GLPK not defined";
-#endif  // USE_GLPK
+    #endif  // USE_GLPK
   }
 }
 
 class SimplexConnection : public SearchMonitor {
  public:
-  SimplexConnection(Solver* const solver,
-                    Callback1<MPSolver*>* const builder,
+  SimplexConnection(Solver* const solver, Callback1<MPSolver*>* const builder,
                     Callback1<MPSolver*>* const modifier,
-                    Callback1<MPSolver*>* const runner,
-                    int simplex_frequency)
+                    Callback1<MPSolver*>* const runner, int simplex_frequency)
       : SearchMonitor(solver),
         builder_(builder),
         modifier_(modifier),
@@ -62,13 +60,13 @@ class SimplexConnection : public SearchMonitor {
         mp_solver_("InSearchSimplex", GetType(FLAGS_use_clp)),
         counter_(0LL),
         simplex_frequency_(simplex_frequency) {
-    if (builder != NULL) {
+    if (builder != nullptr) {
       builder->CheckIsRepeatable();
     }
-    if (modifier != NULL) {
+    if (modifier != nullptr) {
       modifier->CheckIsRepeatable();
     }
-    if (runner != NULL) {
+    if (runner != nullptr) {
       runner->CheckIsRepeatable();
     }
     if (!FLAGS_verbose_simplex_call) {
@@ -78,7 +76,7 @@ class SimplexConnection : public SearchMonitor {
 
   virtual void EndInitialPropagation() {
     mp_solver_.Clear();
-    if (builder_.get() != NULL) {
+    if (builder_.get() != nullptr) {
       builder_->Run(&mp_solver_);
     }
     RunOptim();
@@ -87,9 +85,9 @@ class SimplexConnection : public SearchMonitor {
   virtual void BeginNextDecision(DecisionBuilder* const b) {
     if (++counter_ % simplex_frequency_ == 0) {
       const int cleanup = FLAGS_simplex_cleanup_frequency * simplex_frequency_;
-      if (FLAGS_simplex_cleanup_frequency != 0 && counter_ %  cleanup == 0) {
+      if (FLAGS_simplex_cleanup_frequency != 0 && counter_ % cleanup == 0) {
         mp_solver_.Clear();
-        if (builder_.get() != NULL) {
+        if (builder_.get() != nullptr) {
           builder_->Run(&mp_solver_);
         }
       }
@@ -98,17 +96,15 @@ class SimplexConnection : public SearchMonitor {
   }
 
   void RunOptim() {
-    if (modifier_.get() != NULL) {
+    if (modifier_.get() != nullptr) {
       modifier_->Run(&mp_solver_);
     }
-    if (runner_.get() != NULL) {
+    if (runner_.get() != nullptr) {
       runner_->Run(&mp_solver_);
     }
   }
 
-  virtual string DebugString() const {
-    return "SimplexConnection";
-  }
+  virtual string DebugString() const { return "SimplexConnection"; }
 
  private:
   scoped_ptr<Callback1<MPSolver*> > builder_;
@@ -132,9 +128,7 @@ typedef hash_map<const IntExpr*, MPVariable*> ExprTranslation;
 
 class Linearizer : public ModelParser {
  public:
-  Linearizer(MPSolver* const mp_solver,
-             ExprTranslation* tr,
-             IntVar** objective,
+  Linearizer(MPSolver* const mp_solver, ExprTranslation* tr, IntVar** objective,
              bool* maximize)
       : mp_solver_(mp_solver),
         translation_(tr),
@@ -144,19 +138,14 @@ class Linearizer : public ModelParser {
   virtual ~Linearizer() {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const string& solver_name) {
-    BeginVisit(true);
-  }
+  virtual void BeginVisitModel(const string& solver_name) { BeginVisit(true); }
 
-  virtual void EndVisitModel(const string& solver_name) {
-    EndVisit();
-  }
+  virtual void EndVisitModel(const string& solver_name) { EndVisit(); }
 
   virtual void BeginVisitConstraint(const string& type_name,
                                     const Constraint* const constraint) {
     if (!constraint->IsCastConstraint() &&
-        (IS_TYPE(type_name, kEquality) ||
-         IS_TYPE(type_name, kLessOrEqual) ||
+        (IS_TYPE(type_name, kEquality) || IS_TYPE(type_name, kLessOrEqual) ||
          IS_TYPE(type_name, kGreaterOrEqual) ||
          IS_TYPE(type_name, kScalProdLessOrEqual))) {
       BeginVisit(true);
@@ -180,9 +169,7 @@ class Linearizer : public ModelParser {
     }
     EndVisit();
   }
-  virtual void BeginVisitExtension(const string& type) {
-    BeginVisit(true);
-  }
+  virtual void BeginVisitExtension(const string& type) { BeginVisit(true); }
   virtual void EndVisitExtension(const string& type) {
     if (IS_TYPE(type, kObjectiveExtension)) {
       VisitObjective();
@@ -212,11 +199,10 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate) {
-    RegisterExpression(const_cast<IntVar*>(variable));
-    RegisterExpression(const_cast<IntVar*>(delegate));
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate) {
+    RegisterExpression(variable);
+    RegisterExpression(delegate);
     if (operation == ModelVisitor::kSumOperation) {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
       ct->SetCoefficient(Translated(variable), 1.0);
@@ -233,24 +219,17 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
-    RegisterExpression(const_cast<IntVar*>(variable));
-    if (delegate != NULL) {
+                                    IntExpr* const delegate) {
+    RegisterExpression(variable);
+    if (delegate != nullptr) {
       VisitSubExpression(delegate);
-      AddMpEquality(const_cast<IntVar*>(variable),
-                    const_cast<IntExpr*>(delegate));
+      AddMpEquality(variable, delegate);
     }
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate) {}
-
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegate,
-                                     int size) {}
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate) {}
 
   // Visit integer arguments.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
@@ -260,10 +239,9 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerArrayArgument(const string& arg_name,
-                                         const int64* const values,
-                                         int size) {
+                                         const std::vector<int64>& values) {
     if (DoVisit()) {
-      Top()->SetIntegerArrayArgument(arg_name, values, size);
+      Top()->SetIntegerArrayArgument(arg_name, values);
     }
   }
 
@@ -275,9 +253,8 @@ class Linearizer : public ModelParser {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument) {
+  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+                                              IntExpr* const argument) {
     if (DoVisit()) {
       Top()->SetIntegerExpressionArgument(arg_name, argument);
       VisitSubExpression(argument);
@@ -285,12 +262,10 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
+      const string& arg_name, const std::vector<IntVar*>& arguments) {
     if (DoVisit()) {
-      Top()->SetIntegerVariableArrayArgument(arg_name, arguments, size);
-      for (int i = 0; i < size; ++i) {
+      Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
+      for (int i = 0; i < arguments.size(); ++i) {
         VisitSubExpression(arguments[i]);
       }
     }
@@ -298,15 +273,12 @@ class Linearizer : public ModelParser {
 
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument) {}
+                                     IntervalVar* const argument) {}
 
-  virtual void VisitIntervalArrayArgument(const string& arg_name,
-                                          const IntervalVar* const * argument,
-                                          int size) {}
+  virtual void VisitIntervalArrayArgument(
+      const string& arg_name, const std::vector<IntervalVar*>& argument) {}
 
-  virtual string DebugString() const {
-    return "Linearizer";
-  }
+  virtual string DebugString() const { return "Linearizer"; }
 
  private:
   void BeginVisit(bool active) {
@@ -319,41 +291,34 @@ class Linearizer : public ModelParser {
     PopActive();
   }
 
-  bool DoVisit() const {
-    return actives_.back();
-  }
+  bool DoVisit() const { return actives_.back(); }
 
-  void PushActive(bool active) {
-    actives_.push_back(active);
-  }
+  void PushActive(bool active) { actives_.push_back(active); }
 
-  void PopActive() {
-    actives_.pop_back();
-  }
+  void PopActive() { actives_.pop_back(); }
 
   void RegisterExpression(const IntExpr* const cp_expr) {
     if (!ContainsKey(*translation_, cp_expr)) {
-      MPVariable* const mp_var = mp_solver_->MakeIntVar(cp_expr->Min(),
-                                                        cp_expr->Max(),
-                                                        "");
+      MPVariable* const mp_var =
+          mp_solver_->MakeIntVar(cp_expr->Min(), cp_expr->Max(), "");
       (*translation_)[cp_expr] = mp_var;
     }
   }
 
-  void VisitSubExpression(const IntExpr* const cp_expr) {
+  void VisitSubExpression(IntExpr* const cp_expr) {
     if (!ContainsKey(*translation_, cp_expr)) {
       cp_expr->Accept(this);
     }
   }
 
-  void AddMpEquality(IntExpr* const left, IntExpr* const right) {
+  void AddMpEquality(const IntExpr* const left, const IntExpr* const right) {
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     ct->SetCoefficient(Translated(left), 1.0);
     ct->SetCoefficient(Translated(right), -1.0);
   }
 
-  MPVariable* Translated(const IntExpr* const cp_var) {
-    return FindOrDie((*translation_), cp_var);
+  MPVariable* Translated(const IntExpr* const cp_expr) {
+    return FindOrDie((*translation_), cp_expr);
   }
 
   void VisitBinaryRowConstraint(double lhs, double rhs) {
@@ -367,9 +332,8 @@ class Linearizer : public ModelParser {
   }
 
   void VisitUnaryRowConstraint(double lhs, double rhs) {
-    const IntExpr* const expr =
-        Top()->FindIntegerExpressionArgumentOrDie(
-            ModelVisitor::kExpressionArgument);
+    const IntExpr* const expr = Top()->FindIntegerExpressionArgumentOrDie(
+        ModelVisitor::kExpressionArgument);
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(lhs, rhs);
     ct->SetCoefficient(Translated(expr), 1.0);
   }
@@ -405,17 +369,15 @@ class Linearizer : public ModelParser {
   }
 
   void VisitScalProdLessOrEqual() {
-    const std::vector<const IntVar*>& cp_vars =
+    const std::vector<IntVar*>& cp_vars =
         Top()->FindIntegerVariableArrayArgumentOrDie(
             ModelVisitor::kVarsArgument);
-    const std::vector<int64>& cp_coefficients =
-        Top()->FindIntegerArrayArgumentOrDie(
-            ModelVisitor::kCoefficientsArgument);
+    const std::vector<int64>& cp_coefficients = Top()->FindIntegerArrayArgumentOrDie(
+        ModelVisitor::kCoefficientsArgument);
     const int64 constant =
         Top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
     MPConstraint* const ct =
-        mp_solver_->MakeRowConstraint(-mp_solver_->infinity(),
-                                      constant);
+        mp_solver_->MakeRowConstraint(-mp_solver_->infinity(), constant);
     CHECK_EQ(cp_vars.size(), cp_coefficients.size());
     for (int i = 0; i < cp_coefficients.size(); ++i) {
       MPVariable* const mp_var = Translated(cp_vars[i]);
@@ -427,7 +389,7 @@ class Linearizer : public ModelParser {
   void VisitSum(const IntExpr* const cp_expr) {
     if (Top()->HasIntegerVariableArrayArgument(ModelVisitor::kVarsArgument)) {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
-      const std::vector<const IntVar*>& cp_vars =
+      const std::vector<IntVar*>& cp_vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kVarsArgument);
       for (int i = 0; i < cp_vars.size(); ++i) {
@@ -437,14 +399,12 @@ class Linearizer : public ModelParser {
       RegisterExpression(cp_expr);
       ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else if (Top()->HasIntegerExpressionArgument(
-        ModelVisitor::kLeftArgument)) {
+                   ModelVisitor::kLeftArgument)) {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
-      const IntExpr* const left =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kLeftArgument);
-      const IntExpr* const right =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kRightArgument);
+      const IntExpr* const left = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kLeftArgument);
+      const IntExpr* const right = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kRightArgument);
       if (left != right) {
         ct->SetCoefficient(Translated(left), 1.0);
         ct->SetCoefficient(Translated(right), 1.0);
@@ -454,9 +414,8 @@ class Linearizer : public ModelParser {
       RegisterExpression(cp_expr);
       ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else {
-      const IntExpr* const expr =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
+      const IntExpr* const expr = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kExpressionArgument);
       const int64 value =
           Top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(-value, -value);
@@ -467,12 +426,11 @@ class Linearizer : public ModelParser {
   }
 
   void VisitScalProd(const IntExpr* const cp_expr) {
-    const std::vector<const IntVar*>& cp_vars =
+    const std::vector<IntVar*>& cp_vars =
         Top()->FindIntegerVariableArrayArgumentOrDie(
             ModelVisitor::kVarsArgument);
-    const std::vector<int64>& cp_coefficients =
-        Top()->FindIntegerArrayArgumentOrDie(
-            ModelVisitor::kCoefficientsArgument);
+    const std::vector<int64>& cp_coefficients = Top()->FindIntegerArrayArgumentOrDie(
+        ModelVisitor::kCoefficientsArgument);
     CHECK_EQ(cp_vars.size(), cp_coefficients.size());
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     for (int i = 0; i < cp_vars.size(); ++i) {
@@ -487,20 +445,17 @@ class Linearizer : public ModelParser {
   void VisitDifference(const IntExpr* const cp_expr) {
     if (Top()->HasIntegerExpressionArgument(ModelVisitor::kLeftArgument)) {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
-      const IntExpr* const left =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kLeftArgument);
-      const IntExpr* const right =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kRightArgument);
+      const IntExpr* const left = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kLeftArgument);
+      const IntExpr* const right = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kRightArgument);
       ct->SetCoefficient(Translated(left), 1.0);
       ct->SetCoefficient(Translated(right), -1.0);
       RegisterExpression(cp_expr);
       ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else {
-      const IntExpr* const expr =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
+      const IntExpr* const expr = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kExpressionArgument);
       const int64 value =
           Top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
@@ -511,9 +466,8 @@ class Linearizer : public ModelParser {
   }
 
   void VisitOpposite(const IntExpr* const cp_expr) {
-    const IntExpr* const expr =
-        Top()->FindIntegerExpressionArgumentOrDie(
-            ModelVisitor::kExpressionArgument);
+    const IntExpr* const expr = Top()->FindIntegerExpressionArgumentOrDie(
+        ModelVisitor::kExpressionArgument);
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     ct->SetCoefficient(Translated(expr), 1.0);
     RegisterExpression(cp_expr);
@@ -523,9 +477,8 @@ class Linearizer : public ModelParser {
   void VisitProduct(const IntExpr* const cp_expr) {
     if (Top()->HasIntegerExpressionArgument(
             ModelVisitor::kExpressionArgument)) {
-      const IntExpr* const expr =
-          Top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
+      const IntExpr* const expr = Top()->FindIntegerExpressionArgumentOrDie(
+          ModelVisitor::kExpressionArgument);
       const int64 value =
           Top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
@@ -546,7 +499,7 @@ class Linearizer : public ModelParser {
         Top()->FindIntegerArgumentOrDie(ModelVisitor::kMaximizeArgument);
     *objective_ =
         const_cast<IntExpr*>(Top()->FindIntegerExpressionArgumentOrDie(
-            ModelVisitor::kExpressionArgument))->Var();
+                                 ModelVisitor::kExpressionArgument))->Var();
     mp_solver_->SetObjectiveCoefficient(Translated(*objective_), 1.0);
     mp_solver_->SetOptimizationDirection(*maximize_);
   }
@@ -565,12 +518,12 @@ class Linearizer : public ModelParser {
 class AutomaticLinearization : public SearchMonitor {
  public:
   AutomaticLinearization(Solver* const solver, int frequency)
-    : SearchMonitor(solver),
-      mp_solver_("InSearchSimplex", MPSolver::CLP_LINEAR_PROGRAMMING),
-      counter_(0),
-      simplex_frequency_(frequency),
-      objective_(NULL),
-      maximize_(false) {}
+      : SearchMonitor(solver),
+        mp_solver_("InSearchSimplex", MPSolver::CLP_LINEAR_PROGRAMMING),
+        counter_(0),
+        simplex_frequency_(frequency),
+        objective_(nullptr),
+        maximize_(false) {}
 
   virtual ~AutomaticLinearization() {}
 
@@ -580,9 +533,7 @@ class AutomaticLinearization : public SearchMonitor {
     BuildModel();
   }
 
-  virtual void EndInitialPropagation() {
-    RunOptim();
-  }
+  virtual void EndInitialPropagation() { RunOptim(); }
 
   virtual void BeginNextDecision(DecisionBuilder* const b) {
     if (++counter_ % simplex_frequency_ == 0) {
@@ -607,7 +558,7 @@ class AutomaticLinearization : public SearchMonitor {
   }
 
   void SolveProblem() {
-    if (objective_ != NULL) {
+    if (objective_ != nullptr) {
       switch (mp_solver_.Solve()) {
         case MPSolver::OPTIMAL: {
           const double obj_value = mp_solver_.objective_value();
@@ -638,9 +589,7 @@ class AutomaticLinearization : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const {
-    return "AutomaticLinearization";
-  }
+  virtual string DebugString() const { return "AutomaticLinearization"; }
 
  private:
   MPSolver mp_solver_;
@@ -651,21 +600,15 @@ class AutomaticLinearization : public SearchMonitor {
   bool maximize_;
 };
 
-
 }  // namespace
 
 // ---------- API ----------
 
 SearchMonitor* Solver::MakeSimplexConnection(
-    Callback1<MPSolver*>* const builder,
-    Callback1<MPSolver*>* const modifier,
-    Callback1<MPSolver*>* const runner,
-    int frequency) {
-  return RevAlloc(new SimplexConnection(this,
-                                        builder,
-                                        modifier,
-                                        runner,
-                                        frequency));
+    Callback1<MPSolver*>* const builder, Callback1<MPSolver*>* const modifier,
+    Callback1<MPSolver*>* const runner, int frequency) {
+  return RevAlloc(
+      new SimplexConnection(this, builder, modifier, runner, frequency));
 }
 
 SearchMonitor* Solver::MakeSimplexConstraint(int simplex_frequency) {

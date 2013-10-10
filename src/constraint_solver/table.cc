@@ -25,7 +25,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
@@ -43,6 +43,7 @@ DEFINE_int32(cp_ac4r_table_threshold, 2048,
 namespace operations_research {
 namespace {
 // ----- Presolve helpers -----
+// TODO(user): Move this out of this file.
 struct AffineTransformation {  // y == a*x + b.
   AffineTransformation() : a(1), b(0) {}
   AffineTransformation(int64 aa, int64 bb) : a(aa), b(bb) { CHECK_NE(a, 0); }
@@ -62,13 +63,9 @@ struct AffineTransformation {  // y == a*x + b.
     }
   }
 
-  int64 Forward(int64 value) const {
-    return value * a + b;
-  }
+  int64 Forward(int64 value) const { return value * a + b; }
 
-  int64 UnsafeReverse(int64 value) const {
-    return (value - b) / a;
-  }
+  int64 UnsafeReverse(int64 value) const { return (value - b) / a; }
 
   void Clear() {
     a = 1;
@@ -76,11 +73,11 @@ struct AffineTransformation {  // y == a*x + b.
   }
 
   string DebugString() const {
-    return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)",
-                        a, b);
+    return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a, b);
   }
 };
 
+// TODO(user): Move this out too.
 class VarLinearizer : public ModelParser {
  public:
   VarLinearizer() : target_var_(nullptr), transformation_(nullptr) {}
@@ -88,7 +85,7 @@ class VarLinearizer : public ModelParser {
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     const string& operation, int64 value,
-                                    const IntVar* const delegate) {
+                                    IntVar* const delegate) {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
       delegate->Accept(this);
@@ -108,7 +105,7 @@ class VarLinearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
+                                    IntExpr* const delegate) {
     *target_var_ = const_cast<IntVar*>(variable);
     transformation_->a = multipliers_.back();
   }
@@ -146,8 +143,6 @@ class VarLinearizer : public ModelParser {
   AffineTransformation* transformation_;
 };
 
-// TODO(user): Implement ConstIntMatrix to share/manage tuple sets.
-
 static const int kBitsInUint64 = 64;
 
 // ----- Positive Table Constraint -----
@@ -180,8 +175,11 @@ class BasePositiveTableConstraint : public Constraint {
     // variables.  Thus we can visit all variables to get to the
     // boolean or domain int var beneath it. Then we can reverse
     // process the tupleset to move in parallel to the simplifications
-    // of the variables. At the same time, we remove all tuples
-    // incompatible with the initial domains of the variables.
+    // of the variables. This way, we can keep the memory efficient
+    // nature of shared tuplesets (especially important for
+    // transitions constraints which are a chain of table
+    // constraints).  The cost in running time is small as the tuples
+    // are read only once to construct the bitset data structures.
     VarLinearizer linearizer;
     for (int i = 0; i < arity_; ++i) {
       linearizer.Visit(vars[i], &vars_[i], &transformations_[i]);
@@ -203,20 +201,20 @@ class BasePositiveTableConstraint : public Constraint {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(), arity_);
+                                               vars_);
     visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument, tuples_);
     visitor->EndVisitConstraint(ModelVisitor::kAllowedAssignments, this);
   }
 
  protected:
   bool TupleValue(int tuple_index, int var_index, int64* const value) const {
-    return transformations_[var_index].Reverse(
-        tuples_.Value(tuple_index, var_index), value);
+    return transformations_[var_index]
+        .Reverse(tuples_.Value(tuple_index, var_index), value);
   }
 
   int64 UnsafeTupleValue(int tuple_index, int var_index) const {
-    return transformations_[var_index].UnsafeReverse(
-        tuples_.Value(tuple_index, var_index));
+    return transformations_[var_index]
+        .UnsafeReverse(tuples_.Value(tuple_index, var_index));
   }
 
   const int tuple_count_;
@@ -348,7 +346,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void BlankActives(uint64* const mask) {
-    if (mask != NULL) {
+    if (mask != nullptr) {
       bool empty = true;
       for (int offset = 0; offset < length_; ++offset) {
         if ((mask[offset] & active_tuples_[offset]) != 0) {
@@ -390,7 +388,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       const int64 value = cache[var_index];
       uint64* mask = FindPtrOrNull(masks_[var_index], value);
-      if (mask == NULL) {
+      if (mask == nullptr) {
         mask = new uint64[length_];
         memset(mask, 0, length_ * sizeof(*mask));
         masks_[var_index][value] = mask;
@@ -410,8 +408,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
   const int length_;
   // TODO(user): create bitset64 class and use it.
-  scoped_array<uint64> active_tuples_;
-  scoped_array<uint64> stamps_;
+  scoped_ptr<uint64[]> active_tuples_;
+  scoped_ptr<uint64[]> stamps_;
   std::vector<ValueBitset> masks_;
 };
 
@@ -427,7 +425,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         stamps_(new uint64[length_]),
         original_min_(new int64[arity_]),
         temp_mask_(new uint64[length_]),
-        demon_(NULL),
+        demon_(nullptr),
         touched_var_(-1),
         var_sizes_(arity_, 0) {}
 
@@ -485,7 +483,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       const int64 span = vars_[i]->Max() - original_min_[i] + 1;
       masks_[i].resize(span);
       for (int j = 0; j < span; ++j) {
-        masks_[i][j] = NULL;
+        masks_[i][j] = nullptr;
       }
     }
   }
@@ -525,7 +523,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       supports_[var_index].resize(span);
       for (int value_index = 0; value_index < span; ++value_index) {
         const uint64* const mask = masks_[var_index][value_index];
-        if (mask != NULL) {
+        if (mask != nullptr) {
           starts_[var_index][value_index] = 0;
           while (!mask[starts_[var_index][value_index]]) {
             starts_[var_index][value_index]++;
@@ -665,19 +663,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
             to_remove_.resize(index + 1);
           }
-          switch (to_remove_.size()) {
-            case 0: { break; }
-            case 1: {
-              var->RemoveValue(to_remove_.back());
-              break;
-            }
-            default: {
-              if (new_min != new_max) {
-                var->RemoveValues(to_remove_);
-              }
-              break;
-            }
-          }
+          var->RemoveValues(to_remove_);
         }
       }
     }
@@ -845,19 +831,19 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Length of bitsets in double words.
   const int length_;
   // Bitset of active tuples.
-  scoped_array<uint64> active_tuples_;
+  scoped_ptr<uint64[]> active_tuples_;
   // Array of stamps, one per 64 tuples.
-  scoped_array<uint64> stamps_;
+  scoped_ptr<uint64[]> stamps_;
   // The masks per value per variable.
   std::vector<std::vector<uint64*> > masks_;
   // The min on the vars at creation time.
-  scoped_array<int64> original_min_;
+  scoped_ptr<int64[]> original_min_;
   // The starts of active bitsets.
   std::vector<std::vector<int> > starts_;
   // The ends of the active bitsets.x
   std::vector<std::vector<int> > ends_;
   // A temporary mask use for computation.
-  scoped_array<uint64> temp_mask_;
+  scoped_ptr<uint64[]> temp_mask_;
   // The portion of the active tuples supporting each value per variable.
   std::vector<std::vector<int> > supports_;
   Demon* demon_;
@@ -879,7 +865,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         stamp_(0),
         masks_(new uint64* [arity_]),
         original_min_(new int64[arity_]),
-        demon_(NULL),
+        demon_(nullptr),
         touched_var_(-1) {
     CHECK_GE(tuple_count_, 0);
     CHECK_GE(arity_, 0);
@@ -891,7 +877,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   virtual ~SmallCompactPositiveTableConstraint() {
     for (int i = 0; i < arity_; ++i) {
       delete[] masks_[i];
-      masks_[i] = NULL;
+      masks_[i] = nullptr;
     }
   }
 
@@ -1081,18 +1067,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
             to_remove_.resize(last_size);
           }
-          switch (to_remove_.size()) {
-            case 0: {
-              break;
-            }
-            case 1: {
-              var->RemoveValue(to_remove_.back());
-              break;
-            }
-            default: {
-              var->RemoveValues(to_remove_);
-            }
-          }
+          var->RemoveValues(to_remove_);
         }
       }
     }
@@ -1112,7 +1087,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       case 2: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min] |
-                  masks_[var_index][var->Max() - original_min]);
+                                 masks_[var_index][var->Max() - original_min]);
         return;
       }
       default: {
@@ -1135,8 +1110,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         for (hole->Init(); hole->Ok(); hole->Next()) {
           hole_mask |= var_mask[hole->Value() - original_min];
         }
-        const int64 hole_operations =
-            var_min - old_min + old_max - var_max;
+        const int64 hole_operations = var_min - old_min + old_max - var_max;
         // We estimate the domain iterator to be 4x slower.
         const int64 domain_operations = contiguous ? var_size : 4 * var_size;
         if (hole_operations < domain_operations) {
@@ -1197,9 +1171,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Stamp of the active_tuple bitset.
   uint64 stamp_;
   // The masks per value per variable.
-  scoped_array<uint64*> masks_;
+  scoped_ptr<uint64 * []> masks_;
   // The min on the vars at creation time.
-  scoped_array<int64> original_min_;
+  scoped_ptr<int64[]> original_min_;
   Demon* demon_;
   int touched_var_;
 };
@@ -1297,11 +1271,10 @@ class TransitionConstraint : public Constraint {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kTransition, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(), vars_.size());
+                                               vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kInitialState, initial_state_);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kFinalStatesArgument,
-                                       final_states_.data(),
-                                       final_states_.size());
+                                       final_states_);
     visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument,
                                         transition_table_);
     visitor->EndVisitConstraint(ModelVisitor::kTransition, this);
@@ -1312,7 +1285,7 @@ class TransitionConstraint : public Constraint {
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
         DebugStringVector(vars_, ", ").c_str(), transition_table_.NumTuples(),
-        initial_state_, Int64VectorToString(final_states_, ", ").c_str());
+        initial_state_, IntVectorToString(final_states_, ", ").c_str());
   }
 
  private:

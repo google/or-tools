@@ -1,4 +1,4 @@
-// Copyright 2011-2012 Google
+// Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,21 +10,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// This file illustrate the API for Large Neighborhood Search and
+// Local Search. It solves the same trivial problem with a Large
+// Neighborhood Search approach, a Local Search approach, and a Local
+// Search with Filter approach.
 
-
-#include "base/hash.h"
-#include "base/map-util.h"
+#include "base/commandlineflags.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+#include "base/random.h"
 
 namespace operations_research {
 class OneVarLns : public BaseLNS {
  public:
-  OneVarLns(const IntVar* const* vars, int size)
-      : BaseLNS(vars, size),
-        index_(0) {}
+  explicit OneVarLns(const std::vector<IntVar*>& vars)
+      : BaseLNS(vars), index_(0) {}
 
   ~OneVarLns() {}
 
@@ -47,8 +50,8 @@ class OneVarLns : public BaseLNS {
 
 class MoveOneVar: public IntVarLocalSearchOperator {
  public:
-  MoveOneVar(const std::vector<IntVar*>& variables)
-      : IntVarLocalSearchOperator(variables.data(), variables.size()),
+  explicit MoveOneVar(const std::vector<IntVar*>& variables)
+      : IntVarLocalSearchOperator(variables),
         variable_index_(0),
         move_up_(false) {}
 
@@ -82,8 +85,8 @@ class MoveOneVar: public IntVarLocalSearchOperator {
 
 class SumFilter : public IntVarLocalSearchFilter {
  public:
-  SumFilter(const IntVar* const* vars, int size) :
-      IntVarLocalSearchFilter(vars, size), sum_(0) {}
+  explicit SumFilter(const std::vector<IntVar*>& vars) :
+      IntVarLocalSearchFilter(vars), sum_(0) {}
 
   ~SumFilter() {}
 
@@ -144,8 +147,13 @@ class SumFilter : public IntVarLocalSearchFilter {
   int64 sum_;
 };
 
-void BasicLns() {
-  LOG(INFO) << "Basic LNS";
+enum SolveType {
+  LNS,
+  LS,
+  LS_WITH_FILTER
+};
+
+void SolveProblem(SolveType solve_type) {
   Solver s("Sample");
   std::vector<IntVar*> vars;
   s.MakeIntVarArray(4, 0, 4, &vars);
@@ -155,10 +163,37 @@ void BasicLns() {
       s.MakePhase(vars,
                   Solver::CHOOSE_FIRST_UNBOUND,
                   Solver::ASSIGN_MAX_VALUE);
-  OneVarLns one_var_lns(vars.data(), vars.size());
-  LocalSearchPhaseParameters* const ls_params =
-      s.MakeLocalSearchPhaseParameters(&one_var_lns, db);
-  DecisionBuilder* const ls = s.MakeLocalSearchPhase(vars, db, ls_params);
+  DecisionBuilder* ls = NULL;
+  switch (solve_type) {
+    case LNS: {
+      LOG(INFO) << "Large Neighborhood Search";
+      OneVarLns* const one_var_lns =
+          s.RevAlloc(new OneVarLns(vars));
+      LocalSearchPhaseParameters* const ls_params =
+          s.MakeLocalSearchPhaseParameters(one_var_lns, db);
+      ls = s.MakeLocalSearchPhase(vars, db, ls_params);
+      break;
+    }
+    case LS: {
+      LOG(INFO) << "Local Search";
+      MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
+      LocalSearchPhaseParameters* const ls_params =
+          s.MakeLocalSearchPhaseParameters(one_var_ls, db);
+      ls = s.MakeLocalSearchPhase(vars, db, ls_params);
+      break;
+    }
+    case LS_WITH_FILTER: {
+      LOG(INFO) << "Local Search with Filter";
+      MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
+      std::vector<LocalSearchFilter*> filters;
+      filters.push_back(s.RevAlloc(new SumFilter(vars)));
+
+      LocalSearchPhaseParameters* const ls_params =
+          s.MakeLocalSearchPhaseParameters(one_var_ls, db, NULL, filters);
+      ls = s.MakeLocalSearchPhase(vars, db, ls_params);
+      break;
+    }
+  }
   SolutionCollector* const collector = s.MakeLastSolutionCollector();
   collector->Add(vars);
   collector->AddObjective(sum_var);
@@ -166,62 +201,12 @@ void BasicLns() {
   s.Solve(ls, collector, obj, log);
   LOG(INFO) << "Objective value = " << collector->objective_value(0);
 }
-
-void BasicLs() {
-  LOG(INFO) << "Basic LS";
-  Solver s("Sample");
-  std::vector<IntVar*> vars;
-  s.MakeIntVarArray(4, 0, 4, &vars);
-  IntVar* const sum_var = s.MakeSum(vars)->Var();
-  OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
-  DecisionBuilder* const db =
-      s.MakePhase(vars,
-                  Solver::CHOOSE_FIRST_UNBOUND,
-                  Solver::ASSIGN_MAX_VALUE);
-  MoveOneVar one_var_ls(vars);
-  LocalSearchPhaseParameters* const ls_params =
-      s.MakeLocalSearchPhaseParameters(&one_var_ls, db);
-  DecisionBuilder* const ls = s.MakeLocalSearchPhase(vars, db, ls_params);
-  SolutionCollector* const collector = s.MakeLastSolutionCollector();
-  collector->Add(vars);
-  collector->AddObjective(sum_var);
-  SearchMonitor* const log = s.MakeSearchLog(1000, obj);
-  s.Solve(ls, collector, obj, log);
-  LOG(INFO) << "Objective value = " << collector->objective_value(0);
-}
-
-void BasicLsWithFilter() {
-  LOG(INFO) << "Basic LS with Filter";
-  Solver s("Sample");
-  std::vector<IntVar*> vars;
-  s.MakeIntVarArray(4, 0, 4, &vars);
-  IntVar* const sum_var = s.MakeSum(vars)->Var();
-  OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
-  DecisionBuilder* const db =
-      s.MakePhase(vars,
-                  Solver::CHOOSE_FIRST_UNBOUND,
-                  Solver::ASSIGN_MAX_VALUE);
-  MoveOneVar one_var_ls(vars);
-  std::vector<LocalSearchFilter*> filters;
-  filters.push_back(s.RevAlloc(new SumFilter(vars.data(), vars.size())));
-
-  LocalSearchPhaseParameters* const ls_params =
-      s.MakeLocalSearchPhaseParameters(&one_var_ls, db, NULL, filters);
-  DecisionBuilder* const ls = s.MakeLocalSearchPhase(vars, db, ls_params);
-  SolutionCollector* const collector = s.MakeLastSolutionCollector();
-  collector->Add(vars);
-  collector->AddObjective(sum_var);
-  SearchMonitor* const log = s.MakeSearchLog(1000, obj);
-  s.Solve(ls, collector, obj, log);
-  LOG(INFO) << "Objective value = " << collector->objective_value(0);
-}
-}  //namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::BasicLns();
-  operations_research::BasicLs();
-  operations_research::BasicLsWithFilter();
+  google::ParseCommandLineFlags( &argc, &argv, true);
+  operations_research::SolveProblem(operations_research::LNS);
+  operations_research::SolveProblem(operations_research::LS);
+  operations_research::SolveProblem(operations_research::LS_WITH_FILTER);
   return 0;
 }
-

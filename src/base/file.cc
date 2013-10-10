@@ -106,7 +106,7 @@ int64 File::ReadToString(std::string* const output, uint64 max_length) {
   int64 needed = max_length;
   int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
 
-  scoped_array<char> buf(new char[bufsize]);
+  scoped_ptr<char[]> buf(new char[bufsize]);
 
   int64 nread = 0;
   while (needed > 0) {
@@ -150,7 +150,20 @@ Status SetContents(const std::string& filename, const std::string& contents,
   File* file = File::Open(filename, "w");
   if (file == NULL) return Status(false);
   return Status(file->WriteString(contents) == contents.size());
-};
+}
+
+Status GetContents(const std::string& filename, std::string* output,
+                   int flags) {
+  if (flags != Defaults()) {
+    LOG(DFATAL) << "file::GetContents() with unsupported flags=" << flags;
+    return Status(false);
+  }
+  File* file = File::Open(filename, "r");
+  if (file == NULL) return Status(false);
+  int64 size = file->Size();
+  return Status(size == file->ReadToString(output, size));
+}
+
 }  // namespace file
 
 }  // namespace operations_research

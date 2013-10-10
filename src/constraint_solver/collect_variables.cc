@@ -40,7 +40,6 @@ class CollectVariablesVisitor : public ModelParser {
 
   virtual ~CollectVariablesVisitor() {}
 
-
   virtual void EndVisitModel(const string& solver_name) {
     PopArgumentHolder();
     primaries_->assign(primary_set_.begin(), primary_set_.end());
@@ -57,10 +56,10 @@ class CollectVariablesVisitor : public ModelParser {
                                   const Constraint* const constraint) {
     if (type_name.compare(ModelVisitor::kLinkExprVar) == 0 ||
         (type_name.compare(ModelVisitor::kSumEqual) == 0 &&
-         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument))||
+         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument)) ||
         type_name.compare(ModelVisitor::kElementEqual) == 0 ||
         (type_name.compare(ModelVisitor::kScalProdEqual) == 0 &&
-         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument))||
+         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument)) ||
         type_name.compare(ModelVisitor::kIsEqual) == 0 ||
         type_name.compare(ModelVisitor::kIsDifferent) == 0 ||
         type_name.compare(ModelVisitor::kIsGreaterOrEqual) == 0 ||
@@ -68,18 +67,16 @@ class CollectVariablesVisitor : public ModelParser {
         type_name.compare(ModelVisitor::kMinEqual) == 0 ||
         type_name.compare(ModelVisitor::kMaxEqual) == 0) {
       IntExpr* const target_expr =
-          const_cast<IntExpr*>(
-              Top()->FindIntegerExpressionArgumentOrDie(
-                  ModelVisitor::kTargetArgument));
+          const_cast<IntExpr*>(Top()->FindIntegerExpressionArgumentOrDie(
+              ModelVisitor::kTargetArgument));
       IntVar* const target_var = target_expr->Var();
       IgnoreIntegerVariable(target_var);
     } else if (type_name.compare(ModelVisitor::kCountEqual) == 0 &&
                Top()->HasIntegerExpressionArgument(
                    ModelVisitor::kCountArgument)) {
       IntExpr* const count_expr =
-          const_cast<IntExpr*>(
-              Top()->FindIntegerExpressionArgumentOrDie(
-                  ModelVisitor::kCountArgument));
+          const_cast<IntExpr*>(Top()->FindIntegerExpressionArgumentOrDie(
+              ModelVisitor::kCountArgument));
       IntVar* const count_var = count_expr->Var();
       IgnoreIntegerVariable(count_var);
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
@@ -93,7 +90,7 @@ class CollectVariablesVisitor : public ModelParser {
       }
       for (int j = 0; j < matrix.Arity(); ++j) {
         if (counters[j].size() == matrix.NumTuples()) {
-          const std::vector<const IntVar*>& vars =
+          const std::vector<IntVar*>& vars =
               Top()->FindIntegerVariableArrayArgumentOrDie(
                   ModelVisitor::kVarsArgument);
           for (int k = 0; k < matrix.Arity(); ++k) {
@@ -105,42 +102,42 @@ class CollectVariablesVisitor : public ModelParser {
         }
       }
     } else if (type_name.compare(ModelVisitor::kNoCycle) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kActiveArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kPathCumul) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kActiveArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kDistribute) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kCardsArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kSortingConstraint) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kTargetArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kVarValueWatcher) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kVarsArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kVarBoundWatcher) == 0) {
-      const std::vector<const IntVar*>& vars =
+      const std::vector<IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kVarsArgument);
       for (int i = 0; i < vars.size(); ++i) {
@@ -152,48 +149,34 @@ class CollectVariablesVisitor : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate) {
+                                    IntExpr* const delegate) {
     IntVar* const var = const_cast<IntVar*>(variable);
-    if (delegate != NULL) {
+    if (delegate != nullptr) {
       delegate->Accept(this);
       IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     } else {
       if (!ContainsKey(primary_set_, var) &&
           !ContainsKey(secondary_set_, var) &&
-          !ContainsKey(ignored_set_, var) &&
-          !var->Bound()) {
+          !ContainsKey(ignored_set_, var) && !var->Bound()) {
         primary_set_.insert(var);
       }
     }
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate) {
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate) {
     IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     delegate->Accept(this);
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate) {
-    if (delegate != NULL) {
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate) {
+    if (delegate != nullptr) {
       delegate->Accept(this);
     } else {
       DeclareInterval(const_cast<IntervalVar*>(variable));
-    }
-  }
-
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegates,
-                                     int size) {
-    for (int i = 0; i < size; ++i) {
-      IntervalVar* const var = const_cast<IntervalVar*>(delegates[i]);
-      DeclareInterval(var);
-      delegates[i]->Accept(this);
     }
   }
 
@@ -206,10 +189,7 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
-  virtual string DebugString() const {
-    return "CollectVariablesVisitor";
-  }
-
+  virtual string DebugString() const { return "CollectVariablesVisitor"; }
 
  private:
   void IgnoreIntegerVariable(IntVar* const var) {
@@ -218,9 +198,7 @@ class CollectVariablesVisitor : public ModelParser {
     ignored_set_.insert(var);
   }
 
-  void DeclareInterval(IntervalVar* const var) {
-    interval_set_.insert(var);
-  }
+  void DeclareInterval(IntervalVar* const var) { interval_set_.insert(var); }
 
   std::vector<IntVar*>* const primaries_;
   std::vector<IntVar*>* const secondaries_;
@@ -241,8 +219,7 @@ bool Solver::CollectDecisionVariables(
     std::vector<IntervalVar*>* const interval_variables) {
   CollectVariablesVisitor collector(primary_integer_variables,
                                     secondary_integer_variables,
-                                    sequence_variables,
-                                    interval_variables);
+                                    sequence_variables, interval_variables);
   Accept(&collector);
   return true;
 }

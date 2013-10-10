@@ -13,16 +13,14 @@
 #include "linear_solver/model_exporter.h"
 
 #include <cmath>
-#include <cstddef>
 #include <limits>
-#include <utility>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strutil.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
 
@@ -457,7 +455,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     }
   }
   for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    sort(transpose[var_index].begin(), transpose[var_index].end());
+    std::sort(transpose[var_index].begin(), transpose[var_index].end());
   }
 
   std::vector<double> objective(proto_.variables_size(), 0.0);

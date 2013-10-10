@@ -181,7 +181,7 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
                  ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
-  scoped_array<int> initial_candidates(new int[node_count]);
+  scoped_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
   scoped_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
@@ -210,7 +210,7 @@ void CoverArcsByCliques(
       callback);
 
   FindAndEliminate cache(graph, node_count, callback);
-  scoped_array<int> initial_candidates(new int[node_count]);
+  scoped_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
   scoped_ptr<ResultCallback2<bool, int, int> > cached_graph(

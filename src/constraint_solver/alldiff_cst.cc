@@ -30,39 +30,26 @@ namespace {
 
 class BaseAllDifferent : public Constraint {
  public:
-  BaseAllDifferent(Solver* const s, const IntVar* const* vars, int size);
+  BaseAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
+      : Constraint(s), vars_(vars) {}
   ~BaseAllDifferent() {}
-  string DebugStringInternal(const string& name) const;
- protected:
-  scoped_array<IntVar*> vars_;
-  int size_;
-};
-
-BaseAllDifferent::BaseAllDifferent(Solver* const s,
-                                   const IntVar* const* vars,
-                                   int size)
-    : Constraint(s), size_(size) {
-  CHECK_GE(size_, 0);
-  if (size_ > 0) {
-    vars_.reset(new IntVar*[size_]);
-    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
+  string DebugStringInternal(const string& name) const {
+    return StringPrintf("%s(%s)", name.c_str(),
+                        DebugStringVector(vars_, ", ").c_str());
   }
-}
 
-string BaseAllDifferent::DebugStringInternal(const string& name) const {
-  string out = name + "(";
-  out.append(DebugStringArray(vars_.get(), size_, ", "));
-  out.append(")");
-  return out;
-}
-
+ protected:
+  const std::vector<IntVar*> vars_;
+  int64 size() const { return vars_.size(); }
+};
 
 //-----------------------------------------------------------------------------
 // ValueAllDifferent
 
 class ValueAllDifferent : public BaseAllDifferent {
  public:
-  ValueAllDifferent(Solver* const s, const IntVar* const* vars, int size);
+  ValueAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
+      : BaseAllDifferent(s, vars) {}
   virtual ~ValueAllDifferent() {}
 
   virtual void Post();
@@ -70,11 +57,13 @@ class ValueAllDifferent : public BaseAllDifferent {
   void OneMove(int index);
   bool AllMoves();
 
-  virtual string DebugString() const;
+  virtual string DebugString() const {
+    return DebugStringInternal("ValueAllDifferent");
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(), size_);
+                                               vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kRangeArgument, 0);
     visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
@@ -83,29 +72,17 @@ class ValueAllDifferent : public BaseAllDifferent {
   RevSwitch all_instantiated_;
 };
 
-ValueAllDifferent::ValueAllDifferent(Solver* const s,
-                                     const IntVar* const* vars,
-                                     int size)
-    : BaseAllDifferent(s, vars, size) {}
-
-string ValueAllDifferent::DebugString() const {
-  return DebugStringInternal("ValueAllDifferent");
-}
-
 void ValueAllDifferent::Post() {
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     IntVar* var = vars_[i];
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &ValueAllDifferent::OneMove,
-                                    "OneMove",
-                                    i);
+    Demon* d = MakeConstraintDemon1(solver(), this, &ValueAllDifferent::OneMove,
+                                    "OneMove", i);
     var->WhenBound(d);
   }
 }
 
 void ValueAllDifferent::InitialPropagate() {
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     if (vars_[i]->Bound()) {
       OneMove(i);
     }
@@ -115,7 +92,7 @@ void ValueAllDifferent::InitialPropagate() {
 void ValueAllDifferent::OneMove(int index) {
   if (!AllMoves()) {
     const int64 val = vars_[index]->Value();
-    for (int j = 0; j < size_; ++j) {
+    for (int j = 0; j < size(); ++j) {
       if (index != j) {
         if (vars_[j]->Size() < 0xFFFFFF) {
           vars_[j]->RemoveValue(val);
@@ -128,22 +105,22 @@ void ValueAllDifferent::OneMove(int index) {
 }
 
 bool ValueAllDifferent::AllMoves() {
-  if (all_instantiated_.Switched() || size_ == 0) {
+  if (all_instantiated_.Switched() || size() == 0) {
     return true;
   }
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     if (!vars_[i]->Bound()) {
       return false;
     }
   }
-  scoped_array<int64> values(new int64[size_]);
-  for (int i = 0; i < size_; ++i) {
+  scoped_ptr<int64[]> values(new int64[size()]);
+  for (int i = 0; i < size(); ++i) {
     values[i] = vars_[i]->Value();
   }
-  std::sort(values.get(), values.get() + size_);
-  for (int i = 0; i < size_ - 1; ++i) {
+  std::sort(values.get(), values.get() + size());
+  for (int i = 0; i < size() - 1; ++i) {
     if (values[i] == values[i + 1]) {
-      values.reset();   // prevent leaks (solver()->Fail() won't return)
+      values.reset();  // prevent leaks (solver()->Fail() won't return)
       solver()->Fail();
     }
   }
@@ -167,8 +144,8 @@ class RangeBipartiteMatching {
       : solver_(solver),
         size_(size),
         intervals_(new Interval[size + 1]),
-        min_sorted_(new Interval*[size]),
-        max_sorted_(new Interval*[size]),
+        min_sorted_(new Interval* [size]),
+        max_sorted_(new Interval* [size]),
         bounds_(new int64[2 * size + 2]),
         tree_(new int[2 * size + 2]),
         diff_(new int64[2 * size + 2]),
@@ -193,23 +170,17 @@ class RangeBipartiteMatching {
     return modified1 || modified2;
   }
 
-  int64 Min(int index) const {
-    return intervals_[index].min;
-  }
+  int64 Min(int index) const { return intervals_[index].min; }
 
-  int64 Max(int index) const {
-    return intervals_[index].max;
-  }
+  int64 Max(int index) const { return intervals_[index].max; }
 
  private:
   // This method sorts the min_sorted_ and max_sorted_ arrays and fill
   // the bounds_ array (and set the active_size_ counter).
   void SortArray() {
-    std::sort(min_sorted_.get(),
-              min_sorted_.get() + size_,
+    std::sort(min_sorted_.get(), min_sorted_.get() + size_,
               CompareIntervalMin());
-    std::sort(max_sorted_.get(),
-              max_sorted_.get() + size_,
+    std::sort(max_sorted_.get(), max_sorted_.get() + size_,
               CompareIntervalMax());
 
     int64 min = min_sorted_[0]->min;
@@ -284,11 +255,10 @@ class RangeBipartiteMatching {
     return modified;
   }
 
-
   bool PropagateMax() {
     bool modified = false;
 
-    for (int i = 0; i<= active_size_; i++) {
+    for (int i = 0; i <= active_size_; i++) {
       tree_[i] = i + 1;
       hall_[i] = i + 1;
       diff_[i] = bounds_[i + 1] - bounds_[i];
@@ -323,17 +293,17 @@ class RangeBipartiteMatching {
     return modified;
   }
 
-  // TODO(user) : use better sort, use bounding boxes of modifications to
+  // TODO(user) : use better std::sort, use bounding boxes of modifications to
   //                 improve the sorting (only modified vars).
 
-  // This method is used by the STL sort.
+  // This method is used by the STL std::sort.
   struct CompareIntervalMin {
     bool operator()(const Interval* i1, const Interval* i2) {
       return (i1->min < i2->min);
     }
   };
 
-  // This method is used by the STL sort.
+  // This method is used by the STL std::sort.
   struct CompareIntervalMax {
     bool operator()(const Interval* i1, const Interval* i2) {
       return (i1->max < i2->max);
@@ -367,46 +337,42 @@ class RangeBipartiteMatching {
 
   Solver* const solver_;
   const int size_;
-  scoped_array<Interval> intervals_;
-  scoped_array<Interval*> min_sorted_;
-  scoped_array<Interval*> max_sorted_;
+  scoped_ptr<Interval[]> intervals_;
+  scoped_ptr<Interval * []> min_sorted_;
+  scoped_ptr<Interval * []> max_sorted_;
   // bounds_[1..active_size_] hold set of min & max in the n intervals_
   // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
-  scoped_array<int64> bounds_;
-  scoped_array<int> tree_;              // tree links.
-  scoped_array<int64> diff_;            // diffs between critical capacities.
-  scoped_array<int> hall_;              // hall interval links.
+  scoped_ptr<int64[]> bounds_;
+  scoped_ptr<int[]> tree_;    // tree links.
+  scoped_ptr<int64[]> diff_;  // diffs between critical capacities.
+  scoped_ptr<int[]> hall_;    // hall interval links.
   int active_size_;
 };
 
 class BoundsAllDifferent : public BaseAllDifferent {
  public:
-  BoundsAllDifferent(Solver* const s, const IntVar* const * vars, int size)
-      : BaseAllDifferent(s, vars, size), matching_(s, size) {}
+  BoundsAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
+      : BaseAllDifferent(s, vars), matching_(s, vars.size()) {}
 
   virtual ~BoundsAllDifferent() {}
 
   virtual void Post() {
     Demon* range = MakeDelayedConstraintDemon0(
-        solver(),
-        this,
-        &BoundsAllDifferent::IncrementalPropagate,
+        solver(), this, &BoundsAllDifferent::IncrementalPropagate,
         "IncrementalPropagate");
 
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       vars_[i]->WhenRange(range);
-      Demon* bound = MakeConstraintDemon1(solver(),
-                                          this,
+      Demon* bound = MakeConstraintDemon1(solver(), this,
                                           &BoundsAllDifferent::PropagateValue,
-                                          "PropagateValue",
-                                          i);
+                                          "PropagateValue", i);
       vars_[i]->WhenBound(bound);
     }
   }
 
   virtual void InitialPropagate() {
     IncrementalPropagate();
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       if (vars_[i]->Bound()) {
         PropagateValue(i);
       }
@@ -414,13 +380,12 @@ class BoundsAllDifferent : public BaseAllDifferent {
   }
 
   virtual void IncrementalPropagate() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       matching_.SetRange(i, vars_[i]->Min(), vars_[i]->Max());
     }
 
-
     if (matching_.Propagate()) {
-      for (int i = 0; i < size_; ++i) {
+      for (int i = 0; i < size(); ++i) {
         vars_[i]->SetRange(matching_.Min(i), matching_.Max(i));
       }
     }
@@ -435,7 +400,7 @@ class BoundsAllDifferent : public BaseAllDifferent {
         solver()->AddConstraint(solver()->MakeNonEquality(vars_[j], to_remove));
       }
     }
-    for (int j = index + 1; j < size_; j++) {
+    for (int j = index + 1; j < size(); j++) {
       if (vars_[j]->Size() < 0xFFFFFF) {
         vars_[j]->RemoveValue(to_remove);
       } else {
@@ -451,8 +416,7 @@ class BoundsAllDifferent : public BaseAllDifferent {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
+                                               vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kRangeArgument, 1);
     visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
@@ -463,35 +427,28 @@ class BoundsAllDifferent : public BaseAllDifferent {
 
 class SortConstraint : public Constraint {
  public:
-  SortConstraint(Solver* const solver,
-                 const std::vector<IntVar*>& original_vars,
+  SortConstraint(Solver* const solver, const std::vector<IntVar*>& original_vars,
                  const std::vector<IntVar*>& sorted_vars)
       : Constraint(solver),
         ovars_(original_vars),
         svars_(sorted_vars),
-        size_(original_vars.size()),
-        matching_(solver, size_) {
-    if (size_ > 0) {
-      mins_.reset(new int64[size_]);
-      memset(mins_.get(), 0, size_ * sizeof(*mins_.get()));
-      maxs_.reset(new int64[size_]);
-      memset(maxs_.get(), 0, size_ * sizeof(*maxs_.get()));
-    }
-  }
+        mins_(original_vars.size(), 0),
+        maxs_(original_vars.size(), 0),
+        matching_(solver, original_vars.size()) {}
 
   virtual ~SortConstraint() {}
 
   virtual void Post() {
     Demon* const demon =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       ovars_[i]->WhenRange(demon);
       svars_[i]->WhenRange(demon);
     }
   }
 
   virtual void InitialPropagate() {
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       int64 vmin = 0;
       int64 vmax = 0;
       ovars_[i]->Range(&vmin, &vmax);
@@ -499,27 +456,27 @@ class SortConstraint : public Constraint {
       maxs_[i] = vmax;
     }
     // Propagates from variables to sorted variables.
-    std::sort(mins_.get(), mins_.get() + size_);
-    std::sort(maxs_.get(), maxs_.get() + size_);
-    for (int i = 0; i < size_; ++i) {
+    std::sort(mins_.begin(), mins_.end());
+    std::sort(maxs_.begin(), maxs_.end());
+    for (int i = 0; i < size(); ++i) {
       svars_[i]->SetRange(mins_[i], maxs_[i]);
     }
     // Maintains sortedness.
-    for (int i = 0; i < size_ - 1; ++i) {
+    for (int i = 0; i < size() - 1; ++i) {
       svars_[i + 1]->SetMin(svars_[i]->Min());
     }
-    for (int i = size_ - 1; i > 0; --i) {
+    for (int i = size() - 1; i > 0; --i) {
       svars_[i - 1]->SetMax(svars_[i]->Max());
     }
     // Reverse propagation.
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       int64 imin = 0;
       int64 imax = 0;
       FindIntersectionRange(i, &imin, &imax);
       matching_.SetRange(i, imin, imax);
     }
     matching_.Propagate();
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < size(); ++i) {
       const int64 vmin = svars_[matching_.Min(i)]->Min();
       const int64 vmax = svars_[matching_.Max(i)]->Max();
       ovars_[i]->SetRange(vmin, vmax);
@@ -536,25 +493,25 @@ class SortConstraint : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Sort(%s, %s)",
-                        DebugStringVector(ovars_, ", ").c_str(),
+    return StringPrintf("Sort(%s, %s)", DebugStringVector(ovars_, ", ").c_str(),
                         DebugStringVector(svars_, ", ").c_str());
   }
 
  private:
-  void FindIntersectionRange(int index,
-                             int64* const range_min,
+  int64 size() const { return ovars_.size(); }
+
+  void FindIntersectionRange(int index, int64* const range_min,
                              int64* const range_max) const {
     // Naive version.
     // TODO(user): Implement log(n) version.
     int64 imin = 0;
-    while (imin < size_ && NotIntersect(index, imin)) {
+    while (imin < size() && NotIntersect(index, imin)) {
       imin++;
     }
-    if (imin == size_) {
+    if (imin == size()) {
       solver()->Fail();
     }
-    int64 imax = size_ - 1;
+    int64 imax = size() - 1;
     while (imax > imin && NotIntersect(index, imax)) {
       imax--;
     }
@@ -564,14 +521,13 @@ class SortConstraint : public Constraint {
 
   bool NotIntersect(int oindex, int sindex) const {
     return ovars_[oindex]->Min() > svars_[sindex]->Max() ||
-        ovars_[oindex]->Max() < svars_[sindex]->Min();
+           ovars_[oindex]->Max() < svars_[sindex]->Min();
   }
 
-  std::vector<IntVar*> ovars_;
-  std::vector<IntVar*> svars_;
-  scoped_array<int64> mins_;
-  scoped_array<int64> maxs_;
-  const int size_;
+  const std::vector<IntVar*> ovars_;
+  const std::vector<IntVar*> svars_;
+  std::vector<int64> mins_;
+  std::vector<int64> maxs_;
   RangeBipartiteMatching matching_;
 };
 
@@ -579,23 +535,16 @@ class SortConstraint : public Constraint {
 // the escape value.
 class AllDifferentExcept : public Constraint {
  public:
-  AllDifferentExcept(Solver* const s,
-                     std::vector<IntVar*> vars,
-                     int64 escape_value)
-      : Constraint(s),
-        vars_(vars),
-        escape_value_(escape_value) {}
+  AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars, int64 escape_value)
+      : Constraint(s), vars_(vars), escape_value_(escape_value) {}
 
   virtual ~AllDifferentExcept() {}
 
   virtual void Post() {
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
-      Demon* const d = MakeConstraintDemon1(solver(),
-                                            this,
-                                            &AllDifferentExcept::Propagate,
-                                            "Propagate",
-                                            i);
+      Demon* const d = MakeConstraintDemon1(
+          solver(), this, &AllDifferentExcept::Propagate, "Propagate", i);
       var->WhenBound(d);
     }
   }
@@ -621,15 +570,13 @@ class AllDifferentExcept : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
-                        DebugStringVector(vars_, ", ").c_str(),
-                        escape_value_);
+                        DebugStringVector(vars_, ", ").c_str(), escape_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.data(),
-                                               vars_.size());
+                                               vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, escape_value_);
     visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
@@ -646,18 +593,15 @@ class AllDifferentExcept : public Constraint {
 // not intersect the set of values in the second vector.
 class NullIntersectArrayExcept : public Constraint {
  public:
-  NullIntersectArrayExcept(Solver* const s,
-                           std::vector<IntVar*> first_vars,
-                           std::vector<IntVar*> second_vars,
-                           int64 escape_value)
+  NullIntersectArrayExcept(Solver* const s, std::vector<IntVar*> first_vars,
+                           std::vector<IntVar*> second_vars, int64 escape_value)
       : Constraint(s),
         first_vars_(first_vars),
         second_vars_(second_vars),
         escape_value_(escape_value),
         has_escape_value_(true) {}
 
-  NullIntersectArrayExcept(Solver* const s,
-                           std::vector<IntVar*> first_vars,
+  NullIntersectArrayExcept(Solver* const s, std::vector<IntVar*> first_vars,
                            std::vector<IntVar*> second_vars)
       : Constraint(s),
         first_vars_(first_vars),
@@ -670,22 +614,16 @@ class NullIntersectArrayExcept : public Constraint {
   virtual void Post() {
     for (int i = 0; i < first_vars_.size(); ++i) {
       IntVar* const var = first_vars_[i];
-      Demon* const d =
-          MakeConstraintDemon1(solver(),
-                               this,
-                               &NullIntersectArrayExcept::PropagateFirst,
-                               "PropagateFirst",
-                               i);
+      Demon* const d = MakeConstraintDemon1(
+          solver(), this, &NullIntersectArrayExcept::PropagateFirst,
+          "PropagateFirst", i);
       var->WhenBound(d);
     }
     for (int i = 0; i < second_vars_.size(); ++i) {
       IntVar* const var = second_vars_[i];
-      Demon* const d =
-          MakeConstraintDemon1(solver(),
-                               this,
-                               &NullIntersectArrayExcept::PropagateSecond,
-                               "PropagateSecond",
-                               i);
+      Demon* const d = MakeConstraintDemon1(
+          solver(), this, &NullIntersectArrayExcept::PropagateSecond,
+          "PropagateSecond", i);
       var->WhenBound(d);
     }
   }
@@ -722,21 +660,18 @@ class NullIntersectArrayExcept : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("NullIntersectArray([%s], [%s], escape = %"
-                        GG_LL_FORMAT "d",
-                        DebugStringVector(first_vars_, ", ").c_str(),
-                        DebugStringVector(second_vars_, ", ").c_str(),
-                        escape_value_);
+    return StringPrintf(
+        "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
+        DebugStringVector(first_vars_, ", ").c_str(),
+        DebugStringVector(second_vars_, ", ").c_str(), escape_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNullIntersect, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
-                                               first_vars_.data(),
-                                               first_vars_.size());
+                                               first_vars_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kRightArgument,
-                                               second_vars_.data(),
-                                               second_vars_.size());
+                                               second_vars_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, escape_value_);
     visitor->EndVisitConstraint(ModelVisitor::kNullIntersect, this);
   }
@@ -766,9 +701,9 @@ Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars,
                            const_cast<IntVar* const>(vars[1]));
   } else {
     if (stronger_propagation) {
-      return RevAlloc(new BoundsAllDifferent(this, vars.data(), size));
+      return RevAlloc(new BoundsAllDifferent(this, vars));
     } else {
-      return RevAlloc(new ValueAllDifferent(this, vars.data(), size));
+      return RevAlloc(new ValueAllDifferent(this, vars));
     }
   }
 }
@@ -809,13 +744,10 @@ Constraint* Solver::MakeNullIntersectExcept(const std::vector<IntVar*>& first_va
     second_escape_candidates += (second_vars[i]->Contains(escape_value));
   }
   if (first_escape_candidates == 0 || second_escape_candidates == 0) {
-    return RevAlloc(new NullIntersectArrayExcept(this,
-                                                 first_vars,
-                                                 second_vars));
+    return RevAlloc(
+        new NullIntersectArrayExcept(this, first_vars, second_vars));
   } else {
-    return RevAlloc(new NullIntersectArrayExcept(this,
-                                                 first_vars,
-                                                 second_vars,
+    return RevAlloc(new NullIntersectArrayExcept(this, first_vars, second_vars,
                                                  escape_value));
   }
 }

@@ -526,8 +526,9 @@ endif
 UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/bitset.$O \
 	$(OBJ_DIR)/cached_log.$O \
-	$(OBJ_DIR)/const_int_array.$O \
 	$(OBJ_DIR)/graph_export.$O \
+	$(OBJ_DIR)/piecewise_linear_function.$O \
+	$(OBJ_DIR)/saturated_arithmetic.$O \
 	$(OBJ_DIR)/stats.$O \
 	$(OBJ_DIR)/xml_helper.$O
 
@@ -537,11 +538,14 @@ $(OBJ_DIR)/bitset.$O:$(SRC_DIR)/util/bitset.cc
 $(OBJ_DIR)/cached_log.$O:$(SRC_DIR)/util/cached_log.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/cached_log.cc $(OBJ_OUT)$(OBJ_DIR)$Scached_log.$O
 
-$(OBJ_DIR)/const_int_array.$O:$(SRC_DIR)/util/const_int_array.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/const_int_array.cc $(OBJ_OUT)$(OBJ_DIR)$Sconst_int_array.$O
-
 $(OBJ_DIR)/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/graph_export.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_export.$O
+
+$(OBJ_DIR)/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Spiecewise_linear_function.$O
+
+$(OBJ_DIR)/saturated_arithmetic.$O:$(SRC_DIR)/util/saturated_arithmetic.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/saturated_arithmetic.cc $(OBJ_OUT)$(OBJ_DIR)$Ssaturated_arithmetic.$O
 
 $(OBJ_DIR)/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sstats.$O

@@ -72,7 +72,7 @@ class TreeArrayConstraint : public Constraint {
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
-                                        vars_.data(), vars_.size());
+                                        vars_);
     visitor->VisitIntervalArgument(ModelVisitor::kTargetArgument, target_var_);
     visitor->EndVisitConstraint(name, this);
   }
@@ -113,8 +113,8 @@ class TreeArrayConstraint : public Constraint {
     tree_[depth][position].start_max.SetValue(solver(), start_max);
     tree_[depth][position].end_min.SetValue(solver(), end_min);
     tree_[depth][position].end_max.SetValue(solver(), end_max);
-    tree_[depth][position].performed
-        .SetValue(solver(), static_cast<int>(performed));
+    tree_[depth][position]
+        .performed.SetValue(solver(), static_cast<int>(performed));
   }
 
   int64 StartMin(int depth, int position) const {
@@ -258,7 +258,7 @@ class CoverConstraint : public TreeArrayConstraint {
  public:
   CoverConstraint(Solver* const solver, const std::vector<IntervalVar*>& vars,
                   IntervalVar* const cover_var)
-      : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(NULL) {}
+      : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(nullptr) {}
 
   virtual ~CoverConstraint() {}
 
@@ -311,6 +311,7 @@ class CoverConstraint : public TreeArrayConstraint {
         break;
       case PERFORMED:
         target_var_->SetPerformed(true);
+        FALLTHROUGH_INTENDED;
       case UNDECIDED:
         target_var_->SetStartRange(RootStartMin(), RootStartMax());
         target_var_->SetEndRange(RootEndMin(), RootEndMax());
@@ -348,6 +349,7 @@ class CoverConstraint : public TreeArrayConstraint {
           break;
         case PERFORMED:
           vars_[position]->SetPerformed(true);
+          FALLTHROUGH_INTENDED;
         case UNDECIDED:
           vars_[position]->SetStartRange(new_start_min, new_start_max);
           vars_[position]->SetEndRange(new_end_min, new_end_max);
@@ -376,6 +378,7 @@ class CoverConstraint : public TreeArrayConstraint {
               break;
             case PERFORMED:
               must_be_performed_count++;
+              FALLTHROUGH_INTENDED;
             case UNDECIDED:
               may_be_performed_count++;
               candidate = i;

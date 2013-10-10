@@ -39,6 +39,13 @@ class File {
   // If open failed, program will exit.
   static File* OpenOrDie(const char* const name, const char* const  flag);
 
+#ifndef SWIG  // no overloading
+  inline static File* OpenOrDie(const std::string& name,
+                                const char* const flag) {
+    return OpenOrDie(name.c_str(), flag);
+  }
+#endif
+
   // Reads "size" bytes to buff from file, buff should be pre-allocated.
   size_t Read(void* const buff, size_t size);
 
@@ -103,6 +110,7 @@ class Status {
  public:
   explicit Status(bool ok) : ok_(ok) { }
   bool ok() const { return ok_; }
+  bool CheckSuccess() const { return ok_; }
  private:
   const bool ok_;
 };
@@ -111,6 +119,12 @@ class Status {
 // can only be used with flags = file::Defaults().
 Status SetContents(const std::string& filename, const std::string& contents,
                    int flags);
+
+// A reduced version of the file::GetContents() function, which as of 2013-09
+// can only be used with flags = file::Defaults().
+Status GetContents(const std::string& filename, std::string* output,
+                   int flags);
+
 inline int Defaults() { return 0xBABA; }
 }  // namespace file
 

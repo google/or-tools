@@ -143,7 +143,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 # ----------- LNS Operator ----------
 
-class SteelLns(object):
+class SteelRandomLns(object):
   """Random LNS for Steel."""
 
   def __init__(self, rand, size):
@@ -219,7 +219,7 @@ def main(unused_argv):
   rand = random.Random()
   rand.seed(FLAGS.lns_random_seed)
   local_search_operator = \
-      solver.LNSOperator(x, SteelLns(rand, FLAGS.lns_fragment_size))
+      solver.LNSOperator(x, SteelRandomLns(rand, FLAGS.lns_fragment_size))
   # This is in fact equivalent to the following predefined LNS operator:
   # local_search_operator = solver.RandomLNSOperator(x,
   #                                                  FLAGS.lns_fragment_size,

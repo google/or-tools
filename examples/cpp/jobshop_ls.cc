@@ -170,35 +170,22 @@ void JobshopLs(const JobShopData& data) {
   DecisionBuilder* const first_solution_phase =
       solver.Compose(sequence_phase, obj_phase, store_db);
 
-  LOG(INFO) << "Looking for the first solution";
-  const bool first_solution_found = solver.Solve(first_solution_phase);
-  if (first_solution_found) {
-    LOG(INFO) << "Solution found with makespan = "
-              << first_solution->ObjectiveValue();
-  } else {
-    LOG(INFO) << "No initial solution found!";
-    return;
-  }
-
-  LOG(INFO) << "Switching to local search";
+  LOG(INFO) << "Looking for the first solution and improving with local search";
   std::vector<LocalSearchOperator*> operators;
   LOG(INFO) << "  - use swap operator";
   LocalSearchOperator* const swap_operator =
-      solver.RevAlloc(new SwapIntervals(all_sequences.data(),
-                                        all_sequences.size()));
+      solver.RevAlloc(new SwapIntervals(all_sequences));
   operators.push_back(swap_operator);
   LOG(INFO) << "  - use shuffle operator with a max length of "
             << FLAGS_shuffle_length;
   LocalSearchOperator* const shuffle_operator =
-      solver.RevAlloc(new ShuffleIntervals(all_sequences.data(),
-                                           all_sequences.size(),
+      solver.RevAlloc(new ShuffleIntervals(all_sequences,
                                            FLAGS_shuffle_length));
   operators.push_back(shuffle_operator);
   LOG(INFO) << "  - use free sub sequences of length "
             << FLAGS_sub_sequence_length << " lns operator";
   LocalSearchOperator* const lns_operator =
-      solver.RevAlloc(new SequenceLns(all_sequences.data(),
-                                      all_sequences.size(),
+      solver.RevAlloc(new SequenceLns(all_sequences,
                                       FLAGS_lns_seed,
                                       FLAGS_sub_sequence_length));
   operators.push_back(lns_operator);
@@ -217,8 +204,8 @@ void JobshopLs(const JobShopData& data) {
 
   LocalSearchPhaseParameters* const parameters =
       solver.MakeLocalSearchPhaseParameters(concat, ls_db);
-  DecisionBuilder* const final_db =
-      solver.MakeLocalSearchPhase(first_solution, parameters);
+  DecisionBuilder* const final_db = solver.MakeLocalSearchPhase(
+      all_sequences, first_solution_phase, parameters);
 
   OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
 

@@ -156,7 +156,7 @@ template<class T> class ZVector {
   int64 size_;
 
   // Storage memory for the array.
-  scoped_array<T> storage_;
+  scoped_ptr<T[]> storage_;
 };
 
 // Shorthands for all the types of ZVector's.

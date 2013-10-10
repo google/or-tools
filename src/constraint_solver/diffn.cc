@@ -19,8 +19,8 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/int-type-indexed-vector.h"
-#include "base/int-type.h"
+#include "base/int_type_indexed_vector.h"
+#include "base/int_type.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -191,7 +191,7 @@ class Diffn : public Constraint {
     int64 area_min_y = y_[box]->Min();
     int64 area_max_y = y_[box]->Max() + dy_[box]->Max();
     int64 sum_of_areas = dx_[box]->Min() * dy_[box]->Min();
-    // TODO(user): Is there a better order, maybe sort by distance
+    // TODO(user): Is there a better order, maybe std::sort by distance
     // with the current box.
     for (int i = 0; i < neighbors_.size(); ++i) {
       const int other = neighbors_[i];

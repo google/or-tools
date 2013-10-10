@@ -106,7 +106,7 @@ void Cryptoarithmetics() {
 }   // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::Cryptoarithmetics();
   return 0;
 }

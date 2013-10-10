@@ -39,7 +39,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "graph/shortestpaths.h"
@@ -647,13 +647,12 @@ class NetworkRoutingSolver {
 
   class PathBasedLns : public BaseLNS {
    public:
-    PathBasedLns(const IntVar* const* vars,
-                 int size,
+    PathBasedLns(const std::vector<IntVar*>& vars,
                  int fragment_size,
                  const std::vector<std::vector<OnePath> >& all_paths,
                  int num_arcs,
                  const std::vector<int64>& actual_usage_costs)
-        : BaseLNS(vars, size),
+        : BaseLNS(vars),
           rand_(FLAGS_lns_seed),
           fragment_size_(fragment_size),
           all_paths_(all_paths),
@@ -914,8 +913,7 @@ class NetworkRoutingSolver {
         solver.RevAlloc(new StoreUsageCosts(usage_costs, &actual_usage_costs));
 
     LocalSearchOperator* const local_search_operator =
-        solver.RevAlloc(new PathBasedLns(decision_vars.data(),
-                                         decision_vars.size(),
+        solver.RevAlloc(new PathBasedLns(decision_vars,
                                          FLAGS_lns_size,
                                          all_paths_,
                                          num_arcs,
@@ -1029,7 +1027,7 @@ class NetworkRoutingSolver {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::NetworkRoutingData data;
   operations_research::NetworkRoutingDataBuilder builder;
   builder.BuildModelFromParameters(FLAGS_clients,

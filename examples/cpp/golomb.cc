@@ -95,7 +95,7 @@ void GolombRuler(int size) {
 }   // namespace operations_research
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_size != 0) {
     operations_research::GolombRuler(FLAGS_size);
   } else {

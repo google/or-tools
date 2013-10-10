@@ -48,7 +48,7 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "cpp/fap_model_printer.h"
@@ -87,7 +87,7 @@ int64 ValueEvaluator(hash_map<int64, std::pair<int64, int64> >* value_evaluator,
   CHECK_NOTNULL(value_evaluator);
   // Evaluate the choice. Smaller ranking denotes a better choice.
   int64 ranking = -1;
-  for (ConstIter<hash_map<int64, std::pair<int64, int64> > > 
+  for (ConstIter<hash_map<int64, std::pair<int64, int64> > >
 	 it(*value_evaluator); !it.at_end(); ++it) {
     if ((it->first != variable_index) && (it->second.first == value)) {
       ranking = -2;

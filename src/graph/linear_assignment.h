@@ -608,7 +608,7 @@ template <typename GraphType> class LinearSumAssignment {
   //    forced: When a left-side node is incident to only one arc a,
   //    any feasible solution must include a, and reducing the price
   //    of Head(a) by any nonnegative amount preserves epsilon-
-  //    optimality. Because of this freedom, we'll call this sort of
+  //    optimality. Because of this freedom, we'll call this std::sort of
   //    relabeling (i.e., a relabeling of a right-side node that is
   //    the only neighbor of the left-side node to which it has been
   //    matched in the present double-push operation) a "slack"
@@ -1191,7 +1191,8 @@ void LinearSumAssignment<GraphType>::SaturateNegativeArcs() {
 template <typename GraphType>
 bool LinearSumAssignment<GraphType>::DoublePush(NodeIndex source) {
   DCHECK_GT(num_left_nodes_, source);
-  DCHECK(IsActive(source));
+  DCHECK(IsActive(source)) << "Node " << source
+                           << "must be active (unmatched)!";
   ImplicitPriceSummary summary = BestArcAndGap(source);
   const ArcIndex best_arc = summary.first;
   const CostValue gap = summary.second;
@@ -1260,7 +1261,8 @@ bool LinearSumAssignment<GraphType>::Refine() {
 template <typename GraphType>
 inline typename LinearSumAssignment<GraphType>::ImplicitPriceSummary
 LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
-    DCHECK(IsActive(left_node));
+  DCHECK(IsActive(left_node)) << "Node " << left_node
+                              << " must be active (unmatched)!";
   DCHECK_GT(epsilon_, 0);
   typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
   ArcIndex best_arc = arc_it.Index();

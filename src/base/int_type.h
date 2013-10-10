@@ -326,8 +326,7 @@ INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 #undef INT_TYPE_COMPARISON_OP
 
 // Allows it to be used as a key to hashable containers.
-#if !defined(SWIG)
-#if !defined(_MSC_VER)
+#if !defined(SWIG) && !defined(STLPORT) && !defined(_MSC_VER)
 namespace __gnu_cxx {
 template <typename IntTypeName, typename ValueType>
 struct hash<IntType<IntTypeName, ValueType> > {
@@ -336,7 +335,6 @@ struct hash<IntType<IntTypeName, ValueType> > {
   }
 };
 }  // namespace __gnu_cxx
-#endif  // !defined(_MSC_VER)
-#endif  // !defined(SWIG)
+#endif  // !defined(_MSC_VER) && !defined(SWIG) && !defined(STLPORT)
 
 #endif  // OR_TOOLS_BASE_INT_TYPE_H_

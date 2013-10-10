@@ -57,7 +57,7 @@
 #include <string>
 #include <vector>
 
-#include "base/callback-types.h"
+#include "base/callback_types.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -67,14 +67,14 @@
 #include "base/join.h"
 #include "base/bitmap.h"
 #include "base/sparse_hash.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
-#include "util/const_int_array.h"
 #include "util/tuple_set.h"
 #include "util/vector_map.h"
 
-template <typename T> class ResultCallback;
+template <typename T>
+class ResultCallback;
 
 class WallTimer;
 
@@ -83,7 +83,6 @@ class CPArgumentProto;
 class CPConstraintProto;
 class CPIntegerExpressionProto;
 class CPIntervalVariableProto;
-class ConstIntArray;
 
 // This is the base class for all expressions that are not variables.
 // It proposes a basic 'CastToVar()' implementation.
@@ -109,7 +108,7 @@ class ConstIntArray;
 // makes the code error-prone.
 class BaseIntExpr : public IntExpr {
  public:
-  explicit BaseIntExpr(Solver* const s) : IntExpr(s), var_(NULL) {}
+  explicit BaseIntExpr(Solver* const s) : IntExpr(s), var_(nullptr) {}
   virtual ~BaseIntExpr() {}
 
   virtual IntVar* Var();
@@ -144,9 +143,12 @@ enum VarTypes {
 // It's main use is to store a list of demons in the various classes of
 // variables.
 #ifndef SWIG
-template <class T> class SimpleRevFIFO {
+template <class T>
+class SimpleRevFIFO {
  private:
-  enum { CHUNK_SIZE = 16 };  // TODO(user): could be an extra template param
+  enum {
+    CHUNK_SIZE = 16
+  };  // TODO(user): could be an extra template param
   struct Chunk {
     T data_[CHUNK_SIZE];
     const Chunk* const next_;
@@ -159,13 +161,13 @@ template <class T> class SimpleRevFIFO {
    public:
     explicit Iterator(const SimpleRevFIFO<T>* l)
         : chunk_(l->chunks_), value_(l->Last()) {}
-    bool ok() const { return (value_ != NULL); }
+    bool ok() const { return (value_ != nullptr); }
     T operator*() const { return *value_; }
     void operator++() {
       ++value_;
       if (value_ == chunk_->data_ + CHUNK_SIZE) {
         chunk_ = chunk_->next_;
-        value_ = chunk_ ? chunk_->data_ : NULL;
+        value_ = chunk_ ? chunk_->data_ : nullptr;
       }
     }
 
@@ -174,7 +176,7 @@ template <class T> class SimpleRevFIFO {
     const T* value_;
   };
 
-  SimpleRevFIFO() : chunks_(NULL), pos_(0) {}
+  SimpleRevFIFO() : chunks_(nullptr), pos_(0) {}
 
   void Push(Solver* const s, T val) {
     if (pos_.Value() == 0) {
@@ -190,19 +192,17 @@ template <class T> class SimpleRevFIFO {
 
   // Pushes the var on top if is not a duplicate of the current top object.
   void PushIfNotTop(Solver* const s, T val) {
-    if (chunks_ == NULL || LastValue() != val) {
+    if (chunks_ == nullptr || LastValue() != val) {
       Push(s, val);
     }
   }
 
   // Returns the last item of the FIFO.
   const T* Last() const {
-    return chunks_ ? &chunks_->data_[pos_.Value()] : NULL;
+    return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr;
   }
 
-  T* MutableLast() {
-    return chunks_ ? &chunks_->data_[pos_.Value()] : NULL;
-  }
+  T* MutableLast() { return chunks_ ? &chunks_->data_[pos_.Value()] : nullptr; }
 
   // Returns the last value in the FIFO.
   const T& LastValue() const {
@@ -217,7 +217,7 @@ template <class T> class SimpleRevFIFO {
   }
 
  private:
-  Chunk *chunks_;
+  Chunk* chunks_;
   NumericalRev<int> pos_;
 };
 
@@ -247,37 +247,34 @@ inline uint64 Hash1(uint32 value) {
   return a;
 }
 
-inline uint64 Hash1(int64 value) {
-  return Hash1(static_cast<uint64>(value));
-}
+inline uint64 Hash1(int64 value) { return Hash1(static_cast<uint64>(value)); }
 
-inline uint64 Hash1(int value) {
-  return Hash1(static_cast<uint32>(value));
-}
+inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
-#if defined(ARCH_K8)
-    return Hash1(reinterpret_cast<uint64>(ptr));
+#if defined(ARCH_K8) || defined(__powerpc64__)
+  return Hash1(reinterpret_cast<uint64>(ptr));
 #else
-    return Hash1(reinterpret_cast<uint32>(ptr));
+  return Hash1(reinterpret_cast<uint32>(ptr));
 #endif
 }
 
-inline uint64 Hash1(ConstIntArray* const values) {
-  if (values->size() == 0) {
+template <class T>
+uint64 Hash1(const std::vector<T*>& ptrs) {
+  if (ptrs.size() == 0) {
     return 0;
-  } else if (values->size() == 1) {
-    return Hash1(values->get(0));
+  } else if (ptrs.size() == 1) {
+    return Hash1(ptrs[0]);
   } else {
-    uint64 hash = Hash1(values->get(0));
-    for (int i = 1; i < values->size(); ++i) {
-      hash = hash * i + Hash1(values->get(i));
+    uint64 hash = Hash1(ptrs[0]);
+    for (int i = 1; i < ptrs.size(); ++i) {
+      hash = hash * i + Hash1(ptrs[i]);
     }
     return hash;
   }
 }
 
-template <class T> uint64 Hash1(const std::vector<T*>& ptrs) {
+inline uint64 Hash1(const std::vector<int64>& ptrs) {
   if (ptrs.size() == 0) {
     return 0;
   } else if (ptrs.size() == 1) {
@@ -295,11 +292,12 @@ template <class T> uint64 Hash1(const std::vector<T*>& ptrs) {
 
 // Reversible Immutable MultiMap class.
 // Represents an immutable multi-map that backstracks with the solver.
-template <class K, class V> class RevImmutableMultiMap {
+template <class K, class V>
+class RevImmutableMultiMap {
  public:
   RevImmutableMultiMap(Solver* const solver, int initial_size)
       : solver_(solver),
-        array_(solver->UnsafeRevAllocArray(new Cell*[initial_size])),
+        array_(solver->UnsafeRevAllocArray(new Cell* [initial_size])),
         size_(initial_size),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_.Value());
@@ -380,11 +378,11 @@ template <class K, class V> class RevImmutableMultiMap {
     solver_->SaveAndSetValue(
         reinterpret_cast<void**>(&array_),
         reinterpret_cast<void*>(
-            solver_->UnsafeRevAllocArray(new Cell*[size_.Value()])));
+            solver_->UnsafeRevAllocArray(new Cell* [size_.Value()])));
     memset(array_, 0, size_.Value() * sizeof(*array_));
     for (int i = 0; i < old_size; ++i) {
       Cell* tmp = old_cell_array[i];
-      while (tmp != NULL) {
+      while (tmp != nullptr) {
         Cell* const to_reinsert = tmp;
         tmp = tmp->next();
         const uint64 new_position = Hash1(to_reinsert->key()) % size_.Value();
@@ -409,9 +407,7 @@ class RevSwitch {
 
   bool Switched() const { return value_; }
 
-  void Switch(Solver* const solver) {
-    solver->SaveAndSetValue(&value_, true);
-  }
+  void Switch(Solver* const solver) { solver->SaveAndSetValue(&value_, true); }
 
  private:
   bool value_;
@@ -520,16 +516,15 @@ class RevBitMatrix : private RevBitSet {
 // and demons are just proxies with a priority of NORMAL_PRIORITY.
 
 // Demon proxy to a method on the constraint with no arguments.
-template <class T> class CallMethod0 : public Demon {
+template <class T>
+class CallMethod0 : public Demon {
  public:
   CallMethod0(T* const ct, void (T::*method)(), const string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
   virtual ~CallMethod0() {}
 
-  virtual void Run(Solver* const s) {
-    (constraint_->*method_)();
-  }
+  virtual void Run(Solver* const s) { (constraint_->*method_)(); }
 
   virtual string DebugString() const {
     return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
@@ -537,34 +532,26 @@ template <class T> class CallMethod0 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::* const method_)();
+  void (T::*const method_)();
   const string name_;
 };
 
-template <class T> Demon* MakeConstraintDemon0(Solver* const s,
-                                               T* const ct,
-                                               void (T::*method)(),
-                                               const string& name) {
+template <class T>
+Demon* MakeConstraintDemon0(Solver* const s, T* const ct, void (T::*method)(),
+                            const string& name) {
   return s->RevAlloc(new CallMethod0<T>(ct, method, name));
 }
 
 // Demon proxy to a method on the constraint with one argument.
-template <class T, class P> class CallMethod1 : public Demon {
+template <class T, class P>
+class CallMethod1 : public Demon {
  public:
-  CallMethod1(T* const ct,
-              void (T::*method)(P),
-              const string& name,
-              P param1)
-      : constraint_(ct),
-        method_(method),
-        name_(name),
-        param1_(param1) {}
+  CallMethod1(T* const ct, void (T::*method)(P), const string& name, P param1)
+      : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
   virtual ~CallMethod1() {}
 
-  virtual void Run(Solver* const s) {
-    (constraint_->*method_)(param1_);
-  }
+  virtual void Run(Solver* const s) { (constraint_->*method_)(param1_); }
 
   virtual string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
@@ -574,28 +561,23 @@ template <class T, class P> class CallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::* const method_)(P);
+  void (T::*const method_)(P);
   const string name_;
   P param1_;
 };
 
 template <class T, class P>
-Demon* MakeConstraintDemon1(Solver* const s,
-                            T* const ct,
-                            void (T::*method)(P),
-                            const string& name,
-                            P param1) {
+Demon* MakeConstraintDemon1(Solver* const s, T* const ct, void (T::*method)(P),
+                            const string& name, P param1) {
   return s->RevAlloc(new CallMethod1<T, P>(ct, method, name, param1));
 }
 
 // Demon proxy to a method on the constraint with two arguments.
-template <class T, class P, class Q> class CallMethod2 : public Demon {
+template <class T, class P, class Q>
+class CallMethod2 : public Demon {
  public:
-  CallMethod2(T* const ct,
-              void (T::*method)(P, Q),
-              const string& name,
-              P param1,
-              Q param2)
+  CallMethod2(T* const ct, void (T::*method)(P, Q), const string& name,
+              P param1, Q param2)
       : constraint_(ct),
         method_(method),
         name_(name),
@@ -611,40 +593,30 @@ template <class T, class P, class Q> class CallMethod2 : public Demon {
   virtual string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_),
-                  StrCat(", ", param2_, ")"));
+                  StrCat(", ", param1_), StrCat(", ", param2_, ")"));
   }
 
  private:
   T* const constraint_;
-  void (T::* const method_)(P, Q);
+  void (T::*const method_)(P, Q);
   const string name_;
   P param1_;
   Q param2_;
 };
 
 template <class T, class P, class Q>
-Demon* MakeConstraintDemon2(Solver* const s,
-                            T* const ct,
-                            void (T::*method)(P, Q),
-                            const string& name,
-                            P param1,
-                            Q param2) {
-  return s->RevAlloc(new CallMethod2<T, P, Q>(ct,
-                                              method,
-                                              name,
-                                              param1,
-                                              param2));
+Demon* MakeConstraintDemon2(Solver* const s, T* const ct,
+                            void (T::*method)(P, Q), const string& name,
+                            P param1, Q param2) {
+  return s->RevAlloc(
+      new CallMethod2<T, P, Q>(ct, method, name, param1, param2));
 }
 // Demon proxy to a method on the constraint with three arguments.
-template <class T, class P, class Q, class R> class CallMethod3 : public Demon {
+template <class T, class P, class Q, class R>
+class CallMethod3 : public Demon {
  public:
-  CallMethod3(T* const ct,
-              void (T::*method)(P, Q, R),
-              const string& name,
-              P param1,
-              Q param2,
-              R param3)
+  CallMethod3(T* const ct, void (T::*method)(P, Q, R), const string& name,
+              P param1, Q param2, R param3)
       : constraint_(ct),
         method_(method),
         name_(name),
@@ -661,14 +633,13 @@ template <class T, class P, class Q, class R> class CallMethod3 : public Demon {
   virtual string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_),
-                  StrCat(", ", param2_),
+                  StrCat(", ", param1_), StrCat(", ", param2_),
                   StrCat(", ", param3_, ")"));
   }
 
  private:
   T* const constraint_;
-  void (T::* const method_)(P, Q, R);
+  void (T::*const method_)(P, Q, R);
   const string name_;
   P param1_;
   Q param2_;
@@ -676,19 +647,11 @@ template <class T, class P, class Q, class R> class CallMethod3 : public Demon {
 };
 
 template <class T, class P, class Q, class R>
-Demon* MakeConstraintDemon3(Solver* const s,
-                            T* const ct,
-                            void (T::*method)(P, Q, R),
-                            const string& name,
-                            P param1,
-                            Q param2,
-                            R param3) {
-  return s->RevAlloc(new CallMethod3<T, P, Q, R>(ct,
-                                                 method,
-                                                 name,
-                                                 param1,
-                                                 param2,
-                                                 param3));
+Demon* MakeConstraintDemon3(Solver* const s, T* const ct,
+                            void (T::*method)(P, Q, R), const string& name,
+                            P param1, Q param2, R param3) {
+  return s->RevAlloc(
+      new CallMethod3<T, P, Q, R>(ct, method, name, param1, param2, param3));
 }
 // @}
 
@@ -698,56 +661,48 @@ Demon* MakeConstraintDemon3(Solver* const s,
 // have a priority DELAYED_PRIORITY.
 
 // Low-priority demon proxy to a method on the constraint with no arguments.
-template <class T> class DelayedCallMethod0 : public Demon {
+template <class T>
+class DelayedCallMethod0 : public Demon {
  public:
   DelayedCallMethod0(T* const ct, void (T::*method)(), const string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
   virtual ~DelayedCallMethod0() {}
 
-  virtual void Run(Solver* const s) {
-    (constraint_->*method_)();
-  }
+  virtual void Run(Solver* const s) { (constraint_->*method_)(); }
 
   virtual Solver::DemonPriority priority() const {
     return Solver::DELAYED_PRIORITY;
   }
 
   virtual string DebugString() const {
-    return "DelayedCallMethod_"
-        + name_ + "(" + constraint_->DebugString() + ")";
+    return "DelayedCallMethod_" + name_ + "(" + constraint_->DebugString() +
+           ")";
   }
 
  private:
   T* const constraint_;
-  void (T::* const method_)();
+  void (T::*const method_)();
   const string name_;
 };
 
-template <class T> Demon* MakeDelayedConstraintDemon0(Solver* const s,
-                                                      T* const ct,
-                                                      void (T::*method)(),
-                                                      const string& name) {
+template <class T>
+Demon* MakeDelayedConstraintDemon0(Solver* const s, T* const ct,
+                                   void (T::*method)(), const string& name) {
   return s->RevAlloc(new DelayedCallMethod0<T>(ct, method, name));
 }
 
 // Low-priority demon proxy to a method on the constraint with one argument.
-template <class T, class P> class DelayedCallMethod1 : public Demon {
+template <class T, class P>
+class DelayedCallMethod1 : public Demon {
  public:
-  DelayedCallMethod1(T* const ct,
-                     void (T::*method)(P),
-                     const string& name,
+  DelayedCallMethod1(T* const ct, void (T::*method)(P), const string& name,
                      P param1)
-      : constraint_(ct),
-        method_(method),
-        name_(name),
-        param1_(param1) {}
+      : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
   virtual ~DelayedCallMethod1() {}
 
-  virtual void Run(Solver* const s) {
-    (constraint_->*method_)(param1_);
-  }
+  virtual void Run(Solver* const s) { (constraint_->*method_)(param1_); }
 
   virtual Solver::DemonPriority priority() const {
     return Solver::DELAYED_PRIORITY;
@@ -761,28 +716,24 @@ template <class T, class P> class DelayedCallMethod1 : public Demon {
 
  private:
   T* const constraint_;
-  void (T::* const method_)(P);
+  void (T::*const method_)(P);
   const string name_;
   P param1_;
 };
 
 template <class T, class P>
-Demon* MakeDelayedConstraintDemon1(Solver* const s,
-                                   T* const ct,
-                                   void (T::*method)(P),
-                                   const string& name,
+Demon* MakeDelayedConstraintDemon1(Solver* const s, T* const ct,
+                                   void (T::*method)(P), const string& name,
                                    P param1) {
   return s->RevAlloc(new DelayedCallMethod1<T, P>(ct, method, name, param1));
 }
 
 // Low-priority demon proxy to a method on the constraint with two arguments.
-template <class T, class P, class Q> class DelayedCallMethod2 : public Demon {
+template <class T, class P, class Q>
+class DelayedCallMethod2 : public Demon {
  public:
-  DelayedCallMethod2(T* const ct,
-                     void (T::*method)(P, Q),
-                     const string& name,
-                     P param1,
-                     Q param2)
+  DelayedCallMethod2(T* const ct, void (T::*method)(P, Q), const string& name,
+                     P param1, Q param2)
       : constraint_(ct),
         method_(method),
         name_(name),
@@ -802,34 +753,27 @@ template <class T, class P, class Q> class DelayedCallMethod2 : public Demon {
   virtual string DebugString() const {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_),
-                  StrCat(", ", param2_, ")"));
+                  StrCat(", ", param1_), StrCat(", ", param2_, ")"));
   }
 
  private:
   T* const constraint_;
-  void (T::* const method_)(P, Q);
+  void (T::*const method_)(P, Q);
   const string name_;
   P param1_;
   Q param2_;
 };
 
 template <class T, class P, class Q>
-Demon* MakeDelayedConstraintDemon2(Solver* const s,
-                                   T* const ct,
-                                   void (T::*method)(P, Q),
-                                   const string& name,
-                                   P param1,
-                                   Q param2) {
-  return s->RevAlloc(new DelayedCallMethod2<T, P, Q>(ct,
-                                                     method,
-                                                     name,
-                                                     param1,
-                                                     param2));
+Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
+                                   void (T::*method)(P, Q), const string& name,
+                                   P param1, Q param2) {
+  return s->RevAlloc(
+      new DelayedCallMethod2<T, P, Q>(ct, method, name, param1, param2));
 }
 // @}
 
-#endif   // !defined(SWIG)
+#endif  // !defined(SWIG)
 
 // ---------- Local search operators ----------
 
@@ -866,17 +810,16 @@ class LocalSearchOperator : public BaseObject {
 class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
   IntVarLocalSearchOperator();
-  IntVarLocalSearchOperator(const IntVar* const* vars, int size);
   explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars);
   virtual ~IntVarLocalSearchOperator();
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
   virtual void Start(const Assignment* assignment);
   virtual bool IsIncremental() const { return false; }
-  int Size() const { return size_; }
+  int Size() const { return vars_.size(); }
   // Returns the value in the current assignment of the variable of given index.
   int64 Value(int64 index) const {
-    DCHECK_LT(index, size_);
+    DCHECK_LT(index, vars_.size());
     return values_[index];
   }
   // Returns the variable of given index.
@@ -898,7 +841,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   void Deactivate(int64 index);
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
-  void AddVars(const IntVar* const* vars, int size);
+  void AddVars(const std::vector<IntVar*>& vars);
 
  protected:
   // Creates a new neighbor. It returns false when the neighborhood is
@@ -914,10 +857,9 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   virtual void OnStart() {}
   void MarkChange(int64 index);
 
-  scoped_array<IntVar*> vars_;
-  int size_;
-  scoped_array<int64> values_;
-  scoped_array<int64> old_values_;
+  std::vector<IntVar*> vars_;
+  std::vector<int64> values_;
+  std::vector<int64> old_values_;
   Bitmap activated_;
   Bitmap was_activated_;
   std::vector<int64> changes_;
@@ -932,17 +874,17 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 class SequenceVarLocalSearchOperator : public LocalSearchOperator {
  public:
   SequenceVarLocalSearchOperator();
-  SequenceVarLocalSearchOperator(const SequenceVar* const* vars, int size);
+  explicit SequenceVarLocalSearchOperator(const std::vector<SequenceVar*>& vars);
   virtual ~SequenceVarLocalSearchOperator();
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
   virtual void Start(const Assignment* assignment);
   virtual bool IsIncremental() const { return false; }
-  int Size() const { return size_; }
-  // Returns the value in the current assignment of the variable of given index.
+  int Size() const { return vars_.size(); }
+// Returns the value in the current assignment of the variable of given index.
 #if !defined(SWIG)
   const std::vector<int>& Sequence(int64 index) const {
-    DCHECK_LT(index, size_);
+    DCHECK_LT(index, vars_.size());
     return values_[index];
   }
 #endif
@@ -961,7 +903,7 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
   void Deactivate(int64 index);
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
-  void AddVars(const SequenceVar* const* vars, int size);
+  void AddVars(const std::vector<SequenceVar*>& vars);
 
  private:
   // Called by Start() after synchronizing the operator with the current
@@ -970,11 +912,10 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
   virtual void OnStart() {}
   void MarkChange(int64 index);
 
-  scoped_array<SequenceVar*> vars_;
-  int size_;
-  scoped_array<std::vector<int> > values_;
-  scoped_array<std::vector<int> > backward_values_;
-  scoped_array<std::vector<int> > old_values_;
+  std::vector<SequenceVar*> vars_;
+  std::vector<std::vector<int> > values_;
+  std::vector<std::vector<int> > backward_values_;
+  std::vector<std::vector<int> > old_values_;
   Bitmap activated_;
   Bitmap was_activated_;
   std::vector<int64> changes_;
@@ -995,8 +936,7 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
 //
 // class OneVarLNS : public BaseLNS {
 //  public:
-//   OneVarLNS(const IntVar* const* vars, int size)
-//       : BaseLNS(vars, size), index_(0) {}
+//   OneVarLNS(const std::vector<IntVar*>& vars) : BaseLNS(vars), index_(0) {}
 //   virtual ~OneVarLNS() {}
 //   virtual void InitFragments() { index_ = 0; }
 //   virtual bool NextFragment(std::vector<int>* fragment) {
@@ -1015,7 +955,6 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
 // };
 class BaseLNS : public IntVarLocalSearchOperator {
  public:
-  BaseLNS(const IntVar* const* vars, int size);
   explicit BaseLNS(const std::vector<IntVar*>& vars);
   virtual ~BaseLNS();
   virtual void InitFragments();
@@ -1038,7 +977,7 @@ class BaseLNS : public IntVarLocalSearchOperator {
 // variable value is going to be (given the current value and the variable).
 class ChangeValue : public IntVarLocalSearchOperator {
  public:
-  ChangeValue(const IntVar* const* vars, int size);
+  explicit ChangeValue(const std::vector<IntVar*>& vars);
   virtual ~ChangeValue();
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
 
@@ -1069,10 +1008,8 @@ class ChangeValue : public IntVarLocalSearchOperator {
 // the services above (no direct manipulation of assignments).
 class PathOperator : public IntVarLocalSearchOperator {
  public:
-  PathOperator(const IntVar* const* next_vars,
-               const IntVar* const* path_vars,
-               int size,
-               int number_of_base_nodes);
+  PathOperator(const std::vector<IntVar*>& next_vars,
+               const std::vector<IntVar*>& path_vars, int number_of_base_nodes);
   virtual ~PathOperator() {}
   virtual bool MakeNeighbor() = 0;
 
@@ -1112,17 +1049,13 @@ class PathOperator : public IntVarLocalSearchOperator {
   // This is used to avoid restarting on base nodes which have changed paths,
   // leading to potentially skipping neighbors.
   // TODO(user): remove this when automatic detection of such cases in done.
-  virtual bool RestartAtPathStartOnSynchronize() {
-    return false;
-  }
+  virtual bool RestartAtPathStartOnSynchronize() { return false; }
   // Returns true if a base node has to be on the same path as the "previous"
   // base node (base node of index base_index - 1).
   // Useful to limit neighborhood exploration to nodes on the same path.
   // TODO(user): ideally this should be OnSamePath(int64 node1, int64 node2);
   // it's currently way more complicated to implement.
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
-    return false;
-  }
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) { return false; }
   // Returns the index of the node to which the base node of index base_index
   // must be set to when it reaches the end of a path.
   // By default, it is set to the start of the current path.
@@ -1175,9 +1108,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   // Reset the position of the operator to its position when Start() was last
   // called; this can be used to let an operator iterate more than once over
   // the paths.
-  void ResetPosition() {
-    just_started_ = true;
-  }
+  void ResetPosition() { just_started_ = true; }
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
@@ -1196,8 +1127,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   void InitializePathStarts();
   void InitializeInactives();
   void InitializeBaseNodes();
-  bool CheckChainValidity(int64 chain_start,
-                          int64 chain_end,
+  bool CheckChainValidity(int64 chain_start, int64 chain_end,
                           int64 exclude) const;
   void Synchronize();
 
@@ -1233,21 +1163,20 @@ class LocalSearchFilter : public BaseObject {
 
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
-  IntVarLocalSearchFilter(const IntVar* const* vars, int size);
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter();
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
   virtual void Synchronize(const Assignment* assignment);
 
-  bool FindIndex(const IntVar* const var, int64* index) const {
-    DCHECK(index != NULL);
+  bool FindIndex(IntVar* const var, int64* index) const {
+    DCHECK(index != nullptr);
     return FindCopy(var_to_index_, var, index);
   }
 
   // Add variables to "track" to the filter.
-  void AddVars(const IntVar* const* vars, int size);
-  int Size() const { return size_; }
+  void AddVars(const std::vector<IntVar*>& vars);
+  int Size() const { return vars_.size(); }
   IntVar* Var(int index) const { return vars_[index]; }
   int64 Value(int index) const { return values_[index]; }
 
@@ -1255,10 +1184,9 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   virtual void OnSynchronize() {}
 
  private:
-  scoped_array<IntVar*> vars_;
-  scoped_array<int64> values_;
-  int size_;
-  dense_hash_map<const IntVar*, int64> var_to_index_;
+  std::vector<IntVar*> vars_;
+  std::vector<int64> values_;
+  dense_hash_map<IntVar*, int64> var_to_index_;
 };
 
 // ---------- PropagationMonitor ----------
@@ -1270,20 +1198,18 @@ class PropagationMonitor : public SearchMonitor {
 
   // Propagation events.
   virtual void BeginConstraintInitialPropagation(
-      const Constraint* const constraint) = 0;
+      Constraint* const constraint) = 0;
   virtual void EndConstraintInitialPropagation(
-      const Constraint* const constraint) = 0;
+      Constraint* const constraint) = 0;
   virtual void BeginNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) = 0;
+      Constraint* const parent, Constraint* const nested) = 0;
   virtual void EndNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) = 0;
-  virtual void RegisterDemon(const Demon* const demon) = 0;
-  virtual void BeginDemonRun(const Demon* const demon) = 0;
-  virtual void EndDemonRun(const Demon* const demon) = 0;
-  virtual void StartProcessingIntegerVariable(const IntVar* const var) = 0;
-  virtual void EndProcessingIntegerVariable(const IntVar* const var) = 0;
+      Constraint* const parent, Constraint* const nested) = 0;
+  virtual void RegisterDemon(Demon* const demon) = 0;
+  virtual void BeginDemonRun(Demon* const demon) = 0;
+  virtual void EndDemonRun(Demon* const demon) = 0;
+  virtual void StartProcessingIntegerVariable(IntVar* const var) = 0;
+  virtual void EndProcessingIntegerVariable(IntVar* const var) = 0;
   virtual void PushContext(const string& context) = 0;
   virtual void PopContext() = 0;
   // IntExpr modifiers.
@@ -1297,27 +1223,20 @@ class PropagationMonitor : public SearchMonitor {
   virtual void RemoveValue(IntVar* const var, int64 value) = 0;
   virtual void SetValue(IntVar* const var, int64 value) = 0;
   virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) = 0;
-  virtual void SetValues(IntVar* const var,
-                         const int64* const values,
-                         int size) = 0;
-  virtual void RemoveValues(IntVar* const var,
-                            const int64* const values,
-                            int size) = 0;
+  virtual void SetValues(IntVar* const var, const std::vector<int64>& values) = 0;
+  virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) = 0;
   // IntervalVar modifiers.
   virtual void SetStartMin(IntervalVar* const var, int64 new_min) = 0;
   virtual void SetStartMax(IntervalVar* const var, int64 new_max) = 0;
-  virtual void SetStartRange(IntervalVar* const var,
-                             int64 new_min,
+  virtual void SetStartRange(IntervalVar* const var, int64 new_min,
                              int64 new_max) = 0;
   virtual void SetEndMin(IntervalVar* const var, int64 new_min) = 0;
   virtual void SetEndMax(IntervalVar* const var, int64 new_max) = 0;
-  virtual void SetEndRange(IntervalVar* const var,
-                           int64 new_min,
+  virtual void SetEndRange(IntervalVar* const var, int64 new_min,
                            int64 new_max) = 0;
   virtual void SetDurationMin(IntervalVar* const var, int64 new_min) = 0;
   virtual void SetDurationMax(IntervalVar* const var, int64 new_max) = 0;
-  virtual void SetDurationRange(IntervalVar* const var,
-                                int64 new_min,
+  virtual void SetDurationRange(IntervalVar* const var, int64 new_min,
                                 int64 new_max) = 0;
   virtual void SetPerformed(IntervalVar* const var, bool value) = 0;
   // SequenceVar modifiers
@@ -1333,47 +1252,6 @@ class PropagationMonitor : public SearchMonitor {
   virtual void Install();
 };
 
-// ---------- Overflow utility functions ----------
-
-// A note on overflow treatment.
-// kint64min and kint64max are treated as infinity.
-// Thus if the computation overflows, the result is always kint64m(ax/in).
-// On the other hand, SetMin(kint64min) and SetMax(kint64max) are always a no-op
-// on expressions that can overflow.
-
-inline bool AddOverflows(int64 left, int64 right) {
-  return right > 0 && left > kint64max - right;
-}
-
-inline bool AddUnderflows(int64 left, int64 right) {
-  return right < 0 && left < kint64min - right;
-}
-
-inline int64 CapAdd(int64 left, int64 right) {
-  return AddOverflows(left, right) ? kint64max :
-      (AddUnderflows(left, right) ? kint64min : left + right);
-}
-
-inline bool SubOverflows(int64 left, int64 right) {
-  return right < 0 && left > kint64max + right;
-}
-
-inline bool SubUnderflows(int64 left, int64 right) {
-  return right > 0 && left < kint64min + right;
-}
-
-inline int64 CapSub(int64 left, int64 right) {
-  return SubOverflows(left, right) ? kint64max :
-      (SubUnderflows(left, right) ? kint64min : left - right);
-}
-
-inline int64 CapOpp(int64 v) {
-  // Note: -kint64min != kint64max.
-  return v == kint64min ? kint64max : -v;
-}
-
-int64 CapProd(int64 left, int64 right);
-
 // ---------- SymmetryBreaker ----------
 
 class SymmetryManager;
@@ -1383,7 +1261,8 @@ class SymmetryManager;
 // Each symmetry breaker represents one class of symmetry.
 class SymmetryBreaker : public DecisionVisitor {
  public:
-  SymmetryBreaker() : symmetry_manager_(NULL), index_in_symmetry_manager_(-1) {}
+  SymmetryBreaker()
+  : symmetry_manager_(nullptr), index_in_symmetry_manager_(-1) {}
   virtual ~SymmetryBreaker() {}
 
   void AddIntegerVariableEqualValueClause(IntVar* const var, int64 value);
@@ -1394,7 +1273,7 @@ class SymmetryBreaker : public DecisionVisitor {
  private:
   friend class SymmetryManager;
   void set_symmetry_manager_and_index(SymmetryManager* manager, int index) {
-    CHECK(symmetry_manager_ == NULL);
+    CHECK(symmetry_manager_ == nullptr);
     CHECK_EQ(-1, index_in_symmetry_manager_);
     symmetry_manager_ = manager;
     index_in_symmetry_manager_ = index;
@@ -1413,11 +1292,8 @@ class SymmetryBreaker : public DecisionVisitor {
 // the search is runnning.
 class SearchLog : public SearchMonitor {
  public:
-  SearchLog(Solver* const s,
-            OptimizeVar* const obj,
-            IntVar* const var,
-            ResultCallback<string>* display_callback,
-            int period);
+  SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
+            ResultCallback<string>* display_callback, int period);
   virtual ~SearchLog();
   virtual void EnterSearch();
   virtual void ExitSearch();
@@ -1564,48 +1440,37 @@ class ModelCache {
 
   // Var Constant Constraints.
   virtual Constraint* FindVarConstantConstraint(
-      IntVar* const var,
-      int64 value,
-      VarConstantConstraintType type) const = 0;
+      IntVar* const var, int64 value, VarConstantConstraintType type) const = 0;
 
-  virtual void InsertVarConstantConstraint(
-      Constraint* const ct,
-      IntVar* const var,
-      int64 value,
-      VarConstantConstraintType type) = 0;
+  virtual void InsertVarConstantConstraint(Constraint* const ct,
+                                           IntVar* const var, int64 value,
+                                           VarConstantConstraintType type) = 0;
 
   // Var Constant Constant Constraints.
 
   virtual Constraint* FindVarConstantConstantConstraint(
-      IntVar* const var,
-      int64 value1,
-      int64 value2,
+      IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantConstraintType type) const = 0;
 
   virtual void InsertVarConstantConstantConstraint(
-      Constraint* const ct,
-      IntVar* const var,
-      int64 value1,
-      int64 value2,
+      Constraint* const ct, IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantConstraintType type) = 0;
 
   // Expr Expr Constraints.
 
   virtual Constraint* FindExprExprConstraint(
-      IntExpr* const expr1,
-      IntExpr* const expr2,
+      IntExpr* const expr1, IntExpr* const expr2,
       ExprExprConstraintType type) const = 0;
 
   virtual void InsertExprExprConstraint(Constraint* const ct,
-                                      IntExpr* const expr1,
-                                      IntExpr* const expr2,
-                                      ExprExprConstraintType type) = 0;
+                                        IntExpr* const expr1,
+                                        IntExpr* const expr2,
+                                        ExprExprConstraintType type) = 0;
 
   // Expr Expressions.
 
-  virtual IntExpr* FindExprExpression(
-      IntExpr* const expr,
-      ExprExpressionType type) const = 0;
+  virtual IntExpr* FindExprExpression(IntExpr* const expr,
+                                      ExprExpressionType type) const = 0;
 
   virtual void InsertExprExpression(IntExpr* const expression,
                                     IntExpr* const expr,
@@ -1614,92 +1479,72 @@ class ModelCache {
   // Expr Constant Expressions.
 
   virtual IntExpr* FindExprConstantExpression(
-      IntExpr* const expr,
-      int64 value,
+      IntExpr* const expr, int64 value,
       ExprConstantExpressionType type) const = 0;
 
   virtual void InsertExprConstantExpression(
-      IntExpr* const expression,
-      IntExpr* const var,
-      int64 value,
+      IntExpr* const expression, IntExpr* const var, int64 value,
       ExprConstantExpressionType type) = 0;
 
   // Expr Expr Expressions.
 
   virtual IntExpr* FindExprExprExpression(
-      IntExpr* const var1,
-      IntExpr* const var2,
+      IntExpr* const var1, IntExpr* const var2,
       ExprExprExpressionType type) const = 0;
 
-  virtual void InsertExprExprExpression(
-      IntExpr* const expression,
-      IntExpr* const var1,
-      IntExpr* const var2,
-      ExprExprExpressionType type) = 0;
+  virtual void InsertExprExprExpression(IntExpr* const expression,
+                                        IntExpr* const var1,
+                                        IntExpr* const var2,
+                                        ExprExprExpressionType type) = 0;
 
   // Var Constant Constant Expressions.
 
   virtual IntExpr* FindVarConstantConstantExpression(
-      IntVar* const var,
-      int64 value1,
-      int64 value2,
+      IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantExpressionType type) const = 0;
 
   virtual void InsertVarConstantConstantExpression(
-      IntExpr* const expression,
-      IntVar* const var,
-      int64 value1,
-      int64 value2,
+      IntExpr* const expression, IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantExpressionType type) = 0;
 
   // Var Constant Array Expressions.
 
   virtual IntExpr* FindVarConstantArrayExpression(
-      IntVar* const var,
-      ConstIntArray* const values,
+      IntVar* const var, const std::vector<int64>& values,
       VarConstantArrayExpressionType type) const = 0;
 
   virtual void InsertVarConstantArrayExpression(
-      IntExpr* const expression,
-      IntVar* const var,
-      ConstIntArray* const values,
+      IntExpr* const expression, IntVar* const var, const std::vector<int64>& values,
       VarConstantArrayExpressionType type) = 0;
 
   // Var Array Expressions.
 
   virtual IntExpr* FindVarArrayExpression(
-      const std::vector<IntVar*>& vars,
-      VarArrayExpressionType type) const = 0;
+      const std::vector<IntVar*>& vars, VarArrayExpressionType type) const = 0;
 
-  virtual void InsertVarArrayExpression(
-      IntExpr* const expression,
-      const std::vector<IntVar*>& vars,
-      VarArrayExpressionType type) = 0;
+  virtual void InsertVarArrayExpression(IntExpr* const expression,
+                                        const std::vector<IntVar*>& vars,
+                                        VarArrayExpressionType type) = 0;
 
   // Var Array Constant Array Expressions.
 
   virtual IntExpr* FindVarArrayConstantArrayExpression(
-      const std::vector<IntVar*>& vars,
-      ConstIntArray* const values,
+      const std::vector<IntVar*>& vars, const std::vector<int64>& values,
       VarArrayConstantArrayExpressionType type) const = 0;
 
   virtual void InsertVarArrayConstantArrayExpression(
-      IntExpr* const expression,
-      const std::vector<IntVar*>& var,
-      ConstIntArray* const values,
+      IntExpr* const expression, const std::vector<IntVar*>& var,
+      const std::vector<int64>& values,
       VarArrayConstantArrayExpressionType type) = 0;
 
   // Var Array Constant Expressions.
 
   virtual IntExpr* FindVarArrayConstantExpression(
-      const std::vector<IntVar*>& vars,
-      int64 value,
+      const std::vector<IntVar*>& vars, int64 value,
       VarArrayConstantExpressionType type) const = 0;
 
   virtual void InsertVarArrayConstantExpression(
-      IntExpr* const expression,
-      const std::vector<IntVar*>& var,
-      int64 value,
+      IntExpr* const expression, const std::vector<IntVar*>& var, int64 value,
       VarArrayConstantExpressionType type) = 0;
 
   Solver* solver() const;
@@ -1719,23 +1564,19 @@ class DependencyGraph : public BaseObject {
 
   // start(left) >= end(right) + delay.
   void AddStartsAfterEndWithDelay(IntervalVar* const left,
-                                  IntervalVar* const right,
-                                  int64 delay);
+                                  IntervalVar* const right, int64 delay);
 
   // start(left) == end(right) + delay.
   void AddStartsAtEndWithDelay(IntervalVar* const left,
-                               IntervalVar* const right,
-                               int64 delay);
+                               IntervalVar* const right, int64 delay);
 
   // start(left) >= start(right) + delay.
   void AddStartsAfterStartWithDelay(IntervalVar* const left,
-                                    IntervalVar* const right,
-                                    int64 delay);
+                                    IntervalVar* const right, int64 delay);
 
   // start(left) == start(right) + delay.
   void AddStartsAtStartWithDelay(IntervalVar* const left,
-                                 IntervalVar* const right,
-                                 int64 delay);
+                                 IntervalVar* const right, int64 delay);
 
   // Internal API.
 
@@ -1745,8 +1586,7 @@ class DependencyGraph : public BaseObject {
 
   // Adds left == right + offset.
   virtual void AddEquality(DependencyGraphNode* const left,
-                           DependencyGraphNode* const right,
-                           int64 offset) = 0;
+                           DependencyGraphNode* const right, int64 offset) = 0;
   // Adds left >= right + offset.
   virtual void AddInequality(DependencyGraphNode* const left,
                              DependencyGraphNode* const right,
@@ -1775,43 +1615,34 @@ class ArgumentHolder {
   // Setters.
   void SetIntegerArgument(const string& arg_name, int64 value);
   void SetIntegerArrayArgument(const string& arg_name,
-                               const int64* const values,
-                               int size);
+                               const std::vector<int64>& values);
   void SetIntegerMatrixArgument(const string& arg_name,
                                 const IntTupleSet& values);
   void SetIntegerExpressionArgument(const string& arg_name,
-                                    const IntExpr* const expr);
+                                    IntExpr* const expr);
   void SetIntegerVariableArrayArgument(const string& arg_name,
-                                       const IntVar* const * const vars,
-                                       int size);
-  void SetIntervalArgument(const string& arg_name,
-                           const IntervalVar* const var);
+                                       const std::vector<IntVar*>& vars);
+  void SetIntervalArgument(const string& arg_name, IntervalVar* const var);
   void SetIntervalArrayArgument(const string& arg_name,
-                                const IntervalVar* const * const vars,
-                                int size);
-  void SetSequenceArgument(const string& arg_name,
-                           const SequenceVar* const var);
+                                const std::vector<IntervalVar*>& vars);
+  void SetSequenceArgument(const string& arg_name, SequenceVar* const var);
   void SetSequenceArrayArgument(const string& arg_name,
-                                const SequenceVar* const * const vars,
-                                int size);
+                                const std::vector<SequenceVar*>& vars);
 
   // Checks if arguments exist.
   bool HasIntegerExpressionArgument(const string& arg_name) const;
   bool HasIntegerVariableArrayArgument(const string& arg_name) const;
 
   // Getters.
-  int64 FindIntegerArgumentWithDefault(
-      const string& arg_name,
-      int64 def) const;
+  int64 FindIntegerArgumentWithDefault(const string& arg_name, int64 def) const;
   int64 FindIntegerArgumentOrDie(const string& arg_name) const;
   const std::vector<int64>& FindIntegerArrayArgumentOrDie(
       const string& arg_name) const;
   const IntTupleSet& FindIntegerMatrixArgumentOrDie(
       const string& arg_name) const;
 
-  const IntExpr* FindIntegerExpressionArgumentOrDie(
-      const string& arg_name) const;
-  const std::vector<const IntVar*>& FindIntegerVariableArrayArgumentOrDie(
+  IntExpr* FindIntegerExpressionArgumentOrDie(const string& arg_name) const;
+  const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(
       const string& arg_name) const;
 
  private:
@@ -1819,12 +1650,12 @@ class ArgumentHolder {
   hash_map<string, int64> integer_argument_;
   hash_map<string, std::vector<int64> > integer_array_argument_;
   hash_map<string, IntTupleSet> matrix_argument_;
-  hash_map<string, const IntExpr*> integer_expression_argument_;
-  hash_map<string, const IntervalVar*> interval_argument_;
-  hash_map<string, const SequenceVar*> sequence_argument_;
-  hash_map<string, std::vector<const IntVar*> > integer_variable_array_argument_;
-  hash_map<string, std::vector<const IntervalVar*> > interval_array_argument_;
-  hash_map<string, std::vector<const SequenceVar*> > sequence_array_argument_;
+  hash_map<string, IntExpr*> integer_expression_argument_;
+  hash_map<string, IntervalVar*> interval_argument_;
+  hash_map<string, SequenceVar*> sequence_argument_;
+  hash_map<string, std::vector<IntVar*> > integer_variable_array_argument_;
+  hash_map<string, std::vector<IntervalVar*> > interval_array_argument_;
+  hash_map<string, std::vector<SequenceVar*> > sequence_array_argument_;
 };
 
 // Model Parser
@@ -1847,47 +1678,35 @@ class ModelParser : public ModelVisitor {
   virtual void EndVisitIntegerExpression(const string& type_name,
                                          const IntExpr* const expr);
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const IntExpr* const delegate);
+                                    IntExpr* const delegate);
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation,
-                                    int64 value,
-                                    const IntVar* const delegate);
+                                    const string& operation, int64 value,
+                                    IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     int64 value,
-                                     const IntervalVar* const delegate);
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation,
-                                     const IntervalVar* const * delegates,
-                                     int size);
+                                     const string& operation, int64 value,
+                                     IntervalVar* const delegate);
   virtual void VisitSequenceVariable(const SequenceVar* const variable);
   // Integer arguments
   virtual void VisitIntegerArgument(const string& arg_name, int64 value);
   virtual void VisitIntegerArrayArgument(const string& arg_name,
-                                         const int64* const values,
-                                         int size);
+                                         const std::vector<int64>& values);
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
                                           const IntTupleSet& values);
   // Variables.
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument);
+  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+                                              IntExpr* const argument);
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size);
+      const string& arg_name, const std::vector<IntVar*>& arguments);
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument);
-  virtual void VisitIntervalArrayArgument(const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size);
+                                     IntervalVar* const argument);
+  virtual void VisitIntervalArrayArgument(
+      const string& arg_name, const std::vector<IntervalVar*>& arguments);
   // Visit sequence argument.
   virtual void VisitSequenceArgument(const string& arg_name,
-                                     const SequenceVar* const argument);
-  virtual void VisitSequenceArrayArgument(const string& arg_name,
-                                          const SequenceVar* const * arguments,
-                                          int size);
+                                     SequenceVar* const argument);
+  virtual void VisitSequenceArrayArgument(
+      const string& arg_name, const std::vector<SequenceVar*>& arguments);
 
  protected:
   void PushArgumentHolder();
@@ -1903,7 +1722,8 @@ class ModelParser : public ModelVisitor {
 // directions, and even accept negative indices.  The objects stored
 // have a type T. As it relies on the solver for reversibility, these
 // objects can be up-casted to 'C' when using Solver::SaveValue().
-template <class T, class C> class RevGrowingArray {
+template <class T, class C>
+class RevGrowingArray {
  public:
   explicit RevGrowingArray(int64 block_size)
       : block_size_(block_size), block_offset_(0) {
@@ -1912,7 +1732,7 @@ template <class T, class C> class RevGrowingArray {
 
   ~RevGrowingArray() {
     for (int i = 0; i < elements_.size(); ++i) {
-      delete [] elements_[i];
+      delete[] elements_[i];
     }
   }
 
@@ -1923,7 +1743,7 @@ template <class T, class C> class RevGrowingArray {
       return T();
     }
     const T* block = elements_[relative_index];
-    return block != NULL ? block[index - block_index * block_size_] : T();
+    return block != nullptr ? block[index - block_index * block_size_] : T();
   }
 
   void RevInsert(Solver* const solver, int64 index, T value) {
@@ -1953,7 +1773,7 @@ template <class T, class C> class RevGrowingArray {
       GrowUp(block_index);
     }
     T* block = elements_[block_index - block_offset_];
-    if (block == NULL) {
+    if (block == nullptr) {
       block = NewBlock();
       elements_[block_index - block_offset_] = block;
     }
@@ -1961,9 +1781,8 @@ template <class T, class C> class RevGrowingArray {
   }
 
   int64 ComputeBlockIndex(int64 value) const {
-    return value >= 0 ?
-        value / block_size_ :
-        (value - block_size_ + 1) / block_size_;
+    return value >= 0 ? value / block_size_
+                      : (value - block_size_ + 1) / block_size_;
   }
 
   void GrowUp(int64 block_index) {
@@ -1974,7 +1793,7 @@ template <class T, class C> class RevGrowingArray {
     const int64 delta = block_offset_ - block_index;
     block_offset_ = block_index;
     DCHECK_GT(delta, 0);
-    elements_.insert(elements_.begin(), delta, NULL);
+    elements_.insert(elements_.begin(), delta, nullptr);
   }
 
   const int64 block_size_;
@@ -1988,17 +1807,18 @@ template <class T, class C> class RevGrowingArray {
 // be an integer type.  You fill it at first, and then during search,
 // you can efficiently remove an element, and query the removed
 // elements.
-template <class T> class RevIntSet {
+template <class T>
+class RevIntSet {
  public:
   static const int kNoInserted = -1;
 
   // Capacity is the fixed size of the set (it cannot grow).
   explicit RevIntSet(int capacity)
-  : elements_(new T[capacity]),
-    num_elements_(0),
-    capacity_(capacity),
-    position_(new int[capacity]),
-    delete_position_(true) {
+      : elements_(new T[capacity]),
+        num_elements_(0),
+        capacity_(capacity),
+        position_(new int[capacity]),
+        delete_position_(true) {
     for (int i = 0; i < capacity; ++i) {
       position_[i] = kNoInserted;
     }
@@ -2006,20 +1826,19 @@ template <class T> class RevIntSet {
 
   // Capacity is the fixed size of the set (it cannot grow).
   RevIntSet(int capacity, int* shared_positions, int shared_positions_size)
-  : elements_(new T[capacity]),
-    num_elements_(0),
-    capacity_(capacity),
-    position_(shared_positions),
-    delete_position_(false) {
+      : elements_(new T[capacity]),
+        num_elements_(0),
+        capacity_(capacity),
+        position_(shared_positions),
+        delete_position_(false) {
     for (int i = 0; i < shared_positions_size; ++i) {
       position_[i] = kNoInserted;
     }
   }
 
-
   ~RevIntSet() {
     if (delete_position_) {
-      delete [] position_;
+      delete[] position_;
     }
   }
 
@@ -2041,7 +1860,7 @@ template <class T> class RevIntSet {
 
   void Insert(Solver* const solver, const T& elt) {
     const int position = num_elements_.Value();
-    DCHECK_LT(position, capacity_);  // Valid.
+    DCHECK_LT(position, capacity_);          // Valid.
     DCHECK_EQ(position_[elt], kNoInserted);  // Not already added.
     elements_[position] = elt;
     position_[elt] = position;
@@ -2058,9 +1877,7 @@ template <class T> class RevIntSet {
     num_elements_.Incr(solver);
   }
 
-  void Clear(Solver* const solver) {
-    num_elements_.SetValue(solver, 0);
-  }
+  void Clear(Solver* const solver) { num_elements_.SetValue(solver, 0); }
 
  private:
   void SwapTo(T value_index, int next_position) {
@@ -2075,7 +1892,7 @@ template <class T> class RevIntSet {
   }
 
   // Set of elements.
-  scoped_array<T> elements_;
+  scoped_ptr<T[]> elements_;
   // Number of elements in the set.
   NumericalRev<int> num_elements_;
   // Number of elements in the set.
@@ -2195,15 +2012,15 @@ class RevPartialSequence {
   // Number of elements in the sequence.
   const int size_;
   // Reverse mapping.
-  scoped_array<int> position_;
+  scoped_ptr<int[]> position_;
 };
 
 // ---------- Helpers ----------
 
 // ----- On integer vectors -----
 
-template <class T> bool IsArrayConstant(const std::vector<T>& values,
-                                        const T& value) {
+template <class T>
+bool IsArrayConstant(const std::vector<T>& values, const T& value) {
   for (int i = 0; i < values.size(); ++i) {
     if (values[i] != value) {
       return false;
@@ -2212,16 +2029,28 @@ template <class T> bool IsArrayConstant(const std::vector<T>& values,
   return true;
 }
 
-template<class T> bool AreAllOnes(const std::vector<T>& values) {
+template <class T>
+bool IsArrayBoolean(const std::vector<T>& values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != 0 && values[i] != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
+bool AreAllOnes(const std::vector<T>& values) {
   return IsArrayConstant(values, T(1));
 }
 
-template<class T> bool AreAllNull(const std::vector<T>& values) {
+template <class T>
+bool AreAllNull(const std::vector<T>& values) {
   return IsArrayConstant(values, T(0));
 }
 
-template<class T> bool AreAllGreaterOrEqual(const std::vector<T>& values,
-                                            const T& value) {
+template <class T>
+bool AreAllGreaterOrEqual(const std::vector<T>& values, const T& value) {
   for (int i = 0; i < values.size(); ++i) {
     if (values[i] < value) {
       return false;
@@ -2230,15 +2059,18 @@ template<class T> bool AreAllGreaterOrEqual(const std::vector<T>& values,
   return true;
 }
 
-template<class T> bool AreAllPositive(const std::vector<T>& values) {
+template <class T>
+bool AreAllPositive(const std::vector<T>& values) {
   return AreAllGreaterOrEqual(values, T(0));
 }
 
-template<class T> bool AreAllStrictlyPositive(const std::vector<T>& values) {
+template <class T>
+bool AreAllStrictlyPositive(const std::vector<T>& values) {
   return AreAllGreaterOrEqual(values, T(1));
 }
 
-template <class T> bool IsIncreasingContiguous(const std::vector<T>& values) {
+template <class T>
+bool IsIncreasingContiguous(const std::vector<T>& values) {
   for (int i = 0; i < values.size() - 1; ++i) {
     if (values[i + 1] != values[i] + 1) {
       return false;
@@ -2247,10 +2079,20 @@ template <class T> bool IsIncreasingContiguous(const std::vector<T>& values) {
   return true;
 }
 
+template <class T>
+bool IsIncreasing(const std::vector<T>& values) {
+  for (int i = 0; i < values.size() - 1; ++i) {
+    if (values[i + 1] < values[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // ----- On integer variable vector -----
 
-template <class T> bool IsArrayInRange(const std::vector<IntVar*>& vars,
-                                       T range_min, T range_max) {
+template <class T>
+bool IsArrayInRange(const std::vector<IntVar*>& vars, T range_min, T range_max) {
   for (int i = 0; i < vars.size(); ++i) {
     if (vars[i]->Min() < range_min || vars[i]->Max() > range_max) {
       return false;
@@ -2274,8 +2116,8 @@ inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
 
 // Returns true if all the variables are assigned to a single value,
 // or if their corresponding value is null.
-template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
-                                          const std::vector<T>& values) {
+template <class T>
+bool AreAllBoundOrNull(const std::vector<IntVar*>& vars, const std::vector<T>& values) {
   for (int i = 0; i < vars.size(); ++i) {
     if (values[i] != 0 && !vars[i]->Bound()) {
       return false;
@@ -2312,8 +2154,8 @@ inline int64 MinVarArray(const std::vector<IntVar*>& vars) {
   return result;
 }
 
-inline void FillValues(
-    const std::vector<IntVar*>& vars, std::vector<int64>* const values) {
+inline void FillValues(const std::vector<IntVar*>& vars,
+                       std::vector<int64>* const values) {
   values->clear();
   values->resize(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
@@ -2340,6 +2182,10 @@ inline int64 PosIntDivDown(int64 e, int64 v) {
     return e % v == 0 ? e / v : e / v - 1;
   }
 }
+
+// ----- Vector of integer manipulations -----
+std::vector<int64> ToInt64Vector(const std::vector<int>& input);
+std::vector<int64> SortedNoDuplicates(const std::vector<int64>& input);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

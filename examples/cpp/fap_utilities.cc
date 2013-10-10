@@ -21,7 +21,7 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 
 namespace operations_research {
 

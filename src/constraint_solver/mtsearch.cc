@@ -38,9 +38,7 @@ namespace {
 // and help creates the different objects needed by the searches.
 class MtSolveSupport : public ParallelSolveSupport {
  public:
-  MtSolveSupport(int workers,
-                 bool maximize,
-                 ModelBuilder* const run_model);
+  MtSolveSupport(int workers, bool maximize, ModelBuilder* const run_model);
 
   virtual ~MtSolveSupport();
 
@@ -63,26 +61,19 @@ class MtSolveSupport : public ParallelSolveSupport {
       Solver* const s, const Assignment* const solution);
 
   // A simple shortcut to create the search log only on the master.
-  virtual SearchMonitor* MakeSearchLog(Solver* const s,
-                                       bool master,
-                                       int64 freq,
+  virtual SearchMonitor* MakeSearchLog(Solver* const s, bool master, int64 freq,
                                        IntVar* const objective);
 
   // A simple shortcut to create the limit only on the workers and not
   // on the master.
-  virtual SearchMonitor* MakeLimit(Solver* const s,
-                                   bool master,
-                                   int64 time_limit,
-                                   int64 branch_limit,
-                                   int64 fail_limit,
-                                   int64 solution_limit);
+  virtual SearchMonitor* MakeLimit(Solver* const s, bool master,
+                                   int64 time_limit, int64 branch_limit,
+                                   int64 fail_limit, int64 solution_limit);
 
   // Creates a search monitor that communicates solutions found by the
   // slaves to the master. Both master and slaves should use this.
   virtual SearchMonitor* MakeCommunicationMonitor(
-      Solver* const s,
-      const Assignment* const solution,
-      bool master,
+      Solver* const s, const Assignment* const solution, bool master,
       int worker);
 
   // Creates a solution pool to be used in the Local Search for each
@@ -94,20 +85,14 @@ class MtSolveSupport : public ParallelSolveSupport {
     ThreadPool pool("Parallel_LNS", workers_ + 1);
     pool.StartWorkers();
     // Start master.
-    pool.Add(NewCallback(
-        run_model_.get(),
-        &ModelBuilder::Run,
-        reinterpret_cast<ParallelSolveSupport*>(this),
-        true,
-        -1));
+    pool.Add(NewCallback(run_model_.get(), &ModelBuilder::Run,
+                         reinterpret_cast<ParallelSolveSupport*>(this), true,
+                         -1));
 
     for (int index = 0; index < workers_; ++index) {
-      pool.Add(NewCallback(
-          run_model_.get(),
-          &ModelBuilder::Run,
-          reinterpret_cast<ParallelSolveSupport*>(this),
-          false,
-          index));
+      pool.Add(NewCallback(run_model_.get(), &ModelBuilder::Run,
+                           reinterpret_cast<ParallelSolveSupport*>(this), false,
+                           index));
     }
   }
 
@@ -168,14 +153,11 @@ class MtSolveSupport : public ParallelSolveSupport {
   int ended_slaves_;
 };
 
-
-
 // This class is used in the master search to replay the best solution
 // so far in the apply branch.
 class MtReplaySolution : public Decision {
  public:
-  MtReplaySolution(MtSolveSupport* const support,
-                 Assignment* const solution)
+  MtReplaySolution(MtSolveSupport* const support, Assignment* const solution)
       : support_(support), solution_(solution) {}
   virtual ~MtReplaySolution() {}
 
@@ -186,6 +168,7 @@ class MtReplaySolution : public Decision {
   virtual void Refute(Solver* const solver) {
     support_->MasterRefuteReplayer(solver, solution_);
   }
+
  private:
   MtSolveSupport* const support_;
   Assignment* const solution_;
@@ -194,16 +177,15 @@ class MtReplaySolution : public Decision {
 // This decision builder replays the solutions found by the slaves.
 class MtReplayer : public DecisionBuilder {
  public:
-  MtReplayer(Solver* const solver,
-           MtSolveSupport* const support,
-           const Assignment* const solution)
-      : support_(support),
-        solution_(solver->MakeAssignment(solution)) {}
+  MtReplayer(Solver* const solver, MtSolveSupport* const support,
+             const Assignment* const solution)
+      : support_(support), solution_(solver->MakeAssignment(solution)) {}
   virtual ~MtReplayer() {}
 
   virtual Decision* Next(Solver* const solver) {
     return support_->MasterNextDecision(solver, solution_);
   }
+
  private:
   MtSolveSupport* const support_;
   Assignment* const solution_;
@@ -218,16 +200,10 @@ class MtSolutionReceiver : public SearchMonitor {
 
   virtual ~MtSolutionReceiver() {}
 
-  virtual void EnterSearch() {
-    support_->MasterEnterSearch();
-  }
-  virtual void ExitSearch() {
-    support_->MasterExitSearch();
-  }
+  virtual void EnterSearch() { support_->MasterEnterSearch(); }
+  virtual void ExitSearch() { support_->MasterExitSearch(); }
 
-  virtual string DebugString() const {
-    return "MtSolutionReceiver";
-  }
+  virtual string DebugString() const { return "MtSolutionReceiver"; }
 
  private:
   MtSolveSupport* const support_;
@@ -238,10 +214,8 @@ class MtSolutionReceiver : public SearchMonitor {
 // from the slaves to the master.
 class MtSolutionDispatcher : public SearchMonitor {
  public:
-  MtSolutionDispatcher(Solver* const solver,
-                     MtSolveSupport* const support,
-                     const Assignment* const assignment,
-                     int worker)
+  MtSolutionDispatcher(Solver* const solver, MtSolveSupport* const support,
+                       const Assignment* const assignment, int worker)
       : SearchMonitor(solver),
         support_(support),
         assignment_(solver->MakeAssignment(assignment)),
@@ -249,13 +223,9 @@ class MtSolutionDispatcher : public SearchMonitor {
 
   virtual ~MtSolutionDispatcher() {}
 
-  virtual void EnterSearch() {
-    support_->SlaveEnterSearch(worker_);
-  }
+  virtual void EnterSearch() { support_->SlaveEnterSearch(worker_); }
 
-  virtual void ExitSearch() {
-    support_->SlaveExitSearch(worker_);
-  }
+  virtual void ExitSearch() { support_->SlaveExitSearch(worker_); }
 
   virtual bool AtSolution() {
     assignment_->Store();
@@ -263,9 +233,7 @@ class MtSolutionDispatcher : public SearchMonitor {
     return false;
   }
 
-  virtual string DebugString() const {
-    return "MtSolutionDispatcher";
-  }
+  virtual string DebugString() const { return "MtSolutionDispatcher"; }
 
  private:
   MtSolveSupport* const support_;
@@ -278,8 +246,7 @@ class MtSolutionDispatcher : public SearchMonitor {
 // ----- MtSolveSupport -----
 
 MtSolveSupport::MtSolveSupport(
-    int workers,
-    bool maximize,
+    int workers, bool maximize,
     ParallelSolveSupport::ModelBuilder* const run_model)
     : ParallelSolveSupport(maximize, run_model),
       workers_(workers),
@@ -311,9 +278,7 @@ void MtSolveSupport::LockMutex() EXCLUSIVE_LOCK_FUNCTION(mutex_) {
   mutex_.Lock();
 }
 
-void MtSolveSupport::UnlockMutex() UNLOCK_FUNCTION(mutex_) {
-  mutex_.Unlock();
-}
+void MtSolveSupport::UnlockMutex() UNLOCK_FUNCTION(mutex_) { mutex_.Unlock(); }
 
 bool MtSolveSupport::WaitForInitialSolution(Assignment* const to_fill,
                                             int worker) {
@@ -321,8 +286,7 @@ bool MtSolveSupport::WaitForInitialSolution(Assignment* const to_fill,
   BlockBarrier(&solution_barrier_);
   if (local_solution_->is_valid()) {
     to_fill->Load(*local_solution_);
-    VLOG(1) << "worker " << worker
-            << " receiving initial solution with value "
+    VLOG(1) << "worker " << worker << " receiving initial solution with value "
             << to_fill->ObjectiveValue();
     return true;
   } else {
@@ -405,7 +369,7 @@ Decision* MtSolveSupport::MasterNextDecision(Solver* const s,
     s->Fail();
   }
   if (s->fail_stamp() == fail_stamp_) {
-    return NULL;
+    return nullptr;
   } else {
     return s->RevAlloc(new MtReplaySolution(this, solution));
   }
@@ -452,13 +416,13 @@ void MtSolveSupport::SlaveEnterSearch(int worker) {
 bool MtSolveSupport::IsSharedSolutionBetter(int64 current_value) const {
   const int64 best_value = local_solution_->objective().min();
   return (!maximize_ && current_value > best_value) ||
-      (maximize_ && current_value < best_value);
+         (maximize_ && current_value < best_value);
 }
 
 bool MtSolveSupport::IsSharedSolutionWorse(int64 current_value) const {
   const int64 best_value = local_solution_->objective().min();
   return (!maximize_ && current_value < best_value) ||
-      (maximize_ && current_value > best_value);
+         (maximize_ && current_value > best_value);
 }
 
 void MtSolveSupport::SlaveNotifySolution(int worker,
@@ -483,25 +447,23 @@ void MtSolveSupport::SlaveNotifySolution(int worker,
 }
 
 DecisionBuilder* MtSolveSupport::MakeReplayDecisionBuilder(
-    Solver* const s,
-    const Assignment* const solution) {
+    Solver* const s, const Assignment* const solution) {
   return s->RevAlloc(new MtReplayer(s, this, solution));
 }
 
-SearchMonitor* MtSolveSupport::MakeSearchLog(Solver* const s,
-                                             bool master,
+SearchMonitor* MtSolveSupport::MakeSearchLog(Solver* const s, bool master,
                                              int64 freq,
                                              IntVar* const objective) {
   if (master) {
     return s->MakeSearchLog(freq, objective);
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
 SearchMonitor* MtSolveSupport::MakeCommunicationMonitor(
-    Solver* const s,
-    const Assignment* const solution, bool master, int worker) {
+    Solver* const s, const Assignment* const solution, bool master,
+    int worker) {
   if (master) {
     return s->RevAlloc(new MtSolutionReceiver(s, this));
   } else {
@@ -509,19 +471,14 @@ SearchMonitor* MtSolveSupport::MakeCommunicationMonitor(
   }
 }
 
-SearchMonitor* MtSolveSupport::MakeLimit(Solver* const s,
-                                         bool master,
-                                         int64 time_limit,
-                                         int64 branch_limit,
+SearchMonitor* MtSolveSupport::MakeLimit(Solver* const s, bool master,
+                                         int64 time_limit, int64 branch_limit,
                                          int64 fail_limit,
                                          int64 solution_limit) {
   if (master) {
-    return NULL;
+    return nullptr;
   } else {
-    return s->MakeLimit(time_limit,
-                        branch_limit,
-                        fail_limit,
-                        solution_limit);
+    return s->MakeLimit(time_limit, branch_limit, fail_limit, solution_limit);
   }
 }
 
@@ -565,8 +522,8 @@ class MTSharingSolutionPool : public SolutionPool {
       if (result) {
         VLOG(1) << "Synchronizing current solution with value " << current_value
                 << " with foreign solution with value "
-                << support_->solution()->objective().min()
-                << " for worker " << worker_;
+                << support_->solution()->objective().min() << " for worker "
+                << worker_;
       }
       support_->UnlockMutex();
       return result;
@@ -575,9 +532,7 @@ class MTSharingSolutionPool : public SolutionPool {
     }
   }
 
-  virtual string DebugString() const {
-    return "MTSharingSolutionPool";
-  }
+  virtual string DebugString() const { return "MTSharingSolutionPool"; }
 
  private:
   scoped_ptr<Assignment> reference_assignment_;
@@ -593,12 +548,11 @@ SolutionPool* MtSolveSupport::MakeSolutionPool(Solver* const s, int worker) {
 
 // ----- ParallelSolveSupport -----
 
-ParallelSolveSupport::ParallelSolveSupport(
-    bool maximize,
-    ModelBuilder* const run_model)
-  : local_solution_(new AssignmentProto()),
-    maximize_(maximize),
-    run_model_(run_model) {
+ParallelSolveSupport::ParallelSolveSupport(bool maximize,
+                                           ModelBuilder* const run_model)
+    : local_solution_(new AssignmentProto()),
+      maximize_(maximize),
+      run_model_(run_model) {
   run_model->CheckIsRepeatable();
   local_solution_->mutable_worker_info()->set_worker_id(-1);
 }
@@ -608,8 +562,7 @@ ParallelSolveSupport::~ParallelSolveSupport() {}
 // ----- API -----
 
 ParallelSolveSupport* MakeMtSolveSupport(
-    int workers,
-    bool maximize,
+    int workers, bool maximize,
     ParallelSolveSupport::ModelBuilder* const model_builder) {
   return new MtSolveSupport(workers, maximize, model_builder);
 }
