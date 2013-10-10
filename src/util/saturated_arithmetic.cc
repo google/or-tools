@@ -53,6 +53,12 @@ int64 CapProd(int64 left, int64 right) {
 }
 
 uint64 UnsignedCapProd(uint64 left, uint64 right) {
+  if (left == 0 || right == 0) {
+    return 0;
+  }
+  if (left > (kuint64max / right)) {
+    return kuint64max;
+  }
   return left * right;
 }
 }  // namespace operations_research

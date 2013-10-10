@@ -867,11 +867,7 @@ void MPSolver::MakeVarArray(int nb,
                             std::vector<MPVariable*>* vars) {
   DCHECK_GE(nb, 0);
   if (nb <= 0) return;
-#if defined(_MSC_VER)
-  const int num_digits = static_cast<int>(log(1.0L * nb) / log(10.0L));
-#else
-  const int num_digits = static_cast<int>(log10(nb));
-#endif
+  const int num_digits = NumDigits(nb);
   for (int i = 0; i < nb; ++i) {
     if (name.empty()) {
       vars->push_back(MakeVar(lb, ub, integer, name));

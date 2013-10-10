@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_BASE_UNIQUE_PTR_H_
 #define OR_TOOLS_BASE_UNIQUE_PTR_H_
 
-#if defined(__linux__) || defined(_MSC_VER)
 #include <memory>
-#elif defined(__APPLE__)
+
+#if defined(__APPLE__)
 namespace std {
 // A unique_ptr<T> is like a T*, except that the destructor of unique_ptr<T>
 // automatically deletes the pointer it holds (if any).

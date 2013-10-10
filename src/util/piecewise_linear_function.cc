@@ -61,9 +61,11 @@ int64 PiecewiseRay::SafeValue(int64 xx) const {
     } else {
       const uint64 abs_y = static_cast<uint64>(-y);
       if (span_y > abs_y) {
-        return static_cast<int64>(span_y - abs_y);
+        return span_y - abs_y > kint64max ?
+               kint64max : static_cast<int64>(span_y - abs_y);
       } else {
-        return -static_cast<int64>(abs_y - span_y);
+        return abs_y - span_y > kint64max + 1 ?
+               kint64min : -static_cast<int64>(abs_y - span_y);
       }
     }
   } else {  // slope < 0.
@@ -78,9 +80,11 @@ int64 PiecewiseRay::SafeValue(int64 xx) const {
                  : -static_cast<int64>(opp_unsigned_sum);
     } else {
       if (opp_span_y > y) {
-        return -static_cast<int64>(opp_span_y - y);
+        return opp_span_y - y > kint64max + 1 ?
+               kint64min : -static_cast<int64>(opp_span_y - y);
       } else {
-        return static_cast<int64>(y - opp_span_y);
+        return y - opp_span_y > kint64max ?
+               kint64max : static_cast<int64>(y - opp_span_y);
       }
     }
   }

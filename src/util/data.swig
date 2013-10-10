@@ -535,7 +535,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(in) PROTO_TYPE* INPUT (CppProtoType temp),
              PROTO_TYPE& INPUT (CppProtoType temp) {
   int proto_size = 0;
-  scoped_array<char> proto_buffer(
+  scoped_ptr<char[]> proto_buffer(
     JNIUtil::MakeCharArray(jenv, $input, &proto_size));
   bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
   if (!parsed_ok) {
@@ -570,7 +570,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   }
 }
 %typemap(out) CppProtoType* {
-  scoped_array<char> buf(new char[$1->ByteSize()]);
+  scoped_ptr<char[]> buf(new char[$1->ByteSize()]);
   $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
   $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1->ByteSize());
   if (giveOwnership) {
@@ -852,7 +852,7 @@ CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
 %typemap(csin)    PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.GetByteArrayLength(), $csinput.ToByteArray()"
 %typemap(in) PROTO_TYPE* INPUT (CppProtoType temp), PROTO_TYPE& INPUT (CppProtoType temp) {
   int proto_size = 0;
-  scoped_array<char> proto_buffer($input);
+  scoped_ptr<char[]> proto_buffer($input);
   bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
   if (!parsed_ok) {
     SWIG_CSharpSetPendingException(
@@ -887,7 +887,7 @@ CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
   }
 }
 %typemap(out) CppProtoType* {
-  scoped_array<char> buf(new char[$1->ByteSize()]);
+  scoped_ptr<char[]> buf(new char[$1->ByteSize()]);
   $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
   $result = buf.get();
   if (deleteCppReturn) {
