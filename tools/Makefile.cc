@@ -2,25 +2,6 @@
 # are compiling in the or-tools root, it is empty. Otherwise, it is
 # $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It
 # contains the trailing separator if not empty.
-#
-# INC_DIR is like OR_ROOT, but with a default of '.' instead of
-# empty.  It is used for instance in include directives (-I.).
-#
-# OR_ROOT_FULL is always the complete path to or-tools. It is useful
-# to store path informations inside libraries for instance.
-ifeq ($(OR_TOOLS_TOP),)
-  OR_ROOT =
-else
-  ifeq "$(SHELL)" "cmd.exe"
-    OR_ROOT = $(OR_TOOLS_TOP)\\
-  else
-    ifeq "$(SHELL)" "sh.exe"
-      OR_ROOT = $(OR_TOOLS_TOP)\\
-    else
-      OR_ROOT = $(OR_TOOLS_TOP)/
-    endif
-  endif
-endif
 
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
@@ -33,40 +14,44 @@ else
   endif
 endif
 
-# Directories.
+# Define the OR_ROOT directory.
+ifeq ($(OR_TOOLS_TOP),)
+  OR_ROOT =
+else
+  ifeq "$(SYSTEM)" "win"
+    OR_ROOT = $(OR_TOOLS_TOP)\\
+  else
+    OR_ROOT = $(OR_TOOLS_TOP)/
+  endif
+endif
+
+# Useful directories.
 BIN_DIR = $(OR_ROOT)bin
 OBJ_DIR = $(OR_ROOT)objs
 EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT)include
 
-
 # Unix specific part.
 ifeq ("$(SYSTEM)","unix")
-  OR_TOOLS_TOP ?= $(shell pwd)
-  OR_ROOT_FULL=$(OR_TOOLS_TOP)
-
   OS = $(shell uname -s)
   ifeq ($(OS),Linux)
     CCC = g++ -fPIC -std=c++0x
-    LD_FLAGS = lz -lrt -lpthread
-    ORTOOLS_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -lortools
-    PLATFORM = LINUX
+    LD_FLAGS = -lz -lrt -lpthread
+    # Defines OR_TOOLS_TOP if it is not already defined.
+    OR_TOOLS_TOP ?= $(shell pwd)
+    ORTOOLS_LIB = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib -lortools
     LBITS = $(shell getconf LONG_BIT)
     ifeq ($(LBITS),64)
       PORT = Linux64
-      PTRLENGTH = 64
       ARCH = -DARCH_K8
     else
       PORT = Linux32
-      PTRLENGTH = 32
     endif
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     CCC = clang++ -fPIC -std=c++11
     LD_FLAGS = -lz
     ORTOOLS_LIB = -L$(OR_ROOT)lib -lortools
-    PLATFORM = MACOSX
-    PTRLENGTH = 64
     ARCH = -DARCH_K8
   endif
   O = o
@@ -85,21 +70,16 @@ endif
 # Windows specific part.
 ifeq ("$(SYSTEM)","win")
   ifeq ("$(Platform)", "X64")
-    PLATFORM = x64
+    PLATFORM = Win64
   endif
   ifeq ("$(Platform)", "x64")
-    PLATFORM = x64
+    PLATFORM = Win64
   endif
-  ifeq ("$(PLATFORM)", "x64")
-    CBC_PLATFORM = x64-$(VS_RELEASE)-Release
-    PTRLENGTH = 64
+  ifeq ("$(PLATFORM)", "Win64")
+    PORT = VisualStudio$(VISUAL_STUDIO)-64b
   else
-    PTRLENGTH = 32
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
   endif
-  OS = Windows
-  OR_TOOLS_TOP_AUX = $(shell cd)
-  OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
   CLP_INC = -DUSE_CLP
   CBC_INC = -DUSE_CBC
   CFLAGS= -nologo $(DEBUG) $(CBC_INC) $(CLP_INC)\
@@ -272,10 +252,7 @@ $(BIN_DIR)/integer_programming$E: $(OBJ_DIR)/integer_programming.$O
 
 printport:
 	@echo SHELL = $(SHELL)
-	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
 	@echo SYSTEM = $(SYSTEM)
-	@echo PLATFORM = $(PLATFORM)
-	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo SVNVERSION = $(SVNVERSION)
 	@echo PORT = $(PORT)
 
