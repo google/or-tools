@@ -14,7 +14,9 @@
 
 #include "linear_solver/linear_solver.h"
 
+#if !defined(_MSC_VER)
 #include <unistd.h>
+#endif
 
 #include <cmath>
 #include <cstddef>
@@ -333,7 +335,11 @@ bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
 #else  // defined(__linux__)
   int32 tid = 123;
 #endif  // defined(__linux__)
+#if !defined(_MSC_VER)
   int32 pid = static_cast<int32>(getpid());
+#else  // _MSC_VER
+  int32 pid = 456;
+#endif  // _MSC_VER
   int64 now = WallTimer::GetTimeInMicroSeconds();
   string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
       tid, pid, now, extension.c_str());
@@ -431,7 +437,7 @@ int NumDigits(int n) {
   // Number of digits needed to write a non-negative integer in base 10.
   // Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
 #if defined(_MSC_VER)
-  return static_cast<int>(std::max(1.0, log(1.0L * n) / log(10.0L) + 1.0));
+  return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
 #else
   return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif

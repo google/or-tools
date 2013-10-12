@@ -50,8 +50,13 @@ struct Graphs {
 template<>
 struct Graphs<operations_research::StarGraph> {
   typedef operations_research::StarGraph Graph;
+#if defined(_MSC_VER)
+  typedef Graph::ArcIndex ArcIndex;
+  typedef Graph::NodeIndex NodeIndex;
+#else
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
+#endif
   static ArcIndex OppositeArc(const Graph& graph, ArcIndex arc) {
     return graph.Opposite(arc);
   }

@@ -22,8 +22,10 @@
 #ifndef OR_TOOLS_UTIL_FP_UTILS_H_
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
+#if !defined(_MSC_VER)
 #include <fenv.h>  // NOLINT
-#if !defined(__ANDROID__) && !defined(__APPLE__)
+#endif
+#if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
 #include <fpu_control.h>
 #endif
 #ifdef __SSE__

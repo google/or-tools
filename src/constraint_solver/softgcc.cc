@@ -148,10 +148,10 @@ class SoftGCC : public Constraint{
       num_values_ = max_value_ - min_value_ + 1;
 
       // low
-      vector<int64> new_card_mins(num_values_);
+      std::vector<int64> new_card_mins(num_values_);
 
       // up
-      vector<int64> new_card_max(num_values_);
+      std::vector<int64> new_card_max(num_values_);
       for (int64 k = 0; k < num_values_; k++) {
         new_card_max[k] = vars_.size();
       }
