@@ -17,6 +17,8 @@
 #include <memory>
 
 #if defined(__APPLE__)
+#include <assert.h>
+#include "base/macros.h"
 namespace std {
 // A unique_ptr<T> is like a T*, except that the destructor of unique_ptr<T>
 // automatically deletes the pointer it holds (if any).
