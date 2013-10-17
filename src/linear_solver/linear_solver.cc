@@ -21,14 +21,6 @@
 #include <cmath>
 #include <cstddef>
 #include <utility>
-#if defined(_MSC_VER)
-#define isnan(x) _isnan(x)
-static inline double round(double val) {
-  return floor(val + 0.5);
-}
-#elif defined(__APPLE__)
-using std::isnan;
-#endif
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -45,6 +37,7 @@ using std::isnan;
 #include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/model_exporter.h"
 #include "util/fp_utils.h"
+
 
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"

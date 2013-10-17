@@ -65,7 +65,7 @@ class TreeArrayConstraint : public Constraint {
 
   string DebugStringInternal(const string& name) const {
     return StringPrintf("Cover(%s) == %s",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 

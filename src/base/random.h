@@ -92,6 +92,8 @@ class MTRandom : public ACMRandom {
   }
 };
 
+typedef ACMRandom RandomBase;
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_RANDOM_H_

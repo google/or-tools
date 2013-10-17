@@ -594,10 +594,20 @@ class MPSolver {
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
 
+#if !defined(SWIG)
 // The data structure used to store the coefficients of the contraints and of
 // the objective. Also define a type to facilitate iteration over them with:
 //  for (CoeffEntry entry : coefficients_) { ... }
-typedef hash_map<const MPVariable*, double> CoeffMap;
+class CoeffMap : public hash_map<const MPVariable*, double> {
+ public:
+  explicit CoeffMap(int num_buckets)
+    #if !defined(_MSC_VER)   // Visual C++ doesn't support this constructor
+    : hash_map<const MPVariable*, double>(num_buckets)
+    #endif  // _MSC_VER
+    { }
+};
+#endif  // SWIG
+
 typedef std::pair<const MPVariable*, double> CoeffEntry;
 
 // A class to express a linear objective.

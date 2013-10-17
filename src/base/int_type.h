@@ -90,7 +90,7 @@
 // as key to hashable containers such as hash_map and hash_set.
 //
 // We suggest using the IntTypeIndexedContainer wrapper around STL
-// vector (see int-type-indexed-vector.h) if an IntType is intended
+// vector (see int_type_indexed_vector.h) if an IntType is intended
 // to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using IntTypes to ensure type-safety.
 //

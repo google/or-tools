@@ -64,7 +64,7 @@ string SequenceVar::DebugString() const {
                       "d, duration = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                       "d, not ranked = %d, ranked = %d, nexts = [%s])",
                       name().c_str(), hmin, hmax, dmin, dmax, not_ranked,
-                      ranked, DebugStringVector(nexts_, ", ").c_str());
+                      ranked, JoinDebugStringPtr(nexts_, ", ").c_str());
 }
 
 void SequenceVar::Accept(ModelVisitor* const visitor) const {

@@ -37,6 +37,13 @@
 
 #include "base/logging.h"
 
+#if defined(_MSC_VER)
+static inline double isnan(x) { return _isnan(x); }
+static inline double round(double val) { return floor(val + 0.5); }
+#elif defined(__APPLE__)
+using std::isnan;
+#endif
+
 namespace operations_research {
 
 // The following macro does not change "var", but forces gcc to consider it
@@ -48,8 +55,7 @@ namespace operations_research {
 #define TOUCH(var)
 #endif
 
-#if defined(__i386__) || defined(__x86_64__)
-#if defined(__linux__)
+#if (defined(__i386__) || defined(__x86_64__)) && defined(__linux__)
 inline fpu_control_t GetFPPrecision() {
   fpu_control_t status;
   _FPU_GETCW(status);
@@ -67,8 +73,7 @@ inline void SetFPPrecision(fpu_control_t precision) {
   _FPU_SETCW(status);
   DCHECK_EQ(precision, GetFPPrecision());
 }
-#endif  // defined(__linux__)
-#endif  // defined(__i386__) || defined(__x86_64__)
+#endif  // (defined(__i386__) || defined(__x86_64__)) && defined(__linux__)
 
 #undef TOUCH
 

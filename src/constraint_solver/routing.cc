@@ -2091,6 +2091,11 @@ void RoutingModel::CloseModel() {
   cost_ = solver_->MakeSum(cost_elements)->Var();
   cost_->set_name("Cost");
 
+  // Keep this out of SetupSearch as this contains static search objects.
+  // This will allow calling SetupSearch multiple times with different search
+  // parameters.
+  CreateNeighborhoodOperators();
+  CreateFirstSolutionDecisionBuilders();
   SetupSearch();
 }
 
@@ -3428,6 +3433,8 @@ const char* RoutingModel::RoutingStrategyName(RoutingStrategy strategy) {
       return "Savings";
     case ROUTING_SWEEP:
       return "Sweep";
+    default:
+      return nullptr;
   }
   return nullptr;
 }
@@ -4013,100 +4020,128 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
   }
 }
 
-#define CP_ROUTING_PUSH_BACK_OPERATOR(operator_type)                   \
-  if (homogeneous_costs_) {                                            \
-    operators.push_back(solver_->MakeOperator(nexts_, operator_type)); \
-  } else {                                                             \
-    operators.push_back(                                               \
-        solver_->MakeOperator(nexts_, vehicle_vars_, operator_type));  \
+#define CP_ROUTING_ADD_OPERATOR(operator_type, cp_operator_type)        \
+  if (homogeneous_costs_) {                                             \
+    local_search_operators_[operator_type] =                            \
+        solver_->MakeOperator(nexts_, cp_operator_type);                \
+  } else {                                                              \
+    local_search_operators_[operator_type] =                            \
+        solver_->MakeOperator(nexts_, vehicle_vars_, cp_operator_type); \
   }
 
-#define CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(operator_type)               \
-  if (homogeneous_costs_) {                                                 \
-    operators.push_back(                                                    \
-        solver_->MakeOperator(nexts_, BuildCostCallback(), operator_type)); \
-  } else {                                                                  \
-    operators.push_back(solver_->MakeOperator(                              \
-        nexts_, vehicle_vars_, BuildCostCallback(), operator_type));        \
+#define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type) \
+  if (homogeneous_costs_) {                                             \
+    local_search_operators_[operator_type] =                            \
+        solver_->MakeOperator(nexts_, BuildCostCallback(), cp_operator_type); \
+  } else {                                                              \
+    local_search_operators_[operator_type] =                            \
+        solver_->MakeOperator(                                          \
+            nexts_, vehicle_vars_, BuildCostCallback(), cp_operator_type); \
   }
 
-LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
+void RoutingModel::CreateNeighborhoodOperators() {
+  local_search_operators_.clear();
+  local_search_operators_.resize(ROUTING_LOCAL_SEARCH_OPERATOR_COUNTER,
+                                 nullptr);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_RELOCATE, Solver::RELOCATE);
+  std::vector<IntVar*> empty;
+  local_search_operators_[ROUTING_PAIR_RELOCATE] = MakePairRelocate(
+      solver_.get(), nexts_, homogeneous_costs_ ? empty : vehicle_vars_,
+      pickup_delivery_pairs_);
+  local_search_operators_[ROUTING_RELOCATE_NEIGHBORS] = MakeRelocateNeighbors(
+      solver_.get(), nexts_, homogeneous_costs_ ? empty : vehicle_vars_,
+      NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost));
+  CP_ROUTING_ADD_OPERATOR(ROUTING_EXCHANGE, Solver::EXCHANGE);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_CROSS, Solver::CROSS);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_TWO_OPT, Solver::TWOOPT);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_OR_OPT, Solver::OROPT);
+  CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_LKH, Solver::LK);
+  local_search_operators_[ROUTING_MAKE_ACTIVE] = CreateInsertionOperator();
+  CP_ROUTING_ADD_OPERATOR(ROUTING_MAKE_INACTIVE, Solver::MAKEINACTIVE);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_MAKE_CHAIN_INACTIVE,
+                          Solver::MAKECHAININACTIVE);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_SWAP_ACTIVE, Solver::SWAPACTIVE);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_EXTENDED_SWAP_ACTIVE,
+                          Solver::EXTENDEDSWAPACTIVE);
+  CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_TSP_OPT, Solver::TSPOPT);
+  CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_TSP_LNS, Solver::TSPLNS);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_PATH_LNS, Solver::PATHLNS);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_FULL_PATH_LNS, Solver::FULLPATHLNS);
+  CP_ROUTING_ADD_OPERATOR(ROUTING_INACTIVE_LNS, Solver::UNACTIVELNS);
+}
+
+#undef CP_ROUTING_ADD_CALLBACK_OPERATOR
+#undef CP_ROUTING_ADD_OPERATOR
+
+LocalSearchOperator* RoutingModel::GetNeighborhoodOperators() const {
   std::vector<LocalSearchOperator*> operators = extra_operators_;
   if (pickup_delivery_pairs_.size() > 0) {
-    std::vector<IntVar*> empty;
-    operators.push_back(MakePairRelocate(
-        solver_.get(), nexts_, homogeneous_costs_ ? empty : vehicle_vars_,
-        pickup_delivery_pairs_));
+    operators.push_back(local_search_operators_[ROUTING_PAIR_RELOCATE]);
   }
   if (vehicles_ > 1) {
     if (!FLAGS_routing_no_relocate) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::RELOCATE);
+      operators.push_back(local_search_operators_[ROUTING_RELOCATE]);
     }
     if (!FLAGS_routing_no_exchange) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::EXCHANGE);
+      operators.push_back(local_search_operators_[ROUTING_EXCHANGE]);
     }
     if (!FLAGS_routing_no_cross) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::CROSS);
+      operators.push_back(local_search_operators_[ROUTING_CROSS]);
     }
   }
   if (pickup_delivery_pairs_.size() > 0 ||
       !FLAGS_routing_no_relocate_neighbors) {
-    std::vector<IntVar*> empty;
-    operators.push_back(MakeRelocateNeighbors(
-        solver_.get(), nexts_, homogeneous_costs_ ? empty : vehicle_vars_,
-        NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost)));
+    operators.push_back(local_search_operators_[ROUTING_RELOCATE_NEIGHBORS]);
   }
   if (!FLAGS_routing_no_lkh && !FLAGS_routing_tabu_search &&
       !FLAGS_routing_simulated_annealing) {
-    CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(Solver::LK);
+    operators.push_back(local_search_operators_[ROUTING_LKH]);
   }
   if (!FLAGS_routing_no_2opt) {
-    CP_ROUTING_PUSH_BACK_OPERATOR(Solver::TWOOPT);
+    operators.push_back(local_search_operators_[ROUTING_TWO_OPT]);
   }
   if (!FLAGS_routing_no_oropt) {
-    CP_ROUTING_PUSH_BACK_OPERATOR(Solver::OROPT);
+    operators.push_back(local_search_operators_[ROUTING_OR_OPT]);
   }
   if (!FLAGS_routing_no_make_active && disjunctions_.size() != 0) {
     if (!FLAGS_routing_use_chain_make_inactive) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::MAKEINACTIVE);
+      operators.push_back(local_search_operators_[ROUTING_MAKE_INACTIVE]);
     } else {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::MAKECHAININACTIVE);
+      operators.push_back(local_search_operators_[ROUTING_MAKE_CHAIN_INACTIVE]);
     }
 
     // TODO(user): On cases where we have a mix of node pairs and
     // individual nodes, only pairs are going to be made active. In practice
     // such cases should not appear, but we might want to be robust to them
     // anyway.
-    operators.push_back(CreateInsertionOperator());
+    operators.push_back(local_search_operators_[ROUTING_MAKE_ACTIVE]);
     if (!FLAGS_routing_use_extended_swap_active) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::SWAPACTIVE);
+      operators.push_back(local_search_operators_[ROUTING_SWAP_ACTIVE]);
     } else {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::EXTENDEDSWAPACTIVE);
+      operators.push_back(
+          local_search_operators_[ROUTING_EXTENDED_SWAP_ACTIVE]);
     }
   }
   // TODO(user): move the following operators to a second local search loop.
   if (!FLAGS_routing_no_tsp && !FLAGS_routing_tabu_search &&
       !FLAGS_routing_simulated_annealing) {
-    CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(Solver::TSPOPT);
+    operators.push_back(local_search_operators_[ROUTING_TSP_OPT]);
   }
   if (!FLAGS_routing_no_tsplns && !FLAGS_routing_tabu_search &&
       !FLAGS_routing_simulated_annealing) {
-    CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(Solver::TSPLNS);
+    operators.push_back(local_search_operators_[ROUTING_TSP_LNS]);
   }
   if (!FLAGS_routing_no_fullpathlns) {
-    CP_ROUTING_PUSH_BACK_OPERATOR(Solver::FULLPATHLNS);
+    operators.push_back(local_search_operators_[ROUTING_FULL_PATH_LNS]);
   }
   if (!FLAGS_routing_no_lns) {
-    CP_ROUTING_PUSH_BACK_OPERATOR(Solver::PATHLNS);
+    operators.push_back(local_search_operators_[ROUTING_PATH_LNS]);
     if (disjunctions_.size() != 0) {
-      CP_ROUTING_PUSH_BACK_OPERATOR(Solver::UNACTIVELNS);
+      operators.push_back(local_search_operators_[ROUTING_INACTIVE_LNS]);
     }
   }
   return solver_->ConcatenateOperators(operators);
 }
-
-#undef CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR
-#undef CP_ROUTING_PUSH_BACK_OPERATOR
 
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateLocalSearchFilters() {
@@ -4210,113 +4245,117 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer() {
   return solver_->Compose(decision_builders);
 }
 
-DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
-  DecisionBuilder* finalize_solution = CreateSolutionFinalizer();
-  DecisionBuilder* first_solution = finalize_solution;
-  const RoutingStrategy first_solution_strategy =
-      GetSelectedFirstSolutionStrategy();
-  VLOG(1) << "Using first solution strategy: "
-          << RoutingStrategyName(first_solution_strategy);
-  switch (first_solution_strategy) {
-    case ROUTING_GLOBAL_CHEAPEST_ARC:
-      first_solution = solver_->MakePhase(
+void RoutingModel::CreateFirstSolutionDecisionBuilders() {
+  first_solution_decision_builders_.resize(
+      ROUTING_FIRST_SOLUTION_STRATEGY_COUNTER);
+  DecisionBuilder* const finalize_solution = CreateSolutionFinalizer();
+  // Default heuristic
+  first_solution_decision_builders_[ROUTING_DEFAULT_STRATEGY] =
+      finalize_solution;
+  // Global cheapest addition heuristic.
+  first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_ARC] =
+      solver_->MakePhase(
           nexts_,
           NewPermanentCallback(this, &RoutingModel::GetFirstSolutionCost),
           Solver::CHOOSE_STATIC_GLOBAL_BEST);
-      break;
-    case ROUTING_LOCAL_CHEAPEST_ARC:
-      first_solution = solver_->MakePhase(
+  // Cheapest addition heuristic.
+  first_solution_decision_builders_[ROUTING_LOCAL_CHEAPEST_ARC] =
+      solver_->MakePhase(
           nexts_, Solver::CHOOSE_FIRST_UNBOUND,
           NewPermanentCallback(this, &RoutingModel::GetFirstSolutionCost));
-      break;
-    case ROUTING_PATH_CHEAPEST_ARC:
-      first_solution = solver_->MakePhase(
+  // Path-based cheapest addition heuristic.
+  first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] =
+      solver_->MakePhase(
           nexts_, Solver::CHOOSE_PATH,
           NewPermanentCallback(this, &RoutingModel::GetFirstSolutionCost));
-      if (vehicles() == 1) {
-        DecisionBuilder* fast_one_path_builder =
-            solver_->RevAlloc(new FastOnePathBuilder(
-                this, NewPermanentCallback(
-                          this, &RoutingModel::GetFirstSolutionCost)));
-        first_solution = solver_->Try(fast_one_path_builder, first_solution);
-      }
-      break;
-    case ROUTING_PATH_MOST_CONSTRAINED_ARC:
-      // TODO(user): implement the variable selector CHOOSE_SMALLEST_PATH
-      // and use it here.
-      first_solution = solver_->MakePhase(
-          nexts_, Solver::CHOOSE_PATH,
-          NewPermanentCallback(
-              this, &RoutingModel::ArcIsMoreConstrainedThanArc));
-      break;
-    case ROUTING_EVALUATOR_STRATEGY:
-      CHECK(first_solution_evaluator_ != nullptr);
-      first_solution = solver_->MakePhase(
-          nexts_, Solver::CHOOSE_PATH,
-          NewPermanentCallback(first_solution_evaluator_.get(),
-                               &Solver::IndexEvaluator2::Run));
-      break;
-    case ROUTING_DEFAULT_STRATEGY:
-      break;
-    case ROUTING_ALL_UNPERFORMED:
-      first_solution = solver_->RevAlloc(new AllUnperformed(this));
-      break;
-    case ROUTING_BEST_INSERTION: {
-      SearchLimit* const ls_limit = solver_->MakeLimit(
-          time_limit_ms_, kint64max, kint64max, kint64max, true);
-      DecisionBuilder* const finalize = solver_->MakeSolveOnce(
-          finalize_solution, GetOrCreateLargeNeighborhoodSearchLimit());
-      LocalSearchPhaseParameters* const insertion_parameters =
-          solver_->MakeLocalSearchPhaseParameters(
-              CreateInsertionOperator(), finalize, ls_limit,
-              GetOrCreateLocalSearchFilters());
-      std::vector<SearchMonitor*> monitors;
-      monitors.push_back(GetOrCreateLimit());
-      std::vector<IntVar*> decision_vars = nexts_;
-      if (!homogeneous_costs_) {
-        decision_vars.insert(decision_vars.end(), vehicle_vars_.begin(),
-                             vehicle_vars_.end());
-      }
-      first_solution = solver_->MakeNestedOptimize(
+  if (vehicles() == 1) {
+    DecisionBuilder* fast_one_path_builder =
+        solver_->RevAlloc(new FastOnePathBuilder(
+            this, NewPermanentCallback(
+                this, &RoutingModel::GetFirstSolutionCost)));
+    first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] = solver_->Try(
+        fast_one_path_builder,
+        first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC]);
+  }
+  // Path-based most constrained arc addition heuristic.
+  // TODO(user): implement the variable selector CHOOSE_SMALLEST_PATH and use
+  // it here.
+  first_solution_decision_builders_[ROUTING_PATH_MOST_CONSTRAINED_ARC] =
+      solver_->MakePhase(nexts_, Solver::CHOOSE_PATH,
+                         NewPermanentCallback(
+                             this, &RoutingModel::ArcIsMoreConstrainedThanArc));
+  // Evaluator-based path heuristic.
+  if (first_solution_evaluator_ != nullptr) {
+    first_solution_decision_builders_[ROUTING_EVALUATOR_STRATEGY] =
+        solver_->MakePhase(nexts_, Solver::CHOOSE_PATH,
+                           NewPermanentCallback(first_solution_evaluator_.get(),
+                                                &Solver::IndexEvaluator2::Run));
+  } else {
+    first_solution_decision_builders_[ROUTING_EVALUATOR_STRATEGY] = nullptr;
+  }
+  // All unperformed heuristic.
+  first_solution_decision_builders_[ROUTING_ALL_UNPERFORMED] =
+      solver_->RevAlloc(new AllUnperformed(this));
+  // Best insertion heuristic.
+  SearchLimit* const ls_limit = solver_->MakeLimit(
+      time_limit_ms_, kint64max, kint64max, kint64max, true);
+  DecisionBuilder* const finalize = solver_->MakeSolveOnce(
+      finalize_solution, GetOrCreateLargeNeighborhoodSearchLimit());
+  LocalSearchPhaseParameters* const insertion_parameters =
+      solver_->MakeLocalSearchPhaseParameters(
+          CreateInsertionOperator(), finalize, ls_limit,
+          GetOrCreateLocalSearchFilters());
+  std::vector<SearchMonitor*> monitors;
+  monitors.push_back(GetOrCreateLimit());
+  std::vector<IntVar*> decision_vars = nexts_;
+  if (!homogeneous_costs_) {
+    decision_vars.insert(decision_vars.end(), vehicle_vars_.begin(),
+                         vehicle_vars_.end());
+  }
+  first_solution_decision_builders_[ROUTING_BEST_INSERTION] =
+      solver_->MakeNestedOptimize(
           solver_->MakeLocalSearchPhase(
               decision_vars, solver_->RevAlloc(new AllUnperformed(this)),
               insertion_parameters),
           GetOrCreateAssignment(), false, FLAGS_routing_optimization_step,
           monitors);
-      first_solution = solver_->Compose(first_solution, finalize);
-      break;
-    }
-    case ROUTING_SAVINGS: {
-      first_solution = solver_->RevAlloc(new SavingsBuilder(this, true));
-      DecisionBuilder* savings_builder =
-          solver_->RevAlloc(new SavingsBuilder(this, false));
-      first_solution = solver_->Try(savings_builder, first_solution);
-      break;
-    }
-#ifndef SWIG
-    case ROUTING_SWEEP: {
-      first_solution = solver_->RevAlloc(new SweepBuilder(this, true));
-      DecisionBuilder* sweep_builder =
-          solver_->RevAlloc(new SweepBuilder(this, false));
-      first_solution = solver_->Try(sweep_builder, first_solution);
-      break;
-    }
-#endif
-    default:
-      LOG(WARNING) << "Unknown argument for routing_first_solution, "
-                      "using default";
-  }
+  first_solution_decision_builders_[ROUTING_BEST_INSERTION] =
+      solver_->Compose(
+          first_solution_decision_builders_[ROUTING_BEST_INSERTION],
+          finalize);
+  first_solution_decision_builders_[ROUTING_SAVINGS] =
+      solver_->RevAlloc(new SavingsBuilder(this, true));
+  DecisionBuilder* savings_builder =
+      solver_->RevAlloc(new SavingsBuilder(this, false));
+  first_solution_decision_builders_[ROUTING_SAVINGS] = solver_->Try(
+      savings_builder, first_solution_decision_builders_[ROUTING_SAVINGS]);
+  first_solution_decision_builders_[ROUTING_SWEEP] =
+      solver_->RevAlloc(new SweepBuilder(this, true));
+  DecisionBuilder* sweep_builder =
+      solver_->RevAlloc(new SweepBuilder(this, false));
+  first_solution_decision_builders_[ROUTING_SWEEP] = solver_->Try(
+      sweep_builder, first_solution_decision_builders_[ROUTING_SWEEP]);
   if (FLAGS_routing_use_first_solution_dive) {
-    DecisionBuilder* apply =
+    DecisionBuilder* const apply =
         solver_->MakeApplyBranchSelector(NewPermanentCallback(&LeftDive));
-    first_solution = solver_->Compose(apply, first_solution);
+    for (int i = 0; i < first_solution_decision_builders_.size(); ++i) {
+      first_solution_decision_builders_[i] =
+          solver_->Compose(apply, first_solution_decision_builders_[i]);
+    }
   }
-  return first_solution;
+}
+
+DecisionBuilder* RoutingModel::GetFirstSolutionDecisionBuilder() const {
+  const RoutingStrategy first_solution_strategy =
+      GetSelectedFirstSolutionStrategy();
+  VLOG(1) << "Using first solution strategy: "
+          << RoutingStrategyName(first_solution_strategy);
+  return first_solution_decision_builders_[first_solution_strategy];
 }
 
 LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters() {
   return solver_->MakeLocalSearchPhaseParameters(
-      CreateNeighborhoodOperators(),
+      GetNeighborhoodOperators(),
       solver_->MakeSolveOnce(CreateSolutionFinalizer(),
                              GetOrCreateLargeNeighborhoodSearchLimit()),
       GetOrCreateLocalSearchLimit(), GetOrCreateLocalSearchFilters());
@@ -4324,7 +4363,7 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters() {
 
 DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder() {
   const int size = Size();
-  DecisionBuilder* first_solution = CreateFirstSolutionDecisionBuilder();
+  DecisionBuilder* first_solution = GetFirstSolutionDecisionBuilder();
   LocalSearchPhaseParameters* parameters = CreateLocalSearchParameters();
   if (homogeneous_costs_) {
     return solver_->MakeLocalSearchPhase(nexts_, first_solution, parameters);
@@ -4343,7 +4382,7 @@ DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder() {
 
 void RoutingModel::SetupDecisionBuilders() {
   if (FLAGS_routing_dfs) {
-    solve_db_ = CreateFirstSolutionDecisionBuilder();
+    solve_db_ = GetFirstSolutionDecisionBuilder();
   } else {
     solve_db_ = CreateLocalSearchDecisionBuilder();
   }

@@ -366,13 +366,13 @@ int Run() {
                                       &sequence_variables,
                                       &interval_variables);
       LOG(INFO) << "Primary integer variables = "
-                << DebugStringVector(primary_integer_variables, ", ");
+                << JoinDebugStringPtr(primary_integer_variables, ", ");
       LOG(INFO) << "Secondary integer variables = "
-                << DebugStringVector(secondary_integer_variables, ", ");
+                << JoinDebugStringPtr(secondary_integer_variables, ", ");
       LOG(INFO) << "Sequence variables = "
-                << DebugStringVector(sequence_variables, ", ");
+                << JoinDebugStringPtr(sequence_variables, ", ");
       LOG(INFO) << "Interval variables = "
-                << DebugStringVector(interval_variables, ", ");
+                << JoinDebugStringPtr(interval_variables, ", ");
     }
   }
 

@@ -32,7 +32,7 @@ FLAGS = gflags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
-# pylint: disable-msg=C6403
+# pylint: disable=g-explicit-bool-comparison
 
 
 def main(unused_argv):

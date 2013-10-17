@@ -110,10 +110,10 @@ class Diffn : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
-                        DebugStringVector(x_, ", ").c_str(),
-                        DebugStringVector(y_, ", ").c_str(),
-                        DebugStringVector(dx_, ", ").c_str(),
-                        DebugStringVector(dy_, ", ").c_str());
+                        JoinDebugStringPtr(x_, ", ").c_str(),
+                        JoinDebugStringPtr(y_, ", ").c_str(),
+                        JoinDebugStringPtr(dx_, ", ").c_str(),
+                        JoinDebugStringPtr(dy_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {

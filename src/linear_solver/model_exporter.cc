@@ -23,15 +23,7 @@
 #include "base/map_util.h"
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
-
-#if defined(_MSC_VER)
-#define isnan(x) _isnan(x)
-static inline double round(double val) {
-  return floor(val + 0.5);
-}
-#elif defined(__APPLE__)
-using std::isnan;
-#endif
+#include "util/fp_utils.h"
 
 namespace operations_research {
 

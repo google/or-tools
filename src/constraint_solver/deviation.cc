@@ -73,7 +73,7 @@ class Deviation : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         deviation_var_->DebugString().c_str(), total_sum_);
   }
 

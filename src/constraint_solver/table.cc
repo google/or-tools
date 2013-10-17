@@ -637,8 +637,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
               }
             }
           } else {  // Domain is sparse.
-            // Let's not collect all values below the first supported
-            // value as this can easily and more rapidly be taken care
+                    // Let's not collect all values below the first supported
+                    // value as this can easily and more rapidly be taken care
             // of by a SetRange() call.
             new_min = kint64max;  // escape value.
             IntVarIterator* const it = iterators_[var_index];
@@ -1284,7 +1284,8 @@ class TransitionConstraint : public Constraint {
     return StringPrintf(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
-        DebugStringVector(vars_, ", ").c_str(), transition_table_.NumTuples(),
+        JoinDebugStringPtr(vars_, ", ").c_str(),
+        transition_table_.NumTuples(),
         initial_state_, IntVectorToString(final_states_, ", ").c_str());
   }
 

@@ -719,8 +719,8 @@ class RankedPropagator : public Constraint {
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(
-          CapAdd(interval->EndMin(), slack->Min() + transition_time),
-          CapAdd(interval->EndMax(), slack->Max() + transition_time));
+          CapAdd(interval->StartMin(), slack->Min() + transition_time),
+          CapAdd(interval->StartMax(), slack->Max() + transition_time));
     }
     // Propagates on ranked last from right to left.
     for (int i = last_position; i > last_sentinel; --i) {
@@ -728,7 +728,7 @@ class RankedPropagator : public Constraint {
       IntervalVar* const next_interval = RankedInterval(i);
       IntVar* const slack = RankedSlack(i - 1);
       const int64 transition_time = RankedTransitionTime(i - 1, i);
-      interval->SetEndRange(
+      interval->SetStartRange(
           CapSub(next_interval->StartMin(), slack->Max() + transition_time),
           CapSub(next_interval->StartMax(), slack->Min() + transition_time));
     }
@@ -746,53 +746,50 @@ class RankedPropagator : public Constraint {
       return;
     }
     // Propagates to the middle part.
+    // This assumes triangular inequality in the transition times.
     for (int i = first_sentinel; i <= last_sentinel; ++i) {
       IntervalVar* const interval = RankedInterval(i);
       IntVar* const slack = RankedSlack(i);
       if (interval->MayBePerformed()) {
+        const bool performed = interval->MustBePerformed();
         if (first_interval != nullptr) {
           const int64 transition_time =
               RankedTransitionTime(first_sentinel - 1, i);
-          interval->SetStartRange(CapAdd(first_interval->EndMin(),
+          interval->SetStartRange(CapAdd(first_interval->StartMin(),
                                          first_slack->Min() + transition_time),
-                                  CapAdd(first_interval->EndMax(),
+                                  CapAdd(first_interval->StartMax(),
                                          first_slack->Max() + transition_time));
-        }
-        if (last_interval != nullptr) {
-          const int64 transition_time =
-              RankedTransitionTime(i, last_sentinel + 1);
-          interval->SetEndRange(
-              CapSub(last_interval->StartMin(), slack->Max() + transition_time),
-              CapSub(last_interval->StartMax(),
-                     slack->Min() + transition_time));
-        }
-        if (interval->MustBePerformed()) {
-          if (last_interval != nullptr) {
-            const int64 transition_time =
-                RankedTransitionTime(i, last_sentinel + 1);
-            last_interval->SetStartRange(
-                CapAdd(interval->EndMin(), slack->Min() + transition_time),
-                CapAdd(interval->EndMax(), slack->Max() + transition_time));
-          }
-          if (first_interval != nullptr) {
-            const int64 transition_time =
-                RankedTransitionTime(first_sentinel - 1, i);
-            first_interval->SetEndRange(
+          if (performed) {
+            first_interval->SetStartRange(
                 CapSub(interval->StartMin(),
                        first_slack->Max() + transition_time),
                 CapSub(interval->StartMax(),
                        first_slack->Min() + transition_time));
           }
         }
+        if (last_interval != nullptr) {
+          const int64 transition_time =
+              RankedTransitionTime(i, last_sentinel + 1);
+          interval->SetStartRange(
+              CapSub(last_interval->StartMin(), slack->Max() + transition_time),
+              CapSub(last_interval->StartMax(),
+                     slack->Min() + transition_time));
+          if (performed) {
+            last_interval->SetStartRange(
+                CapAdd(interval->StartMin(), slack->Min() + transition_time),
+                CapAdd(interval->StartMax(), slack->Max() + transition_time));
+          }
+        }
       }
     }
+    // TODO(user): cache transition on ranked intervals in a vector.
     // Propagates on ranked first from right to left.
     for (int i = std::min(first_sentinel - 2, last_position - 1); i >= 0; --i) {
       IntervalVar* const interval = RankedInterval(i);
       IntervalVar* const next_interval = RankedInterval(i + 1);
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
-      interval->SetEndRange(
+      interval->SetStartRange(
           CapSub(next_interval->StartMin(), slack->Max() + transition_time),
           CapSub(next_interval->StartMax(), slack->Min() + transition_time));
     }
@@ -803,8 +800,8 @@ class RankedPropagator : public Constraint {
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(
-          CapAdd(interval->EndMin(), slack->Min() + transition_time),
-          CapAdd(interval->EndMax(), slack->Max() + transition_time));
+          CapAdd(interval->StartMin(), slack->Min() + transition_time),
+          CapAdd(interval->StartMax(), slack->Max() + transition_time));
     }
     // TODO(user) : Propagate on slacks.
   }
@@ -819,7 +816,7 @@ class RankedPropagator : public Constraint {
     return slacks_[index];
   }
 
-  int64 RankedTransitionTime(int before, int after) {
+  int64 RankedTransitionTime(int before, int after) const {
     const int before_index = partial_sequence_[before];
     const int after_index = partial_sequence_[after];
 
@@ -832,8 +829,8 @@ class RankedPropagator : public Constraint {
     return StringPrintf(
         "RankedPropagator([%s], nexts = [%s], intervals = [%s])",
         partial_sequence_.DebugString().c_str(),
-        DebugStringVector(nexts_, ", ").c_str(),
-        DebugStringVector(intervals_, ", ").c_str());
+        JoinDebugStringPtr(nexts_, ", ").c_str(),
+        JoinDebugStringPtr(intervals_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -852,6 +849,7 @@ class RankedPropagator : public Constraint {
 
 // A class that stores several propagators for the sequence constraint, and
 // calls them until a fixpoint is reached.
+
 class FullDisjunctiveConstraint : public DisjunctiveConstraint {
  public:
   FullDisjunctiveConstraint(Solver* const s,
@@ -911,23 +909,18 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   virtual string DebugString() const {
     return StringPrintf("FullDisjunctiveConstraint([%s])",
-                        DebugStringVector(intervals_, ",").c_str());
-  }
-
-  int64 MinDistance(int64 activity_plus_one, int64 next_activity_plus_one) {
-    if (activity_plus_one == 0) {
-      return 0;
-    } else {
-      const int64 transition_time =
-          transition_time_.get() != nullptr
-              ? transition_time_->Run(activity_plus_one - 1,
-                                      next_activity_plus_one - 1)
-              : 0;
-      return intervals_[activity_plus_one - 1]->DurationMin() + transition_time;
-    }
+                        JoinDebugStringPtr(intervals_, ",").c_str());
   }
 
  private:
+  int64 MinDistance(int64 activity_plus_one, int64 next_activity_plus_one) {
+    return (transition_time_.get() == nullptr || activity_plus_one == 0 ||
+            next_activity_plus_one > intervals_.size())
+               ? 0
+               : transition_time_->Run(activity_plus_one - 1,
+                                       next_activity_plus_one - 1);
+  }
+
   void BuildNextModelIfNeeded() {
     if (!nexts_.empty()) {
       return;
@@ -971,20 +964,32 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
     for (int64 i = 0; i < num_intervals; ++i) {
       IntervalVar* const var = intervals_[i];
-      time_slacks_[i + 1] = s->MakeIntVar(
-          0, horizon, StringPrintf("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
-      // TODO(user): Check SafeStartExpr();
-      time_cumuls_[i + 1] =
-          var->MayBePerformed() ? var->SafeStartExpr(var->StartMin())->Var()
-                                : s->MakeIntConst(horizon);
+      if (var->MayBePerformed()) {
+        const int64 duration_min = var->DurationMin();
+        time_slacks_[i + 1] = s->MakeIntVar(
+            duration_min, horizon,
+            StringPrintf("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
+        // TODO(user): Check SafeStartExpr();
+        time_cumuls_[i + 1] = var->MayBePerformed()
+                                  ? var->SafeStartExpr(var->StartMin())->Var()
+                                  : s->MakeIntConst(horizon);
+        if (var->DurationMax() != duration_min) {
+          s->AddConstraint(s->MakeGreaterOrEqual(
+              time_slacks_[i + 1], var->SafeDurationExpr(duration_min)));
+        }
+      } else {
+        time_slacks_[i + 1] = s->MakeIntVar(
+            0, horizon, StringPrintf("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
+        time_cumuls_[i + 1] = s->MakeIntConst(horizon);
+      }
     }
-    time_cumuls_[num_nodes] = s->MakeIntVar(0, horizon, ct_name + "_ect");
+    // TODO(user): Find a better UB for the last time cumul.
+    time_cumuls_[num_nodes] = s->MakeIntVar(0, 2 * horizon, ct_name + "_ect");
     s->AddConstraint(s->MakePathCumul(
         nexts_, actives_, time_cumuls_, time_slacks_,
         NewPermanentCallback(this, &FullDisjunctiveConstraint::MinDistance)));
 
-    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1,
-                                      time_slacks_.end());
+    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
     s->AddConstraint(s->RevAlloc(new RankedPropagator(
         s, nexts_, intervals_, short_slacks, transition_time_.get())));
   }
@@ -1887,8 +1892,8 @@ DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int64>& demands,
-                                   int64 capacity, const string& name) {
+                                   const std::vector<int64>& demands, int64 capacity,
+                                   const string& name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
@@ -1901,8 +1906,8 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int>& demands,
-                                   int64 capacity, const string& name) {
+                                   const std::vector<int>& demands, int64 capacity,
+                                   const string& name) {
   return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
 }
 

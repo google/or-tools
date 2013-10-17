@@ -57,7 +57,7 @@
 #include <string>
 #include <vector>
 
-#include "base/callback_types.h"
+#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"

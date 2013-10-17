@@ -147,7 +147,7 @@ bool NoGood::Apply(Solver* const solver) {
 }
 
 string NoGood::DebugString() const {
-  return StringPrintf("(%s)", DebugStringVector(terms_, " && ").c_str());
+  return StringPrintf("(%s)", JoinDebugStringPtr(terms_, " && ").c_str());
 }
 
 namespace {

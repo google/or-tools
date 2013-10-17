@@ -13,7 +13,7 @@
 
 #include <string.h>
 #include <algorithm>
-#include <memory>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -230,7 +230,7 @@ class MapDomain : public Constraint {
   }
   virtual string DebugString() const {
     return StringPrintf("MapDomain(%s, [%s])", var_->DebugString().c_str(),
-                        DebugStringVector(actives_, ", ").c_str());
+                        JoinDebugStringPtr(actives_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -482,7 +482,8 @@ void NoCycle::ComputeSupports() {
 }
 
 string NoCycle::DebugString() const {
-  return StringPrintf("NoCycle(%s)", DebugStringVector(nexts_, ", ").c_str());
+  return StringPrintf("NoCycle(%s)",
+                      JoinDebugStringPtr(nexts_, ", ").c_str());
 }
 
 // ----- Circuit constraint -----
@@ -540,7 +541,7 @@ class Circuit : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Circuit(%s)", DebugStringVector(nexts_, " ").c_str());
+    return StringPrintf("Circuit(%s)", JoinDebugStringPtr(nexts_, " ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -709,7 +710,7 @@ class SubCircuit : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf(
-        "SubCircuit(%s)", DebugStringVector(nexts_, " ").c_str());
+        "SubCircuit(%s)", JoinDebugStringPtr(nexts_, " ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -1250,12 +1251,14 @@ void ResultCallback2SlackPathCumul::NextBound(int index) {
   IntVar* const cumul_next = cumuls_[next];
   IntVar* const slack = slacks_[index];
   const int64 transit = transits_evaluator_->Run(index, next);
-  cumul_next->SetMin(cumul->Min() + transit + slack->Min());
+  const int64 cumul_next_minus_transit_min = CapSub(cumul_next->Min(), transit);
+  const int64 cumul_next_minus_transit_max = CapSub(cumul_next->Max(), transit);
+  cumul_next->SetMin(CapAdd(CapAdd(cumul->Min(), transit), slack->Min()));
   cumul_next->SetMax(CapAdd(CapAdd(cumul->Max(), transit), slack->Max()));
-  cumul->SetMin(CapSub(cumul_next->Min(), CapAdd(transit, slack->Max())));
-  cumul->SetMax(CapSub(cumul_next->Max(), CapAdd(transit, slack->Min())));
-  slack->SetMin(CapSub(cumul_next->Min(), CapAdd(transit, cumul->Max())));
-  slack->SetMax(CapSub(cumul_next->Max(), CapAdd(transit, cumul->Min())));
+  cumul->SetMin(CapSub(cumul_next_minus_transit_min, slack->Max()));
+  cumul->SetMax(CapSub(cumul_next_minus_transit_max, slack->Min()));
+  slack->SetMin(CapSub(cumul_next_minus_transit_min, cumul->Max()));
+  slack->SetMax(CapSub(cumul_next_minus_transit_max, cumul->Min()));
   if (prevs_[next] < 0) {
     prevs_.SetValue(solver(), next, index);
   }
@@ -1266,8 +1269,9 @@ bool ResultCallback2SlackPathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_j = cumuls_[j];
   const IntVar* const slack = slacks_[i];
   const int64 transit = transits_evaluator_->Run(i, j);
-  return transit + slack->Min() <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
-         CapSub(cumul_j->Min(), cumul_i->Max()) <= slack->Max() + transit;
+  return
+      CapAdd(transit, slack->Min()) <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
+      CapSub(cumul_j->Min(), cumul_i->Max()) <= CapAdd(slack->Max(), transit);
 }
 }  // namespace
 

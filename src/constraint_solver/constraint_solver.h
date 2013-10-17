@@ -62,7 +62,7 @@
 #include "base/hash.h"
 #include "base/hash.h"
 #include <iosfwd>
-#include <memory>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -80,7 +80,6 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "base/random.h"
-#include "base/unique_ptr.h"
 #include "util/tuple_set.h"
 
 class Closure;
@@ -4965,9 +4964,9 @@ class DisjunctiveConstraint : public Constraint {
   virtual SequenceVar* MakeSequenceVar() = 0;
 
   // Add a transition time between intervals.  It forces the distance between
-  // interval a and interval b that follows it to be at lest
-  // transit_evaluator->Run(a, b). This evaluator must always returns a positive
-  // or null value.
+  // the end of interval a and start of interval b that follows it to be at
+  // least transit_evaluator->Run(a, b). This evaluator must always returns
+  // a positive or null value.
   // This method takes ownership of the evaluator.
   virtual void SetTransitionTime(Solver::IndexEvaluator2* transit_evaluator) {
     transition_time_.reset(transit_evaluator);

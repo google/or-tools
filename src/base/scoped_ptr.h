@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_BASE_SCOPED_PTR_H_
 #define OR_TOOLS_BASE_SCOPED_PTR_H_
 
-// This is an implementation designed to match the anticipated future
-// TR2 implementation of the scoped_ptr class, and its closely-related
-// brethren, scoped_ptr_malloc, and make_scoped_ptr.
+//  This is an implementation designed to match the anticipated future TR2
+//  implementation of the scoped_ptr class, and its closely-related brethren,
+//  scoped_ptr_malloc, and make_scoped_ptr.
 
 #include <assert.h>
 #include <stdlib.h>
@@ -31,9 +31,7 @@ namespace operations_research {
 
 template <class C> class scoped_ptr;
 template <class C, class Free> class scoped_ptr_malloc;
-
-template <class C>
-scoped_ptr<C> make_scoped_ptr(C * param);
+template <class C> scoped_ptr<C> make_scoped_ptr(C * param);
 
 // A scoped_ptr<T> is like a T*, except that the destructor of scoped_ptr<T>
 // automatically deletes the pointer it holds (if any).

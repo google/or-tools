@@ -451,7 +451,7 @@ Decision* ComposeDecisionBuilder::Next(Solver* const s) {
 
 string ComposeDecisionBuilder::DebugString() const {
   return StringPrintf("ComposeDecisionBuilder(%s)",
-                      DebugStringVector(builders_, ", ").c_str());
+                      JoinDebugStringPtr(builders_, ", ").c_str());
 }
 }  // namespace
 
@@ -565,8 +565,7 @@ Decision* TryDecisionBuilder::Next(Solver* const solver) {
 
 string TryDecisionBuilder::DebugString() const {
   return StringPrintf(
-      "TryDecisionBuilder(%s)",
-      DebugStringArray(builders_.data(), builders_.size(), ", ").c_str());
+      "TryDecisionBuilder(%s)", JoinDebugStringPtr(builders_, ", ").c_str());
 }
 
 void TryDecisionBuilder::AdvanceToNextBuilder(Solver* const solver) {
@@ -635,7 +634,7 @@ class VariableSelector : public BaseObject {
   virtual ~VariableSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id) = 0;
   string VarDebugString() const {
-    return StringPrintf("(%s)", DebugStringVector(vars_, ", ").c_str());
+    return StringPrintf("(%s)", JoinDebugStringPtr(vars_, ", ").c_str());
   }
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
@@ -1434,7 +1433,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
 
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
-                        DebugStringVector(vars_, ", ").c_str());
+                        JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
   const std::vector<IntVar*> vars_;

@@ -194,5 +194,4 @@ class unique_ptr<C[]> {
 }  // namespace std
 
 #endif
-
-#endif // OR_TOOLS_BASE_UNIQUE_PTR_H_
+#endif  // OR_TOOLS_BASE_UNIQUE_PTR_H_

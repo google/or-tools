@@ -24,12 +24,8 @@ from google.apputils import app
 from graph import pywrapgraph
 
 
-def RunAssignmentOn4x4Matrix(forward_graph):
+def RunAssignmentOn4x4Matrix():
   """Test linear sum assignment on a 4x4 matrix.
-
-  Arguments:
-    forward_graph: if true uses a ForwardStarGraph or a StarGraph to model
-                   the assignment problem.
   """
   num_sources = 4
   num_targets = 4
@@ -39,28 +35,28 @@ def RunAssignmentOn4x4Matrix(forward_graph):
           [45, 110, 95, 115]]
   expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
-  if forward_graph:
-    graph = pywrapgraph.ForwardStarGraph(num_sources + num_targets,
-                                         num_sources * num_targets)
-    assignment = pywrapgraph.ForwardEbertLinearSumAssignment(graph, num_sources)
-  else:
-    graph = pywrapgraph.StarGraph(num_sources + num_targets,
-                                  num_sources * num_targets)
-    assignment = pywrapgraph.EbertLinearSumAssignment(graph, num_sources)
-
+  assignment = pywrapgraph.LinearSumAssignment()
   for source in range (0, num_sources):
     for target in range(0, num_targets):
-      arc = graph.AddArc(source, num_sources + target)
-      assignment.SetArcCost(arc, cost[source][target])
+      assignment.AddArcWithCost(source, target, cost[source][target])
 
-  assignment.ComputeAssignment()
-  total_cost = assignment.GetCost()
-  print 'total cost', total_cost, '/', expected_cost
+  solve_status = assignment.Solve()
+  if solve_status == assignment.OPTIMAL:
+    print 'Successful solve.'
+    print 'Total cost', assignment.OptimalCost(), '/', expected_cost
+    for i in range(0, assignment.NumNodes()):
+      print 'Left node %d assigned to right node %d with cost %d.' % (
+          i,
+          assignment.RightMate(i),
+          assignment.AssignmentCost(i))
+  elif solve_status == assignment.INFEASIBLE:
+    print 'No perfect matching exists.'
+  elif solve_status == assignment.POSSIBLE_OVERFLOW:
+    print 'Some input costs are too large and may cause an integer overflow.'
 
 
 def main(unused_argv):
-  RunAssignmentOn4x4Matrix(True)
-  RunAssignmentOn4x4Matrix(False)
+  RunAssignmentOn4x4Matrix()
 
 if __name__ == '__main__':
   app.run()

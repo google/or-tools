@@ -61,4 +61,5 @@ uint64 UnsignedCapProd(uint64 left, uint64 right) {
   }
   return left * right;
 }
+
 }  // namespace operations_research

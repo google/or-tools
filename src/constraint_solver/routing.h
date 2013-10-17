@@ -40,7 +40,7 @@
 //   * "next(i)" variables representing the immediate successor of the node
 //     corresponding to i; use IndexToNode() to get the node corresponding to
 //     a "next" variable value; note that node indices are strongly typed
-//     integers (cf. base/int-type.h);
+//     integers (cf. base/int_type.h);
 //   * "vehicle(i)" variables representing the vehicle route to which the
 //     node corresponding to i belongs;
 //   * "active(i)" boolean variables, true if the node corresponding to i is
@@ -158,7 +158,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/callback_types.h"
+#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/macros.h"
@@ -283,6 +283,8 @@ struct RoutingSearchParameters {
 class RoutingModel {
  public:
   // First solution strategies, used as starting point of local search.
+  // TODO(user): Remove this when the corresponding enum is available in
+  // the routing search parameters protobuf.
   enum RoutingStrategy {
     // Select the first node with an unbound successor and connect it to the
     // first available node.
@@ -323,6 +325,7 @@ class RoutingModel {
     // Operational Research Quarterly (1970-1977),
     // Vol. 23, No. 3 (Sep., 1972), pp. 333-344
     ROUTING_SWEEP,
+    ROUTING_FIRST_SOLUTION_STRATEGY_COUNTER
   };
 
   // Metaheuristics used to guide the search. Apart greedy descent, they will
@@ -897,6 +900,31 @@ class RoutingModel {
                                         RoutingMetaheuristic* metaheuristic);
 
  private:
+  // Local search move operator usable in routing.
+  // TODO(user): Remove this when the corresponding enum is available in
+  // the routing search parameters protobuf.
+  enum RoutingLocalSearchOperator {
+    ROUTING_RELOCATE = 0,
+    ROUTING_PAIR_RELOCATE,
+    ROUTING_RELOCATE_NEIGHBORS,
+    ROUTING_EXCHANGE,
+    ROUTING_CROSS,
+    ROUTING_TWO_OPT,
+    ROUTING_OR_OPT,
+    ROUTING_LKH,
+    ROUTING_TSP_OPT,
+    ROUTING_TSP_LNS,
+    ROUTING_PATH_LNS,
+    ROUTING_FULL_PATH_LNS,
+    ROUTING_INACTIVE_LNS,
+    ROUTING_MAKE_ACTIVE,
+    ROUTING_MAKE_INACTIVE,
+    ROUTING_MAKE_CHAIN_INACTIVE,
+    ROUTING_SWAP_ACTIVE,
+    ROUTING_EXTENDED_SWAP_ACTIVE,
+    ROUTING_LOCAL_SEARCH_OPERATOR_COUNTER
+  };
+
   // Structure storing node disjunction information (nodes and penalty when
   // unperformed).
   struct Disjunction {
@@ -980,10 +1008,12 @@ class RoutingModel {
   SearchLimit* GetOrCreateLocalSearchLimit();
   SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
-  LocalSearchOperator* CreateNeighborhoodOperators();
+  void CreateNeighborhoodOperators();
+  LocalSearchOperator* GetNeighborhoodOperators() const;
   const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
   DecisionBuilder* CreateSolutionFinalizer();
-  DecisionBuilder* CreateFirstSolutionDecisionBuilder();
+  void CreateFirstSolutionDecisionBuilders();
+  DecisionBuilder* GetFirstSolutionDecisionBuilder() const;
   LocalSearchPhaseParameters* CreateLocalSearchParameters();
   DecisionBuilder* CreateLocalSearchDecisionBuilder();
   void SetupDecisionBuilders();
@@ -1037,8 +1067,10 @@ class RoutingModel {
   Status status_;
 
   // Search data
+  std::vector<DecisionBuilder*> first_solution_decision_builders_;
   RoutingStrategy first_solution_strategy_;
   scoped_ptr<Solver::IndexEvaluator2> first_solution_evaluator_;
+  std::vector<LocalSearchOperator*> local_search_operators_;
   RoutingMetaheuristic metaheuristic_;
   std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collect_assignments_;

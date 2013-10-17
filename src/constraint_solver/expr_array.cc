@@ -56,7 +56,7 @@ class TreeArrayConstraint : public CastConstraint {
 
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s) == %s", name.c_str(),
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -901,7 +901,8 @@ class ArrayBoolAndEq : public CastConstraint {
   }
 
   string DebugString() const {
-    return StringPrintf("And(%s) == %s", DebugStringVector(vars_, ", ").c_str(),
+    return StringPrintf("And(%s) == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -1030,7 +1031,8 @@ class ArrayBoolOrEq : public CastConstraint {
   }
 
   string DebugString() const {
-    return StringPrintf("Or(%s) == %s", DebugStringVector(vars_, ", ").c_str(),
+    return StringPrintf("Or(%s) == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -1081,7 +1083,7 @@ class BaseSumBooleanConstraint : public Constraint {
  protected:
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
-                        DebugStringVector(vars_, ", ").c_str());
+                        JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
   const std::vector<IntVar*> vars_;
@@ -1597,7 +1599,7 @@ class BooleanScalProdLessConstant : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str(), upper_bound_);
   }
 
@@ -1714,7 +1716,7 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
 
   virtual string DebugString() const {
     return StringPrintf("PositiveBooleanScal([%s], [%s]) == %s",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -1827,7 +1829,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
 
   virtual string DebugString() const {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s])",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str());
   }
 
@@ -1956,7 +1958,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   virtual string DebugString() const {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT
                         "d",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str(), constant_);
   }
 
@@ -2577,7 +2579,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
     return solver->MakeSum(cache, constant);
   } else {
     const string name =
-        StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+        StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
     IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
     if (AreAllBooleans(vars)) {
       solver->AddConstraint(
@@ -2769,14 +2771,15 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       const bool all_booleans = AreAllBooleans(vars);
       if (all_booleans) {
         const string name =
-            StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str());
+            StringPrintf("BooleanSum([%s])",
+                         JoinNamePtr(vars, ", ").c_str());
         sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(new SumBooleanEqualToVar(this, vars, sum_var)));
       } else if (new_min != kint64min && new_max != kint64max) {
         sum_var = MakeSumFct(this, vars)->Var();
       } else {
         const string name =
-            StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+            StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
         sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
       }

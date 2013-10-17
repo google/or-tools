@@ -87,9 +87,9 @@ class Distribute : public Constraint {
   void CardMax(int cindex);
   virtual string DebugString() const {
     return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(values_, ", ").c_str(),
-                        DebugStringVector(cards_, ", ").c_str());
+                        JoinDebugStringPtr(cards_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -306,8 +306,8 @@ FastDistribute::FastDistribute(Solver* const s, const std::vector<IntVar*>& vars
 
 string FastDistribute::DebugString() const {
   return StringPrintf("FastDistribute(vars = [%s], cards = [%s])",
-                      DebugStringVector(vars_, ", ").c_str(),
-                      DebugStringVector(cards_, ", ").c_str());
+                      JoinDebugStringPtr(vars_, ", ").c_str(),
+                      JoinDebugStringPtr(cards_, ", ").c_str());
 }
 
 void FastDistribute::Post() {
@@ -507,7 +507,7 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
 string BoundedDistribute::DebugString() const {
   return StringPrintf(
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = [%s]",
-      DebugStringVector(vars_, ", ").c_str(),
+      JoinDebugStringPtr(vars_, ", ").c_str(),
       IntVectorToString(values_, ", ").c_str(),
       IntVectorToString(card_min_, ", ").c_str(),
       IntVectorToString(card_max_, ", ").c_str());
@@ -706,7 +706,7 @@ BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
 string BoundedFastDistribute::DebugString() const {
   return StringPrintf(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
-      DebugStringVector(vars_, ", ").c_str(),
+      JoinDebugStringPtr(vars_, ", ").c_str(),
       IntVectorToString(card_min_, ", ").c_str(),
       IntVectorToString(card_max_, ", ").c_str());
 }

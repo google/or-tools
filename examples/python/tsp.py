@@ -24,6 +24,8 @@
    (forbidden arcs).
 """
 
+
+
 import random
 
 from google.apputils import app
@@ -33,11 +35,11 @@ from constraint_solver import pywraprouting
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_integer('tsp_size', 10,
-                      'Size of Traveling Salesman Problem instance.')
+                     'Size of Traveling Salesman Problem instance.')
 gflags.DEFINE_boolean('tsp_use_random_matrix', True,
-                      'Use random cost matrix.')
+                     'Use random cost matrix.')
 gflags.DEFINE_integer('tsp_random_forbidden_connections', 0,
-                      'Number of random forbidden connections.')
+                     'Number of random forbidden connections.')
 gflags.DEFINE_integer('tsp_random_seed', 0, 'Random seed.')
 
 

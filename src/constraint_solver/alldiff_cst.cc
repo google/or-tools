@@ -35,7 +35,7 @@ class BaseAllDifferent : public Constraint {
   ~BaseAllDifferent() {}
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
-                        DebugStringVector(vars_, ", ").c_str());
+                        JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
  protected:
@@ -493,8 +493,9 @@ class SortConstraint : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Sort(%s, %s)", DebugStringVector(ovars_, ", ").c_str(),
-                        DebugStringVector(svars_, ", ").c_str());
+    return StringPrintf("Sort(%s, %s)",
+                        JoinDebugStringPtr(ovars_, ", ").c_str(),
+                        JoinDebugStringPtr(svars_, ", ").c_str());
   }
 
  private:
@@ -570,7 +571,8 @@ class AllDifferentExcept : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
-                        DebugStringVector(vars_, ", ").c_str(), escape_value_);
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
+                        escape_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -662,8 +664,8 @@ class NullIntersectArrayExcept : public Constraint {
   virtual string DebugString() const {
     return StringPrintf(
         "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
-        DebugStringVector(first_vars_, ", ").c_str(),
-        DebugStringVector(second_vars_, ", ").c_str(), escape_value_);
+        JoinDebugStringPtr(first_vars_, ", ").c_str(),
+        JoinDebugStringPtr(second_vars_, ", ").c_str(), escape_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {

@@ -1118,7 +1118,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       out.append(parameters_.decision_builder->DebugString());
       out.append(", ");
     }
-    out.append(DebugStringVector(vars_, ", "));
+    out.append(JoinDebugStringPtr(vars_, ", "));
     out.append(")");
     return out;
   }

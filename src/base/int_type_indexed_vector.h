@@ -13,7 +13,7 @@
 
 // This file provides the ITIVector container that wraps around the STL vector.
 // The wrapper restrict indexing to a pre-specified type-safe integer type or
-// IntType (see base/int-type.h).  It prevents accidental indexing
+// IntType (see base/int_type.h).  It prevents accidental indexing
 // by different "logical" integer-like types (e.g.  another IntType) or native
 // integer types.  The wrapper is useful as C++ and the standard template
 // library allows the user to mix "logical" integral indices that might have a
@@ -26,7 +26,7 @@
 //
 // where IntTypeName is the desired name for the "logical" integer-like type
 // and the ValueType is a supported native integer type such as int or
-// uint64 (see base/int-type.h for details).
+// uint64 (see base/int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only method modified to ensure type-safety is the operator

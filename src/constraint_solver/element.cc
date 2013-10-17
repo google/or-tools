@@ -1103,7 +1103,7 @@ string IntExprArrayElementCt::DebugString() const {
                         target_var_->DebugString().c_str());
   } else {
     return StringPrintf("IntExprArrayElement([%s], %s) == %s",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -1159,7 +1159,7 @@ class IntExprArrayElementCstCt : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
   }
 
@@ -1254,7 +1254,7 @@ class IntExprIndexOfCt : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
   }
 
@@ -1321,7 +1321,8 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
       size > 10
           ? StringPrintf("ElementVar(var array of size %d, %s)", size,
                          index->DebugString().c_str())
-          : StringPrintf("ElementVar([%s], %s)", NameVector(vars, ", ").c_str(),
+          : StringPrintf("ElementVar([%s], %s)",
+                         JoinNamePtr(vars, ", ").c_str(),
                          index->name().c_str());
   IntVar* const element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(
@@ -1394,7 +1395,8 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 val
     return cache->Var();
   } else {
     const string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                                     NameVector(vars, ", ").c_str(), value);
+                                     JoinNamePtr(vars, ", ").c_str(),
+                                     value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

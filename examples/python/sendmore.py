@@ -47,7 +47,7 @@ def main(unused_argv):
   solver.Add(1000*s + 100*e + 10*n + d + 1000*m + 100*o + 10*r + e ==
              10000*m + 1000*o + 100*n + 10*e + y)
 
-  # pylint: disable-msg=C6403
+  # pylint: disable=g-explicit-bool-comparison
   solver.Add(s != 0)
   solver.Add(m != 0)
 
