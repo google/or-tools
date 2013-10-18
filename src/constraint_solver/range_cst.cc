@@ -413,8 +413,7 @@ class IsDifferentCt : public CastConstraint {
   virtual ~IsDifferentCt() {}
 
   virtual void Post() {
-    range_demon_ = MakeConstraintDemon0(
-        solver(), this, &IsDifferentCt::PropagateRange, "PropagateRange");
+    range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(range_demon_);
     right_->WhenRange(range_demon_);
     Demon* const target_demon = MakeConstraintDemon0(
@@ -422,9 +421,7 @@ class IsDifferentCt : public CastConstraint {
     target_var_->WhenBound(target_demon);
   }
 
-  virtual void InitialPropagate() { PropagateRange(); }
-
-  void PropagateRange() {
+  virtual void InitialPropagate() {
     if (target_var_->Bound()) {
       PropagateTarget();
       return;

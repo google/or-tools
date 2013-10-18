@@ -32,10 +32,11 @@
 namespace operations_research {
 namespace {
 struct Container {
-  const Constraint* ct;
-  int64 value;
   Container(const Constraint* ct_, int64 value_) : ct(ct_), value(value_) {}
   bool operator<(const Container& c) const { return value > c.value; }
+
+  const Constraint* ct;
+  int64 value;
 };
 }  // namespace
 

@@ -5093,18 +5093,5 @@ ParallelSolveSupport* MakeMtSolveSupport(
     ParallelSolveSupport::ModelBuilder* const model_builder);
 
 #endif  // SWIG
-
-// ----- GCD -----
-
-inline int64 Gcd(int64 a, int64 b) {
-  int64 small = std::min(a, b);
-  int64 big = std::max(a, b);
-  while (small != 0) {
-    const int64 tmp = big % small;
-    big = small;
-    small = tmp;
-  }
-  return big;
-}
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

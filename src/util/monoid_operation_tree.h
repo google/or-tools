@@ -134,9 +134,6 @@ class MonoidOperationTree {
   // A pointer to the root node
   T const * result_;
 
-  // The identity element
-  const T identity_;
-
   DISALLOW_COPY_AND_ASSIGN(MonoidOperationTree);
 };
 
@@ -168,28 +165,19 @@ MonoidOperationTree<T>::MonoidOperationTree(int size)
   : size_(size),
     leaf_offset_(ComputeLeafOffset(size)),
     num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
-    nodes_(num_nodes_),
-    result_(&(nodes_[0])),
-    // The default constructor of T is required to produce the identity
-    identity_() {
-  // Clear all nodes, including unused leaves
-  for (int i = 0; i < num_nodes_; ++i) {
-    nodes_[i] = identity_;
-  }
+    nodes_(num_nodes_, T()),
+    result_(&(nodes_[0])) {
 }
 
 template<class T>
 void MonoidOperationTree<T>::Clear() {
-  // No need to reset the unused leaves
-  const int num_used_nodes = leaf_offset_ + size_;
-  for (int i = 0; i < num_used_nodes; ++i) {
-    nodes_[i] = identity_;
-  }
+  const int size = nodes_.size();
+  nodes_.assign(size, T());
 }
 
 template<class T>
 void MonoidOperationTree<T>::Reset(int argument_index) {
-  Set(argument_index, identity_);
+  Set(argument_index, T());
 }
 
 template<class T>

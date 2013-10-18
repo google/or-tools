@@ -62,21 +62,27 @@ namespace operations_research {
 namespace {
 // ----- Comparison functions -----
 
+// TODO(user): Tie breaking.
+
 // Comparison methods, used by the STL std::sort.
-template <class Task> bool StartMinLessThan(Task* const w1, Task* const w2) {
+template <class Task>
+bool StartMinLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->StartMin() < w2->interval->StartMin());
 }
 
-template <class Task> bool EndMaxLessThan(Task* const w1, Task* const w2) {
-  return (w1->interval->EndMax() < w2->interval->EndMax());
-}
-
-template <class Task> bool StartMaxLessThan(Task* const w1, Task* const w2) {
+template <class Task>
+bool StartMaxLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->StartMax() < w2->interval->StartMax());
 }
 
-template <class Task> bool EndMinLessThan(Task* const w1, Task* const w2) {
+template <class Task>
+bool EndMinLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->EndMin() < w2->interval->EndMin());
+}
+
+template <class Task>
+bool EndMaxLessThan(Task* const w1, Task* const w2) {
+  return (w1->interval->EndMax() < w2->interval->EndMax());
 }
 
 // ----- Wrappers around intervals -----
@@ -142,9 +148,9 @@ struct ThetaNode {
   }
 
   string DebugString() const {
-    return StringPrintf(
-        "ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT "d }",
-        total_processing, total_ect < 0LL ? -1LL : total_ect);
+    return StringPrintf("ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT
+                        "d }",
+                        total_processing, total_ect < 0LL ? -1LL : total_ect);
   }
 
   int64 total_processing;
@@ -375,8 +381,8 @@ class NotLast {
   std::vector<int64> new_lct_;
 };
 
-NotLast::NotLast(Solver* const solver,
-                 const std::vector<IntervalVar*>& intervals, bool mirror)
+NotLast::NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
+                 bool mirror)
     : theta_tree_(intervals.size()),
       by_start_min_(intervals.size()),
       by_end_max_(intervals.size()),
@@ -474,7 +480,7 @@ class EdgeFinderAndDetectablePrecedences {
   // --- All the following member variables are essentially used as local ones:
   // no invariant is maintained about them, except for the fact that the vectors
   // always contains all the considered intervals, so any function that wants to
-  // use them must first sort them in the right order.
+  // use them must first std::sort them in the right order.
 
   // All of these vectors store the same set of objects. Therefore, at
   // destruction time, STLDeleteElements should be called on only one of them.
@@ -493,8 +499,7 @@ class EdgeFinderAndDetectablePrecedences {
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals,
-    bool mirror)
+    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror)
     : solver_(solver),
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()) {
@@ -737,9 +742,9 @@ class RankedPropagator : public Constraint {
         first_sentinel > 0 ? RankedInterval(first_sentinel - 1) : nullptr;
     IntVar* const first_slack =
         first_sentinel > 0 ? RankedSlack(first_sentinel - 1) : nullptr;
-    IntervalVar* const last_interval =
-        last_sentinel < last_position ? RankedInterval(last_sentinel + 1)
-                                      : nullptr;
+    IntervalVar* const last_interval = last_sentinel < last_position
+                                           ? RankedInterval(last_sentinel + 1)
+                                           : nullptr;
 
     // Nothing to do afterwards, exiting.
     if (first_interval == nullptr && last_interval == nullptr) {
@@ -913,7 +918,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   }
 
  private:
-  int64 MinDistance(int64 activity_plus_one, int64 next_activity_plus_one) {
+  int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
     return (transition_time_.get() == nullptr || activity_plus_one == 0 ||
             next_activity_plus_one > intervals_.size())
                ? 0
@@ -970,9 +975,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
             duration_min, horizon,
             StringPrintf("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
         // TODO(user): Check SafeStartExpr();
-        time_cumuls_[i + 1] = var->MayBePerformed()
-                                  ? var->SafeStartExpr(var->StartMin())->Var()
-                                  : s->MakeIntConst(horizon);
+        time_cumuls_[i + 1] = var->SafeStartExpr(var->StartMin())->Var();
         if (var->DurationMax() != duration_min) {
           s->AddConstraint(s->MakeGreaterOrEqual(
               time_slacks_[i + 1], var->SafeDurationExpr(duration_min)));
@@ -987,7 +990,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     time_cumuls_[num_nodes] = s->MakeIntVar(0, 2 * horizon, ct_name + "_ect");
     s->AddConstraint(s->MakePathCumul(
         nexts_, actives_, time_cumuls_, time_slacks_,
-        NewPermanentCallback(this, &FullDisjunctiveConstraint::MinDistance)));
+        NewPermanentCallback(this, &FullDisjunctiveConstraint::Distance)));
 
     std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
     s->AddConstraint(s->RevAlloc(new RankedPropagator(
@@ -1028,7 +1031,8 @@ struct DualCapacityThetaNode {
       : energy(task.EnergyMin()),
         energetic_end_min(capacity * task.interval->StartMin() + energy),
         residual_energetic_end_min(residual_capacity *
-                                       task.interval->StartMin() + energy) {}
+                                       task.interval->StartMin() +
+                                   energy) {}
 
   // Sets this DualCapacityThetaNode to the result of the natural binary
   // operation over the two given operands, corresponding to the following set
@@ -1113,7 +1117,8 @@ class EnvJCComputeDiver {
     energy_alpha_ = argument.energy;
     energetic_end_min_alpha_ = argument.energetic_end_min;
     // We should reach a leaf that is not the identity
-    // DCHECK_GT(energetic_end_min_alpha_, kint64min);  TODO(user): Check me.
+    // DCHECK_GT(energetic_end_min_alpha_, kint64min);
+    // TODO(user): Check me.
   }
   bool ChooseGoLeft(const DualCapacityThetaNode& current,
                     const DualCapacityThetaNode& left_child,
@@ -1699,8 +1704,7 @@ class CumulativeTimeTable : public Constraint {
 
 class CumulativeConstraint : public Constraint {
  public:
-  CumulativeConstraint(Solver* const s,
-                       const std::vector<IntervalVar*>& intervals,
+  CumulativeConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
                        const std::vector<int64>& demands, int64 capacity,
                        const string& name)
       : Constraint(s),
@@ -1804,8 +1808,8 @@ class CumulativeConstraint : public Constraint {
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
-  void PopulateVectorUsefulTasks(
-      bool mirror, std::vector<CumulativeTask*>* const useful_tasks) {
+  void PopulateVectorUsefulTasks(bool mirror,
+                                 std::vector<CumulativeTask*>* const useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const CumulativeTask& original_task = tasks_[i];
@@ -1874,8 +1878,7 @@ class CumulativeConstraint : public Constraint {
 // ----- Public class -----
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    Solver* const s, const std::vector<IntervalVar*>& intervals,
-    const string& name)
+    Solver* const s, const std::vector<IntervalVar*>& intervals, const string& name)
     : Constraint(s), intervals_(intervals) {
   if (!name.empty()) {
     set_name(name);

@@ -99,6 +99,19 @@ class MathUtil {
   template <typename T> static T Square(const T x) {
     return x * x;
   }
+
+  // Euclid's Algorithm.
+  // Returns: the greatest common divisor of two unsigned integers x and y
+  static int64 GCD64(int64 x, int64 y) {
+    DCHECK_GE(x, 0);
+    DCHECK_GE(y, 0);
+    while (y != 0) {
+      int64 r = x % y;
+      x = y;
+      y = r;
+    }
+    return x;
+  }
 };
 
 }  // namespace operations_research

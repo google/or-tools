@@ -22,6 +22,7 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/mathutil.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
@@ -2701,23 +2702,26 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
       coefs.push_back(iter->second);
     }
   }
+  if (vars.empty()) {
+    return solver->MakeIntConst(constant);
+  }
   // Can we simplify using some gcd computation.
   int64 gcd = std::abs(coefs[0]);
   for (int i = 1; i < coefs.size(); ++i) {
-    gcd = Gcd(gcd, std::abs(coefs[i]));
+    gcd = MathUtil::GCD64(gcd, std::abs(coefs[i]));
     if (gcd == 1) {
       break;
     }
   }
   if (constant != 0 && gcd != 1) {
-    gcd = Gcd(gcd, std::abs(constant));
+    gcd = MathUtil::GCD64(gcd, std::abs(constant));
   }
   if (gcd > 1) {
     for (int i = 0; i < coefs.size(); ++i) {
       coefs[i] /= gcd;
     }
     return solver->MakeProd(
-        MakeScalProdAux(solver, vars, coefs, constant / gcd), gcd );
+        MakeScalProdAux(solver, vars, coefs, constant / gcd), gcd);
   }
   return MakeScalProdAux(solver, vars, coefs, constant);
 }
