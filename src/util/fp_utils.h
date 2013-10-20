@@ -38,7 +38,7 @@
 #include "base/logging.h"
 
 #if defined(_MSC_VER)
-static inline double isnan(x) { return _isnan(x); }
+static inline double isnan(double x) { return _isnan(x); }
 static inline double round(double val) { return floor(val + 0.5); }
 #elif defined(__APPLE__)
 using std::isnan;
