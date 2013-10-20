@@ -676,13 +676,8 @@ class MPObjective {
   // to several models.
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
-#if defined(_MSC_VER)
-  explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), offset_(0.0) {}
-#else
   explicit MPObjective(MPSolverInterface* const interface)
       : interface_(interface), coefficients_(1), offset_(0.0) {}
-#endif
 
   MPSolverInterface* const interface_;
 
@@ -842,21 +837,12 @@ class MPConstraint {
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
   // to several models.
-#if defined(_MSC_VER)
-  MPConstraint(double lb,
-               double ub,
-               const string& name,
-               MPSolverInterface* const interface)
-      : lb_(lb), ub_(ub), name_(name), is_lazy_(false),
-        index_(-1), dual_value_(0.0), activity_(0.0), interface_(interface) {}
-#else
   MPConstraint(double lb,
                double ub,
                const string& name,
                MPSolverInterface* const interface)
       : coefficients_(1), lb_(lb), ub_(ub), name_(name), is_lazy_(false),
         index_(-1), dual_value_(0.0), activity_(0.0), interface_(interface) {}
-#endif
 
   void set_index(int index) { index_ = index; }
   void set_activity(double activity) { activity_ = activity; }
