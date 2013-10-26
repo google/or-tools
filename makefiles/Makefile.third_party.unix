@@ -134,6 +134,7 @@ dependencies/sources/coin-cbc/Makefile: dependencies/sources/coin-cbc/Makefile.i
 
 dependencies/sources/coin-cbc/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
+	cd dependencies/sources/coin-cbc && patch -p0 -i ../../archives/fix_cbc2.8.5_mavericks.patch
 
 # Install pcre (dependency of SWIG).
 dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile

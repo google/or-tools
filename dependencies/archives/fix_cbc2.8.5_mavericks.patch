@@ -1,0 +1,11 @@
+Index: Cgl/src/CglLandP/CglLandPSimplex.cpp
+===================================================================
+@@ -2104,7 +2104,7 @@
+     double value2;
+     /** index of the row.*/
+     int row;
+-    bool operator<(const reducedCost & other)
++    bool operator<(const reducedCost & other) const
+     {
+         return (value>other.value);
+     }
