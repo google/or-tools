@@ -189,11 +189,11 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 install_mono: $(MONO_TARGET)
 
 dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile
-	cd dependencies/sources/mono-$(MONO_TAG) && make && make install
+	cd dependencies/sources/mono-$(MONO_TAG) && make install
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure
 ifeq ($(PLATFORM),MACOSX)
-	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10
+	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 else
 	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 endif
