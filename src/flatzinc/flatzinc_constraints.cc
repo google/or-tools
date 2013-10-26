@@ -105,7 +105,7 @@ class BooleanSumOdd : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("BooleanSumOdd([%s])",
-                        DebugStringVector(vars_, ", ").c_str());
+                        JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -269,7 +269,7 @@ class IsBooleanSumInRange : public Constraint {
   virtual string DebugString() const {
     return StringPrintf(
         "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
-        DebugStringVector(vars_, ", ").c_str(), range_min_,
+        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
         range_max_, target_->DebugString().c_str());
   }
 
@@ -387,7 +387,7 @@ class BooleanSumInRange : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-                        DebugStringVector(vars_, ", ").c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
                         range_min_, range_max_);
   }
 
@@ -483,8 +483,8 @@ class Lex : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf(
-        "Lex([%s], [%s]%s)", DebugStringVector(left_, ", ").c_str(),
-        DebugStringVector(right_, ", ").c_str(), strict_ ? ", strict" : "");
+        "Lex([%s], [%s]%s)", JoinDebugStringPtr(left_, ", ").c_str(),
+        JoinDebugStringPtr(right_, ", ").c_str(), strict_ ? ", strict" : "");
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -574,8 +574,8 @@ class Inverse : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Inverse([%s], [%s])",
-                        DebugStringVector(left_, ", ").c_str(),
-                        DebugStringVector(right_, ", ").c_str());
+                        JoinDebugStringPtr(left_, ", ").c_str(),
+                        JoinDebugStringPtr(right_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -714,7 +714,7 @@ class VariableCumulativeTimeTable : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("VariableCumulativeTimeTable([%s], capacity = %s)",
-                        DebugStringVector(by_start_min_, ", ").c_str(),
+                        JoinDebugStringPtr(by_start_min_, ", ").c_str(),
                         capacity_->DebugString().c_str());
   }
 

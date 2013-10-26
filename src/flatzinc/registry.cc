@@ -39,6 +39,7 @@
  *
  */
 #include "base/commandlineflags.h"
+#include "base/mathutil.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/flatzinc_constraints.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -952,7 +953,7 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
       solver->IsProduct(e2, &e2, &cc2);
       int64 c1 = array_coefficients->a[0]->getInt() * cc1;
       int64 c2 = array_coefficients->a[1]->getInt() * cc2;
-      const int64 gcd = Gcd(std::abs(c1), std::abs(c2));
+      const int64 gcd = MathUtil::GCD64(std::abs(c1), std::abs(c2));
       c1 /= gcd;
       c2 /= gcd;
       // if (FLAGS_use_sat && IsBoolean(e1) && IsBoolean(e2) && c1 == 1 &&
