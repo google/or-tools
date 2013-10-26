@@ -19,6 +19,7 @@
 #if defined(__APPLE__)
 #include <assert.h>
 #include "base/macros.h"
+#if (__clang_major__ < 5)
 namespace std {
 // A unique_ptr<T> is like a T*, except that the destructor of unique_ptr<T>
 // automatically deletes the pointer it holds (if any).
@@ -194,6 +195,6 @@ class unique_ptr<C[]> {
   DISALLOW_COPY_AND_ASSIGN(unique_ptr);
 };
 }  // namespace std
-
+#endif  // __clang_major__ < 5
 #endif
 #endif  // OR_TOOLS_BASE_UNIQUE_PTR_H_

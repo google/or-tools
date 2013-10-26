@@ -6,11 +6,17 @@
 # continue to use the original comment style based on our current config
 # files.
 
+runsed='sed -r'
+unamestr=`uname`
+if [[ "$unamestr" == 'Darwin' ]]; then
+   runsed='sed -E'
+fi
+
 echo "/** \addtogroup $2"
 echo " *  @{"
 echo " */"
 
-sed -r 's/\/\*([^\*])/\/\*\*\1/;                  # /* -> /**  \
+$runsed 's/\/\*([^\*])/\/\*\*\1/;                  # /* -> /**  \
        s/\/\/\/*/\/\/\//;                 # // -> ///  \
        s/;[ 	]*\/\*\*([^<*]*)/; \/\*\*<\1/; # /** -> /**< on right after code  \
        s/;[ 	]*\/\/\/*([^<])/; \/\/\/<\1/; # /// -> ///< on right after code \
@@ -38,7 +44,8 @@ sed -r 's/\/\*([^\*])/\/\*\*\1/;                  # /* -> /**  \
        s/\/\/\/ *(All [rR]ights [rR]eserved(.*))/\/\/ \1/; # clutter \
        s/\/\/\/ *(Date: (.*))/\/\/\/ @file/; # clutter \
        s/\/\/\/ *Author:(.*)/\/\/\/ @file/; # /// Author -> /// @file \
-       s/\/\/\/ *Author(.*)/\/\/\/ @file/; # /// Author -> /// @file ' \
+       s/\/\/\/ *Author(.*)/\/\/\/ @file/; # /// Author -> /// @file  \
+       s/namespace operations_research \{/namespace operations_research \{\n\/** \\ingroup '"$2"' *\//;' \
   $1
 
 # There are no quotes around $1 to let the script work with standard input if
