@@ -1,15 +1,15 @@
 # SVN tags of dependencies to checkout.
 GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 498 # version 2.5.0 + fix
-GOOGLE_APPUTILS_TAG = 13 # 0.3.0
+GOOGLE_APPUTILS_TAG = 14 # 0.4.0
 SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.8.5
-SWIG_TAG = rel-2.0.9
-PCRE_TAG = 1336 # version 8.33
-MONO_TAG = 2.10.9
+SWIG_TAG = 2.0.11
+PCRE_TAG = 8.33
+MONO_TAG = 3.2.3
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
-# The archive should be glpk-4.47.tar.gz
+# The archive should be glpk-4.52.tar.gz
 GLPK_TAG = 4.52
 # The archive should be scipoptsuite-3.0.1.tgz
 SCIP_TAG = 3.0.1
@@ -66,7 +66,6 @@ build_third_party: \
 	install_protobuf \
 	install_google_apputils \
 	install_sparsehash \
-	install_support \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
@@ -124,13 +123,6 @@ dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autog
 dependencies/sources/sparsehash/autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
 
-# Install google code support.
-install_support: dependencies/sources/googlecode-support/scripts/googlecode_upload.py
-
-dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
-	svn checkout http://support.googlecode.com/svn/trunk/ dependencies/sources/googlecode-support
-
-
 # Install Coin CBC.
 install_coin_cbc: dependencies/install/bin/cbc
 
@@ -144,34 +136,35 @@ dependencies/sources/coin-cbc/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
 
 # Install pcre (dependency of SWIG).
-install_pcre: dependencies/install/bin/pcretest
-
 dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile
-	cd dependencies/sources/pcre && make install
+	cd dependencies/sources/pcre-$(PCRE_TAG) && make install
 
 dependencies/sources/pcre/Makefile: dependencies/sources/pcre/configure
-	cd dependencies/sources/pcre && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/pcre-$(PCRE_TAG) && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/pcre/configure: dependencies/sources/pcre/autogen.sh
-	cd dependencies/sources/pcre && ./autogen.sh
+dependencies/sources/pcre/configure: dependencies/archives/pcre-$(PCRE_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/pcre-$(PCRE_TAG).tar.gz
 
-dependencies/sources/pcre/autogen.sh:
-	svn co svn://vcs.exim.org/pcre/code/trunk -r $(PCRE_TAG) dependencies/sources/pcre
+dependencies/archives/pcre-$(PCRE_TAG).tar.gz:
+	cd dependencies/archives && ftp http://sourceforge.net/projects/pcre/files/pcre/$(PCRE_TAG)/pcre-$(PCRE_TAG).tar.gz/download
 
 # Install SWIG.
 install_swig: dependencies/install/bin/swig
 
 dependencies/install/bin/swig: dependencies/sources/swig/Makefile
-	cd dependencies/sources/swig && make && make install
+	cd dependencies/sources/swig-$(SWIG_TAG) && make && make install
 
 dependencies/sources/swig/Makefile: dependencies/sources/swig/configure dependencies/install/bin/pcretest
-	cd dependencies/sources/swig && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
+	cd dependencies/sources/swig-$(SWIG_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
 
 dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
-	cd dependencies/sources/swig && ./autogen.sh
+	cd dependencies/sources/swig-$(SWIG_TAG) && ./autogen.sh
 
-dependencies/sources/swig/autogen.sh:
-	svn co https://svn.code.sf.net/p/swig/code/tags/$(SWIG_TAG) dependencies/sources/swig
+dependencies/sources/swig/autogen.sh: dependencies/archives/swig-$(SWIG_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
+
+dependencies/archives/swig-$(SWIG_TAG).tar.gz:
+	cd dependencies/archives && ftp http://prdownloads.sourceforge.net/swig/swig-$(SWIG_TAG).tar.gz
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
