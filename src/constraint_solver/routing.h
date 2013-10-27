@@ -214,6 +214,7 @@ struct RoutingSearchParameters {
     first_solution = "";
     use_first_solution_dive = false;
     optimization_step = 1;
+    trace = false;
   }
 
   // ----- Neighborhood deactivation -----
@@ -278,6 +279,8 @@ struct RoutingSearchParameters {
   bool use_first_solution_dive;
   // Optimization step.
   int64 optimization_step;
+  // Trace search.
+  bool trace;
 };
 
 class RoutingModel {

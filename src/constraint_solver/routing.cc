@@ -3100,6 +3100,7 @@ const Assignment* RoutingModel::SolveWithParameters(
   FLAGS_routing_first_solution = p.first_solution;
   FLAGS_routing_use_first_solution_dive = p.use_first_solution_dive;
   FLAGS_routing_optimization_step = p.optimization_step;
+  FLAGS_routing_trace = p.trace;
 
   return Solve(assignment);
 }
