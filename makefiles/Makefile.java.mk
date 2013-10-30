@@ -380,6 +380,7 @@ ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)\examples\com
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver\samples
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
@@ -433,6 +434,7 @@ else
 	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
 	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
 	cp examples/com/google/ortools/constraintsolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver/samples
+	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/linearsolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver/samples
 	cp examples/com/google/ortools/graph/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/graph/samples
 	cp examples/com/google/ortools/knapsacksolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/knapsacksolver/samples
