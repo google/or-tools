@@ -41,7 +41,7 @@ PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # This is needed to find sparse hash containers.
 SPARSEHASH_INC = -I$(UNIX_SPARSEHASH_DIR)/include
 # Tinythread
-THREAD_INC = -I$(OR_ROOT)dependencies/sources/TinyThread++-1.0/source
+THREAD_INC = -I$(OR_ROOT)dependencies/sources/TinyThread++-1.1/source
 
 # Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
 ifdef UNIX_CBC_DIR

@@ -5,7 +5,7 @@
 #include "base/hash.h"
 
 namespace operations_research {
-#if defined(__linux__) || defined(_MSC_VER)
+#if defined(__linux__) || defined(_MSC_VER) || defined(__APPLE__)
 struct Foo {
   Foo() { std::cout << "Foo::Foo\n"; }
   ~Foo() { std::cout << "Foo::~Foo\n"; }

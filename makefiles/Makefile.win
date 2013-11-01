@@ -46,9 +46,7 @@ ZLIB_INC = /I$(WINDOWS_ZLIB_DIR)\\include
 PROTOBUF_INC = /I$(WINDOWS_PROTOBUF_DIR)\\include
 SPARSEHASH_INC = /I$(WINDOWS_SPARSEHASH_DIR)\\include
 # Tinythread
-THREAD_INC = /I$(OR_ROOT)dependencies\\sources\\TinyThread++-1.0\\source
-# Tinythread
-MINISAT_INC = /I$(OR_ROOT)dependencies\\sources\\Minisat
+THREAD_INC = /I$(OR_ROOT)dependencies\\sources\\TinyThread++-1.1\\source
 
 PYTHONVERSION = $(WINDOWS_PYTHON_VERSION)
 PYTHON_INC=/I$(WINDOWS_PYTHON_PATH)\\include

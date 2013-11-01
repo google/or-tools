@@ -137,10 +137,10 @@ dependencies/sources/coin-cbc/Makefile.in:
 	cd dependencies/sources/coin-cbc && patch -p0 -i ../../archives/fix_cbc2.8.5_mavericks.patch
 
 # Install pcre (dependency of SWIG).
-dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile
+dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile
 	cd dependencies/sources/pcre-$(PCRE_TAG) && make install
 
-dependencies/sources/pcre/Makefile: dependencies/sources/pcre/configure
+dependencies/sources/pcre-$(PCRE_TAG)/Makefile: dependencies/sources/pcre-$(PCRE_TAG)/configure
 	cd dependencies/sources/pcre-$(PCRE_TAG) && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/pcre/configure: dependencies/archives/pcre-$(PCRE_TAG).tar.gz
@@ -152,16 +152,13 @@ dependencies/archives/pcre-$(PCRE_TAG).tar.gz:
 # Install SWIG.
 install_swig: dependencies/install/bin/swig
 
-dependencies/install/bin/swig: dependencies/sources/swig/Makefile
-	cd dependencies/sources/swig-$(SWIG_TAG) && make && make install
+dependencies/install/bin/swig: dependencies/sources/swig-$(SWIG_TAG)/Makefile
+	cd dependencies/sources/swig-$(SWIG_TAG) && make install
 
-dependencies/sources/swig/Makefile: dependencies/sources/swig/configure dependencies/install/bin/pcretest
+dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG_TAG)/configure dependencies/install/bin/pcretest
 	cd dependencies/sources/swig-$(SWIG_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
 
-dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
-	cd dependencies/sources/swig-$(SWIG_TAG) && ./autogen.sh
-
-dependencies/sources/swig/autogen.sh: dependencies/archives/swig-$(SWIG_TAG).tar.gz
+dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/archives/swig-$(SWIG_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
 
 dependencies/archives/swig-$(SWIG_TAG).tar.gz:
