@@ -186,7 +186,7 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 install_mono: $(MONO_TARGET)
 
 dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile
-	cd dependencies/sources/mono-$(MONO_TAG) && make install
+	cd dependencies/sources/mono-$(MONO_TAG) && make && make install
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure
 ifeq ($(PLATFORM),MACOSX)
