@@ -45,6 +45,8 @@ class ACMRandom {
     return ieee_double.d - static_cast<double>(1.0);
   }
 
+  double RandDouble() { return RndDouble(); }
+
   // Returns a double in [a, b). The distribution is uniform.
   double UniformDouble(double a, double b) {
     return a + (b - a) * RndDouble();
@@ -80,6 +82,7 @@ class MTRandom : public ACMRandom {
   explicit MTRandom(const std::string& str_seed)
       : ACMRandom(GenerateInt32SeedFromString(str_seed)) {
   }
+  MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
 
  private:
   int32 GenerateInt32SeedFromString(const std::string& str) {
