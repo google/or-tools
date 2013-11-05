@@ -90,7 +90,7 @@ template<typename T> class AdjustablePriorityQueue {
   // This is for debugging, e.g. the caller can use it to
   // examine the heap for rationality w.r.t. other parts of the
   // program.
-  const vector<T*>* Raw() const { return &elems_; }
+  const std::vector<T*>* Raw() const { return &elems_; }
 
  private:
   void AdjustUpwards(int i) {
