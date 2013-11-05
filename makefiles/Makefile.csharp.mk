@@ -152,6 +152,12 @@ $(BIN_DIR)/issue22.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)
 issue22: $(BIN_DIR)/issue22.exe
 	$(MONO) $(BIN_DIR)$Sissue22.exe
 
+$(BIN_DIR)/issue33.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/tests/issue33.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue33.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Sissue33.cs
+
+issue33: $(BIN_DIR)/issue33.exe
+	$(MONO) $(BIN_DIR)$Sissue33.exe
+
 $(BIN_DIR)/jobshop_bug.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/tests/jobshop_bug.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_bug.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Sjobshop_bug.cs
 
