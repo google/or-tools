@@ -425,7 +425,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 "$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
 
 // Typemaps to represent const std::vector<int64>& arguments as arrays of long.
-%typemap(jni) const std::vector<int64>& "jobjectArray"
+%typemap(jni) const std::vector<int64>& "jlongArray"
 %typemap(jtype) const std::vector<int64>& "long[]"
 %typemap(jstype) const std::vector<int64>& "long[]"
 %typemap(javain) const std::vector<int64>& "$javainput"
@@ -449,9 +449,16 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(freearg) const std::vector<int64>& {
   delete $1;
 }
+%typemap(out) const std::vector<int64>& %{
+  $result = jenv->NewLongArray($1->size());
+  jenv->SetLongArrayRegion($result, 0, $1->size(), &(*$1)[0]);
+%}
+%typemap(javaout) const std::vector<int64> & {
+  return $jnicall;
+}
 
 // Typemaps to represent const std::vector<int>& arguments as arrays of long.
-%typemap(jni) const std::vector<int>& "jobjectArray"
+%typemap(jni) const std::vector<int>& "jintArray"
 %typemap(jtype) const std::vector<int>& "int[]"
 %typemap(jstype) const std::vector<int>& "int[]"
 %typemap(javain) const std::vector<int>& "$javainput"
@@ -475,6 +482,13 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %}
 %typemap(freearg) const std::vector<int>& {
   delete $1;
+}
+%typemap(out) const std::vector<int>& %{
+  $result = jenv->NewIntArray($1->size());
+  jenv->SetIntArrayRegion($result, 0, $1->size(), &(*$1)[0]);
+%}
+%typemap(javaout) const std::vector<int> & {
+  return $jnicall;
 }
 
 // Convert long[][] to std::vector<std::vector<int64> >
