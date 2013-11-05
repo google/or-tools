@@ -1263,6 +1263,7 @@ static void SetPythonFlags(bool trace_propagation,
 %feature("director") PathOperator;
 %feature("director") BaseLns;
 %feature("director") IntVarLocalSearchOperator;
+%feature("director") SequenceVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchFilter;
 %include "std_vector.i"
 
@@ -1511,6 +1512,7 @@ class LocalSearchPhaseParameters {
 %feature("director") DecisionBuilder;
 %feature("director") IntVarLocalSearchFilter;
 %feature("director") IntVarLocalSearchOperator;
+%feature("director") SequenceVarLocalSearchOperator;
 %feature("director") LocalSearchOperator;
 %feature("director") OptimizeVar;
 %feature("director") SearchLimit;
