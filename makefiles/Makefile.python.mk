@@ -149,6 +149,7 @@ ifeq ($(SYSTEM),win)
 	copy src\gen\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Slinear_solver
 	copy src\gen\graph\_pywrapgraph.pyd temp$Sor-tools.$(PORT)$Sgraph
 	copy src\gen\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Salgorithms
+	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools.$(PORT)/setup.py
 	-del temp\or-tools.$(PORT)\setup.py-e
 	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
