@@ -882,17 +882,14 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
   virtual bool IsIncremental() const { return false; }
   int Size() const { return vars_.size(); }
 // Returns the value in the current assignment of the variable of given index.
-#if !defined(SWIG)
   const std::vector<int>& Sequence(int64 index) const {
     DCHECK_LT(index, vars_.size());
     return values_[index];
   }
-#endif
   // Returns the variable of given index.
   SequenceVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
 
- protected:
   const std::vector<int>& OldSequence(int64 index) const {
     return old_values_[index];
   }
@@ -905,7 +902,7 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
   void RevertChanges(bool incremental);
   void AddVars(const std::vector<SequenceVar*>& vars);
 
- private:
+ protected:
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // SequenceVarLocalSearchOperator::Start explicitly.

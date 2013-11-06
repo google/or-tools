@@ -1551,6 +1551,8 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::SequenceVarLocalSearchOperator::Sequence;
+%ignore operations_research::SequenceVarLocalSearchOperator::OldSequence;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -2214,6 +2216,41 @@ namespace operations_research {
     return index;
   }
 }
+
+%extend SequenceVarLocalSearchOperator {
+  int SequenceSize(int index) const {
+    return self->Sequence(index).size();
+  }
+  int SequenceValueAt(int index, int position) const {
+    return self->Sequence(index)[position];
+  }
+  int OldSequenceSize(int index) const {
+    return self->OldSequence(index).size();
+  }
+  int OldSequenceValueAt(int index, int position) const {
+    return self->OldSequence(index)[position];
+  }
+}
+
+%typemap(cscode) SequenceVarLocalSearchOperator %{
+  public int[] Sequence(int index) {
+    int size = SequenceSize(index);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = SequenceValueAt(index, position);
+    }
+    return result;
+  }
+
+  public int[] OldSequence(int index) {
+    int size = OldSequenceSize(index);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = OldSequenceValueAt(index, position);
+    }
+    return result;
+  }
+%}
 
 // Protect from failure
 #define PREPROTECT \
