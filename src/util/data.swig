@@ -612,17 +612,17 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 // This pair is then used to rebuild a vector from it.
 %define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
 
-%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
+%typemap(ctype)   const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
 %typemap(imtype)  const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
 %typemap(cstype)  const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
 %typemap(csin)    const std::vector<TYPE>&  "$csinput.Length, $csinput"
-%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
-%typemap(in)    const std::vector<TYPE>&  %{
+%typemap(freearg) const std::vector<TYPE>&  { delete $1; }
+%typemap(in)      const std::vector<TYPE>&  %{
   $1 = new std::vector<TYPE>;
   $1->reserve(length$argnum);
   for(int i = 0; i < length$argnum; ++i)
     $1->push_back($input[i]);
-  %}
+%}
 %enddef // CS_TYPEMAP_STDVECTOR
 
 ////////////////////////////////////////////////
