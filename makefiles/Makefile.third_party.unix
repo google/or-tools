@@ -143,7 +143,7 @@ dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefil
 dependencies/sources/pcre-$(PCRE_TAG)/Makefile: dependencies/sources/pcre-$(PCRE_TAG)/configure
 	cd dependencies/sources/pcre-$(PCRE_TAG) && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/pcre/configure: dependencies/archives/pcre-$(PCRE_TAG).tar.gz
+dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/archives/pcre-$(PCRE_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/pcre-$(PCRE_TAG).tar.gz
 
 dependencies/archives/pcre-$(PCRE_TAG).tar.gz:
