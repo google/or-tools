@@ -4,8 +4,8 @@ PROTOBUF_TAG = 498 # version 2.5.0 + fix
 GOOGLE_APPUTILS_TAG = 14 # 0.4.0
 SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.8.5
-SWIG_TAG = 2.0.11
-PCRE_TAG = 8.33
+SWIG_TAG = 17741# 2.0.11
+PCRE_TAG = 1336# version 8.33
 MONO_TAG = 3.2.3
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
@@ -56,7 +56,7 @@ third_party: build_third_party makefile_third_party
 upgrade_libs:
 	cd dependencies/sources/gflags && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
 	cd dependencies/sources/protobuf && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
-	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
+	cd dependencies/sources/cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
 ifneq ($(GLPK_TARGET),)
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
 endif
@@ -67,7 +67,7 @@ build_third_party: \
 	install_google_apputils \
 	install_sparsehash \
 	install_swig \
-	install_coin_cbc \
+	install_cbc \
 	install_glpk \
 	install_scip \
 	install_mono
@@ -124,45 +124,45 @@ dependencies/sources/sparsehash/autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
 
 # Install Coin CBC.
-install_coin_cbc: dependencies/install/bin/cbc
+install_cbc: dependencies/install/bin/cbc
 
-dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
-	cd dependencies/sources/coin-cbc && make install
+dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile
+	cd dependencies/sources/cbc-$(CBC_TAG) && make install
 
-dependencies/sources/coin-cbc/Makefile: dependencies/sources/coin-cbc/Makefile.in
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
+dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in
+	cd dependencies/sources/cbc-$(CBC_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
 
-dependencies/sources/coin-cbc/Makefile.in:
-	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	cd dependencies/sources/coin-cbc && patch -p0 -i ../../archives/fix_cbc2.8.5_mavericks.patch
+dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
+	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
+	cd dependencies/sources/cbc-$(CBC_TAG) && patch -p0 -i ../../archives/fix_cbc2.8.5_mavericks.patch
 
 # Install pcre (dependency of SWIG).
 dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile
-	cd dependencies/sources/pcre-$(PCRE_TAG) && make install
+	cd dependencies/sources/pcre-$(PCRE_TAG) && make && make install
 
 dependencies/sources/pcre-$(PCRE_TAG)/Makefile: dependencies/sources/pcre-$(PCRE_TAG)/configure
 	cd dependencies/sources/pcre-$(PCRE_TAG) && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/archives/pcre-$(PCRE_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/pcre-$(PCRE_TAG).tar.gz
+dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh
+	cd dependencies/sources/pcre-$(PCRE_TAG) && ./autogen.sh
 
-dependencies/archives/pcre-$(PCRE_TAG).tar.gz:
-	cd dependencies/archives && ftp http://sourceforge.net/projects/pcre/files/pcre/$(PCRE_TAG)/pcre-$(PCRE_TAG).tar.gz/download
+dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh:
+	svn co svn://vcs.exim.org/pcre/code/trunk -r $(PCRE_TAG) dependencies/sources/pcre-$(PCRE_TAG)
 
 # Install SWIG.
 install_swig: dependencies/install/bin/swig
 
 dependencies/install/bin/swig: dependencies/sources/swig-$(SWIG_TAG)/Makefile
-	cd dependencies/sources/swig-$(SWIG_TAG) && make install
+	cd dependencies/sources/swig-$(SWIG_TAG) && make && make install
 
 dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG_TAG)/configure dependencies/install/bin/pcretest
 	cd dependencies/sources/swig-$(SWIG_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
 
-dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/archives/swig-$(SWIG_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
+dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh
+	cd dependencies/sources/swig-$(SWIG_TAG) && ./autogen.sh
 
-dependencies/archives/swig-$(SWIG_TAG).tar.gz:
-	cd dependencies/archives && ftp http://prdownloads.sourceforge.net/swig/swig-$(SWIG_TAG).tar.gz
+dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
+	svn co https://github.com/swig/swig/trunk -r $(SWIG_TAG) dependencies/sources/swig-$(SWIG_TAG)
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
@@ -201,17 +201,18 @@ dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MO
 
 # Clean everything.
 clean_third_party:
-	$(DEL) Makefile.local
-	$(DELREC) dependencies/install
-	$(DELREC) dependencies/sources/coin-cbc*
-	$(DELREC) dependencies/sources/gflags*
-	$(DELREC) dependencies/sources/glpk*
-	$(DELREC) dependencies/sources/google*
-	$(DELREC) dependencies/sources/mono*
-	$(DELREC) dependencies/sources/pcre*
-	$(DELREC) dependencies/sources/protobuf*
-	$(DELREC) dependencies/sources/sparsehash*
-	$(DELREC) dependencies/sources/swig*
+	-$(DEL) Makefile.local
+	-$(DELREC) dependencies/install
+	-$(DELREC) dependencies/sources/cbc*
+	-$(DELREC) dependencies/sources/coin-cbc*
+	-$(DELREC) dependencies/sources/gflags*
+	-$(DELREC) dependencies/sources/glpk*
+	-$(DELREC) dependencies/sources/google*
+	-$(DELREC) dependencies/sources/mono*
+	-$(DELREC) dependencies/sources/pcre*
+	-$(DELREC) dependencies/sources/protobuf*
+	-$(DELREC) dependencies/sources/sparsehash*
+	-$(DELREC) dependencies/sources/swig*
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
