@@ -75,12 +75,17 @@ ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = \# SCIP not compiled
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
   CODEPORT = OpSys-Windows
-  ifeq ("$(VisualStudioVersion)", "11.0")
-    VISUAL_STUDIO=2012
-    VS_RELEASE=v110
+  ifeq ("$(VisualStudioVersion)", "12.0")
+    VISUAL_STUDIO=2013
+    VS_RELEASE=v120
   else
-    VISUAL_STUDIO=2010
-    VS_RELEASE=v100
+    ifeq ("$(VisualStudioVersion)", "11.0")
+      VISUAL_STUDIO=2012
+      VS_RELEASE=v110
+    else
+      VISUAL_STUDIO=2010
+      VS_RELEASE=v100
+    endif
   endif
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
