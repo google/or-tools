@@ -1,12 +1,12 @@
 # SVN tags of dependencies to checkout.
 GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 498 # version 2.5.0 + fix
-GOOGLE_APPUTILS_TAG = 13 # 0.3.0
+GOOGLE_APPUTILS_TAG = 14 # 0.4.0
 SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.8.5
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
-SWIG_TAG = 2.0.9
+SWIG_TAG = 2.0.11
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.52.tar.gz
@@ -118,8 +118,14 @@ dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
 ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libgflags.vcxproj
 endif
+ifeq ("$(VisualStudioVersion)", "12.0")
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libgflags.vcxproj
+endif
 	cd dependencies\solutions && msbuild libgflags.sln /target:Build
 ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies/solutions/libgflags.vcxproj
+endif
+ifeq ("$(VisualStudioVersion)", "12.0")
 	svn revert dependencies/solutions/libgflags.vcxproj
 endif
 
@@ -148,8 +154,20 @@ ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotoc.vcxproj
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\protoc.vcxproj
 endif
+ifeq ("$(VisualStudioVersion)", "12.0")
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf-lite.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotoc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\protoc.vcxproj
+endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies/solutions/libprotobuf.vcxproj
+	svn revert dependencies/solutions/libprotobuf-lite.vcxproj
+	svn revert dependencies/solutions/libprotoc.vcxproj
+	svn revert dependencies/solutions/protoc.vcxproj
+endif
+ifeq ("$(VisualStudioVersion)", "12.0")
 	svn revert dependencies/solutions/libprotobuf.vcxproj
 	svn revert dependencies/solutions/libprotobuf-lite.vcxproj
 	svn revert dependencies/solutions/libprotoc.vcxproj
@@ -227,6 +245,17 @@ ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
 	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
 endif
+ifeq ("$(VisualStudioVersion)", "12.0")
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
+endif
 	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
 dependencies\sources\coin-cbc\configure:
@@ -269,9 +298,17 @@ ifeq ("$(VisualStudioVersion)", "11.0")
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
 	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
 endif
+ifeq ("$(VisualStudioVersion)", "12.0")
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
+endif
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
 ifeq ("$(VisualStudioVersion)", "11.0")
+	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
+	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
+endif
+ifeq ("$(VisualStudioVersion)", "12.0")
 	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
 	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
 endif
