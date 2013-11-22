@@ -486,7 +486,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(out) const std::vector<int>& %{
   $result = jenv->NewIntArray($1->size());
   jenv->SetIntArrayRegion($result, 0, $1->size(), 
-                          static_cast<jint*>(&(*$1)[0]));
+                          reinterpret_cast<jint*>(&(*$1)[0]));
 %}
 %typemap(javaout) const std::vector<int> & {
   return $jnicall;
