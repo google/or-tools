@@ -1,15 +1,22 @@
 # SVN tags of dependencies to checkout.
-GFLAGS_TAG = 76 # version 2.0
-PROTOBUF_TAG = 498 # version 2.5.0 + fix
-GOOGLE_APPUTILS_TAG = 14 # 0.4.0
-SPARSEHASH_TAG = 116 # 2.0.2
-CBC_TAG = 2.8.5
-SWIG_TAG = 17741# 2.0.11
-PCRE_TAG = 1336# version 8.33
+
+# version 2.0
+GFLAGS_TAG = 76
+# version 2.5.0 + fix
+PROTOBUF_TAG = 512
+# 0.4.0
+GOOGLE_APPUTILS_TAG = 14
+# 2.0.2
+SPARSEHASH_TAG = 116
+CBC_TAG = 2.8.7
+# 2.0.11
+SWIG_TAG = 17741
+# version 8.33
+PCRE_TAG = 1336
 MONO_TAG = 3.2.3
 
-# Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
-# The archive should be glpk-4.52.tar.gz
+# Build extra dependencies (GLPK, SCIP) from archive only if the
+# archive is present.  The archive should be glpk-4.52.tar.gz
 GLPK_TAG = 4.52
 # The archive should be scipoptsuite-3.0.1.tgz
 SCIP_TAG = 3.0.1
@@ -47,21 +54,11 @@ else
     MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
-
-
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
-third_party: build_third_party makefile_third_party
+third_party: install_third_party makefile_third_party
 
-upgrade_libs:
-	cd dependencies/sources/gflags && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
-	cd dependencies/sources/protobuf && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
-	cd dependencies/sources/cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
-ifneq ($(GLPK_TARGET),)
-	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
-endif
-
-build_third_party: \
+install_third_party: \
 	install_gflags \
 	install_protobuf \
 	install_google_apputils \
@@ -75,53 +72,53 @@ build_third_party: \
 # Install gflags.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Makefile
-	cd dependencies/sources/gflags && make install
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && make install
 
-dependencies/sources/gflags/Makefile: dependencies/sources/gflags/configure
-	cd dependencies/sources/gflags && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS_TAG)/configure
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
-dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
-	cd dependencies/sources/gflags && ./autogen.sh
+dependencies/sources/gflags-$(GFLAGS_TAG)/configure: dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && ./autogen.sh
 
-dependencies/sources/gflags/autogen.sh:
-	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
+dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh:
+	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags-$(GFLAGS_TAG)
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
 
-dependencies/install/bin/protoc: dependencies/sources/protobuf/Makefile
-	cd dependencies/sources/protobuf && make install
+dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && make install
 
-dependencies/sources/protobuf/Makefile: dependencies/sources/protobuf/configure
-	cd dependencies/sources/protobuf && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
-dependencies/sources/protobuf/configure: dependencies/sources/protobuf/autogen.sh
-	cd dependencies/sources/protobuf && ./autogen.sh
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && ./autogen.sh
 
-dependencies/sources/protobuf/autogen.sh:
-	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
+	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf-$(PROTOBUF_TAG)
 
 # Intall Google Apputils Python.
-install_google_apputils: dependencies/sources/google-apputils/README
+install_google_apputils: dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README
 
-dependencies/sources/google-apputils/README:
-	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google-apputils
+dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README:
+	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)
 
 # Install sparsehash.
 install_sparsehash: dependencies/install/include/google/dense_hash_map
 
-dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash/Makefile
-	cd dependencies/sources/sparsehash && make install
+dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && make install
 
-dependencies/sources/sparsehash/Makefile: dependencies/sources/sparsehash/configure
-	cd dependencies/sources/sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
-dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autogen.sh
-	cd dependencies/sources/sparsehash && ./autogen.sh
+dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && ./autogen.sh
 
-dependencies/sources/sparsehash/autogen.sh:
-	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
+dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
+	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
@@ -134,7 +131,6 @@ dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
-	cd dependencies/sources/cbc-$(CBC_TAG) && patch -p0 -i ../../archives/fix_cbc2.8.5_mavericks.patch
 
 # Install pcre (dependency of SWIG).
 dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile
@@ -219,7 +215,7 @@ makefile_third_party: Makefile.local
 
 # Install python modules
 install_python_modules:
-	cd dependencies/sources/google-apputils && python$(PYTHONVERSION) setup.py install --user
+	cd dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG) && python$(PYTHONVERSION) setup.py install --user
 
 Makefile.local:
 	@echo Generating Makefile.local
