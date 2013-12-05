@@ -217,6 +217,7 @@ LIST_OUTPUT_TYPECHECK(double, PyFloat_Check);
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<int64> >& {
+  std::cout << "Typecheck" << std::endl;
   if (!PyList_Check($input)) {
     $1 = 0;
   } else {
