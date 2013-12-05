@@ -59,35 +59,35 @@ download_third_party: \
 
 # Directories:
 .PHONY: install_directories
-install_directories: dependencies/install/bin dependencies/install/lib/coin dependencies/install/include/coin
+install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
 
-dependencies/install/bin: dependencies/install
-ifeq ($(wildcard dependencies/install),)
-	tools\mkdir.exe dependencies/install/bin
+dependencies\install\bin: dependencies\install
+ifeq ($(wildcard dependencies\install),)
+	tools\mkdir.exe dependencies\install\bin
 endif
 
-dependencies/install/lib: dependencies/install
-ifeq ($(wildcard dependencies/install/lib),)
-	tools\mkdir.exe dependencies/install/lib
+dependencies\install\lib: dependencies\install
+ifeq ($(wildcard dependencies\install\lib),)
+	tools\mkdir.exe dependencies\install\lib
 endif
 
-dependencies/install/lib/coin: dependencies/install/lib
-ifeq ($(wildcard dependencies/install/lib/coin),)
-	tools\mkdir.exe dependencies/install/lib/coin
+dependencies\install\lib\coin: dependencies\install\lib
+ifeq ($(wildcard dependencies\install\lib\coin),)
+	tools\mkdir.exe dependencies\install\lib\coin
 endif
 
-dependencies/install/include: dependencies/install
-ifeq ($(wildcard dependencies/install/include),)
-	tools\mkdir.exe dependencies/install/include
+dependencies\install\include: dependencies\install
+ifeq ($(wildcard dependencies\install\include),)
+	tools\mkdir.exe dependencies\install\include
 endif
 
-dependencies/install/include/coin: dependencies/install/include
-ifeq ($(wildcard dependencies/install/include/coin),)
-	tools\mkdir.exe dependencies/install/include/coin
+dependencies\install\include\coin: dependencies\install\include
+ifeq ($(wildcard dependencies\install\include\coin),)
+	tools\mkdir.exe dependencies\install\include\coin
 endif
 
-dependencies/install:
-	tools\mkdir.exe dependencies/install
+dependencies\install:
+	tools\mkdir.exe dependencies\install
 
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
