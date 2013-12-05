@@ -824,5 +824,39 @@ SWIG_JAVA_SO
     Py_DECREF(value);
   }
 }
-
 #endif  // SWIGPYTHON
+
+#ifdef SWIGCSHARP
+%include "enumsimple.swg"
+%{
+#include <vector>
+#ifdef __GNUC__
+#include <ext/hash_map>
+#include <ext/hash_set>
+#else
+#include <hash_map>
+#include <hash_set>
+#endif
+#include <set>
+#include <map>
+#include <string>
+#include "base/basictypes.h"
+%}
+
+%include <std_string.i>
+
+%apply const std::string & {std::string &};
+%apply const std::string & {std::string *};
+
+%define COPY_TYPEMAPS(oldtype, newtype)
+typedef oldtype newtype;
+%enddef
+
+COPY_TYPEMAPS(signed char, schar);
+COPY_TYPEMAPS(int, int32);
+COPY_TYPEMAPS(unsigned int, uint32);
+COPY_TYPEMAPS(long long, int64);
+COPY_TYPEMAPS(unsigned long long, uint64);
+
+#undef COPY_TYPEMAPS
+#endif  // SWIGCSHARP
