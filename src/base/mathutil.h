@@ -113,7 +113,6 @@ class MathUtil {
     return x;
   }
 };
-
 }  // namespace operations_research
 
 

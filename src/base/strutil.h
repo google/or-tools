@@ -79,6 +79,7 @@ inline string StrCat(const string& str1, const string& str2,
   return str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8 + str9;
 }
 
+
 inline void StrAppend(string* str1, const string& str2) {
   *str1 += str2;
 }

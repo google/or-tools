@@ -135,9 +135,40 @@ class ResultCallback5 {
   virtual R Run(A1,A2,A3,A4,A5) = 0;
 };
 
+// ----- Utility template code used by the callback specializations -----
+
+// enable_if, equivalent semantics to c++11 std::enable_if, specifically:
+//   "If B is true, the member typedef type shall equal T; otherwise, there
+//    shall be no member typedef type."
+// Specified by 20.9.7.6 [Other transformations]
+template<bool cond, class T = void> struct enable_if { typedef T type; };
+template<class T> struct enable_if<false, T> {};
+
+typedef char small_;
+
+struct big_ {
+  char dummy[2];
+};
+
+template <class T> struct is_class_or_union {
+  template <class U> static small_ tester(void (U::*)());
+  template <class U> static big_ tester(...);
+  static const bool value = sizeof(tester<T>(0)) == sizeof(small_);
+};
+
+template<typename T> struct remove_reference { typedef T type; };
+template<typename T> struct remove_reference<T&> { typedef T type; };
+
+template <typename T>
+struct ConstRef {
+  typedef typename remove_reference<T>::type base_type;
+  typedef const base_type& type;
+};
+
 // ----- Callback specializations -----
-namespace {
-template <bool del, class R, class T>
+
+template <bool del, class R, class T,
+          class OnlyIf = typename enable_if<is_class_or_union<T>::value>::type>
 class _ConstMemberResultCallback_0_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -176,7 +207,11 @@ class _ConstMemberResultCallback_0_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T>
-class _ConstMemberResultCallback_0_0<del, void, T> : public Closure {
+class _ConstMemberResultCallback_0_0<del, void, T,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)() const;
@@ -227,7 +262,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)() const) {
 }
 #endif
 
-template <bool del, class R, class T>
+template <bool del, class R, class T,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -266,7 +304,11 @@ class _MemberResultCallback_0_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T>
-class _MemberResultCallback_0_0<del, void, T> : public Closure {
+class _MemberResultCallback_0_0<del, void, T,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)() ;
@@ -386,7 +428,6 @@ class _FunctionResultCallback_0_0<del, void> : public Closure {
     }
   }
 };
-}  // namespace
 
 template <class R>
 inline typename _FunctionResultCallback_0_0<true,R>::base*
@@ -400,8 +441,10 @@ NewPermanentCallback(R (*function)()) {
   return new _FunctionResultCallback_0_0<false,R>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1>
+template <bool del, class R, class T, class P1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -410,10 +453,10 @@ class _ConstMemberResultCallback_1_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -441,7 +484,11 @@ class _ConstMemberResultCallback_1_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1>
-class _ConstMemberResultCallback_1_0<del, void, T, P1> : public Closure {
+class _ConstMemberResultCallback_1_0<del, void, T, P1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1) const;
@@ -449,10 +496,10 @@ class _ConstMemberResultCallback_1_0<del, void, T, P1> : public Closure {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -476,12 +523,11 @@ class _ConstMemberResultCallback_1_0<del, void, T, P1> : public Closure {
     }
   }
 };
-}  // namespace
 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1>
 inline typename _ConstMemberResultCallback_1_0<true,R,T1,P1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_0<true,R,T1,P1>(obj, member, p1);
 }
 #endif
@@ -489,13 +535,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1>
 inline typename _ConstMemberResultCallback_1_0<false,R,T1,P1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_0<false,R,T1,P1>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1>
+template <bool del, class R, class T, class P1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -504,10 +552,10 @@ class _MemberResultCallback_1_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_0( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -535,7 +583,11 @@ class _MemberResultCallback_1_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1>
-class _MemberResultCallback_1_0<del, void, T, P1> : public Closure {
+class _MemberResultCallback_1_0<del, void, T, P1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1) ;
@@ -543,10 +595,10 @@ class _MemberResultCallback_1_0<del, void, T, P1> : public Closure {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_0( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -570,12 +622,11 @@ class _MemberResultCallback_1_0<del, void, T, P1> : public Closure {
     }
   }
 };
-}  // namespace
 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1>
 inline typename _MemberResultCallback_1_0<true,R,T1,P1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_0<true,R,T1,P1>(obj, member, p1);
 }
 #endif
@@ -583,12 +634,11 @@ NewCallback( T1* obj, R (T2::*member)(P1) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1>
 inline typename _MemberResultCallback_1_0<false,R,T1,P1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_0<false,R,T1,P1>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1>
 class _FunctionResultCallback_1_0 : public ResultCallback<R> {
  public:
@@ -597,10 +647,10 @@ class _FunctionResultCallback_1_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_0(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_0(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback<R>(),
       function_(function),      p1_(p1) { }
 
@@ -634,10 +684,10 @@ class _FunctionResultCallback_1_0<del, void, P1> : public Closure {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_0(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_0(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Closure(),
       function_(function),      p1_(p1) { }
 
@@ -660,21 +710,23 @@ class _FunctionResultCallback_1_0<del, void, P1> : public Closure {
     }
   }
 };
-}  // namespace
+
 template <class R, class P1>
 inline typename _FunctionResultCallback_1_0<true,R,P1>::base*
-NewCallback(R (*function)(P1), P1 p1) {
+NewCallback(R (*function)(P1), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_0<true,R,P1>(function, p1);
 }
 
 template <class R, class P1>
 inline typename _FunctionResultCallback_1_0<false,R,P1>::base*
-NewPermanentCallback(R (*function)(P1), P1 p1) {
+NewPermanentCallback(R (*function)(P1), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_0<false,R,P1>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2>
+template <bool del, class R, class T, class P1, class P2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -683,11 +735,11 @@ class _ConstMemberResultCallback_2_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -715,7 +767,11 @@ class _ConstMemberResultCallback_2_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2>
-class _ConstMemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
+class _ConstMemberResultCallback_2_0<del, void, T, P1, P2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2) const;
@@ -723,11 +779,11 @@ class _ConstMemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -751,11 +807,11 @@ class _ConstMemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2>
 inline typename _ConstMemberResultCallback_2_0<true,R,T1,P1,P2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_0<true,R,T1,P1,P2>(obj, member, p1, p2);
 }
 #endif
@@ -763,13 +819,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2) const, P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2>
 inline typename _ConstMemberResultCallback_2_0<false,R,T1,P1,P2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_0<false,R,T1,P1,P2>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2>
+template <bool del, class R, class T, class P1, class P2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -778,11 +836,11 @@ class _MemberResultCallback_2_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_0( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -810,7 +868,11 @@ class _MemberResultCallback_2_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2>
-class _MemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
+class _MemberResultCallback_2_0<del, void, T, P1, P2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2) ;
@@ -818,11 +880,11 @@ class _MemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_0( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -846,11 +908,11 @@ class _MemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2>
 inline typename _MemberResultCallback_2_0<true,R,T1,P1,P2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_0<true,R,T1,P1,P2>(obj, member, p1, p2);
 }
 #endif
@@ -858,12 +920,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2>
 inline typename _MemberResultCallback_2_0<false,R,T1,P1,P2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_0<false,R,T1,P1,P2>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2>
 class _FunctionResultCallback_2_0 : public ResultCallback<R> {
  public:
@@ -872,11 +933,11 @@ class _FunctionResultCallback_2_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_0(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback<R>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -910,11 +971,11 @@ class _FunctionResultCallback_2_0<del, void, P1, P2> : public Closure {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_0(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Closure(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -937,21 +998,23 @@ class _FunctionResultCallback_2_0<del, void, P1, P2> : public Closure {
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2>
 inline typename _FunctionResultCallback_2_0<true,R,P1,P2>::base*
-NewCallback(R (*function)(P1,P2), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_0<true,R,P1,P2>(function, p1, p2);
 }
 
 template <class R, class P1, class P2>
 inline typename _FunctionResultCallback_2_0<false,R,P1,P2>::base*
-NewPermanentCallback(R (*function)(P1,P2), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_0<false,R,P1,P2>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3>
+template <bool del, class R, class T, class P1, class P2, class P3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -960,12 +1023,12 @@ class _ConstMemberResultCallback_3_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -993,7 +1056,11 @@ class _ConstMemberResultCallback_3_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3>
-class _ConstMemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure {
+class _ConstMemberResultCallback_3_0<del, void, T, P1, P2, P3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3) const;
@@ -1001,12 +1068,12 @@ class _ConstMemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -1030,11 +1097,11 @@ class _ConstMemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3>
 inline typename _ConstMemberResultCallback_3_0<true,R,T1,P1,P2,P3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_0<true,R,T1,P1,P2,P3>(obj, member, p1, p2, p3);
 }
 #endif
@@ -1042,13 +1109,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3) const, P1 p1, P2 p2, P3 p3)
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3>
 inline typename _ConstMemberResultCallback_3_0<false,R,T1,P1,P2,P3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_0<false,R,T1,P1,P2,P3>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3>
+template <bool del, class R, class T, class P1, class P2, class P3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1057,12 +1126,12 @@ class _MemberResultCallback_3_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -1090,7 +1159,11 @@ class _MemberResultCallback_3_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3>
-class _MemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure {
+class _MemberResultCallback_3_0<del, void, T, P1, P2, P3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3) ;
@@ -1098,12 +1171,12 @@ class _MemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -1127,11 +1200,11 @@ class _MemberResultCallback_3_0<del, void, T, P1, P2, P3> : public Closure {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3>
 inline typename _MemberResultCallback_3_0<true,R,T1,P1,P2,P3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_0<true,R,T1,P1,P2,P3>(obj, member, p1, p2, p3);
 }
 #endif
@@ -1139,12 +1212,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3) , P1 p1, P2 p2, P3 p3) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3>
 inline typename _MemberResultCallback_3_0<false,R,T1,P1,P2,P3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_0<false,R,T1,P1,P2,P3>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3>
 class _FunctionResultCallback_3_0 : public ResultCallback<R> {
  public:
@@ -1153,12 +1225,12 @@ class _FunctionResultCallback_3_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_0(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback<R>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -1192,12 +1264,12 @@ class _FunctionResultCallback_3_0<del, void, P1, P2, P3> : public Closure {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_0(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Closure(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -1220,21 +1292,23 @@ class _FunctionResultCallback_3_0<del, void, P1, P2, P3> : public Closure {
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3>
 inline typename _FunctionResultCallback_3_0<true,R,P1,P2,P3>::base*
-NewCallback(R (*function)(P1,P2,P3), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_0<true,R,P1,P2,P3>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3>
 inline typename _FunctionResultCallback_3_0<false,R,P1,P2,P3>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_0<false,R,P1,P2,P3>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1243,13 +1317,13 @@ class _ConstMemberResultCallback_4_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -1277,7 +1351,11 @@ class _ConstMemberResultCallback_4_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4>
-class _ConstMemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Closure {
+class _ConstMemberResultCallback_4_0<del, void, T, P1, P2, P3, P4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4) const;
@@ -1285,13 +1363,13 @@ class _ConstMemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Clos
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -1315,11 +1393,11 @@ class _ConstMemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Clos
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4>
 inline typename _ConstMemberResultCallback_4_0<true,R,T1,P1,P2,P3,P4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_0<true,R,T1,P1,P2,P3,P4>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -1327,13 +1405,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4) const, P1 p1, P2 p2, P3 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4>
 inline typename _ConstMemberResultCallback_4_0<false,R,T1,P1,P2,P3,P4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_0<false,R,T1,P1,P2,P3,P4>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1342,13 +1422,13 @@ class _MemberResultCallback_4_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -1376,7 +1456,11 @@ class _MemberResultCallback_4_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4>
-class _MemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Closure {
+class _MemberResultCallback_4_0<del, void, T, P1, P2, P3, P4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4) ;
@@ -1384,13 +1468,13 @@ class _MemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Closure {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -1414,11 +1498,11 @@ class _MemberResultCallback_4_0<del, void, T, P1, P2, P3, P4> : public Closure {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4>
 inline typename _MemberResultCallback_4_0<true,R,T1,P1,P2,P3,P4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_0<true,R,T1,P1,P2,P3,P4>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -1426,12 +1510,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4) , P1 p1, P2 p2, P3 p3, P4 p4)
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4>
 inline typename _MemberResultCallback_4_0<false,R,T1,P1,P2,P3,P4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_0<false,R,T1,P1,P2,P3,P4>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4>
 class _FunctionResultCallback_4_0 : public ResultCallback<R> {
  public:
@@ -1440,13 +1523,13 @@ class _FunctionResultCallback_4_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback<R>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -1480,13 +1563,13 @@ class _FunctionResultCallback_4_0<del, void, P1, P2, P3, P4> : public Closure {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Closure(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -1509,21 +1592,23 @@ class _FunctionResultCallback_4_0<del, void, P1, P2, P3, P4> : public Closure {
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4>
 inline typename _FunctionResultCallback_4_0<true,R,P1,P2,P3,P4>::base*
-NewCallback(R (*function)(P1,P2,P3,P4), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_0<true,R,P1,P2,P3,P4>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4>
 inline typename _FunctionResultCallback_4_0<false,R,P1,P2,P3,P4>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_0<false,R,P1,P2,P3,P4>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1532,14 +1617,14 @@ class _ConstMemberResultCallback_5_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -1567,7 +1652,11 @@ class _ConstMemberResultCallback_5_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5>
-class _ConstMemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public Closure {
+class _ConstMemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5) const;
@@ -1575,14 +1664,14 @@ class _ConstMemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -1606,11 +1695,11 @@ class _ConstMemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _ConstMemberResultCallback_5_0<true,R,T1,P1,P2,P3,P4,P5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_0<true,R,T1,P1,P2,P3,P4,P5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -1618,13 +1707,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) const, P1 p1, P2 p2, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _ConstMemberResultCallback_5_0<false,R,T1,P1,P2,P3,P4,P5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_0<false,R,T1,P1,P2,P3,P4,P5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1633,14 +1724,14 @@ class _MemberResultCallback_5_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -1668,7 +1759,11 @@ class _MemberResultCallback_5_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5>
-class _MemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public Closure {
+class _MemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5) ;
@@ -1676,14 +1771,14 @@ class _MemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public Closu
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -1707,11 +1802,11 @@ class _MemberResultCallback_5_0<del, void, T, P1, P2, P3, P4, P5> : public Closu
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _MemberResultCallback_5_0<true,R,T1,P1,P2,P3,P4,P5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_0<true,R,T1,P1,P2,P3,P4,P5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -1719,12 +1814,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) , P1 p1, P2 p2, P3 p3, P4 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _MemberResultCallback_5_0<false,R,T1,P1,P2,P3,P4,P5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_0<false,R,T1,P1,P2,P3,P4,P5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5>
 class _FunctionResultCallback_5_0 : public ResultCallback<R> {
  public:
@@ -1733,14 +1827,14 @@ class _FunctionResultCallback_5_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback<R>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -1774,14 +1868,14 @@ class _FunctionResultCallback_5_0<del, void, P1, P2, P3, P4, P5> : public Closur
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Closure(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -1804,21 +1898,23 @@ class _FunctionResultCallback_5_0<del, void, P1, P2, P3, P4, P5> : public Closur
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _FunctionResultCallback_5_0<true,R,P1,P2,P3,P4,P5>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_0<true,R,P1,P2,P3,P4,P5>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5>
 inline typename _FunctionResultCallback_5_0<false,R,P1,P2,P3,P4,P5>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_0<false,R,P1,P2,P3,P4,P5>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1827,15 +1923,15 @@ class _ConstMemberResultCallback_6_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -1863,7 +1959,11 @@ class _ConstMemberResultCallback_6_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6>
-class _ConstMemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : public Closure {
+class _ConstMemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6) const;
@@ -1871,15 +1971,15 @@ class _ConstMemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -1903,11 +2003,11 @@ class _ConstMemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _ConstMemberResultCallback_6_0<true,R,T1,P1,P2,P3,P4,P5,P6>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_0<true,R,T1,P1,P2,P3,P4,P5,P6>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -1915,13 +2015,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) const, P1 p1, P2 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _ConstMemberResultCallback_6_0<false,R,T1,P1,P2,P3,P4,P5,P6>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_0<false,R,T1,P1,P2,P3,P4,P5,P6>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;
@@ -1930,15 +2032,15 @@ class _MemberResultCallback_6_0 : public ResultCallback<R> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback<R>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -1966,7 +2068,11 @@ class _MemberResultCallback_6_0 : public ResultCallback<R> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6>
-class _MemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : public Closure {
+class _MemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Closure {
  public:
   typedef Closure base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6) ;
@@ -1974,15 +2080,15 @@ class _MemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_0( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_0( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Closure(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -2006,11 +2112,11 @@ class _MemberResultCallback_6_0<del, void, T, P1, P2, P3, P4, P5, P6> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _MemberResultCallback_6_0<true,R,T1,P1,P2,P3,P4,P5,P6>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_0<true,R,T1,P1,P2,P3,P4,P5,P6>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -2018,12 +2124,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) , P1 p1, P2 p2, P3 p3, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _MemberResultCallback_6_0<false,R,T1,P1,P2,P3,P4,P5,P6>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_0<false,R,T1,P1,P2,P3,P4,P5,P6>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6>
 class _FunctionResultCallback_6_0 : public ResultCallback<R> {
  public:
@@ -2032,15 +2137,15 @@ class _FunctionResultCallback_6_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback<R>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -2074,15 +2179,15 @@ class _FunctionResultCallback_6_0<del, void, P1, P2, P3, P4, P5, P6> : public Cl
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_0(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_0(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Closure(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -2105,21 +2210,23 @@ class _FunctionResultCallback_6_0<del, void, P1, P2, P3, P4, P5, P6> : public Cl
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _FunctionResultCallback_6_0<true,R,P1,P2,P3,P4,P5,P6>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_0<true,R,P1,P2,P3,P4,P5,P6>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6>
 inline typename _FunctionResultCallback_6_0<false,R,P1,P2,P3,P4,P5,P6>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_0<false,R,P1,P2,P3,P4,P5,P6>(function, p1, p2, p3, p4, p5, p6);
 }
 
-namespace {
-template <bool del, class R, class T, class A1>
+template <bool del, class R, class T, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_0_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2158,7 +2265,11 @@ class _ConstMemberResultCallback_0_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class A1>
-class _ConstMemberResultCallback_0_1<del, void, T, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_0_1<del, void, T, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(A1) const;
@@ -2192,7 +2303,7 @@ class _ConstMemberResultCallback_0_1<del, void, T, A1> : public Callback1<A1> {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1>
 inline typename _ConstMemberResultCallback_0_1<true,R,T1,A1>::base*
@@ -2209,8 +2320,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)(A1) const) {
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class A1>
+template <bool del, class R, class T, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2249,7 +2362,11 @@ class _MemberResultCallback_0_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class A1>
-class _MemberResultCallback_0_1<del, void, T, A1> : public Callback1<A1> {
+class _MemberResultCallback_0_1<del, void, T, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(A1) ;
@@ -2283,7 +2400,7 @@ class _MemberResultCallback_0_1<del, void, T, A1> : public Callback1<A1> {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1>
 inline typename _MemberResultCallback_0_1<true,R,T1,A1>::base*
@@ -2300,7 +2417,6 @@ NewPermanentCallback( T1* obj, R (T2::*member)(A1) ) {
 }
 #endif
 
-namespace {
 template <bool del, class R, class A1>
 class _FunctionResultCallback_0_1 : public ResultCallback1<R,A1> {
  public:
@@ -2370,7 +2486,7 @@ class _FunctionResultCallback_0_1<del, void, A1> : public Callback1<A1> {
     }
   }
 };
-}  // namespace
+
 template <class R, class A1>
 inline typename _FunctionResultCallback_0_1<true,R,A1>::base*
 NewCallback(R (*function)(A1)) {
@@ -2383,8 +2499,10 @@ NewPermanentCallback(R (*function)(A1)) {
   return new _FunctionResultCallback_0_1<false,R,A1>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class A1>
+template <bool del, class R, class T, class P1, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2393,10 +2511,10 @@ class _ConstMemberResultCallback_1_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -2424,7 +2542,11 @@ class _ConstMemberResultCallback_1_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class A1>
-class _ConstMemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_1_1<del, void, T, P1, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,A1) const;
@@ -2432,10 +2554,10 @@ class _ConstMemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -2459,11 +2581,11 @@ class _ConstMemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1>
 inline typename _ConstMemberResultCallback_1_1<true,R,T1,P1,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,A1) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1,A1) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_1<true,R,T1,P1,A1>(obj, member, p1);
 }
 #endif
@@ -2471,13 +2593,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,A1) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1>
 inline typename _ConstMemberResultCallback_1_1<false,R,T1,P1,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_1<false,R,T1,P1,A1>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class A1>
+template <bool del, class R, class T, class P1, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2486,10 +2610,10 @@ class _MemberResultCallback_1_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_1( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -2517,7 +2641,11 @@ class _MemberResultCallback_1_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class A1>
-class _MemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1> {
+class _MemberResultCallback_1_1<del, void, T, P1, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,A1) ;
@@ -2525,10 +2653,10 @@ class _MemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_1( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -2552,11 +2680,11 @@ class _MemberResultCallback_1_1<del, void, T, P1, A1> : public Callback1<A1> {
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1>
 inline typename _MemberResultCallback_1_1<true,R,T1,P1,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,A1) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1,A1) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_1<true,R,T1,P1,A1>(obj, member, p1);
 }
 #endif
@@ -2564,12 +2692,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,A1) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1>
 inline typename _MemberResultCallback_1_1<false,R,T1,P1,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_1<false,R,T1,P1,A1>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class A1>
 class _FunctionResultCallback_1_1 : public ResultCallback1<R,A1> {
  public:
@@ -2578,10 +2705,10 @@ class _FunctionResultCallback_1_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_1(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_1(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1) { }
 
@@ -2615,10 +2742,10 @@ class _FunctionResultCallback_1_1<del, void, P1, A1> : public Callback1<A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_1(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_1(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Callback1<A1>(),
       function_(function),      p1_(p1) { }
 
@@ -2641,21 +2768,23 @@ class _FunctionResultCallback_1_1<del, void, P1, A1> : public Callback1<A1> {
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class A1>
 inline typename _FunctionResultCallback_1_1<true,R,P1,A1>::base*
-NewCallback(R (*function)(P1,A1), P1 p1) {
+NewCallback(R (*function)(P1,A1), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_1<true,R,P1,A1>(function, p1);
 }
 
 template <class R, class P1, class A1>
 inline typename _FunctionResultCallback_1_1<false,R,P1,A1>::base*
-NewPermanentCallback(R (*function)(P1,A1), P1 p1) {
+NewPermanentCallback(R (*function)(P1,A1), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_1<false,R,P1,A1>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1>
+template <bool del, class R, class T, class P1, class P2, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2664,11 +2793,11 @@ class _ConstMemberResultCallback_2_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -2696,7 +2825,11 @@ class _ConstMemberResultCallback_2_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class A1>
-class _ConstMemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_2_1<del, void, T, P1, P2, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,A1) const;
@@ -2704,11 +2837,11 @@ class _ConstMemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -2732,11 +2865,11 @@ class _ConstMemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1>
 inline typename _ConstMemberResultCallback_2_1<true,R,T1,P1,P2,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_1<true,R,T1,P1,P2,A1>(obj, member, p1, p2);
 }
 #endif
@@ -2744,13 +2877,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1) const, P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1>
 inline typename _ConstMemberResultCallback_2_1<false,R,T1,P1,P2,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_1<false,R,T1,P1,P2,A1>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1>
+template <bool del, class R, class T, class P1, class P2, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2759,11 +2894,11 @@ class _MemberResultCallback_2_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_1( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -2791,7 +2926,11 @@ class _MemberResultCallback_2_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class A1>
-class _MemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback1<A1> {
+class _MemberResultCallback_2_1<del, void, T, P1, P2, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,A1) ;
@@ -2799,11 +2938,11 @@ class _MemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback1<A1>
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_1( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -2827,11 +2966,11 @@ class _MemberResultCallback_2_1<del, void, T, P1, P2, A1> : public Callback1<A1>
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1>
 inline typename _MemberResultCallback_2_1<true,R,T1,P1,P2,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,A1) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_1<true,R,T1,P1,P2,A1>(obj, member, p1, p2);
 }
 #endif
@@ -2839,12 +2978,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,A1) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1>
 inline typename _MemberResultCallback_2_1<false,R,T1,P1,P2,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_1<false,R,T1,P1,P2,A1>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class A1>
 class _FunctionResultCallback_2_1 : public ResultCallback1<R,A1> {
  public:
@@ -2853,11 +2991,11 @@ class _FunctionResultCallback_2_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_1(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -2891,11 +3029,11 @@ class _FunctionResultCallback_2_1<del, void, P1, P2, A1> : public Callback1<A1> 
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_1(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback1<A1>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -2918,21 +3056,23 @@ class _FunctionResultCallback_2_1<del, void, P1, P2, A1> : public Callback1<A1> 
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class A1>
 inline typename _FunctionResultCallback_2_1<true,R,P1,P2,A1>::base*
-NewCallback(R (*function)(P1,P2,A1), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_1<true,R,P1,P2,A1>(function, p1, p2);
 }
 
 template <class R, class P1, class P2, class A1>
 inline typename _FunctionResultCallback_2_1<false,R,P1,P2,A1>::base*
-NewPermanentCallback(R (*function)(P1,P2,A1), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_1<false,R,P1,P2,A1>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -2941,12 +3081,12 @@ class _ConstMemberResultCallback_3_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -2974,7 +3114,11 @@ class _ConstMemberResultCallback_3_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1>
-class _ConstMemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_3_1<del, void, T, P1, P2, P3, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1) const;
@@ -2982,12 +3126,12 @@ class _ConstMemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Call
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -3011,11 +3155,11 @@ class _ConstMemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Call
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1>
 inline typename _ConstMemberResultCallback_3_1<true,R,T1,P1,P2,P3,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_1<true,R,T1,P1,P2,P3,A1>(obj, member, p1, p2, p3);
 }
 #endif
@@ -3023,13 +3167,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1) const, P1 p1, P2 p2, P3 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1>
 inline typename _ConstMemberResultCallback_3_1<false,R,T1,P1,P2,P3,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_1<false,R,T1,P1,P2,P3,A1>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3038,12 +3184,12 @@ class _MemberResultCallback_3_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -3071,7 +3217,11 @@ class _MemberResultCallback_3_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1>
-class _MemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Callback1<A1> {
+class _MemberResultCallback_3_1<del, void, T, P1, P2, P3, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1) ;
@@ -3079,12 +3229,12 @@ class _MemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Callback1
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -3108,11 +3258,11 @@ class _MemberResultCallback_3_1<del, void, T, P1, P2, P3, A1> : public Callback1
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1>
 inline typename _MemberResultCallback_3_1<true,R,T1,P1,P2,P3,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_1<true,R,T1,P1,P2,P3,A1>(obj, member, p1, p2, p3);
 }
 #endif
@@ -3120,12 +3270,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1) , P1 p1, P2 p2, P3 p3) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1>
 inline typename _MemberResultCallback_3_1<false,R,T1,P1,P2,P3,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_1<false,R,T1,P1,P2,P3,A1>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class A1>
 class _FunctionResultCallback_3_1 : public ResultCallback1<R,A1> {
  public:
@@ -3134,12 +3283,12 @@ class _FunctionResultCallback_3_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_1(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -3173,12 +3322,12 @@ class _FunctionResultCallback_3_1<del, void, P1, P2, P3, A1> : public Callback1<
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_1(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback1<A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -3201,21 +3350,23 @@ class _FunctionResultCallback_3_1<del, void, P1, P2, P3, A1> : public Callback1<
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class A1>
 inline typename _FunctionResultCallback_3_1<true,R,P1,P2,P3,A1>::base*
-NewCallback(R (*function)(P1,P2,P3,A1), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_1<true,R,P1,P2,P3,A1>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3, class A1>
 inline typename _FunctionResultCallback_3_1<false,R,P1,P2,P3,A1>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,A1), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_1<false,R,P1,P2,P3,A1>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3224,13 +3375,13 @@ class _ConstMemberResultCallback_4_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -3258,7 +3409,11 @@ class _ConstMemberResultCallback_4_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1>
-class _ConstMemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1) const;
@@ -3266,13 +3421,13 @@ class _ConstMemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -3296,11 +3451,11 @@ class _ConstMemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _ConstMemberResultCallback_4_1<true,R,T1,P1,P2,P3,P4,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_1<true,R,T1,P1,P2,P3,P4,A1>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -3308,13 +3463,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) const, P1 p1, P2 p2, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _ConstMemberResultCallback_4_1<false,R,T1,P1,P2,P3,P4,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_1<false,R,T1,P1,P2,P3,P4,A1>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3323,13 +3480,13 @@ class _MemberResultCallback_4_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -3357,7 +3514,11 @@ class _MemberResultCallback_4_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1>
-class _MemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public Callback1<A1> {
+class _MemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1) ;
@@ -3365,13 +3526,13 @@ class _MemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public Callb
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -3395,11 +3556,11 @@ class _MemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1> : public Callb
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _MemberResultCallback_4_1<true,R,T1,P1,P2,P3,P4,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_1<true,R,T1,P1,P2,P3,P4,A1>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -3407,12 +3568,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) , P1 p1, P2 p2, P3 p3, P4 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _MemberResultCallback_4_1<false,R,T1,P1,P2,P3,P4,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_1<false,R,T1,P1,P2,P3,P4,A1>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class A1>
 class _FunctionResultCallback_4_1 : public ResultCallback1<R,A1> {
  public:
@@ -3421,13 +3581,13 @@ class _FunctionResultCallback_4_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -3461,13 +3621,13 @@ class _FunctionResultCallback_4_1<del, void, P1, P2, P3, P4, A1> : public Callba
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback1<A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -3490,21 +3650,23 @@ class _FunctionResultCallback_4_1<del, void, P1, P2, P3, P4, A1> : public Callba
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _FunctionResultCallback_4_1<true,R,P1,P2,P3,P4,A1>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,A1), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_1<true,R,P1,P2,P3,P4,A1>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class A1>
 inline typename _FunctionResultCallback_4_1<false,R,P1,P2,P3,P4,A1>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_1<false,R,P1,P2,P3,P4,A1>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3513,14 +3675,14 @@ class _ConstMemberResultCallback_5_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -3548,7 +3710,11 @@ class _ConstMemberResultCallback_5_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1>
-class _ConstMemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1) const;
@@ -3556,14 +3722,14 @@ class _ConstMemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -3587,11 +3753,11 @@ class _ConstMemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _ConstMemberResultCallback_5_1<true,R,T1,P1,P2,P3,P4,P5,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_1<true,R,T1,P1,P2,P3,P4,P5,A1>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -3599,13 +3765,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) const, P1 p1, P2 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _ConstMemberResultCallback_5_1<false,R,T1,P1,P2,P3,P4,P5,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_1<false,R,T1,P1,P2,P3,P4,P5,A1>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3614,14 +3782,14 @@ class _MemberResultCallback_5_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -3649,7 +3817,11 @@ class _MemberResultCallback_5_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1>
-class _MemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : public Callback1<A1> {
+class _MemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1) ;
@@ -3657,14 +3829,14 @@ class _MemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -3688,11 +3860,11 @@ class _MemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _MemberResultCallback_5_1<true,R,T1,P1,P2,P3,P4,P5,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_1<true,R,T1,P1,P2,P3,P4,P5,A1>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -3700,12 +3872,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) , P1 p1, P2 p2, P3 p3, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _MemberResultCallback_5_1<false,R,T1,P1,P2,P3,P4,P5,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_1<false,R,T1,P1,P2,P3,P4,P5,A1>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class A1>
 class _FunctionResultCallback_5_1 : public ResultCallback1<R,A1> {
  public:
@@ -3714,14 +3885,14 @@ class _FunctionResultCallback_5_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -3755,14 +3926,14 @@ class _FunctionResultCallback_5_1<del, void, P1, P2, P3, P4, P5, A1> : public Ca
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback1<A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -3785,21 +3956,23 @@ class _FunctionResultCallback_5_1<del, void, P1, P2, P3, P4, P5, A1> : public Ca
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _FunctionResultCallback_5_1<true,R,P1,P2,P3,P4,P5,A1>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,A1), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_1<true,R,P1,P2,P3,P4,P5,A1>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1>
 inline typename _FunctionResultCallback_5_1<false,R,P1,P2,P3,P4,P5,A1>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_1<false,R,P1,P2,P3,P4,P5,A1>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3808,15 +3981,15 @@ class _ConstMemberResultCallback_6_1 : public ResultCallback1<R,A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -3844,7 +4017,11 @@ class _ConstMemberResultCallback_6_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
-class _ConstMemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> : public Callback1<A1> {
+class _ConstMemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1) const;
@@ -3852,15 +4029,15 @@ class _ConstMemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> :
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -3884,11 +4061,11 @@ class _ConstMemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> :
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _ConstMemberResultCallback_6_1<true,R,T1,P1,P2,P3,P4,P5,P6,A1>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_1<true,R,T1,P1,P2,P3,P4,P5,P6,A1>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -3896,13 +4073,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) const, P1 p1, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _ConstMemberResultCallback_6_1<false,R,T1,P1,P2,P3,P4,P5,P6,A1>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_1<false,R,T1,P1,P2,P3,P4,P5,P6,A1>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_1 : public ResultCallback1<R,A1> {
  public:
   typedef ResultCallback1<R,A1> base;
@@ -3911,15 +4090,15 @@ class _MemberResultCallback_6_1 : public ResultCallback1<R,A1> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback1<R,A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -3947,7 +4126,11 @@ class _MemberResultCallback_6_1 : public ResultCallback1<R,A1> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
-class _MemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> : public Callback1<A1> {
+class _MemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback1<A1> {
  public:
   typedef Callback1<A1> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1) ;
@@ -3955,15 +4138,15 @@ class _MemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> : publ
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_1( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_1( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback1<A1>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -3987,11 +4170,11 @@ class _MemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1> : publ
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _MemberResultCallback_6_1<true,R,T1,P1,P2,P3,P4,P5,P6,A1>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_1<true,R,T1,P1,P2,P3,P4,P5,P6,A1>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -3999,12 +4182,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) , P1 p1, P2 p2, P3 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _MemberResultCallback_6_1<false,R,T1,P1,P2,P3,P4,P5,P6,A1>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_1<false,R,T1,P1,P2,P3,P4,P5,P6,A1>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 class _FunctionResultCallback_6_1 : public ResultCallback1<R,A1> {
  public:
@@ -4013,15 +4195,15 @@ class _FunctionResultCallback_6_1 : public ResultCallback1<R,A1> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback1<R,A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -4055,15 +4237,15 @@ class _FunctionResultCallback_6_1<del, void, P1, P2, P3, P4, P5, P6, A1> : publi
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_1(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_1(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback1<A1>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -4086,21 +4268,23 @@ class _FunctionResultCallback_6_1<del, void, P1, P2, P3, P4, P5, P6, A1> : publi
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _FunctionResultCallback_6_1<true,R,P1,P2,P3,P4,P5,P6,A1>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_1<true,R,P1,P2,P3,P4,P5,P6,A1>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1>
 inline typename _FunctionResultCallback_6_1<false,R,P1,P2,P3,P4,P5,P6,A1>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_1<false,R,P1,P2,P3,P4,P5,P6,A1>(function, p1, p2, p3, p4, p5, p6);
 }
 
-namespace {
-template <bool del, class R, class T, class A1, class A2>
+template <bool del, class R, class T, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_0_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4139,7 +4323,11 @@ class _ConstMemberResultCallback_0_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class A1, class A2>
-class _ConstMemberResultCallback_0_2<del, void, T, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_0_2<del, void, T, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(A1,A2) const;
@@ -4173,7 +4361,7 @@ class _ConstMemberResultCallback_0_2<del, void, T, A1, A2> : public Callback2<A1
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2>
 inline typename _ConstMemberResultCallback_0_2<true,R,T1,A1,A2>::base*
@@ -4190,8 +4378,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)(A1,A2) const) {
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class A1, class A2>
+template <bool del, class R, class T, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4230,7 +4420,11 @@ class _MemberResultCallback_0_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class A1, class A2>
-class _MemberResultCallback_0_2<del, void, T, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_0_2<del, void, T, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(A1,A2) ;
@@ -4264,7 +4458,7 @@ class _MemberResultCallback_0_2<del, void, T, A1, A2> : public Callback2<A1,A2> 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2>
 inline typename _MemberResultCallback_0_2<true,R,T1,A1,A2>::base*
@@ -4281,7 +4475,6 @@ NewPermanentCallback( T1* obj, R (T2::*member)(A1,A2) ) {
 }
 #endif
 
-namespace {
 template <bool del, class R, class A1, class A2>
 class _FunctionResultCallback_0_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -4351,7 +4544,7 @@ class _FunctionResultCallback_0_2<del, void, A1, A2> : public Callback2<A1,A2> {
     }
   }
 };
-}  // namespace
+
 template <class R, class A1, class A2>
 inline typename _FunctionResultCallback_0_2<true,R,A1,A2>::base*
 NewCallback(R (*function)(A1,A2)) {
@@ -4364,8 +4557,10 @@ NewPermanentCallback(R (*function)(A1,A2)) {
   return new _FunctionResultCallback_0_2<false,R,A1,A2>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2>
+template <bool del, class R, class T, class P1, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4374,10 +4569,10 @@ class _ConstMemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -4405,7 +4600,11 @@ class _ConstMemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class A1, class A2>
-class _ConstMemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_1_2<del, void, T, P1, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,A1,A2) const;
@@ -4413,10 +4612,10 @@ class _ConstMemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -4440,11 +4639,11 @@ class _ConstMemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2>
 inline typename _ConstMemberResultCallback_1_2<true,R,T1,P1,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_2<true,R,T1,P1,A1,A2>(obj, member, p1);
 }
 #endif
@@ -4452,13 +4651,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2>
 inline typename _ConstMemberResultCallback_1_2<false,R,T1,P1,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_2<false,R,T1,P1,A1,A2>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2>
+template <bool del, class R, class T, class P1, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4467,10 +4668,10 @@ class _MemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_2( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -4498,7 +4699,11 @@ class _MemberResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class A1, class A2>
-class _MemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_1_2<del, void, T, P1, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,A1,A2) ;
@@ -4506,10 +4711,10 @@ class _MemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback2<A1,
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_2( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -4533,11 +4738,11 @@ class _MemberResultCallback_1_2<del, void, T, P1, A1, A2> : public Callback2<A1,
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2>
 inline typename _MemberResultCallback_1_2<true,R,T1,P1,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,A1,A2) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1,A1,A2) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_2<true,R,T1,P1,A1,A2>(obj, member, p1);
 }
 #endif
@@ -4545,12 +4750,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,A1,A2) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2>
 inline typename _MemberResultCallback_1_2<false,R,T1,P1,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_2<false,R,T1,P1,A1,A2>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class A1, class A2>
 class _FunctionResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -4559,10 +4763,10 @@ class _FunctionResultCallback_1_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_2(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_2(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1) { }
 
@@ -4596,10 +4800,10 @@ class _FunctionResultCallback_1_2<del, void, P1, A1, A2> : public Callback2<A1,A
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_2(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_2(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1) { }
 
@@ -4622,21 +4826,23 @@ class _FunctionResultCallback_1_2<del, void, P1, A1, A2> : public Callback2<A1,A
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class A1, class A2>
 inline typename _FunctionResultCallback_1_2<true,R,P1,A1,A2>::base*
-NewCallback(R (*function)(P1,A1,A2), P1 p1) {
+NewCallback(R (*function)(P1,A1,A2), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_2<true,R,P1,A1,A2>(function, p1);
 }
 
 template <class R, class P1, class A1, class A2>
 inline typename _FunctionResultCallback_1_2<false,R,P1,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,A1,A2), P1 p1) {
+NewPermanentCallback(R (*function)(P1,A1,A2), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_2<false,R,P1,A1,A2>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4645,11 +4851,11 @@ class _ConstMemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -4677,7 +4883,11 @@ class _ConstMemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2>
-class _ConstMemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_2_2<del, void, T, P1, P2, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2) const;
@@ -4685,11 +4895,11 @@ class _ConstMemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Call
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -4713,11 +4923,11 @@ class _ConstMemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Call
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2>
 inline typename _ConstMemberResultCallback_2_2<true,R,T1,P1,P2,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_2<true,R,T1,P1,P2,A1,A2>(obj, member, p1, p2);
 }
 #endif
@@ -4725,13 +4935,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2) const, P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2>
 inline typename _ConstMemberResultCallback_2_2<false,R,T1,P1,P2,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_2<false,R,T1,P1,P2,A1,A2>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4740,11 +4952,11 @@ class _MemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_2( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -4772,7 +4984,11 @@ class _MemberResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2>
-class _MemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_2_2<del, void, T, P1, P2, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2) ;
@@ -4780,11 +4996,11 @@ class _MemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Callback2
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_2( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -4808,11 +5024,11 @@ class _MemberResultCallback_2_2<del, void, T, P1, P2, A1, A2> : public Callback2
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2>
 inline typename _MemberResultCallback_2_2<true,R,T1,P1,P2,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_2<true,R,T1,P1,P2,A1,A2>(obj, member, p1, p2);
 }
 #endif
@@ -4820,12 +5036,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2>
 inline typename _MemberResultCallback_2_2<false,R,T1,P1,P2,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_2<false,R,T1,P1,P2,A1,A2>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class A1, class A2>
 class _FunctionResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -4834,11 +5049,11 @@ class _FunctionResultCallback_2_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_2(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -4872,11 +5087,11 @@ class _FunctionResultCallback_2_2<del, void, P1, P2, A1, A2> : public Callback2<
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_2(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -4899,21 +5114,23 @@ class _FunctionResultCallback_2_2<del, void, P1, P2, A1, A2> : public Callback2<
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class A1, class A2>
 inline typename _FunctionResultCallback_2_2<true,R,P1,P2,A1,A2>::base*
-NewCallback(R (*function)(P1,P2,A1,A2), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_2<true,R,P1,P2,A1,A2>(function, p1, p2);
 }
 
 template <class R, class P1, class P2, class A1, class A2>
 inline typename _FunctionResultCallback_2_2<false,R,P1,P2,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,P2,A1,A2), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_2<false,R,P1,P2,A1,A2>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -4922,12 +5139,12 @@ class _ConstMemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -4955,7 +5172,11 @@ class _ConstMemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2>
-class _ConstMemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2) const;
@@ -4963,12 +5184,12 @@ class _ConstMemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -4992,11 +5213,11 @@ class _ConstMemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _ConstMemberResultCallback_3_2<true,R,T1,P1,P2,P3,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_2<true,R,T1,P1,P2,P3,A1,A2>(obj, member, p1, p2, p3);
 }
 #endif
@@ -5004,13 +5225,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) const, P1 p1, P2 p2, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _ConstMemberResultCallback_3_2<false,R,T1,P1,P2,P3,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_2<false,R,T1,P1,P2,P3,A1,A2>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5019,12 +5242,12 @@ class _MemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -5052,7 +5275,11 @@ class _MemberResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2>
-class _MemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2) ;
@@ -5060,12 +5287,12 @@ class _MemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public Callb
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -5089,11 +5316,11 @@ class _MemberResultCallback_3_2<del, void, T, P1, P2, P3, A1, A2> : public Callb
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _MemberResultCallback_3_2<true,R,T1,P1,P2,P3,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_2<true,R,T1,P1,P2,P3,A1,A2>(obj, member, p1, p2, p3);
 }
 #endif
@@ -5101,12 +5328,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) , P1 p1, P2 p2, P3 p3) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _MemberResultCallback_3_2<false,R,T1,P1,P2,P3,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_2<false,R,T1,P1,P2,P3,A1,A2>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class A1, class A2>
 class _FunctionResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -5115,12 +5341,12 @@ class _FunctionResultCallback_3_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_2(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -5154,12 +5380,12 @@ class _FunctionResultCallback_3_2<del, void, P1, P2, P3, A1, A2> : public Callba
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_2(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -5182,21 +5408,23 @@ class _FunctionResultCallback_3_2<del, void, P1, P2, P3, A1, A2> : public Callba
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _FunctionResultCallback_3_2<true,R,P1,P2,P3,A1,A2>::base*
-NewCallback(R (*function)(P1,P2,P3,A1,A2), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_2<true,R,P1,P2,P3,A1,A2>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3, class A1, class A2>
 inline typename _FunctionResultCallback_3_2<false,R,P1,P2,P3,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_2<false,R,P1,P2,P3,A1,A2>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5205,13 +5433,13 @@ class _ConstMemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -5239,7 +5467,11 @@ class _ConstMemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2>
-class _ConstMemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2) const;
@@ -5247,13 +5479,13 @@ class _ConstMemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -5277,11 +5509,11 @@ class _ConstMemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _ConstMemberResultCallback_4_2<true,R,T1,P1,P2,P3,P4,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_2<true,R,T1,P1,P2,P3,P4,A1,A2>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -5289,13 +5521,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) const, P1 p1, P2 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _ConstMemberResultCallback_4_2<false,R,T1,P1,P2,P3,P4,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_2<false,R,T1,P1,P2,P3,P4,A1,A2>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5304,13 +5538,13 @@ class _MemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -5338,7 +5572,11 @@ class _MemberResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2>
-class _MemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2) ;
@@ -5346,13 +5584,13 @@ class _MemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -5376,11 +5614,11 @@ class _MemberResultCallback_4_2<del, void, T, P1, P2, P3, P4, A1, A2> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _MemberResultCallback_4_2<true,R,T1,P1,P2,P3,P4,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_2<true,R,T1,P1,P2,P3,P4,A1,A2>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -5388,12 +5626,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) , P1 p1, P2 p2, P3 p3, 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _MemberResultCallback_4_2<false,R,T1,P1,P2,P3,P4,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_2<false,R,T1,P1,P2,P3,P4,A1,A2>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class A1, class A2>
 class _FunctionResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -5402,13 +5639,13 @@ class _FunctionResultCallback_4_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -5442,13 +5679,13 @@ class _FunctionResultCallback_4_2<del, void, P1, P2, P3, P4, A1, A2> : public Ca
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -5471,21 +5708,23 @@ class _FunctionResultCallback_4_2<del, void, P1, P2, P3, P4, A1, A2> : public Ca
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _FunctionResultCallback_4_2<true,R,P1,P2,P3,P4,A1,A2>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_2<true,R,P1,P2,P3,P4,A1,A2>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2>
 inline typename _FunctionResultCallback_4_2<false,R,P1,P2,P3,P4,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_2<false,R,P1,P2,P3,P4,A1,A2>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5494,14 +5733,14 @@ class _ConstMemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -5529,7 +5768,11 @@ class _ConstMemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
-class _ConstMemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2) const;
@@ -5537,14 +5780,14 @@ class _ConstMemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> :
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -5568,11 +5811,11 @@ class _ConstMemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> :
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _ConstMemberResultCallback_5_2<true,R,T1,P1,P2,P3,P4,P5,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_2<true,R,T1,P1,P2,P3,P4,P5,A1,A2>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -5580,13 +5823,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) const, P1 p1, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _ConstMemberResultCallback_5_2<false,R,T1,P1,P2,P3,P4,P5,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_2<false,R,T1,P1,P2,P3,P4,P5,A1,A2>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5595,14 +5840,14 @@ class _MemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -5630,7 +5875,11 @@ class _MemberResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
-class _MemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2) ;
@@ -5638,14 +5887,14 @@ class _MemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> : publ
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -5669,11 +5918,11 @@ class _MemberResultCallback_5_2<del, void, T, P1, P2, P3, P4, P5, A1, A2> : publ
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _MemberResultCallback_5_2<true,R,T1,P1,P2,P3,P4,P5,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_2<true,R,T1,P1,P2,P3,P4,P5,A1,A2>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -5681,12 +5930,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) , P1 p1, P2 p2, P3 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _MemberResultCallback_5_2<false,R,T1,P1,P2,P3,P4,P5,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_2<false,R,T1,P1,P2,P3,P4,P5,A1,A2>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 class _FunctionResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -5695,14 +5943,14 @@ class _FunctionResultCallback_5_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -5736,14 +5984,14 @@ class _FunctionResultCallback_5_2<del, void, P1, P2, P3, P4, P5, A1, A2> : publi
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -5766,21 +6014,23 @@ class _FunctionResultCallback_5_2<del, void, P1, P2, P3, P4, P5, A1, A2> : publi
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _FunctionResultCallback_5_2<true,R,P1,P2,P3,P4,P5,A1,A2>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_2<true,R,P1,P2,P3,P4,P5,A1,A2>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2>
 inline typename _FunctionResultCallback_5_2<false,R,P1,P2,P3,P4,P5,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_2<false,R,P1,P2,P3,P4,P5,A1,A2>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5789,15 +6039,15 @@ class _ConstMemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -5825,7 +6075,11 @@ class _ConstMemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
-class _ConstMemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2> : public Callback2<A1,A2> {
+class _ConstMemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2) const;
@@ -5833,15 +6087,15 @@ class _ConstMemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -5865,11 +6119,11 @@ class _ConstMemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _ConstMemberResultCallback_6_2<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_2<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -5877,13 +6131,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) const, P1 p1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _ConstMemberResultCallback_6_2<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_2<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
  public:
   typedef ResultCallback2<R,A1,A2> base;
@@ -5892,15 +6148,15 @@ class _MemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback2<R,A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -5928,7 +6184,11 @@ class _MemberResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
-class _MemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2> : public Callback2<A1,A2> {
+class _MemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback2<A1,A2> {
  public:
   typedef Callback2<A1,A2> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2) ;
@@ -5936,15 +6196,15 @@ class _MemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2> : 
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_2( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_2( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback2<A1,A2>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -5968,11 +6228,11 @@ class _MemberResultCallback_6_2<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2> : 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _MemberResultCallback_6_2<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_2<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -5980,12 +6240,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) , P1 p1, P2 p2, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _MemberResultCallback_6_2<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_2<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 class _FunctionResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
  public:
@@ -5994,15 +6253,15 @@ class _FunctionResultCallback_6_2 : public ResultCallback2<R,A1,A2> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback2<R,A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -6036,15 +6295,15 @@ class _FunctionResultCallback_6_2<del, void, P1, P2, P3, P4, P5, P6, A1, A2> : p
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_2(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_2(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback2<A1,A2>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -6067,21 +6326,23 @@ class _FunctionResultCallback_6_2<del, void, P1, P2, P3, P4, P5, P6, A1, A2> : p
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _FunctionResultCallback_6_2<true,R,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_2<true,R,P1,P2,P3,P4,P5,P6,A1,A2>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2>
 inline typename _FunctionResultCallback_6_2<false,R,P1,P2,P3,P4,P5,P6,A1,A2>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_2<false,R,P1,P2,P3,P4,P5,P6,A1,A2>(function, p1, p2, p3, p4, p5, p6);
 }
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3>
+template <bool del, class R, class T, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_0_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6120,7 +6381,11 @@ class _ConstMemberResultCallback_0_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class A1, class A2, class A3>
-class _ConstMemberResultCallback_0_3<del, void, T, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_0_3<del, void, T, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(A1,A2,A3) const;
@@ -6154,7 +6419,7 @@ class _ConstMemberResultCallback_0_3<del, void, T, A1, A2, A3> : public Callback
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_0_3<true,R,T1,A1,A2,A3>::base*
@@ -6171,8 +6436,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)(A1,A2,A3) const) {
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3>
+template <bool del, class R, class T, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6211,7 +6478,11 @@ class _MemberResultCallback_0_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class A1, class A2, class A3>
-class _MemberResultCallback_0_3<del, void, T, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_0_3<del, void, T, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(A1,A2,A3) ;
@@ -6245,7 +6516,7 @@ class _MemberResultCallback_0_3<del, void, T, A1, A2, A3> : public Callback3<A1,
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3>
 inline typename _MemberResultCallback_0_3<true,R,T1,A1,A2,A3>::base*
@@ -6262,7 +6533,6 @@ NewPermanentCallback( T1* obj, R (T2::*member)(A1,A2,A3) ) {
 }
 #endif
 
-namespace {
 template <bool del, class R, class A1, class A2, class A3>
 class _FunctionResultCallback_0_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -6332,7 +6602,7 @@ class _FunctionResultCallback_0_3<del, void, A1, A2, A3> : public Callback3<A1,A
     }
   }
 };
-}  // namespace
+
 template <class R, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_0_3<true,R,A1,A2,A3>::base*
 NewCallback(R (*function)(A1,A2,A3)) {
@@ -6345,8 +6615,10 @@ NewPermanentCallback(R (*function)(A1,A2,A3)) {
   return new _FunctionResultCallback_0_3<false,R,A1,A2,A3>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6355,10 +6627,10 @@ class _ConstMemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -6386,7 +6658,11 @@ class _ConstMemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3>
-class _ConstMemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_1_3<del, void, T, P1, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3) const;
@@ -6394,10 +6670,10 @@ class _ConstMemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Call
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -6421,11 +6697,11 @@ class _ConstMemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Call
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_1_3<true,R,T1,P1,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_3<true,R,T1,P1,A1,A2,A3>(obj, member, p1);
 }
 #endif
@@ -6433,13 +6709,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_1_3<false,R,T1,P1,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_3<false,R,T1,P1,A1,A2,A3>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6448,10 +6726,10 @@ class _MemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_3( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -6479,7 +6757,11 @@ class _MemberResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3>
-class _MemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_1_3<del, void, T, P1, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3) ;
@@ -6487,10 +6769,10 @@ class _MemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Callback3
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_3( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -6514,11 +6796,11 @@ class _MemberResultCallback_1_3<del, void, T, P1, A1, A2, A3> : public Callback3
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3>
 inline typename _MemberResultCallback_1_3<true,R,T1,P1,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_3<true,R,T1,P1,A1,A2,A3>(obj, member, p1);
 }
 #endif
@@ -6526,12 +6808,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3>
 inline typename _MemberResultCallback_1_3<false,R,T1,P1,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_3<false,R,T1,P1,A1,A2,A3>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class A1, class A2, class A3>
 class _FunctionResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -6540,10 +6821,10 @@ class _FunctionResultCallback_1_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_3(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_3(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1) { }
 
@@ -6577,10 +6858,10 @@ class _FunctionResultCallback_1_3<del, void, P1, A1, A2, A3> : public Callback3<
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_3(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_3(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1) { }
 
@@ -6603,21 +6884,23 @@ class _FunctionResultCallback_1_3<del, void, P1, A1, A2, A3> : public Callback3<
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_1_3<true,R,P1,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,A1,A2,A3), P1 p1) {
+NewCallback(R (*function)(P1,A1,A2,A3), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_3<true,R,P1,A1,A2,A3>(function, p1);
 }
 
 template <class R, class P1, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_1_3<false,R,P1,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,A1,A2,A3), P1 p1) {
+NewPermanentCallback(R (*function)(P1,A1,A2,A3), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_3<false,R,P1,A1,A2,A3>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6626,11 +6909,11 @@ class _ConstMemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -6658,7 +6941,11 @@ class _ConstMemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3>
-class _ConstMemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3) const;
@@ -6666,11 +6953,11 @@ class _ConstMemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -6694,11 +6981,11 @@ class _ConstMemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_2_3<true,R,T1,P1,P2,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_3<true,R,T1,P1,P2,A1,A2,A3>(obj, member, p1, p2);
 }
 #endif
@@ -6706,13 +6993,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) const, P1 p1, P2 p2) 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_2_3<false,R,T1,P1,P2,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_3<false,R,T1,P1,P2,A1,A2,A3>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6721,11 +7010,11 @@ class _MemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_3( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -6753,7 +7042,11 @@ class _MemberResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3>
-class _MemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3) ;
@@ -6761,11 +7054,11 @@ class _MemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public Callb
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_3( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -6789,11 +7082,11 @@ class _MemberResultCallback_2_3<del, void, T, P1, P2, A1, A2, A3> : public Callb
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _MemberResultCallback_2_3<true,R,T1,P1,P2,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_3<true,R,T1,P1,P2,A1,A2,A3>(obj, member, p1, p2);
 }
 #endif
@@ -6801,12 +7094,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _MemberResultCallback_2_3<false,R,T1,P1,P2,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_3<false,R,T1,P1,P2,A1,A2,A3>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class A1, class A2, class A3>
 class _FunctionResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -6815,11 +7107,11 @@ class _FunctionResultCallback_2_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_3(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -6853,11 +7145,11 @@ class _FunctionResultCallback_2_3<del, void, P1, P2, A1, A2, A3> : public Callba
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_3(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -6880,21 +7172,23 @@ class _FunctionResultCallback_2_3<del, void, P1, P2, A1, A2, A3> : public Callba
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_2_3<true,R,P1,P2,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,P2,A1,A2,A3), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_3<true,R,P1,P2,A1,A2,A3>(function, p1, p2);
 }
 
 template <class R, class P1, class P2, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_2_3<false,R,P1,P2,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_3<false,R,P1,P2,A1,A2,A3>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -6903,12 +7197,12 @@ class _ConstMemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -6936,7 +7230,11 @@ class _ConstMemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3>
-class _ConstMemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3) const;
@@ -6944,12 +7242,12 @@ class _ConstMemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -6973,11 +7271,11 @@ class _ConstMemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_3_3<true,R,T1,P1,P2,P3,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_3<true,R,T1,P1,P2,P3,A1,A2,A3>(obj, member, p1, p2, p3);
 }
 #endif
@@ -6985,13 +7283,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) const, P1 p1, P2 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_3_3<false,R,T1,P1,P2,P3,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_3<false,R,T1,P1,P2,P3,A1,A2,A3>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7000,12 +7300,12 @@ class _MemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -7033,7 +7333,11 @@ class _MemberResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3>
-class _MemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3) ;
@@ -7041,12 +7345,12 @@ class _MemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -7070,11 +7374,11 @@ class _MemberResultCallback_3_3<del, void, T, P1, P2, P3, A1, A2, A3> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _MemberResultCallback_3_3<true,R,T1,P1,P2,P3,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_3<true,R,T1,P1,P2,P3,A1,A2,A3>(obj, member, p1, p2, p3);
 }
 #endif
@@ -7082,12 +7386,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) , P1 p1, P2 p2, P3 p3) 
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _MemberResultCallback_3_3<false,R,T1,P1,P2,P3,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_3<false,R,T1,P1,P2,P3,A1,A2,A3>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class A1, class A2, class A3>
 class _FunctionResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -7096,12 +7399,12 @@ class _FunctionResultCallback_3_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_3(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -7135,12 +7438,12 @@ class _FunctionResultCallback_3_3<del, void, P1, P2, P3, A1, A2, A3> : public Ca
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_3(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -7163,21 +7466,23 @@ class _FunctionResultCallback_3_3<del, void, P1, P2, P3, A1, A2, A3> : public Ca
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_3_3<true,R,P1,P2,P3,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,P2,P3,A1,A2,A3), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_3<true,R,P1,P2,P3,A1,A2,A3>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_3_3<false,R,P1,P2,P3,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_3<false,R,P1,P2,P3,A1,A2,A3>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7186,13 +7491,13 @@ class _ConstMemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -7220,7 +7525,11 @@ class _ConstMemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
-class _ConstMemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3) const;
@@ -7228,13 +7537,13 @@ class _ConstMemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> :
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -7258,11 +7567,11 @@ class _ConstMemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> :
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_4_3<true,R,T1,P1,P2,P3,P4,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_3<true,R,T1,P1,P2,P3,P4,A1,A2,A3>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -7270,13 +7579,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) const, P1 p1, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_4_3<false,R,T1,P1,P2,P3,P4,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_3<false,R,T1,P1,P2,P3,P4,A1,A2,A3>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7285,13 +7596,13 @@ class _MemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -7319,7 +7630,11 @@ class _MemberResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
-class _MemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3) ;
@@ -7327,13 +7642,13 @@ class _MemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> : publ
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -7357,11 +7672,11 @@ class _MemberResultCallback_4_3<del, void, T, P1, P2, P3, P4, A1, A2, A3> : publ
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _MemberResultCallback_4_3<true,R,T1,P1,P2,P3,P4,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_3<true,R,T1,P1,P2,P3,P4,A1,A2,A3>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -7369,12 +7684,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) , P1 p1, P2 p2, P3 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _MemberResultCallback_4_3<false,R,T1,P1,P2,P3,P4,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_3<false,R,T1,P1,P2,P3,P4,A1,A2,A3>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 class _FunctionResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -7383,13 +7697,13 @@ class _FunctionResultCallback_4_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -7423,13 +7737,13 @@ class _FunctionResultCallback_4_3<del, void, P1, P2, P3, P4, A1, A2, A3> : publi
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -7452,21 +7766,23 @@ class _FunctionResultCallback_4_3<del, void, P1, P2, P3, P4, A1, A2, A3> : publi
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_4_3<true,R,P1,P2,P3,P4,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_3<true,R,P1,P2,P3,P4,A1,A2,A3>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_4_3<false,R,P1,P2,P3,P4,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_3<false,R,P1,P2,P3,P4,A1,A2,A3>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7475,14 +7791,14 @@ class _ConstMemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -7510,7 +7826,11 @@ class _ConstMemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
-class _ConstMemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3) const;
@@ -7518,14 +7838,14 @@ class _ConstMemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -7549,11 +7869,11 @@ class _ConstMemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_5_3<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_3<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -7561,13 +7881,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) const, P1 p1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_5_3<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_3<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7576,14 +7898,14 @@ class _MemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -7611,7 +7933,11 @@ class _MemberResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
-class _MemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3) ;
@@ -7619,14 +7945,14 @@ class _MemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3> : 
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -7650,11 +7976,11 @@ class _MemberResultCallback_5_3<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3> : 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _MemberResultCallback_5_3<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_3<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -7662,12 +7988,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) , P1 p1, P2 p2, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _MemberResultCallback_5_3<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_3<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 class _FunctionResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -7676,14 +8001,14 @@ class _FunctionResultCallback_5_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -7717,14 +8042,14 @@ class _FunctionResultCallback_5_3<del, void, P1, P2, P3, P4, P5, A1, A2, A3> : p
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -7747,21 +8072,23 @@ class _FunctionResultCallback_5_3<del, void, P1, P2, P3, P4, P5, A1, A2, A3> : p
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_5_3<true,R,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_3<true,R,P1,P2,P3,P4,P5,A1,A2,A3>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_5_3<false,R,P1,P2,P3,P4,P5,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_3<false,R,P1,P2,P3,P4,P5,A1,A2,A3>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7770,15 +8097,15 @@ class _ConstMemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -7806,7 +8133,11 @@ class _ConstMemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
-class _ConstMemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _ConstMemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const;
@@ -7814,15 +8145,15 @@ class _ConstMemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -7846,11 +8177,11 @@ class _ConstMemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_6_3<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_3<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -7858,13 +8189,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const, P1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _ConstMemberResultCallback_6_3<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_3<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
   typedef ResultCallback3<R,A1,A2,A3> base;
@@ -7873,15 +8206,15 @@ class _MemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback3<R,A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -7909,7 +8242,11 @@ class _MemberResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
-class _MemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3> : public Callback3<A1,A2,A3> {
+class _MemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback3<A1,A2,A3> {
  public:
   typedef Callback3<A1,A2,A3> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3) ;
@@ -7917,15 +8254,15 @@ class _MemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_3( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_3( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback3<A1,A2,A3>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -7949,11 +8286,11 @@ class _MemberResultCallback_6_3<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _MemberResultCallback_6_3<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_3<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -7961,12 +8298,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) , P1 p1, P2 p2
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _MemberResultCallback_6_3<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_3<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 class _FunctionResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
  public:
@@ -7975,15 +8311,15 @@ class _FunctionResultCallback_6_3 : public ResultCallback3<R,A1,A2,A3> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback3<R,A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -8017,15 +8353,15 @@ class _FunctionResultCallback_6_3<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3>
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_3(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_3(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback3<A1,A2,A3>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -8048,21 +8384,23 @@ class _FunctionResultCallback_6_3<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3>
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_6_3<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_3<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3>
 inline typename _FunctionResultCallback_6_3<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_3<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3>(function, p1, p2, p3, p4, p5, p6);
 }
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_0_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8101,7 +8439,11 @@ class _ConstMemberResultCallback_0_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_0_4<del, void, T, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_0_4<del, void, T, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(A1,A2,A3,A4) const;
@@ -8135,7 +8477,7 @@ class _ConstMemberResultCallback_0_4<del, void, T, A1, A2, A3, A4> : public Call
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_0_4<true,R,T1,A1,A2,A3,A4>::base*
@@ -8152,8 +8494,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)(A1,A2,A3,A4) const) {
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8192,7 +8536,11 @@ class _MemberResultCallback_0_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_0_4<del, void, T, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_0_4<del, void, T, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(A1,A2,A3,A4) ;
@@ -8226,7 +8574,7 @@ class _MemberResultCallback_0_4<del, void, T, A1, A2, A3, A4> : public Callback4
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_0_4<true,R,T1,A1,A2,A3,A4>::base*
@@ -8243,7 +8591,6 @@ NewPermanentCallback( T1* obj, R (T2::*member)(A1,A2,A3,A4) ) {
 }
 #endif
 
-namespace {
 template <bool del, class R, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_0_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -8313,7 +8660,7 @@ class _FunctionResultCallback_0_4<del, void, A1, A2, A3, A4> : public Callback4<
     }
   }
 };
-}  // namespace
+
 template <class R, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_0_4<true,R,A1,A2,A3,A4>::base*
 NewCallback(R (*function)(A1,A2,A3,A4)) {
@@ -8326,8 +8673,10 @@ NewPermanentCallback(R (*function)(A1,A2,A3,A4)) {
   return new _FunctionResultCallback_0_4<false,R,A1,A2,A3,A4>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8336,10 +8685,10 @@ class _ConstMemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -8367,7 +8716,11 @@ class _ConstMemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3,A4) const;
@@ -8375,10 +8728,10 @@ class _ConstMemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -8402,11 +8755,11 @@ class _ConstMemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_1_4<true,R,T1,P1,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_4<true,R,T1,P1,A1,A2,A3,A4>(obj, member, p1);
 }
 #endif
@@ -8414,13 +8767,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_1_4<false,R,T1,P1,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_4<false,R,T1,P1,A1,A2,A3,A4>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8429,10 +8784,10 @@ class _MemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_4( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -8460,7 +8815,11 @@ class _MemberResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3,A4) ;
@@ -8468,10 +8827,10 @@ class _MemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public Callb
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_4( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -8495,11 +8854,11 @@ class _MemberResultCallback_1_4<del, void, T, P1, A1, A2, A3, A4> : public Callb
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_1_4<true,R,T1,P1,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_4<true,R,T1,P1,A1,A2,A3,A4>(obj, member, p1);
 }
 #endif
@@ -8507,12 +8866,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_1_4<false,R,T1,P1,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_4<false,R,T1,P1,A1,A2,A3,A4>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -8521,10 +8879,10 @@ class _FunctionResultCallback_1_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_4(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_4(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1) { }
 
@@ -8558,10 +8916,10 @@ class _FunctionResultCallback_1_4<del, void, P1, A1, A2, A3, A4> : public Callba
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_4(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_4(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1) { }
 
@@ -8584,21 +8942,23 @@ class _FunctionResultCallback_1_4<del, void, P1, A1, A2, A3, A4> : public Callba
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_1_4<true,R,P1,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,A1,A2,A3,A4), P1 p1) {
+NewCallback(R (*function)(P1,A1,A2,A3,A4), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_4<true,R,P1,A1,A2,A3,A4>(function, p1);
 }
 
 template <class R, class P1, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_1_4<false,R,P1,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,A1,A2,A3,A4), P1 p1) {
+NewPermanentCallback(R (*function)(P1,A1,A2,A3,A4), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_4<false,R,P1,A1,A2,A3,A4>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8607,11 +8967,11 @@ class _ConstMemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -8639,7 +8999,11 @@ class _ConstMemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3,A4) const;
@@ -8647,11 +9011,11 @@ class _ConstMemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -8675,11 +9039,11 @@ class _ConstMemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_2_4<true,R,T1,P1,P2,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_4<true,R,T1,P1,P2,A1,A2,A3,A4>(obj, member, p1, p2);
 }
 #endif
@@ -8687,13 +9051,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) const, P1 p1, P2 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_2_4<false,R,T1,P1,P2,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_4<false,R,T1,P1,P2,A1,A2,A3,A4>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8702,11 +9068,11 @@ class _MemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_4( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -8734,7 +9100,11 @@ class _MemberResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3,A4) ;
@@ -8742,11 +9112,11 @@ class _MemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_4( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -8770,11 +9140,11 @@ class _MemberResultCallback_2_4<del, void, T, P1, P2, A1, A2, A3, A4> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_2_4<true,R,T1,P1,P2,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_4<true,R,T1,P1,P2,A1,A2,A3,A4>(obj, member, p1, p2);
 }
 #endif
@@ -8782,12 +9152,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_2_4<false,R,T1,P1,P2,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_4<false,R,T1,P1,P2,A1,A2,A3,A4>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -8796,11 +9165,11 @@ class _FunctionResultCallback_2_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_4(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -8834,11 +9203,11 @@ class _FunctionResultCallback_2_4<del, void, P1, P2, A1, A2, A3, A4> : public Ca
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_4(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -8861,21 +9230,23 @@ class _FunctionResultCallback_2_4<del, void, P1, P2, A1, A2, A3, A4> : public Ca
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_2_4<true,R,P1,P2,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,P2,A1,A2,A3,A4), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_4<true,R,P1,P2,A1,A2,A3,A4>(function, p1, p2);
 }
 
 template <class R, class P1, class P2, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_2_4<false,R,P1,P2,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3,A4), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_4<false,R,P1,P2,A1,A2,A3,A4>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8884,12 +9255,12 @@ class _ConstMemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -8917,7 +9288,11 @@ class _ConstMemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3,A4) const;
@@ -8925,12 +9300,12 @@ class _ConstMemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> :
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -8954,11 +9329,11 @@ class _ConstMemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> :
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_3_4<true,R,T1,P1,P2,P3,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_4<true,R,T1,P1,P2,P3,A1,A2,A3,A4>(obj, member, p1, p2, p3);
 }
 #endif
@@ -8966,13 +9341,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) const, P1 p1, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_3_4<false,R,T1,P1,P2,P3,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_4<false,R,T1,P1,P2,P3,A1,A2,A3,A4>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -8981,12 +9358,12 @@ class _MemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -9014,7 +9391,11 @@ class _MemberResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3,A4) ;
@@ -9022,12 +9403,12 @@ class _MemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> : publ
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -9051,11 +9432,11 @@ class _MemberResultCallback_3_4<del, void, T, P1, P2, P3, A1, A2, A3, A4> : publ
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_3_4<true,R,T1,P1,P2,P3,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_4<true,R,T1,P1,P2,P3,A1,A2,A3,A4>(obj, member, p1, p2, p3);
 }
 #endif
@@ -9063,12 +9444,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_3_4<false,R,T1,P1,P2,P3,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_4<false,R,T1,P1,P2,P3,A1,A2,A3,A4>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -9077,12 +9457,12 @@ class _FunctionResultCallback_3_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_4(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -9116,12 +9496,12 @@ class _FunctionResultCallback_3_4<del, void, P1, P2, P3, A1, A2, A3, A4> : publi
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_4(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -9144,21 +9524,23 @@ class _FunctionResultCallback_3_4<del, void, P1, P2, P3, A1, A2, A3, A4> : publi
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_3_4<true,R,P1,P2,P3,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_4<true,R,P1,P2,P3,A1,A2,A3,A4>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_3_4<false,R,P1,P2,P3,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_4<false,R,P1,P2,P3,A1,A2,A3,A4>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9167,13 +9549,13 @@ class _ConstMemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -9201,7 +9583,11 @@ class _ConstMemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3,A4) const;
@@ -9209,13 +9595,13 @@ class _ConstMemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -9239,11 +9625,11 @@ class _ConstMemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_4_4<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_4<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -9251,13 +9637,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) const, P1 p1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_4_4<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_4<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9266,13 +9654,13 @@ class _MemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -9300,7 +9688,11 @@ class _MemberResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3,A4) ;
@@ -9308,13 +9700,13 @@ class _MemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4> : 
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -9338,11 +9730,11 @@ class _MemberResultCallback_4_4<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4> : 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_4_4<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_4<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -9350,12 +9742,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) , P1 p1, P2 p2, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_4_4<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_4<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -9364,13 +9755,13 @@ class _FunctionResultCallback_4_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -9404,13 +9795,13 @@ class _FunctionResultCallback_4_4<del, void, P1, P2, P3, P4, A1, A2, A3, A4> : p
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -9433,21 +9824,23 @@ class _FunctionResultCallback_4_4<del, void, P1, P2, P3, P4, A1, A2, A3, A4> : p
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_4_4<true,R,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_4<true,R,P1,P2,P3,P4,A1,A2,A3,A4>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_4_4<false,R,P1,P2,P3,P4,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_4<false,R,P1,P2,P3,P4,A1,A2,A3,A4>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9456,14 +9849,14 @@ class _ConstMemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -9491,7 +9884,11 @@ class _ConstMemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const;
@@ -9499,14 +9896,14 @@ class _ConstMemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -9530,11 +9927,11 @@ class _ConstMemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_5_4<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_4<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -9542,13 +9939,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const, P1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_5_4<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_4<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9557,14 +9956,14 @@ class _MemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -9592,7 +9991,11 @@ class _MemberResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3,A4) ;
@@ -9600,14 +10003,14 @@ class _MemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -9631,11 +10034,11 @@ class _MemberResultCallback_5_4<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_5_4<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_4<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -9643,12 +10046,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) , P1 p1, P2 p2
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_5_4<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_4<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -9657,14 +10059,14 @@ class _FunctionResultCallback_5_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -9698,14 +10100,14 @@ class _FunctionResultCallback_5_4<del, void, P1, P2, P3, P4, P5, A1, A2, A3, A4>
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -9728,21 +10130,23 @@ class _FunctionResultCallback_5_4<del, void, P1, P2, P3, P4, P5, A1, A2, A3, A4>
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_5_4<true,R,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_4<true,R,P1,P2,P3,P4,P5,A1,A2,A3,A4>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_5_4<false,R,P1,P2,P3,P4,P5,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_4<false,R,P1,P2,P3,P4,P5,A1,A2,A3,A4>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9751,15 +10155,15 @@ class _ConstMemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -9787,7 +10191,11 @@ class _ConstMemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
-class _ConstMemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _ConstMemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const;
@@ -9795,15 +10203,15 @@ class _ConstMemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -9827,11 +10235,11 @@ class _ConstMemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_6_4<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_4<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -9839,13 +10247,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const,
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _ConstMemberResultCallback_6_4<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_4<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
   typedef ResultCallback4<R,A1,A2,A3,A4> base;
@@ -9854,15 +10264,15 @@ class _MemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -9890,7 +10300,11 @@ class _MemberResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
-class _MemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4> : public Callback4<A1,A2,A3,A4> {
+class _MemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback4<A1,A2,A3,A4> {
  public:
   typedef Callback4<A1,A2,A3,A4> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) ;
@@ -9898,15 +10312,15 @@ class _MemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_4( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_4( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback4<A1,A2,A3,A4>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -9930,11 +10344,11 @@ class _MemberResultCallback_6_4<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_6_4<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_4<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -9942,12 +10356,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) , P1 p1, P2
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _MemberResultCallback_6_4<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_4<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 class _FunctionResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
  public:
@@ -9956,15 +10369,15 @@ class _FunctionResultCallback_6_4 : public ResultCallback4<R,A1,A2,A3,A4> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback4<R,A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -9998,15 +10411,15 @@ class _FunctionResultCallback_6_4<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_4(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_4(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback4<A1,A2,A3,A4>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -10029,21 +10442,23 @@ class _FunctionResultCallback_6_4<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_6_4<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_4<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4>
 inline typename _FunctionResultCallback_6_4<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_4<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4>(function, p1, p2, p3, p4, p5, p6);
 }
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_0_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10082,7 +10497,11 @@ class _ConstMemberResultCallback_0_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(A1,A2,A3,A4,A5) const;
@@ -10116,7 +10535,7 @@ class _ConstMemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5> : public 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_0_5<true,R,T1,A1,A2,A3,A4,A5>::base*
@@ -10133,8 +10552,10 @@ NewPermanentCallback(const T1* obj, R (T2::*member)(A1,A2,A3,A4,A5) const) {
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_0_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10173,7 +10594,11 @@ class _MemberResultCallback_0_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(A1,A2,A3,A4,A5) ;
@@ -10207,7 +10632,7 @@ class _MemberResultCallback_0_5<del, void, T, A1, A2, A3, A4, A5> : public Callb
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_0_5<true,R,T1,A1,A2,A3,A4,A5>::base*
@@ -10224,7 +10649,6 @@ NewPermanentCallback( T1* obj, R (T2::*member)(A1,A2,A3,A4,A5) ) {
 }
 #endif
 
-namespace {
 template <bool del, class R, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_0_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -10294,7 +10718,7 @@ class _FunctionResultCallback_0_5<del, void, A1, A2, A3, A4, A5> : public Callba
     }
   }
 };
-}  // namespace
+
 template <class R, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_0_5<true,R,A1,A2,A3,A4,A5>::base*
 NewCallback(R (*function)(A1,A2,A3,A4,A5)) {
@@ -10307,8 +10731,10 @@ NewPermanentCallback(R (*function)(A1,A2,A3,A4,A5)) {
   return new _FunctionResultCallback_0_5<false,R,A1,A2,A3,A4,A5>(function);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10317,10 +10743,10 @@ class _ConstMemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -10348,7 +10774,11 @@ class _ConstMemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3,A4,A5) const;
@@ -10356,10 +10786,10 @@ class _ConstMemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : pub
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member, P1 p1)
+  inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -10383,11 +10813,11 @@ class _ConstMemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : pub
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_1_5<true,R,T1,P1,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) const, P1 p1) {
+NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_5<true,R,T1,P1,A1,A2,A3,A4,A5>(obj, member, p1);
 }
 #endif
@@ -10395,13 +10825,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) const, P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_1_5<false,R,T1,P1,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) const, P1 p1) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1) {
   return new _ConstMemberResultCallback_1_5<false,R,T1,P1,A1,A2,A3,A4,A5>(obj, member, p1);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10410,10 +10842,10 @@ class _MemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_5( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -10441,7 +10873,11 @@ class _MemberResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,A1,A2,A3,A4,A5) ;
@@ -10449,10 +10885,10 @@ class _MemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : public C
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _MemberResultCallback_1_5( T* object, MemberSignature member, P1 p1)
+  inline _MemberResultCallback_1_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1) { }
@@ -10476,11 +10912,11 @@ class _MemberResultCallback_1_5<del, void, T, P1, A1, A2, A3, A4, A5> : public C
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_1_5<true,R,T1,P1,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) , P1 p1) {
+NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_5<true,R,T1,P1,A1,A2,A3,A4,A5>(obj, member, p1);
 }
 #endif
@@ -10488,12 +10924,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) , P1 p1) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_1_5<false,R,T1,P1,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) , P1 p1) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1) {
   return new _MemberResultCallback_1_5<false,R,T1,P1,A1,A2,A3,A4,A5>(obj, member, p1);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -10502,10 +10937,10 @@ class _FunctionResultCallback_1_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_5(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_5(FunctionSignature function, typename ConstRef<P1>::type p1)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1) { }
 
@@ -10539,10 +10974,10 @@ class _FunctionResultCallback_1_5<del, void, P1, A1, A2, A3, A4, A5> : public Ca
 
  private:
   FunctionSignature function_;
-  P1 p1_;
+  typename remove_reference<P1>::type p1_;
 
  public:
-  inline _FunctionResultCallback_1_5(FunctionSignature function, P1 p1)
+  inline _FunctionResultCallback_1_5(FunctionSignature function, typename ConstRef<P1>::type p1)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1) { }
 
@@ -10565,21 +11000,23 @@ class _FunctionResultCallback_1_5<del, void, P1, A1, A2, A3, A4, A5> : public Ca
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_1_5<true,R,P1,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,A1,A2,A3,A4,A5), P1 p1) {
+NewCallback(R (*function)(P1,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_5<true,R,P1,A1,A2,A3,A4,A5>(function, p1);
 }
 
 template <class R, class P1, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_1_5<false,R,P1,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,A1,A2,A3,A4,A5), P1 p1) {
+NewPermanentCallback(R (*function)(P1,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1) {
   return new _FunctionResultCallback_1_5<false,R,P1,A1,A2,A3,A4,A5>(function, p1);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10588,11 +11025,11 @@ class _ConstMemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -10620,7 +11057,11 @@ class _ConstMemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3,A4,A5) const;
@@ -10628,11 +11069,11 @@ class _ConstMemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> :
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -10656,11 +11097,11 @@ class _ConstMemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> :
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_2_5<true,R,T1,P1,P2,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) const, P1 p1, P2 p2) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_5<true,R,T1,P1,P2,A1,A2,A3,A4,A5>(obj, member, p1, p2);
 }
 #endif
@@ -10668,13 +11109,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) const, P1 p1, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_2_5<false,R,T1,P1,P2,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) const, P1 p1, P2 p2) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _ConstMemberResultCallback_2_5<false,R,T1,P1,P2,A1,A2,A3,A4,A5>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10683,11 +11126,11 @@ class _MemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_5( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -10715,7 +11158,11 @@ class _MemberResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,A1,A2,A3,A4,A5) ;
@@ -10723,11 +11170,11 @@ class _MemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> : publ
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _MemberResultCallback_2_5( T* object, MemberSignature member, P1 p1, P2 p2)
+  inline _MemberResultCallback_2_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2) { }
@@ -10751,11 +11198,11 @@ class _MemberResultCallback_2_5<del, void, T, P1, P2, A1, A2, A3, A4, A5> : publ
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_2_5<true,R,T1,P1,P2,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) , P1 p1, P2 p2) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_5<true,R,T1,P1,P2,A1,A2,A3,A4,A5>(obj, member, p1, p2);
 }
 #endif
@@ -10763,12 +11210,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) , P1 p1, P2 p2) {
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_2_5<false,R,T1,P1,P2,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) , P1 p1, P2 p2) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _MemberResultCallback_2_5<false,R,T1,P1,P2,A1,A2,A3,A4,A5>(obj, member, p1, p2);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -10777,11 +11223,11 @@ class _FunctionResultCallback_2_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_5(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -10815,11 +11261,11 @@ class _FunctionResultCallback_2_5<del, void, P1, P2, A1, A2, A3, A4, A5> : publi
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
 
  public:
-  inline _FunctionResultCallback_2_5(FunctionSignature function, P1 p1, P2 p2)
+  inline _FunctionResultCallback_2_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2) { }
 
@@ -10842,21 +11288,23 @@ class _FunctionResultCallback_2_5<del, void, P1, P2, A1, A2, A3, A4, A5> : publi
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_2_5<true,R,P1,P2,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,P2,A1,A2,A3,A4,A5), P1 p1, P2 p2) {
+NewCallback(R (*function)(P1,P2,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_5<true,R,P1,P2,A1,A2,A3,A4,A5>(function, p1, p2);
 }
 
 template <class R, class P1, class P2, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_2_5<false,R,P1,P2,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3,A4,A5), P1 p1, P2 p2) {
+NewPermanentCallback(R (*function)(P1,P2,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2) {
   return new _FunctionResultCallback_2_5<false,R,P1,P2,A1,A2,A3,A4,A5>(function, p1, p2);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10865,12 +11313,12 @@ class _ConstMemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -10898,7 +11346,11 @@ class _ConstMemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3,A4,A5) const;
@@ -10906,12 +11358,12 @@ class _ConstMemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -10935,11 +11387,11 @@ class _ConstMemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_3_5<true,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_5<true,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3);
 }
 #endif
@@ -10947,13 +11399,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) const, P1 p1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_3_5<false,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _ConstMemberResultCallback_3_5<false,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -10962,12 +11416,12 @@ class _MemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -10995,7 +11449,11 @@ class _MemberResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,A1,A2,A3,A4,A5) ;
@@ -11003,12 +11461,12 @@ class _MemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5> : 
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _MemberResultCallback_3_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3)
+  inline _MemberResultCallback_3_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3) { }
@@ -11032,11 +11490,11 @@ class _MemberResultCallback_3_5<del, void, T, P1, P2, P3, A1, A2, A3, A4, A5> : 
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_3_5<true,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_5<true,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3);
 }
 #endif
@@ -11044,12 +11502,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_3_5<false,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _MemberResultCallback_3_5<false,R,T1,P1,P2,P3,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -11058,12 +11515,12 @@ class _FunctionResultCallback_3_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_5(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -11097,12 +11554,12 @@ class _FunctionResultCallback_3_5<del, void, P1, P2, P3, A1, A2, A3, A4, A5> : p
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
 
  public:
-  inline _FunctionResultCallback_3_5(FunctionSignature function, P1 p1, P2 p2, P3 p3)
+  inline _FunctionResultCallback_3_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3) { }
 
@@ -11125,21 +11582,23 @@ class _FunctionResultCallback_3_5<del, void, P1, P2, P3, A1, A2, A3, A4, A5> : p
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_3_5<true,R,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3) {
+NewCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_5<true,R,P1,P2,P3,A1,A2,A3,A4,A5>(function, p1, p2, p3);
 }
 
 template <class R, class P1, class P2, class P3, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_3_5<false,R,P1,P2,P3,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3) {
+NewPermanentCallback(R (*function)(P1,P2,P3,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3) {
   return new _FunctionResultCallback_3_5<false,R,P1,P2,P3,A1,A2,A3,A4,A5>(function, p1, p2, p3);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11148,13 +11607,13 @@ class _ConstMemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -11182,7 +11641,11 @@ class _ConstMemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const;
@@ -11190,13 +11653,13 @@ class _ConstMemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -11220,11 +11683,11 @@ class _ConstMemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_4_5<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_5<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -11232,13 +11695,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const, P1
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_4_5<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _ConstMemberResultCallback_4_5<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11247,13 +11712,13 @@ class _MemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -11281,7 +11746,11 @@ class _MemberResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,A1,A2,A3,A4,A5) ;
@@ -11289,13 +11758,13 @@ class _MemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _MemberResultCallback_4_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _MemberResultCallback_4_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
@@ -11319,11 +11788,11 @@ class _MemberResultCallback_4_5<del, void, T, P1, P2, P3, P4, A1, A2, A3, A4, A5
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_4_5<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_5<true,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4);
 }
 #endif
@@ -11331,12 +11800,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) , P1 p1, P2 p2
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_4_5<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _MemberResultCallback_4_5<false,R,T1,P1,P2,P3,P4,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -11345,13 +11813,13 @@ class _FunctionResultCallback_4_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -11385,13 +11853,13 @@ class _FunctionResultCallback_4_5<del, void, P1, P2, P3, P4, A1, A2, A3, A4, A5>
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
 
  public:
-  inline _FunctionResultCallback_4_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4)
+  inline _FunctionResultCallback_4_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4) { }
 
@@ -11414,21 +11882,23 @@ class _FunctionResultCallback_4_5<del, void, P1, P2, P3, P4, A1, A2, A3, A4, A5>
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_4_5<true,R,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_5<true,R,P1,P2,P3,P4,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_4_5<false,R,P1,P2,P3,P4,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4) {
   return new _FunctionResultCallback_4_5<false,R,P1,P2,P3,P4,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11437,14 +11907,14 @@ class _ConstMemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -11472,7 +11942,11 @@ class _ConstMemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const;
@@ -11480,14 +11954,14 @@ class _ConstMemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -11511,11 +11985,11 @@ class _ConstMemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_5_5<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_5<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -11523,13 +11997,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const,
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_5_5<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _ConstMemberResultCallback_5_5<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11538,14 +12014,14 @@ class _MemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -11573,7 +12049,11 @@ class _MemberResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) ;
@@ -11581,14 +12061,14 @@ class _MemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _MemberResultCallback_5_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _MemberResultCallback_5_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
@@ -11612,11 +12092,11 @@ class _MemberResultCallback_5_5<del, void, T, P1, P2, P3, P4, P5, A1, A2, A3, A4
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_5_5<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_5<true,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
@@ -11624,12 +12104,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) , P1 p1, P2
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_5_5<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _MemberResultCallback_5_5<false,R,T1,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -11638,14 +12117,14 @@ class _FunctionResultCallback_5_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -11679,14 +12158,14 @@ class _FunctionResultCallback_5_5<del, void, P1, P2, P3, P4, P5, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
 
  public:
-  inline _FunctionResultCallback_5_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
+  inline _FunctionResultCallback_5_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5) { }
 
@@ -11709,21 +12188,23 @@ class _FunctionResultCallback_5_5<del, void, P1, P2, P3, P4, P5, A1, A2, A3, A4,
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_5_5<true,R,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_5<true,R,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4, p5);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_5_5<false,R,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5) {
   return new _FunctionResultCallback_5_5<false,R,P1,P2,P3,P4,P5,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4, p5);
 }
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _ConstMemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11732,15 +12213,15 @@ class _ConstMemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -11768,7 +12249,11 @@ class _ConstMemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> 
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
-class _ConstMemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _ConstMemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) const;
@@ -11776,15 +12261,15 @@ class _ConstMemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
  private:
   const T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -11808,11 +12293,11 @@ class _ConstMemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_6_5<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_5<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -11820,13 +12305,15 @@ NewCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) con
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _ConstMemberResultCallback_6_5<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) const, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) const, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _ConstMemberResultCallback_6_5<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
-template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
+template <bool del, class R, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5,
+          class OnlyIf = typename enable_if<
+              is_class_or_union<T>::value
+              >::type>
 class _MemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
   typedef ResultCallback5<R,A1,A2,A3,A4,A5> base;
@@ -11835,15 +12322,15 @@ class _MemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -11871,7 +12358,11 @@ class _MemberResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 };
 
 template <bool del, class T, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
-class _MemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4, A5> : public Callback5<A1,A2,A3,A4,A5> {
+class _MemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3, A4, A5,
+         typename enable_if<
+             is_class_or_union<T>::value
+             >::type>
+    : public Callback5<A1,A2,A3,A4,A5> {
  public:
   typedef Callback5<A1,A2,A3,A4,A5> base;
   typedef void (T::*MemberSignature)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) ;
@@ -11879,15 +12370,15 @@ class _MemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
  private:
    T* object_;
   MemberSignature member_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _MemberResultCallback_6_5( T* object, MemberSignature member, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _MemberResultCallback_6_5( T* object, MemberSignature member, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback5<A1,A2,A3,A4,A5>(),
       object_(object),
       member_(member),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
@@ -11911,11 +12402,11 @@ class _MemberResultCallback_6_5<del, void, T, P1, P2, P3, P4, P5, P6, A1, A2, A3
     }
   }
 };
-}  // namespace
+
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_6_5<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_5<true,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
@@ -11923,12 +12414,11 @@ NewCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) , P1 p1,
 #ifndef SWIG
 template <class T1, class T2, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _MemberResultCallback_6_5<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) , P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5) , typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _MemberResultCallback_6_5<false,R,T1,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(obj, member, p1, p2, p3, p4, p5, p6);
 }
 #endif
 
-namespace {
 template <bool del, class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 class _FunctionResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
  public:
@@ -11937,15 +12427,15 @@ class _FunctionResultCallback_6_5 : public ResultCallback5<R,A1,A2,A3,A4,A5> {
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : ResultCallback5<R,A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -11979,15 +12469,15 @@ class _FunctionResultCallback_6_5<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  P1 p1_;
-  P2 p2_;
-  P3 p3_;
-  P4 p4_;
-  P5 p5_;
-  P6 p6_;
+  typename remove_reference<P1>::type p1_;
+  typename remove_reference<P2>::type p2_;
+  typename remove_reference<P3>::type p3_;
+  typename remove_reference<P4>::type p4_;
+  typename remove_reference<P5>::type p5_;
+  typename remove_reference<P6>::type p6_;
 
  public:
-  inline _FunctionResultCallback_6_5(FunctionSignature function, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
+  inline _FunctionResultCallback_6_5(FunctionSignature function, typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6)
     : Callback5<A1,A2,A3,A4,A5>(),
       function_(function),      p1_(p1),      p2_(p2),      p3_(p3),      p4_(p4),      p5_(p5),      p6_(p6) { }
 
@@ -12010,16 +12500,16 @@ class _FunctionResultCallback_6_5<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
     }
   }
 };
-}  // namespace
+
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_6_5<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_5<true,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4, p5, p6);
 }
 
 template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A1, class A2, class A3, class A4, class A5>
 inline typename _FunctionResultCallback_6_5<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>::base*
-NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5), P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6) {
+NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5), typename ConstRef<P1>::type p1, typename ConstRef<P2>::type p2, typename ConstRef<P3>::type p3, typename ConstRef<P4>::type p4, typename ConstRef<P5>::type p5, typename ConstRef<P6>::type p6) {
   return new _FunctionResultCallback_6_5<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4, p5, p6);
 }
 
