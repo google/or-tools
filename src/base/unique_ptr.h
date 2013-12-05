@@ -16,7 +16,7 @@
 
 #include <memory>
 
-#if defined(__APPLE__) && (__clang_major__ < 5)
+#if defined(__APPLE__) && defined(__GLIBCXX__)
 #include <assert.h>
 #include "base/macros.h"
 namespace std {
@@ -194,5 +194,5 @@ class unique_ptr<C[]> {
   DISALLOW_COPY_AND_ASSIGN(unique_ptr);
 };
 }  // namespace std
-#endif  // defined(__APPLE__) && (__clang_major__ < 5)
+#endif  // defined(__APPLE__) && defined(__GLIBCXX__)
 #endif  // OR_TOOLS_BASE_UNIQUE_PTR_H_
