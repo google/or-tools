@@ -58,6 +58,7 @@
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
 #include <math.h>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -150,7 +151,7 @@ class KnapsackSolver {
                           const std::vector<std::vector<int64> >& weights,
                           const std::vector<int64>& capacities);
 
-  scoped_ptr<BaseKnapsackSolver> solver_;
+  std::unique_ptr<BaseKnapsackSolver> solver_;
   std::vector<bool> known_value_;
   std::vector<bool> best_solution_;
   std::vector<int> mapping_reduced_item_id_;
