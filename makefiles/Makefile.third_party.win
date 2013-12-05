@@ -49,7 +49,7 @@ build_third_party: \
 	install_scip
 
 download_third_party: \
-        dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
+    dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
 	dependencies/sources/gflags/autogen.sh \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
@@ -253,6 +253,8 @@ endif
 
 dependencies\sources\coin-cbc\configure:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
+	tools\sed -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\coin-cbc\CoinUtils\src\CoinHelperFunctions.hpp
+
 
 # Install SWIG.
 install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
