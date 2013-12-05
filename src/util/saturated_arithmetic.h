@@ -41,10 +41,6 @@ inline int64 CapAdd(int64 left, int64 right) {
              : (AddUnderflows(left, right) ? kint64min : left + right);
 }
 
-uint64 UnsignedCapAdd(uint64 left, uint64 right);
-
-uint64 UnsignedCapSub(uint64 left, uint64 right);
-
 inline bool SubOverflows(int64 left, int64 right) {
   return right < 0 && left > kint64max + right;
 }
@@ -65,8 +61,6 @@ inline int64 CapOpp(int64 v) {
 }
 
 int64 CapProd(int64 left, int64 right);
-
-uint64 UnsignedCapProd(uint64 left, uint64 right);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_

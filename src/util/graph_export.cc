@@ -13,6 +13,8 @@
 
 #include "util/graph_export.h"
 
+#include "base/unique_ptr.h"
+
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
@@ -166,7 +168,7 @@ class FileGraphExporter : public GraphExporter {
   }
 
   File* const file_;
-  scoped_ptr<GraphSyntax> syntax_;
+  std::unique_ptr<GraphSyntax> syntax_;
 };
 }  // namespace
 

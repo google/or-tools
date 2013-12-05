@@ -77,6 +77,9 @@ using std::string;
 
 namespace operations_research {
 
+// Returns the current thread's total memory usage in an human-readable string.
+string MemoryUsage();
+
 // Forward declaration.
 class StatsGroup;
 class TimeDistribution;

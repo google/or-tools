@@ -15,15 +15,6 @@
 namespace operations_research {
 // ---------- Overflow utility functions ----------
 
-uint64 UnsignedCapAdd(uint64 left, uint64 right) {
-  const uint64 sum = left + right;
-  return (sum < left) || (sum < right) ? kint64max : sum;
-}
-
-uint64 UnsignedCapSub(uint64 left, uint64 right) {
-  return left >= right ? left - right : 0;
-}
-
 int64 CapProd(int64 left, int64 right) {
   if (left == 0 || right == 0) {
     return 0;
@@ -49,16 +40,6 @@ int64 CapProd(int64 left, int64 right) {
       }
     } /* end if left and right are non-positive */
   }   /* end if left is non-positive */
-  return left * right;
-}
-
-uint64 UnsignedCapProd(uint64 left, uint64 right) {
-  if (left == 0 || right == 0) {
-    return 0;
-  }
-  if (left > (kuint64max / right)) {
-    return kuint64max;
-  }
   return left * right;
 }
 

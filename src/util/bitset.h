@@ -381,6 +381,11 @@ int64 UnsafeMostSignificantBitPosition64(const uint64* const bitset,
 int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
                                          uint32 start, uint32 end);
 
+// Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
+inline uint64 TwoBitsFromPos64(uint64 pos) {
+  return GG_ULONGLONG(3) << (pos & 62);
+}
+
 // This class is like an ITIVector<IndexType, bool> except that it provides a
 // more efficient way to iterate over the positions set to true. It achieves
 // this by caching the current uint64 bucket in the Iterator and using
@@ -418,6 +423,23 @@ class Bitset64 {
     DCHECK_GE(i.value(), 0);
     DCHECK_LT(i.value(), size_);
     data_[BitOffset64(i.value())] &= ~OneBit64(BitPos64(i.value()));
+  }
+
+  // Copies the bits at position i and i ^ 1 and then clear them.
+  void CopyAndClearTwoBits(IndexType i, Bitset64* to) {
+    DCHECK_GE(i.value(), 0);
+    DCHECK_LT(i.value(), size_);
+    uint64 offset = BitOffset64(i.value());
+    uint64 mask = TwoBitsFromPos64(i.value());
+    (*to).data_[offset] ^= ((*to).data_[offset] ^ data_[offset]) & mask;
+    data_[offset] ^= (data_[offset] & mask);
+  }
+
+  // Returns true if the bit at position i or the one at position i ^ 1 is set.
+  bool AreOneOfTwoBitsSet(IndexType i) const {
+    DCHECK_GE(i.value(), 0);
+    DCHECK_LT(i.value(), size_);
+    return data_[BitOffset64(i.value())] & TwoBitsFromPos64(i.value());
   }
 
   // Returns true if the bit at position i is set.
@@ -564,6 +586,43 @@ class Bitset64 {
   const Iterator end_;
 
   DISALLOW_COPY_AND_ASSIGN(Bitset64);
+};
+
+// A simple utility class to set/unset integer in a range [0, size).
+// This is optimized for sparsity.
+template <typename IntegerType>
+class SparseBitset {
+ public:
+  SparseBitset() {}
+  void ClearAndResize(IntegerType size) {
+    if (size.value() > is_set_.size()) {
+      is_set_.resize(size.value(), false);
+    }
+    for (int i : to_clear_) {
+      is_set_[i] = false;
+    }
+    to_clear_.clear();
+  }
+  bool operator[](IntegerType index) const {
+    return is_set_[index.value()];
+  }
+  void Set(IntegerType index) {
+    if (!is_set_[index.value()]) {
+      is_set_[index.value()] = true;
+      to_clear_.push_back(index.value());
+    }
+  }
+  void Clear(IntegerType index) {
+    is_set_[index.value()] = false;
+  }
+  int NumberOfSetCallsWithDifferentArguments() const {
+    return to_clear_.size();
+  }
+
+ private:
+  std::vector<bool> is_set_;
+  std::vector<int> to_clear_;
+  DISALLOW_COPY_AND_ASSIGN(SparseBitset);
 };
 
 }  // namespace operations_research

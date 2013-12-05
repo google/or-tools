@@ -23,6 +23,7 @@
 #include <climits>
 #include <cstdio>
 #include <limits>
+#include "base/unique_ptr.h"
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -156,7 +157,7 @@ template<class T> class ZVector {
   int64 size_;
 
   // Storage memory for the array.
-  scoped_ptr<T[]> storage_;
+  std::unique_ptr<T[]> storage_;
 };
 
 // Shorthands for all the types of ZVector's.
