@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -137,8 +138,8 @@ class CLPInterface : public MPSolverInterface {
   MPSolver::BasisStatus
   TransformCLPBasisStatus(ClpSimplex::Status clp_basis_status) const;
 
-  scoped_ptr<ClpSimplex> clp_;  // TODO(user) : remove pointer.
-  scoped_ptr<ClpSolve> options_;  // For parameter setting.
+  std::unique_ptr<ClpSimplex> clp_;    // TODO(user) : remove pointer.
+  std::unique_ptr<ClpSolve> options_;  // For parameter setting.
 };
 
 // ----- Solver -----
@@ -349,8 +350,8 @@ void CLPInterface::ExtractNewConstraints() {
     }
     // Make space for dummy variable.
     max_row_length = std::max(1, max_row_length);
-    scoped_ptr<int[]> indices(new int[max_row_length]);
-    scoped_ptr<double[]> coefs(new double[max_row_length]);
+    std::unique_ptr<int[]> indices(new int[max_row_length]);
+    std::unique_ptr<double[]> coefs(new double[max_row_length]);
     CoinBuild build_object;
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {

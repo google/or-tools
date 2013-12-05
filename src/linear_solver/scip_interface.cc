@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -394,8 +395,8 @@ void SCIPInterface::ExtractNewConstraints() {
         max_row_length = ct->coefficients_.size();
       }
     }
-    scoped_ptr<SCIP_VAR * []> vars(new SCIP_VAR* [max_row_length]);
-    scoped_ptr<double[]> coefs(new double[max_row_length]);
+    std::unique_ptr<SCIP_VAR * []> vars(new SCIP_VAR* [max_row_length]);
+    std::unique_ptr<double[]> coefs(new double[max_row_length]);
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];

@@ -134,6 +134,7 @@
 #include "base/hash.h"
 #include <limits>
 #include <map>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -564,7 +565,7 @@ class MPSolver {
   const OptimizationProblemType problem_type_;
 
   // The solver interface.
-  scoped_ptr<MPSolverInterface> interface_;
+  std::unique_ptr<MPSolverInterface> interface_;
 
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
@@ -577,7 +578,7 @@ class MPSolver {
   hash_map<string, int> constraint_name_to_index_;
 
   // The linear objective function.
-  scoped_ptr<MPObjective> objective_;
+  std::unique_ptr<MPObjective> objective_;
 
   // Time limit in milliseconds (0 = no limit).
   int64 time_limit_;

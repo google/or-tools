@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include "base/hash.h"
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -213,7 +214,7 @@ class GLPKInterface : public MPSolverInterface {
   glp_smcp lp_param_;
   glp_iocp mip_param_;
   // For the callback
-  scoped_ptr<GLPKInformation> mip_callback_info_;
+  std::unique_ptr<GLPKInformation> mip_callback_info_;
 };
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
@@ -326,8 +327,8 @@ void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
       (sync_status_ == MODEL_SYNCHRONIZED ||
        !constraint->ContainsNewVariables())) {
     const int size = constraint->coefficients_.size();
-    scoped_ptr<int[]> indices(new int[size + 1]);
-    scoped_ptr<double[]> coefs(new double[size + 1]);
+    std::unique_ptr<int[]> indices(new int[size + 1]);
+    std::unique_ptr<double[]> coefs(new double[size + 1]);
     ExtractOneConstraint(constraint, indices.get(), coefs.get());
   }
 }
@@ -408,8 +409,8 @@ void GLPKInterface::ExtractOldConstraints() {
       0, last_constraint_index_);
   // The first entry in the following arrays is dummy, to be
   // consistent with glpk API.
-  scoped_ptr<int[]> indices(new int[max_constraint_size + 1]);
-  scoped_ptr<double[]> coefs(new double[max_constraint_size + 1]);
+  std::unique_ptr<int[]> indices(new int[max_constraint_size + 1]);
+  std::unique_ptr<double[]> coefs(new double[max_constraint_size + 1]);
 
   for (int i = 0; i < last_constraint_index_; ++i) {
     MPConstraint* const  ct = solver_->constraints_[i];
@@ -474,9 +475,9 @@ void GLPKInterface::ExtractNewConstraints() {
 
       // The first entry in the following arrays is dummy, to be
       // consistent with glpk API.
-      scoped_ptr<int[]> variable_indices(new int[num_coefs + 1]);
-      scoped_ptr<int[]> constraint_indices(new int[num_coefs + 1]);
-      scoped_ptr<double[]> coefs(new double[num_coefs + 1]);
+      std::unique_ptr<int[]> variable_indices(new int[num_coefs + 1]);
+      std::unique_ptr<int[]> constraint_indices(new int[num_coefs + 1]);
+      std::unique_ptr<double[]> coefs(new double[num_coefs + 1]);
       int k = 1;
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* ct = solver_->constraints_[i];
@@ -497,8 +498,8 @@ void GLPKInterface::ExtractNewConstraints() {
           last_constraint_index_, total_num_rows);
       // The first entry in the following arrays is dummy, to be
       // consistent with glpk API.
-      scoped_ptr<int[]> indices(new int[max_constraint_size + 1]);
-      scoped_ptr<double[]> coefs(new double[max_constraint_size + 1]);
+      std::unique_ptr<int[]> indices(new int[max_constraint_size + 1]);
+      std::unique_ptr<double[]> coefs(new double[max_constraint_size + 1]);
       for (int i = last_constraint_index_; i < total_num_rows; i++) {
         ExtractOneConstraint(solver_->constraints_[i], indices.get(),
                              coefs.get());
@@ -770,8 +771,8 @@ double GLPKInterface::ComputeExactConditionNumber() const {
   const int num_rows = glp_get_num_rows(lp_);
   const int num_cols = glp_get_num_cols(lp_);
   // GLPK indexes everything starting from 1 instead of 0.
-  scoped_ptr<double[]> row_scaling_factor(new double[num_rows + 1]);
-  scoped_ptr<double[]> column_scaling_factor(new double[num_cols + 1]);
+  std::unique_ptr<double[]> row_scaling_factor(new double[num_rows + 1]);
+  std::unique_ptr<double[]> column_scaling_factor(new double[num_cols + 1]);
   for (int row = 1; row <= num_rows; ++row) {
     row_scaling_factor[row] = glp_get_rii(lp_, row);
   }
@@ -791,8 +792,8 @@ double GLPKInterface::ComputeScaledBasisL1Norm(
     int num_rows, int num_cols,
     double* row_scaling_factor, double* column_scaling_factor) const {
   double norm = 0.0;
-  scoped_ptr<double[]> values(new double[num_rows + 1]);
-  scoped_ptr<int[]> indices(new int[num_rows + 1]);
+  std::unique_ptr<double[]> values(new double[num_rows + 1]);
+  std::unique_ptr<int[]> indices(new int[num_rows + 1]);
   for (int col = 1; col <= num_cols; ++col) {
     const int glpk_basis_status = glp_get_col_stat(lp_, col);
     // Take into account only basic columns.
@@ -850,7 +851,7 @@ double GLPKInterface::ComputeInverseScaledBasisL1Norm(
         break;
     }
   }
-  scoped_ptr<double[]> right_hand_side(new double[num_rows + 1]);
+  std::unique_ptr<double[]> right_hand_side(new double[num_rows + 1]);
   double norm = 0.0;
   // Iteratively solve B x = e_k, where e_k is the kth unit vector.
   // The result of this computation is the kth column of B^-1.

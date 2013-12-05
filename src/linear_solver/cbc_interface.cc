@@ -14,6 +14,7 @@
 
 #include "base/hash.h"
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -294,8 +295,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
           max_row_length = ct->coefficients_.size();
         }
       }
-      scoped_ptr<int[]> indices(new int[max_row_length]);
-      scoped_ptr<double[]> coefs(new double[max_row_length]);
+      std::unique_ptr<int[]> indices(new int[max_row_length]);
+      std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* const  ct = solver_->constraints_[i];

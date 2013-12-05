@@ -499,7 +499,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
     }
   }
   // To detect duplicate variables in each constraint, and in the objective.
-  hash_set<MPVariable*> tmp_variable_set;
+  hash_set<const MPVariable*> tmp_variable_set;
   for (int i = 0; i < input_model.constraints_size(); ++i) {
     tmp_variable_set.clear();
     const MPConstraintProto& ct_proto = input_model.constraints(i);
@@ -1580,3 +1580,4 @@ int MPSolverParameters::GetIntegerParam(
 
 
 }  // namespace operations_research
+

@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include "base/hash.h"
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -450,11 +451,12 @@ void GurobiInterface::ExtractNewVariables() {
   int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
     int num_new_variables = total_num_vars - last_variable_index_;
-    scoped_ptr<double[]> obj_coefs(new double[num_new_variables]);
-    scoped_ptr<double[]> lb(new double[num_new_variables]);
-    scoped_ptr<double[]> ub(new double[num_new_variables]);
-    scoped_ptr<char[]> ctype(new char[num_new_variables]);
-    scoped_ptr<const char * []> colname(new const char* [num_new_variables]);
+    std::unique_ptr<double[]> obj_coefs(new double[num_new_variables]);
+    std::unique_ptr<double[]> lb(new double[num_new_variables]);
+    std::unique_ptr<double[]> ub(new double[num_new_variables]);
+    std::unique_ptr<char[]> ctype(new char[num_new_variables]);
+    std::unique_ptr<const char * []> colname(
+        new const char* [num_new_variables]);
 
     for (int j = 0; j < num_new_variables; ++j) {
       MPVariable* const var = solver_->variables_[last_variable_index_+j];
@@ -502,8 +504,8 @@ void GurobiInterface::ExtractNewConstraints() {
     }
 
     max_row_length = std::max(1, max_row_length);
-    scoped_ptr<int[]> col_indices(new int[max_row_length]);
-    scoped_ptr<double[]> coefs(new double[max_row_length]);
+    std::unique_ptr<int[]> col_indices(new int[max_row_length]);
+    std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
     // Add each new constraint.
     for (int row = last_constraint_index_; row < total_num_rows; ++row) {
@@ -732,11 +734,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     const int total_num_rows = solver_->constraints_.size();
     const int total_num_cols = solver_->variables_.size();
 
-    scoped_ptr<double[]> values(new double[total_num_cols]);
-    scoped_ptr<double[]> dual_values(new double[total_num_rows]);
-    scoped_ptr<double[]> slacks(new double[total_num_rows]);
-    scoped_ptr<double[]> rhs(new double[total_num_rows]);
-    scoped_ptr<double[]> reduced_costs(new double[total_num_cols]);
+    std::unique_ptr<double[]> values(new double[total_num_cols]);
+    std::unique_ptr<double[]> dual_values(new double[total_num_rows]);
+    std::unique_ptr<double[]> slacks(new double[total_num_rows]);
+    std::unique_ptr<double[]> rhs(new double[total_num_rows]);
+    std::unique_ptr<double[]> reduced_costs(new double[total_num_cols]);
 
     CHECKED_GUROBI_CALL(GRBgetdblattr(model_,
                                       GRB_DBL_ATTR_OBJVAL,
