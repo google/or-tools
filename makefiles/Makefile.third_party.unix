@@ -13,7 +13,7 @@ CBC_TAG = 2.8.7
 SWIG_TAG = 17741
 # version 8.33
 PCRE_TAG = 1336
-MONO_TAG = 3.2.3
+MONO_TAG = 3.2.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the
 # archive is present.  The archive should be glpk-4.52.tar.gz
