@@ -1292,10 +1292,6 @@ class BooleanVar : public IntVar {
 
   int RawValue() const { return value_; }
 
-  friend class TimesBooleanPosIntExpr;
-  friend class TimesBooleanIntExpr;
-  friend class TimesPosCstBoolVar;
-
  protected:
   int value_;
   SimpleRevFIFO<Demon*> bound_demons_;
