@@ -149,77 +149,37 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   $1 = NewPermanentCallback(&PyCallbackBool, $input);
 }
 
-// ----- std::vector<data> wrapping -----
+// --------- std::vector<data> wrapping ----------
 
-// Add conversion rules for std::vector<int64>.
-%typemap(in) const std::vector<int64>& (std::vector<int64> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    temp[i] = PyInt_AsLong(is_tuple ? PyTuple_GetItem($input, i) :
-                           PyList_GetItem($input, i));
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<int64>& {
+// To be able to use the google.swig code (see LIST_OUTPUT_TYPEMAP in that file)
+// in our context, with heavy usage of function overloading, we must implement
+// typechecks. We do that here.
+// Note(user): for an unknown reason, using the (handy) method PyObjAs()
+// defined in base/swig/python-swig.cc seems to cause issues, so we can't
+// use a generic, templated type checker.
+%define LIST_OUTPUT_TYPECHECK(type, checker)
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
     const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      if (!PyInt_Check(obj) && !PyLong_Check(obj)) {
-        failed = true;
-        break;
-      }
+    const size_t size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
+    size_t i = 0;
+    while (i < size && checker(is_tuple ? PyTuple_GetItem($input, i)
+                                        : PyList_GetItem($input, i))) {
+      ++i;
     }
-    $1 = failed ? 0 : 1;
+    $1 = i == size;
   }
 }
-
-// Add conversion rules for std::vector<double>.
-%typemap(in) const std::vector<double>& (std::vector<double> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    temp[i] = PyFloat_AsDouble(is_tuple ? PyTuple_GetItem($input, i) :
-                               PyList_GetItem($input, i));
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<double>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      if (!PyFloat_Check(obj)) {
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
+%enddef
+LIST_OUTPUT_TYPECHECK(int, PyInt_Check);
+LIST_OUTPUT_TYPECHECK(long long, PyInt_Check);
+LIST_OUTPUT_TYPECHECK(double, PyFloat_Check);
 
 // Add conversion list(tuple(int)) -> std::vector<vector>.
+// TODO(user): see if we can also get rid of this and utilize already
+// existing code.
 %typemap(in) const std::vector<std::vector<int64> >&
     (std::vector<std::vector<int64> > temp) {
   if (!PyList_Check($input)) {
@@ -424,73 +384,42 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(javain) ResultCallback3<int64, int64, int64, int64>*
 "$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
 
-// Typemaps to represent const std::vector<int64>& arguments as arrays of long.
-%typemap(jni) const std::vector<int64>& "jlongArray"
-%typemap(jtype) const std::vector<int64>& "long[]"
-%typemap(jstype) const std::vector<int64>& "long[]"
-%typemap(javain) const std::vector<int64>& "$javainput"
-%typemap(in) const std::vector<int64>& %{
+// Typemaps to represent const std::vector<CType>& arguments as arrays of JavaType.
+%define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
+%typemap(jni) const std::vector<CType>& "j" #JavaType "Array"
+%typemap(jtype) const std::vector<CType>& #JavaType "[]"
+%typemap(jstype) const std::vector<CType>& #JavaType "[]"
+%typemap(javain) const std::vector<CType>& "$javainput"
+%typemap(in) const std::vector<CType>& %{
   if($input) {
-    $1 = new std::vector<int64>;
+    $1 = new std::vector<CType>;
     const int size = jenv->GetArrayLength($input);
     $1->reserve(size);
-    jlong *values = jenv->GetLongArrayElements((jlongArray)$input, NULL);
+    j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
-      long value = values[i];
+      JavaType value = values[i];
       $1->push_back(value);
     }
-    jenv->ReleaseLongArrayElements((jlongArray)$input, values, JNI_ABORT);
+    jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
   else {
     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
     return $null;
   }
 %}
-%typemap(freearg) const std::vector<int64>& {
+%typemap(freearg) const std::vector<CType>& {
   delete $1;
 }
-%typemap(out) const std::vector<int64>& %{
-  $result = jenv->NewLongArray($1->size());
-  jenv->SetLongArrayRegion($result, 0, $1->size(), &(*$1)[0]);
+%typemap(out) const std::vector<CType>& %{
+  $result = jenv->New ## JavaTypeName ## Array($1->size());
+  jenv->Set ## JavaTypeName ## ArrayRegion($result, 0, $1->size(), &(*$1)[0]);
 %}
-%typemap(javaout) const std::vector<int64> & {
+%typemap(javaout) const std::vector<CType> & {
   return $jnicall;
 }
-
-// Typemaps to represent const std::vector<int>& arguments as arrays of long.
-%typemap(jni) const std::vector<int>& "jintArray"
-%typemap(jtype) const std::vector<int>& "int[]"
-%typemap(jstype) const std::vector<int>& "int[]"
-%typemap(javain) const std::vector<int>& "$javainput"
-
-%typemap(in) const std::vector<int>& %{
-  if($input) {
-    $1 = new std::vector<int>;
-    const int size = jenv->GetArrayLength($input);
-    $1->reserve(size);
-    jint *values = jenv->GetIntArrayElements((jintArray)$input, NULL);
-    for (int i = 0; i < size; ++i) {
-      int value = values[i];
-      $1->push_back(value);
-    }
-    jenv->ReleaseIntArrayElements((jintArray)$input, values, JNI_ABORT);
-  }
-  else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-%}
-%typemap(freearg) const std::vector<int>& {
-  delete $1;
-}
-%typemap(out) const std::vector<int>& %{
-  $result = jenv->NewIntArray($1->size());
-  jenv->SetIntArrayRegion($result, 0, $1->size(), 
-                          reinterpret_cast<jint*>(&(*$1)[0]));
-%}
-%typemap(javaout) const std::vector<int> & {
-  return $jnicall;
-}
+%enddef
+VECTOR_AS_JAVA_ARRAY(int, int, Int);
+VECTOR_AS_JAVA_ARRAY(int64, long, Long);
 
 // Convert long[][] to std::vector<std::vector<int64> >
 %typemap(jni) const std::vector<std::vector<int64> >& "jobjectArray"
@@ -613,17 +542,17 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 // This pair is then used to rebuild a vector from it.
 %define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
 
-%typemap(ctype)   const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
+%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
 %typemap(imtype)  const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
 %typemap(cstype)  const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
 %typemap(csin)    const std::vector<TYPE>&  "$csinput.Length, $csinput"
-%typemap(freearg) const std::vector<TYPE>&  { delete $1; }
-%typemap(in)      const std::vector<TYPE>&  %{
+%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
+%typemap(in)    const std::vector<TYPE>&  %{
   $1 = new std::vector<TYPE>;
   $1->reserve(length$argnum);
   for(int i = 0; i < length$argnum; ++i)
     $1->push_back($input[i]);
-%}
+  %}
 %enddef // CS_TYPEMAP_STDVECTOR
 
 ////////////////////////////////////////////////
