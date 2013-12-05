@@ -1670,8 +1670,8 @@ void DomainIntVar::SetMin(int64 m) {
   } else {
     CheckOldMin();
     const int64 new_min =
-        (bits_ == nullptr ? m
-                       : bits_->ComputeNewMin(m, min_.Value(), max_.Value()));
+        (bits_ == nullptr ? m : bits_->ComputeNewMin(m, min_.Value(),
+                                                     max_.Value()));
     min_.SetValue(solver(), new_min);
     if (min_.Value() > max_.Value()) {
       solver()->Fail();
@@ -1693,8 +1693,8 @@ void DomainIntVar::SetMax(int64 m) {
   } else {
     CheckOldMax();
     const int64 new_max =
-        (bits_ == nullptr ? m
-                       : bits_->ComputeNewMax(m, min_.Value(), max_.Value()));
+        (bits_ == nullptr ? m : bits_->ComputeNewMax(m, min_.Value(),
+                                                     max_.Value()));
     max_.SetValue(solver(), new_max);
     if (min_.Value() > max_.Value()) {
       solver()->Fail();
@@ -1724,7 +1724,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
         CheckOldMin();
         const int64 new_min =
             (bits_ == nullptr ? mi : bits_->ComputeNewMin(mi, min_.Value(),
-                                                       max_.Value()));
+                                                          max_.Value()));
         min_.SetValue(solver(), new_min);
       }
       if (min_.Value() > ma) {
@@ -1734,7 +1734,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
         CheckOldMax();
         const int64 new_max =
             (bits_ == nullptr ? ma : bits_->ComputeNewMax(ma, min_.Value(),
-                                                       max_.Value()));
+                                                          max_.Value()));
         max_.SetValue(solver(), new_max);
       }
       if (min_.Value() > max_.Value()) {
@@ -5552,6 +5552,116 @@ class LinkExprAndVar : public CastConstraint {
   IntExpr* const expr_;
 };
 
+// ----- Conditional Expression -----
+
+class ExprWithEscapeValue : public BaseIntExpr {
+ public:
+  ExprWithEscapeValue(Solver* const s, IntVar* const c, IntExpr* const e,
+                      int64 unperformed_value)
+      : BaseIntExpr(s),
+        condition_(c),
+        expression_(e),
+        unperformed_value_(unperformed_value) {}
+
+  virtual ~ExprWithEscapeValue() {}
+
+  virtual int64 Min() const {
+    if (condition_->Min() == 1) {
+      return expression_->Min();
+    } else if (condition_->Max() == 1) {
+      return std::min(unperformed_value_, expression_->Min());
+    } else {
+      return unperformed_value_;
+    }
+  }
+
+  virtual void SetMin(int64 m) {
+    if (m > unperformed_value_) {
+      condition_->SetValue(1);
+      expression_->SetMin(m);
+    } else if (condition_->Min() == 1) {
+      expression_->SetMin(m);
+    } else if (m > expression_->Max()) {
+      condition_->SetValue(0);
+    }
+  }
+
+  virtual int64 Max() const {
+    if (condition_->Min() == 1) {
+      return expression_->Max();
+    } else if (condition_->Max() == 1) {
+      return std::max(unperformed_value_, expression_->Max());
+    } else {
+      return unperformed_value_;
+    }
+  }
+
+  virtual void SetMax(int64 m) {
+    if (m < unperformed_value_) {
+      condition_->SetValue(1);
+      expression_->SetMax(m);
+    } else if (condition_->Min() == 1) {
+      expression_->SetMax(m);
+    } else if (m < expression_->Min()) {
+      condition_->SetValue(0);
+    }
+  }
+
+  virtual void SetRange(int64 mi, int64 ma) {
+    if (ma < unperformed_value_ || mi > unperformed_value_) {
+      condition_->SetValue(1);
+      expression_->SetRange(mi, ma);
+    } else if (condition_->Min() == 1) {
+      expression_->SetRange(mi, ma);
+    } else if (ma < expression_->Min() || mi > expression_->Max()) {
+      condition_->SetValue(0);
+    }
+  }
+
+  virtual void SetValue(int64 v) {
+    if (v != unperformed_value_) {
+      condition_->SetValue(1);
+      expression_->SetValue(v);
+    } else if (condition_->Min() == 1) {
+      expression_->SetValue(v);
+    } else if (v < expression_->Min() || v > expression_->Max()) {
+      condition_->SetValue(0);
+    }
+  }
+
+  virtual bool Bound() const {
+    return condition_->Max() == 0 || expression_->Bound();
+  }
+
+  virtual void WhenRange(Demon* d) {
+    expression_->WhenRange(d);
+    condition_->WhenBound(d);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("ConditionExpr(%s, %s, %" GG_LL_FORMAT "d)",
+                        condition_->DebugString().c_str(),
+                        expression_->DebugString().c_str(), unperformed_value_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kConditionalExpr, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
+                                            condition_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            expression_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
+                                  unperformed_value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kConditionalExpr, this);
+  }
+
+ private:
+  IntVar* const condition_;
+  IntExpr* const expression_;
+  const int64 unperformed_value_;
+  DISALLOW_COPY_AND_ASSIGN(ExprWithEscapeValue);
+};
+
 // ----- This is a specialized case when the variable exact type is known -----
 class LinkExprAndDomainIntVar : public CastConstraint {
  public:
@@ -6401,7 +6511,29 @@ IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const e, int64 fixed_charge,
   // PosIntDivDown and PosIntDivUp - or function pointers.
 }
 
-// ---------- Modulo ----------
+// ----- Conditional Expression -----
+
+IntExpr* Solver::MakeConditionalExpression(IntVar* const condition,
+                                           IntExpr* const expr,
+                                           int64 unperformed_value) {
+  if (condition->Min() == 1) {
+    return expr;
+  } else if (condition->Max() == 0) {
+    return MakeIntConst(unperformed_value);
+  } else {
+    IntExpr* cache = Cache()->FindExprExprConstantExpression(
+        condition, expr, unperformed_value,
+        ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    if (cache == nullptr) {
+      cache = RevAlloc(
+          new ExprWithEscapeValue(this, condition, expr, unperformed_value));
+      Cache()->InsertExprExprConstantExpression(
+          cache, condition, expr, unperformed_value,
+          ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    }
+    return cache;
+  }
+}
 
 // ----- Modulo -----
 

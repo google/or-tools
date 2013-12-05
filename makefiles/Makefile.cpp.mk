@@ -96,7 +96,6 @@ DYNAMIC_FAP_LNK = \
 	$(DYNAMIC_PRE_LIB)fap$(DYNAMIC_POST_LIB) \
 	$(DYNAMIC_CP_LNK)
 
-
 #### STATIC link and libs ####
 
 # List libraries by module.
@@ -137,7 +136,6 @@ STATIC_GRAPH_DEPS = $(STATIC_GRAPH_LIBS) $(STATIC_BASE_LIBS)
 STATIC_ROUTING_DEPS = $(STATIC_ROUTING_LIBS) $(STATIC_CP_LIBS) $(STATIC_LP_LIBS) $(STATIC_GRAPH_LIBS) $(STATIC_BASE_LIBS)
 
 STATIC_FLATZINC_DEPS = $(STATIC_FLATZINC_LIBS) $(STATIC_CP_LIBS) $(STATIC_LP_LIBS) $(STATIC_BASE_LIBS)
-
 
 # Create link commands.
 STATIC_BASE_LNK = \
@@ -624,10 +622,14 @@ endif
 # Routing library.
 
 ROUTING_LIB_OBJS=\
-	$(OBJ_DIR)/routing.$O
+	$(OBJ_DIR)/routing.$O \
+	$(OBJ_DIR)/routing_search.$O
 
 $(OBJ_DIR)/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting.$O
+
+$(OBJ_DIR)/routing_search.$O:$(SRC_DIR)/constraint_solver/routing_search.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_search.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting_search.$O
 
 $(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX): $(ROUTING_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX) $(ROUTING_LIB_OBJS)
@@ -1045,7 +1047,6 @@ $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programm
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(DYNAMIC_LP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
 
 # Target for archives
-
 
 ifeq "$(SYSTEM)" "win"
 $(LIB_DIR)/ortools.lib: $(STATIC_ROUTING_DEPS)

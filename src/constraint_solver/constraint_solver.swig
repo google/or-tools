@@ -1553,6 +1553,15 @@ struct FailureProtect {
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 %ignore operations_research::SequenceVarLocalSearchOperator::Sequence;
 %ignore operations_research::SequenceVarLocalSearchOperator::OldSequence;
+%ignore operations_research::SolutionCollector::ForwardSequence;
+%ignore operations_research::SolutionCollector::BackwardSequence;
+%ignore operations_research::SolutionCollector::Unperformed;
+%ignore operations_research::SequenceVarElement::ForwardSequence;
+%ignore operations_research::SequenceVarElement::BackwardSequence;
+%ignore operations_research::SequenceVarElement::Unperformed;
+%ignore operations_research::Assignment::ForwardSequence;
+%ignore operations_research::Assignment::BackwardSequence;
+%ignore operations_research::Assignment::Unperformed;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";

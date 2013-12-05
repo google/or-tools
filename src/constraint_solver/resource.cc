@@ -722,8 +722,6 @@ class RankedPropagator : public Constraint {
       IntervalVar* const interval = RankedInterval(i);
       IntervalVar* const next_interval = RankedInterval(i + 1);
       IntVar* const slack = RankedSlack(i);
-      DCHECK(interval->MustBePerformed());
-      DCHECK(next_interval->MustBePerformed());
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(
           CapAdd(interval->StartMin(), slack->Min() + transition_time),
@@ -733,8 +731,6 @@ class RankedPropagator : public Constraint {
     for (int i = last_position; i > last_sentinel + 1; --i) {
       IntervalVar* const interval = RankedInterval(i - 1);
       IntervalVar* const next_interval = RankedInterval(i);
-      DCHECK(interval->MustBePerformed());
-      DCHECK(next_interval->MustBePerformed());
       IntVar* const slack = RankedSlack(i - 1);
       const int64 transition_time = RankedTransitionTime(i - 1, i);
       interval->SetStartRange(
@@ -792,13 +788,10 @@ class RankedPropagator : public Constraint {
       }
     }
     // TODO(user): cache transition on ranked intervals in a vector.
-
     // Propagates on ranked first from right to left.
     for (int i = std::min(first_sentinel - 2, last_position - 1); i >= 0; --i) {
       IntervalVar* const interval = RankedInterval(i);
       IntervalVar* const next_interval = RankedInterval(i + 1);
-      DCHECK(interval->MustBePerformed());
-      DCHECK(next_interval->MustBePerformed());
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       interval->SetStartRange(
@@ -809,8 +802,6 @@ class RankedPropagator : public Constraint {
     for (int i = last_sentinel + 1; i < last_position - 1; ++i) {
       IntervalVar* const interval = RankedInterval(i);
       IntervalVar* const next_interval = RankedInterval(i + 1);
-      DCHECK(interval->MustBePerformed());
-      DCHECK(next_interval->MustBePerformed());
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(

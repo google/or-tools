@@ -1175,7 +1175,11 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   void AddVars(const std::vector<IntVar*>& vars);
   int Size() const { return vars_.size(); }
   IntVar* Var(int index) const { return vars_[index]; }
-  int64 Value(int index) const { return values_[index]; }
+  int64 Value(int index) const {
+    DCHECK(IsVarSynced(index));
+    return values_[index];
+  }
+  bool IsVarSynced(int index) const { return var_synced_[index]; }
 
  protected:
   virtual void OnSynchronize() {}
@@ -1183,6 +1187,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
  private:
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
+  std::vector<bool> var_synced_;
   dense_hash_map<const IntVar*, int64> var_to_index_;
 };
 
@@ -1308,7 +1313,7 @@ class SymmetryManager;
 class SymmetryBreaker : public DecisionVisitor {
  public:
   SymmetryBreaker()
-  : symmetry_manager_(nullptr), index_in_symmetry_manager_(-1) {}
+      : symmetry_manager_(nullptr), index_in_symmetry_manager_(-1) {}
   virtual ~SymmetryBreaker() {}
 
   void AddIntegerVariableEqualValueClause(IntVar* const var, int64 value);
@@ -1432,6 +1437,11 @@ class ModelCache {
     EXPR_EXPR_EXPRESSION_MAX,
   };
 
+  enum ExprExprConstantExpressionType {
+    EXPR_EXPR_CONSTANT_CONDITIONAL = 0,
+    EXPR_EXPR_CONSTANT_EXPRESSION_MAX,
+  };
+
   enum ExprConstantExpressionType {
     EXPR_CONSTANT_DIFFERENCE = 0,
     EXPR_CONSTANT_DIVIDE,
@@ -1524,9 +1534,9 @@ class ModelCache {
 
   // Expr Constant Expressions.
 
-  virtual IntExpr* FindExprConstantExpression(
-      IntExpr* const expr, int64 value,
-      ExprConstantExpressionType type) const = 0;
+  virtual IntExpr* FindExprConstantExpression(IntExpr* const expr, int64 value,
+                                              ExprConstantExpressionType type)
+      const = 0;
 
   virtual void InsertExprConstantExpression(
       IntExpr* const expression, IntExpr* const var, int64 value,
@@ -1542,6 +1552,16 @@ class ModelCache {
                                         IntExpr* const var1,
                                         IntExpr* const var2,
                                         ExprExprExpressionType type) = 0;
+
+  // Expr Expr Constant Expressions.
+
+  virtual IntExpr* FindExprExprConstantExpression(
+      IntExpr* const var1, IntExpr* const var2, int64 constant,
+      ExprExprConstantExpressionType type) const = 0;
+
+  virtual void InsertExprExprConstantExpression(
+      IntExpr* const expression, IntExpr* const var1, IntExpr* const var2,
+      int64 constant, ExprExprConstantExpressionType type) = 0;
 
   // Var Constant Constant Expressions.
 
@@ -1682,10 +1702,10 @@ class ArgumentHolder {
   // Getters.
   int64 FindIntegerArgumentWithDefault(const string& arg_name, int64 def) const;
   int64 FindIntegerArgumentOrDie(const string& arg_name) const;
-  const std::vector<int64>& FindIntegerArrayArgumentOrDie(
-      const string& arg_name) const;
-  const IntTupleSet& FindIntegerMatrixArgumentOrDie(
-      const string& arg_name) const;
+  const std::vector<int64>& FindIntegerArrayArgumentOrDie(const string& arg_name)
+      const;
+  const IntTupleSet& FindIntegerMatrixArgumentOrDie(const string& arg_name)
+      const;
 
   IntExpr* FindIntegerExpressionArgumentOrDie(const string& arg_name) const;
   const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(

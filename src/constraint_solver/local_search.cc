@@ -2085,7 +2085,8 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
     }
     case Solver::FULLPATHLNS: {
       result = RevAlloc(new PathLNS(vars, secondary_vars,
-                                    /*number_of_chunks=*/1, /*chunk_size=*/0,
+                                    /*number_of_chunks=*/1,
+                                    /*chunk_size=*/0,
                                     /*unactive_fragment=*/true));
       break;
     }
@@ -2275,24 +2276,30 @@ void IntVarLocalSearchFilter::AddVars(const std::vector<IntVar*>& vars) {
     }
     vars_.insert(vars_.end(), vars.begin(), vars.end());
     values_.resize(vars_.size(), /*junk*/ 0);
+    var_synced_.resize(vars_.size(), false);
   }
 }
 
 IntVarLocalSearchFilter::~IntVarLocalSearchFilter() {}
 
 void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment) {
+  var_synced_.assign(var_synced_.size(), false);
   const Assignment::IntContainer& container = assignment->IntVarContainer();
   const int size = container.Size();
   for (int i = 0; i < size; ++i) {
     const IntVarElement& element = container.Element(i);
     IntVar* const var = element.Var();
-    if (i < vars_.size() && vars_[i] == var) {
-      values_[i] = element.Value();
-    } else {
-      const int64 kUnallocated = -1;
-      int64 index = kUnallocated;
-      if (FindIndex(var, &index)) {
-        values_[index] = element.Value();
+    if (var != nullptr) {
+      if (i < vars_.size() && vars_[i] == var) {
+        values_[i] = element.Value();
+        var_synced_[i] = true;
+      } else {
+        const int64 kUnallocated = -1;
+        int64 index = kUnallocated;
+        if (FindIndex(var, &index)) {
+          values_[index] = element.Value();
+          var_synced_[index] = true;
+        }
       }
     }
   }
@@ -2486,7 +2493,7 @@ BinaryObjectiveFilter::BinaryObjectiveFilter(
 }
 
 int64 BinaryObjectiveFilter::SynchronizedElementValue(int64 index) {
-  return value_evaluator_->Run(index, Value(index));
+  return IsVarSynced(index) ? value_evaluator_->Run(index, Value(index)) : 0;
 }
 
 bool BinaryObjectiveFilter::EvaluateElementValue(
@@ -2541,8 +2548,10 @@ TernaryObjectiveFilter::TernaryObjectiveFilter(
 
 int64 TernaryObjectiveFilter::SynchronizedElementValue(int64 index) {
   DCHECK_LT(index, secondary_vars_offset_);
-  return value_evaluator_->Run(index, Value(index),
-                               Value(index + secondary_vars_offset_));
+  return IsVarSynced(index)
+             ? value_evaluator_->Run(index, Value(index),
+                                     Value(index + secondary_vars_offset_))
+             : 0;
 }
 
 bool TernaryObjectiveFilter::EvaluateElementValue(
@@ -2984,8 +2993,7 @@ class LocalSearch : public DecisionBuilder {
               DecisionBuilder* const sub_decision_builder,
               SearchLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
-  LocalSearch(const std::vector<SequenceVar*>& vars,
-              SolutionPool* const pool,
+  LocalSearch(const std::vector<SequenceVar*>& vars, SolutionPool* const pool,
               DecisionBuilder* const first_solution,
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
@@ -3234,15 +3242,11 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
 }
 
 DecisionBuilder* Solver::MakeLocalSearchPhase(
-    const std::vector<SequenceVar*>& vars,
-    DecisionBuilder* first_solution,
+    const std::vector<SequenceVar*>& vars, DecisionBuilder* first_solution,
     LocalSearchPhaseParameters* parameters) {
-  return RevAlloc(new LocalSearch(vars,
-                                  parameters->solution_pool(),
-                                  first_solution,
-                                  parameters->ls_operator(),
+  return RevAlloc(new LocalSearch(vars, parameters->solution_pool(),
+                                  first_solution, parameters->ls_operator(),
                                   parameters->sub_decision_builder(),
-                                  parameters->limit(),
-                                  parameters->filters()));
+                                  parameters->limit(), parameters->filters()));
 }
 }  // namespace operations_research

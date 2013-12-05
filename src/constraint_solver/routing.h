@@ -316,10 +316,21 @@ class RoutingModel {
     // Make all node inactive. Only finds a solution if nodes are optional (are
     // element of a disjunction constraint with a finite penalty cost).
     ROUTING_ALL_UNPERFORMED,
-    // Iteratively build a solution by inserting nodes at their cheapest (best)
-    // position. As of 2/2012, only works on models with optional nodes
-    // (with finite penalty costs).
+    // Iteratively build a solution by inserting the cheapest node at its
+    // cheapest position; the cost of insertion is based on the global cost
+    // function of the routing model. As of 2/2012, only works on models with
+    // optional nodes (with finite penalty costs).
     ROUTING_BEST_INSERTION,
+    // Iteratively build a solution by inserting the cheapest node at its
+    // cheapest position; the cost of insertion is based on the the arc cost
+    // function. Is faster than BEST_INSERTION.
+    ROUTING_GLOBAL_CHEAPEST_INSERTION,
+    // Iteratively build a solution by inserting each node at its cheapest
+    // position; the cost of insertion is based on the the arc cost function.
+    // Differs from ROUTING_GLOBAL_CHEAPEST_INSERTION by the node selected for
+    // insertion; here nodes are considered in their order of creation. Is
+    // faster than ROUTING_GLOBAL_CHEAPEST_INSERTION.
+    ROUTING_LOCAL_CHEAPEST_INSERTION,
     // Savings algorithm (Clarke & Wright).
     // Reference: Clarke, G. & Wright, J.W.:
     // "Scheduling of Vehicles from a Central Depot to a Number of
@@ -411,7 +422,7 @@ class RoutingModel {
         return a.arc_cost_evaluator < b.arc_cost_evaluator;
       }
       return a.dimension_transit_evaluator_and_cost_coefficient <
-          b.dimension_transit_evaluator_and_cost_coefficient;
+             b.dimension_transit_evaluator_and_cost_coefficient;
     }
   };
 
@@ -500,6 +511,7 @@ class RoutingModel {
   bool AddMatrixDimension(const int64* const* values, int64 capacity,
                           bool fix_start_cumul_to_zero, const string& name);
   // Outputs the names of all dimensions added to the routing engine.
+  // TODO(user): rename.
   void GetAllDimensions(std::vector<string>* dimension_names) const;
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const string& dimension_name) const;
@@ -564,12 +576,13 @@ class RoutingModel {
       indices->clear();
     }
   }
+#ifndef SWIG
   // Returns the variable indices of the nodes in the disjunction of index
   // 'index'.
-  void GetDisjunctionIndices(DisjunctionIndex index,
-                             std::vector<int>* indices) const {
-    *indices = disjunctions_[index].nodes;
+  const std::vector<int>& GetDisjunctionIndices(DisjunctionIndex index) const {
+    return disjunctions_[index].nodes;
   }
+#endif
   // Returns the penalty of the node disjunction of index 'index'.
   int64 GetDisjunctionPenalty(DisjunctionIndex index) const {
     return disjunctions_[index].penalty;
@@ -612,7 +625,7 @@ class RoutingModel {
   // Sets the cost function for a given vehicle route.
   void SetArcCostEvaluatorOfVehicle(NodeEvaluator2* evaluator, int vehicle);
   // Sets the fixed cost of all vehicle routes. It is equivalent to calling
-  // SetVehicleFixedCost on all vehicle routes.
+  // SetFixedCostOfVehicle on all vehicle routes.
   void SetFixedCostOfAllVehicles(int64 cost);
   // Sets the fixed cost of one vehicle route.
   void SetFixedCostOfVehicle(int64 cost, int vehicle);
@@ -630,9 +643,9 @@ class RoutingModel {
   void set_first_solution_strategy(RoutingStrategy strategy) {
     first_solution_strategy_ = strategy;
   }
-  // Gets/sets the evaluator used when the first solution heuristic is set to
-  // ROUTING_EVALUATOR_STRATEGY (variant of ROUTING_PATH_CHEAPEST_ARC using
-  // 'evaluator' to std::sort node segments).
+// Gets/sets the evaluator used when the first solution heuristic is set to
+// ROUTING_EVALUATOR_STRATEGY (variant of ROUTING_PATH_CHEAPEST_ARC using
+// 'evaluator' to std::sort node segments).
 #ifndef SWIG
   Solver::IndexEvaluator2* first_solution_evaluator() const {
     return first_solution_evaluator_.get();
@@ -809,8 +822,6 @@ class RoutingModel {
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
-  // Returns all cumul variables of the model for the dimension named "name".
-  const std::vector<IntVar*>& CumulVars(const string& dimension_name) const;
 #endif
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
@@ -818,18 +829,11 @@ class RoutingModel {
   IntVar* ActiveVar(int64 index) const { return active_[index]; }
   // Returns the vehicle variable of the node corresponding to index.
   IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
-  // Returns the cumul variable for the dimension named 'name'.
-  IntVar* CumulVar(int64 index, const string& dimension_name) const;
-  // Returns the transit variable for the dimension named 'name'.
-  IntVar* TransitVar(int64 index, const string& dimension_name) const;
-  // Return the slack variable for the dimension named 'name'.
-  IntVar* SlackVar(int64 index, const string& dimension_name) const;
   // Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
   // Returns the cost of the transit arc between two nodes for a given vehicle.
   // Input are variable indices of node. This returns 0 if vehicle < 0.
-  int64 GetArcCostForVehicle(
-      int64 from_index, int64 to_index, int64 vehicle);
+  int64 GetArcCostForVehicle(int64 from_index, int64 to_index, int64 vehicle);
   // Whether costs are homogeneous across all vehicles.
   bool CostsAreHomogeneousAcrossVehicles() const {
     return costs_are_homogeneous_across_vehicles_;
@@ -837,7 +841,7 @@ class RoutingModel {
   // Returns the cost of the segment between two nodes supposing all vehicle
   // costs are the same (returns the cost for the first vehicle otherwise).
   int64 GetHomogeneousCost(int64 from_index, int64 to_index) {
-    return GetArcCostForVehicle(from_index, to_index, /*vehicle=*/ 0);
+    return GetArcCostForVehicle(from_index, to_index, /*vehicle=*/0);
   }
   // Returns the cost of the arc in the context of the first solution strategy.
   // This is typically a simplification of the actual cost; see the .cc.
@@ -933,14 +937,15 @@ class RoutingModel {
   // DEPRECATED METHODS.
   // Don't use these methods; instead use their proposed replacement (in
   // comments).
+  // TODO(user): only keep those for the open-source export.
   void SetCost(NodeEvaluator2* e);  // SetArcCostEvaluatorOfAllVehicles()
   // SetArcCostEvaluatorOfVehicle()
   void SetVehicleCost(int v, NodeEvaluator2* e);
-  int64 GetRouteFixedCost() const;  // GetFixedCostOfVehicle()
-  void SetRouteFixedCost(int64 c);  // SetFixedCostOfAllVehicles()
-  int64 GetVehicleFixedCost(int v) const;  // GetFixedCostOfVehicle()
+  int64 GetRouteFixedCost() const;           // GetFixedCostOfVehicle()
+  void SetRouteFixedCost(int64 c);           // SetFixedCostOfAllVehicles()
+  int64 GetVehicleFixedCost(int v) const;    // GetFixedCostOfVehicle()
   void SetVehicleFixedCost(int v, int64 c);  // SetFixedCostOfVehicle()
-  bool homogeneous_costs() const;  // CostsAreHomogeneousAcrossVehicles()
+  bool homogeneous_costs() const;   // CostsAreHomogeneousAcrossVehicles()
   int GetVehicleCostCount() const;  // GetNonZeroCostClassesCount()
   int64 GetCost(int64 i, int64 j, int64 v);  // GetArcCostForVehicle()
   int64 GetVehicleClassCost(int64 i, int64 j, int64 c);  // GetArcCostForClass()
@@ -951,8 +956,14 @@ class RoutingModel {
   void SetDimensionSpanCost(const string& d, int64 c);
   int64 GetDimensionSpanCost(const string& d) const;
   int64 GetTransitValue(const string& d, int64 from, int64 to) const;
-  // All the *SoftUpperBound methods below are also replaced by public methods
-  // with the same name on the RoutingDimension class. See those.
+#ifndef SWIG
+  const std::vector<IntVar*>& CumulVars(const string& dimension_name) const;
+#endif
+  // All the methods below are replaced by public methods with the same name
+  // on the RoutingDimension class. See those.
+  IntVar* CumulVar(int64 index, const string& dimension_name) const;
+  IntVar* TransitVar(int64 index, const string& dimension_name) const;
+  IntVar* SlackVar(int64 index, const string& dimension_name) const;
   void SetCumulVarSoftUpperBound(NodeIndex, const string&, int64, int64);
   bool HasCumulVarSoftUpperBound(NodeIndex, const string&) const;
   int64 GetCumulVarSoftUpperBound(NodeIndex, const string&) const;
@@ -1033,7 +1044,7 @@ class RoutingModel {
   int64 SafeGetCostClassInt64OfVehicle(int64 vehicle) const {
     DCHECK_LT(0, vehicles_);
     return (vehicle >= 0 ? GetCostClassIndexOfVehicle(vehicle)
-        : kCostClassIndexOfZeroCost).value();
+                         : kCostClassIndexOfZeroCost).value();
   }
   int64 GetDimensionTransitCostSum(int64 i, int64 j,
                                    const CostClass& cost_class) const;
@@ -1075,6 +1086,7 @@ class RoutingModel {
   void CreateNeighborhoodOperators();
   LocalSearchOperator* GetNeighborhoodOperators() const;
   const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
+  const std::vector<LocalSearchFilter*>& GetOrCreateFeasibilityFilters();
   DecisionBuilder* CreateSolutionFinalizer();
   void CreateFirstSolutionDecisionBuilders();
   DecisionBuilder* GetFirstSolutionDecisionBuilder() const;
@@ -1093,10 +1105,15 @@ class RoutingModel {
   int nodes_;
   int vehicles_;
   Constraint* no_cycle_constraint_;
-  // Decision variables
+  // Decision variables: indexed by int64 var index.
   std::vector<IntVar*> nexts_;
   std::vector<IntVar*> vehicle_vars_;
   std::vector<IntVar*> active_;
+  // is_bound_to_end_[i] will be true iff the path starting at var #i is fully
+  // bound and reaches the end of a route, i.e. either:
+  // - IsEnd(i) is true
+  // - or nexts_[i] is bound and is_bound_to_end_[nexts_[i].Value()] is true.
+  std::vector<IntVar*> is_bound_to_end_;
   // Dimensions
   hash_map<string, DimensionIndex> dimension_name_to_index_;
   ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
@@ -1106,9 +1123,9 @@ class RoutingModel {
   std::vector<NodeEvaluator2*> transit_cost_of_vehicle_;
   std::vector<int64> fixed_cost_of_vehicle_;
   std::vector<CostClassIndex> cost_class_index_of_vehicle_;
-  #ifndef SWIG
+#ifndef SWIG
   ITIVector<CostClassIndex, CostClass> cost_classes_;
-  #endif  // SWIG
+#endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<RoutingCache*> routing_caches_;
@@ -1145,6 +1162,7 @@ class RoutingModel {
   std::vector<IntVar*> extra_vars_;
   std::vector<LocalSearchOperator*> extra_operators_;
   std::vector<LocalSearchFilter*> filters_;
+  std::vector<LocalSearchFilter*> feasibility_filters_;
   std::vector<IntVar*> variables_maximized_by_finalizer_;
   std::vector<IntVar*> variables_minimized_by_finalizer_;
 #ifndef SWIG
@@ -1181,12 +1199,16 @@ class RoutingDimension {
   // this value is the one taken by the corresponding transit variable when
   // the 'next' variable for 'from_index' is bound to 'to_index'.
   int64 GetTransitValue(int64 from_index, int64 to_index) const;
+  // Get the cumul, transit and slack variables for the given node (given as
+  // int64 var index).
+  IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
+  IntVar* TransitVar(int64 index) const { return transits_[index]; }
+  IntVar* SlackVar(int64 index) const { return slacks_[index]; }
 #ifndef SWIG
-  // Returns all cumul variables for the dimension.
+  // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
+  // vectors instead (indexed by int64 var index).
   const std::vector<IntVar*>& cumuls() const { return cumuls_; }
-  // Returns all transit variables for the dimension.
   const std::vector<IntVar*>& transits() const { return transits_; }
-  // Returns all slack variables for the dimension.
   const std::vector<IntVar*>& slacks() const { return slacks_; }
   // Returns the callback evaluating the capacity for vehicle indices.
   RoutingModel::VehicleEvaluator* capacity_evaluator() const {
@@ -1224,14 +1246,14 @@ class RoutingDimension {
   void SetCumulVarSoftUpperBound(RoutingModel::NodeIndex node,
                                  int64 upper_bound, int64 coefficient);
   // Same as SetCumulVarSoftUpperBound applied to vehicle start node,
-  void SetStartCumulVarSoftUpperBound(int vehicle,
-                                      int64 upper_bound, int64 coefficient);
+  void SetStartCumulVarSoftUpperBound(int vehicle, int64 upper_bound,
+                                      int64 coefficient);
   // Same as SetCumulVarSoftUpperBound applied to vehicle end node,
-  void SetEndCumulVarSoftUpperBound(int vehicle,
-                                    int64 upper_bound, int64 coefficient);
+  void SetEndCumulVarSoftUpperBound(int vehicle, int64 upper_bound,
+                                    int64 coefficient);
   // Same as SetCumulVarSoftUpperBound but using a variable index.
-  void SetCumulVarSoftUpperBoundFromIndex(int64 index,
-                                          int64 upper_bound, int64 coefficient);
+  void SetCumulVarSoftUpperBoundFromIndex(int64 index, int64 upper_bound,
+                                          int64 coefficient);
   // Returns true if a soft upper bound has been set for a given node.
   bool HasCumulVarSoftUpperBound(RoutingModel::NodeIndex node) const;
   // Returns true if a soft upper bound has been set for a given vehicle start
@@ -1260,8 +1282,8 @@ class RoutingDimension {
   int64 GetCumulVarSoftUpperBoundFromIndex(int64 index) const;
   // Returns the cost coefficient of the soft upper bound of a cumul variable
   // for a given node. If no soft upper bound has been set, 0 is returned.
-  int64 GetCumulVarSoftUpperBoundCoefficient(
-      RoutingModel::NodeIndex node) const;
+  int64 GetCumulVarSoftUpperBoundCoefficient(RoutingModel::NodeIndex node)
+      const;
   // Returns the cost coefficient of the soft upper bound of a cumul variable
   // for a given vehicle start node. If no soft upper bound has been set, 0 is
   // returned.
@@ -1277,6 +1299,9 @@ class RoutingDimension {
   const string& name() const { return name_; }
 
   // Accessors.
+  int64 GetSpanCostCoefficientForVehicle(int vehicle) const {
+    return vehicle_span_cost_coefficients_[vehicle];
+  }
 #ifndef SWIG
   const std::vector<int64>& vehicle_span_cost_coefficients() const {
     return vehicle_span_cost_coefficients_;
@@ -1345,6 +1370,173 @@ class SweepArranger {
   DISALLOW_COPY_AND_ASSIGN(SweepArranger);
 };
 #endif
+
+// Routing Search
+
+// Decision builders building a solution using local search filters to evaluate
+// its feasibility. This is very fast but can eventually fail when the solution
+// is restored if filters did not detect all infeasiblities.
+// More details:
+// Using local search filters to build a solution. The approach is pretty
+// straight-forward: have a general assignment storing the current solution,
+// build delta assigment representing possible extensions to the current
+// solution and validate them with filters.
+// The tricky bit comes from using the assignment and filter APIs in a way
+// which avoids the lazy creation of internal hash_maps between variables
+// and indices.
+
+// Generic filter-based decision builder applied to IntVars.
+// TODO(user): Eventually move this to the core CP solver library
+// when the code is mature enough.
+class IntVarFilteredDecisionBuilder : public DecisionBuilder {
+ public:
+  IntVarFilteredDecisionBuilder(Solver* solver, const std::vector<IntVar*>& vars,
+                                const std::vector<LocalSearchFilter*>& filters);
+  virtual ~IntVarFilteredDecisionBuilder() {}
+  virtual Decision* Next(Solver* solver);
+  // Virtual method to redefine to build a solution.
+  virtual bool BuildSolution() = 0;
+
+ protected:
+  // Commits the modifications to the current solution if these modifications
+  // are "filter-feasible", returns false otherwise; in any case discards
+  // all modifications.
+  bool Commit();
+  // Modifies the current solution by setting the variable of index 'index' to
+  // value 'value'.
+  void SetValue(int index, int64 value) {
+    delta_->FastAdd(vars_[index])->SetValue(value);
+    delta_indices_.push_back(index);
+  }
+  // Returns the value of the variable of index 'index' in the last committed
+  // solution.
+  int64 Value(int index) const {
+    return assignment_->IntVarContainer().Element(index).Value();
+  }
+  // Returns true if the variable of index 'index' is in the current solution.
+  bool Contains(int index) const {
+    return assignment_->IntVarContainer().Element(index).Var() != nullptr;
+  }
+  // Returns the number of variables the decision builder is trying to
+  // instantiate.
+  int Size() const { return vars_.size(); }
+  // Returns the variable of index 'index'.
+  IntVar* Var(int index) const { return vars_[index]; }
+
+ private:
+  // Sets all variables currently bound to their value in the current solution.
+  void SetValuesFromDomains();
+  // Synchronizes filters with an assignment (the current solution).
+  void SynchronizeFilters();
+  // Checks if filters accept a given modification to the current solution
+  // (represented by delta).
+  bool FilterAccept();
+
+  const std::vector<IntVar*> vars_;
+  Assignment* const assignment_;
+  Assignment* const delta_;
+  std::vector<int> delta_indices_;
+  const Assignment* const empty_;
+  std::vector<LocalSearchFilter*> filters_;
+};
+
+// Filter-based decision builder dedicated to routing.
+class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
+ public:
+  RoutingFilteredDecisionBuilder(RoutingModel* model,
+                                 const std::vector<LocalSearchFilter*>& filters);
+  virtual ~RoutingFilteredDecisionBuilder() {}
+  RoutingModel* model() const { return model_; }
+  // Initializes the current solution with empty or partial vehicle routes.
+  bool InitializeRoutes();
+  // Returns the end of the start chain of vehicle,
+  int GetStartChainEnd(int vehicle) const { return start_chain_ends_[vehicle]; }
+  // Make nodes in the same disjunction as node unperformed.
+  void MakeDisjunctionNodesUnperformed(int node);
+  // Make all unassigned nodes unperformed.
+  void MakeUnassignedNodesUnperformed();
+
+ private:
+  RoutingModel* const model_;
+  std::vector<int> start_chain_ends_;
+};
+
+// Filtered-base decision builder which builds a solution by inserting
+// nodes at their cheapest position. The cost of a position is computed
+// an arc-based cost callback. The node selected for insertion is the one
+// which minimizes insertion cost.
+class GlobalCheapestInsertionFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  GlobalCheapestInsertionFilteredDecisionBuilder(
+      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~GlobalCheapestInsertionFilteredDecisionBuilder() {}
+  virtual bool BuildSolution();
+
+ private:
+  // Computes the possible insertions for all non-inserted nodes and sorts them
+  // according to the current cost evaluator.
+  void ComputeEvaluatorSortedInsertions(
+      std::vector<std::pair<int, int> >* sorted_insertions);
+
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+};
+
+// Filtered-base decision builder which builds a solution by inserting
+// nodes at their cheapest position. The cost of a position is computed
+// an arc-based cost callback. Node selected for insertion are considered in
+// the order they were created in the model.
+class LocalCheapestInsertionFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  LocalCheapestInsertionFilteredDecisionBuilder(
+      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~LocalCheapestInsertionFilteredDecisionBuilder() {}
+  virtual bool BuildSolution();
+
+ private:
+  // Computes the possible insertion neighbors of node 'index' and sorts them
+  // according to the current cost evaluator.
+  void ComputeEvaluatorSortedNeighbors(int index,
+                                       std::vector<int>* sorted_neighbors);
+
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+};
+
+// Filtered-base decision builder based on the addition heuristic, extending
+// a path from its start node with the cheapest arc according to an evaluator.
+class CheapestAdditionFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  CheapestAdditionFilteredDecisionBuilder(
+      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~CheapestAdditionFilteredDecisionBuilder() {}
+  virtual bool BuildSolution();
+
+ private:
+  class PartialRoutesAndLargeVehicleIndicesFirst {
+   public:
+    PartialRoutesAndLargeVehicleIndicesFirst(
+        const CheapestAdditionFilteredDecisionBuilder& builder)
+        : builder_(builder) {}
+    bool operator()(int vehicle1, int vehicle2);
+
+   private:
+    const CheapestAdditionFilteredDecisionBuilder& builder_;
+  };
+  // Computes the possible neighbors of node 'index' and sorts them according
+  // to the current cost evaluator.
+  void ComputeEvaluatorSortedNeighbors(int index,
+                                       std::vector<int>* sorted_neighbors);
+
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+};
 
 // Routing filters, exposed for testing.
 LocalSearchFilter* MakeNodeDisjunctionFilter(const RoutingModel& routing_model);

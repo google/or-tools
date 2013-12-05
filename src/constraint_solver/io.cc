@@ -1039,6 +1039,22 @@ Constraint* BuildCircuit(CPModelLoader* const builder,
   return builder->solver()->MakeCircuit(vars);
 }
 
+// ----- kConditionalExpr -----
+
+IntExpr* BuildConditionalExpr(CPModelLoader* const builder,
+                              const CPIntegerExpressionProto& proto) {
+  IntExpr* condition = nullptr;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVariableArgument, proto,
+                                &condition));
+  IntExpr* expr = nullptr;
+  VERIFY(
+      builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr));
+  int64 value = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+  return builder->solver()->MakeConditionalExpression(condition->Var(), expr,
+                                                      value);
+}
+
 // ----- kConvexPiecewise -----
 IntExpr* BuildConvexPiecewise(CPModelLoader* const builder,
                               const CPIntegerExpressionProto& proto) {
@@ -2588,8 +2604,8 @@ void Solver::RegisterBuilder(const string& tag,
   InsertOrDie(&sequence_builders_, tag, builder);
 }
 
-Solver::ConstraintBuilder* Solver::GetConstraintBuilder(
-    const string& tag) const {
+Solver::ConstraintBuilder* Solver::GetConstraintBuilder(const string& tag)
+    const {
   return FindPtrOrNull(constraint_builders_, tag);
 }
 
@@ -2624,6 +2640,7 @@ void Solver::InitBuilders() {
   REGISTER(kAllowedAssignments, BuildAllowedAssignments);
   REGISTER(kBetween, BuildBetween);
   REGISTER(kCircuit, BuildCircuit);
+  REGISTER(kConditionalExpr, BuildConditionalExpr);
   REGISTER(kConvexPiecewise, BuildConvexPiecewise);
   REGISTER(kCountEqual, BuildCountEqual);
   REGISTER(kCover, BuildCover);

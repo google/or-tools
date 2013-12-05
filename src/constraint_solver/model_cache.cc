@@ -394,6 +394,8 @@ class NonReversibleCache : public ModelCache {
       VarConstantConstantIntExprCache;
   typedef Cache3<Constraint, IntVar*, int64, int64>
       VarConstantConstantConstraintCache;
+  typedef Cache3<IntExpr, IntExpr*, IntExpr*, int64>
+      ExprExprConstantIntExprCache;
 
   explicit NonReversibleCache(Solver* const solver)
       : ModelCache(solver), void_constraints_(VOID_CONSTRAINT_MAX, nullptr) {
@@ -435,6 +437,10 @@ class NonReversibleCache : public ModelCache {
       var_array_constant_expressions_.push_back(
           new VarArrayConstantIntExprCache);
     }
+    for (int i = 0; i < EXPR_EXPR_CONSTANT_EXPRESSION_MAX; ++i) {
+      expr_expr_constant_expressions_.push_back(
+          new ExprExprConstantIntExprCache);
+    }
   }
 
   virtual ~NonReversibleCache() {
@@ -449,6 +455,7 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&var_array_expressions_);
     STLDeleteElements(&var_array_constant_array_expressions_);
     STLDeleteElements(&var_array_constant_expressions_);
+    STLDeleteElements(&expr_expr_constant_expressions_);
   }
 
   virtual void Clear() {
@@ -484,6 +491,9 @@ class NonReversibleCache : public ModelCache {
     }
     for (int i = 0; i < VAR_ARRAY_CONSTANT_EXPRESSION_MAX; ++i) {
       var_array_constant_expressions_[i]->Clear();
+    }
+    for (int i = 0; i < EXPR_EXPR_CONSTANT_EXPRESSION_MAX; ++i) {
+      expr_expr_constant_expressions_[i]->Clear();
     }
   }
 
@@ -585,7 +595,7 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
-  // Var Expression.
+  // Expr Expression.
 
   virtual IntExpr* FindExprExpression(IntExpr* const expr,
                                       ExprExpressionType type) const {
@@ -658,6 +668,34 @@ class NonReversibleCache : public ModelCache {
         !FLAGS_cp_disable_cache &&
         expr_expr_expressions_[type]->Find(var1, var2) == nullptr) {
       expr_expr_expressions_[type]->UnsafeInsert(var1, var2, expression);
+    }
+  }
+
+  // Expr Expr Constant Expression.
+
+  virtual IntExpr* FindExprExprConstantExpression(
+      IntExpr* const var1, IntExpr* const var2, int64 constant,
+      ExprExprConstantExpressionType type) const {
+    DCHECK(var1 != nullptr);
+    DCHECK(var2 != nullptr);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, EXPR_EXPR_CONSTANT_EXPRESSION_MAX);
+    return expr_expr_constant_expressions_[type]->Find(var1, var2, constant);
+  }
+
+  virtual void InsertExprExprConstantExpression(
+      IntExpr* const expression, IntExpr* const var1, IntExpr* const var2,
+      int64 constant, ExprExprConstantExpressionType type) {
+    DCHECK(expression != nullptr);
+    DCHECK(var1 != nullptr);
+    DCHECK(var2 != nullptr);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, EXPR_EXPR_CONSTANT_EXPRESSION_MAX);
+    if (solver()->state() == Solver::OUTSIDE_SEARCH &&
+        !FLAGS_cp_disable_cache && expr_expr_constant_expressions_[type]->Find(
+                                       var1, var2, constant) == nullptr) {
+      expr_expr_constant_expressions_[type]
+          ->UnsafeInsert(var1, var2, constant, expression);
     }
   }
 
@@ -798,6 +836,7 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarArrayConstantArrayIntExprCache*>
       var_array_constant_array_expressions_;
   std::vector<VarArrayConstantIntExprCache*> var_array_constant_expressions_;
+  std::vector<ExprExprConstantIntExprCache*> expr_expr_constant_expressions_;
 };
 }  // namespace
 

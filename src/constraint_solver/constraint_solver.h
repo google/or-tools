@@ -1317,6 +1317,10 @@ class Solver {
   // Modulo expression x % mod (with the python convention for modulo).
   IntExpr* MakeModulo(IntExpr* const x, IntExpr* const mod);
 
+  // Conditional Expr condition ? expression : value
+  IntExpr* MakeConditionalExpression(IntVar* const condition,
+                                     IntExpr* const expression, int64 value);
+
   // ----- Constraints -----
   // This constraint always succeeds.
   Constraint* MakeTrueConstraint();
@@ -3227,6 +3231,7 @@ class ModelVisitor : public BaseObject {
   static const char kIndexOf[];
   static const char kBetween[];
   static const char kCircuit[];
+  static const char kConditionalExpr[];
   static const char kConvexPiecewise[];
   static const char kCountEqual[];
   static const char kCover[];
@@ -3922,7 +3927,6 @@ class SolutionCollector : public SearchMonitor {
   // This is a short-cut to get the PerformedValue of 'var' in the nth solution.
   int64 PerformedValue(int n, IntervalVar* const var) const;
 
-#if !defined(SWIG)
   // This is a short-cut to get the ForwardSequence of 'var' in the
   // nth solution. The forward sequence is the list of ranked interval
   // variables starting from the start of the sequence.
@@ -3934,7 +3938,6 @@ class SolutionCollector : public SearchMonitor {
   // This is a short-cut to get the list of unperformed of 'var' in the
   // nth solution.
   const std::vector<int>& Unperformed(int n, SequenceVar* const var) const;
-#endif
 
  protected:
   // Push the current state as a new solution.
@@ -4497,11 +4500,9 @@ class SequenceVarElement : public AssignmentElement {
   void WriteToProto(
       SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
 
-#if !defined(SWIG)
   const std::vector<int>& ForwardSequence() const;
   const std::vector<int>& BackwardSequence() const;
   const std::vector<int>& Unperformed() const;
-#endif
   void SetSequence(const std::vector<int>& forward_sequence,
                    const std::vector<int>& backward_sequence,
                    const std::vector<int>& unperformed);
@@ -4770,11 +4771,9 @@ class Assignment : public PropagationBaseObject {
   void Add(const std::vector<SequenceVar*>& vars);
   // Adds without checking if variable has been previously added.
   SequenceVarElement* FastAdd(SequenceVar* const v);
-#if !defined(SWIG)
   const std::vector<int>& ForwardSequence(const SequenceVar* const v) const;
   const std::vector<int>& BackwardSequence(const SequenceVar* const v) const;
   const std::vector<int>& Unperformed(const SequenceVar* const v) const;
-#endif
   void SetSequence(const SequenceVar* const v,
                    const std::vector<int>& forward_sequence,
                    const std::vector<int>& backward_sequence,
