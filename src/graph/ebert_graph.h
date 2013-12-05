@@ -169,6 +169,7 @@
 
 #include <algorithm>
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -671,7 +672,7 @@ class ForwardStaticGraph
     }
     DCHECK_EQ(num_arcs, next_arc);
     head_.Reserve(kFirstArc, kFirstArc + num_arcs - 1);
-    scoped_ptr<ArcIndexType[]> arc_permutation;
+    std::unique_ptr<ArcIndexType[]> arc_permutation;
     if (client_cycle_handler != NULL) {
       arc_permutation.reset(new ArcIndexType[end_arc_index()]);
       for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
@@ -910,7 +911,7 @@ class ForwardStaticGraph
   // such modifications take place, representation_clean_ must be set
   // to false, of course, to indicate that the adjacency lists are no
   // longer current.
-  scoped_ptr<ZVector<NodeIndexType> > tail_;
+  std::unique_ptr<ZVector<NodeIndexType> > tail_;
 };
 
 // The index of the 'nil' node in the graph.
@@ -1050,7 +1051,7 @@ class EbertGraphBase
   void GroupForwardArcsByFunctor(
       const ArcIndexTypeStrictWeakOrderingFunctor& compare,
       PermutationCycleHandler<ArcIndexType>* annotation_handler) {
-    scoped_ptr<ArcIndexType[]> arc_permutation(
+    std::unique_ptr<ArcIndexType[]> arc_permutation(
         new ArcIndexType[end_arc_index()]);
 
     // Determine the permutation that groups arcs by their tail nodes.
@@ -1867,7 +1868,7 @@ class ForwardEbertGraph
   // such modifications take place, representation_clean_ must be set
   // to false, of course, to indicate that the adjacency lists are no
   // longer current.
-  scoped_ptr<ZVector<NodeIndexType> > tail_;
+  std::unique_ptr<ZVector<NodeIndexType> > tail_;
 };
 
 // Traits for EbertGraphBase types, for use in testing and clients

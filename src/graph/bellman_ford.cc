@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/unique_ptr.h"
 #include <vector>
 
 #include "base/callback.h"
@@ -44,10 +45,10 @@ class BellmanFord {
 
   const int node_count_;
   const int start_node_;
-  scoped_ptr<ResultCallback2<int64, int, int> > graph_;
+  std::unique_ptr<ResultCallback2<int64, int, int> > graph_;
   const int64 disconnected_distance_;
-  scoped_ptr<int64[]> distance_;
-  scoped_ptr<int[]> predecessor_;
+  std::unique_ptr<int64[]> distance_;
+  std::unique_ptr<int[]> predecessor_;
 };
 
 void BellmanFord::Initialize() {

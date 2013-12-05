@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <utility>
 #include <vector>
 
@@ -181,11 +182,11 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
                  ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
-  scoped_ptr<int[]> initial_candidates(new int[node_count]);
+  std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
-  scoped_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
-  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
+  std::unique_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
+  std::unique_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
       callback);
 
   for (int c = 0; c < node_count; ++c) {
@@ -205,17 +206,17 @@ void CoverArcsByCliques(
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
 
-  scoped_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
-  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
+  std::unique_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
+  std::unique_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
       callback);
 
   FindAndEliminate cache(graph, node_count, callback);
-  scoped_ptr<int[]> initial_candidates(new int[node_count]);
+  std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
-  scoped_ptr<ResultCallback2<bool, int, int> > cached_graph(
+  std::unique_ptr<ResultCallback2<bool, int, int> > cached_graph(
       NewPermanentCallback(&cache, &FindAndEliminate::GraphCallback));
-  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> >cached_callback(
+  std::unique_ptr<ResultCallback1<bool, const std::vector<int>&> > cached_callback(
       NewPermanentCallback(&cache, &FindAndEliminate::SolutionCallback));
 
   for (int c = 0; c < node_count; ++c) {

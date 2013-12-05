@@ -174,6 +174,7 @@
 #include <cstdlib>
 #include <deque>
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -939,7 +940,7 @@ template <typename GraphType> class LinearSumAssignment {
   // The container of active nodes (i.e., unmatched nodes). This can
   // be switched easily between ActiveNodeStack and ActiveNodeQueue
   // for experimentation.
-  scoped_ptr<ActiveNodeContainerInterface> active_nodes_;
+  std::unique_ptr<ActiveNodeContainerInterface> active_nodes_;
 
   // Statistics giving the overall numbers of various operations the
   // algorithm performs.

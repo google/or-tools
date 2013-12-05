@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <vector>
 
 #include "base/callback.h"
@@ -69,9 +70,9 @@ class DijkstraSP {
 
   const int node_count_;
   const int start_node_;
-  scoped_ptr<ResultCallback2<int64, int, int> > graph_;
+  std::unique_ptr<ResultCallback2<int64, int, int> > graph_;
   const int64 disconnected_distance_;
-  scoped_ptr<int[]> predecessor_;
+  std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
   hash_set<int> not_visited_;

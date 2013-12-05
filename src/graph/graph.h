@@ -383,6 +383,11 @@ template<typename NodeIndexType = int32,
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(
       NodeIndexType node, ArcIndexType from) const;
 
+  // This loops over the heads of the OutgoingArcs(node). It is just a more
+  // convenient way to achieve this. Moreover this interface is used by some
+  // graph algorithms.
+  BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
+
   virtual void ReserveNodes(NodeIndexType bound);
   virtual void ReserveArcs(ArcIndexType bound);
   void AddNode(NodeIndexType node);
@@ -1119,6 +1124,13 @@ template<typename NodeIndexType, typename ArcIndexType>
 IntegerRange<ArcIndexType> StaticGraph<NodeIndexType, ArcIndexType>
     ::OutgoingArcs(NodeIndexType node) const {
   return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
+}
+
+template<typename NodeIndexType, typename ArcIndexType>
+BeginEndWrapper<NodeIndexType const*> StaticGraph<NodeIndexType, ArcIndexType>
+    ::operator[](NodeIndexType node) const {
+  return BeginEndWrapper<NodeIndexType const *>(&(head_[start_[node]]),
+                                                &(head_[DirectArcLimit(node)]));
 }
 
 template<typename NodeIndexType, typename ArcIndexType>

@@ -114,6 +114,7 @@
 #define OR_TOOLS_GRAPH_MAX_FLOW_H_
 
 #include <algorithm>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -216,8 +217,8 @@ class SimpleMaxFlow {
   // Note that we cannot free the graph before we stop using the max-flow
   // instance that uses it.
   typedef ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
-  scoped_ptr<Graph> underlying_graph_;
-  scoped_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
+  std::unique_ptr<Graph> underlying_graph_;
+  std::unique_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
 
   DISALLOW_COPY_AND_ASSIGN(SimpleMaxFlow);
 };
