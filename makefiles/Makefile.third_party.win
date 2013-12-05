@@ -44,7 +44,6 @@ build_third_party: \
 	install_protobuf \
 	install_sparsehash \
 	install_swig \
-	install_support \
 	install_coin_cbc \
 	install_glpk \
 	install_scip
