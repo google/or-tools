@@ -23,7 +23,7 @@ clean_python:
 # pywrapknapsack_solver
 pyalgorithms: $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/algorithms/pywrapknapsack_solver.py
 
-$(GEN_DIR)/algorithms/pywrapknapsack_solver.py: $(SRC_DIR)/algorithms/knapsack_solver.swig $(SRC_DIR)/algorithms/knapsack_solver.h $(SRC_DIR)/base/base.swig
+$(GEN_DIR)/algorithms/pywrapknapsack_solver.py: $(SRC_DIR)/algorithms/knapsack_solver.swig $(SRC_DIR)/algorithms/knapsack_solver.h $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python -o $(GEN_DIR)$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/algorithms$Sknapsack_solver.swig
 
 $(GEN_DIR)/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/algorithms/pywrapknapsack_solver.py
