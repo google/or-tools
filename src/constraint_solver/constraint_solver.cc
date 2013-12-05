@@ -1744,7 +1744,6 @@ void Solver::ProcessConstraints() {
     Accept(visitor);
   }
   if (!FLAGS_cp_export_file.empty()) {
-    File::Init();
     File* file = File::Open(FLAGS_cp_export_file, "wb");
     if (file == nullptr) {
       LOG(WARNING) << "Cannot open " << FLAGS_cp_export_file;

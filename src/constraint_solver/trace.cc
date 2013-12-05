@@ -363,6 +363,20 @@ class TraceIntervalVar : public IntervalVar {
     inner_->WhenPerformedBound(d);
   }
 
+  virtual IntExpr* StartExpr() { return inner_->StartExpr(); }
+  virtual IntExpr* DurationExpr() { return inner_->DurationExpr(); }
+  virtual IntExpr* EndExpr() { return inner_->EndExpr(); }
+  virtual IntExpr* PerformedExpr() { return inner_->PerformedExpr(); }
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return inner_->SafeStartExpr(unperformed_value);
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return inner_->SafeDurationExpr(unperformed_value);
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return inner_->SafeEndExpr(unperformed_value);
+  }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     inner_->Accept(visitor);
   }

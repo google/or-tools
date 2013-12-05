@@ -13,6 +13,8 @@
 
 #include <stddef.h>
 
+#include "base/unique_ptr.h"
+
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -123,7 +125,7 @@ class MtSolveSupport : public ParallelSolveSupport {
  private:
   bool CheckTermination();
   void Reset();
-  void BlockBarrier(scoped_ptr<Barrier>* barrier_ptr) {
+  void BlockBarrier(std::unique_ptr<Barrier>* barrier_ptr) {
     if ((*barrier_ptr)->Block()) {
       barrier_ptr->reset(new Barrier(workers_ + 1));
     }
@@ -140,11 +142,11 @@ class MtSolveSupport : public ParallelSolveSupport {
   // Is the master blocked awaiting a better solution.
   bool master_blocked_;
   // Initial barrier after the search for the first solution.
-  scoped_ptr<Barrier> solution_barrier_;
+  std::unique_ptr<Barrier> solution_barrier_;
   // Initial barrier when all slaves enter search.
-  scoped_ptr<Barrier> enter_search_barrier_;
+  std::unique_ptr<Barrier> enter_search_barrier_;
   // Initial barrier when all slaves exit search.
-  scoped_ptr<Barrier> exit_search_barrier_;
+  std::unique_ptr<Barrier> exit_search_barrier_;
   // Fail stamp of the last reported solution in the master search.
   uint64 fail_stamp_;
   // How many slaves have started.
@@ -535,7 +537,7 @@ class MTSharingSolutionPool : public SolutionPool {
   virtual string DebugString() const { return "MTSharingSolutionPool"; }
 
  private:
-  scoped_ptr<Assignment> reference_assignment_;
+  std::unique_ptr<Assignment> reference_assignment_;
   MtSolveSupport* const support_;
   const int worker_;
   int count_;

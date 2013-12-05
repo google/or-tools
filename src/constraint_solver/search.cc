@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "base/hash.h"
 #include <list>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -1049,7 +1050,7 @@ class CheapestVarSelector : public VariableSelector {
   virtual string DebugString() const { return "CheapestVarSelector"; }
 
  private:
-  scoped_ptr<ResultCallback1<int64, int64> > var_evaluator_;
+  std::unique_ptr<ResultCallback1<int64, int64> > var_evaluator_;
 };
 
 IntVar* CheapestVarSelector::Select(Solver* const s, int64* id) {
@@ -1313,15 +1314,15 @@ class CheapestValueSelector : public ValueSelector {
   string DebugString() const { return "CheapestValue"; }
 
  private:
-  scoped_ptr<ResultCallback2<int64, int64, int64> > eval_;
-  scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > eval_;
+  std::unique_ptr<ResultCallback1<int64, int64> > tie_breaker_;
   std::vector<int64> cache_;
 };
 
 int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
   cache_.clear();
   int64 best = kint64max;
-  scoped_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
+  std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
   for (it->Init(); it->Ok(); it->Next()) {
     const int i = it->Value();
     int64 eval = eval_->Run(id, i);
@@ -1361,11 +1362,11 @@ class BestValueByComparisonSelector : public ValueSelector {
   string DebugString() const { return "BestValueByComparisonSelector"; }
 
  private:
-  scoped_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
+  std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
 };
 
 int64 BestValueByComparisonSelector::Select(const IntVar* const v, int64 id) {
-  scoped_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
+  std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
   it->Init();
   DCHECK(it->Ok());  // At least one value.
   int64 best_value = it->Value();
@@ -1437,7 +1438,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
   }
 
   const std::vector<IntVar*> vars_;
-  scoped_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
 
 BaseEvaluatorSelector::BaseEvaluatorSelector(
@@ -1459,7 +1460,7 @@ class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
 
  private:
   int first_;
-  scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
+  std::unique_ptr<ResultCallback1<int64, int64> > tie_breaker_;
   std::vector<Element> cache_;
 };
 
@@ -1481,7 +1482,7 @@ IntVar* DynamicEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
   for (int i = 0; i < vars_.size(); ++i) {
     const IntVar* const var = vars_[i];
     if (!var->Bound()) {
-      scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
+      std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
       for (it->Init(); it->Ok(); it->Next()) {
         const int j = it->Value();
         const int64 value = evaluator_->Run(i, j);
@@ -1574,7 +1575,7 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
     for (int i = 0; i < vars_.size(); ++i) {
       const IntVar* const var = vars_[i];
       if (!var->Bound()) {
-        scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
+        std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
         for (it->Init(); it->Ok(); it->Next()) {
           elements_[count++] = Element(i, it->Value());
         }
@@ -3230,11 +3231,11 @@ class GuidedLocalSearch : public Metaheuristic {
   int64 assignment_penalized_value_;
   int64 old_penalized_value_;
   const std::vector<IntVar*> vars_;
-  hash_map<IntVar*, int64> indices_;
+  hash_map<const IntVar*, int64> indices_;
   const double penalty_factor_;
-  scoped_ptr<GuidedLocalSearchPenalties> penalties_;
-  scoped_ptr<int64[]> current_penalized_values_;
-  scoped_ptr<int64[]> delta_cache_;
+  std::unique_ptr<GuidedLocalSearchPenalties> penalties_;
+  std::unique_ptr<int64[]> current_penalized_values_;
+  std::unique_ptr<int64[]> delta_cache_;
   bool incremental_;
 };
 
@@ -3457,7 +3458,7 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
 
  private:
   int64 PenalizedValue(int64 i, int64 j);
-  scoped_ptr<Solver::IndexEvaluator2> objective_function_;
+  std::unique_ptr<Solver::IndexEvaluator2> objective_function_;
 };
 
 BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
@@ -3539,7 +3540,7 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch {
                                     int index, int* container_index) const;
 
   const std::vector<IntVar*> secondary_vars_;
-  scoped_ptr<Solver::IndexEvaluator3> objective_function_;
+  std::unique_ptr<Solver::IndexEvaluator3> objective_function_;
 };
 
 TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(

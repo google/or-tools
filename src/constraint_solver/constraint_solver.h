@@ -38,8 +38,9 @@
 //                                             Solver::ASSIGN_MIN_VALUE);
 //     s.NewSearch(db);
 //     CHECK(s.NextSolution());
-//     LG << "rabbits -> " << r->Value() << ", pheasants -> " << p->Value();
-//     LG << s.DebugString();
+//     LOG(INFO) << "rabbits -> " << r->Value() << ", pheasants -> "
+//               << p->Value();
+//     LOG(INFO) << s.DebugString();
 //     s.EndSearch();
 //   }
 //
@@ -2245,7 +2246,8 @@ class Solver {
   ModelVisitor* MakeStatisticsModelVisitor();
 #if !defined(SWIG)
   // Compute the number of constraints a variable is attached to.
-  ModelVisitor* MakeVariableDegreeVisitor(hash_map<IntVar*, int>* const map);
+  ModelVisitor* MakeVariableDegreeVisitor(
+      hash_map<const IntVar*, int>* const map);
 #endif
 
   // ----- Symmetry Breaking -----
@@ -3832,12 +3834,14 @@ class IntVar : public IntExpr {
   // This method returns whether the value 'v' is in the domain of the variable.
   virtual bool Contains(int64 v) const = 0;
 
-  // Creates a hole iterator. The object is created on the normal C++
-  // heap and the solver does NOT take ownership of the object.
+  // Creates a hole iterator. When 'reversible' is false, the returned object is
+  // created on the normal C++ heap and the solver does NOT take ownership of
+  // the object.
   virtual IntVarIterator* MakeHoleIterator(bool reversible) const = 0;
 
-  // Creates a domain iterator. The object is created on the normal C++
-  // heap and the solver does NOT take ownership of the object.
+  // Creates a domain iterator. When 'reversible' is false, the returned object
+  // is created on the normal C++ heap and the solver does NOT take ownership of
+  // the object.
   virtual IntVarIterator* MakeDomainIterator(bool reversible) const = 0;
 
   // Returns the previous min.
@@ -4125,11 +4129,7 @@ class IntervalVar : public PropagationBaseObject {
   // The largest acceptable value to be returned by EndMax()
   static const int64 kMaxValidValue;
   IntervalVar(Solver* const solver, const string& name)
-      : PropagationBaseObject(solver),
-        start_expr_(nullptr),
-        duration_expr_(nullptr),
-        end_expr_(nullptr),
-        performed_expr_(nullptr) {
+      : PropagationBaseObject(solver) {
     set_name(name);
   }
   virtual ~IntervalVar() {}
@@ -4174,7 +4174,7 @@ class IntervalVar : public PropagationBaseObject {
   virtual bool MayBePerformed() const = 0;
   bool CannotBePerformed() const { return !MayBePerformed(); }
   bool IsPerformedBound() const {
-    return MustBePerformed() == MayBePerformed();
+    return MustBePerformed() || !MayBePerformed();
   }
   virtual void SetPerformed(bool val) = 0;
   virtual bool WasPerformedBound() const = 0;
@@ -4186,25 +4186,21 @@ class IntervalVar : public PropagationBaseObject {
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. Please note that these must not
   // be used if the interval var is unperformed.
-  IntExpr* StartExpr();
-  IntExpr* DurationExpr();
-  IntExpr* EndExpr();
-  IntExpr* PerformedExpr();
+  virtual IntExpr* StartExpr() = 0;
+  virtual IntExpr* DurationExpr() = 0;
+  virtual IntExpr* EndExpr() = 0;
+  virtual IntExpr* PerformedExpr() = 0;
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. If the interval var is
   // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64 unperformed_value);
-  IntExpr* SafeDurationExpr(int64 unperformed_value);
-  IntExpr* SafeEndExpr(int64 unperformed_value);
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) = 0;
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) = 0;
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) = 0;
 
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const = 0;
 
  private:
-  IntExpr* start_expr_;
-  IntExpr* duration_expr_;
-  IntExpr* end_expr_;
-  IntExpr* performed_expr_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVar);
 };
 
@@ -4535,27 +4531,38 @@ template <class V, class E>
 class AssignmentContainer {
  public:
   AssignmentContainer() {}
-  E& Add(V* const var) {
+  E* Add(V* var) {
     CHECK(var != nullptr);
     int index = -1;
     if (!Find(var, &index)) {
       return FastAdd(var);
     } else {
-      return elements_[index];
+      return &elements_[index];
     }
   }
   // Adds element without checking its presence in the container.
-  E& FastAdd(V* const var) {
+  E* FastAdd(V* var) {
     DCHECK(var != nullptr);
     E e(var);
     elements_.push_back(e);
-    return elements_.back();
+    return &elements_.back();
+  }
+  // Advanced usage: Adds element at a given position; position has to have
+  // been allocated with AssignmentContainer::Resize() beforehand.
+  E* AddAtPosition(V* var, int position) {
+    elements_[position].Reset(var);
+    return &elements_[position];
   }
   void Clear() {
     elements_.clear();
     if (!elements_map_.empty()) {  // 2x speedup on or-tools.
       elements_map_.clear();
     }
+  }
+  // Advanced usage: Resizes the container, potentially adding elements with
+  // null variables.
+  void Resize(size_t size) {
+    elements_.resize(size);
   }
   bool Empty() const { return elements_.empty(); }
   // Copies intersection of containers.
@@ -4570,12 +4577,12 @@ class AssignmentContainer {
         continue;
       }
       DCHECK_GE(index, 0);
-      E& local_element(elements_[index]);
-      local_element.Copy(element);
+      E* const local_element = &elements_[index];
+      local_element->Copy(element);
       if (element.Activated()) {
-        local_element.Activate();
+        local_element->Activate();
       } else {
-        local_element.Deactivate();
+        local_element->Deactivate();
       }
     }
   }
@@ -4583,7 +4590,7 @@ class AssignmentContainer {
     int index;
     return Find(var, &index);
   }
-  E& MutableElement(const V* const var) {
+  E* MutableElement(const V* const var) {
     int index = -1;
     const bool found = Find(var, &index);
     CHECK(found) << "Unknown variable " << var->DebugString() << " in solution";
@@ -4596,7 +4603,7 @@ class AssignmentContainer {
     return Element(index);
   }
   const std::vector<E>& elements() const { return elements_; }
-  E& MutableElement(int index) { return elements_[index]; }
+  E* MutableElement(int index) { return &elements_[index]; }
   const E& Element(int index) const { return elements_[index]; }
   int Size() const { return elements_.size(); }
   void Store() {
@@ -4606,9 +4613,9 @@ class AssignmentContainer {
   }
   void Restore() {
     for (int i = 0; i < elements_.size(); ++i) {
-      E& element = elements_[i];
-      if (element.Activated()) {
-        element.Restore();
+      E* element = &elements_[i];
+      if (element->Activated()) {
+        element->Restore();
       }
     }
   }
@@ -4713,10 +4720,10 @@ class Assignment : public PropagationBaseObject {
   void SetObjectiveValue(int64 value);
   void SetObjectiveRange(int64 l, int64 u);
 
-  IntVarElement& Add(IntVar* const v);
+  IntVarElement* Add(IntVar* const v);
   void Add(const std::vector<IntVar*>& v);
   // Adds without checking if variable has been previously added.
-  IntVarElement& FastAdd(IntVar* const v);
+  IntVarElement* FastAdd(IntVar* const v);
   int64 Min(const IntVar* const v) const;
   int64 Max(const IntVar* const v) const;
   int64 Value(const IntVar* const v) const;
@@ -4726,10 +4733,10 @@ class Assignment : public PropagationBaseObject {
   void SetRange(const IntVar* const v, int64 l, int64 u);
   void SetValue(const IntVar* const v, int64 value);
 
-  IntervalVarElement& Add(IntervalVar* const v);
+  IntervalVarElement* Add(IntervalVar* const v);
   void Add(const std::vector<IntervalVar*>& vars);
   // Adds without checking if variable has been previously added.
-  IntervalVarElement& FastAdd(IntervalVar* const v);
+  IntervalVarElement* FastAdd(IntervalVar* const v);
   int64 StartMin(const IntervalVar* const v) const;
   int64 StartMax(const IntervalVar* const v) const;
   int64 StartValue(const IntervalVar* const v) const;
@@ -4759,10 +4766,10 @@ class Assignment : public PropagationBaseObject {
   void SetPerformedRange(const IntervalVar* const v, int64 mi, int64 ma);
   void SetPerformedValue(const IntervalVar* const v, int64 value);
 
-  SequenceVarElement& Add(SequenceVar* const v);
+  SequenceVarElement* Add(SequenceVar* const v);
   void Add(const std::vector<SequenceVar*>& vars);
   // Adds without checking if variable has been previously added.
-  SequenceVarElement& FastAdd(SequenceVar* const v);
+  SequenceVarElement* FastAdd(SequenceVar* const v);
 #if !defined(SWIG)
   const std::vector<int>& ForwardSequence(const SequenceVar* const v) const;
   const std::vector<int>& BackwardSequence(const SequenceVar* const v) const;
@@ -4805,18 +4812,18 @@ class Assignment : public PropagationBaseObject {
 
   // TODO(user): Add iterators on elements to avoid exposing container class.
   const IntContainer& IntVarContainer() const { return int_var_container_; }
-  IntContainer& MutableIntVarContainer() { return int_var_container_; }
+  IntContainer* MutableIntVarContainer() { return &int_var_container_; }
   const IntervalContainer& IntervalVarContainer() const {
     return interval_var_container_;
   }
-  IntervalContainer& MutableIntervalVarContainer() {
-    return interval_var_container_;
+  IntervalContainer* MutableIntervalVarContainer() {
+    return &interval_var_container_;
   }
   const SequenceContainer& SequenceVarContainer() const {
     return sequence_var_container_;
   }
-  SequenceContainer& MutableSequenceVarContainer() {
-    return sequence_var_container_;
+  SequenceContainer* MutableSequenceVarContainer() {
+    return &sequence_var_container_;
   }
   bool operator==(const Assignment& assignment) const {
     return int_var_container_ == assignment.int_var_container_ &&

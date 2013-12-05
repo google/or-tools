@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <algorithm>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -686,7 +687,7 @@ class SecondPassVisitor : public ModelVisitor {
         CPArgumentProto* const values_proto = var_proto->add_arguments();
         values_proto->set_argument_index(
             TagIndex(ModelVisitor::kValuesArgument));
-        scoped_ptr<IntVarIterator> it(variable->MakeDomainIterator(false));
+        std::unique_ptr<IntVarIterator> it(variable->MakeDomainIterator(false));
         for (it->Init(); it->Ok(); it->Next()) {
           values_proto->add_integer_array(it->Value());
         }
@@ -936,7 +937,7 @@ class ArrayWithOffset : public BaseObject {
  private:
   const int64 index_min_;
   const int64 index_max_;
-  scoped_ptr<T[]> values_;
+  std::unique_ptr<T[]> values_;
 };
 
 template <class T>

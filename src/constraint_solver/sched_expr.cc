@@ -459,81 +459,98 @@ class IntervalVarSafeEndExpr : public BaseIntExpr {
 
 // ----- API -----
 
-IntExpr* IntervalVar::StartExpr() {
-  if (start_expr_ == nullptr) {
-    solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
-    start_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarStartExpr(this)));
-    if (HasName()) {
-      start_expr_->set_name(StringPrintf("start(%s)", name().c_str()));
+IntExpr* BuildStartExpr(IntervalVar* var) {
+  Solver* const s = var->solver();
+  IntExpr* const expr =
+      s->RegisterIntExpr(s->RevAlloc(new IntervalVarStartExpr(var)));
+  if (var->HasName()) {
+    expr->set_name(StringPrintf("start<%s>", var->name().c_str()));
+  }
+  return expr;
+}
+
+IntExpr* BuildDurationExpr(IntervalVar* var) {
+  Solver* const s = var->solver();
+  IntExpr* const expr =
+      s->RegisterIntExpr(s->RevAlloc(new IntervalVarDurationExpr(var)));
+  if (var->HasName()) {
+    expr->set_name(StringPrintf("duration<%s>", var->name().c_str()));
+  }
+  return expr;
+}
+
+IntExpr* BuildEndExpr(IntervalVar* var) {
+  Solver* const s = var->solver();
+  IntExpr* const expr =
+      s->RegisterIntExpr(s->RevAlloc(new IntervalVarEndExpr(var)));
+  if (var->HasName()) {
+    expr->set_name(StringPrintf("end<%s>", var->name().c_str()));
+  }
+  return expr;
+}
+
+IntExpr* BuildPerformedExpr(IntervalVar* var) {
+  Solver* const s = var->solver();
+  if (var->MustBePerformed()) {
+    return s->MakeIntConst(1);
+  } else if (var->MayBePerformed()) {
+    IntExpr* const expr =
+        s->RegisterIntExpr(s->RevAlloc(new IntervalVarPerformedExpr(var)));
+    if (var->HasName()) {
+      expr->set_name(StringPrintf("performed<%s>", var->name().c_str()));
     }
+    return expr;
+  } else {
+    return s->MakeIntConst(0);
   }
-  return start_expr_;
 }
 
-IntExpr* IntervalVar::DurationExpr() {
-  if (duration_expr_ == nullptr) {
-    solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
-    duration_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarDurationExpr(this)));
-    if (HasName()) {
-      duration_expr_->set_name(StringPrintf("duration(%s)", name().c_str()));
+IntExpr* BuildSafeStartExpr(IntervalVar* var, int64 unperformed_value) {
+  Solver* const s = var->solver();
+  if (var->MustBePerformed()) {
+    return var->StartExpr();
+  } else if (var->MayBePerformed()) {
+    IntExpr* const expr = s->RegisterIntExpr(
+        s->RevAlloc(new IntervalVarSafeStartExpr(var, unperformed_value)));
+    if (var->HasName()) {
+      expr->set_name(StringPrintf("safe_start<%s>", var->name().c_str()));
     }
+    return expr;
+  } else {
+    return s->MakeIntConst(unperformed_value);
   }
-  return duration_expr_;
 }
 
-IntExpr* IntervalVar::EndExpr() {
-  if (end_expr_ == nullptr) {
-    solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
-    end_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarEndExpr(this)));
-    if (HasName()) {
-      end_expr_->set_name(StringPrintf("end(%s)", name().c_str()));
+IntExpr* BuildSafeDurationExpr(IntervalVar* var,
+                               int64 unperformed_value) {
+  Solver* const s = var->solver();
+  if (var->MustBePerformed()) {
+    return var->DurationExpr();
+  } else if (var->MayBePerformed()) {
+    IntExpr* const expr = s->RegisterIntExpr(
+        s->RevAlloc(new IntervalVarSafeDurationExpr(var, unperformed_value)));
+    if (var->HasName()) {
+      expr->set_name(StringPrintf("safe_duration<%s>", var->name().c_str()));
     }
+    return expr;
+  } else {
+    return s->MakeIntConst(unperformed_value);
   }
-  return end_expr_;
 }
 
-IntExpr* IntervalVar::PerformedExpr() {
-  if (performed_expr_ == nullptr) {
-    solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
-    performed_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarPerformedExpr(this)));
-    if (HasName()) {
-      performed_expr_->set_name(StringPrintf("performed(%s)", name().c_str()));
+IntExpr* BuildSafeEndExpr(IntervalVar* var, int64 unperformed_value) {
+  Solver* const s = var->solver();
+  if (var->MustBePerformed()) {
+    return var->EndExpr();
+  } else if (var->MayBePerformed()) {
+    IntExpr* const expr = s->RegisterIntExpr(
+        s->RevAlloc(new IntervalVarSafeEndExpr(var, unperformed_value)));
+    if (var->HasName()) {
+      expr->set_name(StringPrintf("safe_end<%s>", var->name().c_str()));
     }
+    return expr;
+  } else {
+    return s->MakeIntConst(unperformed_value);
   }
-  return performed_expr_;
-}
-
-IntExpr* IntervalVar::SafeStartExpr(int64 unperformed_value) {
-  IntExpr* const end_expr = solver()->RegisterIntExpr(solver()->RevAlloc(
-      new IntervalVarSafeStartExpr(this, unperformed_value)));
-  if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_start(%s, %" GG_LL_FORMAT "d)",
-                                    name().c_str(), unperformed_value));
-  }
-  return end_expr;
-}
-
-IntExpr* IntervalVar::SafeDurationExpr(int64 unperformed_value) {
-  IntExpr* const end_expr = solver()->RegisterIntExpr(solver()->RevAlloc(
-      new IntervalVarSafeDurationExpr(this, unperformed_value)));
-  if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_duration(%s, %" GG_LL_FORMAT "d)",
-                                    name().c_str(), unperformed_value));
-  }
-  return end_expr;
-}
-
-IntExpr* IntervalVar::SafeEndExpr(int64 unperformed_value) {
-  IntExpr* const end_expr = solver()->RegisterIntExpr(
-      solver()->RevAlloc(new IntervalVarSafeEndExpr(this, unperformed_value)));
-  if (HasName()) {
-    end_expr->set_name(StringPrintf("safe_end(%s, %" GG_LL_FORMAT "d)",
-                                    name().c_str(), unperformed_value));
-  }
-  return end_expr;
 }
 }  // namespace operations_research

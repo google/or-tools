@@ -204,6 +204,8 @@ class CollectVariablesVisitor : public ModelParser {
   std::vector<IntVar*>* const secondaries_;
   std::vector<SequenceVar*>* const sequences_;
   std::vector<IntervalVar*>* const intervals_;
+  // These hash_set can't easily hold const IntVar*, because they
+  // ultimately serve as containers of mutable IntVar.
   hash_set<IntVar*> primary_set_;
   hash_set<IntVar*> secondary_set_;
   hash_set<IntVar*> ignored_set_;

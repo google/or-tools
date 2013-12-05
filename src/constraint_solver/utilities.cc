@@ -215,7 +215,7 @@ int64 RevBitMatrix::GetFirstBit(int row, int start) const {
 }
 
 void RevBitMatrix::ClearAll(Solver* const solver) {
-  RevBitMatrix::ClearAll(solver);
+  RevBitSet::ClearAll(solver);
 }
 
 // ----- PrintModelVisitor -----
@@ -621,7 +621,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
 class VariableDegreeVisitor : public ModelVisitor {
  public:
-  VariableDegreeVisitor(hash_map<IntVar*, int>* const map) : map_(map) {}
+  VariableDegreeVisitor(hash_map<const IntVar*, int>* const map) : map_(map) {}
 
   virtual ~VariableDegreeVisitor() {}
 
@@ -709,7 +709,7 @@ class VariableDegreeVisitor : public ModelVisitor {
     object->Accept(this);
   }
 
-  hash_map<IntVar*, int>* const map_;
+  hash_map<const IntVar*, int>* const map_;
 };
 }  // namespace
 
@@ -722,7 +722,7 @@ ModelVisitor* Solver::MakeStatisticsModelVisitor() {
 }
 
 ModelVisitor* Solver::MakeVariableDegreeVisitor(
-    hash_map<IntVar*, int>* const map) {
+    hash_map<const IntVar*, int>* const map) {
   return RevAlloc(new VariableDegreeVisitor(map));
 }
 

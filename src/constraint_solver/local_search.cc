@@ -16,6 +16,7 @@
 #include "base/hash.h"
 #include "base/hash.h"
 #include <iterator>
+#include "base/unique_ptr.h"
 #include <set>
 #include <string>
 #include <utility>
@@ -147,14 +148,14 @@ bool IntVarLocalSearchOperator::ApplyChanges(Assignment* delta,
     const bool activated = activated_.Get(index);
     if (!activated) {
       if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
-        deltadelta->FastAdd(var).Deactivate();
+        deltadelta->FastAdd(var)->Deactivate();
       }
-      delta->FastAdd(var).Deactivate();
+      delta->FastAdd(var)->Deactivate();
     } else if (value != OldValue(index) || !SkipUnchanged(index)) {
       if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
-        deltadelta->FastAdd(var).SetValue(value);
+        deltadelta->FastAdd(var)->SetValue(value);
       }
-      delta->FastAdd(var).SetValue(value);
+      delta->FastAdd(var)->SetValue(value);
     }
   }
   return true;
@@ -299,16 +300,16 @@ bool SequenceVarLocalSearchOperator::ApplyChanges(
     const bool activated = activated_.Get(index);
     if (!activated) {
       if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
-        deltadelta->FastAdd(var).Deactivate();
+        deltadelta->FastAdd(var)->Deactivate();
       }
-      delta->FastAdd(var).Deactivate();
+      delta->FastAdd(var)->Deactivate();
     } else if (value != OldSequence(index) || !SkipUnchanged(index)) {
       if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
-        SequenceVarElement* const fast_element = &deltadelta->FastAdd(var);
+        SequenceVarElement* const fast_element = deltadelta->FastAdd(var);
         fast_element->SetForwardSequence(value);
         fast_element->SetBackwardSequence(backward_values_[index]);
       }
-      SequenceVarElement* const element = &delta->FastAdd(var);
+      SequenceVarElement* const element = delta->FastAdd(var);
       element->SetForwardSequence(value);
       element->SetBackwardSequence(backward_values_[index]);
     }
@@ -1275,7 +1276,7 @@ class TSPOpt : public PathOperator {
  private:
   std::vector<std::vector<int64> > cost_;
   HamiltonianPathSolver<int64> hamiltonian_path_solver_;
-  scoped_ptr<Solver::IndexEvaluator3> evaluator_;
+  std::unique_ptr<Solver::IndexEvaluator3> evaluator_;
   const int chain_length_;
 };
 
@@ -1344,7 +1345,7 @@ class TSPLns : public PathOperator {
  private:
   std::vector<std::vector<int64> > cost_;
   HamiltonianPathSolver<int64> hamiltonian_path_solver_;
-  scoped_ptr<Solver::IndexEvaluator3> evaluator_;
+  std::unique_ptr<Solver::IndexEvaluator3> evaluator_;
   const int tsp_size_;
   ACMRandom rand_;
 };
@@ -1513,8 +1514,8 @@ void NearestNeighbors::ComputeNearest(int row) {
   const IntVar* var = path_operator_.Var(row);
   const int64 var_min = var->Min();
   const int var_size = var->Max() - var_min + 1;
-  scoped_ptr<int[]> neighbors(new int[var_size]);
-  scoped_ptr<int64[]> row_data(new int64[var_size]);
+  std::unique_ptr<int[]> neighbors(new int[var_size]);
+  std::unique_ptr<int64[]> row_data(new int64[var_size]);
   for (int i = 0; i < var_size; ++i) {
     const int index = i + var_min;
     neighbors[i] = index;
@@ -1857,9 +1858,9 @@ class CompoundOperator : public LocalSearchOperator {
 
   int64 index_;
   int64 size_;
-  scoped_ptr<LocalSearchOperator * []> operators_;
-  scoped_ptr<int[]> operator_indices_;
-  scoped_ptr<ResultCallback2<int64, int, int> > evaluator_;
+  std::unique_ptr<LocalSearchOperator * []> operators_;
+  std::unique_ptr<int[]> operator_indices_;
+  std::unique_ptr<ResultCallback2<int64, int, int> > evaluator_;
 };
 
 CompoundOperator::CompoundOperator(
@@ -1967,7 +1968,7 @@ class RandomCompoundOperator : public LocalSearchOperator {
  private:
   const int size_;
   ACMRandom rand_;
-  scoped_ptr<LocalSearchOperator * []> operators_;
+  std::unique_ptr<LocalSearchOperator * []> operators_;
 };
 
 void RandomCompoundOperator::Start(const Assignment* assignment) {
@@ -2327,10 +2328,10 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   const int primary_vars_size_;
   int64* const cache_;
   int64* const delta_cache_;
-  scoped_ptr<Callback1<int64> > delta_objective_callback_;
+  std::unique_ptr<Callback1<int64> > delta_objective_callback_;
   const IntVar* const objective_;
   Solver::LocalSearchFilterBound filter_enum_;
-  scoped_ptr<LSOperation> op_;
+  std::unique_ptr<LSOperation> op_;
   int64 old_value_;
   int64 old_delta_value_;
   bool incremental_;
@@ -2471,7 +2472,7 @@ class BinaryObjectiveFilter : public ObjectiveFilter {
                                     int64* obj_value);
 
  private:
-  scoped_ptr<Solver::IndexEvaluator2> value_evaluator_;
+  std::unique_ptr<Solver::IndexEvaluator2> value_evaluator_;
 };
 
 BinaryObjectiveFilter::BinaryObjectiveFilter(
@@ -2521,7 +2522,7 @@ class TernaryObjectiveFilter : public ObjectiveFilter {
 
  private:
   int secondary_vars_offset_;
-  scoped_ptr<Solver::IndexEvaluator3> value_evaluator_;
+  std::unique_ptr<Solver::IndexEvaluator3> value_evaluator_;
 };
 
 TernaryObjectiveFilter::TernaryObjectiveFilter(
@@ -2662,7 +2663,7 @@ class FindOneNeighbor : public DecisionBuilder {
   void SynchronizeFilters(const Assignment* assignment);
 
   Assignment* const assignment_;
-  scoped_ptr<Assignment> reference_assignment_;
+  std::unique_ptr<Assignment> reference_assignment_;
   SolutionPool* const pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
@@ -3207,7 +3208,7 @@ class DefaultSolutionPool : public SolutionPool {
   virtual string DebugString() const { return "DefaultSolutionPool"; }
 
  private:
-  scoped_ptr<Assignment> reference_assignment_;
+  std::unique_ptr<Assignment> reference_assignment_;
 };
 }  // namespace
 

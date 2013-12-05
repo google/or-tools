@@ -468,8 +468,8 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
   CHECK(id_to_element_map != nullptr);
   id_to_element_map->clear();
   for (int i = 0; i < container->Size(); ++i) {
-    E& element = container->MutableElement(i);
-    const V* const var = element.Var();
+    E* const element = container->MutableElement(i);
+    const V* const var = element->Var();
     const string& name = var->name();
     if (name.empty()) {
       LOG(INFO) << "Cannot save/load variables with empty name"
@@ -478,7 +478,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
       LOG(INFO) << "Cannot save/load variables with duplicate names: " << name
                 << "; variable will be ignored";
     } else {
-      (*id_to_element_map)[name] = &element;
+      (*id_to_element_map)[name] = element;
     }
   }
 }
@@ -500,7 +500,6 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
 }  // namespace
 
 bool Assignment::Load(const string& filename) {
-  File::Init();
   File* file = File::Open(filename, "r");
   if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
@@ -528,10 +527,10 @@ void RealLoad(const AssignmentProto& assignment_proto,
               const Proto& (AssignmentProto::*GetElem)(int) const) {  // NOLINT
   bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
   for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
-    Element& element = container->MutableElement(i);
+    Element* const element = container->MutableElement(i);
     const Proto& proto = (assignment_proto.*GetElem)(i);
-    if (element.Var()->name() == proto.var_id()) {
-      element.LoadFromProto(proto);
+    if (element->Var()->name() == proto.var_id()) {
+      element->LoadFromProto(proto);
     } else {
       fast_load = false;
     }
@@ -577,7 +576,6 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
 }
 
 bool Assignment::Save(const string& filename) const {
-  File::Init();
   File* file = File::Open(filename, "w");
   if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
@@ -659,7 +657,7 @@ string Assignment::DebugString() const {
   return out;
 }
 
-IntVarElement& Assignment::Add(IntVar* const v) {
+IntVarElement* Assignment::Add(IntVar* const v) {
   return int_var_container_.Add(v);
 }
 
@@ -669,7 +667,7 @@ void Assignment::Add(const std::vector<IntVar*>& v) {
   }
 }
 
-IntVarElement& Assignment::FastAdd(IntVar* const v) {
+IntVarElement* Assignment::FastAdd(IntVar* const v) {
   return int_var_container_.FastAdd(v);
 }
 
@@ -690,24 +688,24 @@ bool Assignment::Bound(const IntVar* const v) const {
 }
 
 void Assignment::SetMin(const IntVar* const v, int64 m) {
-  int_var_container_.MutableElement(v).SetMin(m);
+  int_var_container_.MutableElement(v)->SetMin(m);
 }
 
 void Assignment::SetMax(const IntVar* const v, int64 m) {
-  int_var_container_.MutableElement(v).SetMax(m);
+  int_var_container_.MutableElement(v)->SetMax(m);
 }
 
 void Assignment::SetRange(const IntVar* const v, int64 l, int64 u) {
-  int_var_container_.MutableElement(v).SetRange(l, u);
+  int_var_container_.MutableElement(v)->SetRange(l, u);
 }
 
 void Assignment::SetValue(const IntVar* const v, int64 value) {
-  int_var_container_.MutableElement(v).SetValue(value);
+  int_var_container_.MutableElement(v)->SetValue(value);
 }
 
 // ----- Interval Var -----
 
-IntervalVarElement& Assignment::Add(IntervalVar* const v) {
+IntervalVarElement* Assignment::Add(IntervalVar* const v) {
   return interval_var_container_.Add(v);
 }
 
@@ -717,7 +715,7 @@ void Assignment::Add(const std::vector<IntervalVar*>& vars) {
   }
 }
 
-IntervalVarElement& Assignment::FastAdd(IntervalVar* const v) {
+IntervalVarElement* Assignment::FastAdd(IntervalVar* const v) {
   return interval_var_container_.FastAdd(v);
 }
 
@@ -770,74 +768,74 @@ int64 Assignment::PerformedValue(const IntervalVar* const v) const {
 }
 
 void Assignment::SetStartMin(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetStartMin(m);
+  interval_var_container_.MutableElement(v)->SetStartMin(m);
 }
 
 void Assignment::SetStartMax(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetStartMax(m);
+  interval_var_container_.MutableElement(v)->SetStartMax(m);
 }
 
 void Assignment::SetStartRange(const IntervalVar* const v, int64 mi, int64 ma) {
-  interval_var_container_.MutableElement(v).SetStartRange(mi, ma);
+  interval_var_container_.MutableElement(v)->SetStartRange(mi, ma);
 }
 
 void Assignment::SetStartValue(const IntervalVar* const v, int64 value) {
-  interval_var_container_.MutableElement(v).SetStartValue(value);
+  interval_var_container_.MutableElement(v)->SetStartValue(value);
 }
 
 void Assignment::SetDurationMin(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetDurationMin(m);
+  interval_var_container_.MutableElement(v)->SetDurationMin(m);
 }
 
 void Assignment::SetDurationMax(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetDurationMax(m);
+  interval_var_container_.MutableElement(v)->SetDurationMax(m);
 }
 
 void Assignment::SetDurationRange(const IntervalVar* const v, int64 mi,
                                   int64 ma) {
-  interval_var_container_.MutableElement(v).SetDurationRange(mi, ma);
+  interval_var_container_.MutableElement(v)->SetDurationRange(mi, ma);
 }
 
 void Assignment::SetDurationValue(const IntervalVar* const v, int64 value) {
-  interval_var_container_.MutableElement(v).SetDurationValue(value);
+  interval_var_container_.MutableElement(v)->SetDurationValue(value);
 }
 
 void Assignment::SetEndMin(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetEndMin(m);
+  interval_var_container_.MutableElement(v)->SetEndMin(m);
 }
 
 void Assignment::SetEndMax(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetEndMax(m);
+  interval_var_container_.MutableElement(v)->SetEndMax(m);
 }
 
 void Assignment::SetEndRange(const IntervalVar* const v, int64 mi, int64 ma) {
-  interval_var_container_.MutableElement(v).SetEndRange(mi, ma);
+  interval_var_container_.MutableElement(v)->SetEndRange(mi, ma);
 }
 
 void Assignment::SetEndValue(const IntervalVar* const v, int64 value) {
-  interval_var_container_.MutableElement(v).SetEndValue(value);
+  interval_var_container_.MutableElement(v)->SetEndValue(value);
 }
 
 void Assignment::SetPerformedMin(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetPerformedMin(m);
+  interval_var_container_.MutableElement(v)->SetPerformedMin(m);
 }
 
 void Assignment::SetPerformedMax(const IntervalVar* const v, int64 m) {
-  interval_var_container_.MutableElement(v).SetPerformedMax(m);
+  interval_var_container_.MutableElement(v)->SetPerformedMax(m);
 }
 
 void Assignment::SetPerformedRange(const IntervalVar* const v, int64 mi,
                                    int64 ma) {
-  interval_var_container_.MutableElement(v).SetPerformedRange(mi, ma);
+  interval_var_container_.MutableElement(v)->SetPerformedRange(mi, ma);
 }
 
 void Assignment::SetPerformedValue(const IntervalVar* const v, int64 value) {
-  interval_var_container_.MutableElement(v).SetPerformedValue(value);
+  interval_var_container_.MutableElement(v)->SetPerformedValue(value);
 }
 
 // ----- Sequence Var -----
 
-SequenceVarElement& Assignment::Add(SequenceVar* const v) {
+SequenceVarElement* Assignment::Add(SequenceVar* const v) {
   return sequence_var_container_.Add(v);
 }
 
@@ -847,7 +845,7 @@ void Assignment::Add(const std::vector<SequenceVar*>& vars) {
   }
 }
 
-SequenceVarElement& Assignment::FastAdd(SequenceVar* const v) {
+SequenceVarElement* Assignment::FastAdd(SequenceVar* const v) {
   return sequence_var_container_.FastAdd(v);
 }
 
@@ -870,24 +868,24 @@ void Assignment::SetSequence(const SequenceVar* const v,
                              const std::vector<int>& backward_sequence,
                              const std::vector<int>& unperformed) {
   sequence_var_container_.MutableElement(v)
-      .SetSequence(forward_sequence, backward_sequence, unperformed);
+      ->SetSequence(forward_sequence, backward_sequence, unperformed);
 }
 
 void Assignment::SetForwardSequence(const SequenceVar* const v,
                                     const std::vector<int>& forward_sequence) {
   sequence_var_container_.MutableElement(v)
-      .SetForwardSequence(forward_sequence);
+      ->SetForwardSequence(forward_sequence);
 }
 
 void Assignment::SetBackwardSequence(const SequenceVar* const v,
                                      const std::vector<int>& backward_sequence) {
   sequence_var_container_.MutableElement(v)
-      .SetBackwardSequence(backward_sequence);
+      ->SetBackwardSequence(backward_sequence);
 }
 
 void Assignment::SetUnperformed(const SequenceVar* const v,
                                 const std::vector<int>& unperformed) {
-  sequence_var_container_.MutableElement(v).SetUnperformed(unperformed);
+  sequence_var_container_.MutableElement(v)->SetUnperformed(unperformed);
 }
 
 // ----- Objective -----
@@ -953,11 +951,11 @@ void Assignment::SetObjectiveValue(int64 value) {
 }
 
 void Assignment::Activate(const IntVar* const b) {
-  int_var_container_.MutableElement(b).Activate();
+  int_var_container_.MutableElement(b)->Activate();
 }
 
 void Assignment::Deactivate(const IntVar* const b) {
-  int_var_container_.MutableElement(b).Deactivate();
+  int_var_container_.MutableElement(b)->Deactivate();
 }
 
 bool Assignment::Activated(const IntVar* const b) const {
@@ -965,11 +963,11 @@ bool Assignment::Activated(const IntVar* const b) const {
 }
 
 void Assignment::Activate(const IntervalVar* const b) {
-  interval_var_container_.MutableElement(b).Activate();
+  interval_var_container_.MutableElement(b)->Activate();
 }
 
 void Assignment::Deactivate(const IntervalVar* const b) {
-  interval_var_container_.MutableElement(b).Deactivate();
+  interval_var_container_.MutableElement(b)->Deactivate();
 }
 
 bool Assignment::Activated(const IntervalVar* const b) const {
@@ -977,11 +975,11 @@ bool Assignment::Activated(const IntervalVar* const b) const {
 }
 
 void Assignment::Activate(const SequenceVar* const b) {
-  sequence_var_container_.MutableElement(b).Activate();
+  sequence_var_container_.MutableElement(b)->Activate();
 }
 
 void Assignment::Deactivate(const SequenceVar* const b) {
-  sequence_var_container_.MutableElement(b).Deactivate();
+  sequence_var_container_.MutableElement(b)->Deactivate();
 }
 
 bool Assignment::Activated(const SequenceVar* const b) const {

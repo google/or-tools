@@ -16,6 +16,7 @@
 #include <string.h>
 #include <algorithm>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -408,8 +409,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
   const int length_;
   // TODO(user): create bitset64 class and use it.
-  scoped_ptr<uint64[]> active_tuples_;
-  scoped_ptr<uint64[]> stamps_;
+  std::unique_ptr<uint64[]> active_tuples_;
+  std::unique_ptr<uint64[]> stamps_;
   std::vector<ValueBitset> masks_;
 };
 
@@ -831,19 +832,19 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Length of bitsets in double words.
   const int length_;
   // Bitset of active tuples.
-  scoped_ptr<uint64[]> active_tuples_;
+  std::unique_ptr<uint64[]> active_tuples_;
   // Array of stamps, one per 64 tuples.
-  scoped_ptr<uint64[]> stamps_;
+  std::unique_ptr<uint64[]> stamps_;
   // The masks per value per variable.
   std::vector<std::vector<uint64*> > masks_;
   // The min on the vars at creation time.
-  scoped_ptr<int64[]> original_min_;
+  std::unique_ptr<int64[]> original_min_;
   // The starts of active bitsets.
   std::vector<std::vector<int> > starts_;
   // The ends of the active bitsets.x
   std::vector<std::vector<int> > ends_;
   // A temporary mask use for computation.
-  scoped_ptr<uint64[]> temp_mask_;
+  std::unique_ptr<uint64[]> temp_mask_;
   // The portion of the active tuples supporting each value per variable.
   std::vector<std::vector<int> > supports_;
   Demon* demon_;
@@ -1171,9 +1172,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Stamp of the active_tuple bitset.
   uint64 stamp_;
   // The masks per value per variable.
-  scoped_ptr<uint64 * []> masks_;
+  std::unique_ptr<uint64 * []> masks_;
   // The min on the vars at creation time.
-  scoped_ptr<int64[]> original_min_;
+  std::unique_ptr<int64[]> original_min_;
   Demon* demon_;
   int touched_var_;
 };

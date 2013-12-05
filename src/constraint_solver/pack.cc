@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <algorithm>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -210,7 +211,7 @@ void Pack::InitialPropagate() {
       if (var->Max() < bins_) {
         data->PushAssigned(var_index);
       }
-      scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
+      std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
       for (it->Init(); it->Ok(); it->Next()) {
         const int64 value = it->Value();
         if (value >= 0 && value <= bins_) {
@@ -745,7 +746,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
  private:
   const int vars_count_;
-  scoped_ptr<Pack::ItemUsageEvaluator> weights_;
+  std::unique_ptr<Pack::ItemUsageEvaluator> weights_;
   const int bins_count_;
   const std::vector<int64> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
@@ -850,7 +851,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
 
  private:
   const int vars_count_;
-  scoped_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
+  std::unique_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
   const int bins_count_;
   const std::vector<int64> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
@@ -1123,7 +1124,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
 
  private:
   const int vars_count_;
-  scoped_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
+  std::unique_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
   const int bins_count_;
   const std::vector<IntVar*> loads_;
   RevArray<int> first_unbound_backward_vector_;

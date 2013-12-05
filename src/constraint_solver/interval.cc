@@ -27,6 +27,70 @@
 #endif
 
 namespace operations_research {
+// Generic code for start/end/duration expressions.
+// This is not done in a superclass as this is not compatible with the current
+// class hierarchy.
+
+// ----- Expression builders ------
+
+IntExpr* BuildStartExpr(IntervalVar* var);
+IntExpr* BuildDurationExpr(IntervalVar* var);
+IntExpr* BuildEndExpr(IntervalVar* var);
+IntExpr* BuildPerformedExpr(IntervalVar* var);
+IntExpr* BuildSafeStartExpr(IntervalVar* var, int64 unperformed_value);
+IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64 unperformed_value);
+IntExpr* BuildSafeEndExpr(IntervalVar* var, int64 unperformed_value);
+
+// ----- Macros to insert inside the class code -----
+
+#define GENERIC_INTERVAL_EXPR_METHODS                                  \
+  virtual IntExpr* StartExpr() {                                       \
+    if (start_expr_ == nullptr) {                                      \
+      solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));     \
+      start_expr_ = BuildStartExpr(this);                              \
+    }                                                                  \
+    return start_expr_;                                                \
+  }                                                                    \
+  IntExpr* DurationExpr() {                                            \
+    if (duration_expr_ == nullptr) {                                   \
+      solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));  \
+      duration_expr_ = BuildDurationExpr(this);                        \
+    }                                                                  \
+    return duration_expr_;                                             \
+  }                                                                    \
+  IntExpr* EndExpr() {                                                 \
+    if (end_expr_ == nullptr) {                                        \
+      solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));       \
+      end_expr_ = BuildEndExpr(this);                                  \
+    }                                                                  \
+    return end_expr_;                                                  \
+  }                                                                    \
+  IntExpr* PerformedExpr() {                                           \
+    if (performed_expr_ == nullptr) {                                  \
+      solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_)); \
+      performed_expr_ = BuildPerformedExpr(this);                      \
+    }                                                                  \
+    return performed_expr_;                                            \
+  }                                                                    \
+  IntExpr* SafeStartExpr(int64 unperformed_value) {                    \
+    return BuildSafeStartExpr(this, unperformed_value);                \
+  }                                                                    \
+  IntExpr* SafeDurationExpr(int64 unperformed_value) {                 \
+    return BuildSafeDurationExpr(this, unperformed_value);             \
+  }                                                                    \
+  IntExpr* SafeEndExpr(int64 unperformed_value) {                      \
+    return BuildSafeEndExpr(this, unperformed_value);                  \
+  }
+
+#define GENERIC_INTERVAL_EXPR_FIELDS \
+  IntExpr* start_expr_;              \
+  IntExpr* duration_expr_;           \
+  IntExpr* end_expr_;                \
+  IntExpr* performed_expr_
+
+#define GENERIC_INTERVAL_CTOR                                        \
+  start_expr_(nullptr), duration_expr_(nullptr), end_expr_(nullptr), \
+      performed_expr_(nullptr)
 
 // ----- Interval Var -----
 
@@ -103,6 +167,23 @@ class MirrorIntervalVar : public IntervalVar {
     return StringPrintf("MirrorInterval(%s)", t_->DebugString().c_str());
   }
 
+  virtual IntExpr* StartExpr() { return solver()->MakeOpposite(t_->EndExpr()); }
+  virtual IntExpr* DurationExpr() { return t_->DurationExpr(); }
+  virtual IntExpr* EndExpr() { return solver()->MakeOpposite(t_->StartExpr()); }
+  virtual IntExpr* PerformedExpr() { return t_->PerformedExpr(); }
+  // These methods create expressions encapsulating the start, end
+  // and duration of the interval var. If the interval var is
+  // unperformed, they will return the unperformed_value.
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return solver()->MakeOpposite(t_->SafeEndExpr(-unperformed_value));
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return t_->SafeDurationExpr(unperformed_value);
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return solver()->MakeOpposite(t_->SafeStartExpr(-unperformed_value));
+  }
+
  private:
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
@@ -129,7 +210,8 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
   explicit AlwaysPerformedIntervalVarWrapper(IntervalVar* const t)
       : IntervalVar(t->solver(),
                     StringPrintf("AlwaysPerformed<%s>", t->name().c_str())),
-        t_(t) {}
+        t_(t),
+        GENERIC_INTERVAL_CTOR {}
   virtual ~AlwaysPerformedIntervalVarWrapper() {}
   virtual int64 StartMin() const {
     return MayUnderlyingBePerformed() ? t_->StartMin() : kMinValidValue;
@@ -197,6 +279,7 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
   }
   virtual bool WasPerformedBound() const { return true; }
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
+  GENERIC_INTERVAL_EXPR_METHODS
 
  protected:
   IntervalVar* const underlying() const { return t_; }
@@ -206,6 +289,7 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
 
  private:
   IntervalVar* const t_;
+  GENERIC_INTERVAL_EXPR_FIELDS;
   DISALLOW_COPY_AND_ASSIGN(AlwaysPerformedIntervalVarWrapper);
 };
 
@@ -366,6 +450,8 @@ class BaseIntervalVar : public IntervalVar {
 
   virtual string BaseName() const { return "IntervalVar"; }
 
+  bool InProcess() const { return in_process_; }
+
  protected:
   // TODO(user): Remove this enum and change the protocol.
   void ProcessModification(SetterStatus status) {
@@ -387,121 +473,6 @@ class BaseIntervalVar : public IntervalVar {
   Handler handler_;
   Cleaner cleaner_;
 };
-
-// ----- Propagation aware storage for booleans and intervals -----
-
-class BooleanStorage : public PropagationBaseObject {
- public:
-  static const int kFalse;
-  static const int kTrue;
-  static const int kUndecidedBooleanValue;
-
-  // Ctor with true or undecided boolean value. If 'optional' is true, then
-  // the performed status is UNDECIDED. If false, the performed status is
-  // PERFORMED.
-  BooleanStorage(Solver* const solver, bool optional)
-      : PropagationBaseObject(solver),
-        status_(optional ? kUndecidedBooleanValue : kTrue),
-        previous_status_(status_),
-        postponed_status_(status_) {}
-
-  // Ctor with a false default value.
-  explicit BooleanStorage(Solver* const solver)
-      : PropagationBaseObject(solver),
-        status_(kFalse),
-        previous_status_(kFalse),
-        postponed_status_(kFalse) {}
-
-  virtual ~BooleanStorage() {}
-
-  bool MayBeTrue() const { return status_ != kFalse; }
-
-  bool MustBeTrue() const { return (status_ == kTrue); }
-
-  bool Bound() const { return status_ != kUndecidedBooleanValue; }
-
-  bool WasBound() const { return previous_status_ != kUndecidedBooleanValue; }
-
-  void WhenBound(Demon* const demon) {
-    if (!Bound()) {
-      if (demon->priority() == Solver::DELAYED_PRIORITY) {
-        delayed_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
-      } else {
-        demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
-      }
-    }
-  }
-
-  // Returns true if we need to push the interval var onto the queue.
-  bool SetValue(bool value) {
-    if (status_ == kUndecidedBooleanValue) {
-      // Sync previous value.
-      previous_status_ = kUndecidedBooleanValue;
-      // And set the current one.
-      solver()->SaveAndSetValue(&status_, value ? kTrue : kFalse);
-      return true;
-    } else if (status_ != value) {
-      solver()->Fail();
-    }
-    return false;
-  }
-
-  void SetValueInProcess(bool value) {
-    if (status_ == kUndecidedBooleanValue) {
-      if (postponed_status_ == kUndecidedBooleanValue) {
-        postponed_status_ = value ? kTrue : kFalse;
-      } else if (postponed_status_ != value) {
-        solver()->Fail();
-      }
-    } else if (status_ != value) {
-      solver()->Fail();
-    }
-  }
-
-  void UpdatePostponedBounds() { postponed_status_ = status_; }
-
-  void ProcessDemons() {
-    if (previous_status_ != status_) {
-      ExecuteAll(demons_);
-      EnqueueAll(delayed_demons_);
-    }
-  }
-
-  void UpdatePreviousBoundsAndApplyPostponedBounds(BaseIntervalVar* var) {
-    previous_status_ = status_;
-    if (postponed_status_ != status_) {
-      CHECK_NE(kUndecidedBooleanValue, postponed_status_);
-      var->SetPerformed(postponed_status_ != 0);
-    }
-  }
-
-  string DebugString() const {
-    switch (status_) {
-      case 0:
-        return "false";
-      case 1:
-        return "true";
-      default:
-        return "undecided";
-    }
-  }
-
- private:
-  // The current status.
-  int status_;
-  // The status  at the end of the last time ProcessDemons() was run.
-  int previous_status_;
-  // If the variable this boolean belongs to is being processed, all
-  // modifications are postponed. This new status is stored in this
-  // field.
-  int postponed_status_;
-  SimpleRevFIFO<Demon*> demons_;
-  SimpleRevFIFO<Demon*> delayed_demons_;
-};  // class BooleanStorage
-
-const int BooleanStorage::kFalse = 0;
-const int BooleanStorage::kTrue = 1;
-const int BooleanStorage::kUndecidedBooleanValue = 2;
 
 class IntervalStorage : public PropagationBaseObject {
  public:
@@ -706,8 +677,85 @@ class IntervalStorage : public PropagationBaseObject {
   SimpleRevFIFO<Demon*> delayed_range_demons_;
 };  // class IntervalStorage
 
-// TODO(user): Move BooleanStorage and IntervalStorage into
-// constraint_solveri.h
+// TODO(user): Change IntervalStorage into an expr or a variable.
+
+// ----- PerformedVar -----
+
+class PerformedVar : public BooleanVar {
+ public:
+  PerformedVar(Solver* const s, BaseIntervalVar* const var, bool optional)
+      : BooleanVar(s, ""),
+        var_(var),
+        previous_value_(optional ? kUnboundBooleanVarValue : 1),
+        postponed_value_(optional ? kUnboundBooleanVarValue : 1) {
+    if (!optional) {
+      value_ = 1;
+    }
+  }
+
+  PerformedVar(Solver* const s, BaseIntervalVar* var)
+      : BooleanVar(s, ""), var_(var), previous_value_(0), postponed_value_(0) {
+    value_ = 1;
+  }
+
+  virtual ~PerformedVar() {}
+
+  virtual void SetValue(int64 v) {
+    if ((v & 0xfffffffffffffffe) != 0 ||  // Not 0 or 1.
+        (value_ != kUnboundBooleanVarValue && v != value_)) {
+      solver()->Fail();
+    }
+    if (var_->InProcess()) {
+      if (postponed_value_ != kUnboundBooleanVarValue &&
+          v != postponed_value_) {  // Fail early.
+        solver()->Fail();
+      } else {
+        postponed_value_ = v;
+      }
+    } else if (value_ == kUnboundBooleanVarValue) {
+      previous_value_ = kUnboundBooleanVarValue;
+      InternalSaveBooleanVarValue(solver(), this);
+      value_ = static_cast<int>(v);
+      var_->Push();
+    }
+  }
+  virtual int64 OldMin() const { return previous_value_ == 1; }
+  virtual int64 OldMax() const { return previous_value_ != 0; }
+  virtual void RestoreValue() {
+    previous_value_ = kUnboundBooleanVarValue;
+    value_ = kUnboundBooleanVarValue;
+    postponed_value_ = kUnboundBooleanVarValue;
+  }
+  void Process() {
+    if (previous_value_ != value_) {
+      ExecuteAll(bound_demons_);
+      EnqueueAll(delayed_bound_demons_);
+    }
+  }
+  void UpdatePostponedValue() {
+    postponed_value_ = value_;
+  }
+  void UpdatePreviousValueAndApplyPostponedValue() {
+    previous_value_ = value_;
+    if (value_ != postponed_value_) {
+      DCHECK_NE(kUnboundBooleanVarValue, postponed_value_);
+      SetValue(postponed_value_);
+    }
+  }
+
+  virtual string DebugString() const {
+    switch (value_) {
+      case 0: return "false";
+      case 1: return "true";
+      default: return "undecided";
+    }
+  }
+
+ private:
+  BaseIntervalVar* const var_;
+  int previous_value_;
+  int postponed_value_;
+};
 
 // ----- FixedDurationIntervalVar -----
 
@@ -727,12 +775,12 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
   virtual int64 OldStartMin() const { return start_.PreviousMin(); }
   virtual int64 OldStartMax() const { return start_.PreviousMax(); }
   virtual void WhenStartRange(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       start_.WhenRange(d);
     }
   }
   virtual void WhenStartBound(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       start_.WhenBound(d);
     }
   }
@@ -760,7 +808,9 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
   virtual bool MustBePerformed() const;
   virtual bool MayBePerformed() const;
   virtual void SetPerformed(bool val);
-  virtual bool WasPerformedBound() const { return performed_.WasBound(); }
+  virtual bool WasPerformedBound() const {
+    return performed_.OldMin() == performed_.OldMax();
+  }
   virtual void WhenPerformedBound(Demon* const d) { performed_.WhenBound(d); }
   virtual void Process();
   virtual string DebugString() const;
@@ -769,12 +819,35 @@ class FixedDurationIntervalVar : public BaseIntervalVar {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
 
- private:
+  virtual IntExpr* StartExpr() {
+    if (start_expr_ == nullptr) {
+      solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
+      start_expr_ = BuildStartExpr(this);
+    }
+    return start_expr_;
+  }
+  IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  IntExpr* EndExpr() { return solver()->MakeSum(StartExpr(), duration_); }
+  IntExpr* PerformedExpr() {
+    return &performed_;
+  }
+  IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return BuildSafeStartExpr(this, unperformed_value);
+  }
+  IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return BuildSafeDurationExpr(this, unperformed_value);
+  }
+  IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return BuildSafeEndExpr(this, unperformed_value);
+  }
+
   virtual void Push();
 
+ private:
   IntervalStorage start_;
   int64 duration_;
-  BooleanStorage performed_;
+  PerformedVar performed_;
+  IntExpr* start_expr_;
 };
 
 FixedDurationIntervalVar::FixedDurationIntervalVar(
@@ -783,40 +856,45 @@ FixedDurationIntervalVar::FixedDurationIntervalVar(
     : BaseIntervalVar(s, name),
       start_(s, start_min, start_max),
       duration_(duration),
-      performed_(s, optional) {}
+      performed_(s, this, optional),
+      start_expr_(nullptr) {}
 
 FixedDurationIntervalVar::FixedDurationIntervalVar(Solver* const s,
                                                    const string& name)
-    : BaseIntervalVar(s, name), start_(s, 0, 0), duration_(0), performed_(s) {}
+    : BaseIntervalVar(s, name),
+      start_(s, 0, 0),
+      duration_(0),
+      performed_(s, this),
+      start_expr_(nullptr) {}
 
 void FixedDurationIntervalVar::Process() {
   CHECK(!in_process_);
   in_process_ = true;
   start_.UpdatePostponedBounds();
-  performed_.UpdatePostponedBounds();
+  performed_.UpdatePostponedValue();
   set_queue_action_on_fail(&cleaner_);
-  if (performed_.MayBeTrue()) {
+  if (performed_.Max() == 1) {
     start_.ProcessDemons();
   }
-  performed_.ProcessDemons();
+  performed_.Process();
   clear_queue_action_on_fail();
   ClearInProcess();
   start_.UpdatePreviousBoundsAndApplyPostponedBounds(this, START);
-  performed_.UpdatePreviousBoundsAndApplyPostponedBounds(this);
+  performed_.UpdatePreviousValueAndApplyPostponedValue();
 }
 
 int64 FixedDurationIntervalVar::StartMin() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return start_.Min();
 }
 
 int64 FixedDurationIntervalVar::StartMax() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return start_.Max();
 }
 
 void FixedDurationIntervalVar::SetStartMin(int64 m) {
-  if (performed_.MayBeTrue()) {
+  if (performed_.Max() == 1) {
     if (in_process_) {
       if (!start_.SetMinInProcess(m)) {
         SetPerformed(false);
@@ -828,7 +906,7 @@ void FixedDurationIntervalVar::SetStartMin(int64 m) {
 }
 
 void FixedDurationIntervalVar::SetStartMax(int64 m) {
-  if (performed_.MayBeTrue()) {
+  if (performed_.Max() == 1) {
     if (in_process_) {
       if (!start_.SetMaxInProcess(m)) {
         SetPerformed(false);
@@ -840,7 +918,7 @@ void FixedDurationIntervalVar::SetStartMax(int64 m) {
 }
 
 void FixedDurationIntervalVar::SetStartRange(int64 mi, int64 ma) {
-  if (performed_.MayBeTrue()) {
+  if (performed_.Max() == 1) {
     if (in_process_) {
       if (!start_.SetRangeInProcess(mi, ma)) {
         SetPerformed(false);
@@ -852,12 +930,12 @@ void FixedDurationIntervalVar::SetStartRange(int64 mi, int64 ma) {
 }
 
 int64 FixedDurationIntervalVar::DurationMin() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return duration_;
 }
 
 int64 FixedDurationIntervalVar::DurationMax() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return duration_;
 }
 
@@ -880,12 +958,12 @@ void FixedDurationIntervalVar::SetDurationRange(int64 mi, int64 ma) {
 }
 
 int64 FixedDurationIntervalVar::EndMin() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return start_.Min() + duration_;
 }
 
 int64 FixedDurationIntervalVar::EndMax() const {
-  CHECK(performed_.MayBeTrue());
+  CHECK_EQ(performed_.Max(), 1);
   return CapAdd(start_.Max(), duration_);
 }
 
@@ -902,19 +980,15 @@ void FixedDurationIntervalVar::SetEndRange(int64 mi, int64 ma) {
 }
 
 bool FixedDurationIntervalVar::MustBePerformed() const {
-  return (performed_.MustBeTrue());
+  return (performed_.Min() == 1);
 }
 
 bool FixedDurationIntervalVar::MayBePerformed() const {
-  return (performed_.MayBeTrue());
+  return (performed_.Max() == 1);
 }
 
 void FixedDurationIntervalVar::SetPerformed(bool val) {
-  if (in_process_) {
-    performed_.SetValueInProcess(val);
-  } else if (performed_.SetValue(val)) {
-    Push();
-  }
+  performed_.SetValue(val);
 }
 
 void FixedDurationIntervalVar::Push() {
@@ -925,7 +999,7 @@ void FixedDurationIntervalVar::Push() {
 
 string FixedDurationIntervalVar::DebugString() const {
   const string& var_name = name();
-  if (!performed_.MayBeTrue()) {
+  if (performed_.Max() == 0) {
     if (!var_name.empty()) {
       return StringPrintf("%s(performed = false)", var_name.c_str());
     } else {
@@ -998,12 +1072,27 @@ class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
 
+  virtual IntExpr* StartExpr() {
+    if (start_expr_ == nullptr) {
+      solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
+      start_expr_ = BuildStartExpr(this);
+    }
+    return start_expr_;
+  }
+  IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  IntExpr* EndExpr() { return solver()->MakeSum(StartExpr(), duration_); }
+  IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
+  IntExpr* SafeStartExpr(int64 unperformed_value) { return StartExpr(); }
+  IntExpr* SafeDurationExpr(int64 unperformed_value) { return PerformedExpr(); }
+  IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
+
  private:
   void CheckOldPerformed() {}
   virtual void Push();
 
   IntervalStorage start_;
   int64 duration_;
+  IntExpr* start_expr_;
 };
 
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
@@ -1011,11 +1100,15 @@ FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
     const string& name)
     : BaseIntervalVar(s, name),
       start_(s, start_min, start_max),
-      duration_(duration) {}
+      duration_(duration),
+      start_expr_(nullptr) {}
 
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
     Solver* const s, const string& name)
-    : BaseIntervalVar(s, name), start_(s, 0, 0), duration_(0) {}
+    : BaseIntervalVar(s, name),
+      start_(s, 0, 0),
+      duration_(0),
+      start_expr_(nullptr) {}
 
 void FixedDurationPerformedIntervalVar::Process() {
   CHECK(!in_process_);
@@ -1185,6 +1278,20 @@ class StartVarPerformedIntervalVar : public IntervalVar {
   virtual void WhenPerformedBound(Demon* const d) {}
   virtual string DebugString() const;
 
+  virtual IntExpr* StartExpr() { return start_var_; }
+  virtual IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeSum(start_var_, duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return StartExpr();
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return DurationExpr();
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
@@ -1339,6 +1446,20 @@ class FixedInterval : public IntervalVar {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
 
+  virtual IntExpr* StartExpr() { return solver()->MakeIntConst(start_); }
+  virtual IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeIntConst(start_ + duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return StartExpr();
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return DurationExpr();
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
+
  private:
   const int64 start_;
   const int64 duration_;
@@ -1437,22 +1558,23 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
                   std::min(duration_max, end_max - start_min)),
         end_(s, std::max(end_min, start_min + duration_min),
              std::min(end_max, start_max + duration_max)),
-        performed_(s, optional) {}
+        performed_(s, this, optional),
+        GENERIC_INTERVAL_CTOR {}
 
   virtual ~VariableDurationIntervalVar() {}
 
   virtual int64 StartMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return start_.Min();
   }
 
   virtual int64 StartMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return start_.Max();
   }
 
   virtual void SetStartMin(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!start_.SetMinInProcess(m)) {
           SetPerformed(false);
@@ -1464,7 +1586,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetStartMax(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!start_.SetMaxInProcess(m)) {
           SetPerformed(false);
@@ -1476,7 +1598,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetStartRange(int64 mi, int64 ma) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!start_.SetRangeInProcess(mi, ma)) {
           SetPerformed(false);
@@ -1488,41 +1610,41 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual int64 OldStartMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return start_.PreviousMin();
   }
 
   virtual int64 OldStartMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return start_.PreviousMax();
   }
 
   virtual void WhenStartRange(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       start_.WhenRange(d);
     }
   }
 
   virtual void WhenStartBound(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       start_.WhenBound(d);
     }
   }
 
   virtual int64 DurationMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return duration_.Min();
   }
 
   virtual int64 DurationMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return duration_.Max();
   }
 
   virtual void SetDurationMin(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!duration_.SetMinInProcess(m)) {
           SetPerformed(false);
@@ -1534,7 +1656,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetDurationMax(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!duration_.SetMaxInProcess(m)) {
           SetPerformed(false);
@@ -1546,7 +1668,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetDurationRange(int64 mi, int64 ma) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!duration_.SetRangeInProcess(mi, ma)) {
           SetPerformed(false);
@@ -1558,41 +1680,41 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual int64 OldDurationMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return duration_.PreviousMin();
   }
 
   virtual int64 OldDurationMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return duration_.PreviousMax();
   }
 
   virtual void WhenDurationRange(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       duration_.WhenRange(d);
     }
   }
 
   virtual void WhenDurationBound(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       duration_.WhenBound(d);
     }
   }
 
   virtual int64 EndMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return end_.Min();
   }
 
   virtual int64 EndMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     return end_.Max();
   }
 
   virtual void SetEndMin(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!end_.SetMinInProcess(m)) {
           SetPerformed(false);
@@ -1604,7 +1726,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetEndMax(int64 m) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!end_.SetMaxInProcess(m)) {
           SetPerformed(false);
@@ -1616,7 +1738,7 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual void SetEndRange(int64 mi, int64 ma) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       if (in_process_) {
         if (!end_.SetRangeInProcess(mi, ma)) {
           SetPerformed(false);
@@ -1628,44 +1750,40 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   }
 
   virtual int64 OldEndMin() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return end_.PreviousMin();
   }
 
   virtual int64 OldEndMax() const {
-    CHECK(performed_.MayBeTrue());
+    CHECK_EQ(performed_.Max(), 1);
     CHECK(in_process_);
     return end_.PreviousMax();
   }
 
   virtual void WhenEndRange(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       end_.WhenRange(d);
     }
   }
 
   virtual void WhenEndBound(Demon* const d) {
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       end_.WhenBound(d);
     }
   }
 
-  virtual bool MustBePerformed() const { return (performed_.MustBeTrue()); }
+  virtual bool MustBePerformed() const { return (performed_.Min() == 1); }
 
-  virtual bool MayBePerformed() const { return (performed_.MayBeTrue()); }
+  virtual bool MayBePerformed() const { return (performed_.Max() == 1); }
 
   virtual void SetPerformed(bool val) {
-    if (in_process_) {
-      performed_.SetValueInProcess(val);
-    } else if (performed_.SetValue(val)) {
-      Push();
-    }
+    performed_.SetValue(val);
   }
 
   virtual bool WasPerformedBound() const {
     CHECK(in_process_);
-    return performed_.WasBound();
+    return performed_.OldMin() == performed_.OldMax();
   }
 
   virtual void WhenPerformedBound(Demon* const d) { performed_.WhenBound(d); }
@@ -1676,26 +1794,26 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
     start_.UpdatePostponedBounds();
     duration_.UpdatePostponedBounds();
     end_.UpdatePostponedBounds();
-    performed_.UpdatePostponedBounds();
+    performed_.UpdatePostponedValue();
     set_queue_action_on_fail(&cleaner_);
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       start_.ProcessDemons();
       duration_.ProcessDemons();
       end_.ProcessDemons();
     }
-    performed_.ProcessDemons();
+    performed_.Process();
     clear_queue_action_on_fail();
     ClearInProcess();
     // TODO(user): Replace this enum by a callback.
     start_.UpdatePreviousBoundsAndApplyPostponedBounds(this, START);
     duration_.UpdatePreviousBoundsAndApplyPostponedBounds(this, DURATION);
     end_.UpdatePreviousBoundsAndApplyPostponedBounds(this, END);
-    performed_.UpdatePreviousBoundsAndApplyPostponedBounds(this);
+    performed_.UpdatePreviousValueAndApplyPostponedValue();
   }
 
   virtual string DebugString() const {
     const string& var_name = name();
-    if (!performed_.MayBeTrue()) {
+    if (!performed_.Max() == 1) {
       if (!var_name.empty()) {
         return StringPrintf("%s(performed = false)", var_name.c_str());
       } else {
@@ -1721,25 +1839,27 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
 
+  GENERIC_INTERVAL_EXPR_METHODS;
+
  private:
   virtual void Push() {
     DCHECK(!in_process_);
-    if (performed_.MayBeTrue()) {
+    if (performed_.Max() == 1) {
       // Performs the intersection on all intervals before pushing the
       // variable onto the queue. This way, we make sure the interval variable
       // is always in a consistent minimal state.
       if (start_.SetRange(CapSub(end_.Min(), duration_.Max()),
                           CapSub(end_.Max(), duration_.Min())) ==
           INCONSISTENT) {
-        performed_.SetValue(false);
+        performed_.SetValue(0);
       } else if (duration_.SetRange(CapSub(end_.Min(), start_.Max()),
                                     CapSub(end_.Max(), start_.Min())) ==
                  INCONSISTENT) {
-        performed_.SetValue(false);
+        performed_.SetValue(0);
       } else if (end_.SetRange(CapAdd(start_.Min(), duration_.Min()),
                                CapAdd(start_.Max(), duration_.Max())) ==
                  INCONSISTENT) {
-        performed_.SetValue(false);
+        performed_.SetValue(0);
       }
     }
     EnqueueVar(&handler_);
@@ -1749,7 +1869,8 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
   IntervalStorage start_;
   IntervalStorage duration_;
   IntervalStorage end_;
-  BooleanStorage performed_;
+  PerformedVar performed_;
+  GENERIC_INTERVAL_EXPR_FIELDS;
 };
 
 // ----- Base synced interval var -----
@@ -1839,6 +1960,26 @@ class FixedDurationIntervalVarStartSyncedOnStart
   }
   virtual void WhenStartRange(Demon* const d) { t_->WhenStartRange(d); }
   virtual void WhenStartBound(Demon* const d) { t_->WhenStartBound(d); }
+  virtual IntExpr* StartExpr() {
+    return solver()->MakeSum(t_->StartExpr(), offset_);
+  }
+  virtual IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeSum(t_->StartExpr(), offset_ + duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return t_->PerformedExpr(); }
+  // These methods create expressions encapsulating the start, end
+  // and duration of the interval var. If the interval var is
+  // unperformed, they will return the unperformed_value.
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return BuildSafeStartExpr(t_, unperformed_value);
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return BuildSafeDurationExpr(t_, unperformed_value);
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return BuildSafeEndExpr(t_, unperformed_value);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->VisitIntervalVariable(
         this, ModelVisitor::kStartSyncOnStartOperation, offset_, t_);
@@ -1876,6 +2017,27 @@ class FixedDurationIntervalVarStartSyncedOnEnd
   virtual int64 OldStartMax() const { return CapAdd(t_->OldEndMax(), offset_); }
   virtual void WhenStartRange(Demon* const d) { t_->WhenEndRange(d); }
   virtual void WhenStartBound(Demon* const d) { t_->WhenEndBound(d); }
+  virtual IntExpr* StartExpr() {
+    return solver()->MakeSum(t_->EndExpr(), offset_);
+  }
+  virtual IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeSum(t_->EndExpr(), offset_ + duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return t_->PerformedExpr(); }
+  // These methods create expressions encapsulating the start, end
+  // and duration of the interval var. If the interval var is
+  // unperformed, they will return the unperformed_value.
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return BuildSafeStartExpr(t_, unperformed_value);
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return BuildSafeDurationExpr(t_, unperformed_value);
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return BuildSafeEndExpr(t_, unperformed_value);
+  }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->VisitIntervalVariable(this, ModelVisitor::kStartSyncOnEndOperation,
                                    offset_, t_);
@@ -2057,4 +2219,8 @@ IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
           interval_var, duration, offset - duration)));
 }
+
+#undef GENERIC_INTERVAL_EXPR_METHODS
+#undef GENERIC_INTERVAL_EXPR_FIELDS
+#undef GENERIC_INTERVAL_CTOR
 }  // namespace operations_research

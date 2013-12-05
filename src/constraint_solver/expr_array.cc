@@ -2013,13 +2013,9 @@ class ExprLinearizer : public ModelParser {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void BeginVisitExtension(const string& type) {
-    LOG(FATAL) << "Should not be here";
-  }
+  virtual void BeginVisitExtension(const string& type) {}
 
-  virtual void EndVisitExtension(const string& type) {
-    LOG(FATAL) << "Should not be here";
-  }
+  virtual void EndVisitExtension(const string& type) {}
   virtual void BeginVisitIntegerExpression(const string& type_name,
                                            const IntExpr* const expr) {
     BeginVisit(true);
@@ -2248,6 +2244,8 @@ class ExprLinearizer : public ModelParser {
 
   void PopMultiplier() { multipliers_.pop_back(); }
 
+  // We do need a IntVar* as key, and not const IntVar*, because clients of this
+  // class typically iterate over the map keys and use them as mutable IntVar*.
   hash_map<IntVar*, int64>* const map_;
   std::vector<int64> multipliers_;
   int64 constant_;

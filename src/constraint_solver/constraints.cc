@@ -282,10 +282,11 @@ class NoCycle : public Constraint {
   }
   virtual void Post();
   virtual void InitialPropagate();
-  void CheckSupport(int index);
+  void NextChange(int index);
   void ActiveBound(int index);
   void NextBound(int index);
   void ComputeSupports();
+  void ComputeSupport(int index);
   virtual string DebugString() const;
 
   void Accept(ModelVisitor* const visitor) const {
@@ -304,9 +305,13 @@ class NoCycle : public Constraint {
 
   const std::vector<IntVar*> nexts_;
   const std::vector<IntVar*> active_;
+  std::vector<IntVarIterator*> iterators_;
   std::vector<int64> starts_;
   std::vector<int64> ends_;
+  bool all_nexts_bound_;
   std::vector<int64> outbound_supports_;
+  std::vector<int64> support_leaves_;
+  std::vector<int64> unsupported_;
   ResultCallback1<bool, int64>* sink_handler_;
   std::vector<int64> sinks_;
   bool owner_;
@@ -320,15 +325,20 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
     : Constraint(s),
       nexts_(nexts),
       active_(active),
+      iterators_(nexts.size(), nullptr),
       starts_(nexts.size()),
       ends_(nexts.size()),
+      all_nexts_bound_(false),
       outbound_supports_(nexts.size(), -1),
       sink_handler_(sink_handler),
       owner_(owner),
       assume_paths_(assume_paths) {
+  support_leaves_.reserve(size());
+  unsupported_.reserve(size());
   for (int i = 0; i < size(); ++i) {
     starts_[i] = i;
     ends_[i] = i;
+    iterators_[i] = nexts_[i]->MakeDomainIterator(true);
   }
   sink_handler_->CheckIsRepeatable();
 }
@@ -336,6 +346,7 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
 void NoCycle::InitialPropagate() {
   // Reduce next domains to sinks + range of nexts
   for (int i = 0; i < size(); ++i) {
+    outbound_supports_[i] = -1;
     IntVar* next = nexts_[i];
     for (int j = next->Min(); j < 0; ++j) {
       if (!sink_handler_->Run(j)) {
@@ -348,9 +359,12 @@ void NoCycle::InitialPropagate() {
       }
     }
   }
+  solver()->SaveAndSetValue(&all_nexts_bound_, true);
   for (int i = 0; i < size(); ++i) {
     if (nexts_[i]->Bound()) {
       NextBound(i);
+    } else {
+      solver()->SaveAndSetValue(&all_nexts_bound_, false);
     }
   }
   ComputeSupports();
@@ -360,11 +374,8 @@ void NoCycle::Post() {
   if (size() == 0) return;
   for (int i = 0; i < size(); ++i) {
     IntVar* next = nexts_[i];
-    Demon* d = MakeConstraintDemon1(solver(), this, &NoCycle::NextBound,
-                                    "NextBound", i);
-    next->WhenBound(d);
     Demon* support_demon = MakeConstraintDemon1(
-        solver(), this, &NoCycle::CheckSupport, "CheckSupport", i);
+        solver(), this, &NoCycle::NextChange, "NextChange", i);
     next->WhenDomain(support_demon);
     Demon* active_demon = MakeConstraintDemon1(
         solver(), this, &NoCycle::ActiveBound, "ActiveBound", i);
@@ -386,10 +397,26 @@ void NoCycle::Post() {
   }
 }
 
-void NoCycle::CheckSupport(int index) {
-  // TODO(user): make this incremental
-  if (!nexts_[index]->Contains(outbound_supports_[index])) {
-    ComputeSupports();
+void NoCycle::NextChange(int index) {
+  IntVar* const next_var = nexts_[index];
+  if (next_var->Bound()) {
+    NextBound(index);
+  }
+  if (!all_nexts_bound_) {
+    bool all_nexts_bound = true;
+    for (int i = 0; i < size(); ++i) {
+      if (!nexts_[i]->Bound()) {
+        all_nexts_bound = false;
+        break;
+      }
+    }
+    solver()->SaveAndSetValue(&all_nexts_bound_, all_nexts_bound);
+  }
+  if (all_nexts_bound_) {
+    return;
+  }
+  if (!next_var->Contains(outbound_supports_[index])) {
+    ComputeSupport(index);
   }
 }
 
@@ -429,56 +456,140 @@ void NoCycle::NextBound(int index) {
   }
 }
 
-// For each variable, find a path connecting to a sink. Starts partial paths
-// from the sinks down to all unconnected variables. If some variables remain
-// unconnected, fail. Resulting paths are used as supports.
+// Compute the support tree. For each variable, find a path connecting to a
+// sink. Starts partial paths from the sinks down to all unconnected variables.
+// If some variables remain unconnected, make the corresponding active_
+// variable false.
+// Resulting tree is used as supports for nect variables.
+// TODO(user): Try to see if we can find an algorithm which is less than
+// quadratic to do this (note that if the tree is flat we are already linear
+// for a given number of sinks).
 void NoCycle::ComputeSupports() {
-  std::unique_ptr<int64[]> supported(new int64[size()]);
-  int64 support_count = 0;
-  for (int i = 0; i < size(); ++i) {
-    if (nexts_[i]->Bound()) {
-      supported[support_count] = i;
-      outbound_supports_[i] = nexts_[i]->Value();
-      ++support_count;
-    } else {
-      outbound_supports_[i] = -1;
-    }
-  }
-  if (size() == support_count) {
-    return;
-  }
+  // unsupported_ contains nodes not connected to sinks.
+  unsupported_.clear();
+  // supported_leaves_ contains the current frontier containing nodes surely
+  // connected to sinks.
+  support_leaves_.clear();
+  // Initial phase: find direct connections to sinks and initialize
+  // support_leaves_ and unsupported_ accordingly.
   const int sink_size = sinks_.size();
   for (int i = 0; i < size(); ++i) {
     const IntVar* next = nexts_[i];
-    if (!nexts_[i]->Bound()) {
-      for (int j = 0; j < sink_size; ++j) {
-        if (next->Contains(sinks_[j])) {
-          supported[support_count] = i;
-          outbound_supports_[i] = sinks_[j];
-          ++support_count;
+    // If node is not active, no need to try to connect it to a sink.
+    if (active_[i]->Max() != 0) {
+      const int64 current_support = outbound_supports_[i];
+      // Optimization: if this node was already supported by a sink, check if
+      // it's still a valid support.
+      if (current_support >= 0 &&
+          sink_handler_->Run(current_support) &&
+          next->Contains(current_support)) {
+        support_leaves_.push_back(i);
+      } else {
+        // Optimization: iterate on sinks or next domain depending on which is
+        // smaller.
+        outbound_supports_[i] = -1;
+        if (sink_size < next->Size()) {
+          for (int j = 0; j < sink_size; ++j) {
+            if (next->Contains(sinks_[j])) {
+              outbound_supports_[i] = sinks_[j];
+              support_leaves_.push_back(i);
+              break;
+            }
+          }
+        } else {
+          for (iterators_[i]->Init();
+               iterators_[i]->Ok();
+               iterators_[i]->Next()) {
+            const int64 value = iterators_[i]->Value();
+            if (sink_handler_->Run(value)) {
+              outbound_supports_[i] = value;
+              support_leaves_.push_back(i);
+              break;
+            }
+          }
+        }
+      }
+      if (outbound_supports_[i] == -1) {
+        unsupported_.push_back(i);
+      }
+    }
+  }
+  // No need to iterate on all nodes connected to sinks but just on the ones
+  // added in the last iteration; leaves_begin and leaves_end mark the block
+  // in support_leaves_ corresponding to such nodes.
+  size_t leaves_begin = 0;
+  size_t leaves_end = support_leaves_.size();
+  while (!unsupported_.empty()) {
+    // Try to connected unsupported nodes to nodes connected to sinks.
+    for (int64 unsupported_index = 0;
+         unsupported_index < unsupported_.size();
+         ++unsupported_index) {
+      const int64 unsupported = unsupported_[unsupported_index];
+      const IntVar* const next = nexts_[unsupported];
+      for (int i = leaves_begin; i < leaves_end; ++i) {
+        if (next->Contains(support_leaves_[i])) {
+          outbound_supports_[unsupported] = support_leaves_[i];
+          support_leaves_.push_back(unsupported);
+          // Remove current node from unsupported vector.
+          unsupported_[unsupported_index] = unsupported_.back();
+          unsupported_.pop_back();
+          --unsupported_index;
           break;
+        }
+        // TODO(user): evaluate same trick as with the sinks by keeping a
+        // bitmap with supported nodes.
+      }
+    }
+    // No new leaves were added, we can bail out.
+    if (leaves_end == support_leaves_.size()) {
+      break;
+    }
+    leaves_begin = leaves_end;
+    leaves_end = support_leaves_.size();
+  }
+  // Mark as inactive any unsupported node.
+  for (int64 unsupported_index = 0;
+       unsupported_index < unsupported_.size();
+       ++unsupported_index) {
+    active_[unsupported_[unsupported_index]]->SetMax(0);
+  }
+}
+
+void NoCycle::ComputeSupport(int index) {
+  // Try to reconnect the node to the support tree by finding a next node
+  // which is both supported and was not a descendant of the node in the tree.
+  if (active_[index]->Max() != 0) {
+    for (iterators_[index]->Init();
+         iterators_[index]->Ok();
+         iterators_[index]->Next()) {
+      const int64 next = iterators_[index]->Value();
+      if (sink_handler_->Run(next)) {
+        outbound_supports_[index] = next;
+        return;
+      }
+      if (next != index && next < outbound_supports_.size()) {
+        int64 next_support = outbound_supports_[next];
+        if (next_support >= 0) {
+          // Check if next is not already a descendant of index.
+          bool ancestor_found = false;
+          while (next_support < outbound_supports_.size()
+                 && !sink_handler_->Run(next_support)) {
+            if (next_support == index) {
+              ancestor_found = true;
+              break;
+            }
+            next_support = outbound_supports_[next_support];
+          }
+          if (!ancestor_found) {
+            outbound_supports_[index] = next;
+            return;
+          }
         }
       }
     }
   }
-  for (int i = 0; i < support_count && support_count < size(); ++i) {
-    const int64 supported_i = supported[i];
-    for (int j = 0; j < size(); ++j) {
-      if (outbound_supports_[j] < 0 && nexts_[j]->Contains(supported_i)) {
-        supported[support_count] = j;
-        outbound_supports_[j] = supported_i;
-        ++support_count;
-      }
-    }
-  }
-  if (support_count != size()) {
-    supported.reset();
-    for (int i = 0; i < size(); ++i) {
-      if (outbound_supports_[i] < 0) {
-        active_[i]->SetMax(0);
-      }
-    }
-  }
+  // No support was found, rebuild the support tree.
+  ComputeSupports();
 }
 
 string NoCycle::DebugString() const {
@@ -656,7 +767,7 @@ class Circuit : public Constraint {
 
 const int Circuit::kRoot = 0;
 
-// ----- Circuit constraint -----
+// ----- Sub Circuit constraint -----
 
 class SubCircuit : public Constraint {
  public:
@@ -873,9 +984,8 @@ class SubCircuit : public Constraint {
 
 // ----- Misc -----
 
-bool GreaterThan(int64 x, int64 y) {
-  return y >= x;
-}
+
+bool GreaterThan(int64 x, int64 y) { return y >= x; }
 }  // namespace
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,

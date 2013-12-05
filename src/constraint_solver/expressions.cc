@@ -15,6 +15,7 @@
 #include <string.h>
 #include <algorithm>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,6 +56,138 @@ IntVar::IntVar(Solver* const s) : IntExpr(s) {}
 
 IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
   set_name(name);
+}
+
+// ----- Boolean variable -----
+
+const int BooleanVar::kUnboundBooleanVarValue = 2;
+
+void BooleanVar::SetMin(int64 m) {
+  if (m <= 0) return;
+  if (m > 1) solver()->Fail();
+  SetValue(1);
+}
+
+void BooleanVar::SetMax(int64 m) {
+  if (m >= 1) return;
+  if (m < 0) solver()->Fail();
+  SetValue(0);
+}
+
+void BooleanVar::SetRange(int64 mi, int64 ma) {
+  if (mi > 1 || ma < 0 || mi > ma) {
+    solver()->Fail();
+  }
+  if (mi == 1) {
+    SetValue(1);
+  } else if (ma == 0) {
+    SetValue(0);
+  }
+}
+
+void BooleanVar::RemoveValue(int64 v) {
+  if (value_ == kUnboundBooleanVarValue) {
+    if (v == 0) {
+      SetValue(1);
+    } else if (v == 1) {
+      SetValue(0);
+    }
+  } else if (v == value_) {
+    solver()->Fail();
+  }
+}
+
+void BooleanVar::RemoveInterval(int64 l, int64 u) {
+  if (l <= 0 && u >= 1) {
+    solver()->Fail();
+  } else if (l == 1) {
+    SetValue(0);
+  } else if (u == 0) {
+    SetValue(1);
+  }
+}
+
+void BooleanVar::WhenBound(Demon* d) {
+  if (value_ == kUnboundBooleanVarValue) {
+    if (d->priority() == Solver::DELAYED_PRIORITY) {
+      delayed_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    } else {
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
+  }
+}
+
+uint64 BooleanVar::Size() const {
+  return (1 + (value_ == kUnboundBooleanVarValue));
+}
+
+bool BooleanVar::Contains(int64 v) const {
+  return ((v == 0 && value_ != 1) || (v == 1 && value_ != 0));
+}
+
+IntVar* BooleanVar::IsEqual(int64 constant) {
+  if (constant > 1 || constant < 0) {
+    return solver()->MakeIntConst(0);
+  }
+  if (constant == 1) {
+    return this;
+  } else {  // constant == 0.
+    return solver()->MakeDifference(1, this)->Var();
+  }
+}
+
+IntVar* BooleanVar::IsDifferent(int64 constant) {
+  if (constant > 1 || constant < 0) {
+    return solver()->MakeIntConst(1);
+  }
+  if (constant == 1) {
+    return solver()->MakeDifference(1, this)->Var();
+  } else {  // constant == 0.
+    return this;
+  }
+}
+
+IntVar* BooleanVar::IsGreaterOrEqual(int64 constant) {
+  if (constant > 1) {
+    return solver()->MakeIntConst(0);
+  } else if (constant <= 0) {
+    return solver()->MakeIntConst(1);
+  } else {
+    return this;
+  }
+}
+
+IntVar* BooleanVar::IsLessOrEqual(int64 constant) {
+  if (constant < 0) {
+    return solver()->MakeIntConst(0);
+  } else if (constant >= 1) {
+    return solver()->MakeIntConst(1);
+  } else {
+    return IsEqual(0);
+  }
+}
+
+string BooleanVar::DebugString() const {
+  string out;
+  const string& var_name = name();
+  if (!var_name.empty()) {
+    out = var_name + "(";
+  } else {
+    out = "BooleanVar(";
+  }
+  switch (value_) {
+    case 0:
+      out += "0";
+      break;
+    case 1:
+      out += "1";
+      break;
+    case kUnboundBooleanVarValue:
+      out += "0 .. 1";
+      break;
+  }
+  out += ")";
+  return out;
 }
 
 namespace {
@@ -1769,16 +1902,14 @@ string DomainIntVar::DebugString() const {
   return out;
 }
 
-// ----- Boolean variable -----
+// ----- Real Boolean Var -----
 
-static const int kUnboundBooleanVarValue = 2;
-
-class BooleanVar : public IntVar {
+class ConcreteBooleanVar : public BooleanVar {
  public:
   // Utility classes
   class Handler : public Demon {
    public:
-    explicit Handler(BooleanVar* const var) : Demon(), var_(var) {}
+    explicit Handler(ConcreteBooleanVar* const var) : Demon(), var_(var) {}
     virtual ~Handler() {}
     virtual void Run(Solver* const s) {
       s->GetPropagationMonitor()->StartProcessingIntegerVariable(var_);
@@ -1793,210 +1924,44 @@ class BooleanVar : public IntVar {
     }
 
    private:
-    BooleanVar* const var_;
+    ConcreteBooleanVar* const var_;
   };
 
-  BooleanVar(Solver* const s, const string& name = "")
-      : IntVar(s, name), value_(kUnboundBooleanVarValue), handler_(this) {}
-  virtual ~BooleanVar() {}
+  ConcreteBooleanVar(Solver* const s, const string& name)
+      : BooleanVar(s, name), handler_(this) {}
 
-  virtual int64 Min() const { return (value_ == 1); }
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const { return (value_ != 0); }
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 l, int64 u);
-  virtual void SetValue(int64 v);
-  virtual bool Bound() const { return (value_ != kUnboundBooleanVarValue); }
-  virtual int64 Value() const {
-    CHECK_NE(value_, kUnboundBooleanVarValue) << "variable is not bound";
-    return value_;
-  }
-  virtual void RemoveValue(int64 v);
-  virtual void RemoveInterval(int64 l, int64 u);
-  virtual void WhenBound(Demon* d) {
+  virtual ~ConcreteBooleanVar() {}
+
+  virtual void SetValue(int64 v) {
     if (value_ == kUnboundBooleanVarValue) {
-      if (d->priority() == Solver::DELAYED_PRIORITY) {
-        delayed_bound_demons_.PushIfNotTop(solver(),
-                                           solver()->RegisterDemon(d));
-      } else {
-        bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      if ((v & 0xfffffffffffffffe) == 0) {
+        InternalSaveBooleanVarValue(solver(), this);
+        value_ = static_cast<int>(v);
+        EnqueueVar(&handler_);
+        return;
       }
-    }
-  }
-  virtual void WhenRange(Demon* d) { WhenBound(d); }
-  virtual void WhenDomain(Demon* d) { WhenBound(d); }
-  void Process();
-  void Push() { EnqueueVar(&handler_); }
-  virtual uint64 Size() const {
-    return (1 + (value_ == kUnboundBooleanVarValue));
-  }
-  virtual bool Contains(int64 v) const {
-    return ((v == 0 && value_ != 1) || (v == 1 && value_ != 0));
-  }
-  virtual IntVarIterator* MakeHoleIterator(bool reversible) const {
-    return COND_REV_ALLOC(reversible, new EmptyIterator());
-  }
-  virtual IntVarIterator* MakeDomainIterator(bool reversible) const {
-    return COND_REV_ALLOC(reversible, new RangeIterator(this));
-  }
-  virtual int64 OldMin() const { return 0LL; }
-  virtual int64 OldMax() const { return 1LL; }
-  virtual string DebugString() const;
-  virtual int VarType() const { return BOOLEAN_VAR; }
-
-  virtual IntVar* IsEqual(int64 constant) {
-    if (constant > 1 || constant < 0) {
-      return solver()->MakeIntConst(0);
-    }
-    if (constant == 1) {
-      return this;
-    } else {  // constant == 0.
-      return solver()->MakeDifference(1, this)->Var();
-    }
-  }
-
-  virtual IntVar* IsDifferent(int64 constant) {
-    if (constant > 1 || constant < 0) {
-      return solver()->MakeIntConst(1);
-    }
-    if (constant == 1) {
-      return solver()->MakeDifference(1, this)->Var();
-    } else {  // constant == 0.
-      return this;
-    }
-  }
-
-  virtual IntVar* IsGreaterOrEqual(int64 constant) {
-    if (constant > 1) {
-      return solver()->MakeIntConst(0);
-    } else if (constant <= 0) {
-      return solver()->MakeIntConst(1);
-    } else {
-      return this;
-    }
-  }
-
-  virtual IntVar* IsLessOrEqual(int64 constant) {
-    if (constant < 0) {
-      return solver()->MakeIntConst(0);
-    } else if (constant >= 1) {
-      return solver()->MakeIntConst(1);
-    } else {
-      return IsEqual(0);
-    }
-  }
-
-  void RestoreValue() { value_ = kUnboundBooleanVarValue; }
-
-  virtual string BaseName() const { return "BooleanVar"; }
-
-  friend class TimesBooleanPosIntExpr;
-  friend class TimesBooleanIntExpr;
-  friend class TimesPosCstBoolVar;
-
- private:
-  int value_;
-  SimpleRevFIFO<Demon*> bound_demons_;
-  SimpleRevFIFO<Demon*> delayed_bound_demons_;
-  Handler handler_;
-};
-
-void BooleanVar::SetMin(int64 m) {
-  if (m <= 0) {
-    return;
-  }
-  if (m > 1) solver()->Fail();
-  SetValue(1);
-}
-
-void BooleanVar::SetMax(int64 m) {
-  if (m >= 1) {
-    return;
-  }
-  if (m < 0) {
-    solver()->Fail();
-  }
-  SetValue(0);
-}
-
-void BooleanVar::SetRange(int64 mi, int64 ma) {
-  if (mi > 1 || ma < 0 || mi > ma) {
-    solver()->Fail();
-  }
-  if (mi == 1) {
-    SetValue(1);
-  } else if (ma == 0) {
-    SetValue(0);
-  }
-}
-
-void BooleanVar::SetValue(int64 v) {
-  if (value_ == kUnboundBooleanVarValue) {
-    if (v == 0 || v == 1) {
-      InternalSaveBooleanVarValue(solver(), this);
-      value_ = static_cast<int>(v);
-      Push();
+    } else if (v == value_) {
       return;
     }
-  } else if (v == value_) {
-    return;
+    solver()->Fail();
   }
-  solver()->Fail();
-}
 
-void BooleanVar::RemoveValue(int64 v) {
-  if (value_ == kUnboundBooleanVarValue) {
-    if (v == 0) {
-      SetValue(1);
-    } else if (v == 1) {
-      SetValue(0);
+  void Process() {
+    DCHECK_NE(value_, kUnboundBooleanVarValue);
+    ExecuteAll(bound_demons_);
+    for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_bound_demons_); it.ok();
+         ++it) {
+      EnqueueDelayedDemon(*it);
     }
-  } else if (v == value_) {
-    solver()->Fail();
   }
-}
 
-void BooleanVar::RemoveInterval(int64 l, int64 u) {
-  if (l <= 0 && u >= 1) {
-    solver()->Fail();
-  } else if (l == 1) {
-    SetValue(0);
-  } else if (u == 0) {
-    SetValue(1);
-  }
-}
+  virtual int64 OldMin() const { return 0LL; }
+  virtual int64 OldMax() const { return 1LL; }
+  virtual void RestoreValue() { value_ = kUnboundBooleanVarValue; }
 
-void BooleanVar::Process() {
-  DCHECK_NE(value_, kUnboundBooleanVarValue);
-  ExecuteAll(bound_demons_);
-  for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_bound_demons_); it.ok();
-       ++it) {
-    EnqueueDelayedDemon(*it);
-  }
-}
-
-string BooleanVar::DebugString() const {
-  string out;
-  const string& var_name = name();
-  if (!var_name.empty()) {
-    out = var_name + "(";
-  } else {
-    out = "BooleanVar(";
-  }
-  switch (value_) {
-    case 0:
-      out += "0";
-      break;
-    case 1:
-      out += "1";
-      break;
-    case kUnboundBooleanVarValue:
-      out += "0 .. 1";
-      break;
-  }
-  out += ")";
-  return out;
-}
+ private:
+  Handler handler_;
+};
 
 // ----- IntConst -----
 
@@ -2783,7 +2748,7 @@ TimesPosCstBoolVar::TimesPosCstBoolVar(Solver* const s, BooleanVar* v, int64 c)
 TimesPosCstBoolVar::~TimesPosCstBoolVar() {}
 
 int64 TimesPosCstBoolVar::Min() const {
-  return (boolean_var()->value_ == 1) * cst_;
+  return (boolean_var()->RawValue() == 1) * cst_;
 }
 
 void TimesPosCstBoolVar::SetMin(int64 m) {
@@ -2795,7 +2760,7 @@ void TimesPosCstBoolVar::SetMin(int64 m) {
 }
 
 int64 TimesPosCstBoolVar::Max() const {
-  return (boolean_var()->value_ != 0) * cst_;
+  return (boolean_var()->RawValue() != 0) * cst_;
 }
 
 void TimesPosCstBoolVar::SetMax(int64 m) {
@@ -2828,15 +2793,15 @@ void TimesPosCstBoolVar::SetValue(int64 v) {
 }
 
 bool TimesPosCstBoolVar::Bound() const {
-  return boolean_var()->value_ != kUnboundBooleanVarValue;
+  return boolean_var()->RawValue() != BooleanVar::kUnboundBooleanVarValue;
 }
 
 void TimesPosCstBoolVar::WhenRange(Demon* d) { boolean_var()->WhenRange(d); }
 
 int64 TimesPosCstBoolVar::Value() const {
-  CHECK_NE(boolean_var()->value_, kUnboundBooleanVarValue)
+  CHECK_NE(boolean_var()->RawValue(), BooleanVar::kUnboundBooleanVarValue)
       << "variable is not bound";
-  return boolean_var()->value_ * cst_;
+  return boolean_var()->RawValue() * cst_;
 }
 
 void TimesPosCstBoolVar::RemoveValue(int64 v) {
@@ -2861,14 +2826,15 @@ void TimesPosCstBoolVar::WhenBound(Demon* d) { boolean_var()->WhenBound(d); }
 void TimesPosCstBoolVar::WhenDomain(Demon* d) { boolean_var()->WhenDomain(d); }
 
 uint64 TimesPosCstBoolVar::Size() const {
-  return (1 + (boolean_var()->value_ == kUnboundBooleanVarValue));
+  return (1 +
+          (boolean_var()->RawValue() == BooleanVar::kUnboundBooleanVarValue));
 }
 
 bool TimesPosCstBoolVar::Contains(int64 v) const {
   if (v == 0) {
-    return boolean_var()->value_ != 1;
+    return boolean_var()->RawValue() != 1;
   } else if (v == cst_) {
-    return boolean_var()->value_ != 0;
+    return boolean_var()->RawValue() != 0;
   }
   return false;
 }
@@ -3849,11 +3815,11 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
       : BaseIntExpr(s), boolvar_(b), expr_(e) {}
   virtual ~TimesBooleanPosIntExpr() {}
   virtual int64 Min() const {
-    return (boolvar_->value_ == 1 ? expr_->Min() : 0);
+    return (boolvar_->RawValue() == 1 ? expr_->Min() : 0);
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
-    return (boolvar_->value_ == 0 ? 0 : expr_->Max());
+    return (boolvar_->RawValue() == 0 ? 0 : expr_->Max());
   }
   virtual void SetMax(int64 m);
   virtual void Range(int64* mi, int64* ma);
@@ -3900,13 +3866,13 @@ void TimesBooleanPosIntExpr::SetMax(int64 m) {
   if (m < expr_->Min()) {
     boolvar_->SetValue(0);
   }
-  if (boolvar_->value_ == 1) {
+  if (boolvar_->RawValue() == 1) {
     expr_->SetMax(m);
   }
 }
 
 void TimesBooleanPosIntExpr::Range(int64* mi, int64* ma) {
-  const int value = boolvar_->value_;
+  const int value = boolvar_->RawValue();
   if (value == 0) {
     *mi = 0;
     *ma = 0;
@@ -3929,14 +3895,15 @@ void TimesBooleanPosIntExpr::SetRange(int64 mi, int64 ma) {
   if (ma < expr_->Min()) {
     boolvar_->SetValue(0);
   }
-  if (boolvar_->value_ == 1) {
+  if (boolvar_->RawValue() == 1) {
     expr_->SetMax(ma);
   }
 }
 
 bool TimesBooleanPosIntExpr::Bound() const {
-  return (boolvar_->value_ == 0 || expr_->Max() == 0 ||
-          (boolvar_->value_ != kUnboundBooleanVarValue && expr_->Bound()));
+  return (boolvar_->RawValue() == 0 || expr_->Max() == 0 ||
+          (boolvar_->RawValue() != BooleanVar::kUnboundBooleanVarValue &&
+           expr_->Bound()));
 }
 
 // ----- TimesBooleanIntExpr -----
@@ -3947,22 +3914,22 @@ class TimesBooleanIntExpr : public BaseIntExpr {
       : BaseIntExpr(s), boolvar_(b), expr_(e) {}
   virtual ~TimesBooleanIntExpr() {}
   virtual int64 Min() const {
-    switch (boolvar_->value_) {
+    switch (boolvar_->RawValue()) {
       case 0: { return 0LL; }
       case 1: { return expr_->Min(); }
       default: {
-        DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+        DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
         return std::min(0LL, expr_->Min());
       }
     }
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
-    switch (boolvar_->value_) {
+    switch (boolvar_->RawValue()) {
       case 0: { return 0LL; }
       case 1: { return expr_->Max(); }
       default: {
-        DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+        DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
         return std::max(0LL, expr_->Max());
       }
     }
@@ -3999,7 +3966,7 @@ class TimesBooleanIntExpr : public BaseIntExpr {
 };
 
 void TimesBooleanIntExpr::SetMin(int64 m) {
-  switch (boolvar_->value_) {
+  switch (boolvar_->RawValue()) {
     case 0: {
       if (m > 0) {
         solver()->Fail();
@@ -4011,7 +3978,7 @@ void TimesBooleanIntExpr::SetMin(int64 m) {
       break;
     }
     default: {
-      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
       if (m > 0) {  // 0 is no longer possible for boolvar because min > 0.
         boolvar_->SetValue(1);
         expr_->SetMin(m);
@@ -4023,7 +3990,7 @@ void TimesBooleanIntExpr::SetMin(int64 m) {
 }
 
 void TimesBooleanIntExpr::SetMax(int64 m) {
-  switch (boolvar_->value_) {
+  switch (boolvar_->RawValue()) {
     case 0: {
       if (m < 0) {
         solver()->Fail();
@@ -4035,7 +4002,7 @@ void TimesBooleanIntExpr::SetMax(int64 m) {
       break;
     }
     default: {
-      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
       if (m < 0) {  // 0 is no longer possible for boolvar because max < 0.
         boolvar_->SetValue(1);
         expr_->SetMax(m);
@@ -4047,7 +4014,7 @@ void TimesBooleanIntExpr::SetMax(int64 m) {
 }
 
 void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
-  switch (boolvar_->value_) {
+  switch (boolvar_->RawValue()) {
     case 0: {
       *mi = 0;
       *ma = 0;
@@ -4059,7 +4026,7 @@ void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
       break;
     }
     default: {
-      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
       *mi = std::min(0LL, expr_->Min());
       *ma = std::max(0LL, expr_->Max());
       break;
@@ -4071,7 +4038,7 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  switch (boolvar_->value_) {
+  switch (boolvar_->RawValue()) {
     case 0: {
       if (mi > 0 || ma < 0) {
         solver()->Fail();
@@ -4083,7 +4050,7 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
       break;
     }
     default: {
-      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
       if (mi > 0) {
         boolvar_->SetValue(1);
         expr_->SetMin(mi);
@@ -4102,9 +4069,10 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
 }
 
 bool TimesBooleanIntExpr::Bound() const {
-  return (boolvar_->value_ == 0 ||
+  return (boolvar_->RawValue() == 0 ||
           (expr_->Bound() &&
-           (boolvar_->value_ != kUnboundBooleanVarValue || expr_->Max() == 0)));
+           (boolvar_->RawValue() != BooleanVar::kUnboundBooleanVarValue ||
+            expr_->Max() == 0)));
 }
 
 // ----- DivPosIntCstExpr -----
@@ -5669,6 +5637,17 @@ class VariableQueueCleaner : public Action {
 
 }  //  namespace
 
+// ----- Misc -----
+
+IntVarIterator* BooleanVar::MakeHoleIterator(bool reversible) const {
+  return COND_REV_ALLOC(reversible, new EmptyIterator());
+}
+IntVarIterator* BooleanVar::MakeDomainIterator(bool reversible) const {
+  return COND_REV_ALLOC(reversible, new RangeIterator(this));
+}
+
+// ----- API -----
+
 Action* NewDomainIntVarCleaner() { return new VariableQueueCleaner; }
 
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
@@ -5707,11 +5686,12 @@ IntVar* Solver::MakeIntVar(int64 min, int64 max, const string& name) {
     return RevAlloc(new IntConst(this, min, name));
   }
   if (min == 0 && max == 1) {
-    return RegisterIntVar(RevAlloc(new BooleanVar(this, name)));
+    return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
   } else if (max - min == 1) {
     const string inner_name = "inner_" + name;
-    return RegisterIntVar(MakeSum(RevAlloc(new BooleanVar(this, inner_name)),
-                                  min)->VarWithName(name));
+    return RegisterIntVar(
+        MakeSum(RevAlloc(new ConcreteBooleanVar(this, inner_name)), min)
+            ->VarWithName(name));
   } else {
     return RegisterIntVar(RevAlloc(new DomainIntVar(this, min, max, name)));
   }
@@ -5722,11 +5702,11 @@ IntVar* Solver::MakeIntVar(int64 min, int64 max) {
 }
 
 IntVar* Solver::MakeBoolVar(const string& name) {
-  return RegisterIntVar(RevAlloc(new BooleanVar(this, name)));
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
 }
 
 IntVar* Solver::MakeBoolVar() {
-  return RegisterIntVar(RevAlloc(new BooleanVar(this, "")));
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
@@ -6140,7 +6120,7 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
     return MakeProd(MakeProd(left, right), coefficient);
   }
 
-  // ----- Standart build -----
+  // ----- Standard build -----
 
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());

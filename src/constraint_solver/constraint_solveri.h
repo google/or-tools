@@ -32,7 +32,7 @@
 //     PathOperator to create new local search operators.
 //   - LocalSearchFilter and IntVarLocalSearchFilter to create new local
 //     search filters.
-//   - BaseLNS to write Large Neighbood Search operators.
+//   - BaseLNS to write Large Neighborhood Search operators.
 //   - SymmetryBreaker to describe model symmetries that will be broken during
 //     search using the 'Symmetry Breaking During Search' framework
 //     see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
@@ -92,7 +92,7 @@ class CPIntervalVariableProto;
 // subclasses of BaseIntExpr represent range-only stateless objects.
 // That is the min(A + B) is recomputed each time as min(A) + min(B).
 // Furthermore, sometimes, the propagation on an expression is not complete,
-// and Min(), Max() are not monononic with respect to SetMin() and SetMax().
+// and Min(), Max() are not monotonic with respect to SetMin() and SetMax().
 // For instance, A is a var with domain [0 .. 5], and B another variable
 // with domain [0 .. 5]. Then Plus(A, B) has domain [0, 10].
 // If we apply SetMax(Plus(A, B), 4)). Then we will deduce that both A
@@ -135,7 +135,7 @@ enum VarTypes {
 // ----- utility classes -----
 
 // This class represent a reversible FIFO structure.
-// The main diffence w.r.t a standart FIFO structure is that a Solver is
+// The main difference w.r.t a standard FIFO structure is that a Solver is
 // given as parameter to the modifiers such that the solver can store the
 // backtrack information
 // Iterator's traversing order should not be changed, as some algorithm
@@ -291,7 +291,7 @@ inline uint64 Hash1(const std::vector<int64>& ptrs) {
 // ----- Immutable Multi Map -----
 
 // Reversible Immutable MultiMap class.
-// Represents an immutable multi-map that backstracks with the solver.
+// Represents an immutable multi-map that backtracks with the solver.
 template <class K, class V>
 class RevImmutableMultiMap {
  public:
@@ -786,7 +786,7 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
 // current values of the variables); this is done in the Start() method.
 // Then one can iterate over the neighbors using the MakeNextNeighbor method.
 // This method returns an assignment which represents the incremental changes
-// to the curent solution. It also returns a second assignment representing the
+// to the current solution. It also returns a second assignment representing the
 // changes to the last solution defined by the neighborhood operator; this
 // assignment is empty is the neighborhood operator cannot track this
 // information.
@@ -1183,7 +1183,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
  private:
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
-  dense_hash_map<IntVar*, int64> var_to_index_;
+  dense_hash_map<const IntVar*, int64> var_to_index_;
 };
 
 // ---------- PropagationMonitor ----------
@@ -1249,6 +1249,59 @@ class PropagationMonitor : public SearchMonitor {
   virtual void Install();
 };
 
+// ----- Boolean Variable -----
+
+class BooleanVar : public IntVar {
+ public:
+  static const int kUnboundBooleanVarValue;
+
+  BooleanVar(Solver* const s, const string& name = "")
+      : IntVar(s, name), value_(kUnboundBooleanVarValue) {}
+
+  virtual ~BooleanVar() {}
+
+  virtual int64 Min() const { return (value_ == 1); }
+  virtual void SetMin(int64 m);
+  virtual int64 Max() const { return (value_ != 0); }
+  virtual void SetMax(int64 m);
+  virtual void SetRange(int64 l, int64 u);
+  virtual bool Bound() const { return (value_ != kUnboundBooleanVarValue); }
+  virtual int64 Value() const {
+    CHECK_NE(value_, kUnboundBooleanVarValue) << "variable is not bound";
+    return value_;
+  }
+  virtual void RemoveValue(int64 v);
+  virtual void RemoveInterval(int64 l, int64 u);
+  virtual void WhenBound(Demon* d);
+  virtual void WhenRange(Demon* d) { WhenBound(d); }
+  virtual void WhenDomain(Demon* d) { WhenBound(d); }
+  virtual uint64 Size() const;
+  virtual bool Contains(int64 v) const;
+  virtual IntVarIterator* MakeHoleIterator(bool reversible) const;
+  virtual IntVarIterator* MakeDomainIterator(bool reversible) const;
+  virtual string DebugString() const;
+  virtual int VarType() const { return BOOLEAN_VAR; }
+
+  virtual IntVar* IsEqual(int64 constant);
+  virtual IntVar* IsDifferent(int64 constant);
+  virtual IntVar* IsGreaterOrEqual(int64 constant);
+  virtual IntVar* IsLessOrEqual(int64 constant);
+
+  virtual void RestoreValue() = 0;
+  virtual string BaseName() const { return "BooleanVar"; }
+
+  int RawValue() const { return value_; }
+
+  friend class TimesBooleanPosIntExpr;
+  friend class TimesBooleanIntExpr;
+  friend class TimesPosCstBoolVar;
+
+ protected:
+  int value_;
+  SimpleRevFIFO<Demon*> bound_demons_;
+  SimpleRevFIFO<Demon*> delayed_bound_demons_;
+};
+
 // ---------- SymmetryBreaker ----------
 
 class SymmetryManager;
@@ -1286,7 +1339,7 @@ class SymmetryBreaker : public DecisionVisitor {
 // ---------- Search Log ---------
 
 // The base class of all search logs that periodically outputs information when
-// the search is runnning.
+// the search is running.
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
@@ -1596,7 +1649,7 @@ class DependencyGraph : public BaseObject {
                        bool applied_to_min_or_max) = 0;
 
  private:
-  hash_map<IntervalVar*, DependencyGraphNode*> start_node_map_;
+  hash_map<const IntervalVar*, DependencyGraphNode*> start_node_map_;
   std::vector<DependencyGraphNode*> managed_nodes_;
 };
 #endif

@@ -621,7 +621,7 @@ class ImpactRecorder : public SearchMonitor {
   int current_var_;
   int64 current_value_;
   FindVar find_var_;
-  hash_map<IntVar*, int> var_map_;
+  hash_map<const IntVar*, int> var_map_;
   bool init_done_;
 
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
@@ -872,7 +872,7 @@ class RestartMonitor : public SearchMonitor {
 
       // if the nogood contains both x == 3 and x != 4, we can simplify
       // to keep only x == 3.
-      hash_set<IntVar*> positive_variable;
+      hash_set<const IntVar*> positive_variable;
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
         const ChoiceInfo& choice = *it;
         if (choice.left()) {

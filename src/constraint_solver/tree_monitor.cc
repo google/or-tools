@@ -17,6 +17,7 @@
 #include <limits>
 #include <map>
 #include <set>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -239,7 +240,7 @@ class TreeMonitor : public SearchMonitor {
   string last_variable_;
   int64 min_;
   int64 max_;
-  scoped_ptr<TreeNode> root_node_;
+  std::unique_ptr<TreeNode> root_node_;
   int search_level_;
   string* const tree_xml_;
   IntVarMap vars_;
@@ -276,7 +277,7 @@ class TreeNode {
     for (ConstIter<TreeMonitor::IntVarMap> it(vars); !it.at_end(); ++it) {
       std::vector<int64> domain;
 
-      scoped_ptr<IntVarIterator> intvar_it(
+      std::unique_ptr<IntVarIterator> intvar_it(
           it->second->MakeDomainIterator(false));
 
       for (intvar_it->Init(); intvar_it->Ok(); intvar_it->Next()) {
@@ -709,7 +710,7 @@ void TreeMonitor::ExitSearch() {
         file_tree_ << GenerateTreeXML().c_str();
         file_tree_.close();
       } else {
-        LG << "Failed to gain write access to file: " << filename_tree_;
+        LOG(INFO) << "Failed to gain write access to file: " << filename_tree_;
       }
 
       std::ofstream file_visualizer_(filename_visualizer_.c_str());
@@ -718,7 +719,7 @@ void TreeMonitor::ExitSearch() {
         file_visualizer_ << GenerateVisualizationXML().c_str();
         file_visualizer_.close();
       } else {
-        LG << "Failed to gain write access to file: " << filename_tree_;
+        LOG(INFO) << "Failed to gain write access to file: " << filename_tree_;
       }
 
       if(!filename_config_.empty()) {
@@ -728,7 +729,8 @@ void TreeMonitor::ExitSearch() {
           file_config_ << kConfigXml;
           file_config_.close();
         } else {
-          LG << "Failed to gain write access to file: " << filename_config_;
+          LOG(INFO) << "Failed to gain write access to file: " <<
+      filename_config_;
         }
       }
     } else {
