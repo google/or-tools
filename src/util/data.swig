@@ -410,7 +410,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(freearg) const std::vector<CType>& {
   delete $1;
 }
-%typemap(out) const std::vector<CType>& %{
+%typemap(out) const std::vector<j ## CType>& %{
   $result = jenv->New ## JavaTypeName ## Array($1->size());
   jenv->Set ## JavaTypeName ## ArrayRegion($result, 0, $1->size(), &(*$1)[0]);
 %}
