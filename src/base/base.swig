@@ -73,6 +73,7 @@
 %}
 
 #ifdef SWIGJAVA
+%include "enumsimple.swg"
 
 %typemap(jni) void* INOUT "jbyteArray"
 %typemap(jtype) void* INOUT "byte[]"
