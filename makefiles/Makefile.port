@@ -64,7 +64,8 @@ ifeq ("$(SYSTEM)","unix")
     CANDIDATE_JDK_HEADERS = \
       /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
       /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
-      /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
+      /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers\
+      /Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/include
 
     SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
   endif
