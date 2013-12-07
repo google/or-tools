@@ -150,7 +150,7 @@ ifeq ($(PLATFORM),LINUX)
     ifeq ($(SCIP_30),TRUE)
       STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     else
-      STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+      STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     endif
   endif
   ifdef UNIX_SLM_DIR
