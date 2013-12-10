@@ -164,6 +164,76 @@ Status GetContents(const std::string& filename, std::string* output,
   return Status(size == file->ReadToString(output, size));
 }
 
+bool ReadFileToString(const string& file_name, string* output) {
+  return GetContents(file_name, output, file::Defaults()).ok();
+}
+
+bool WriteStringToFile(const string& data, const string& file_name) {
+  return SetContents(file_name, data, file::Defaults()).ok();
+}
+
+namespace {
+class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
+ public:
+  virtual void AddError(int line, int column, const string& message) { }
+};
+}  // namespace
+
+bool ReadFileToProto(const string& file_name, google::protobuf::Message* proto) {
+  string str;
+  if (!ReadFileToString(file_name, &str)) {
+    LOG(INFO) << "Could not read " << file_name;
+    return false;
+  }
+  // Attempt to decode ASCII before deciding binary. Do it in this order because
+  // it is much harder for a binary encoding to happen to be a valid ASCII
+  // encoding than the other way around. For instance "index: 1\n" is a valid
+  // (but nonsensical) binary encoding. We want to avoid printing errors for
+  // valid binary encodings if the ASCII parsing fails, and so specify a no-op
+  // error collector.
+  NoOpErrorCollector error_collector;
+  google::protobuf::TextFormat::Parser parser;
+  parser.RecordErrorsTo(&error_collector);
+  if (parser.ParseFromString(str, proto)) {
+    return true;
+  }
+  if (proto->ParseFromString(str)) {
+    return true;
+  }
+  // Re-parse the ASCII, just to show the diagnostics (we could also get them
+  // out of the ErrorCollector but this way is easier).
+  google::protobuf::TextFormat::ParseFromString(str, proto);
+  LOG(INFO) << "Could not parse contents of " << file_name;
+  return false;
+}
+
+void ReadFileToProtoOrDie(const string& file_name, google::protobuf::Message* proto) {
+  CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
+}
+
+bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
+                           const string& file_name) {
+  string proto_string;
+  return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
+         WriteStringToFile(proto_string, file_name);
+}
+
+void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
+                                const string& file_name) {
+  CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
+}
+
+bool WriteProtoToFile(const google::protobuf::Message& proto, const string& file_name) {
+  string proto_string;
+  return proto.AppendToString(&proto_string) &&
+         WriteStringToFile(proto_string, file_name);
+}
+
+void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
+                           const string& file_name) {
+  CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
+}
+
 }  // namespace file
 
 }  // namespace operations_research

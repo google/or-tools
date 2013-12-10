@@ -137,7 +137,7 @@ class ResultCallback5 {
 
 // ----- Utility template code used by the callback specializations -----
 
-// c_enable_if, equivalent semantics to c++11 std::c_enable_if, specifically:
+// c_enable_if, equivalent semantics to c++11 std::enable_if, specifically:
 //   "If B is true, the member typedef type shall equal T; otherwise, there
 //    shall be no member typedef type."
 // Specified by 20.9.7.6 [Other transformations]
@@ -167,8 +167,8 @@ struct ConstRef {
 
 // ----- Callback specializations -----
 
-template <bool del, class R, class T,
-          class OnlyIf = typename c_enable_if<is_class_or_union<T>::value>::type>
+template <bool del, class R, class T, class OnlyIf = typename c_enable_if<
+                                          is_class_or_union<T>::value>::type>
 class _ConstMemberResultCallback_0_0 : public ResultCallback<R> {
  public:
   typedef ResultCallback<R> base;

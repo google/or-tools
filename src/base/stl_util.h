@@ -104,6 +104,12 @@ void STLDeleteValues(T *v) {
   v->clear();
 }
 
-}  // namespace operations_research
+template<typename T>
+void STLClearObject(T* obj) {
+  T tmp;
+  tmp.swap(*obj);
+  obj->reserve(0);
+}
 
+}  // namespace operations_research
 #endif  // OR_TOOLS_BASE_STL_UTIL_H_

@@ -19,10 +19,18 @@
 #include <string>
 
 #include "base/integral_types.h"
+#include "base/logging.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/text_format.h"
+#include "google/protobuf/io/tokenizer.h"
 
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.
 namespace operations_research {
+
+using std::string;
+
 class File {
  public:
   // Opens file "name" with flags specified by "flag".
@@ -30,7 +38,7 @@ class File {
   static File* Open(const char* const name, const char* const flag);
 
 #ifndef SWIG  // no overloading
-  inline static File* Open(const std::string& name, const char* const mode) {
+  inline static File* Open(const string& name, const char* const mode) {
     return Open(name.c_str(), mode);
   }
 #endif
@@ -40,7 +48,7 @@ class File {
   static File* OpenOrDie(const char* const name, const char* const  flag);
 
 #ifndef SWIG  // no overloading
-  inline static File* OpenOrDie(const std::string& name,
+  inline static File* OpenOrDie(const string& name,
                                 const char* const flag) {
     return OpenOrDie(name.c_str(), flag);
   }
@@ -59,7 +67,7 @@ class File {
 
   // Reads the whole file to a string, with a maximum length of 'max_length'.
   // Returns the number of bytes read.
-  int64 ReadToString(std::string* const line, uint64 max_length);
+  int64 ReadToString(string* const line, uint64 max_length);
 
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
   size_t Write(const void* const buff, size_t size);
@@ -69,10 +77,10 @@ class File {
   void WriteOrDie(const void* const buff, size_t size);
 
   // Writes a string to file.
-  size_t WriteString(const std::string& line);
+  size_t WriteString(const string& line);
 
   // Writes a string to file and append a "\n".
-  bool WriteLine(const std::string& line);
+  bool WriteLine(const string& line);
 
   // Closes the file.
   bool Close();
@@ -87,7 +95,7 @@ class File {
   static void Init();
 
   // Returns the file name.
-  std::string filename() const;
+  string filename() const;
 
   // Deletes a file.
   static bool Delete(const char* const name);
@@ -98,10 +106,10 @@ class File {
   bool Open() const;
 
  private:
-  File(FILE* const descriptor, const std::string& name);
+  File(FILE* const descriptor, const string& name);
 
   FILE* f_;
-  const std::string name_;
+  const string name_;
 };
 
 namespace file {
@@ -115,17 +123,30 @@ class Status {
   const bool ok_;
 };
 
+inline int Defaults() { return 0xBABA; }
+
 // A reduced version of the file::SetContents() function, which as of 2013-04
 // can only be used with flags = file::Defaults().
-Status SetContents(const std::string& filename, const std::string& contents,
+Status SetContents(const string& filename, const string& contents,
                    int flags);
 
 // A reduced version of the file::GetContents() function, which as of 2013-09
 // can only be used with flags = file::Defaults().
-Status GetContents(const std::string& filename, std::string* output,
+Status GetContents(const string& filename, string* output,
                    int flags);
 
-inline int Defaults() { return 0xBABA; }
+bool ReadFileToString(const string& file_name, string* output);
+bool WriteStringToFile(const string& data, const string& file_name);
+bool ReadFileToProto(const string& file_name, google::protobuf::Message* proto);
+void ReadFileToProtoOrDie(const string& file_name, google::protobuf::Message* proto);
+bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
+                           const string& file_name);
+void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
+                                const string& file_name);
+bool WriteProtoToFile(const google::protobuf::Message& proto, const string& file_name);
+void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
+                           const string& file_name);
+
 }  // namespace file
 
 }  // namespace operations_research
