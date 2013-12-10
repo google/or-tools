@@ -35,7 +35,9 @@
 #include "base/hash.h"
 #include "base/accurate_sum.h"
 #include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/model_exporter.h"
+#include "linear_solver/proto_tools.h"
 #include "util/fp_utils.h"
 
 
@@ -553,6 +555,47 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   return MPSolver::NO_ERROR;
 }
 
+MPSolver::LoadStatus MPSolver::LoadModelFromProto(
+    const new_proto::MPModelProto& input_model) {
+  for (int i = 0; i < input_model.variable_size(); ++i) {
+    const new_proto::MPVariableProto& var_proto = input_model.variable(i);
+
+    // TODO(user): The variable name var_proto.name() is lost at this point.
+    // This is because MPSolver has no notion of name, just of ids, and these
+    // must be unique which is not necessarily the case of names in the new
+    // proto. MakeNumVar() will just assign an automated variable id when the
+    // the given name argument is empty.
+    //
+    // Note(user): The auto assigned id limits the number of variables to 10^9.
+    MPVariable* variable = MakeNumVar(
+        var_proto.lower_bound(), var_proto.upper_bound(), /*name=*/ "");
+    variable->SetInteger(var_proto.is_integer());
+    SetObjectiveCoefficient(variable, var_proto.objective_coefficient());
+  }
+
+  for (int i = 0; i < input_model.constraint_size(); ++i) {
+    const new_proto::MPConstraintProto& ct_proto = input_model.constraint(i);
+    MPConstraint* const ct = MakeRowConstraint(ct_proto.lower_bound(),
+                                               ct_proto.upper_bound(),
+                                               ct_proto.name());
+    for (int j = 0; j < ct_proto.linear_term_size(); ++j) {
+      const new_proto::MPConstraintProto::UnaryTerm& term_proto =
+          ct_proto.linear_term(j);
+      if (term_proto.var_index() >= variables_.size()) {
+        LOG(ERROR) << "Variable index out of bound in constraint named "
+                    << ct_proto.name() << ".";
+        return MPSolver::UNKNOWN_VARIABLE_ID;
+      }
+      ct->SetCoefficient(variables_[term_proto.var_index()],
+                         term_proto.coefficient());
+    }
+  }
+  SetOptimizationDirection(input_model.maximize());
+  if (input_model.has_objective_offset()) {
+    MutableObjective()->SetOffset(input_model.objective_offset());
+  }
+  return MPSolver::NO_ERROR;
+}
 
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
@@ -612,6 +655,40 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   }
 }
 
+namespace {
+new_proto::MPSolutionResponse::Status ResultStatusToMPSolutionResponse(
+    MPSolver::ResultStatus status) {
+  switch (status) {
+    case MPSolver::OPTIMAL :
+      return new_proto::MPSolutionResponse::OPTIMAL;
+    case MPSolver::FEASIBLE :
+      return new_proto::MPSolutionResponse::FEASIBLE;
+    case MPSolver::INFEASIBLE :
+      return new_proto::MPSolutionResponse::INFEASIBLE;
+    case MPSolver::UNBOUNDED :
+      return new_proto::MPSolutionResponse::UNBOUNDED;
+    case MPSolver::ABNORMAL :
+      return new_proto::MPSolutionResponse::ABNORMAL;
+    default:
+      return new_proto::MPSolutionResponse::UNKNOWN;
+  }
+}
+}  // namespace
+
+void MPSolver::FillSolutionResponseProto(
+    new_proto::MPSolutionResponse* response) const {
+  CHECK_NOTNULL(response);
+  response->Clear();
+  response->set_status(
+      ResultStatusToMPSolutionResponse(interface_->result_status_));
+  if (interface_->result_status_ == MPSolver::OPTIMAL ||
+      interface_->result_status_ == MPSolver::FEASIBLE) {
+    response->set_objective_value(objective_value());
+    for (int i = 0; i < variables_.size(); ++i) {
+      response->add_variable_value(variables_[i]->solution_value());
+    }
+  }
+}
 
 // static
 void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
@@ -624,6 +701,8 @@ void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
   const MPSolver::LoadStatus loadStatus = solver.LoadModel(model);
   if (loadStatus != MPSolver::NO_ERROR) {
     LOG(WARNING) << "Loading model from protocol buffer failed, "
+                 << "load status = "
+                 << Error::Code_Name(static_cast<Error::Code>(loadStatus))
                  << " (" << loadStatus << ")";
     response->set_result_status(MPSolutionResponse::ABNORMAL);
     return;
@@ -636,6 +715,33 @@ void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
   solver.FillSolutionResponse(response);
 }
 
+// static
+void MPSolver::SolveWithProto(
+    const new_proto::MPModelRequest& model_request,
+    new_proto::MPSolutionResponse* response) {
+  CHECK_NOTNULL(response);
+  const new_proto::MPModelProto& model = model_request.model();
+  MPSolver solver(model.name(),
+                  static_cast<MPSolver::OptimizationProblemType>(
+                      model_request.solver_type()));
+  const MPSolver::LoadStatus loadStatus = solver.LoadModelFromProto(model);
+  if (loadStatus != MPSolver::NO_ERROR) {
+    LOG(WARNING) << "Loading model from protocol buffer failed, "
+                 << "load status = "
+                 << Error::Code_Name(static_cast<Error::Code>(loadStatus))
+                 << " (" << loadStatus << ")";
+    response->set_status(new_proto::MPSolutionResponse::ABNORMAL);
+    return;
+  }
+  if (model_request.has_solver_time_limit_seconds()) {
+    // static_cast<int64> avoids a warning with -Wreal-conversion. This
+    // helps catching bugs with unwanted conversions from double to ints.
+    solver.set_time_limit(
+        static_cast<int64>(model_request.solver_time_limit_seconds()) * 1000);
+  }
+  solver.Solve();
+  solver.FillSolutionResponseProto(response);
+}
 
 namespace {
 // Outputs the terms in var_coeff_map to output_term, by sorting the
@@ -673,32 +779,32 @@ void OutputTermsToProto(
 
 void MPSolver::ExportModel(MPModelProto* output_model) const {
   DCHECK(output_model != NULL);
-  if (output_model->variables_size() > 0 ||
-      output_model->has_maximize() ||
-      output_model->objective_terms_size() > 0 ||
-      output_model->constraints_size() > 0 ||
-      output_model->has_name() ||
-      output_model->has_objective_offset()) {
-    LOG(WARNING) << "The model protocol buffer is not empty, "
-                 << "it will be overwritten.";
-    output_model->clear_variables();
-    output_model->clear_maximize();
-    output_model->clear_objective_terms();
-    output_model->clear_constraints();
-    output_model->clear_name();
-  }
+  new_proto::MPModelProto new_proto_model;
+  ExportModelToNewProto(&new_proto_model);
+  ConvertNewMPModelProtoToOld(new_proto_model, output_model);
+}
 
+void MPSolver::ExportModelToNewProto(
+    new_proto::MPModelProto* output_model) const {
+  DCHECK(output_model != NULL);
+  output_model->Clear();
   // Name
   output_model->set_name(Name());
   // Variables
   for (int j = 0; j < variables_.size(); ++j) {
     const MPVariable* const var = variables_[j];
-    MPVariableProto* const variable_proto = output_model->add_variables();
-    DCHECK(!var->name().empty());
-    variable_proto->set_id(var->name());
-    variable_proto->set_lb(var->lb());
-    variable_proto->set_ub(var->ub());
-    variable_proto->set_integer(var->integer());
+    new_proto::MPVariableProto* const variable_proto
+        = output_model->add_variable();
+    // TODO(user): Add option to avoid filling the var name to avoid overly
+    // large protocol buffers.
+    variable_proto->set_name(var->name());
+    variable_proto->set_lower_bound(var->lb());
+    variable_proto->set_upper_bound(var->ub());
+    variable_proto->set_is_integer(var->integer());
+    if (objective_->GetCoefficient(var) != 0.0) {
+      variable_proto->set_objective_coefficient(
+          objective_->GetCoefficient(var));
+    }
   }
 
   // Map the variables to their indices. This is needed to output the
@@ -707,37 +813,56 @@ void MPSolver::ExportModel(MPModelProto* output_model) const {
   // This step is needed as long as the variable indices are given by the
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
-  hash_map<const MPVariable*, int> var_name_to_index;
+  hash_map<const MPVariable*, int> var_to_index;
   for (int j = 0; j < variables_.size(); ++j) {
-    var_name_to_index[variables_[j]] = j;
+    var_to_index[variables_[j]] = j;
   }
 
   // Constraints
   for (int i = 0; i < constraints_.size(); ++i) {
     MPConstraint* const constraint = constraints_[i];
-    MPConstraintProto* const constraint_proto = output_model->add_constraints();
-    // Constraint names need to be non-empty.
-    DCHECK(!constraint->name().empty());
-    constraint_proto->set_id(constraint->name());
-    constraint_proto->set_lb(constraint->lb());
-    constraint_proto->set_ub(constraint->ub());
-    OutputTermsToProto(variables_, var_name_to_index, constraint->coefficients_,
-                       constraint_proto->mutable_terms());
+    new_proto::MPConstraintProto* const constraint_proto
+        = output_model->add_constraint();
+    constraint_proto->set_name(constraint->name());
+    constraint_proto->set_lower_bound(constraint->lb());
+    constraint_proto->set_upper_bound(constraint->ub());
+    constraint_proto->set_is_lazy(constraint->is_lazy());
+    // Vector linear_term will contain pairs (variable index, coeff), that will
+    // be sorted by variable index.
+    std::vector<std::pair<int, double> > linear_term;
+    for (CoeffEntry entry : constraint->coefficients_) {
+      const MPVariable* const var = entry.first;
+      const int var_index = FindWithDefault(var_to_index, var, -1);
+      DCHECK_NE(-1, var_index);
+      const double coeff = entry.second;
+      linear_term.push_back(std::pair<int, double>(var_index, coeff));
+    }
+    // The cost of std::sort is expected to be low as constraints usually have very
+    // few terms.
+    std::sort(linear_term.begin(), linear_term.end());
+    // Now use linear term.
+    for (int k = 0; k < linear_term.size(); ++k) {
+      const std::pair<int, double>& p = linear_term[k];
+      const int var_index = p.first;
+      const double coeff = p.second;
+      new_proto::MPConstraintProto_UnaryTerm* unary_term
+          = constraint_proto->add_linear_term();
+      unary_term->set_var_index(var_index);
+      unary_term->set_coefficient(coeff);
+      constraint_proto->add_var_index(var_index);
+      constraint_proto->add_coefficient(coeff);
+    }
   }
-
-  // Objective.
-  OutputTermsToProto(variables_, var_name_to_index, objective_->coefficients_,
-                     output_model->mutable_objective_terms());
   output_model->set_maximize(Objective().maximization());
   output_model->set_objective_offset(Objective().offset());
 }
 
-
-bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
+bool MPSolver::LoadSolutionFromNewProto(
+    const new_proto::MPSolutionResponse& response) {
   interface_->result_status_ =
-      static_cast<ResultStatus>(response.result_status());
-  if (response.result_status() != MPSolutionResponse::OPTIMAL &&
-      response.result_status() != MPSolutionResponse::FEASIBLE) {
+      static_cast<ResultStatus>(response.status());
+  if (response.status() != new_proto::MPSolutionResponse::OPTIMAL &&
+      response.status() != new_proto::MPSolutionResponse::FEASIBLE) {
     LOG(ERROR)
         << "Cannot load a solution unless its status is OPTIMAL or FEASIBLE.";
     return false;
@@ -745,55 +870,37 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   // Before touching the variables, verify that the solution looks legit:
   // each variable of the MPSolver must have its value listed exactly once, and
   // each listed solution should correspond to a known variable.
-  if (response.solution_values_size() != variables_.size()) {
+  if (response.variable_value_size() != variables_.size()) {
     LOG(ERROR)
         << "Trying to load a solution whose number of variables does not"
         << " correspond to the Solver.";
     return false;
   }
-  std::vector<bool> variable_has_solution_value(variables_.size(), false);
+  double largest_error = 0;
+  interface_->ExtractModel();
   int num_vars_out_of_bounds = 0;
-  for (int i = 0; i < response.solution_values_size(); ++i) {
-    const string& var_name = response.solution_values(i).variable_id();
-    const int var_index =
-        FindWithDefault(variable_name_to_index_, var_name, -1);
-    if (var_index < 0) {
-      LOG(ERROR)
-          << "Trying to load a solution with unknown var '" << var_name << "'.";
-      return false;
-    }
-    if (variable_has_solution_value[var_index]) {
-      LOG(ERROR)
-          << "Trying to load a solution value where variable '" << var_name
-          << "' has its solution value listed twice.";
-      return false;
-    }
-    variable_has_solution_value[var_index] = true;
+  const double tolerance = MPSolverParameters::kDefaultPrimalTolerance;
+  for (int i = 0; i< response.variable_value_size(); ++i) {
     // Look further: verify the bounds. Since linear solvers yield (small)
     // numerical errors, though, we just log a warning if the variables look
     // like they are out of their bounds. The user should inspect the values.
-    const double var_value = response.solution_values(i).value();
-    const MPVariable* var = variables_[var_index];
-    DCHECK_EQ(var->name(), var_name);
-    if (var_value < var->lb() || var_value > var->ub()) {
+    const double var_value = response.variable_value(i);
+    MPVariable* var = variables_[i];
+    // TODO(user): Use parameter when they become available in this class.
+    const double lb_error = var->lb() - var_value;
+    const double ub_error = var_value - var->ub();
+    if (lb_error > tolerance || ub_error > tolerance) {
       ++num_vars_out_of_bounds;
+      largest_error = std::max(largest_error, std::max(lb_error, ub_error));
     }
+    var->set_solution_value(var_value);
   }
   if (num_vars_out_of_bounds > 0) {
     LOG(WARNING)
         << "Loaded a solution whose variables matched the solver's, but "
         << num_vars_out_of_bounds << " out of " << variables_.size()
-        << " had values outside their bounds.";
-  }
-  // At this point, we know for sure that the solution can be safely loaded.
-  // We extract the model onto the underlying solver, so that the accessors work
-  // properly later (as if we had called Solve()).
-  interface_->ExtractModel();
-  // Do a second pass, where we actually set the variable values.
-  for (int i = 0; i < response.solution_values_size(); ++i) {
-    variables_[FindOrDie(variable_name_to_index_,
-                         response.solution_values(i).variable_id())]
-        ->set_solution_value(response.solution_values(i).value());
+        << " exceed one of their bounds by more tahn the primal tolerance: "
+        << tolerance;
   }
   // Set the objective value, if is known.
   if (response.has_objective_value()) {
@@ -1578,6 +1685,82 @@ int MPSolverParameters::GetIntegerParam(
   }
 }
 
+
+bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
+  // CHANGES TO THIS METHOD ARE DISCOURAGED.
+  // This method will be deprecated in 2014.
+  // Please try using LoadSolutionFromNewProto() instead.
+  // TODO(user): Deprecate then remove this code.
+  interface_->result_status_ =
+      static_cast<ResultStatus>(response.result_status());
+  if (response.result_status() != MPSolutionResponse::OPTIMAL &&
+      response.result_status() != MPSolutionResponse::FEASIBLE) {
+    LOG(ERROR)
+        << "Cannot load a solution unless its status is OPTIMAL or FEASIBLE.";
+    return false;
+  }
+  // Before touching the variables, verify that the solution looks legit:
+  // each variable of the MPSolver must have its value listed exactly once, and
+  // each listed solution should correspond to a known variable.
+  if (response.solution_values_size() != variables_.size()) {
+    LOG(ERROR)
+        << "Trying to load a solution whose number of variables does not"
+        << " correspond to the Solver.";
+    return false;
+  }
+  std::vector<bool> variable_has_solution_value(variables_.size(), false);
+  int num_vars_out_of_bounds = 0;
+  for (int i = 0; i < response.solution_values_size(); ++i) {
+    const string& var_name = response.solution_values(i).variable_id();
+    const int var_index =
+        FindWithDefault(variable_name_to_index_, var_name, -1);
+    if (var_index < 0) {
+      LOG(ERROR)
+          << "Trying to load a solution with unknown var '" << var_name << "'.";
+      return false;
+    }
+    if (variable_has_solution_value[var_index]) {
+      LOG(ERROR)
+          << "Trying to load a solution value where variable '" << var_name
+          << "' has its solution value listed twice.";
+      return false;
+    }
+    variable_has_solution_value[var_index] = true;
+    // Look further: verify the bounds. Since linear solvers yield (small)
+    // numerical errors, though, we just log a warning if the variables look
+    // like they are out of their bounds. The user should inspect the values.
+    const double var_value = response.solution_values(i).value();
+    const MPVariable* var = variables_[var_index];
+    DCHECK_EQ(var->name(), var_name);
+    if (var_value < var->lb() || var_value > var->ub()) {
+      ++num_vars_out_of_bounds;
+    }
+  }
+  if (num_vars_out_of_bounds > 0) {
+    LOG(WARNING)
+        << "Loaded a solution whose variables matched the solver's, but "
+        << num_vars_out_of_bounds << " out of " << variables_.size()
+        << " had values outside their bounds.";
+  }
+  // At this point, we know for sure that the solution can be safely loaded.
+  // We extract the model onto the underlying solver, so that the accessors work
+  // properly later (as if we had called Solve()).
+  interface_->ExtractModel();
+  // Do a second pass, where we actually set the variable values.
+  for (int i = 0; i < response.solution_values_size(); ++i) {
+    variables_[FindOrDie(variable_name_to_index_,
+                         response.solution_values(i).variable_id())]
+        ->set_solution_value(response.solution_values(i).value());
+  }
+  // Set the objective value, if is known.
+  if (response.has_objective_value()) {
+    interface_->objective_value_ = response.objective_value();
+  }
+  // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
+  // solution normally.
+  interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
+  return true;
+}
 
 }  // namespace operations_research
 

@@ -87,3 +87,14 @@ message MPSolutionResponse {
   repeated MPSolutionValue solution_values = 3;
 }
 
+message Error {
+  enum Code {
+    NO_ERROR = 0;
+    INVALID_PROBLEM_TYPE = 1;
+    DUPLICATE_VARIABLE_ID = 2;
+    UNKNOWN_VARIABLE_ID = 3;
+    REQUEST_IS_QOD = 4;
+    RPC_DEADLINE_TOO_SMALL = 5;
+  }
+}
+

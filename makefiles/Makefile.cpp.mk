@@ -474,7 +474,9 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/gurobi_interface.$O \
 	$(OBJ_DIR)/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver.pb.$O \
+	$(OBJ_DIR)/linear_solver2.pb.$O \
 	$(OBJ_DIR)/model_exporter.$O \
+        $(OBJ_DIR)/proto_tools.$O \
 	$(OBJ_DIR)/scip_interface.$O \
 	$(OBJ_DIR)/sulum_interface.$O
 
@@ -491,7 +493,7 @@ $(OBJ_DIR)/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
 $(OBJ_DIR)/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sgurobi_interface.$O
 
-$(OBJ_DIR)/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
+$(OBJ_DIR)/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/linear_solver/linear_solver2.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver.$O
 
 $(OBJ_DIR)/linear_solver.pb.$O:$(GEN_DIR)/linear_solver/linear_solver.pb.cc
@@ -502,8 +504,19 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.cc:$(SRC_DIR)/linear_solver/linear_sol
 
 $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solver.pb.cc
 
+$(OBJ_DIR)/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/linear_solver/linear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver2.pb.$O
+
+$(GEN_DIR)/linear_solver/linear_solver2.pb.cc:$(SRC_DIR)/linear_solver/linear_solver2.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/linear_solver/linear_solver2.proto
+
+$(GEN_DIR)/linear_solver/linear_solver2.pb.h:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
+
 $(OBJ_DIR)/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/model_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel_exporter.$O
+
+$(OBJ_DIR)/proto_tools.$O:$(SRC_DIR)/linear_solver/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/proto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sproto_tools.$O
 
 $(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sscip_interface.$O

@@ -158,6 +158,13 @@ class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
 
+// The new MP protocol buffer format. New clients that want to work with
+// protocol buffers should use this.
+namespace new_proto {
+  class MPModelProto;
+  class MPModelRequest;
+  class MPSolutionResponse;
+}  // namespace new_proto
 
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
@@ -351,12 +358,12 @@ class MPSolver {
   };
 
   // Loads model from protocol buffer.
-  LoadStatus LoadModel(const MPModelProto& input_model);
+  LoadStatus LoadModelFromProto(const new_proto::MPModelProto& input_model);
 
   // Encodes the current solution in a solution response protocol buffer.
   // Only nonzero variable values are stored in order to reduce the
   // size of the MPSolutionResponse protocol buffer.
-  void FillSolutionResponse(MPSolutionResponse* response) const;
+  void FillSolutionResponseProto(new_proto::MPSolutionResponse* response) const;
 
   // Solves the model encoded by a MPModelRequest protocol buffer and
   // fills the solution encoded as a MPSolutionResponse.
@@ -364,27 +371,28 @@ class MPSolver {
   // end. If you want to keep the MPSolver alive (for debugging, or for
   // incremental solving), you should write another version of this function
   // that creates the MPSolver object on the heap and returns it.
-  static void SolveWithProtocolBuffers(const MPModelRequest& model_request,
-                                       MPSolutionResponse* response);
-
+  static void SolveWithProto(
+      const new_proto::MPModelRequest& model_request,
+      new_proto::MPSolutionResponse* response);
 
   // Exports model to protocol buffer.
-  void ExportModel(MPModelProto* output_model) const;
+  // TODO(user): rename to ExportModelToProto when possible.
+  void ExportModelToNewProto(new_proto::MPModelProto* output_model) const;
 
-
-  // Load a solution encoded in a protocol buffer onto this solver.
+  // Load a solution encoded in a protocol buffer onto this solver for easy
+  // access via the MPSolver interface.
   //
   // IMPORTANT: This may only be used in conjunction with ExportModel(),
   // following this example:
   //   MPSolver my_solver;
   //   ... add variables and constraints ...
-  //   MPModelProto model_proto;
-  //   my_solver.ExportModel(&model_proto);
-  //   MPSolutionResponse solver_response;
+  //   new_proto::MPModelProto model_proto;
+  //   my_solver.ExportModelToNewProto(&model_proto);
+  //   new_proto::MPSolutionResponse solver_response;
   //   // This can be replaced by a stubby call to the linear solver server.
-  //   MPSolver::SolveWithProtocolBuffers(model_proto, &solver_response);
+  //   MPSolver::SolveWithProto(model_proto, &solver_response);
   //   if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-  //     CHECK(my_solver.LoadSolutionFromProto(solver_response));
+  //     CHECK(my_solver.LoadSolutionFromNewProto(solver_response));
   //     ... inspect the solution using the usual API: solution_value(), etc...
   //   }
   //
@@ -400,12 +408,14 @@ class MPSolver {
   // - loading a solution with a status other than OPTIMAL / FEASIBLE.
   // Note: the variable and objective values aren't checked. You can use
   // VerifySolution() for that.
-  bool LoadSolutionFromProto(const MPSolutionResponse& response);
+  // TODO(user): rename to LoadSolutionFromProto when possible.
+  bool LoadSolutionFromNewProto(
+      const new_proto::MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
 
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
-  // exporting to a MPModelProto with ExportModel() (see above).
+  // exporting to a MPModelProto with ExportModelToNewProto() (see above).
   bool ExportModelAsLpFormat(bool obfuscated, string* model_str);
   bool ExportModelAsMpsFormat(
       bool fixed_format, bool obfuscated, string* model_str);
@@ -547,6 +557,16 @@ class MPSolver {
   void SetMaximization() { SetOptimizationDirection(true); }
   bool Maximization() const;
   bool Minimization() const;
+
+  // DEPRECATED methods. Use the explicitly listed replacement.
+  LoadStatus LoadModel(const MPModelProto& input_model);  // LoadModelFromProto
+  void FillSolutionResponse(  // FillSolutionResponseProto
+      MPSolutionResponse* response) const;
+  static void SolveWithProtocolBuffers(  // SolveWithProto
+      const MPModelRequest& model_request, MPSolutionResponse* response);
+  void ExportModel(MPModelProto* output_model) const;  // ExportModelToNewProto
+  bool LoadSolutionFromProto(  // LoadSolutionFromNewProto
+      const MPSolutionResponse& response);
 
  private:
   // Computes the size of the constraint with the largest number of

@@ -35,18 +35,17 @@
 #if defined(USE_GLPK)
 
 extern "C" {
-  #include "glpk.h"
+#include "glpk.h"
 }
 
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);
 
 namespace operations_research {
-
 // Class to store information gathered in the callback
 class GLPKInformation {
  public:
-  explicit GLPKInformation(bool maximize): num_all_nodes_(0) {
+  explicit GLPKInformation(bool maximize) : num_all_nodes_(0) {
     ResetBestObjectiveBound(maximize);
   }
   void Reset(bool maximize) {
@@ -63,8 +62,6 @@ class GLPKInformation {
   int num_all_nodes_;
   double best_objective_bound_;
 };
-
-
 
 // Function to be called in the GLPK callback
 void GLPKGatherInformationCallback(glp_tree* tree, void* info) {
@@ -122,8 +119,7 @@ class GLPKInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
-                              double new_value,
-                              double old_value);
+                              double new_value, double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
@@ -166,9 +162,7 @@ class GLPKInterface : public MPSolverInterface {
     return StringPrintf("GLPK %s", glp_version());
   }
 
-  virtual void* underlying_solver() {
-    return reinterpret_cast<void*>(lp_);
-  }
+  virtual void* underlying_solver() { return reinterpret_cast<void*>(lp_); }
 
   virtual double ComputeExactConditionNumber() const;
 
@@ -187,8 +181,7 @@ class GLPKInterface : public MPSolverInterface {
   virtual void SetLpAlgorithm(int value);
 
   void ExtractOldConstraints();
-  void ExtractOneConstraint(MPConstraint* const constraint,
-                            int* const indices,
+  void ExtractOneConstraint(MPConstraint* const constraint, int* const indices,
                             double* const coefs);
   // Transforms basis status from GLPK integer code to MPSolver::BasisStatus.
   MPSolver::BasisStatus TransformGLPKBasisStatus(int glpk_basis_status) const;
@@ -196,16 +189,16 @@ class GLPKInterface : public MPSolverInterface {
   // Computes the L1-norm of the current scaled basis.
   // The L1-norm |A| is defined as max_j sum_i |a_ij|
   // This method is available only for continuous problems.
-  double ComputeScaledBasisL1Norm(
-    int num_rows, int num_cols,
-    double* row_scaling_factor, double* column_scaling_factor) const;
+  double ComputeScaledBasisL1Norm(int num_rows, int num_cols,
+                                  double* row_scaling_factor,
+                                  double* column_scaling_factor) const;
 
   // Computes the L1-norm of the inverse of the current scaled
   // basis.
   // This method is available only for continuous problems.
-  double ComputeInverseScaledBasisL1Norm(
-    int num_rows, int num_cols,
-    double* row_scaling_factor, double* column_scaling_factor) const;
+  double ComputeInverseScaledBasisL1Norm(int num_rows, int num_cols,
+                                         double* row_scaling_factor,
+                                         double* column_scaling_factor) const;
 
   glp_prob* lp_;
   bool mip_;
@@ -281,7 +274,7 @@ void GLPKInterface::SetVariableInteger(int var_index, bool integer) {
   if (mip_) {
     if (var_index != kNoIndex) {
       // Not cached if the variable has been extracted.
-     glp_set_col_kind(lp_, var_index, integer ? GLP_IV : GLP_CV);
+      glp_set_col_kind(lp_, var_index, integer ? GLP_IV : GLP_CV);
     } else {
       sync_status_ = MUST_RELOAD;
     }
@@ -316,8 +309,7 @@ void GLPKInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
                                    const MPVariable* const variable,
-                                   double new_value,
-                                   double old_value) {
+                                   double new_value, double old_value) {
   InvalidateSolutionSynchronization();
   // GLPK does not allow to modify one coefficient at a time, so we
   // extract the whole constraint again, if it has been extracted
@@ -405,15 +397,15 @@ void GLPKInterface::ExtractNewVariables() {
 
 // Extract again existing constraints if they contain new variables.
 void GLPKInterface::ExtractOldConstraints() {
-  int max_constraint_size = solver_->ComputeMaxConstraintSize(
-      0, last_constraint_index_);
+  int max_constraint_size =
+      solver_->ComputeMaxConstraintSize(0, last_constraint_index_);
   // The first entry in the following arrays is dummy, to be
   // consistent with glpk API.
   std::unique_ptr<int[]> indices(new int[max_constraint_size + 1]);
   std::unique_ptr<double[]> coefs(new double[max_constraint_size + 1]);
 
   for (int i = 0; i < last_constraint_index_; ++i) {
-    MPConstraint* const  ct = solver_->constraints_[i];
+    MPConstraint* const ct = solver_->constraints_[i];
     DCHECK_NE(kNoIndex, ct->index());
     const int size = ct->coefficients_.size();
     if (size == 0) {
@@ -441,7 +433,7 @@ void GLPKInterface::ExtractOneConstraint(MPConstraint* const constraint,
     coefs[k] = entry.second;
     ++k;
   }
-  glp_set_mat_row(lp_, constraint->index(), k-1, indices, coefs);
+  glp_set_mat_row(lp_, constraint->index(), k - 1, indices, coefs);
 }
 
 // Define new constraints on old and new variables.
@@ -595,15 +587,13 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
     if (mip_) {
       const double row_activity = glp_mip_row_val(lp_, ct->index());
       ct->set_activity(row_activity);
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity;
+      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
     } else {
       const double row_activity = glp_get_row_prim(lp_, ct->index());
       ct->set_activity(row_activity);
       const double dual_value = glp_get_row_dual(lp_, ct->index());
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity
+      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity
               << ": dual value = " << dual_value;
     }
   }
@@ -633,8 +623,7 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
       result_status_ = MPSolver::OPTIMAL;
     } else if (tmp_status == GLP_FEAS) {
       result_status_ = MPSolver::FEASIBLE;
-    } else if (tmp_status == GLP_NOFEAS ||
-               tmp_status == GLP_INFEAS) {
+    } else if (tmp_status == GLP_NOFEAS || tmp_status == GLP_INFEAS) {
       // For infeasible problems, GLPK actually seems to return
       // GLP_UNDEF. So this is never (?) reached.  Return infeasible
       // in case GLPK returns a correct status in future versions.
@@ -654,8 +643,8 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-MPSolver::BasisStatus
-GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
+MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
+    int glpk_basis_status) const {
   switch (glpk_basis_status) {
     case GLP_BS:
       return MPSolver::BASIC;
@@ -676,17 +665,12 @@ GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
 // ------ Query statistics on the solution and the solve ------
 
 int64 GLPKInterface::iterations() const {
-  if (mip_) {
-    LOG(WARNING) << "Total number of iterations is not available";
-    return kUnknownNumberOfIterations;
-  } else {
-    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
-#if GLP_MINOR_VERSION >= 49
-    return kUnknownNumberOfIterations;
-#else
+#if GLP_MINOR_VERSION < 49
+  if (!mip_ && CheckSolutionIsSynchronized())
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
 #endif
-  }
+  LOG(WARNING) << "Total number of iterations is not available";
+  return kUnknownNumberOfIterations;
 }
 
 int64 GLPKInterface::nodes() const {
@@ -732,7 +716,6 @@ MPSolver::BasisStatus GLPKInterface::column_status(int variable_index) const {
   return TransformGLPKBasisStatus(glpk_basis_status);
 }
 
-
 bool GLPKInterface::CheckSolutionExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {
     LOG(WARNING) << "Ignoring ABNORMAL status from GLPK: This status may or may"
@@ -759,9 +742,8 @@ bool GLPKInterface::CheckBestObjectiveBoundExists() const {
 double GLPKInterface::ComputeExactConditionNumber() const {
   if (!IsContinuous()) {
     // TODO(user): support MIP.
-    LOG(DFATAL)
-        << "ComputeExactConditionNumber not implemented for"
-        << " GLPK_MIXED_INTEGER_PROGRAMMING";
+    LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
+                << " GLPK_MIXED_INTEGER_PROGRAMMING";
     return 0.0;
   }
   if (!CheckSolutionIsSynchronized()) return 0.0;
@@ -779,18 +761,16 @@ double GLPKInterface::ComputeExactConditionNumber() const {
   for (int col = 1; col <= num_cols; ++col) {
     column_scaling_factor[col] = glp_get_sjj(lp_, col);
   }
-  return
-      ComputeInverseScaledBasisL1Norm(
-          num_rows, num_cols,
-          row_scaling_factor.get(), column_scaling_factor.get()) *
-      ComputeScaledBasisL1Norm(
-          num_rows, num_cols,
-          row_scaling_factor.get(), column_scaling_factor.get());
+  return ComputeInverseScaledBasisL1Norm(num_rows, num_cols,
+                                         row_scaling_factor.get(),
+                                         column_scaling_factor.get()) *
+         ComputeScaledBasisL1Norm(num_rows, num_cols, row_scaling_factor.get(),
+                                  column_scaling_factor.get());
 }
 
 double GLPKInterface::ComputeScaledBasisL1Norm(
-    int num_rows, int num_cols,
-    double* row_scaling_factor, double* column_scaling_factor) const {
+    int num_rows, int num_cols, double* row_scaling_factor,
+    double* column_scaling_factor) const {
   double norm = 0.0;
   std::unique_ptr<double[]> values(new double[num_rows + 1]);
   std::unique_ptr<int[]> indices(new int[num_rows + 1]);
@@ -826,8 +806,8 @@ double GLPKInterface::ComputeScaledBasisL1Norm(
 }
 
 double GLPKInterface::ComputeInverseScaledBasisL1Norm(
-    int num_rows, int num_cols,
-    double* row_scaling_factor, double* column_scaling_factor) const {
+    int num_rows, int num_cols, double* row_scaling_factor,
+    double* column_scaling_factor) const {
   // Compute the LU factorization if it doesn't exist yet.
   if (!glp_bf_exists(lp_)) {
     const int factorize_status = glp_factorize(lp_);
@@ -929,7 +909,7 @@ void GLPKInterface::ConfigureGLPKParameters(const MPSolverParameters& param) {
   glp_scale_prob(lp_, GLP_SF_AUTO);
 
   // Use advanced initial basis (options: standard / advanced / Bixby's).
-  glp_adv_basis(lp_, nullptr);
+  glp_adv_basis(lp_, 0);
 
   // Set parameters specified by the user.
   SetParameters(param);
@@ -955,9 +935,7 @@ void GLPKInterface::SetPrimalTolerance(double value) {
   lp_param_.tol_bnd = value;
 }
 
-void GLPKInterface::SetDualTolerance(double value) {
-  lp_param_.tol_dj = value;
-}
+void GLPKInterface::SetDualTolerance(double value) { lp_param_.tol_dj = value; }
 
 void GLPKInterface::SetPresolveMode(int value) {
   switch (value) {
@@ -1003,7 +981,6 @@ void GLPKInterface::SetLpAlgorithm(int value) {
 MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver) {
   return new GLPKInterface(solver, mip);
 }
-
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_GLPK)

@@ -20,6 +20,7 @@
 %{
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver_ext.h"
 %}
 
@@ -526,6 +527,9 @@ namespace operations_research {
 // The following 3 methods that use protocol buffers as output
 // arguments are replaced by methods that return a protocol buffer,
 // see code below.
+%ignore MPSolver::ExportModelToNewProto;
+%ignore MPSolver::FillSolutionResponseProto;
+%ignore MPSolver::SolveWithProto;
 %ignore MPSolver::ExportModel;
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
@@ -635,6 +639,7 @@ namespace operations_research {
 // arguments are replaced by methods that return a protocol buffer,
 // see code below.
 %ignore MPSolver::ExportModel;
+%ignore MPSolver::ExportModelToNewProto;
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
 
