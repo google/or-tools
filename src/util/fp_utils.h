@@ -123,7 +123,7 @@ template<typename FloatType> bool AreWithinAbsoluteTolerance(
 
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
-// TODO(user): investigate moving this to util/math/ or some other place.
+// TODO(user): investigate moving this to base/ or some other place.
 #define EXPECT_COMPARABLE(expected, obtained, epsilon)                      \
   EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances(   \
       expected, obtained, epsilon, epsilon))                                \

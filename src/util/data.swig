@@ -151,13 +151,18 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 
 // --------- std::vector<data> wrapping ----------
 
-// To be able to use the google.swig code (see LIST_OUTPUT_TYPEMAP in that file)
-// in our context, with heavy usage of function overloading, we must implement
-// typechecks. We do that here.
+// We can't just reuse the google.swig code (see LIST_OUTPUT_TYPEMAP in that
+// file); for two reasons:
+// 1) We want a few extra typemaps (ITI integers <-> int, for example), but
+//    can't invoke google.swig's LIST_OUTPUT_TYPEMAP because it's only
+//    defined there. We may reuse base/swig/python-swig.cc though, since it's
+//    bundled with the google.swig rule.
+// 2) We use a lot of function overloading, so we must add extra typechecks.
+//
 // Note(user): for an unknown reason, using the (handy) method PyObjAs()
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
-%define LIST_OUTPUT_TYPECHECK(type, checker)
+%define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
 %typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
@@ -172,10 +177,43 @@ static bool PyCallbackBool(PyObject* pyfunc) {
     $1 = i == size;
   }
 }
+%typemap(in) std::vector<type>(std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+  $1 = temp;
+}
+%typemap(in) const std::vector<type>& (std::vector<type> temp),
+             const std::vector<type>* (std::vector<type> temp) {
+  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+    if (!PyErr_Occurred())
+      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+    return NULL;
+  }
+  $1 = &temp;
+}
+%typemap(in,numinputs=0)
+ std::vector<type>* OUTPUT (std::vector<type> temp),
+ hash_set<type>* OUTPUT (hash_set<type> temp),
+ std::set<type>* OUTPUT (std::set<type> temp) {
+  $1 = &temp;
+}
+%typemap(argout) std::vector<type>* OUTPUT, std::set<type>* OUTPUT, hash_set<type>* OUTPUT {
+  %append_output(list_output_helper($1, &py_converter));
+}
+%typemap(out) std::vector<type> {
+  $result = vector_output_helper(&$1, &py_converter);
+}
+%typemap(out) std::vector<type>*, const std::vector<type>& {
+  $result = vector_output_helper($1, &py_converter);
+}
 %enddef
-LIST_OUTPUT_TYPECHECK(int, PyInt_Check);
-LIST_OUTPUT_TYPECHECK(long long, PyInt_Check);
-LIST_OUTPUT_TYPECHECK(double, PyFloat_Check);
+
+PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(long long, PyInt_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<vector>.
 // TODO(user): see if we can also get rid of this and utilize already
@@ -398,7 +436,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
       JavaType value = values[i];
-      $1->push_back(value);
+      $1->emplace_back(value);
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
@@ -410,7 +448,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(freearg) const std::vector<CType>& {
   delete $1;
 }
-%typemap(out) const std::vector<j ## CType>& %{
+%typemap(out) const std::vector<CType>& %{
   $result = jenv->New ## JavaTypeName ## Array($1->size());
   jenv->Set ## JavaTypeName ## ArrayRegion($result, 0, $1->size(), &(*$1)[0]);
 %}
@@ -439,7 +477,7 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
         jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
     for (int index2 = 0; index2 < tuple_size; ++index2) {
       const int64 value = values[index2];
-      result[index1].push_back(value);
+      result[index1].emplace_back(value);
     }
     jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
     jenv->DeleteLocalRef(inner_array);
@@ -551,7 +589,7 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
   $1 = new std::vector<TYPE>;
   $1->reserve(length$argnum);
   for(int i = 0; i < length$argnum; ++i)
-    $1->push_back($input[i]);
+    $1->emplace_back($input[i]);
   %}
 %enddef // CS_TYPEMAP_STDVECTOR
 
@@ -597,13 +635,13 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
   result.clear();
   result.resize(size_x);
 
-  TYPE* inner_array = $input;
+  TYPE* inner_array = reinterpret_cast<TYPE*>($input);
 
   for (int index1 = 0; index1 < size_x; ++index1) {
     result[index1].reserve(size_y);
     for (int index2 = 0; index2 < size_y; ++index2) {
       const TYPE value = inner_array[index1 * size_y + index2];
-      result[index1].push_back(value);
+      result[index1].emplace_back(value);
     }
   }
 
@@ -672,7 +710,7 @@ CTYPE** "IntPtr[]"
 %typemap(in) const std::vector<CTYPE*>& (std::vector<CTYPE*> result) {
   result.reserve(length$argnum);
   for (int i = 0; i < length$argnum; i++) {
-    result.push_back($input[i]);
+    result.emplace_back($input[i]);
   }
   $1 = &result;
 }

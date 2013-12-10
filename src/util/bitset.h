@@ -598,8 +598,8 @@ class SparseBitset {
     if (size.value() > is_set_.size()) {
       is_set_.resize(size.value(), false);
     }
-    for (int i : to_clear_) {
-      is_set_[i] = false;
+    for (IntegerType i : to_clear_) {
+      is_set_[i.value()] = false;
     }
     to_clear_.clear();
   }
@@ -609,7 +609,7 @@ class SparseBitset {
   void Set(IntegerType index) {
     if (!is_set_[index.value()]) {
       is_set_[index.value()] = true;
-      to_clear_.push_back(index.value());
+      to_clear_.push_back(index);
     }
   }
   void Clear(IntegerType index) {
@@ -618,10 +618,13 @@ class SparseBitset {
   int NumberOfSetCallsWithDifferentArguments() const {
     return to_clear_.size();
   }
+  const std::vector<IntegerType>& PositionsSetAtLeastOnce() const {
+    return to_clear_;
+  }
 
  private:
   std::vector<bool> is_set_;
-  std::vector<int> to_clear_;
+  std::vector<IntegerType> to_clear_;
   DISALLOW_COPY_AND_ASSIGN(SparseBitset);
 };
 
