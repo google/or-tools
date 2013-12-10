@@ -15,6 +15,7 @@
 #include <string.h>
 #include "base/hash.h"
 #include <limits>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -221,7 +222,7 @@ class InitVarImpacts : public DecisionBuilder {
   int var_index_;
   std::vector<int64> active_values_;
   int value_index_;
-  const scoped_ptr<Closure> update_impact_closure_;
+  const std::unique_ptr<Closure> update_impact_closure_;
   AssignCallFail updater_;
 };
 
@@ -332,7 +333,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   int64 max_value_;
   const int split_size_;
   int split_index_;
-  scoped_ptr<Closure> update_impact_closure_;
+  std::unique_ptr<Closure> update_impact_closure_;
   AssignIntervalCallFail updater_;
 };
 
@@ -601,7 +602,7 @@ class ImpactRecorder : public SearchMonitor {
     virtual string DebugString() const { return "FirstRunVariableContainers"; }
 
    private:
-    scoped_ptr<Callback2<int, int64> > update_impact_callback_;
+    std::unique_ptr<Callback2<int, int64> > update_impact_callback_;
     std::vector<int64> removed_values_;
     InitVarImpacts without_splits_;
     InitVarImpactsWithSplits with_splits_;
@@ -615,7 +616,7 @@ class ImpactRecorder : public SearchMonitor {
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
   std::vector<int64> original_min_;
-  scoped_ptr<IntVarIterator * []> domain_iterators_;
+  std::unique_ptr<IntVarIterator * []> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;

@@ -54,6 +54,7 @@
 #include <math.h>
 #include <stddef.h>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -1367,10 +1368,10 @@ class SearchLog : public SearchMonitor {
   static string MemoryUsage();
 
   const int period_;
-  scoped_ptr<WallTimer> timer_;
+  std::unique_ptr<WallTimer> timer_;
   IntVar* const var_;
   OptimizeVar* const obj_;
-  scoped_ptr<ResultCallback<string> > display_callback_;
+  std::unique_ptr<ResultCallback<string> > display_callback_;
   int nsol_;
   int64 tick_;
   int64 objective_min_;
@@ -1958,7 +1959,7 @@ class RevIntSet {
   }
 
   // Set of elements.
-  scoped_ptr<T[]> elements_;
+  std::unique_ptr<T[]> elements_;
   // Number of elements in the set.
   NumericalRev<int> num_elements_;
   // Number of elements in the set.
@@ -2078,7 +2079,7 @@ class RevPartialSequence {
   // Number of elements in the sequence.
   const int size_;
   // Reverse mapping.
-  scoped_ptr<int[]> position_;
+  std::unique_ptr<int[]> position_;
 };
 
 // ---------- Helpers ----------

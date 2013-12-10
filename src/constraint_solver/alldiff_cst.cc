@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <algorithm>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -113,7 +114,7 @@ bool ValueAllDifferent::AllMoves() {
       return false;
     }
   }
-  scoped_ptr<int64[]> values(new int64[size()]);
+  std::unique_ptr<int64[]> values(new int64[size()]);
   for (int i = 0; i < size(); ++i) {
     values[i] = vars_[i]->Value();
   }
@@ -337,15 +338,15 @@ class RangeBipartiteMatching {
 
   Solver* const solver_;
   const int size_;
-  scoped_ptr<Interval[]> intervals_;
-  scoped_ptr<Interval * []> min_sorted_;
-  scoped_ptr<Interval * []> max_sorted_;
+  std::unique_ptr<Interval[]> intervals_;
+  std::unique_ptr<Interval * []> min_sorted_;
+  std::unique_ptr<Interval * []> max_sorted_;
   // bounds_[1..active_size_] hold set of min & max in the n intervals_
   // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
-  scoped_ptr<int64[]> bounds_;
-  scoped_ptr<int[]> tree_;    // tree links.
-  scoped_ptr<int64[]> diff_;  // diffs between critical capacities.
-  scoped_ptr<int[]> hall_;    // hall interval links.
+  std::unique_ptr<int64[]> bounds_;
+  std::unique_ptr<int[]> tree_;    // tree links.
+  std::unique_ptr<int64[]> diff_;  // diffs between critical capacities.
+  std::unique_ptr<int[]> hall_;    // hall interval links.
   int active_size_;
 };
 

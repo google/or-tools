@@ -15,8 +15,11 @@
 %include util/data.swig
 %include util/util.swig
 
-// Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON
+// We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
+// the recommended replacement $descriptor(...) is only available within
+// SWIG code.
+//swiglint: disable swigtype-name
 
 #pragma SWIG nowarn=473 // about Decision* return from Next()
 %{
@@ -289,328 +292,102 @@ class PyDecisionBuilder(object):
 // Generic rule to remove all Make prefixes.
 %rename("%(strip:[Make])s", %$isfunction) "";
 
+// Conversion utilities.
 namespace operations_research {
-%typemap(in) IntExpr* const {
-  operations_research::IntExpr* t;
-  if (SWIG_ConvertPtr($input,
-                      (void**)&t,
-                      $descriptor(operations_research::IntExpr*),
-                      SWIG_POINTER_EXCEPTION | 0 ) == -1) {
-    operations_research::Constraint* c;
-    if (SWIG_ConvertPtr($input,
-                        (void**)&c,
-                        $descriptor(operations_research::Constraint*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-      operations_research::IntVar* const v = c->Var();
-      if (v == nullptr) {
-        SWIG_fail;
-      } else {
-        $1 = v;
-      }
-    } else {
-      SWIG_fail;
-    }
-  } else {
-    $1 = t;
-  }
-}
 
-%typecheck(SWIG_TYPECHECK_POINTER) IntExpr* const {
-  operations_research::IntExpr* t;
-  operations_research::Constraint* c;
-  $1 = (SWIG_ConvertPtr($input,
-                        (void**)&t,
-                        $descriptor(operations_research::IntExpr*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
-        SWIG_ConvertPtr($input,
-                        (void**)&c,
-                        $descriptor(operations_research::Constraint*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1);
-  if ($1 == 0) {
-    PyErr_Clear();
-  }
+%define PY_CONVERT_HELPER_PTR(CType)
+%{
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::CType** b) {
+  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
+                         SWIGTYPE_p_operations_research__ ## CType,
+                         SWIG_POINTER_EXCEPTION) >= 0;
 }
-
-%typemap(in) IntVar* const {
-  operations_research::IntExpr* t;
-  if (SWIG_ConvertPtr($input,
-                      (void**)&t,
-                      $descriptor(operations_research::IntExpr*),
-                      SWIG_POINTER_EXCEPTION | 0 ) == -1) {
-    operations_research::Constraint* c;
-    if (SWIG_ConvertPtr($input,
-                        (void**)&c,
-                        $descriptor(operations_research::Constraint*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-      if (c == nullptr) {
-        PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-        SWIG_fail;
-      }
-      operations_research::IntVar* const v = c->Var();
-      if (v == nullptr) {
-        SWIG_fail;
-      } else {
-        $1 = v;
-      }
-    } else {
-      SWIG_fail;
-    }
-  } else {
-    $1 = t->Var();
-  }
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) IntVar* const {
-  operations_research::IntExpr* t;
-  operations_research::Constraint* c;
-  $1 = (SWIG_ConvertPtr($input,
-                        (void**)&t,
-                        $descriptor(operations_research::IntExpr*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
-        SWIG_ConvertPtr($input,
-                        (void**)&c,
-                        $descriptor(operations_research::Constraint*),
-                        SWIG_POINTER_EXCEPTION | 0 ) != -1);
-
-  if ($1 == 0) {
-    PyErr_Clear();
-  }
-}
-
-%typemap(in) const IntVar* const {
-  operations_research::IntExpr* t;
-  if (SWIG_ConvertPtr($input,
-                      (void**)&t,
-                      $descriptor(operations_research::IntExpr*),
-                      SWIG_POINTER_EXCEPTION | 0 ) == -1) {
-    SWIG_fail;
-  }
-  $1 = t->Var();
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const IntVar* const {
-  operations_research::IntExpr* t;
-  $1 = SWIG_ConvertPtr($input,
-                       (void**)&t,
-                       $descriptor(operations_research::IntExpr*),
-                       SWIG_POINTER_EXCEPTION | 0 ) != -1;
-  if ($1 == 0) {
-    PyErr_Clear();
-  }
-}
-
-// Add conversion rules for std::vector<IntExpr*> and std::vector<IntVar*>. Please
-// note that list of expressions will be converted to vectors of
-// IntVar.
-%typemap(in) const std::vector<IntVar*>& (std::vector<IntVar*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::IntExpr* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         $descriptor(operations_research::IntExpr*),
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      operations_research::Constraint* c;
-      if (SWIG_ConvertPtr(obj,
-                          (void**)&c,
-                          $descriptor(operations_research::Constraint*),
-                          SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-        if (c == nullptr) {
-          PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-          SWIG_fail;
-        }
-        operations_research::IntVar* const v = c->Var();
-        if (v == nullptr) {
-          SWIG_fail;
-        } else {
-          temp[i] = v;
-        }
-      } else {
-        SWIG_fail;
-      }
-    } else {
-      if (t == nullptr) {
-        PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-        SWIG_fail;
-      }
-      temp[i] = t->Var();
-    }
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<IntVar*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::IntExpr* t;
-      operations_research::Constraint* c;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           $descriptor(operations_research::IntExpr*),
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1 &&
-          SWIG_ConvertPtr(obj,
-                          (void**)&c,
-                          $descriptor(operations_research::Constraint*),
-                          SWIG_POINTER_EXCEPTION | 0 ) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
-// TODO(user): retest directors.
-// Add conversion rules for std::vector<DecisionBuilder*>.
-%typemap(in) const std::vector<DecisionBuilder*>&
-    (std::vector<DecisionBuilder*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::DecisionBuilder* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         $descriptor(operations_research::DecisionBuilder*),
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      PyErr_Clear();
-      t = new CallPyDecisionBuilder(obj);
-    }
-    if (t == nullptr) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<DecisionBuilder*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::DecisionBuilder* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           $descriptor(operations_research::DecisionBuilder*),
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        PyObject* next_func = PyObject_GetAttrString(obj, "Next");
-        failed = next_func == nullptr;
-        if (failed) {
-          break;
-        }
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
-%define CONVERT_VECTOR(TYPE)
-%typemap(in) const std::vector<TYPE*>&
-    (std::vector<TYPE*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::TYPE* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         $descriptor(operations_research::##TYPE*),
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
-    }
-    if (t == nullptr) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<TYPE*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::TYPE* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           $descriptor(operations_research::##TYPE*),
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
+%}
 %enddef
+PY_CONVERT_HELPER_PTR(SearchMonitor);
+PY_CONVERT_HELPER_PTR(IntervalVar);
+PY_CONVERT_HELPER_PTR(SequenceVar);
+PY_CONVERT_HELPER_PTR(LocalSearchOperator);
+PY_CONVERT_HELPER_PTR(LocalSearchFilter);
+#undef PY_CONVERT_HELPER_PTR
 
-CONVERT_VECTOR(SearchMonitor);
-CONVERT_VECTOR(IntervalVar);
-CONVERT_VECTOR(SequenceVar);
-CONVERT_VECTOR(LocalSearchOperator);
-CONVERT_VECTOR(LocalSearchFilter);
-
-%typemap(in) DecisionBuilder* const {
-  operations_research::DecisionBuilder* tmp;
-  if (SWIG_ConvertPtr($input,
-                      (void **) &tmp,
-                      $descriptor(operations_research::DecisionBuilder*),
-                      SWIG_POINTER_EXCEPTION | 0) == -1) {
-    PyErr_Clear();
-    $1 = new CallPyDecisionBuilder($input);
-  } else {
-    $1 = tmp;
+// Conversion to IntExpr* and IntVar* are a bit special because of the two
+// possible casts from IntExpr and Constraint.
+%define PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(Class)
+%{
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::Class** var) {
+  // First, try to interpret the python object as an IntExpr.
+  operations_research::IntExpr* t;
+  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(&t),
+                      SWIGTYPE_p_operations_research__IntExpr,
+                      SWIG_POINTER_EXCEPTION) >= 0) {
+    if (t == nullptr) return false;
+    *var = t->Var();
+    return true;
   }
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) DecisionBuilder* const {
-  operations_research::DecisionBuilder* tmp;
-  if (SWIG_ConvertPtr($input,
-                      (void **) &tmp,
-                      $descriptor(operations_research::DecisionBuilder*),
-                      SWIG_POINTER_EXCEPTION | 0) == -1) {
-    PyErr_Clear();
-    PyObject* next_func = PyObject_GetAttrString($input, "Next");
-    $1 =  next_func != nullptr;
-  } else {
-    $1 = 1;
+  // Then, try to interpret it as a Constraint.
+  operations_research::Constraint* c;
+  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(&c),
+                      SWIGTYPE_p_operations_research__Constraint,
+                      SWIG_POINTER_EXCEPTION) >= 0) {
+    if (c == nullptr || c->Var() == nullptr) return false;
+    *var = c->Var();
+    return true;
   }
+  // Give up.
+  return false;
 }
+%}
+%enddef
+PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
+PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
+#undef PY_CONVERT_HELPER_INTEXPR_OR_INTVAR
+
+// Conversions to DecisionBuilder* are also special because we've redefined
+// our own python DecisionBuilder object.
+%{
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::DecisionBuilder** b) {
+  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
+                      SWIGTYPE_p_operations_research__DecisionBuilder,
+                      SWIG_POINTER_EXCEPTION) == -1) {
+    // If the conversion failed, we try to create our own decision builder
+    // if it looks like we're given one.
+    PyErr_Clear();
+    if (PyObject_GetAttrString(py_obj, "Next") == nullptr) return false;
+    *b = new CallPyDecisionBuilder(py_obj);
+  }
+  return true;
+}
+%}
+
+// Actual conversions. Also include the conversion to std::vector<Class>.
+%define PY_CONVERT(Class)
+%{
+bool CanConvertTo ## Class(PyObject *py_obj) {
+  operations_research::Class* tmp;
+  return PyObjAs(py_obj, &tmp);
+}
+%}
+%typemap(in) Class* const { if (!PyObjAs($input, &$1)) SWIG_fail; }
+%typecheck(SWIG_TYPECHECK_POINTER) Class* const {
+  $1 = CanConvertTo ## Class($input);
+  if ($1 == 0) PyErr_Clear();
+}
+PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
+                       PyObjAs<operations_research::Class*>);
+%enddef
+PY_CONVERT(IntVar);
+PY_CONVERT(IntExpr);
+PY_CONVERT(DecisionBuilder);
+PY_CONVERT(SearchMonitor);
+PY_CONVERT(IntervalVar);
+PY_CONVERT(SequenceVar);
+PY_CONVERT(LocalSearchOperator);
+PY_CONVERT(LocalSearchFilter);
+#undef PY_CONVERT
 
 // Add display methods on BaseObject and remove DebugString method.
 %ignore BaseObject::DebugString;
@@ -702,47 +479,21 @@ CONVERT_VECTOR(LocalSearchFilter);
   }
 }
 
-%extend SequenceVar {
+%define PY_STRINGIFY_DEBUGSTRING(Class)
+%extend Class {
   string __repr__() {
     return self->DebugString();
   }
 }
-
-%extend IntVar {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
-
-%extend IntExpr {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
-
-%extend Constraint {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
-
-%extend SearchMonitor {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
-
-%extend DecisionBuilder {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
-
-%extend Decision {
-  string __repr__() {
-    return self->DebugString();
-  }
-}
+%enddef
+PY_STRINGIFY_DEBUGSTRING(SequenceVar);
+PY_STRINGIFY_DEBUGSTRING(IntVar);
+PY_STRINGIFY_DEBUGSTRING(IntExpr);
+PY_STRINGIFY_DEBUGSTRING(Constraint);
+PY_STRINGIFY_DEBUGSTRING(SearchMonitor);
+PY_STRINGIFY_DEBUGSTRING(DecisionBuilder);
+PY_STRINGIFY_DEBUGSTRING(Decision);
+#undef PY_STRINGIFY_DEBUGSTRING
 
 // Add display methods on Solver and remove DebugString method.
 %ignore Solver::DebugString;
@@ -1188,70 +939,64 @@ static void SetPythonFlags(bool trace_propagation,
     return self->Size();
   }
 }
-
-// Protect from failure
-#define PREPROTECT \
-  FailureProtect protect;\
-  Closure* const intercept = \
-      NewCallback<>(&protect, &FailureProtect::JumpBack);\
-  solver->set_fail_intercept(intercept);\
-  if (setjmp(protect.exception_buffer) == 0) {
-
-#define POSTPROTECT \
-    solver->clear_fail_intercept();\
-    delete intercept;\
-  } else {\
-    solver->clear_fail_intercept();\
-    PyErr_SetString(PyExc_IndexError, "fail");\
-    SWIG_fail;\
-  }
-
-%exception IntExpr::SetValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMin(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMax(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetRange(int64 mi, int64 ma) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntVar::RemoveValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::AddConstraint(Constraint* const ct) {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::Fail() {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-#undef PREPROTECT
-#undef POSTPROTECT
 }  // namespace operations_research
 #endif  // SWIGPYTHON
+
+// Protect from failure. Since the code is very similar in Python, Java and C#
+// we use the same block.
+%define PROTECT_FROM_FAILURE(Method, GetSolver)
+%exception Method {
+  operations_research::Solver* const solver = GetSolver;
+  FailureProtect protect;
+  Closure* const intercept = NewCallback<>(&protect, &FailureProtect::JumpBack);
+  solver->set_fail_intercept(intercept);
+  if (setjmp(protect.exception_buffer) == 0) {
+    $action
+    solver->clear_fail_intercept();
+    delete intercept;
+  } else {
+    solver->clear_fail_intercept();
+    #if defined(SWIGCSHARP)
+    SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "fail");
+    return $null;
+    #elif defined(SWIGJAVA)
+    jclass fail_class = jenv->FindClass(
+        "com/google/ortools/constraintsolver/"
+        "Solver$FailException");
+    jenv->ThrowNew(fail_class, "fail");
+    return $null;
+    #elif defined(SWIGPYTHON)
+    PyErr_SetString(PyExc_IndexError, "fail");
+    SWIG_fail;
+    #endif
+  }
+}
+%enddef
+namespace operations_research {
+PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetMax(int64 v), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 mi, int64 ma), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64 v), arg1->solver());
+PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64>& values),
+                     arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMin(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartMax(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetStartRange(int64 mi, int64 ma),
+                     arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMin(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationMax(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetDurationRange(int64 mi, int64 ma),
+                     arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMin(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64 m), arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
+                     arg1->solver());
+PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
+PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const ct), arg1);
+PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
+#undef PROTECT_FROM_FAILURE
+}  // namespace operations_research
 
 #if defined(SWIGJAVA)
 %module(directors="1") operations_research;
@@ -1428,69 +1173,6 @@ CONVERT_VECTOR(LocalSearchFilter);
     return index;
   }
 }
-
-// Protect from failure
-#define PREPROTECT\
-  FailureProtect protect;\
-  Closure* const intercept = \
-      NewCallback<>(&protect, &FailureProtect::JumpBack);\
-  solver->set_fail_intercept(intercept);\
-  if (setjmp(protect.exception_buffer) == 0) {
-
-#define POSTPROTECT\
-    solver->clear_fail_intercept();\
-    delete intercept;\
-  } else {\
-    solver->clear_fail_intercept();\
-    jclass fail_class = jenv->FindClass(\
-        "com/google/ortools/constraintsolver/"\
-        "Solver$FailException");\
-    jenv->ThrowNew(fail_class, "fail");\
-    return $null;\
-  }
-
-%exception IntExpr::SetValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMin(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMax(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetRange(int64 mi, int64 ma) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntVar::RemoveValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::AddConstraint(Constraint* const ct) {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::Fail() {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
 }  // namespace operations_research
 
 namespace operations_research {
@@ -1536,8 +1218,6 @@ class LocalSearchPhaseParameters {
   ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
-
-
 
 struct FailureProtect {
   jmp_buf exception_buffer;

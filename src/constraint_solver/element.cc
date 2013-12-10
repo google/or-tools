@@ -13,6 +13,7 @@
 
 #include <string.h>
 #include <algorithm>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -710,7 +711,7 @@ class OppositeCallback : public BaseObject {
   virtual string DebugString() const { return "OppositeCallback"; }
 
  public:
-  scoped_ptr<ResultCallback1<int64, int64>> values_;
+  std::unique_ptr<ResultCallback1<int64, int64>> values_;
 };
 }  // namespace
 
@@ -782,7 +783,7 @@ class IntIntExprFunctionElement : public BaseIntExpr {
   mutable int max_support1_;
   mutable int max_support2_;
   mutable bool initial_update_;
-  scoped_ptr<ResultCallback2<int64, int64, int64>> values_;
+  std::unique_ptr<ResultCallback2<int64, int64, int64>> values_;
   IntVarIterator* const expr1_iterator_;
   IntVarIterator* const expr2_iterator_;
 };
@@ -1309,7 +1310,7 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
   }
   int64 emin = kint64max;
   int64 emax = kint64min;
-  scoped_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
+  std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
   for (iterator->Init(); iterator->Ok(); iterator->Next()) {
     const int64 index_value = iterator->Value();
     if (index_value >= 0 && index_value < size) {

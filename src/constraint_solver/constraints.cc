@@ -460,7 +460,7 @@ void NoCycle::NextBound(int index) {
 // sink. Starts partial paths from the sinks down to all unconnected variables.
 // If some variables remain unconnected, make the corresponding active_
 // variable false.
-// Resulting tree is used as supports for nect variables.
+// Resulting tree is used as supports for next variables.
 // TODO(user): Try to see if we can find an algorithm which is less than
 // quadratic to do this (note that if the tree is flat we are already linear
 // for a given number of sinks).
@@ -480,8 +480,7 @@ void NoCycle::ComputeSupports() {
       const int64 current_support = outbound_supports_[i];
       // Optimization: if this node was already supported by a sink, check if
       // it's still a valid support.
-      if (current_support >= 0 &&
-          sink_handler_->Run(current_support) &&
+      if (current_support >= 0 && sink_handler_->Run(current_support) &&
           next->Contains(current_support)) {
         support_leaves_.push_back(i);
       } else {
@@ -497,8 +496,7 @@ void NoCycle::ComputeSupports() {
             }
           }
         } else {
-          for (iterators_[i]->Init();
-               iterators_[i]->Ok();
+          for (iterators_[i]->Init(); iterators_[i]->Ok();
                iterators_[i]->Next()) {
             const int64 value = iterators_[i]->Value();
             if (sink_handler_->Run(value)) {
@@ -521,8 +519,7 @@ void NoCycle::ComputeSupports() {
   size_t leaves_end = support_leaves_.size();
   while (!unsupported_.empty()) {
     // Try to connected unsupported nodes to nodes connected to sinks.
-    for (int64 unsupported_index = 0;
-         unsupported_index < unsupported_.size();
+    for (int64 unsupported_index = 0; unsupported_index < unsupported_.size();
          ++unsupported_index) {
       const int64 unsupported = unsupported_[unsupported_index];
       const IntVar* const next = nexts_[unsupported];
@@ -548,8 +545,7 @@ void NoCycle::ComputeSupports() {
     leaves_end = support_leaves_.size();
   }
   // Mark as inactive any unsupported node.
-  for (int64 unsupported_index = 0;
-       unsupported_index < unsupported_.size();
+  for (int64 unsupported_index = 0; unsupported_index < unsupported_.size();
        ++unsupported_index) {
     active_[unsupported_[unsupported_index]]->SetMax(0);
   }
@@ -559,8 +555,7 @@ void NoCycle::ComputeSupport(int index) {
   // Try to reconnect the node to the support tree by finding a next node
   // which is both supported and was not a descendant of the node in the tree.
   if (active_[index]->Max() != 0) {
-    for (iterators_[index]->Init();
-         iterators_[index]->Ok();
+    for (iterators_[index]->Init(); iterators_[index]->Ok();
          iterators_[index]->Next()) {
       const int64 next = iterators_[index]->Value();
       if (sink_handler_->Run(next)) {
@@ -572,8 +567,8 @@ void NoCycle::ComputeSupport(int index) {
         if (next_support >= 0) {
           // Check if next is not already a descendant of index.
           bool ancestor_found = false;
-          while (next_support < outbound_supports_.size()
-                 && !sink_handler_->Run(next_support)) {
+          while (next_support < outbound_supports_.size() &&
+                 !sink_handler_->Run(next_support)) {
             if (next_support == index) {
               ancestor_found = true;
               break;
@@ -593,8 +588,7 @@ void NoCycle::ComputeSupport(int index) {
 }
 
 string NoCycle::DebugString() const {
-  return StringPrintf("NoCycle(%s)",
-                      JoinDebugStringPtr(nexts_, ", ").c_str());
+  return StringPrintf("NoCycle(%s)", JoinDebugStringPtr(nexts_, ", ").c_str());
 }
 
 // ----- Circuit constraint -----
@@ -603,10 +597,18 @@ class Circuit : public Constraint {
  public:
   static const int kRoot;
   Circuit(Solver* const s, const std::vector<IntVar*>& nexts)
-      : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
-        starts_(size_, -1), ends_(size_, -1), domains_(size_),
-        outbound_support_(size_, -1), inbound_support_(size_, -1),
-        temp_support_(size_, -1), inbound_demon_(nullptr),
+      : Constraint(s),
+        nexts_(nexts),
+        size_(nexts_.size()),
+        processed_(0),
+        starts_(size_, -1),
+        ends_(size_, -1),
+        lengths_(size_, 1),
+        domains_(size_),
+        outbound_support_(size_, -1),
+        inbound_support_(size_, -1),
+        temp_support_(size_, -1),
+        inbound_demon_(nullptr),
         outbound_demon_(nullptr) {
     for (int i = 0; i < size_; ++i) {
       domains_[i] = nexts_[i]->MakeDomainIterator(true);
@@ -623,12 +625,12 @@ class Circuit : public Constraint {
         solver(), this, &Circuit::CheckReachabilityFromRoot,
         "CheckReachabilityFromRoot");
     for (int i = 0; i < size_; ++i) {
-      Demon* const domain_demon = MakeConstraintDemon1(
-          solver(), this, &Circuit::NextDomain, "NextDomain", i);
-      nexts_[i]->WhenDomain(domain_demon);
       Demon* const bound_demon = MakeConstraintDemon1(
           solver(), this, &Circuit::NextBound, "NextBound", i);
       nexts_[i]->WhenBound(bound_demon);
+      Demon* const domain_demon = MakeConstraintDemon1(
+          solver(), this, &Circuit::NextDomain, "NextDomain", i);
+      nexts_[i]->WhenDomain(domain_demon);
     }
     solver()->AddConstraint(solver()->MakeAllDifferent(nexts_));
   }
@@ -657,31 +659,33 @@ class Circuit : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
-    visitor->VisitIntegerVariableArrayArgument(
-        ModelVisitor::kNextsArgument, nexts_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
+                                               nexts_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCompleteArgument, 1);
     visitor->EndVisitConstraint(ModelVisitor::kCircuit, this);
   }
 
  private:
+  // When a variable is bound, we update all the bounds of the 2 newly
+  // connected chains.
   void NextBound(int index) {
     Solver* const s = solver();
     const int destination = nexts_[index]->Value();
     const int new_end = ends_.Value(destination);
     const int new_start = starts_.Value(index);
-    int chain_length = 0;
-    for (int current = new_start; current != new_end;
-         current = nexts_[current]->Value()) {
-      if (current != kRoot) {
-        starts_.SetValue(s, current, new_start);
-        ends_.SetValue(s, current, new_end);
-        chain_length++;
-      }
-    }
-    if (chain_length < size_ - 1) {
+    starts_.SetValue(s, new_end, new_start);
+    ends_.SetValue(s, new_start, new_end);
+    lengths_.SetValue(s, new_start,
+                      lengths_.Value(new_start) + lengths_.Value(destination));
+    // If a chain is not complete, it cannot loop onto itself.
+    if (lengths_.Value(new_start) < size_ - 1) {
       nexts_[new_end]->RemoveValue(new_start);
     }
   }
 
+  // When a variable is modified, we check if the support for the
+  // inbound and outbound spanning tree are still valid. If no, we
+  // enqueue the low priority demons to recompute them.
   void NextDomain(int index) {
     if (!nexts_[index]->Contains(outbound_support_[index])) {
       EnqueueDelayedDemon(outbound_demon_);
@@ -691,22 +695,25 @@ class Circuit : public Constraint {
     }
   }
 
+  // Builds a spanning tree based from root to all nodes and stores
+  // the result in outbound_support_.
   void CheckReachabilityFromRoot() {
-    reached_.clear();
-    reached_.insert(kRoot);
+    reached_.assign(size_, false);
+    reached_[kRoot] = true;
+    int reached_count = 1;
     processed_ = 0;
     insertion_queue_.clear();
     insertion_queue_.push_back(kRoot);
-    while (processed_ < insertion_queue_.size() &&
-           reached_.size() < size_) {
+    while (processed_ < insertion_queue_.size() && reached_count < size_) {
       const int candidate = insertion_queue_[processed_++];
       IntVarIterator* const domain = domains_[candidate];
       for (domain->Init(); domain->Ok(); domain->Next()) {
         const int64 after = domain->Value();
-        if (!ContainsKey(reached_, after)) {
-          reached_.insert(after);
+        if (!reached_[after]) {
+          reached_[after] = true;
           insertion_queue_.push_back(after);
           temp_support_[candidate] = after;
+          reached_count++;
         }
       }
     }
@@ -717,6 +724,8 @@ class Circuit : public Constraint {
     }
   }
 
+  // Builds a spanning tree going from all nodes to root and stores
+  // the result in inbound_support_.
   void CheckReachabilityToRoot() {
     insertion_queue_.clear();
     insertion_queue_.push_back(kRoot);
@@ -749,18 +758,25 @@ class Circuit : public Constraint {
     }
   }
 
-  const std::vector<IntVar*> nexts_;
+  std::vector<IntVar*> nexts_;
   const int size_;
+  // Utility variables to implement the traversal in the graph.
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
-  hash_set<int> reached_;
+  std::vector<bool> reached_;
   int processed_;
+  // Reversible starts and ends of the chains vars[i] belongs to.
   RevArray<int> starts_;
   RevArray<int> ends_;
+  RevArray<int> lengths_;
+  // We cache iterators.
   std::vector<IntVarIterator*> domains_;
+  // We store the links in the inbound and outbound flows to launch
+  // recomputation only if those links are no longer there.
   std::vector<int> outbound_support_;
   std::vector<int> inbound_support_;
   std::vector<int> temp_support_;
+  // Low priority demons.
   Demon* inbound_demon_;
   Demon* outbound_demon_;
 };
@@ -772,11 +788,20 @@ const int Circuit::kRoot = 0;
 class SubCircuit : public Constraint {
  public:
   SubCircuit(Solver* const s, const std::vector<IntVar*>& nexts)
-      : Constraint(s), nexts_(nexts), size_(nexts_.size()), processed_(0),
-        starts_(size_, -1), ends_(size_, -1), domains_(size_),
-        outbound_support_(size_, -1), inbound_support_(size_, -1),
-        temp_support_(size_, -1), inbound_demon_(nullptr),
-        outbound_demon_(nullptr), root_(-1) {
+      : Constraint(s),
+        nexts_(nexts),
+        size_(nexts_.size()),
+        processed_(0),
+        starts_(size_, -1),
+        ends_(size_, -1),
+        lengths_(size_, 1),
+        domains_(size_),
+        outbound_support_(size_, -1),
+        inbound_support_(size_, -1),
+        temp_support_(size_, -1),
+        inbound_demon_(nullptr),
+        outbound_demon_(nullptr),
+        root_(-1) {
     for (int i = 0; i < size_; ++i) {
       domains_[i] = nexts_[i]->MakeDomainIterator(true);
     }
@@ -820,14 +845,15 @@ class SubCircuit : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "SubCircuit(%s)", JoinDebugStringPtr(nexts_, " ").c_str());
+    return StringPrintf("SubCircuit(%s)",
+                        JoinDebugStringPtr(nexts_, " ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
-    visitor->VisitIntegerVariableArrayArgument(
-        ModelVisitor::kNextsArgument, nexts_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
+                                               nexts_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCompleteArgument, 0);
     visitor->EndVisitConstraint(ModelVisitor::kCircuit, this);
   }
 
@@ -847,24 +873,25 @@ class SubCircuit : public Constraint {
   void NextBound(int index) {
     Solver* const s = solver();
     const int destination = nexts_[index]->Value();
+    const int root = root_.Value();
     if (destination != index) {
-      if (root_.Value() == -1) {
+      if (root == -1) {
         root_.SetValue(s, index);
       }
       const int new_end = ends_.Value(destination);
       const int new_start = starts_.Value(index);
-      int chain_length = 0;
-      for (int current = new_start; current != new_end;
-           current = nexts_[current]->Value()) {
-        if (current != root_.Value()) {
-          starts_.SetValue(s, current, new_start);
-          ends_.SetValue(s, current, new_end);
-          chain_length++;
-        }
-      }
+      starts_.SetValue(s, new_end, new_start);
+      ends_.SetValue(s, new_start, new_end);
+      lengths_.SetValue(s, new_start,
+                      lengths_.Value(new_start) + lengths_.Value(destination));
       const int inactive = NumberOfInactiveNodes();
-      if (chain_length < size_ - 1 - inactive) {
+      if (lengths_.Value(new_start) < size_ - 1 - inactive) {
         nexts_[new_end]->RemoveValue(new_start);
+      }
+    } else if (root != -1) {
+      const int inactive = NumberOfInactiveNodes();
+      if (lengths_.Value(root) < size_ - 1 - inactive) {
+        nexts_[ends_[root]]->RemoveValue(root);
       }
     }
   }
@@ -881,11 +908,6 @@ class SubCircuit : public Constraint {
     }
   }
 
-  void AddReached(int index) {
-    reached_.insert(index);
-    insertion_queue_.push_back(index);
-  }
-
   void CheckReachabilityFromRoot() {
     if (root_.Value() == -1) {  // Root is not yet defined. Nothing to deduce.
       return;
@@ -894,31 +916,34 @@ class SubCircuit : public Constraint {
     const int inactive = NumberOfInactiveNodes();
 
     // Assign temp_support_ to a dummy value.
-    for (int i = 0; i < size_; ++i) {
-      temp_support_[i] = -1;
-    }
+    temp_support_.assign(size_, -1);
     // Clear the spanning tree.
     processed_ = 0;
-    reached_.clear();
+    reached_.assign(size_, false);
+    int reached_count = 0;
     insertion_queue_.clear();
     // Add the root node.
-    AddReached(root_.Value());
+    const int root_value = root_.Value();
+    reached_[root_value] = true;
+    insertion_queue_.push_back(root_value);
     // Compute reachable nodes.
     while (processed_ < insertion_queue_.size() &&
-           reached_.size() + inactive < size_) {
+           reached_count + inactive < size_) {
       const int candidate = insertion_queue_[processed_++];
       IntVarIterator* const domain = domains_[candidate];
       for (domain->Init(); domain->Ok(); domain->Next()) {
         const int64 after = domain->Value();
-        if (!ContainsKey(reached_, after)) {
-          AddReached(after);
+        if (!reached_[after]) {
+          reached_[after] = true;
+          insertion_queue_.push_back(after);
+          reached_count++;
           temp_support_[candidate] = after;
         }
       }
     }
     // All non reachable nodes should point to themselves.
     for (int i = 0; i < size_; ++i) {
-      if (!ContainsKey(reached_, i)) {
+      if (!reached_[i]) {
         nexts_[i]->SetValue(i);
       }
     }
@@ -969,10 +994,11 @@ class SubCircuit : public Constraint {
   const int size_;
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
-  hash_set<int> reached_;
+  std::vector<bool> reached_;
   int processed_;
   RevArray<int> starts_;
   RevArray<int> ends_;
+  RevArray<int> lengths_;
   std::vector<IntVarIterator*> domains_;
   std::vector<int> outbound_support_;
   std::vector<int> inbound_support_;
@@ -983,7 +1009,6 @@ class SubCircuit : public Constraint {
 };
 
 // ----- Misc -----
-
 
 bool GreaterThan(int64 x, int64 y) { return y >= x; }
 }  // namespace
@@ -1007,6 +1032,7 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
   return MakeNoCycle(nexts, active, sink_handler, true);
 }
 
+// TODO(user): Merge NoCycle and Circuit/SubCircuit.
 Constraint* Solver::MakeCircuit(const std::vector<IntVar*>& nexts) {
   return RevAlloc(new Circuit(this, nexts));
 }
@@ -1379,9 +1405,10 @@ bool ResultCallback2SlackPathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_j = cumuls_[j];
   const IntVar* const slack = slacks_[i];
   const int64 transit = transits_evaluator_->Run(i, j);
-  return
-      CapAdd(transit, slack->Min()) <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
-      CapSub(cumul_j->Min(), cumul_i->Max()) <= CapAdd(slack->Max(), transit);
+  return CapAdd(transit, slack->Min()) <=
+             CapSub(cumul_j->Max(), cumul_i->Min()) &&
+         CapSub(cumul_j->Min(), cumul_i->Max()) <=
+             CapAdd(slack->Max(), transit);
 }
 }  // namespace
 

@@ -19,6 +19,7 @@
 #include <setjmp.h>
 #include <string.h>
 #include <iosfwd>
+#include "base/unique_ptr.h"
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -558,7 +559,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
 
  private:
   const uint64 tmp_size_;
-  scoped_ptr<char[]> tmp_block_;
+  std::unique_ptr<char[]> tmp_block_;
   DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker<T>);
 };
 
@@ -671,12 +672,12 @@ class CompressedTrail {
     }
   }
 
-  scoped_ptr<TrailPacker<T> > packer_;
+  std::unique_ptr<TrailPacker<T> > packer_;
   const int block_size_;
   Block* blocks_;
   Block* free_blocks_;
-  scoped_ptr<addrval<T> []> data_;
-  scoped_ptr<addrval<T> []> buffer_;
+  std::unique_ptr<addrval<T> []> data_;
+  std::unique_ptr<addrval<T> []> buffer_;
   bool buffer_used_;
   int current_;
   int size_;
@@ -1031,7 +1032,8 @@ class Search {
   int64 solution_counter_;
   DecisionBuilder* decision_builder_;
   bool created_by_solve_;
-  scoped_ptr<ResultCallback1<Solver::DecisionModification, Solver*> > selector_;
+  std::unique_ptr<ResultCallback1<Solver::DecisionModification, Solver*> >
+      selector_;
   int search_depth_;
   int left_search_depth_;
   bool should_restart_;
@@ -1121,8 +1123,8 @@ class ApplyBranchSelector : public DecisionBuilder {
 
 void Search::SetBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
-  CHECK(bs == selector_ || selector_ == nullptr || bs == nullptr);
-  if (selector_ != bs) {
+  CHECK(bs == selector_.get() || selector_ == nullptr || bs == nullptr);
+  if (selector_.get() != bs) {
     selector_.reset(bs);
   }
 }
@@ -2212,7 +2214,7 @@ bool Solver::NextSolution() {
         search->BeginNextDecision(db);
         d = db->Next(this);
         search->EndNextDecision(db, d);
-        if (d == fail_decision_) {
+        if (d == fail_decision_.get()) {
           Fail();  // fail now instead of after 2 branches.
         }
         if (d != nullptr) {
@@ -2588,8 +2590,8 @@ const char ModelVisitor::kAbsEqual[] = "AbsEqual";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";
 const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
 const char ModelVisitor::kBetween[] = "Between";
-const char ModelVisitor::kCircuit[] = "Circuit";
 const char ModelVisitor::kConditionalExpr[] = "ConditionalExpr";
+const char ModelVisitor::kCircuit[] = "Circuit";
 const char ModelVisitor::kConvexPiecewise[] = "ConvexPiecewise";
 const char ModelVisitor::kCountEqual[] = "CountEqual";
 const char ModelVisitor::kCover[] = "Cover";
@@ -2682,6 +2684,7 @@ const char ModelVisitor::kBranchesLimitArgument[] = "branches_limit";
 const char ModelVisitor::kCapacityArgument[] = "capacity";
 const char ModelVisitor::kCardsArgument[] = "cardinalities";
 const char ModelVisitor::kCoefficientsArgument[] = "coefficients";
+const char ModelVisitor::kCompleteArgument[] = "complete";
 const char ModelVisitor::kCountArgument[] = "count";
 const char ModelVisitor::kCumulativeArgument[] = "cumulative";
 const char ModelVisitor::kCumulsArgument[] = "cumuls";

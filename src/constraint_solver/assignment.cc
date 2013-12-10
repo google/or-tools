@@ -638,8 +638,10 @@ template <class Container, class Element>
 void RealDebugString(const Container& container, string* const out) {
   for (int i = 0; i < container.Size(); ++i) {
     const Element& element = container.Element(i);
-    StringAppendF(out, "%s %s | ", element.Var()->name().c_str(),
-                  element.DebugString().c_str());
+    if (element.Var() != nullptr) {
+      StringAppendF(out, "%s %s | ", element.Var()->name().c_str(),
+                    element.DebugString().c_str());
+    }
   }
 }
 

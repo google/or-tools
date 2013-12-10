@@ -13,6 +13,7 @@
 
 #include <math.h>
 #include "base/hash.h"
+#include "base/unique_ptr.h"
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -107,9 +108,9 @@ class SimplexConnection : public SearchMonitor {
   virtual string DebugString() const { return "SimplexConnection"; }
 
  private:
-  scoped_ptr<Callback1<MPSolver*> > builder_;
-  scoped_ptr<Callback1<MPSolver*> > modifier_;
-  scoped_ptr<Callback1<MPSolver*> > runner_;
+  std::unique_ptr<Callback1<MPSolver*> > builder_;
+  std::unique_ptr<Callback1<MPSolver*> > modifier_;
+  std::unique_ptr<Callback1<MPSolver*> > runner_;
   MPSolver mp_solver_;
   int64 counter_;
   const int simplex_frequency_;

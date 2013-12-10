@@ -170,6 +170,7 @@
 #include "base/int_type.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 
 
 namespace operations_research {
@@ -1508,14 +1509,12 @@ class LocalCheapestInsertionFilteredDecisionBuilder
 };
 
 // Filtered-base decision builder based on the addition heuristic, extending
-// a path from its start node with the cheapest arc according to an evaluator.
+// a path from its start node with the cheapest arc.
 class CheapestAdditionFilteredDecisionBuilder
     : public RoutingFilteredDecisionBuilder {
  public:
-  // Takes ownership of evaluator.
   CheapestAdditionFilteredDecisionBuilder(
-      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
-      const std::vector<LocalSearchFilter*>& filters);
+      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
   virtual ~CheapestAdditionFilteredDecisionBuilder() {}
   virtual bool BuildSolution();
 
@@ -1530,19 +1529,78 @@ class CheapestAdditionFilteredDecisionBuilder
    private:
     const CheapestAdditionFilteredDecisionBuilder& builder_;
   };
-  // Computes the possible neighbors of node 'index' and sorts them according
-  // to the current cost evaluator.
-  void ComputeEvaluatorSortedNeighbors(int index,
-                                       std::vector<int>* sorted_neighbors);
+  // Returns a sorted vector of nodes which can come next in the route after
+  // node 'from'.
+  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts) = 0;
+};
+
+// A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
+// comes from an arc evaluator.
+class EvaluatorCheapestAdditionFilteredDecisionBuilder
+    : public CheapestAdditionFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  EvaluatorCheapestAdditionFilteredDecisionBuilder(
+      RoutingModel* model,
+      ResultCallback2<int64, /*from*/ int64, /*to*/ int64>* evaluator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~EvaluatorCheapestAdditionFilteredDecisionBuilder() {}
+
+ private:
+  // Next nodes are sorted according to the current evaluator.
+  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts);
 
   std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
 
-// Routing filters, exposed for testing.
-LocalSearchFilter* MakeNodeDisjunctionFilter(const RoutingModel& routing_model);
-LocalSearchFilter* MakePathCumulFilter(const RoutingModel& routing_model,
-                                       const string& dimension_name,
-                                       Callback1<int64>* objective_callback);
+// A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
+// comes from an arc comparator.
+class ComparatorCheapestAdditionFilteredDecisionBuilder
+    : public CheapestAdditionFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  ComparatorCheapestAdditionFilteredDecisionBuilder(
+      RoutingModel* model, ResultCallback3<bool, /*from*/ int64, /*to1*/ int64,
+                                           /*to2*/ int64>* comparator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~ComparatorCheapestAdditionFilteredDecisionBuilder() {}
+
+ private:
+  // Next nodes are sorted according to the current comparator.
+  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts);
+
+  std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
+};
+
+// Routing filters
+
+class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
+ public:
+  RoutingLocalSearchFilter(const std::vector<IntVar*> nexts,
+                           Callback1<int64>* objective_callback);
+  virtual ~RoutingLocalSearchFilter() {}
+  virtual void InjectObjectiveValue(int64 objective_value);
+
+ protected:
+  bool CanPropagateObjectiveValue() const {
+    return objective_callback_.get() != nullptr;
+  }
+  void PropagateObjectiveValue(int64 objective_value);
+
+  int64 injected_objective_value_;
+
+ private:
+  std::unique_ptr<Callback1<int64> > objective_callback_;
+};
+
+RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(
+    const RoutingModel& routing_model,
+    Callback1<int64>* objective_callback);
+RoutingLocalSearchFilter* MakePathCumulFilter(
+    const RoutingModel& routing_model, const RoutingDimension& dimension,
+    Callback1<int64>* objective_callback);
+RoutingLocalSearchFilter* MakeNodePrecedenceFilter(
+    const RoutingModel& routing_model, const RoutingModel::NodePairs& pairs);
 
 }  // namespace operations_research
 

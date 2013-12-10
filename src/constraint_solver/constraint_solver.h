@@ -1634,11 +1634,10 @@ class Solver {
                           ResultCallback1<bool, int64>* sink_handler,
                           bool assume_paths);
 
-  // Force the nexts() variable to create an complete hamiltonian path.
+  // Force the nexts() variable to create a complete hamiltonian path.
   Constraint* MakeCircuit(const std::vector<IntVar*>& nexts);
 
-
-  // Force the nexts() variable to create an complete hamiltonian path
+  // Force the nexts() variable to create a complete hamiltonian path
   // for those that do not loop upon themselves.
   Constraint* MakeSubCircuit(const std::vector<IntVar*>& nexts);
 
@@ -2958,8 +2957,8 @@ class Solver {
   hash_map<const PropagationBaseObject*, IntegerCastInfo> cast_information_;
   hash_set<const Constraint*> cast_constraints_;
   const string empty_name_;
-  scoped_ptr<Queue> queue_;
-  scoped_ptr<Trail> trail_;
+  std::unique_ptr<Queue> queue_;
+  std::unique_ptr<Trail> trail_;
   std::vector<Constraint*> constraints_list_;
   std::vector<Constraint*> additional_constraints_list_;
   std::vector<int> additional_constraints_parent_list_;
@@ -2971,13 +2970,13 @@ class Solver {
   int64 neighbors_;
   int64 filtered_neighbors_;
   int64 accepted_neighbors_;
-  scoped_ptr<Action> variable_cleaner_;
-  scoped_ptr<ClockTimer> timer_;
+  std::unique_ptr<Action> variable_cleaner_;
+  std::unique_ptr<ClockTimer> timer_;
   std::vector<Search*> searches_;
   ACMRandom random_;
   SimpleRevFIFO<Action*>* fail_hooks_;
   uint64 fail_stamp_;
-  scoped_ptr<Decision> balancing_decision_;
+  std::unique_ptr<Decision> balancing_decision_;
   // intercept failures
   Closure* fail_intercept_;
   // Demon monitor
@@ -2994,7 +2993,7 @@ class Solver {
   Constraint* true_constraint_;
   Constraint* false_constraint_;
 
-  scoped_ptr<Decision> fail_decision_;
+  std::unique_ptr<Decision> fail_decision_;
   int constraint_index_;
   int additional_constraint_index_;
 
@@ -3004,9 +3003,9 @@ class Solver {
   hash_map<string, IntervalVariableBuilder*> interval_builders_;
   hash_map<string, SequenceVariableBuilder*> sequence_builders_;
 
-  scoped_ptr<ModelCache> model_cache_;
-  scoped_ptr<DependencyGraph> dependency_graph_;
-  scoped_ptr<PropagationMonitor> propagation_monitor_;
+  std::unique_ptr<ModelCache> model_cache_;
+  std::unique_ptr<DependencyGraph> dependency_graph_;
+  std::unique_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
   int anonymous_variable_index_;
 
@@ -3230,8 +3229,8 @@ class ModelVisitor : public BaseObject {
   static const char kAllowedAssignments[];
   static const char kIndexOf[];
   static const char kBetween[];
-  static const char kCircuit[];
   static const char kConditionalExpr[];
+  static const char kCircuit[];
   static const char kConvexPiecewise[];
   static const char kCountEqual[];
   static const char kCover[];
@@ -3322,6 +3321,7 @@ class ModelVisitor : public BaseObject {
   static const char kCapacityArgument[];
   static const char kCardsArgument[];
   static const char kCoefficientsArgument[];
+  static const char kCompleteArgument[];
   static const char kCountArgument[];
   static const char kCumulativeArgument[];
   static const char kCumulsArgument[];
@@ -3681,8 +3681,8 @@ class RevArray {
   }
 
  private:
-  scoped_ptr<uint64[]> stamps_;
-  scoped_ptr<T[]> values_;
+  std::unique_ptr<uint64[]> stamps_;
+  std::unique_ptr<T[]> values_;
   const int size_;
 };
 
@@ -3946,7 +3946,7 @@ class SolutionCollector : public SearchMonitor {
   void PopSolution();
 
   void check_index(int n) const;
-  scoped_ptr<Assignment> prototype_;
+  std::unique_ptr<Assignment> prototype_;
   std::vector<Assignment*> solutions_;
   std::vector<Assignment*> recycle_solutions_;
   std::vector<int64> times_;
@@ -4947,7 +4947,7 @@ class Pack : public Constraint {
   const std::vector<IntVar*> vars_;
   const int bins_;
   std::vector<Dimension*> dims_;
-  scoped_ptr<RevBitMatrix> unprocessed_;
+  std::unique_ptr<RevBitMatrix> unprocessed_;
   std::vector<std::vector<int> > forced_;
   std::vector<std::vector<int> > removed_;
   std::vector<IntVarIterator*> holes_;
@@ -5082,11 +5082,11 @@ class ParallelSolveSupport {
 
  protected:
   // Best solution found so far.
-  scoped_ptr<AssignmentProto> local_solution_;
+  std::unique_ptr<AssignmentProto> local_solution_;
   // Are we maximizing.
   const bool maximize_;
   // Callback to run the model
-  scoped_ptr<ModelBuilder> run_model_;
+  std::unique_ptr<ModelBuilder> run_model_;
 };
 
 // This method creates an instance of ParallelSolveSupport suited for

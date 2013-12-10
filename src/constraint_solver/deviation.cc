@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <algorithm>
+#include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
@@ -391,15 +392,15 @@ class Deviation : public Constraint {
   const int size_;
   IntVar* const deviation_var_;
   const int64 total_sum_;
-  scoped_ptr<int64[]> scaled_vars_assigned_value_;
-  scoped_ptr<int64[]> scaled_vars_min_;
-  scoped_ptr<int64[]> scaled_vars_max_;
+  std::unique_ptr<int64[]> scaled_vars_assigned_value_;
+  std::unique_ptr<int64[]> scaled_vars_min_;
+  std::unique_ptr<int64[]> scaled_vars_max_;
   int64 scaled_sum_max_;
   int64 scaled_sum_min_;
   // Stores the variables overlapping the mean value.
   std::vector<int> overlaps_;
-  scoped_ptr<int64[]> maximum_;
-  scoped_ptr<int64[]> overlaps_sup_;
+  std::unique_ptr<int64[]> maximum_;
+  std::unique_ptr<int64[]> overlaps_sup_;
   // These values are updated by ComputeData().
   int64 active_sum_;
   int64 active_sum_rounded_down_;

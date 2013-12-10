@@ -29,10 +29,8 @@
 #include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
-#include "base/small_map.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
-#include "constraint_solver/constraint_solveri.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
 
@@ -106,6 +104,8 @@ DEFINE_bool(routing_use_pickup_and_delivery_filter, true,
             "Use filter which filters precedence and same route constraints.");
 DEFINE_bool(routing_use_disjunction_filter, true,
             "Use filter which filters node disjunction constraints.");
+
+// First solution heuristics
 DEFINE_double(savings_route_shape_parameter, 1.0,
               "Coefficient of the added arc in the savings definition."
               "Variation of this parameter may provide heuristic solutions "
@@ -151,6 +151,8 @@ size_t hash_value<operations_research::RoutingModel::NodeIndex>(
 #endif  // _MSC_VER
 
 namespace operations_research {
+
+namespace {
 
 // Set of "light" constraints, well-suited for use within Local Search.
 // These constraints are "checking" constraints, only triggered on WhenBound
@@ -592,6 +594,8 @@ LocalSearchOperator* MakePairRelocate(Solver* const solver,
       new PairRelocateOperator(vars, secondary_vars, pairs));
 }
 
+}  // namespace
+
 // Cached callbacks
 
 class RoutingCache {
@@ -629,753 +633,6 @@ class RoutingCache {
 };
 
 namespace {
-
-// Node disjunction filter class.
-
-class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
- public:
-  NodeDisjunctionFilter(const RoutingModel& routing_model,
-                        Callback1<int64>* delta_objective_callback)
-      : IntVarLocalSearchFilter(routing_model.Nexts()),
-        routing_model_(routing_model),
-        active_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
-        penalty_value_(0),
-        injected_objective_value_(0),
-        delta_objective_callback_(delta_objective_callback) {}
-
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta) {
-    const int64 kUnassigned = -1;
-    const Assignment::IntContainer& container = delta->IntVarContainer();
-    const int delta_size = container.Size();
-    small_map<std::map<RoutingModel::DisjunctionIndex, int> >
-        disjunction_active_deltas;
-    bool lns_detected = false;
-    for (int i = 0; i < delta_size; ++i) {
-      const IntVarElement& new_element = container.Element(i);
-      IntVar* const var = new_element.Var();
-      int64 index = kUnassigned;
-      if (FindIndex(var, &index) && IsVarSynced(index)) {
-        RoutingModel::DisjunctionIndex disjunction_index(kUnassigned);
-        if (routing_model_.GetDisjunctionIndexFromVariableIndex(
-                index, &disjunction_index)) {
-          const bool was_inactive = (Value(index) == index);
-          const bool is_inactive =
-              (new_element.Min() <= index && new_element.Max() >= index);
-          if (new_element.Min() != new_element.Max()) {
-            lns_detected = true;
-          }
-          if (was_inactive && !is_inactive) {
-            ++LookupOrInsert(&disjunction_active_deltas, disjunction_index, 0);
-          } else if (!was_inactive && is_inactive) {
-            --LookupOrInsert(&disjunction_active_deltas, disjunction_index, 0);
-          }
-        }
-      }
-    }
-    int64 new_objective_value = injected_objective_value_ + penalty_value_;
-    for (ConstIter<small_map<std::map<RoutingModel::DisjunctionIndex, int> > >
-             it(disjunction_active_deltas); !it.at_end(); ++it) {
-      const int active_nodes = active_per_disjunction_[it->first] + it->second;
-      if (active_nodes > 1) {
-        PropagateObjectiveValue(0);
-        return false;
-      }
-      if (!lns_detected) {
-        const int64 penalty = routing_model_.GetDisjunctionPenalty(it->first);
-        if (it->second < 0) {
-          if (penalty < 0) {
-            PropagateObjectiveValue(0);
-            return false;
-          } else {
-            new_objective_value += penalty;
-          }
-        } else if (it->second > 0) {
-          new_objective_value -= penalty;
-        }
-      }
-    }
-    PropagateObjectiveValue(new_objective_value);
-    if (lns_detected) {
-      return true;
-    } else {
-      IntVar* const cost_var = routing_model_.CostVar();
-      return new_objective_value <= cost_var->Max() &&
-             new_objective_value >= cost_var->Min();
-    }
-  }
-  void InjectObjectiveValue(int64 objective_value) {
-    injected_objective_value_ = objective_value;
-  }
-
- private:
-  virtual void OnSynchronize() {
-    for (RoutingModel::DisjunctionIndex i(0);
-         i < active_per_disjunction_.size(); ++i) {
-      active_per_disjunction_[i] = 0;
-      const std::vector<int>& disjunction_nodes =
-          routing_model_.GetDisjunctionIndices(i);
-      for (int j = 0; j < disjunction_nodes.size(); ++j) {
-        const int node = disjunction_nodes[j];
-        if (IsVarSynced(node) && Value(node) != node) {
-          ++active_per_disjunction_[i];
-        }
-      }
-    }
-    penalty_value_ = 0;
-    for (RoutingModel::DisjunctionIndex i(0);
-         i < active_per_disjunction_.size(); ++i) {
-      const int64 penalty = routing_model_.GetDisjunctionPenalty(i);
-      if (active_per_disjunction_[i] == 0 && penalty > 0) {
-        penalty_value_ += penalty;
-      }
-    }
-    PropagateObjectiveValue(injected_objective_value_ + penalty_value_);
-  }
-  void PropagateObjectiveValue(int64 objective_value) {
-    if (delta_objective_callback_ != nullptr) {
-      delta_objective_callback_->Run(objective_value);
-    }
-  }
-
-  const RoutingModel& routing_model_;
-  ITIVector<RoutingModel::DisjunctionIndex, int> active_per_disjunction_;
-  int64 penalty_value_;
-  int64 injected_objective_value_;
-  std::unique_ptr<Callback1<int64> > delta_objective_callback_;
-};
-}  // namespace
-
-LocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model) {
-  return routing_model.solver()->RevAlloc(
-      new NodeDisjunctionFilter(routing_model, nullptr));
-}
-
-namespace {
-
-// Generic path-based filter class.
-// TODO(user): Move all filters to local_search.cc.
-
-class BasePathFilter : public IntVarLocalSearchFilter {
- public:
-  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
-                 const string& name);
-  virtual ~BasePathFilter() {}
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void OnSynchronize();
-
- protected:
-  static const int64 kUnassigned;
-
-  int64 GetNext(const Assignment::IntContainer& container, int64 node) const;
-  int NumPaths() const { return starts_.size(); }
-  int64 Start(int i) const { return starts_[i]; }
-  int GetPath(int64 node) const { return paths_[node]; }
-
- private:
-  virtual void InitializeAcceptPath() {}
-  virtual bool AcceptPath(const Assignment::IntContainer& container,
-                          int64 path_start) = 0;
-  virtual bool FinalizeAcceptPath() { return true; }
-
-  std::vector<int64> node_path_starts_;
-  std::vector<int64> starts_;
-  std::vector<int> paths_;
-  const string name_;
-};
-
-const int64 BasePathFilter::kUnassigned = -1;
-
-BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
-                               int next_domain_size, const string& name)
-    : IntVarLocalSearchFilter(nexts),
-      node_path_starts_(next_domain_size),
-      paths_(nexts.size(), -1),
-      name_(name) {}
-
-bool BasePathFilter::Accept(const Assignment* delta,
-                            const Assignment* deltadelta) {
-  const Assignment::IntContainer& container = delta->IntVarContainer();
-  const int delta_size = container.Size();
-  // Determining touched paths. Number of touched paths should be very small
-  // given the set of available operators (1 or 2 paths), so performing
-  // a linear search to find an element is faster than using a set.
-  std::vector<int64> touched_paths;
-  for (int i = 0; i < delta_size; ++i) {
-    const IntVarElement& new_element = container.Element(i);
-    IntVar* const var = new_element.Var();
-    int64 index = kUnassigned;
-    if (FindIndex(var, &index)) {
-      const int64 start = node_path_starts_[index];
-      if (start != kUnassigned &&
-          find(touched_paths.begin(), touched_paths.end(), start) ==
-              touched_paths.end()) {
-        touched_paths.push_back(start);
-      }
-    }
-  }
-  // Checking feasibility of touched paths.
-  const int touched_paths_size = touched_paths.size();
-  InitializeAcceptPath();
-  bool accept = true;
-  for (int i = 0; i < touched_paths_size; ++i) {
-    if (!AcceptPath(container, touched_paths[i])) {
-      accept = false;
-      break;
-    }
-  }
-  // Order is important: FinalizeAcceptPath() must always be called.
-  return FinalizeAcceptPath() && accept;
-}
-
-void BasePathFilter::OnSynchronize() {
-  const int nexts_size = Size();
-  starts_.clear();
-  // Detecting path starts, used to track which node belongs to which path.
-  std::vector<int64> path_starts;
-  // TODO(user): Replace Bitmap by std::vector<bool> if it's as fast.
-  Bitmap has_prevs(nexts_size, false);
-  for (int i = 0; i < nexts_size; ++i) {
-    if (!IsVarSynced(i)) {
-      has_prevs.Set(i, true);
-    } else {
-      const int next = Value(i);
-      if (next < nexts_size) {
-        has_prevs.Set(next, true);
-      }
-    }
-  }
-  for (int i = 0; i < nexts_size; ++i) {
-    if (!has_prevs.Get(i)) {
-      paths_[i] = starts_.size();
-      starts_.push_back(i);
-      path_starts.push_back(i);
-    }
-  }
-  // Marking unactive nodes (which are not on a path).
-  node_path_starts_.assign(node_path_starts_.size(), kUnassigned);
-  // Marking nodes on a path and storing next values.
-  for (int i = 0; i < path_starts.size(); ++i) {
-    const int64 start = path_starts[i];
-    int node = start;
-    node_path_starts_[node] = start;
-    DCHECK(IsVarSynced(node));
-    int next = Value(node);
-    while (next < nexts_size) {
-      node = next;
-      node_path_starts_[node] = start;
-      DCHECK(IsVarSynced(node));
-      next = Value(node);
-    }
-    node_path_starts_[next] = start;
-  }
-}
-
-int64 BasePathFilter::GetNext(const Assignment::IntContainer& container,
-                              int64 node) const {
-  const IntVar* const next_var = Var(node);
-  int64 next = IsVarSynced(node) ? Value(node) : kUnassigned;
-  if (container.Contains(next_var)) {
-    const IntVarElement& element = container.Element(next_var);
-    if (element.Bound()) {
-      next = element.Value();
-    } else {
-      return kUnassigned;
-    }
-  }
-  return next;
-}
-
-// PathCumul filter.
-
-class PathCumulFilter : public BasePathFilter {
- public:
-  PathCumulFilter(const RoutingModel& routing_model,
-                  const RoutingDimension& dimension,
-                  Callback1<int64>* delta_objective_callback);
-  virtual ~PathCumulFilter() {}
-  virtual void OnSynchronize();
-  void InjectObjectiveValue(int64 objective_value) {
-    injected_objective_value_ = objective_value;
-  }
-
- private:
-  // This structure stores the "best" path cumul value for a solution, the path
-  // supporting this value, and the corresponding path cumul values for all
-  // paths.
-  struct SupportedPathCumul {
-    int64 cumul_value;
-    int cumul_value_support;
-    std::vector<int64> path_values;
-  };
-
-  struct SoftBound {
-    SoftBound() : bound(-1), coefficient(0) {}
-    int64 bound;
-    int64 coefficient;
-  };
-
-  // This class caches transit values between nodes of paths. Transit and path
-  // nodes are to be added in the order in which they appear on a path.
-  class PathTransits {
-   public:
-    void Clear() {
-      paths_.clear();
-      transits_.clear();
-    }
-    int AddPaths(int num_paths) {
-      const int first_path = paths_.size();
-      paths_.resize(first_path + num_paths);
-      transits_.resize(first_path + num_paths);
-      return first_path;
-    }
-    void ReserveTransits(int path, int number_of_route_arcs) {
-      transits_[path].reserve(number_of_route_arcs);
-      paths_[path].reserve(number_of_route_arcs + 1);
-    }
-    // Stores the transit between node and next on path. For a given non-empty
-    // path, node must correspond to next in the previous call to PushTransit.
-    void PushTransit(int path, int node, int next, int64 transit) {
-      transits_[path].push_back(transit);
-      if (paths_[path].empty()) {
-        paths_[path].push_back(node);
-      }
-      DCHECK_EQ(paths_[path].back(), node);
-      paths_[path].push_back(next);
-    }
-    int NumPaths() const { return paths_.size(); }
-    int PathSize(int path) const { return paths_[path].size(); }
-    int Node(int path, int position) const { return paths_[path][position]; }
-    int64 Transit(int path, int position) const {
-      return transits_[path][position];
-    }
-
-   private:
-    // paths_[r][i] is the ith node on path r.
-    std::vector<std::vector<int64> > paths_;
-    // transits_[r][i] is the transit value between nodes path_[i] and
-    // path_[i+1] on path r.
-    std::vector<std::vector<int64> > transits_;
-  };
-
-  virtual void InitializeAcceptPath() {
-    cumul_cost_delta_ = total_current_cumul_cost_value_;
-  }
-  virtual bool AcceptPath(const Assignment::IntContainer& container,
-                          int64 path_start);
-  virtual bool FinalizeAcceptPath();
-
-  bool FilterSpanCost() const { return global_span_cost_coefficient_ != 0; }
-
-  bool FilterSlackCost() const {
-    return has_nonzero_vehicle_span_cost_coefficients_;
-  }
-
-  bool FilterCumulSoftBounds() const { return !cumul_soft_bounds_.empty(); }
-
-  int64 GetCumulSoftCost(int64 node, int64 cumul_value) const;
-
-  void InitializeSupportedPathCumul(SupportedPathCumul* supported_cumul,
-                                    int64 default_value);
-
-  // Compute the max start cumul value for a given path given an end cumul
-  // value.
-  int64 ComputePathMaxStartFromEndCumul(const PathTransits& path_transits,
-                                        int path, int end_cumul) const;
-
-  const std::vector<IntVar*> cumuls_;
-  const std::vector<IntVar*> slacks_;
-  std::vector<int64> start_to_vehicle_;
-  Solver::IndexEvaluator2* const evaluator_;
-  int64 total_current_cumul_cost_value_;
-  // Map between paths and path soft cumul bound costs. The paths are indexed
-  // by the index of the start node of the path.
-  hash_map<int64, int64> current_cumul_cost_values_;
-  int64 cumul_cost_delta_;
-  int64 injected_objective_value_;
-  const int64 global_span_cost_coefficient_;
-  std::vector<SoftBound> cumul_soft_bounds_;
-  std::vector<int64> vehicle_span_cost_coefficients_;
-  bool has_nonzero_vehicle_span_cost_coefficients_;
-  IntVar* const cost_var_;
-  RoutingModel::VehicleEvaluator* const capacity_evaluator_;
-  // Data reflecting information on paths and cumul variables for the solution
-  // to which the filter was synchronized.
-  SupportedPathCumul current_min_start_;
-  SupportedPathCumul current_max_end_;
-  PathTransits current_path_transits_;
-  // Data reflecting information on paths and cumul variables for the "delta"
-  // solution (aka neighbor solution) being examined.
-  PathTransits delta_path_transits_;
-  int64 delta_max_end_cumul_;
-  hash_set<int> delta_paths_;
-
-  bool lns_detected_;
-  std::unique_ptr<Callback1<int64> > delta_objective_callback_;
-};
-
-PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
-                                 const RoutingDimension& dimension,
-                                 Callback1<int64>* delta_objective_callback)
-    : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
-                     StrCat("PathCumulFilter", dimension.name())),
-      cumuls_(dimension.cumuls()),
-      slacks_(dimension.slacks()),
-      evaluator_(dimension.transit_evaluator()),
-      total_current_cumul_cost_value_(0),
-      current_cumul_cost_values_(),
-      cumul_cost_delta_(0),
-      injected_objective_value_(0),
-      global_span_cost_coefficient_(dimension.global_span_cost_coefficient()),
-      vehicle_span_cost_coefficients_(
-          dimension.vehicle_span_cost_coefficients()),
-      has_nonzero_vehicle_span_cost_coefficients_(false),
-      cost_var_(routing_model.CostVar()),
-      capacity_evaluator_(dimension.capacity_evaluator()),
-      delta_max_end_cumul_(kint64min),
-      lns_detected_(false),
-      delta_objective_callback_(delta_objective_callback) {
-  for (int i = 0; i < vehicle_span_cost_coefficients_.size(); ++i) {
-    if (vehicle_span_cost_coefficients_[i] != 0) {
-      has_nonzero_vehicle_span_cost_coefficients_ = true;
-      break;
-    }
-  }
-  cumul_soft_bounds_.resize(cumuls_.size());
-  bool has_cumul_soft_bounds = false;
-  bool has_cumul_hard_bounds = false;
-  for (int i = 0; i < slacks_.size(); ++i) {
-    if (slacks_[i]->Min() > 0) {
-      has_cumul_hard_bounds = true;
-      break;
-    }
-  }
-  for (int i = 0; i < cumuls_.size(); ++i) {
-    if (dimension.HasCumulVarSoftUpperBoundFromIndex(i)) {
-      has_cumul_soft_bounds = true;
-      cumul_soft_bounds_[i].bound =
-          dimension.GetCumulVarSoftUpperBoundFromIndex(i);
-      cumul_soft_bounds_[i].coefficient =
-          dimension.GetCumulVarSoftUpperBoundCoefficientFromIndex(i);
-    }
-    IntVar* const cumul_var = cumuls_[i];
-    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
-      has_cumul_hard_bounds = true;
-    }
-  }
-  if (!has_cumul_soft_bounds) {
-    cumul_soft_bounds_.clear();
-  }
-  if (!has_cumul_hard_bounds) {
-    // Slacks don't need to be constrained if the cumuls don't have hard bounds;
-    // therefore we can ignore the vehicle span cost coefficient (note that the
-    // transit part is already handled by the arc cost filters).
-    // This doesn't concern the global span filter though.
-    vehicle_span_cost_coefficients_.assign(routing_model.vehicles(), 0);
-    has_nonzero_vehicle_span_cost_coefficients_ = false;
-  }
-  start_to_vehicle_.resize(Size(), -1);
-  for (int i = 0; i < routing_model.vehicles(); ++i) {
-    start_to_vehicle_[routing_model.Start(i)] = i;
-  }
-}
-
-int64 PathCumulFilter::GetCumulSoftCost(int64 node, int64 cumul_value) const {
-  if (node < cumul_soft_bounds_.size()) {
-    const int64 bound = cumul_soft_bounds_[node].bound;
-    const int64 coefficient = cumul_soft_bounds_[node].coefficient;
-    if (coefficient > 0 && bound < cumul_value) {
-      return (cumul_value - bound) * coefficient;
-    }
-  }
-  return 0;
-}
-
-void PathCumulFilter::OnSynchronize() {
-  BasePathFilter::OnSynchronize();
-  total_current_cumul_cost_value_ = 0;
-  cumul_cost_delta_ = 0;
-  current_cumul_cost_values_.clear();
-  if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost()) {
-    InitializeSupportedPathCumul(&current_min_start_, kint64max);
-    InitializeSupportedPathCumul(&current_max_end_, kint64min);
-    current_path_transits_.Clear();
-    current_path_transits_.AddPaths(NumPaths());
-    // For each path, compute the minimum end cumul and store the max of these.
-    for (int r = 0; r < NumPaths(); ++r) {
-      int64 node = Start(r);
-      // First pass: evaluating route length to reserve memory to store route
-      // information.
-      int number_of_route_arcs = 0;
-      while (node < Size()) {
-        ++number_of_route_arcs;
-        node = Value(node);
-      }
-      current_path_transits_.ReserveTransits(r, number_of_route_arcs);
-      // Second pass: update cumul, transit and cost values.
-      node = Start(r);
-      int64 cumul = cumuls_[node]->Min();
-      int64 current_cumul_cost_value = GetCumulSoftCost(node, cumul);
-      int64 total_transit = 0;
-      while (node < Size()) {
-        const int64 next = Value(node);
-        const int64 transit = evaluator_->Run(node, next);
-        total_transit += transit;
-        const int64 transit_slack = transit + slacks_[node]->Min();
-        current_path_transits_.PushTransit(r, node, next, transit_slack);
-        cumul += transit_slack;
-        cumul = std::max(cumuls_[next]->Min(), cumul);
-        node = next;
-        current_cumul_cost_value += GetCumulSoftCost(node, cumul);
-      }
-      if (FilterSlackCost()) {
-        const int64 start =
-            ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
-        const int vehicle = start_to_vehicle_[Start(r)];
-        current_cumul_cost_value += vehicle_span_cost_coefficients_[vehicle] *
-                                    (cumul - start - total_transit);
-      }
-      current_cumul_cost_values_[Start(r)] = current_cumul_cost_value;
-      current_max_end_.path_values[r] = cumul;
-      if (current_max_end_.cumul_value < cumul) {
-        current_max_end_.cumul_value = cumul;
-        current_max_end_.cumul_value_support = r;
-      }
-      total_current_cumul_cost_value_ += current_cumul_cost_value;
-    }
-    // Use the max of the path end cumul mins to compute the corresponding
-    // maximum start cumul of each path; store the minimum of these.
-    for (int r = 0; r < NumPaths(); ++r) {
-      const int64 start = ComputePathMaxStartFromEndCumul(
-          current_path_transits_, r, current_max_end_.cumul_value);
-      current_min_start_.path_values[r] = start;
-      if (current_min_start_.cumul_value > start) {
-        current_min_start_.cumul_value = start;
-        current_min_start_.cumul_value_support = r;
-      }
-    }
-  }
-  // Initialize this before considering any deltas (neighbor).
-  delta_max_end_cumul_ = kint64min;
-  lns_detected_ = false;
-  if (delta_objective_callback_ != nullptr) {
-    const int64 new_objective_value =
-        injected_objective_value_ + total_current_cumul_cost_value_ +
-        global_span_cost_coefficient_ *
-            (current_max_end_.cumul_value - current_min_start_.cumul_value);
-    delta_objective_callback_->Run(new_objective_value);
-  }
-}
-
-bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
-                                 int64 path_start) {
-  int64 node = path_start;
-  int64 cumul = cumuls_[node]->Min();
-  cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
-  int64 total_transit = 0;
-  const int path = delta_path_transits_.AddPaths(1);
-  const int vehicle = start_to_vehicle_[path_start];
-  const int64 capacity = capacity_evaluator_ == nullptr
-                             ? kint64max
-                             : capacity_evaluator_->Run(vehicle);
-  // Check that the path is feasible with regards to cumul bounds, scanning
-  // the paths from start to end (caching path node sequences and transits
-  // for further span cost filtering).
-  while (node < Size()) {
-    const int64 next = GetNext(container, node);
-    if (next == kUnassigned) {
-      // LNS detected, return true since path was ok up to now.
-      lns_detected_ = true;
-      return true;
-    }
-    const int64 transit = evaluator_->Run(node, next);
-    total_transit += transit;
-    const int64 transit_slack = transit + slacks_[node]->Min();
-    delta_path_transits_.PushTransit(path, node, next, transit_slack);
-    cumul += transit_slack;
-    if (cumul > std::min(capacity, cumuls_[next]->Max())) {
-      return false;
-    }
-    cumul = std::max(cumuls_[next]->Min(), cumul);
-    node = next;
-    cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
-  }
-  if (FilterSlackCost()) {
-    const int64 start =
-        ComputePathMaxStartFromEndCumul(delta_path_transits_, path, cumul);
-    cumul_cost_delta_ += vehicle_span_cost_coefficients_[vehicle] *
-                         (cumul - start - total_transit);
-  }
-  if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost()) {
-    delta_paths_.insert(GetPath(path_start));
-    delta_max_end_cumul_ = std::max(delta_max_end_cumul_, cumul);
-    cumul_cost_delta_ -= current_cumul_cost_values_[path_start];
-  }
-  return true;
-}
-
-bool PathCumulFilter::FinalizeAcceptPath() {
-  if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost()) ||
-      lns_detected_) {
-    // Cleaning up for the next delta.
-    delta_max_end_cumul_ = kint64min;
-    delta_paths_.clear();
-    delta_path_transits_.Clear();
-    lns_detected_ = false;
-    if (delta_objective_callback_ != nullptr) {
-      delta_objective_callback_->Run(injected_objective_value_);
-    }
-    return true;
-  }
-  int64 new_max_end = delta_max_end_cumul_;
-  int64 new_min_start = kint64max;
-  if (FilterSpanCost()) {
-    if (new_max_end < current_max_end_.cumul_value) {
-      // Delta max end is lower than the current solution one.
-      // If the path supporting the current max end has been modified, we need
-      // to check all paths to find the largest max end.
-      if (!ContainsKey(delta_paths_, current_max_end_.cumul_value_support)) {
-        new_max_end = current_max_end_.cumul_value;
-      } else {
-        for (int i = 0; i < current_max_end_.path_values.size(); ++i) {
-          if (current_max_end_.path_values[i] > new_max_end &&
-              !ContainsKey(delta_paths_, i)) {
-            new_max_end = current_max_end_.path_values[i];
-          }
-        }
-      }
-    }
-    // Now that the max end cumul has been found, compute the corresponding
-    // min start cumul, first from the delta, then if the max end cumul has
-    // changed, from the unchanged paths as well.
-    for (int r = 0; r < delta_path_transits_.NumPaths(); ++r) {
-      new_min_start = std::min(
-          ComputePathMaxStartFromEndCumul(delta_path_transits_, r, new_max_end),
-          new_min_start);
-    }
-    if (new_max_end != current_max_end_.cumul_value) {
-      for (int r = 0; r < NumPaths(); ++r) {
-        if (ContainsKey(delta_paths_, r)) {
-          continue;
-        }
-        new_min_start = std::min(ComputePathMaxStartFromEndCumul(
-                                     current_path_transits_, r, new_max_end),
-                                 new_min_start);
-      }
-    } else if (new_min_start > current_min_start_.cumul_value) {
-      // Delta min start is greater than the current solution one.
-      // If the path supporting the current min start has been modified, we need
-      // to check all paths to find the smallest min start.
-      if (!ContainsKey(delta_paths_, current_min_start_.cumul_value_support)) {
-        new_min_start = current_min_start_.cumul_value;
-      } else {
-        for (int i = 0; i < current_min_start_.path_values.size(); ++i) {
-          if (current_min_start_.path_values[i] < new_min_start &&
-              !ContainsKey(delta_paths_, i)) {
-            new_min_start = current_min_start_.path_values[i];
-          }
-        }
-      }
-    }
-  }
-  // Cleaning up for the next delta.
-  delta_max_end_cumul_ = kint64min;
-  delta_paths_.clear();
-  delta_path_transits_.Clear();
-  lns_detected_ = false;
-  // Filtering on objective value, including the injected part of it.
-  const int64 new_objective_value =
-      injected_objective_value_ + cumul_cost_delta_ +
-      global_span_cost_coefficient_ * (new_max_end - new_min_start);
-  if (delta_objective_callback_ != nullptr) {
-    delta_objective_callback_->Run(new_objective_value);
-  }
-  return new_objective_value <= cost_var_->Max() &&
-         new_objective_value >= cost_var_->Min();
-}
-
-void PathCumulFilter::InitializeSupportedPathCumul(
-    SupportedPathCumul* supported_cumul, int64 default_value) {
-  supported_cumul->cumul_value = default_value;
-  supported_cumul->cumul_value_support = -1;
-  supported_cumul->path_values.resize(NumPaths(), default_value);
-}
-
-int64 PathCumulFilter::ComputePathMaxStartFromEndCumul(
-    const PathTransits& path_transits, int path, int end_cumul) const {
-  int64 cumul = end_cumul;
-  for (int i = path_transits.PathSize(path) - 2; i >= 0; --i) {
-    cumul -= path_transits.Transit(path, i);
-    cumul = std::min(cumuls_[path_transits.Node(path, i)]->Max(), cumul);
-  }
-  return cumul;
-}
-
-}  // namespace
-
-LocalSearchFilter* MakePathCumulFilter(const RoutingModel& routing_model,
-                                       const string& dimension_name,
-                                       Callback1<int64>* objective_callback) {
-  return routing_model.solver()->RevAlloc(new PathCumulFilter(
-      routing_model, routing_model.GetDimensionOrDie(dimension_name),
-      objective_callback));
-}
-
-namespace {
-
-// Node precedence filter, resulting from pickup and delivery pairs.
-class NodePrecedenceFilter : public BasePathFilter {
- public:
-  NodePrecedenceFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
-                       const RoutingModel::NodePairs& pairs,
-                       const string& name);
-  virtual ~NodePrecedenceFilter() {}
-  bool AcceptPath(const Assignment::IntContainer& container, int64 path_start);
-
- private:
-  std::vector<int> pair_firsts_;
-  std::vector<int> pair_seconds_;
-};
-
-NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
-                                           int next_domain_size,
-                                           const RoutingModel::NodePairs& pairs,
-                                           const string& name)
-    : BasePathFilter(nexts, next_domain_size, name),
-      pair_firsts_(next_domain_size, kUnassigned),
-      pair_seconds_(next_domain_size, kUnassigned) {
-  for (int i = 0; i < pairs.size(); ++i) {
-    pair_firsts_[pairs[i].first] = pairs[i].second;
-    pair_seconds_[pairs[i].second] = pairs[i].first;
-  }
-}
-
-bool NodePrecedenceFilter::AcceptPath(const Assignment::IntContainer& container,
-                                      int64 path_start) {
-  std::vector<bool> visited(Size(), false);
-  int64 node = path_start;
-  int64 path_length = 1;
-  while (node < Size()) {
-    if (path_length > Size()) {
-      return false;
-    }
-    if (pair_firsts_[node] != kUnassigned && visited[pair_firsts_[node]]) {
-      return false;
-    }
-    if (pair_seconds_[node] != kUnassigned && !visited[pair_seconds_[node]]) {
-      return false;
-    }
-    visited[node] = true;
-    const int64 next = GetNext(container, node);
-    if (next == kUnassigned) {
-      // LNS detected, return true since path was ok up to now.
-      return true;
-    }
-    node = next;
-    ++path_length;
-  }
-  return true;
-}
 
 // Evaluators
 
@@ -4233,43 +3490,45 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
   // each other too). Callbacks are called on OnSynchronize to send the cost
   // of the current solution and on Accept to send the cost of solution deltas.
   if (filters_.empty()) {
-    std::vector<PathCumulFilter*> path_cumul_filters;
-    PathCumulFilter* path_cumul_filter = nullptr;
+    std::vector<RoutingLocalSearchFilter*> path_cumul_filters;
+    RoutingLocalSearchFilter* path_cumul_filter = nullptr;
     if (FLAGS_routing_use_path_cumul_filter) {
       for (DimensionIndex dimension_index(0);
            dimension_index < dimensions_.size(); ++dimension_index) {
         Callback1<int64>* objective_callback = nullptr;
         if (path_cumul_filter != nullptr) {
           objective_callback = NewPermanentCallback(
-              path_cumul_filter, &PathCumulFilter::InjectObjectiveValue);
+              path_cumul_filter,
+              &RoutingLocalSearchFilter::InjectObjectiveValue);
         }
-        path_cumul_filter = solver_->RevAlloc(new PathCumulFilter(
-            *this, *dimensions_[dimension_index], objective_callback));
+        path_cumul_filter = MakePathCumulFilter(
+            *this, *dimensions_[dimension_index], objective_callback);
         path_cumul_filters.push_back(path_cumul_filter);
       }
       // Due to the way cost injection is setup, path filters have to be
       // called in reverse order.
       std::reverse(path_cumul_filters.begin(), path_cumul_filters.end());
     }
-    NodeDisjunctionFilter* node_disjunction_filter = nullptr;
+    RoutingLocalSearchFilter* node_disjunction_filter = nullptr;
     if (FLAGS_routing_use_disjunction_filter && !disjunctions_.empty()) {
       Callback1<int64>* objective_callback = nullptr;
       if (path_cumul_filter != nullptr) {
         objective_callback = NewPermanentCallback(
-            path_cumul_filter, &PathCumulFilter::InjectObjectiveValue);
+            path_cumul_filter, &RoutingLocalSearchFilter::InjectObjectiveValue);
       }
-      node_disjunction_filter = solver_->RevAlloc(
-          new NodeDisjunctionFilter(*this, objective_callback));
+      node_disjunction_filter =
+          MakeNodeDisjunctionFilter(*this, objective_callback);
     }
     if (FLAGS_routing_use_objective_filter) {
       Callback1<int64>* objective_callback = nullptr;
       if (node_disjunction_filter != nullptr) {
         objective_callback =
-            NewPermanentCallback(node_disjunction_filter,
-                                 &NodeDisjunctionFilter::InjectObjectiveValue);
+            NewPermanentCallback(
+                node_disjunction_filter,
+                &RoutingLocalSearchFilter::InjectObjectiveValue);
       } else if (path_cumul_filter != nullptr) {
         objective_callback = NewPermanentCallback(
-            path_cumul_filter, &PathCumulFilter::InjectObjectiveValue);
+            path_cumul_filter, &RoutingLocalSearchFilter::InjectObjectiveValue);
       }
       if (CostsAreHomogeneousAcrossVehicles()) {
         LocalSearchFilter* filter = solver_->MakeLocalSearchObjectiveFilter(
@@ -4292,8 +3551,8 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
     }
     if (FLAGS_routing_use_pickup_and_delivery_filter &&
         pickup_delivery_pairs_.size() > 0) {
-      filters_.push_back(solver_->RevAlloc(new NodePrecedenceFilter(
-          nexts_, Size() + vehicles_, pickup_delivery_pairs_, "")));
+      filters_.push_back(MakeNodePrecedenceFilter(*this,
+                                                  pickup_delivery_pairs_));
     }
     if (FLAGS_routing_use_path_cumul_filter) {
       // Must be added after NodeDisjunctionFilter and ObjectiveFilter.
@@ -4309,19 +3568,19 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
     if (FLAGS_routing_use_path_cumul_filter) {
       for (DimensionIndex dimension_index(0);
            dimension_index < dimensions_.size(); ++dimension_index) {
-        feasibility_filters_.push_back(solver_->RevAlloc(new PathCumulFilter(
-            *this, *dimensions_[dimension_index], nullptr)));
+        feasibility_filters_.push_back(MakePathCumulFilter(
+            *this, *dimensions_[dimension_index], nullptr));
       }
     }
     if (FLAGS_routing_use_disjunction_filter && !disjunctions_.empty()) {
       feasibility_filters_.push_back(
-          solver_->RevAlloc(new NodeDisjunctionFilter(*this, nullptr)));
+          MakeNodeDisjunctionFilter(*this, nullptr));
     }
     feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
     if (FLAGS_routing_use_pickup_and_delivery_filter &&
         pickup_delivery_pairs_.size() > 0) {
-      feasibility_filters_.push_back(solver_->RevAlloc(new NodePrecedenceFilter(
-          nexts_, Size() + vehicles_, pickup_delivery_pairs_, "")));
+      feasibility_filters_.push_back(
+          MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
     }
   }
   return feasibility_filters_;
@@ -4377,7 +3636,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
         first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC]);
   } else if (FLAGS_routing_use_filtered_first_solutions) {
     DecisionBuilder* cheapest_addition_builder =
-        solver_->RevAlloc(new CheapestAdditionFilteredDecisionBuilder(
+        solver_->RevAlloc(new EvaluatorCheapestAdditionFilteredDecisionBuilder(
             this, NewPermanentCallback(
                       this, &RoutingModel::GetArcCostForFirstSolution),
             GetOrCreateFeasibilityFilters()));
@@ -4386,12 +3645,21 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
         first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC]);
   }
   // Path-based most constrained arc addition heuristic.
-  // TODO(user): implement the variable selector CHOOSE_SMALLEST_PATH and use
-  // it here.
   first_solution_decision_builders_[ROUTING_PATH_MOST_CONSTRAINED_ARC] =
       solver_->MakePhase(nexts_, Solver::CHOOSE_PATH,
                          NewPermanentCallback(
                              this, &RoutingModel::ArcIsMoreConstrainedThanArc));
+  if (FLAGS_routing_use_filtered_first_solutions) {
+    DecisionBuilder* cheapest_addition_builder =
+        solver_->RevAlloc(new ComparatorCheapestAdditionFilteredDecisionBuilder(
+            this, NewPermanentCallback(
+                      this, &RoutingModel::ArcIsMoreConstrainedThanArc),
+            GetOrCreateFeasibilityFilters()));
+    first_solution_decision_builders_[ROUTING_PATH_MOST_CONSTRAINED_ARC] =
+        solver_->Try(cheapest_addition_builder,
+                     first_solution_decision_builders_
+                         [ROUTING_PATH_MOST_CONSTRAINED_ARC]);
+  }
   // Evaluator-based path heuristic.
   if (first_solution_evaluator_ != nullptr) {
     first_solution_decision_builders_[ROUTING_EVALUATOR_STRATEGY] =

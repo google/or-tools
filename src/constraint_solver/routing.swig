@@ -26,7 +26,7 @@
 %typemap(out) operations_research::RoutingModel::NodeIndex {
   $result = PyInt_FromLong($1.value());
 }
-#endif
+#endif  // SWIGPYTHON
 #ifdef SWIGJAVA
 %typemap(jni) operations_research::RoutingModel::NodeIndex "jint"
 %typemap(jtype) operations_research::RoutingModel::NodeIndex "int"
@@ -41,7 +41,7 @@
 %typemap(out) operations_research::RoutingModel::NodeIndex {
   $result = (jlong)$1.value();
 }
-#endif
+#endif  // SWIGJAVA
 #ifdef SWIGCSHARP
 %typemap(ctype) operations_research::RoutingModel::NodeIndex "int"
 %typemap(imtype) operations_research::RoutingModel::NodeIndex "int"
@@ -66,73 +66,28 @@
         return $imcall;
   }
 %}
-#endif
+#endif  // SWIGCSHARP
 
-// On input, create std::vector<RoutingModel::NodeIndex> from int arrays.
+// Convert std::vector<RoutingModel::NodeIndex> to/from int arrays.
 #ifdef SWIGPYTHON
-%typemap(in) const std::vector<operations_research::RoutingModel::NodeIndex>&
-    (std::vector<operations_research::RoutingModel::NodeIndex> temp) {
-  const int size = PyList_Size($input);
-  temp.clear();
-  temp.reserve(size);
-  if (PyList_Check($input)) {
-    for (int i = 0; i < size; ++i) {
-      PyObject* const o = PyList_GetItem($input, i);
-      const operations_research::RoutingModel::NodeIndex nd(PyInt_AsLong(o));
-      temp.push_back(nd);
-    }
-    $1 = &temp;
-  } else {
-    PyErr_SetString(PyExc_TypeError, "not a list");
-    return nullptr;
-  }
+%{
+template<>
+bool PyObjAs(PyObject *py, operations_research::RoutingModel::NodeIndex* i) {
+  int temp;
+  if (!PyObjAs(py, &temp)) return false;
+  *i = operations_research::RoutingModel::NodeIndex(temp);
+  return true;
 }
-
-%typecheck(SWIG_TYPECHECK_INT64_ARRAY)
-const std::vector<operations_research::RoutingModel::NodeIndex>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      if (!PyInt_Check(obj) && !PyLong_Check(obj)) {
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-#endif
+%}
+PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
+                       PyInt_Check, PyInt_FromLong);
+// TODO(user): also support std::vector<std::vector<>> <-> list of list for python.
+#endif  // SWIGPYTHON
 #ifdef SWIGJAVA
-%typemap(jni) const std::vector<operations_research::RoutingModel::NodeIndex>& "jobjectArray"
-%typemap(jtype) const std::vector<operations_research::RoutingModel::NodeIndex>& "int[]"
-%typemap(jstype) const std::vector<operations_research::RoutingModel::NodeIndex>& "int[]"
-%typemap(javain) const std::vector<operations_research::RoutingModel::NodeIndex>& "$javainput"
+VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 
-%typemap(in) const std::vector<operations_research::RoutingModel::NodeIndex>&
-    (std::vector<operations_research::RoutingModel::NodeIndex> temp) {
-  if ($input) {
-    const int size = jenv->GetArrayLength($input);
-    temp.clear();
-    temp.reserve(size);
-    jint* values = jenv->GetIntArrayElements((jintArray)$input, nullptr);
-    for (int i = 0; i < size; ++i) {
-      const int value = values[i];
-      temp.push_back(operations_research::RoutingModel::NodeIndex(value));
-    }
-    jenv->ReleaseIntArrayElements((jintArray)$input, values, 0);
-    $1 = &temp;
-  } else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-}
-
+// TODO(user): define a macro in util/data.swig for std::vector<std::vector<>> and reuse
+// it here.
 %typemap(jni) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "jobjectArray"
 %typemap(jtype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
 %typemap(jstype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
@@ -162,44 +117,11 @@ const std::vector<operations_research::RoutingModel::NodeIndex>& {
     return $null;
   }
 }
-#endif    // defined(SWIGJAVA)
+#endif  // SWIGJAVA
 #ifdef SWIGCSHARP
-%typemap(ctype)    const std::vector<operations_research::RoutingModel::NodeIndex>&  %{ int length$argnum, int* %}
-%typemap(imtype)  const std::vector<operations_research::RoutingModel::NodeIndex>&  %{ int length$argnum, int[] %}
-%typemap(cstype)  const std::vector<operations_research::RoutingModel::NodeIndex>&  %{ int[] %}
-%typemap(csin)    const std::vector<operations_research::RoutingModel::NodeIndex>&  "$csinput.Length, $csinput"
-%typemap(freearg)  const std::vector<operations_research::RoutingModel::NodeIndex>&  { delete $1; }
-%typemap(in)    const std::vector<operations_research::RoutingModel::NodeIndex>&  %{
-  $1 = new std::vector<operations_research::RoutingModel::NodeIndex>;
-  $1->reserve(length$argnum);
-  for(int i = 0; i < length$argnum; ++i)
-    $1->push_back(operations_research::RoutingModel::NodeIndex($input[i]));
-  %}
-
-%typemap(ctype)    const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&  %{ int len$argnum_1, int len$argnum_2, int* %}
-%typemap(imtype)  const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&  %{ int len$argnum_1, int len$argnum_2, int[] %}
-%typemap(cstype)  const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&  %{ int[,] %}
-%typemap(csin)    const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&  "$csinput.GetLength(0), $csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
-%typemap(in)    const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&  (std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > result) %{
-
-  const int size_x = len$argnum_1;
-  const int size_y = len$argnum_2;
-
-  result.clear();
-  result.resize(size_x);
-
-  for (int index1 = 0; index1 < size_x; ++index1) {
-    result[index1].reserve(size_y);
-    for (int index2 = 0; index2 < size_y; ++index2) {
-      const operations_research::RoutingModel::NodeIndex val = operations_research::RoutingModel::NodeIndex($input[index1 * size_y + index2]);
-      result[index1].push_back(val);
-    }
-  }
-
-  $1 = &result;
-%}
-
-#endif    // defined(SWIGCSHARP)
+CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
+CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
+#endif  // SWIGCSHARP
 
 // Create input mapping for NodeEvaluator2
 #ifdef SWIGPYTHON
@@ -327,16 +249,19 @@ class NodeEvaluator2 {
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 #ifdef SWIGJAVA
+// RoutingModel methods.
 %rename (solve) Solve;
+%rename (setArcCostEvaluatorOfAllVehicles) SetArcCostEvaluatorOfAllVehicles;
+%rename (setArcCostEvaluatorOfVehicle) SetArcCostEvaluatorOfVehicle;
 %rename (addDimension) AddDimension;
 %rename (addDimensionWithVehicleCapacity) AddDimensionWithVehicleCapacity;
 %rename (addConstantDimension) AddConstantDimension;
 %rename (addVectorDimension) AddVectorDimension;
+%rename (getDimensionOrDie) GetDimensionOrDie;
+%rename (getMutableDimension) GetMutableDimension;
 %rename (addAllActive) AddAllActive;
 %rename (addDisjunction) AddDisjunction;
 %rename (addLocalSearchOperator) AddLocalSearchOperator;
-%rename (setCost) SetCost;
-%rename (setVehicleCost) SetVehicleCost;
 %rename (setDepot) SetDepot;
 %rename (addSearchMonitor) AddSearchMonitor;
 %rename (applyLocks) ApplyLocks;
@@ -346,15 +271,11 @@ class NodeEvaluator2 {
 %rename (end) End;
 %rename (isStart) IsStart;
 %rename (isEnd) IsEnd;
-%rename (getCost) GetCost;
-%rename (getFirstSolutionCost) GetFirstSolutionCost;
+%rename (getArcCostForVehicle) GetArcCostForVehicle;
 %rename (nexts) Nexts;
 %rename (nextVar) NextVar;
 %rename (vehicleVar) VehicleVar;
 %rename (activeVar) ActiveVar;
-%rename (cumulVar) CumulVar;
-%rename (transitVar) TransitVar;
-%rename (slackVar) SlackVar;
 %rename (addToAssignment) AddToAssignment;
 %rename (isVehicleUsed) IsVehicleUsed;
 %rename (next) Next;
@@ -368,16 +289,30 @@ class NodeEvaluator2 {
 %rename (setFirstSolutionEvaluator) SetFirstSolutionEvaluator;
 %rename (getMetaheuristic) metaheuristic;
 %rename (setMetaheuristic) set_metaheuristic;
-%rename (setCommandLineOption) SetCommandLineOption;
 %rename (routesToAssignment) RoutesToAssignment;
 %rename (closeModel) CloseModel;
+
+// RoutingDimension methods.
+%rename (cumulVar) CumulVar;
+%rename (transitVar) TransitVar;
+%rename (slackVar) SlackVar;
+%rename (setSpanCostCoefficientForAllVehicles) SetSpanCostCoefficientForAllVehicles;
+%rename (setSpanCostCoefficientForVehicle) SetSpanCostCoefficientForVehicle;
+%rename (getSpanCostCoefficientForVehicle) GetSpanCostCoefficientForVehicle;
+%rename (setGlobalSpanCostCoefficient) SetGlobalSpanCostCoefficient;
+%rename (getGlobalSpanCostCoefficient) global_span_cost_coefficient;
+%rename (setCumulVarSoftUpperBound) SetCumulVarSoftUpperBound;
+%rename (getCumulVarSoftUpperBound) GetCumulVarSoftUpperBound;
+%rename (getCumulVarSoftUpperBoundCoefficient) GetCumulVarSoftUpperBoundCoefficient;
+
+// DEPRECATED METHODS. See ./routing.h for how to replace them.
+%rename (setCost) SetCost;
+%rename (setVehicleCost) SetVehicleCost;
 %rename (setDimensionTransitCost) SetDimensionTransitCost;
 %rename (getDimensionTransitCost) GetDimensionTransitCost;
 %rename (setDimensionSpanCost) SetDimensionSpanCost;
 %rename (getDimensionSpanCost) GetDimensionSpanCost;
-%rename (setCumulVarSoftUpperBound) SetCumulVarSoftUpperBound;
-%rename (getCumulVarSoftUpperBound) GetCumulVarSoftUpperBound;
-%rename (getCumulVarSoftUpperBoundCoefficient) GetCumulVarSoftUpperBoundCoefficient;
+
 #endif // SWIGJAVA
 
 #ifdef SWIGCSHARP
