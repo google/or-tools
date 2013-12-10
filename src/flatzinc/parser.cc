@@ -566,7 +566,7 @@ void ParserState::BuildStatistics() {
 
 void ParserState::SortConstraints(NodeSet* const candidates,
                                   NodeSet* const computed_variables) {
-  // Discover expressions, topological sort of constraints.
+  // Discover expressions, topological std::sort of constraints.
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];

@@ -38,10 +38,11 @@
  *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+
 #include "base/commandlineflags.h"
-#include "base/mathutil.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/flatzinc_constraints.h"
+#include "base/mathutil.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 

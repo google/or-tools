@@ -26,9 +26,9 @@ namespace operations_research {
 namespace {
 class BooleanSumOdd : public Constraint {
  public:
-  BooleanSumOdd(Solver* const s, const std::vector<IntVar*>& bool_vars)
+  BooleanSumOdd(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s),
-        vars_(bool_vars),
+        vars_(vars),
         num_possible_true_vars_(0),
         num_always_true_vars_(0) {}
 
@@ -121,8 +121,6 @@ class BooleanSumOdd : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
-
-
 class VariableParity : public Constraint {
  public:
   VariableParity(Solver* const s, IntVar* const var, bool odd)
@@ -161,14 +159,13 @@ class VariableParity : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "VarParity(%s, %d)", var_->DebugString().c_str(), odd_ );
+    return StringPrintf("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint("VarParity", this);
-    visitor->VisitIntegerExpressionArgument(
-        ModelVisitor::kVariableArgument, var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
+                                            var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValuesArgument, odd_);
     visitor->EndVisitConstraint("VarParity", this);
   }
@@ -180,10 +177,10 @@ class VariableParity : public Constraint {
 
 class IsBooleanSumInRange : public Constraint {
  public:
-  IsBooleanSumInRange(Solver* const s, const std::vector<IntVar*>& bool_vars,
+  IsBooleanSumInRange(Solver* const s, const std::vector<IntVar*>& vars,
                       int64 range_min, int64 range_max, IntVar* const target)
       : Constraint(s),
-        vars_(bool_vars),
+        vars_(vars),
         range_min_(range_min),
         range_max_(range_max),
         target_(target),
@@ -267,10 +264,10 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
-        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
-        range_max_, target_->DebugString().c_str());
+    return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                        "d] == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
+                        range_max_, target_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -387,8 +384,8 @@ class BooleanSumInRange : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        range_min_, range_max_);
+                        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
+                        range_max_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -409,7 +406,7 @@ class BooleanSumInRange : public Constraint {
   }
 
   void PushAllUnboundToOne() {
-    for (int i = 0; i < vars_.size(); i++) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Max() == 1) {
         vars_[i]->SetValue(1);
       }
@@ -609,7 +606,7 @@ class Inverse : public Constraint {
                        IntVarIterator* const domain,
                        const std::vector<IntVar*>& inverse,
                        std::vector<int64>* const remove) {
-     remove->clear();
+    remove->clear();
     for (domain->Init(); domain->Ok(); domain->Next()) {
       const int64 value = domain->Value();
       if (!inverse[value]->Contains(index)) {
@@ -731,8 +728,7 @@ class VariableCumulativeTimeTable : public Constraint {
       if (start_max < end_min && demand_min > 0) {
         profile_non_unique_time_.push_back(
             ProfileDelta(start_max, +demand_min));
-        profile_non_unique_time_.push_back(
-            ProfileDelta(end_min, -demand_min));
+        profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand_min));
       }
     }
     // Sort
@@ -971,8 +967,8 @@ void PostBooleanSumInRange(FlatZincModel* const model, CtSpec* const spec,
   }
 }
 
-Constraint* MakeBooleanSumOdd(
-    Solver* const solver, const std::vector<IntVar*>& variables) {
+Constraint* MakeBooleanSumOdd(Solver* const solver,
+                              const std::vector<IntVar*>& variables) {
   return solver->RevAlloc(new BooleanSumOdd(solver, variables));
 }
 
@@ -1007,15 +1003,12 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
   return solver->MakeAllowedAssignments(variables, tuples);
 }
 
-Constraint* MakeLexLess(Solver* const solver,
-                        const std::vector<IntVar*>& left,
-                        const std::vector<IntVar*>& right,
-                        bool strict) {
+Constraint* MakeLexLess(Solver* const solver, const std::vector<IntVar*>& left,
+                        const std::vector<IntVar*>& right, bool strict) {
   return solver->RevAlloc(new Lex(solver, left, right, strict));
 }
 
-Constraint* MakeInverse(Solver* const solver,
-                        const std::vector<IntVar*>& left,
+Constraint* MakeInverse(Solver* const solver, const std::vector<IntVar*>& left,
                         const std::vector<IntVar*>& right) {
   return solver->RevAlloc(new Inverse(solver, left, right));
 }
