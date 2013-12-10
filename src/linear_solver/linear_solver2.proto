@@ -1,0 +1,209 @@
+// Copyright 2010-2013 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// Linear Programming Protocol Buffers.
+//
+// The protocol buffers below make it possible to store and transfer the
+// representation of Linear and Mixed-Integer Programs.
+//
+// A Linear Program (LP) is a mathematical optimization model with a linear
+// objective function, and linear equality and inequality constraints.
+// The goal is to achieve the best outcome (such as maximum profit or lowest
+// cost) by modeling the real-world problem at hand using linear functions.
+// In a Mixed Integer Program (MIP), some variables may also be constrained to
+// take integer values.
+//
+// Check ./linear_solver.h and Wikipedia for more detail:
+//   http://en.wikipedia.org/wiki/Linear_programming
+//
+
+
+syntax = "proto2";
+option java_package = "com.google.ortools.linearsolver";
+option java_multiple_files = true;
+
+package operations_research.new_proto;
+
+// A variable is always constrained in the form:
+//    lower_bound <= x <= upper_bound
+// where lower_bound and upper_bound:
+// - Can form a singleton: x = constant = lower_bound = upper_bound.
+// - Can form a finite interval: lower_bound <= x <= upper_bound. (x is boxed.)
+// - Can form a semi-infinite interval.
+//     - lower_bound = -infinity: x <= upper_bound.
+//     - upper_bound = +infinity: x >= lower_bound.
+// - Can form the infinite interval: lower_bound = -infinity and
+//   upper_bound = +infinity, x is free.
+// MPVariableProto furthermore stores:
+//  - The coefficient of the variable in the objective.
+//  - Whether the variable is integer.
+//  - Whether the variable domain is {0} union [lower_bound, upper_bound].
+message MPVariableProto {
+  // lower_bound must be <= upper_bound.
+  optional double lower_bound = 1 [default = -inf];
+  optional double upper_bound = 2 [default = inf];
+
+  // The coefficient of the variable in the objective. Must be finite.
+  optional double objective_coefficient = 3 [default = 0.0];
+
+  // True if the variable is constrained to be integer.
+  // Ignored if MPModelProto::solver_type is *LINEAR_PROGRAMMING*.
+  optional bool is_integer = 4 [default = false];
+
+  // The name of the variable.
+  optional string name = 5 [default = ""];
+
+  // [Advanced feature.]
+  // When the variable can also take zero as its value, even if zero is not
+  // within [lower_bound, upper_bound].
+  // This is only supported if lower_bound and upper_bound are set and finite.
+  // Ignored if MPModelProto::solver_type is *LINEAR_PROGRAMMING*.
+  optional bool can_also_be_zero = 6 [default = false];
+}
+
+// A linear constraint is always of the form:
+// lower_bound <= sum of linear term elements <= upper_bound,
+// where lower_bound and upper_bound:
+// - Can form a singleton: lower_bound == upper_bound. The constraint is an
+//   equation.
+// - Can form a finite interval [lower_bound, upper_bound]. The constraint is
+//   both lower- and upper-bounded, i.e. "boxed".
+// - Can form a semi-infinite interval. lower_bound = -infinity: the constraint
+//   is upper-bounded. upper_bound = +infinity: the constraint is lower-bounded.
+// - Can form the infinite interval: lower_bound = -infinity and
+//   upper_bound = +infinity. The constraint is free.
+message MPConstraintProto {
+  // Linear terms involved in this constraint.
+  //
+  // var_index[i] is the variable index (w.r.t. to "variable" field of
+  // MPModelProto) of the i-th linear term involved in this constraint, and
+  // coefficient[i] is its coefficient. Only the terms with non-zero
+  // coefficients need to appear. var_index may not contain duplicates.
+  //
+  // IMPORTANT: Until November 30, 2013, clients must fill both these fields
+  // and the legacy fields "linear_term" below.
+  repeated int32 var_index = 6 [packed = true];
+  repeated double coefficient = 7 [packed = true];  // Must be finite.
+
+  // LEGACY: linear_term contain the same information as the var_index and
+  // coefficient fields above and should be filled until November 30, 2013.
+  // Don't use them after that. They will be removed in Q4 2013.
+  message UnaryTerm {
+    optional int32 var_index = 1;
+    optional double coefficient = 2 [default = 1.0];  // Must be finite.
+  }
+  repeated UnaryTerm linear_term = 1;
+
+  // lower_bound must be <= upper_bound.
+  optional double lower_bound = 2 [default = -inf];
+  optional double upper_bound = 3 [default = inf];
+
+  // The name of the constraint.
+  optional string name = 4 [default = ""];
+
+  // [Advanced usage: do not use this if you don't know what you're doing.]
+  // A lazy constraint is handled differently by the core solving engine, but
+  // it does not change the result. It may or may not impact the performance.
+  // For more info see: http://tinyurl.com/lazy-constraints.
+  optional bool is_lazy = 5 [default = false];
+}
+
+// MPModelProto contains all the information for a Linear Programming model.
+message MPModelProto {
+  // True if the problem is a maximization problem. Minimize by default.
+  optional bool maximize = 1 [default = false];
+
+  // Offset for the objective function.
+  optional double objective_offset = 2 [default = 0.0];
+
+  // All the variables appearing in the model.
+  repeated MPVariableProto variable = 3;
+
+  // All the constraints appearing in the model.
+  repeated MPConstraintProto constraint = 4;
+
+  // Name of the model.
+  optional string name = 5 [default = ""];
+}
+
+message MPModelRequest {
+  // The model to be optimized by the server.
+  optional MPModelProto model = 1;
+
+  // The solver type, which will select a specific implementation, and will also
+  // impact the interpretation of the model (i.e. are we solving the problem
+  // as a mixed integer program or are we relaxing it as a continuous linear
+  // program?).
+  // This must remain consistent with MPSolver::OptimizationProblemType.
+  enum SolverType {
+    CLP_LINEAR_PROGRAMMING = 0;            // Recommended default for LP models.
+    GLPK_LINEAR_PROGRAMMING = 1;
+
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3;   // Recommended default for MIP models.
+    GLPK_MIXED_INTEGER_PROGRAMMING = 4;
+    CBC_MIXED_INTEGER_PROGRAMMING = 5;
+  }
+  optional SolverType solver_type = 2;
+
+  // Maximum time to be spent by the solver to solve 'model'. If the server is
+  // busy and the RPC's deadline_left is less than this, it will immediately
+  // give up and return an error, without even trying to solve.
+  //
+  // The client can use this to have a guarantee on how much time the
+  // solver will spend on the problem (unless it finds and proves
+  // an optimal solution more quickly).
+  //
+  // If not specified, the time limit on the solver is the RPC's deadline_left.
+  optional double solver_time_limit_seconds = 3;
+}
+
+message MPSolutionResponse {
+  // Result of the optimization.
+  enum Status {
+    // The solver found the proven optimal solution. This is what should be
+    // returned in most cases.
+    OPTIMAL = 0;
+    // The solver had enough time to find some solution that satisfied all
+    // constraints, but it did not reach the optimal.
+    FEASIBLE = 1;
+    // The model does not have any solution.
+    INFEASIBLE = 2;
+    // There exists solutions that make the magnitude of the objective value
+    // as large as wanted (i.e. -infinity (resp. +infinity) for a minimization
+    // (resp. maximization) problem.
+    UNBOUNDED = 3;
+    // An error occured.
+    ABNORMAL = 4;
+    // Problem was not solved because model was malformed.
+    MODEL_INVALID = 5;
+    // Unknown. As of 2013-02, this only happens when the solver did not
+    // have enough time to diagnose one of the above states.
+    UNKNOWN = 99;
+  }
+  optional Status status = 1 [default = UNKNOWN];
+
+  // Objective value corresponding to the "variable_value" below, taking into
+  // account the source "objective_offset" and "objective_coefficient".
+  // This is set iff 'status' is OPTIMAL or FEASIBLE.
+  optional double objective_value = 2;
+
+  // Variable values in the same order as the MPModelProto::variable field.
+  // This is a dense representation. These are set iff 'status' is OPTIMAL or
+  // FEASIBLE.
+  repeated double variable_value = 3 [packed = true];
+
+  // [Advanced usage.]
+  // Values of the dual variables values in the same order as the
+  // MPModelProto::constraint field. This is a dense representation.
+  // These are set iff 'status' is OPTIMAL or FEASIBLE.
+  repeated double dual_value = 4 [packed = true];
+}
