@@ -87,7 +87,7 @@ class IntTupleSet {
   // Returns the number of different values in the given column.
   int NumDifferentValuesInColumn(int col) const;
   // Return a copy of the set, sorted by the "col"-th value of each
-  // tuples. The std::sort is stable.
+  // tuples. The sort is stable.
   IntTupleSet SortedByColumn(int col) const;
   // Returns a copy of the tuple set lexicographically sorted.
   IntTupleSet SortedLexicographically() const;

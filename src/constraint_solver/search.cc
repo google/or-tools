@@ -1563,7 +1563,7 @@ int64 StaticEvaluatorSelector::SelectValue(const IntVar* const var, int64 id) {
 
 IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
   if (first_ == -1) {  // first call to select. update assignment costs
-    // Two phases: compute size then filland std::sort
+    // Two phases: compute size then filland sort
     int element_size = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {

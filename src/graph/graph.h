@@ -1600,7 +1600,7 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>
   this->ComputeCumulativeSum(&reverse_start_);
 
   // Computes the reverse arcs of the forward arcs.
-  // Note that this std::sort the reverse arcs with the same tail by head.
+  // Note that this sort the reverse arcs with the same tail by head.
   opposite_.reserve(num_arcs_);
   for (int i = 0; i < num_arcs_; ++i) {
     // TODO(user): the 0 is wasted here, but minor optimisation.

@@ -859,25 +859,44 @@ RoutingFilteredDecisionBuilder::RoutingFilteredDecisionBuilder(
       model_(model) {}
 
 bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
-  // TODO(user): Handle chains to end nodes properly.
-  start_chain_ends_.clear();
-  start_chain_ends_.reserve(model()->vehicles());
-  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-    int64 start = model()->Start(vehicle);
-    const int64 end = model()->End(vehicle);
-    while (Contains(start)) {
-      start = Value(start);
-      if (model()->IsEnd(start)) {
-        if (start != end) {
-          return false;
-        }
-        break;
+  // Find the chains of nodes (when nodes have their "Next" value bound in the
+  // current solution, it forms a link in a chain). Eventually, starts[end]
+  // will contain the index of the first node of the chain ending at node 'end'
+  // and ends[start] will be the last node of the chain starting at node
+  // 'start'. Values of starts[node] and ends[node] for other nodes is used
+  // for intermediary computations and do not necessarily reflect actual chain
+  // starts and ends.
+  std::vector<int> starts(Size() + model()->vehicles(), -1);
+  std::vector<int> ends(Size() + model()->vehicles(), -1);
+  for (int node = 0; node < Size() + model()->vehicles(); ++node) {
+    // Each node starts as a singleton chain.
+    starts[node] = node;
+    ends[node] = node;
+  }
+  std::vector<bool> touched(Size(), false);
+  for (int node = 0; node < Size(); ++node) {
+    int current = node;
+    while (!model()->IsEnd(current) && !touched[current]) {
+      touched[current] = true;
+      if (Contains(current)) {
+        current = Value(current);
       }
     }
-    start_chain_ends_.push_back(start);
-    if (start != end) {
-      SetValue(start, end);
+    // Merge the sub-chain starting from 'node' and ending at 'current' with
+    // the existing sub-chain starting at 'current'.
+    starts[ends[current]] = starts[node];
+    ends[starts[node]] = ends[current];
+  }
+  start_chain_ends_.clear();
+  start_chain_ends_.reserve(model()->vehicles());
+  // Set each route to be the concatenation of the chain at its starts and the
+  // chain at its end, without nodes in between.
+  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    const int start_chain_end = ends[model()->Start(vehicle)];
+    if (!model()->IsEnd(start_chain_end)) {
+      SetValue(start_chain_end, starts[model()->End(vehicle)]);
     }
+    start_chain_ends_.push_back(start_chain_end);
   }
   return Commit();
 }

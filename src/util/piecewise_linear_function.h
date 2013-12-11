@@ -56,7 +56,7 @@ class PiecewiseSegment {
   // Returns the intersection of the segment's extension with the y axis.
   int64 intersection_y() const { return intersection_y_; }
 
-  // Comparison method useful to std::sort a sequence of segments.
+  // Comparison method useful to sort a sequence of segments.
   static bool SortComparator(const PiecewiseSegment& segment1,
                              const PiecewiseSegment& segment2);
   // Comparison method useful to find in which segment a point belongs.

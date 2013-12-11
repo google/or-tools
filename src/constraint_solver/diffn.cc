@@ -191,7 +191,7 @@ class Diffn : public Constraint {
     int64 area_min_y = y_[box]->Min();
     int64 area_max_y = y_[box]->Max() + dy_[box]->Max();
     int64 sum_of_areas = dx_[box]->Min() * dy_[box]->Min();
-    // TODO(user): Is there a better order, maybe std::sort by distance
+    // TODO(user): Is there a better order, maybe sort by distance
     // with the current box.
     for (int i = 0; i < neighbors_.size(); ++i) {
       const int other = neighbors_[i];

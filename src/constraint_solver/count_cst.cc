@@ -884,7 +884,7 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
     CHECK_EQ(this, (*it)->solver());
   }
 
-  // TODO(user) : we can std::sort values (and cards) before doing the test.
+  // TODO(user) : we can sort values (and cards) before doing the test.
   bool fast = true;
   for (int i = 0; i < values.size(); ++i) {
     if (values[i] != i) {

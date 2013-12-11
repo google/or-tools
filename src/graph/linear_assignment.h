@@ -609,7 +609,7 @@ template <typename GraphType> class LinearSumAssignment {
   //    forced: When a left-side node is incident to only one arc a,
   //    any feasible solution must include a, and reducing the price
   //    of Head(a) by any nonnegative amount preserves epsilon-
-  //    optimality. Because of this freedom, we'll call this std::sort of
+  //    optimality. Because of this freedom, we'll call this sort of
   //    relabeling (i.e., a relabeling of a right-side node that is
   //    the only neighbor of the left-side node to which it has been
   //    matched in the present double-push operation) a "slack"

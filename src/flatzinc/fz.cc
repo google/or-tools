@@ -36,6 +36,7 @@
 #include <iostream>  // NOLINT
 #include <fstream>  // NOLINT
 #include <cstring>
+#include "base/unique_ptr.h"
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -175,7 +176,7 @@ void SequentialRun(char* const file) {
       FLAGS_use_impact ? FlatZincSearchParameters::IBS
       : FlatZincSearchParameters::DEFAULT;
 
-  scoped_ptr<FzParallelSupport> parallel_support(
+  std::unique_ptr<FzParallelSupport> parallel_support(
       operations_research::MakeSequentialSupport(parameters.all_solutions,
                                                  parameters.num_solutions,
                                                  FLAGS_verbose_mt));
@@ -225,7 +226,7 @@ int main(int argc, char** argv) {
   if (FLAGS_workers == 0) {
     operations_research::SequentialRun(argv[1]);
   } else {
-    scoped_ptr<operations_research::FzParallelSupport> parallel_support(
+    std::unique_ptr<operations_research::FzParallelSupport> parallel_support(
         operations_research::MakeMtSupport(
             FLAGS_all, FLAGS_num_solutions, FLAGS_verbose_mt));
     {

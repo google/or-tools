@@ -140,8 +140,8 @@ template <> bool PyObjAs(PyObject * py, unsigned long long * c) {  // NOLINT
       {
     if (!PyLong_Check(py)) return false;  // Not a Python long.
     i = PyLong_AsUnsignedLongLong(py);
-    if (i == (unsigned long long) - 1 && PyErr_Occurred())
-      return false;  // NOLINT
+    if (i == (unsigned long long) - 1 && PyErr_Occurred())  // NOLINT
+      return false;
   }
   if (c) *c = i;
   return true;
@@ -251,8 +251,7 @@ bool vector_input_wrap_helper(PyObject * seq, std::vector<T> * out,
   }
   typename vector_pusher<T>::ptr elem;
   while ((item = PyIter_Next(it))) {
-    if (SWIG_ConvertPtr(item, (void**)&elem, swig_Tp_type, 0) ==
-        -1) {  // NOLINT
+    if (SWIG_ConvertPtr(item, (void**)&elem, swig_Tp_type, 0) == -1) {  // NOLINT
       Py_DECREF(it);
       it = PyObject_Repr(item);
       Py_DECREF(item);
@@ -323,8 +322,8 @@ static PyObject* vector_output_wrap_helper(const std::vector<T*> * vec,
   return vector_output_helper(vec, converter);
 #else  // Lambda version
   auto converter = [](const T * x) {
-    return SWIG_NewPointerObj((void*)x, swig_Tp_type, newobj);
-  }  // NOLINT
+    return SWIG_NewPointerObj((void*)x, swig_Tp_type, newobj);  // NOLINT
+  }
   return list_output_helper(vec, converter);
 #endif
 }

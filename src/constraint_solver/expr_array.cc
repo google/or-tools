@@ -1478,7 +1478,7 @@ struct Container {
   bool operator<(const Container& c) const { return (coef < c.coef); }
 };
 
-// This method will std::sort both vars and coefficients in increasing
+// This method will sort both vars and coefficients in increasing
 // coefficient order. Vars with null coefficients will be
 // removed. Bound vars will be collected and the sum of the
 // corresponding products (when the var is bound to 1) is returned by

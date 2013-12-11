@@ -731,7 +731,6 @@ static void SetPythonFlags(bool trace_propagation,
   IntExpr* __mod__(IntExpr* e) {
     return self->solver()->MakeModulo(self, e);
   }
-
   IntExpr* __neg__() {
     return self->solver()->MakeOpposite(self);
   }
@@ -1186,7 +1185,6 @@ class LocalSearchPhaseParameters {
 #endif  // SWIGJAVA
 
 #if defined(SWIGCSHARP)
-
 %module(directors="1", allprotected="1") operations_research;
 %feature("director") Action;
 %feature("director") BaseLNS;
@@ -1829,7 +1827,6 @@ namespace operations_research {
     }
     return array;
   }
-
   public void NewSearch(DecisionBuilder db) {
     pinned_decision_builder_ = db;
     pinned_search_monitors_.Clear();
@@ -1905,7 +1902,6 @@ namespace operations_research {
     return index;
   }
 }
-
 %extend SequenceVarLocalSearchOperator {
   int SequenceSize(int index) const {
     return self->Sequence(index).size();
@@ -1940,68 +1936,6 @@ namespace operations_research {
     return result;
   }
 %}
-
-// Protect from failure
-#define PREPROTECT \
-  FailureProtect protect;\
-  Closure* const intercept = \
-      NewCallback<>(&protect, &FailureProtect::JumpBack);\
-  solver->set_fail_intercept(intercept);\
-  if (setjmp(protect.exception_buffer) == 0) {
-
-#define POSTPROTECT \
-    solver->clear_fail_intercept();\
-    delete intercept;\
-  } else {\
-    solver->clear_fail_intercept();\
-  SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "fail");\
-    return $null;\
-  }
-
-%exception IntExpr::SetValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMin(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetMax(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntExpr::SetRange(int64 mi, int64 ma) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception IntVar::RemoveValue(int64 v) {
-  operations_research::Solver* const solver = arg1->solver();
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::AddConstraint(Constraint* const ct) {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-%exception Solver::Fail() {
-  operations_research::Solver* const solver = arg1;
-  PREPROTECT
-    $action
-  POSTPROTECT
-}
-#undef PREPROTECT
-#undef POSTPROTECT
 }  // namespace operations_research
 
 namespace operations_research {

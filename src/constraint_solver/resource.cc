@@ -480,7 +480,7 @@ class EdgeFinderAndDetectablePrecedences {
   // --- All the following member variables are essentially used as local ones:
   // no invariant is maintained about them, except for the fact that the vectors
   // always contains all the considered intervals, so any function that wants to
-  // use them must first std::sort them in the right order.
+  // use them must first sort them in the right order.
 
   // All of these vectors store the same set of objects. Therefore, at
   // destruction time, STLDeleteElements should be called on only one of them.

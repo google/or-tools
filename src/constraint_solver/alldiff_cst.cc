@@ -294,17 +294,17 @@ class RangeBipartiteMatching {
     return modified;
   }
 
-  // TODO(user) : use better std::sort, use bounding boxes of modifications to
+  // TODO(user) : use better sort, use bounding boxes of modifications to
   //                 improve the sorting (only modified vars).
 
-  // This method is used by the STL std::sort.
+  // This method is used by the STL sort.
   struct CompareIntervalMin {
     bool operator()(const Interval* i1, const Interval* i2) {
       return (i1->min < i2->min);
     }
   };
 
-  // This method is used by the STL std::sort.
+  // This method is used by the STL sort.
   struct CompareIntervalMax {
     bool operator()(const Interval* i1, const Interval* i2) {
       return (i1->max < i2->max);

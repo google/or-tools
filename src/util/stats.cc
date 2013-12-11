@@ -70,7 +70,7 @@ bool CompareStatPointerByName(Stat* s1, Stat *s2) {
 
 string StatsGroup::StatString() const {
   // Computes the longest name of all the stats we want to display.
-  // Also create a temporary vector so we can std::sort the stats by names.
+  // Also create a temporary vector so we can sort the stats by names.
   int longest_name_size = 0;
   std::vector<Stat*> sorted_stats;
   for (int i = 0; i < stats_.size(); ++i) {

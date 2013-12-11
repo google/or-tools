@@ -18,6 +18,7 @@
 #include <unistd.h>
 #endif
 
+
 #include <cmath>
 #include <cstddef>
 #include <utility>
@@ -761,7 +762,7 @@ void OutputTermsToProto(
     DCHECK_NE(-1, var_index);
     linear_term.push_back(std::pair<int, double>(var_index, coef));
   }
-  // The cost of std::sort is expected to be low as constraints usually have very
+  // The cost of sort is expected to be low as constraints usually have very
   // few terms.
   std::sort(linear_term.begin(), linear_term.end());
   // Now use linear term.
@@ -837,7 +838,7 @@ void MPSolver::ExportModelToNewProto(
       const double coeff = entry.second;
       linear_term.push_back(std::pair<int, double>(var_index, coeff));
     }
-    // The cost of std::sort is expected to be low as constraints usually have very
+    // The cost of sort is expected to be low as constraints usually have very
     // few terms.
     std::sort(linear_term.begin(), linear_term.end());
     // Now use linear term.

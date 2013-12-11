@@ -646,7 +646,7 @@ class RoutingModel {
   }
 // Gets/sets the evaluator used when the first solution heuristic is set to
 // ROUTING_EVALUATOR_STRATEGY (variant of ROUTING_PATH_CHEAPEST_ARC using
-// 'evaluator' to std::sort node segments).
+// 'evaluator' to sort node segments).
 #ifndef SWIG
   Solver::IndexEvaluator2* first_solution_evaluator() const {
     return first_solution_evaluator_.get();

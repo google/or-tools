@@ -37,6 +37,7 @@
 
 #include <map>
 #include <cassert>
+#include "base/unique_ptr.h"
 
 #include "flatzinc/parser.h"
 #include "constraint_solver/constraint_solver.h"
@@ -273,7 +274,7 @@ class FlatZincModel {
   // Number of set variables
   int set_var_count;
 
-  scoped_ptr<Solver> solver_;
+  std::unique_ptr<Solver> solver_;
   OptimizeVar* objective_;
 
   // Index of the integer variable to optimize

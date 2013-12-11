@@ -262,7 +262,7 @@ class KnapsackSearchNode {
   const KnapsackSearchNode* const parent_;
   KnapsackAssignment assignment_;
 
-  // 'current_profit' and 'profit_upper_bound' fields are used to std::sort search
+  // 'current_profit' and 'profit_upper_bound' fields are used to sort search
   // nodes using a priority queue. That allows to pop the node with the best
   // upper bound, and more importantly to stop the search when optimality is
   // proved.
@@ -435,7 +435,7 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
   virtual int GetNextItemId() const { return break_item_id_; }
 
  protected:
-  // Initializes KnapsackCapacityPropagator (eg. std::sort items in decreasing
+  // Initializes KnapsackCapacityPropagator (eg. sort items in decreasing
   // order).
   virtual void InitPropagator();
   // Updates internal data structure incrementally (ie. 'consumed_capacity_')

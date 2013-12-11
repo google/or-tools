@@ -31,7 +31,7 @@ const int kMasterPropagatorId = 0;
 const int kMaxNumberOfBruteForceItems = 30;
 const int kMaxNumberOf64Items = 64;
 
-// Comparator used to std::sort item in decreasing efficiency order
+// Comparator used to sort item in decreasing efficiency order
 // (see KnapsackCapacityPropagator).
 struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
   explicit CompareKnapsackItemsInDecreasingEfficiencyOrder(int64 _profit_max)
@@ -44,7 +44,7 @@ struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
   const int64 profit_max;
 };
 
-// Comparator used to std::sort search nodes in the priority queue in order
+// Comparator used to sort search nodes in the priority queue in order
 // to pop first the node with the highest profit upper bound
 // (see KnapsackSearchNode). When two nodes have the same upper bound, we
 // prefer the one with the highest current profit, ie. usually the one closer
@@ -727,7 +727,7 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
   int64 rejected_items_weight_;
 };
 
-// Comparator used to std::sort item in decreasing efficiency order
+// Comparator used to sort item in decreasing efficiency order
 bool CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder(
     const KnapsackItemWithEfficiency& item1,
     const KnapsackItemWithEfficiency& item2) {
