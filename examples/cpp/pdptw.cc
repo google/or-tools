@@ -30,7 +30,7 @@
 // flag.
 //
 // A further description of the problem can be found here:
-// http://http://en.wikipedia.org/wiki/Vehicle_routing_problem
+// http://en.wikipedia.org/wiki/Vehicle_routing_problem
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.123.9965&rep=rep1&type=pdf.
 // Reads data in the format defined by Li & Lim
 // (http://www.sintef.no/Projectweb/TOP/PDPTW/Li--Lim-benchmark/Documentation/).
@@ -109,6 +109,8 @@ string VerboseOutput(const RoutingModel& routing,
                      const Coordinates& coords,
                      const std::vector<int64>& service_times) {
   string output;
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
+  const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
   for (int i = 0; i < routing.vehicles(); ++i) {
       StringAppendF(&output, "Vehicle %d: ", i);
     int64 index = routing.Start(i);
@@ -120,11 +122,11 @@ string VerboseOutput(const RoutingModel& routing,
         StringAppendF(&output, "%d ", real_node.value());
         const IntVar* vehicle = routing.VehicleVar(index);
         StringAppendF(&output, "Vehicle(%lld) ", assignment.Value(vehicle));
-        const IntVar* arrival = routing.CumulVar(index, "time");
+        const IntVar* arrival = time_dimension.CumulVar(index);
         StringAppendF(&output, "Time(%lld..%lld) ",
                       assignment.Min(arrival),
                       assignment.Max(arrival));
-        const IntVar* load = routing.CumulVar(index, "demand");
+        const IntVar* load = load_dimension.CumulVar(index);
         StringAppendF(&output, "Load(%lld..%lld) ",
                       assignment.Min(load),
                       assignment.Max(load));
@@ -138,11 +140,11 @@ string VerboseOutput(const RoutingModel& routing,
       StringAppendF(&output, "Route end ");
       const IntVar* vehicle = routing.VehicleVar(index);
       StringAppendF(&output, "Vehicle(%lld) ", assignment.Value(vehicle));
-      const IntVar* arrival = routing.CumulVar(index, "time");
+      const IntVar* arrival = time_dimension.CumulVar(index);
       StringAppendF(&output, "Time(%lld..%lld) ",
                     assignment.Min(arrival),
                     assignment.Max(arrival));
-      const IntVar* load = routing.CumulVar(index, "demand");
+      const IntVar* load = load_dimension.CumulVar(index);
       StringAppendF(&output, "Load(%lld..%lld) ",
                     assignment.Min(load),
                     assignment.Max(load));
@@ -256,8 +258,8 @@ bool LoadAndSolve(const string& pdp_file) {
   // Build pickup and delivery model.
   const int num_nodes = customer_ids.size();
   RoutingModel routing(num_nodes, num_vehicles);
-  routing.SetCost(NewPermanentCallback(
-      Travel, const_cast<const Coordinates*>(&coords)));
+  routing.SetArcCostEvaluatorOfAllVehicles(
+      NewPermanentCallback(Travel, const_cast<const Coordinates*>(&coords)));
   routing.AddDimension(
       NewPermanentCallback(&Demand, const_cast<const std::vector<int64>*>(&demands)),
       0, capacity, /*fix_start_cumul_to_zero=*/ true, "demand");
@@ -269,6 +271,7 @@ bool LoadAndSolve(const string& pdp_file) {
       kScalingFactor * horizon,
       /*fix_start_cumul_to_zero=*/ true,
       "time");
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   Solver* const solver = routing.solver();
   for (RoutingModel::NodeIndex i(0); i < num_nodes; ++i) {
     const int64 index = routing.NodeToIndex(i);
@@ -281,12 +284,12 @@ bool LoadAndSolve(const string& pdp_file) {
             routing.VehicleVar(index),
             routing.VehicleVar(delivery_index)));
         solver->AddConstraint(solver->MakeLessOrEqual(
-            routing.CumulVar(index, "time"),
-            routing.CumulVar(delivery_index, "time")));
+            time_dimension.CumulVar(index),
+            time_dimension.CumulVar(delivery_index)));
         routing.AddPickupAndDelivery(i, deliveries[i.value()]);
       }
     }
-    IntVar* const cumul = routing.CumulVar(index, "time");
+    IntVar* const cumul = time_dimension.CumulVar(index);
     cumul->SetMin(kScalingFactor * open_times[i.value()]);
     cumul->SetMax(kScalingFactor * close_times[i.value()]);
   }

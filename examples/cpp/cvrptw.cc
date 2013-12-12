@@ -20,6 +20,7 @@
 // distances are computed using the Manhattan distance. Distances are assumed
 // to be in meters and times in seconds.
 
+#include "base/unique_ptr.h"
 #include <vector>
 
 #include "base/callback.h"
@@ -34,6 +35,7 @@
 
 using operations_research::Assignment;
 using operations_research::IntVar;
+using operations_research::RoutingDimension;
 using operations_research::RoutingModel;
 using operations_research::Solver;
 using operations_research::ACMRandom;
@@ -131,7 +133,7 @@ class RandomDemand {
   }
 
  private:
-  scoped_ptr<int64[]> demand_;
+  std::unique_ptr<int64[]> demand_;
   const int size_;
   const RoutingModel::NodeIndex depot_;
 };
@@ -152,8 +154,8 @@ class ServiceTimePlusTransition {
   }
  private:
   const int64 time_per_demand_unit_;
-  scoped_ptr<RoutingModel::NodeEvaluator2> demand_;
-  scoped_ptr<RoutingModel::NodeEvaluator2> transition_time_;
+  std::unique_ptr<RoutingModel::NodeEvaluator2> demand_;
+  std::unique_ptr<RoutingModel::NodeEvaluator2> transition_time_;
 };
 
 // Route plan displayer.
@@ -178,6 +180,9 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   }
 
   // Display actual output for each vehicle.
+  const RoutingDimension& capacity_dimension =
+      routing.GetDimensionOrDie(kCapacity);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
   for (int route_number = 0;
        route_number < routing.vehicles();
        ++route_number) {
@@ -186,23 +191,17 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
     if (routing.IsEnd(plan.Value(routing.NextVar(order)))) {
       plan_output += "Empty\n";
     } else {
-      while (!routing.IsEnd(order)) {
-        IntVar* load_var = routing.CumulVar(order, kCapacity);
-        IntVar* time_var = routing.CumulVar(order, kTime);
+      while (true) {
+        IntVar* const load_var = capacity_dimension.CumulVar(order);
+        IntVar* const time_var = time_dimension.CumulVar(order);
         StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
                       order,
                       plan.Value(load_var),
                       plan.Min(time_var),
                       plan.Max(time_var));
+        if (routing.IsEnd(order)) break;
         order = plan.Value(routing.NextVar(order));
       }
-      IntVar* load_var = routing.CumulVar(order, kCapacity);
-      IntVar* time_var = routing.CumulVar(order, kTime);
-      StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld)\n",
-                    order,
-                    plan.Value(load_var),
-                    plan.Min(time_var),
-                    plan.Max(time_var));
     }
   }
   LOG(INFO) << plan_output;
@@ -233,8 +232,8 @@ int main(int argc, char **argv) {
   }
 
   // Setting the cost function.
-  routing.SetCost(NewPermanentCallback(&locations,
-                                       &LocationContainer::ManhattanDistance));
+  routing.SetArcCostEvaluatorOfAllVehicles(
+      NewPermanentCallback(&locations, &LocationContainer::ManhattanDistance));
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
@@ -256,12 +255,13 @@ int main(int argc, char **argv) {
       NewPermanentCallback(&time,
                            &ServiceTimePlusTransition::Compute),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ true, kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
   ACMRandom randomizer(GetSeed());
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < routing.nodes(); ++order) {
     const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
-    routing.CumulVar(order, kTime)->SetRange(start, start + kTWDuration);
+    time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
   }
 
   // Adding penalty costs to allow skipping orders.

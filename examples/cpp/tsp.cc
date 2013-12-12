@@ -24,6 +24,8 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
+#include "base/unique_ptr.h"
+
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
@@ -96,7 +98,7 @@ class RandomMatrix {
                     RoutingModel::NodeIndex to) const {
     return (from * size_ + to).value();
   }
-  scoped_ptr<int64[]> matrix_;
+  std::unique_ptr<int64[]> matrix_;
   const int size_;
 };
 
@@ -120,9 +122,11 @@ int main(int argc, char **argv) {
     RandomMatrix matrix(FLAGS_tsp_size);
     if (FLAGS_tsp_use_random_matrix) {
       matrix.Initialize();
-      routing.SetCost(NewPermanentCallback(&matrix, &RandomMatrix::Distance));
+      routing.SetArcCostEvaluatorOfAllVehicles(
+          NewPermanentCallback(&matrix, &RandomMatrix::Distance));
     } else {
-      routing.SetCost(NewPermanentCallback(MyDistance));
+      routing.SetArcCostEvaluatorOfAllVehicles(
+          NewPermanentCallback(MyDistance));
     }
     // Forbid node connections (randomly).
     ACMRandom randomizer(GetSeed());
