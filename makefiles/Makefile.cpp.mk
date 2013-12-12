@@ -30,6 +30,9 @@ DYNAMIC_DIMACS_LIBS = \
 DYNAMIC_FAP_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX)
 
+DYNAMIC_SAT_LIBS = \
+	$(LIB_DIR)/$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
+
 # Lib dependencies.
 DYNAMIC_BASE_DEPS = $(DYNAMIC_BASE_LIBS)
 
@@ -52,6 +55,8 @@ DYNAMIC_FAP_DEPS = \
 	$(DYNAMIC_CP_LIBS) \
 	$(DYNAMIC_LP_LIBS) \
 	$(DYNAMIC_BASE_LIBS)
+
+DYNAMIC_SAT_DEPS = $(DYNAMIC_SAT_LIBS) $(DYNAMIC_BASE_LIBS)
 
 # Create link commands.
 DYNAMIC_BASE_LNK = \
@@ -96,6 +101,10 @@ DYNAMIC_FAP_LNK = \
 	$(DYNAMIC_PRE_LIB)fap$(DYNAMIC_POST_LIB) \
 	$(DYNAMIC_CP_LNK)
 
+DYNAMIC_SAT_LNK = \
+	$(DYNAMIC_PRE_LIB)sat$(DYNAMIC_POST_LIB) \
+	$(DYNAMIC_BASE_LNK)
+
 #### STATIC link and libs ####
 
 # List libraries by module.
@@ -122,6 +131,9 @@ STATIC_ROUTING_LIBS = \
 STATIC_FLATZINC_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 
+STATIC_SAT_LIBS = \
+	$(LIB_DIR)/$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
+
 # Lib dependencies.
 STATIC_BASE_DEPS = $(STATIC_BASE_LIBS)
 
@@ -136,6 +148,8 @@ STATIC_GRAPH_DEPS = $(STATIC_GRAPH_LIBS) $(STATIC_BASE_LIBS)
 STATIC_ROUTING_DEPS = $(STATIC_ROUTING_LIBS) $(STATIC_CP_LIBS) $(STATIC_LP_LIBS) $(STATIC_GRAPH_LIBS) $(STATIC_BASE_LIBS)
 
 STATIC_FLATZINC_DEPS = $(STATIC_FLATZINC_LIBS) $(STATIC_CP_LIBS) $(STATIC_LP_LIBS) $(STATIC_BASE_LIBS)
+
+STATIC_SAT_DEPS = $(STATIC_SAT_LIBS) $(STATIC_BASE_LIBS)
 
 # Create link commands.
 STATIC_BASE_LNK = \
@@ -169,6 +183,10 @@ STATIC_GRAPH_LNK = \
 STATIC_FLATZINC_LNK = \
 	$(STATIC_PRE_LIB)fz$(STATIC_POST_LIB)\
 	$(STATIC_CP_LNK)
+
+STATIC_SAT_LNK = \
+	$(STATIC_PRE_LIB)sat$(STATIC_POST_LIB) \
+	$(STATIC_BASE_LNK)
 
 # Binaries
 
@@ -1058,6 +1076,60 @@ $(OBJ_DIR)/integer_programming.$O: $(EX_DIR)/cpp/integer_programming.cc $(SRC_DI
 
 $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programming.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(DYNAMIC_LP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
+
+# Sat solver
+
+SAT_LIB_OBJS = \
+        $(OBJ_DIR)/boolean_problem.pb.$O\
+	$(OBJ_DIR)/boolean_problem.$O\
+	$(OBJ_DIR)/pb_constraint.$O\
+	$(OBJ_DIR)/sat_conflict.$O\
+	$(OBJ_DIR)/sat_parameters.pb.$O\
+	$(OBJ_DIR)/sat_solver.$O\
+
+satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
+
+$(OBJ_DIR)/sat_solver.$O:$(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_solver.$O
+
+$(OBJ_DIR)/sat_conflict.$O:$(SRC_DIR)/sat/sat_conflict.cc $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_conflict.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_conflict.$O
+
+$(OBJ_DIR)/boolean_problem.$O:$(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.$O
+
+$(GEN_DIR)/sat/boolean_problem.pb.cc:$(SRC_DIR)/sat/boolean_problem.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/boolean_problem.proto
+
+$(GEN_DIR)/sat/boolean_problem.pb.h:$(GEN_DIR)/sat/boolean_problem.pb.cc
+
+$(OBJ_DIR)/boolean_problem.pb.$O:$(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.pb.$O
+
+$(OBJ_DIR)/pb_constraint.$O:$(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Spb_constraint.$O
+
+$(GEN_DIR)/sat/sat_parameters.pb.cc:$(SRC_DIR)/sat/sat_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/sat_parameters.proto
+
+$(GEN_DIR)/sat/sat_parameters.pb.h:$(GEN_DIR)/sat/sat_parameters.pb.cc
+
+$(OBJ_DIR)/sat_parameters.pb.$O:$(GEN_DIR)/sat/sat_parameters.pb.cc $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/sat_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_parameters.pb.$O
+
+$(LIB_DIR)/$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX): $(SAT_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX) $(SAT_LIB_OBJS)
+
+ifneq ($(SYSTEM),win)
+$(LIB_DIR)/$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX): $(SAT_LIB_OBJS)
+	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX) $(SAT_LIB_OBJS)
+endif
+
+$(OBJ_DIR)/sat_runner.$O:$(EX_DIR)/cpp/sat_runner.cc $(SRC_DIR)/sat/sat_solver.h $(EX_DIR)/cpp/opb_reader.h $(EX_DIR)/cpp/sat_cnf_reader.h $(GEN_DIR)/sat/sat_parameters.pb.h  $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/boolean_problem.h  $(SRC_DIR)/sat/sat_base.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
+
+$(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat_runner.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat_runner.$O $(DYNAMIC_SAT_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
 # Target for archives
 

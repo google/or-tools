@@ -1,0 +1,95 @@
+// Copyright 2010-2013 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// Protocol buffer to encode a Boolean satisfiability/optimization problem.
+
+syntax = "proto2";
+package operations_research;
+
+// A linear Boolean constraint which is a bounded sum of linear terms. Each term
+// beeing a literal times an integer coefficient. If we assume that a literal
+// takes the value 1 if it is true and 0 otherwise, the constraint is:
+//   lower_bound <= ... + coefficients[i] * literals[i] + ... <= upper_bound
+message LinearBooleanConstraint {
+  // Linear terms involved in this constraint.
+  //
+  // literals[i] is the signed representation of the i-th literal of the
+  // constraint and coefficients[i] its coefficients. The signed representation
+  // is as follow: for a 0-based variable index x, (x + 1) represents the
+  // variable x and -(x + 1) represents its negation.
+  repeated int32 literals = 1;
+  repeated int64 coefficients = 2;
+
+  // Optional lower (resp. upper) bound of the constraint. If not present, it
+  // means that the constraint is not bounded in this direction. The bounds
+  // are INCLUSIVE.
+  optional int64 lower_bound = 3;
+  optional int64 upper_bound = 4;
+
+  // The name of this constraint.
+  optional string name = 5 [default = ""];
+}
+
+// The objective of an optimization problem. The goal will be to minimize (resp.
+// maximize) this linear Boolean formula. The direction is given by the problem
+// type (see below).
+message LinearObjective {
+  repeated int32 literals = 1;
+  repeated int64 coefficients = 2;
+
+  // The objective offset. This is needed sometimes to report the correct
+  // objective value (after preprocessing for instance).
+  optional int64 offset = 3 [default = 0];
+}
+
+// Stores an assignment of variables as a list of true literals using their
+// signed representation. There will be at most one literal per variable. The
+// literals will be sorted by increasing variable index. The assignment may be
+// partial in the sense that some variables may not appear and thus not be
+// assigned.
+message BooleanAssignment {
+  repeated int32 literals = 1;
+}
+
+// A linear Boolean problem.
+message LinearBooleanProblem {
+  // The name of the problem.
+  optional string name = 1 [default = ""];
+
+  // The type of the problem.
+  enum ProblemType {
+    SATISFIABILITY = 0;
+    MAXIMIZATION = 1;
+    MINIMIZATION = 2;
+  }
+  optional ProblemType type = 2 [default = SATISFIABILITY];
+
+  // The number of variables in the problem.
+  // All the signed representation of the problem literals must be in
+  // [-num_variables, num_variables], excluding 0.
+  optional int32 num_variables = 3;
+
+  // The constraints of the problem.
+  repeated LinearBooleanConstraint constraints = 4;
+
+  // The objective of the problem (for the MINIMIZATION or MAXIMIZATION types).
+  optional LinearObjective objective = 5;
+
+  // The names of the problem variables. The variables index are 0-based and
+  // var_names[i] will be the name of the i-th variable which correspond to
+  // literals +(i + 1) or -(i + 1). This is optional and can be left empty.
+  repeated string var_names = 6;
+
+  // Stores an assignement of the problem variables. That may be an initial
+  // feasible solution, just a partial assignement or the optimal solution.
+  optional BooleanAssignment assignment = 7;
+}

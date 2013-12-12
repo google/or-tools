@@ -1,0 +1,159 @@
+// Copyright 2010-2013 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto2";
+
+package operations_research.sat;
+
+// Contains the definitions for all the sat algorithm parameters and their
+// default values.
+message SatParameters {
+  // Specifies how variables should be ordered during search.
+  enum VariableOrdering {
+    // Variables will be instantiated in the order of creation.
+    STATIC_IN_ORDER = 0;
+    // Variables appearing in the smallest number of clauses will be
+    // chosen first.
+    STATIC_MIN_USAGE_FIRST = 1;
+    // Variables appearing in the largest number of clauses will be
+    // chosen first.
+    STATIC_MAX_USAGE_FIRST = 2;
+    // Variables with the highest activity (number of appearances in
+    // conflict creation) will be chosen first.
+    DYNAMIC_MAX_ACTIVITY_FIRST = 3;
+  }
+  optional VariableOrdering variable_ordering = 1
+      [default = DYNAMIC_MAX_ACTIVITY_FIRST];
+
+  // Specifies how branching on variable should be done.
+  enum VariableBranching {
+    // Always branch on the variable being true.
+    FIXED_POSITIVE = 0;
+    // Always branch on the variable being false.
+    FIXED_NEGATIVE = 1;
+    // The sign of a variable is true if it appears in more clauses in a
+    // positive literal than in clauses in a negative literal. With that
+    // definition, branching will follow the sign of the variable.
+    SIGN = 2;
+    // Branching will follow the reverse of the sign.
+    REVERSE_SIGN = 3;
+    // The polarity of the variable is the last value it was assigned
+    // to, or its sign if it was never assigned.
+    // Note this is also referenced as 'literal phase saving' in some papers.
+    // For details see 'A Lightweight Component Caching Scheme for
+    // Satisfiability Solvers' K. Pipatsrisawat and A.Darwiche, In 10th
+    // International Conference on Theory and Applications of Satisfiability
+    // Testing, 2007.
+    POLARITY = 4;
+    // Branching will follow the reverse of the polarity.
+    REVERSE_POLARITY = 5;
+  }
+  optional VariableBranching variable_branching = 2 [default = POLARITY];
+
+  // Specifies how literals should be initially sorted in a clause.
+  enum LiteralOrdering {
+    // Do nothing and keep literals in order.
+    LITERAL_IN_ORDER = 0;
+    // Sort the literals by increasing order of their variable appearance in the
+    // problem.
+    VAR_MIN_USAGE = 1;
+    // Sort the literals by decreasing order of their variable appearance in the
+    // problem.
+    VAR_MAX_USAGE = 2;
+  }
+  optional LiteralOrdering literal_ordering = 3 [default = VAR_MIN_USAGE];
+
+  // Do we try to minimize conflicts (greedily) when creating them.
+  enum ConflictMinimizationAlgorithm {
+    NONE = 0;
+    SIMPLE = 1;
+    RECURSIVE = 2;
+    EXPERIMENTAL = 3;
+  }
+  optional ConflictMinimizationAlgorithm minimization_algorithm = 4
+      [default = RECURSIVE];
+
+  // Initial ratio learned_clauses / problem clauses before starting deletion.
+  // If it falls under the minimum size, the minimum size is used instead.
+  optional double initial_conflict_size_ratio = 10 [default = 0.25];
+  optional double initial_minimum_conflict_size = 11 [default = 3000];
+
+  // Growing rate of the learned clause limit after each stage of cleaning.
+  // the limit is increased by this ratio times the initial conflict size.
+  // Each time we learn that much conflicts, a new cleaning is triggered.
+  optional double conflict_size_growing_ratio = 12 [default = 0.1];
+
+  // Each time the clause database is cleaned, we only keep this ratio of all
+  // the clauses that can be deleted.
+  optional double learned_clauses_deletion_ratio = 13 [default = 0.5];
+
+  // Variable activity parameters.
+  //
+  // Each time a conflict is found, the activities of some variables are
+  // increased by one. Then, the activity of all variables are multiplied by
+  // variable_activity_decay.
+  //
+  // To implement this efficiently, the activity of all the variables is not
+  // decayed at each conflict. Instead, the activity increment is multiplied by
+  // 1 / decay. When an activity reach max_variable_activity_value, all the
+  // activity are multiplied by 1 / max_variable_activity_value.
+  optional double variable_activity_decay = 15 [default = 0.95];
+  optional double max_variable_activity_value = 16 [default = 1e100];
+
+  // Clause activity parameters (same effect as the one on the variables).
+  optional double clause_activity_decay = 17 [default = 0.999];
+  optional double max_clause_activity_value = 18 [default = 1e20];
+
+  // Whether or not we take the LBD (literal blocks distance) into account
+  // during the conflict cleaning phase. If true, then clauses with an LBD of
+  // 2 will not be deleted and clauses will be ordered by increasing LBD first
+  // with a tie breaking given by decreasing activity.
+  optional bool use_lbd = 20 [default = true];
+
+  // To try to reward good variables, Glucose bumps again the variable from the
+  // last decision level and with a learned reason of smaller LBD than the 1 UIP
+  // conflict. This needs use_lbd() to be true.
+  optional bool use_glucose_bump_again_strategy = 21 [ default = false];
+
+  // Frequecy of periodic restart if > 0. A negative value indicates
+  // no restart.
+  optional int32 restart_period = 30 [default = 100];
+
+  // At the beginning of each solve, the random number generator used in some
+  // part of the solver is reinitialized to this seed. If you change the random
+  // seed, the solver may make different choices during the solving process.
+  //
+  // For some problems, the running time may vary a lot depending on small
+  // change in the solving algorithm. Running the solver with different seeds
+  // enables to have more robust benchmarks when evaluating new features.
+  optional int32 random_seed = 31 [default = 1];
+
+  // A number between 0 and 1 that indicates the proportion of branching
+  // variables that are selected randomly instead of choosing the first variable
+  // from the given variable_ordering strategy.
+  optional double random_branches_ratio = 32 [default = 0.01];
+
+  // If true, the binary clauses are treated separately from the others. This
+  // should be faster and uses less memory. However it changes the propagation
+  // order.
+  optional bool treat_binary_clauses_separately = 33 [default = true];
+
+  // Whether to expoit the binary clause to minimize learned clauses further.
+  // This will have an effect only if treat_binary_clauses_separately is true.
+  optional bool use_binary_clauses_minimization = 34 [default = true];
+
+  // For an optimization problem, whether we follow some hints in order to find
+  // a better first solution. For a variable with hint, the solver will always
+  // try to follow the hint. It will revert to the variable_branching default
+  // otherwise.
+  optional bool use_optimization_hints = 35 [default = true];
+}
