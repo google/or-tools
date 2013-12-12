@@ -231,7 +231,11 @@ struct AssignmentInfo {
   // Some data about this assignment used to compute the reason clause when it
   // becomes needed. Note that depending on the type, these fields will not be
   // used and be left uninitialized.
+  #if defined(_MSC_VER)
+  struct {
+  #else
   union {
+  #endif
     Literal literal;
     int source_trail_index;
   };

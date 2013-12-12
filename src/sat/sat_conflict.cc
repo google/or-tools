@@ -255,8 +255,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   // recursive call stack of the variable we are currently processing. All its
   // adjacent variable will be pushed into variable_to_process, and we will then
   // dequeue them one by one and process them.
-  std::vector<VariableIndex> dfs_stack {variable};
-  std::vector<VariableIndex> variable_to_process {variable};
+  std::vector<VariableIndex> dfs_stack(1, variable);
+  std::vector<VariableIndex> variable_to_process(1, variable);
 
   // First we expand the reason for the given variable.
   DCHECK(!Reason(variable).IsEmpty());
