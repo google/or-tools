@@ -117,15 +117,20 @@ class UpperBoundedLinearConstraint {
   // propagated the conflict or the literal we wants to explain, then this will
   // compute the reason.
   //
-  // TODO(user): This is a really simple reason, it should be possible to
-  // derive a more compact one depending on the coefficients of the assigned
-  // variables. This is especially true if the rhs changed. Some idea:
-  // * Remove level 0 literals. They are actually ignored later, but it is
-  //   slightly more efficient to not include them here.
-  // * greadily use the term with larger coefficients and remove non mandatory
-  //   terms with small coefficients.
-  // * during conflict minimization, ask for the mask of the literals that are
-  //   better to use.
+  // Some properties of the reason:
+  // - Literals of level 0 are removed.
+  // - It will always contain the literal with given source_trail_index (except
+  //   if it is of level 0).
+  // - We make the reason more compact by greedily removing terms with small
+  //   coefficients that would not have changed the propagation.
+  // - It is possible that the same source_trail_index literal propagated more
+  //   than one literal. It is important that the reason of each of these
+  //   literal is exactly the same so we can use PbReasonCache.
+  //
+  // TODO(user): Maybe it is possible to derive a better reason by using more
+  // information. For instance one could use the mask of literals that are
+  // better to use during conflict minimization (namely the one already in the
+  // 1-UIP conflict).
   void FillReason(const Trail& trail,
                   int source_trail_index,
                   std::vector<Literal>* reason);

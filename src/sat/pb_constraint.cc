@@ -199,13 +199,61 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
 void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
                                               int source_trail_index,
                                               std::vector<Literal>* reason) {
+  // Compute the initial reason which is formed by all the literals of the
+  // constraint that were assigned to true at the time of the propagation.
+  // We remove literals with a level of 0 since they are not needed.
+  // We also compute the current_rhs at the time.
   reason->clear();
-  for (Literal literal : literals_) {
+  Coefficient current_rhs = rhs_;
+  int coeff_index = coeffs_.size() - 1;
+  for (int i = literals_.size() - 1; i >= 0; --i) {
+    const Literal literal = literals_[i];
     if (trail.Assignment().IsLiteralTrue(literal) &&
         trail.Info(literal.Variable()).trail_index <= source_trail_index) {
-      reason->push_back(literal.Negated());
+      if (trail.Info(literal.Variable()).level != 0) {
+        reason->push_back(literal.Negated());
+      }
+      current_rhs -= coeffs_[coeff_index];
+    }
+    if (i == starts_[coeff_index]) {
+      --coeff_index;
     }
   }
+  if (reason->size() == 0) return;
+
+  // Find the smallest coefficient greater than current_rhs.
+  // We want a coefficient of a literal that wasn't assigned at the time.
+  coeff_index = coeffs_.size() - 1;
+  Coefficient coeff = coeffs_[coeff_index];
+  for (int i = literals_.size() - 1; i >= 0; --i) {
+    if (coeffs_[coeff_index] <= current_rhs) break;
+    const Literal literal = literals_[i];
+    if (!trail.Assignment().IsVariableAssigned(literal.Variable())
+        || trail.Info(literal.Variable()).trail_index > source_trail_index) {
+      coeff = coeffs_[coeff_index];
+    }
+    if (i == starts_[coeff_index]) --coeff_index;
+  }
+  int limit = coeff - current_rhs;
+  DCHECK_GE(limit, 1);
+
+  // Remove literals with small coefficients from the reason as long as the
+  // limit is still stricly positive.
+  coeff_index = 0;
+  if (coeffs_[coeff_index] >= limit) return;
+  for (int i = 0; i < literals_.size(); ++i) {
+    const Literal literal = literals_[i];
+    if (i == starts_[coeff_index + 1]) {
+      ++coeff_index;
+      if (coeffs_[coeff_index] >= limit) break;
+    }
+    if (literal.Negated() != reason->back()) continue;
+    limit -= coeffs_[coeff_index];
+    reason->pop_back();
+    if (coeffs_[coeff_index] >= limit) break;
+  }
+  DCHECK(!reason->empty());
+  DCHECK_GE(limit, 1);
 }
 
 void UpperBoundedLinearConstraint::Untrail(Coefficient* slack) {
