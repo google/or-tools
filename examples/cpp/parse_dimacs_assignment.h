@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include "base/unique_ptr.h"
 #include <string>
 
 #include "base/callback.h"
@@ -89,7 +90,7 @@ template <typename GraphType> class DimacsAssignmentParser {
     const char* reason;
     NodeIndex num_left_nodes;
     ArcIndex num_arcs;
-    scoped_ptr<string> bad_line;
+    std::unique_ptr<string> bad_line;
   };
 
   ErrorTrackingState state_;
@@ -288,7 +289,7 @@ LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     *error_message = "empty graph description";
     return NULL;
   }
-  scoped_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
+  std::unique_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
       assignment_->ArcAnnotationCycleHandler());
   GraphType* graph = graph_builder_->Graph(cycle_handler.get());
   if (graph == NULL) {

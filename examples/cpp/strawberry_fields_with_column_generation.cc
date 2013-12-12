@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <string.h>  // strlen
 #include <map>
+#include "base/unique_ptr.h"
 #include <string>
 #include <utility>
 #include <vector>

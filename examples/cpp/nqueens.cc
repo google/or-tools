@@ -77,7 +77,7 @@ class NQueenSymmetry : public SymmetryBreaker {
  private:
   Solver* const solver_;
   const std::vector<IntVar*> vars_;
-  std::map<IntVar*, int> indices_;
+  std::map<const IntVar*, int> indices_;
   const int size_;
 };
 

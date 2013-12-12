@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/unique_ptr.h"
+
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -203,7 +205,7 @@ void DeclareConstraint(int index,
 void ExportToGraphFile(const CPModelProto& proto,
                        File* const file,
                        GraphExporter::GraphFormat format) {
-  scoped_ptr<GraphExporter> exporter(
+  std::unique_ptr<GraphExporter> exporter(
       GraphExporter::MakeFileExporter(file, format));
   exporter->WriteHeader(proto.model());
   for (int i = 0; i < proto.expressions_size(); ++i) {
@@ -274,7 +276,6 @@ void ExportToGraphFile(const CPModelProto& proto,
 int Run() {
   // ----- Load input file into protobuf -----
 
-  File::Init();
   File* const file = File::Open(FLAGS_input, "r");
   if (file == NULL) {
     LOG(WARNING) << "Cannot open " << FLAGS_input;
