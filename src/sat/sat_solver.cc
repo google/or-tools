@@ -1041,23 +1041,6 @@ string SatSolver::RunningStatisticsString() const {
                       num_variables_.value() - num_processed_fixed_variables_);
 }
 
-template<typename Literals>
-void SatSolver::UpdateStatisticsOnOneClause(
-    const Literals& literals, int size, bool added) {
-  SCOPED_TIME_STAT(&stats_);
-  for (const Literal literal : literals) {
-    const VariableIndex var = literal.Variable();
-    const int direction = added ? 1 : -1;
-    statistics_[var].num_appearances += direction;
-    statistics_[var].weighted_num_appearances += 1.0 / size * direction;
-    if (literal.IsPositive()) {
-      statistics_[var].num_positive_clauses += direction;
-    } else {
-      statistics_[var].num_negative_clauses += direction;
-    }
-  }
-}
-
 double SatSolver::ComputeInitialVariableWeight(VariableIndex var) const {
   if (leave_initial_activities_unchanged_) return activities_[var];
   const double usage = statistics_[var].weighted_num_appearances;

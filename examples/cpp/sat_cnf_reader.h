@@ -42,6 +42,7 @@ class SatCnfReader {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
     is_wcnf_ = false;
+    end_marker_seen_ = false;
     slack_variable_weights_.clear();
 
     int num_lines = 0;
@@ -92,7 +93,10 @@ class SatCnfReader {
 
     // TODO(user): It seems our files contains 2 lines of junk at the end.
     // Hence this test. Clear them?
-    if (words[0] == "%") return;
+    if (words[0] == "%" || end_marker_seen_) {
+      end_marker_seen_ = true;
+      return;
+    }
 
     if (words[0] == "p") {
       if (words[1] == "cnf" || words[1] == "wcnf") {
@@ -139,6 +143,7 @@ class SatCnfReader {
   bool is_wcnf_;
   std::vector<int64> slack_variable_weights_;
   int64 hard_weight_;
+  bool end_marker_seen_;
 
   DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };

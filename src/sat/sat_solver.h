@@ -568,7 +568,20 @@ class SatSolver {
   // clause, or deleting it.
   template<typename Literals>
   void UpdateStatisticsOnOneClause(
-      const Literals& literals, int size, bool added);
+      const Literals& literals, int size, bool added) {
+    SCOPED_TIME_STAT(&stats_);
+    for (const Literal literal : literals) {
+      const VariableIndex var = literal.Variable();
+      const int direction = added ? 1 : -1;
+      statistics_[var].num_appearances += direction;
+      statistics_[var].weighted_num_appearances += 1.0 / size * direction;
+      if (literal.IsPositive()) {
+        statistics_[var].num_positive_clauses += direction;
+      } else {
+        statistics_[var].num_negative_clauses += direction;
+      }
+    }
+  }
 
   // Compute an initial variable ordering.
   void ComputeInitialVariableOrdering();
