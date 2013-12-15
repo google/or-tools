@@ -222,7 +222,7 @@ LPBINARIES = \
 # Makefile targets.
 
 # Main target
-cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
+cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe sat
 
 # Clean target
 
@@ -1086,6 +1086,8 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat_conflict.$O\
 	$(OBJ_DIR)/sat_parameters.pb.$O\
 	$(OBJ_DIR)/sat_solver.$O\
+
+sat: bin/sat_runner$E
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 

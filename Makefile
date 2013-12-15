@@ -34,7 +34,7 @@ else
   endif
 endif
 
-.PHONY : python cc java csharp
+.PHONY : python cc java csharp sat
 all: cc java python csharp
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
