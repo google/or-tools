@@ -223,18 +223,18 @@ class NodeEvaluator2 {
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
     int64 capacity,
-    const string& name);
+    const std::string& name);
 
 %ignore operations_research::RoutingModel::AddMatrixDimension(
     const int64* const* values,
     int64 capacity,
-    const string& name);
+    const std::string& name);
 
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
-                          const string& name) {
+                          const std::string& name) {
     DCHECK_EQ(values.size(), self->nodes());
     self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);

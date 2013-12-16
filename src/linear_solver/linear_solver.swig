@@ -278,10 +278,10 @@ class LinearConstraint(object):
 
 # We also apply the same idea to MPVariable.
 %extend MPVariable {
-  string __str__() {
+  std::string __str__() {
     return self->name();
   }
-  string __repr__() {
+  std::string __repr__() {
     return self->name();
   }
   %pythoncode {
@@ -375,14 +375,14 @@ class LinearConstraint(object):
 # See ../python/linear_programming.py for example on how to use the nice
 # extended python API provided below.
 %extend MPSolver {
-  string ExportModelAsLpFormat(bool obfuscated) {
-    string output;
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    std::string output;
     if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
     return output;
   }
 
-  string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    string output;
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
     if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
       return "";
     }
