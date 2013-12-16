@@ -162,10 +162,10 @@ class ServiceTimePlusTransition {
 // TODO(user): Move the display code to the routing library.
 void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   // Display plan cost.
-  string plan_output = StringPrintf("Cost %lld\n", plan.ObjectiveValue());
+  std::string plan_output = StringPrintf("Cost %lld\n", plan.ObjectiveValue());
 
   // Display dropped orders.
-  string dropped;
+  std::string dropped;
   for (int order = 1; order < routing.nodes(); ++order) {
     if (plan.Value(routing.NextVar(order)) == order) {
       if (dropped.empty()) {

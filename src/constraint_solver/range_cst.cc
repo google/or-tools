@@ -44,7 +44,7 @@ class RangeEquality : public Constraint {
     right_->SetRange(left_->Min(), left_->Max());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return left_->DebugString() + " == " + right_->DebugString();
   }
 
@@ -72,7 +72,7 @@ class RangeLessOrEqual : public Constraint {
   virtual ~RangeLessOrEqual() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
@@ -108,7 +108,7 @@ void RangeLessOrEqual::InitialPropagate() {
   }
 }
 
-string RangeLessOrEqual::DebugString() const {
+std::string RangeLessOrEqual::DebugString() const {
   return left_->DebugString() + " <= " + right_->DebugString();
 }
 
@@ -121,7 +121,7 @@ class RangeGreaterOrEqual : public Constraint {
   virtual ~RangeGreaterOrEqual() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() {
     return solver()->MakeIsGreaterOrEqualVar(left_, right_);
   }
@@ -157,7 +157,7 @@ void RangeGreaterOrEqual::InitialPropagate() {
   }
 }
 
-string RangeGreaterOrEqual::DebugString() const {
+std::string RangeGreaterOrEqual::DebugString() const {
   return left_->DebugString() + " >= " + right_->DebugString();
 }
 
@@ -170,7 +170,7 @@ class RangeLess : public Constraint {
   virtual ~RangeLess() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() { return solver()->MakeIsLessVar(left_, right_); }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
@@ -203,7 +203,7 @@ void RangeLess::InitialPropagate() {
   }
 }
 
-string RangeLess::DebugString() const {
+std::string RangeLess::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
 }
 
@@ -216,7 +216,7 @@ class RangeGreater : public Constraint {
   virtual ~RangeGreater() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() { return solver()->MakeIsGreaterVar(left_, right_); }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreater, this);
@@ -249,7 +249,7 @@ void RangeGreater::InitialPropagate() {
   }
 }
 
-string RangeGreater::DebugString() const {
+std::string RangeGreater::DebugString() const {
   return left_->DebugString() + " > " + right_->DebugString();
 }
 
@@ -262,7 +262,7 @@ class DiffVar : public Constraint {
   virtual ~DiffVar() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() { return solver()->MakeIsDifferentVar(left_, right_); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -305,7 +305,7 @@ void DiffVar::InitialPropagate() {
   }
 }
 
-string DiffVar::DebugString() const {
+std::string DiffVar::DebugString() const {
   return left_->DebugString() + " != " + right_->DebugString();
 }
 
@@ -380,7 +380,7 @@ class IsEqualCt : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("IsEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
@@ -460,7 +460,7 @@ class IsDifferentCt : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf(
         "IsDifferentCt(%s, %s, %s)", left_->DebugString().c_str(),
         right_->DebugString().c_str(), target_var_->DebugString().c_str());
@@ -515,7 +515,7 @@ class IsLessOrEqualCt : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf(
         "IsLessOrEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
         right_->DebugString().c_str(), target_var_->DebugString().c_str());
@@ -569,7 +569,7 @@ class IsLessCt : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("IsLessCt(%s, %s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
@@ -688,11 +688,11 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    string name1 = v1->name();
+    std::string name1 = v1->name();
     if (name1.empty()) {
       name1 = v1->DebugString();
     }
-    string name2 = v2->name();
+    std::string name2 = v2->name();
     if (name2.empty()) {
       name2 = v2->DebugString();
     }
@@ -751,11 +751,11 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
     if (reverse_cache != nullptr) {
       boolvar = MakeDifference(1, reverse_cache)->Var();
     } else {
-      string name1 = v1->name();
+      std::string name1 = v1->name();
       if (name1.empty()) {
         name1 = v1->DebugString();
       }
-      string name2 = v2->name();
+      std::string name2 = v2->name();
       if (name2.empty()) {
         name2 = v2->DebugString();
       }
@@ -795,11 +795,11 @@ IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    string name1 = left->name();
+    std::string name1 = left->name();
     if (name1.empty()) {
       name1 = left->DebugString();
     }
-    string name2 = right->name();
+    std::string name2 = right->name();
     if (name2.empty()) {
       name2 = right->DebugString();
     }
@@ -838,11 +838,11 @@ IntVar* Solver::MakeIsLessVar(IntExpr* const left, IntExpr* const right) {
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    string name1 = left->name();
+    std::string name1 = left->name();
     if (name1.empty()) {
       name1 = left->DebugString();
     }
-    string name2 = right->name();
+    std::string name2 = right->name();
     if (name2.empty()) {
       name2 = right->DebugString();
     }

@@ -19,8 +19,8 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
-#include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -108,7 +108,7 @@ class Diffn : public Constraint {
     PropagateAll();
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
                         JoinDebugStringPtr(x_, ", ").c_str(),
                         JoinDebugStringPtr(y_, ", ").c_str(),

@@ -13,7 +13,6 @@
 //
 //  AllDifferent constraints
 
-#include <string.h>
 #include <algorithm>
 #include "base/unique_ptr.h"
 #include <string>
@@ -34,7 +33,7 @@ class BaseAllDifferent : public Constraint {
   BaseAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s), vars_(vars) {}
   ~BaseAllDifferent() {}
-  string DebugStringInternal(const string& name) const {
+  std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
@@ -58,7 +57,7 @@ class ValueAllDifferent : public BaseAllDifferent {
   void OneMove(int index);
   bool AllMoves();
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return DebugStringInternal("ValueAllDifferent");
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -180,9 +179,9 @@ class RangeBipartiteMatching {
   // the bounds_ array (and set the active_size_ counter).
   void SortArray() {
     std::sort(min_sorted_.get(), min_sorted_.get() + size_,
-              CompareIntervalMin());
+         CompareIntervalMin());
     std::sort(max_sorted_.get(), max_sorted_.get() + size_,
-              CompareIntervalMax());
+         CompareIntervalMax());
 
     int64 min = min_sorted_[0]->min;
     int64 max = max_sorted_[0]->max + 1;
@@ -410,7 +409,7 @@ class BoundsAllDifferent : public BaseAllDifferent {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return DebugStringInternal("BoundsAllDifferent");
   }
 
@@ -493,7 +492,7 @@ class SortConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kSortingConstraint, this);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Sort(%s, %s)",
                         JoinDebugStringPtr(ovars_, ", ").c_str(),
                         JoinDebugStringPtr(svars_, ", ").c_str());
@@ -570,7 +569,7 @@ class AllDifferentExcept : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         escape_value_);
@@ -662,7 +661,7 @@ class NullIntersectArrayExcept : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf(
         "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
         JoinDebugStringPtr(first_vars_, ", ").c_str(),

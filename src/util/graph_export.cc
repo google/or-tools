@@ -30,29 +30,29 @@ class GraphSyntax {
   virtual ~GraphSyntax() {}
 
   // Node in the right syntax.
-  virtual string Node(const string& name,
-                      const string& label,
-                      const string& shape,
-                      const string& color) = 0;
+  virtual std::string Node(const std::string& name,
+                      const std::string& label,
+                      const std::string& shape,
+                      const std::string& color) = 0;
   // Adds one link in the generated graph.
-  virtual string Link(const string& source,
-                      const string& destination,
-                      const string& label) = 0;
+  virtual std::string Link(const std::string& source,
+                      const std::string& destination,
+                      const std::string& label) = 0;
   // File header.
-  virtual string Header(const string& name) = 0;
+  virtual std::string Header(const std::string& name) = 0;
 
   // File footer.
-  virtual string Footer() = 0;
+  virtual std::string Footer() = 0;
 };
 
 class DotSyntax : public GraphSyntax {
  public:
   virtual ~DotSyntax() {}
 
-  virtual string Node(const string& name,
-                      const string& label,
-                      const string& shape,
-                      const string& color) {
+  virtual std::string Node(const std::string& name,
+                      const std::string& label,
+                      const std::string& shape,
+                      const std::string& color) {
     return StringPrintf("%s [shape=%s label=\"%s\" color=%s]\n",
                         name.c_str(),
                         shape.c_str(),
@@ -61,9 +61,9 @@ class DotSyntax : public GraphSyntax {
   }
 
   // Adds one link in the generated graph.
-  virtual string Link(const string& source,
-                      const string& destination,
-                      const string& label) {
+  virtual std::string Link(const std::string& source,
+                      const std::string& destination,
+                      const std::string& label) {
     return StringPrintf("%s -> %s [label=%s]\n",
                         source.c_str(),
                         destination.c_str(),
@@ -71,12 +71,12 @@ class DotSyntax : public GraphSyntax {
   }
 
   // File header.
-  virtual string Header(const string& name) {
+  virtual std::string Header(const std::string& name) {
     return StringPrintf("graph %s {\n", name.c_str());
   }
 
   // File footer.
-  virtual string Footer() {
+  virtual std::string Footer() {
     return "}\n";
   }
 };
@@ -85,10 +85,10 @@ class GmlSyntax : public GraphSyntax {
  public:
   virtual ~GmlSyntax() {}
 
-  virtual string Node(const string& name,
-                      const string& label,
-                      const string& shape,
-                      const string& color) {
+  virtual std::string Node(const std::string& name,
+                      const std::string& label,
+                      const std::string& shape,
+                      const std::string& color) {
     return StringPrintf("  node [\n"
                         "    name \"%s\"\n"
                         "    label \"%s\"\n"
@@ -104,9 +104,9 @@ class GmlSyntax : public GraphSyntax {
   }
 
   // Adds one link in the generated graph.
-  virtual string Link(const string& source,
-                      const string& destination,
-                      const string& label) {
+  virtual std::string Link(const std::string& source,
+                      const std::string& destination,
+                      const std::string& label) {
     return StringPrintf("  edge [\n"
                         "    label \"%s\"\n"
                         "    source \"%s\"\n"
@@ -118,14 +118,14 @@ class GmlSyntax : public GraphSyntax {
   }
 
   // File header.
-  virtual string Header(const string& name) {
+  virtual std::string Header(const std::string& name) {
     return StringPrintf("graph [\n"
                         "  name \"%s\"\n"
                         , name.c_str());
   }
 
   // File footer.
-  virtual string Footer() {
+  virtual std::string Footer() {
     return "]\n";
   }
 };
@@ -140,21 +140,21 @@ class FileGraphExporter : public GraphExporter {
   virtual ~FileGraphExporter() {}
 
   // Write node in GML or DOT format.
-  virtual void WriteNode(const string& name,
-                         const string& label,
-                         const string& shape,
-                         const string& color) {
+  virtual void WriteNode(const std::string& name,
+                         const std::string& label,
+                         const std::string& shape,
+                         const std::string& color) {
     Append(syntax_->Node(name, label, shape, color));
   }
 
   // Adds one link in the generated graph.
-  virtual void WriteLink(const string& source,
-                         const string& destination,
-                         const string& label) {
+  virtual void WriteLink(const std::string& source,
+                         const std::string& destination,
+                         const std::string& label) {
     Append(syntax_->Link(source, destination, label));
   }
 
-  virtual void WriteHeader(const string& name) {
+  virtual void WriteHeader(const std::string& name) {
     Append(syntax_->Header(name));
   }
 
@@ -163,8 +163,8 @@ class FileGraphExporter : public GraphExporter {
   }
 
  private:
-  void Append(const string& string) {
-    file_->Write(string.c_str(), string.size());
+  void Append(const std::string& str) {
+    file_->Write(str.c_str(), str.size());
   }
 
   File* const file_;

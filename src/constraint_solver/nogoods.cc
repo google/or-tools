@@ -51,7 +51,7 @@ class NoGoodTerm {
 
   virtual TermStatus Evaluate() const = 0;
   virtual void Refute() = 0;
-  virtual string DebugString() const = 0;
+  virtual std::string DebugString() const = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NoGoodTerm);
@@ -86,7 +86,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s %s %lld)", integer_variable_->name().c_str(),
                         assign_ ? "==" : "!=", value_);
   }
@@ -146,7 +146,7 @@ bool NoGood::Apply(Solver* const solver) {
   return false;
 }
 
-string NoGood::DebugString() const {
+std::string NoGood::DebugString() const {
   return StringPrintf("(%s)", JoinDebugStringPtr(terms_, " && ").c_str());
 }
 
@@ -176,7 +176,7 @@ class NaiveNoGoodManager : public NoGoodManager {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("NaiveNoGoodManager(%d)", NoGoodCount());
   }
 

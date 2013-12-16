@@ -30,7 +30,6 @@
 
 #include "util/saturated_arithmetic.h"
 
-using std::string;
 
 namespace operations_research {
 // This structure stores one straight line. It contains the start point, the
@@ -71,7 +70,7 @@ class PiecewiseSegment {
   // Adds 'constant' to the 'y' the segments.
   void AddConstantToY(int64 constant);
 
-  string DebugString() const;
+  std::string DebugString() const;
 
  private:
   // Computes the value of the segment at point x, taking care of possible
@@ -219,7 +218,7 @@ class PiecewiseLinearFunction {
 
   const std::vector<PiecewiseSegment>& segments() const { return segments_; }
 
-  string DebugString() const;
+  std::string DebugString() const;
 
  private:
   // Takes the sequence of segments, sorts them on increasing start and inserts

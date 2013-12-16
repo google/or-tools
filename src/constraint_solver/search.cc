@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include <algorithm>
 #include "base/hash.h"
 #include <list>
@@ -53,7 +52,7 @@ namespace operations_research {
 // ---------- Search Log ---------
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-                     ResultCallback<string>* display_callback, int period)
+                     ResultCallback<std::string>* display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
@@ -77,10 +76,10 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
 
 SearchLog::~SearchLog() {}
 
-string SearchLog::DebugString() const { return "SearchLog"; }
+std::string SearchLog::DebugString() const { return "SearchLog"; }
 
 void SearchLog::EnterSearch() {
-  const string buffer =
+  const std::string buffer =
       StringPrintf("Start search (%s)", MemoryUsage().c_str());
   OutputLine(buffer);
   timer_->Restart();
@@ -93,7 +92,7 @@ void SearchLog::ExitSearch() {
   if (ms == 0) {
     ms = 1;
   }
-  const string buffer = StringPrintf(
+  const std::string buffer = StringPrintf(
       "End search (time = %" GG_LL_FORMAT "d ms, branches = %" GG_LL_FORMAT
       "d, failures = %" GG_LL_FORMAT "d, %s, speed = %" GG_LL_FORMAT
       "d branches/s)",
@@ -105,7 +104,7 @@ void SearchLog::ExitSearch() {
 bool SearchLog::AtSolution() {
   Maintain();
   const int depth = solver()->SearchDepth();
-  string obj_str = "";
+  std::string obj_str = "";
   int64 current = 0;
   bool objective_updated = false;
   if (obj_ != nullptr) {
@@ -131,7 +130,7 @@ bool SearchLog::AtSolution() {
       objective_max_ = current;
     }
   }
-  string log;
+  std::string log;
   StringAppendF(&log, "Solution #%d (%stime = %" GG_LL_FORMAT
                       "d ms, branches = %" GG_LL_FORMAT
                       "d,"
@@ -162,7 +161,7 @@ bool SearchLog::AtSolution() {
 void SearchLog::BeginFail() { Maintain(); }
 
 void SearchLog::NoMoreSolutions() {
-  string buffer = StringPrintf("Finished search tree (time = %" GG_LL_FORMAT
+  std::string buffer = StringPrintf("Finished search tree (time = %" GG_LL_FORMAT
                                "d ms, branches = %" GG_LL_FORMAT
                                "d,"
                                " failures = %" GG_LL_FORMAT "d",
@@ -194,7 +193,7 @@ void SearchLog::RefuteDecision(Decision* const d) {
 }
 
 void SearchLog::OutputDecision() {
-  string buffer = StringPrintf("%" GG_LL_FORMAT "d branches, %" GG_LL_FORMAT
+  std::string buffer = StringPrintf("%" GG_LL_FORMAT "d branches, %" GG_LL_FORMAT
                                "d ms, %" GG_LL_FORMAT "d failures",
                                solver()->branches(), timer_->GetInMs(),
                                solver()->failures());
@@ -231,14 +230,14 @@ void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetInMs(); }
 
 void SearchLog::EndInitialPropagation() {
   const int64 delta = std::max(timer_->GetInMs() - tick_, 0LL);
-  const string buffer =
+  const std::string buffer =
       StringPrintf("Root node processed (time = %" GG_LL_FORMAT
                    "d ms, constraints = %d, %s)",
                    delta, solver()->constraints(), MemoryUsage().c_str());
   OutputLine(buffer);
 }
 
-void SearchLog::OutputLine(const string& line) {
+void SearchLog::OutputLine(const std::string& line) {
   if (FLAGS_cp_log_to_vlog) {
     VLOG(1) << line;
   } else {
@@ -246,7 +245,7 @@ void SearchLog::OutputLine(const string& line) {
   }
 }
 
-string SearchLog::MemoryUsage() {
+std::string SearchLog::MemoryUsage() {
   static const int64 kDisplayThreshold = 2;
      static const int64 kKiloByte = 1024;
      static const int64 kMegaByte = kKiloByte * kKiloByte;
@@ -275,13 +274,13 @@ SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period,
-                                     ResultCallback<string>* display_callback) {
+                                     ResultCallback<std::string>* display_callback) {
   return RevAlloc(
       new SearchLog(this, nullptr, nullptr, display_callback, period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var,
-                                     ResultCallback<string>* display_callback) {
+                                     ResultCallback<std::string>* display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, display_callback, period));
 }
 
@@ -290,7 +289,7 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
-                                     ResultCallback<string>* display_callback) {
+                                     ResultCallback<std::string>* display_callback) {
   return RevAlloc(new SearchLog(this, obj, nullptr, display_callback, period));
 }
 
@@ -299,7 +298,7 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
 namespace {
 class SearchTrace : public SearchMonitor {
  public:
-  SearchTrace(Solver* const s, const string& prefix)
+  SearchTrace(Solver* const s, const std::string& prefix)
       : SearchMonitor(s), prefix_(prefix) {}
   virtual ~SearchTrace() {}
 
@@ -355,14 +354,14 @@ class SearchTrace : public SearchMonitor {
     LOG(INFO) << prefix_ << " NoMoreSolutions()";
   }
 
-  virtual string DebugString() const { return "SearchTrace"; }
+  virtual std::string DebugString() const { return "SearchTrace"; }
 
  private:
-  const string prefix_;
+  const std::string prefix_;
 };
 }  // namespace
 
-SearchMonitor* Solver::MakeSearchTrace(const string& prefix) {
+SearchMonitor* Solver::MakeSearchTrace(const std::string& prefix) {
   return RevAlloc(new SearchTrace(this, prefix));
 }
 
@@ -423,7 +422,7 @@ class ComposeDecisionBuilder : public CompositeDecisionBuilder {
   explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
   ~ComposeDecisionBuilder();
   virtual Decision* Next(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  private:
   int start_index_;
@@ -450,7 +449,7 @@ Decision* ComposeDecisionBuilder::Next(Solver* const s) {
   return nullptr;
 }
 
-string ComposeDecisionBuilder::DebugString() const {
+std::string ComposeDecisionBuilder::DebugString() const {
   return StringPrintf("ComposeDecisionBuilder(%s)",
                       JoinDebugStringPtr(builders_, ", ").c_str());
 }
@@ -505,7 +504,7 @@ class TryDecision : public Decision {
   virtual ~TryDecision();
   virtual void Apply(Solver* const solver);
   virtual void Refute(Solver* const solver);
-  virtual string DebugString() const { return "TryDecision"; }
+  virtual std::string DebugString() const { return "TryDecision"; }
 
  private:
   TryDecisionBuilder* const try_builder_;
@@ -517,7 +516,7 @@ class TryDecisionBuilder : public CompositeDecisionBuilder {
   explicit TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
   virtual ~TryDecisionBuilder();
   virtual Decision* Next(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   void AdvanceToNextBuilder(Solver* const solver);
 
  private:
@@ -564,7 +563,7 @@ Decision* TryDecisionBuilder::Next(Solver* const solver) {
   }
 }
 
-string TryDecisionBuilder::DebugString() const {
+std::string TryDecisionBuilder::DebugString() const {
   return StringPrintf(
       "TryDecisionBuilder(%s)", JoinDebugStringPtr(builders_, ", ").c_str());
 }
@@ -634,7 +633,7 @@ class VariableSelector : public BaseObject {
   explicit VariableSelector(const std::vector<IntVar*>& vars) : vars_(vars) {}
   virtual ~VariableSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id) = 0;
-  string VarDebugString() const {
+  std::string VarDebugString() const {
     return StringPrintf("(%s)", JoinDebugStringPtr(vars_, ", ").c_str());
   }
   void Accept(ModelVisitor* const visitor) const {
@@ -656,7 +655,7 @@ class FirstUnboundSelector : public VariableSelector {
       : VariableSelector(vars), first_(0) {}
   virtual ~FirstUnboundSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "ChooseFirstUnbound"; }
+  virtual std::string DebugString() const { return "ChooseFirstUnbound"; }
 
  private:
   int first_;
@@ -684,7 +683,7 @@ class MinSizeLowestMinSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~MinSizeLowestMinSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MinSizeLowestMinSelector"; }
+  virtual std::string DebugString() const { return "MinSizeLowestMinSelector"; }
 };
 
 IntVar* MinSizeLowestMinSelector::Select(Solver* const s, int64* id) {
@@ -721,7 +720,7 @@ class MinSizeHighestMinSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~MinSizeHighestMinSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MinSizeHighestMinSelector"; }
+  virtual std::string DebugString() const { return "MinSizeHighestMinSelector"; }
 };
 
 IntVar* MinSizeHighestMinSelector::Select(Solver* const s, int64* id) {
@@ -758,7 +757,7 @@ class MinSizeLowestMaxSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~MinSizeLowestMaxSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MinSizeLowestMaxSelector"; }
+  virtual std::string DebugString() const { return "MinSizeLowestMaxSelector"; }
 };
 
 IntVar* MinSizeLowestMaxSelector::Select(Solver* const s, int64* id) {
@@ -795,7 +794,7 @@ class MinSizeHighestMaxSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~MinSizeHighestMaxSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MinSizeHighestMaxSelector"; }
+  virtual std::string DebugString() const { return "MinSizeHighestMaxSelector"; }
 };
 
 IntVar* MinSizeHighestMaxSelector::Select(Solver* const s, int64* id) {
@@ -832,7 +831,7 @@ class LowestMinSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~LowestMinSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "LowestMinSelector"; }
+  virtual std::string DebugString() const { return "LowestMinSelector"; }
 };
 
 IntVar* LowestMinSelector::Select(Solver* const s, int64* id) {
@@ -866,7 +865,7 @@ class HighestMaxSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~HighestMaxSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "HighestMaxSelector"; }
+  virtual std::string DebugString() const { return "HighestMaxSelector"; }
 };
 
 IntVar* HighestMaxSelector::Select(Solver* const s, int64* id) {
@@ -900,7 +899,7 @@ class LowestSizeSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~LowestSizeSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MinSizeSelector"; }
+  virtual std::string DebugString() const { return "MinSizeSelector"; }
 };
 
 IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
@@ -935,7 +934,7 @@ class HighestSizeSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~HighestSizeSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MaxSizeSelector"; }
+  virtual std::string DebugString() const { return "MaxSizeSelector"; }
 };
 
 IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
@@ -974,7 +973,7 @@ class HighestRegretSelectorOnMin : public VariableSelector {
   }
   virtual ~HighestRegretSelectorOnMin() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "MaxRegretSelector"; }
+  virtual std::string DebugString() const { return "MaxRegretSelector"; }
 
   int64 ComputeRegret(int index) const {
     DCHECK(!vars_[index]->Bound());
@@ -1021,7 +1020,7 @@ class RandomSelector : public VariableSelector {
       : VariableSelector(vars) {}
   virtual ~RandomSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "RandomSelector"; }
+  virtual std::string DebugString() const { return "RandomSelector"; }
 };
 
 IntVar* RandomSelector::Select(Solver* const s, int64* id) {
@@ -1047,7 +1046,7 @@ class CheapestVarSelector : public VariableSelector {
       : VariableSelector(vars), var_evaluator_(var_eval) {}
   virtual ~CheapestVarSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "CheapestVarSelector"; }
+  virtual std::string DebugString() const { return "CheapestVarSelector"; }
 
  private:
   std::unique_ptr<ResultCallback1<int64, int64> > var_evaluator_;
@@ -1086,7 +1085,7 @@ class PathSelector : public VariableSelector {
       : VariableSelector(vars), first_(kint64max) {}
   virtual ~PathSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
-  virtual string DebugString() const { return "ChooseNextOnPath"; }
+  virtual std::string DebugString() const { return "ChooseNextOnPath"; }
 
  private:
   bool UpdateIndex(int64* index) const;
@@ -1184,7 +1183,7 @@ class MinValueSelector : public ValueSelector {
   MinValueSelector() {}
   virtual ~MinValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id) { return v->Min(); }
-  string DebugString() const { return "AssignMin"; }
+  std::string DebugString() const { return "AssignMin"; }
 };
 
 // ----- Select max -----
@@ -1194,7 +1193,7 @@ class MaxValueSelector : public ValueSelector {
   MaxValueSelector() {}
   virtual ~MaxValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id) { return v->Max(); }
-  string DebugString() const { return "AssignMax"; }
+  std::string DebugString() const { return "AssignMax"; }
 };
 
 // ----- Select random -----
@@ -1204,7 +1203,7 @@ class RandomValueSelector : public ValueSelector {
   RandomValueSelector() {}
   virtual ~RandomValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return "AssignRandom"; }
+  std::string DebugString() const { return "AssignRandom"; }
 };
 
 int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1255,7 +1254,7 @@ class CenterValueSelector : public ValueSelector {
   CenterValueSelector() {}
   virtual ~CenterValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return "AssignCenter"; }
+  std::string DebugString() const { return "AssignCenter"; }
 };
 
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1285,13 +1284,13 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
 
 class SplitValueSelector : public ValueSelector {
  public:
-  explicit SplitValueSelector(const string& name) : name_(name) {}
+  explicit SplitValueSelector(const std::string& name) : name_(name) {}
   virtual ~SplitValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return name_; }
+  std::string DebugString() const { return name_; }
 
  private:
-  const string name_;
+  const std::string name_;
 };
 
 int64 SplitValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1311,7 +1310,7 @@ class CheapestValueSelector : public ValueSelector {
       : eval_(eval), tie_breaker_(tie_breaker) {}
   virtual ~CheapestValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return "CheapestValue"; }
+  std::string DebugString() const { return "CheapestValue"; }
 
  private:
   std::unique_ptr<ResultCallback2<int64, int64, int64> > eval_;
@@ -1359,7 +1358,7 @@ class BestValueByComparisonSelector : public ValueSelector {
       : comparator_(comparator) {}
   virtual ~BestValueByComparisonSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return "BestValueByComparisonSelector"; }
+  std::string DebugString() const { return "BestValueByComparisonSelector"; }
 
  private:
   std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
@@ -1393,7 +1392,7 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
   virtual IntVar* SelectVariable(Solver* const s, int64* id) {
     return var_selector_->Select(s, id);
   }
-  string DebugString() const;
+  std::string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     var_selector_->Accept(visitor);
@@ -1404,7 +1403,7 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
   ValueSelector* const value_selector_;
 };
 
-string VariableAssignmentSelector::DebugString() const {
+std::string VariableAssignmentSelector::DebugString() const {
   return var_selector_->DebugString() + "_" + value_selector_->DebugString() +
          var_selector_->VarDebugString();
 }
@@ -1432,7 +1431,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
     int64 value;
   };
 
-  string DebugStringInternal(const string& name) const {
+  std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
@@ -1456,7 +1455,7 @@ class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
   virtual ~DynamicEvaluatorSelector() {}
   virtual int64 SelectValue(const IntVar* const var, int64 id);
   virtual IntVar* SelectVariable(Solver* const s, int64* id);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  private:
   int first_;
@@ -1511,7 +1510,7 @@ IntVar* DynamicEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
   }
 }
 
-string DynamicEvaluatorSelector::DebugString() const {
+std::string DynamicEvaluatorSelector::DebugString() const {
   return DebugStringInternal("AssignVariablesOnDynamicEvaluator");
 }
 
@@ -1524,7 +1523,7 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
   virtual ~StaticEvaluatorSelector() {}
   virtual int64 SelectValue(const IntVar* const var, int64 id);
   virtual IntVar* SelectVariable(Solver* const s, int64* id);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  private:
   class Compare {
@@ -1599,7 +1598,7 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
   return nullptr;
 }
 
-string StaticEvaluatorSelector::DebugString() const {
+std::string StaticEvaluatorSelector::DebugString() const {
   return DebugStringInternal("AssignVariablesOnStaticEvaluator");
 }
 
@@ -1611,7 +1610,7 @@ class AssignOneVariableValue : public Decision {
   virtual ~AssignOneVariableValue() {}
   virtual void Apply(Solver* const s);
   virtual void Refute(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSetVariableValue(var_, value_);
   }
@@ -1624,7 +1623,7 @@ class AssignOneVariableValue : public Decision {
 AssignOneVariableValue::AssignOneVariableValue(IntVar* const v, int64 val)
     : var_(v), value_(val) {}
 
-string AssignOneVariableValue::DebugString() const {
+std::string AssignOneVariableValue::DebugString() const {
   return StringPrintf("[%s == %" GG_LL_FORMAT "d]", var_->DebugString().c_str(),
                       value_);
 }
@@ -1649,7 +1648,7 @@ class AssignOneVariableValueOrFail : public Decision {
   virtual ~AssignOneVariableValueOrFail() {}
   virtual void Apply(Solver* const s);
   virtual void Refute(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSetVariableValue(var_, value_);
   }
@@ -1663,7 +1662,7 @@ AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
                                                            int64 value)
     : var_(v), value_(value) {}
 
-string AssignOneVariableValueOrFail::DebugString() const {
+std::string AssignOneVariableValueOrFail::DebugString() const {
   return StringPrintf("[%s == %" GG_LL_FORMAT "d]", var_->DebugString().c_str(),
                       value_);
 }
@@ -1688,7 +1687,7 @@ class SplitOneVariable : public Decision {
   virtual ~SplitOneVariable() {}
   virtual void Apply(Solver* const s);
   virtual void Refute(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
   }
@@ -1703,7 +1702,7 @@ SplitOneVariable::SplitOneVariable(IntVar* const v, int64 val,
                                    bool start_with_lower_half)
     : var_(v), value_(val), start_with_lower_half_(start_with_lower_half) {}
 
-string SplitOneVariable::DebugString() const {
+std::string SplitOneVariable::DebugString() const {
   if (start_with_lower_half_) {
     return StringPrintf("[%s <= %" GG_LL_FORMAT "d]",
                         var_->DebugString().c_str(), value_);
@@ -1754,7 +1753,7 @@ class AssignVariablesValues : public Decision {
   virtual ~AssignVariablesValues() {}
   virtual void Apply(Solver* const s);
   virtual void Refute(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual void Accept(DecisionVisitor* const visitor) const {
     for (int i = 0; i < vars_.size(); ++i) {
       visitor->VisitSetVariableValue(vars_[i], values_[i]);
@@ -1777,8 +1776,8 @@ AssignVariablesValues::AssignVariablesValues(const std::vector<IntVar*>& vars,
                                              const std::vector<int64>& values)
     : vars_(vars), values_(values) {}
 
-string AssignVariablesValues::DebugString() const {
-  string out;
+std::string AssignVariablesValues::DebugString() const {
+  std::string out;
   for (int i = 0; i < vars_.size(); ++i) {
     StringAppendF(&out, "[%s == %" GG_LL_FORMAT "d]",
                   vars_[i]->DebugString().c_str(), values_[i]);
@@ -1825,7 +1824,7 @@ class BaseAssignVariables : public DecisionBuilder {
       : selector_(selector), mode_(mode) {}
   virtual ~BaseAssignVariables();
   virtual Decision* Next(Solver* const s);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   static BaseAssignVariables* MakePhase(Solver* const s,
                                         const std::vector<IntVar*>& vars,
                                         VariableSelector* const var_selector,
@@ -1940,7 +1939,7 @@ Decision* BaseAssignVariables::Next(Solver* const s) {
   return nullptr;
 }
 
-string BaseAssignVariables::DebugString() const {
+std::string BaseAssignVariables::DebugString() const {
   return selector_->DebugString();
 }
 
@@ -2356,7 +2355,7 @@ class FirstSolutionCollector : public SolutionCollector {
   virtual ~FirstSolutionCollector();
   virtual void EnterSearch();
   virtual bool AtSolution();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  private:
   bool done_;
@@ -2384,7 +2383,7 @@ bool FirstSolutionCollector::AtSolution() {
   return false;
 }
 
-string FirstSolutionCollector::DebugString() const {
+std::string FirstSolutionCollector::DebugString() const {
   if (prototype_.get() == nullptr) {
     return "FirstSolutionCollector()";
   } else {
@@ -2412,7 +2411,7 @@ class LastSolutionCollector : public SolutionCollector {
   explicit LastSolutionCollector(Solver* const s);
   virtual ~LastSolutionCollector();
   virtual bool AtSolution();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 };
 
 LastSolutionCollector::LastSolutionCollector(Solver* const s,
@@ -2430,7 +2429,7 @@ bool LastSolutionCollector::AtSolution() {
   return true;
 }
 
-string LastSolutionCollector::DebugString() const {
+std::string LastSolutionCollector::DebugString() const {
   if (prototype_.get() == nullptr) {
     return "LastSolutionCollector()";
   } else {
@@ -2459,7 +2458,7 @@ class BestValueSolutionCollector : public SolutionCollector {
   virtual ~BestValueSolutionCollector() {}
   virtual void EnterSearch();
   virtual bool AtSolution();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  public:
   const bool maximize_;
@@ -2501,7 +2500,7 @@ bool BestValueSolutionCollector::AtSolution() {
   return true;
 }
 
-string BestValueSolutionCollector::DebugString() const {
+std::string BestValueSolutionCollector::DebugString() const {
   if (prototype_.get() == nullptr) {
     return "BestValueSolutionCollector()";
   } else {
@@ -2529,7 +2528,7 @@ class AllSolutionCollector : public SolutionCollector {
   explicit AllSolutionCollector(Solver* const s);
   virtual ~AllSolutionCollector();
   virtual bool AtSolution();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 };
 
 AllSolutionCollector::AllSolutionCollector(Solver* const s,
@@ -2546,7 +2545,7 @@ bool AllSolutionCollector::AtSolution() {
   return true;
 }
 
-string AllSolutionCollector::DebugString() const {
+std::string AllSolutionCollector::DebugString() const {
   if (prototype_.get() == nullptr) {
     return "AllSolutionCollector()";
   } else {
@@ -2630,12 +2629,12 @@ bool OptimizeVar::AtSolution() {
   return true;
 }
 
-string OptimizeVar::Print() const {
+std::string OptimizeVar::Print() const {
   return StringPrintf("objective value = %" GG_LL_FORMAT "d, ", var_->Value());
 }
 
-string OptimizeVar::DebugString() const {
-  string out;
+std::string OptimizeVar::DebugString() const {
+  std::string out;
   if (maximize_) {
     out = "MaximizeVar(";
   } else {
@@ -2682,7 +2681,7 @@ class WeightedOptimizeVar : public OptimizeVar {
   }
 
   virtual ~WeightedOptimizeVar() {}
-  virtual string Print() const;
+  virtual std::string Print() const;
 
  private:
   const std::vector<IntVar*> sub_objectives_;
@@ -2691,8 +2690,8 @@ class WeightedOptimizeVar : public OptimizeVar {
   DISALLOW_COPY_AND_ASSIGN(WeightedOptimizeVar);
 };
 
-string WeightedOptimizeVar::Print() const {
-  string result(OptimizeVar::Print());
+std::string WeightedOptimizeVar::Print() const {
+  std::string result(OptimizeVar::Print());
   StringAppendF(&result, "\nWeighted Objective:\n");
   for (int i = 0; i < sub_objectives_.size(); ++i) {
     StringAppendF(&result, "Variable %s,\tvalue %lld,\tweight %lld\n",
@@ -2818,7 +2817,7 @@ class TabuSearch : public Metaheuristic {
   virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
-  virtual string DebugString() const { return "Tabu Search"; }
+  virtual std::string DebugString() const { return "Tabu Search"; }
 
  private:
   struct VarValue {
@@ -3004,7 +3003,7 @@ class SimulatedAnnealing : public Metaheuristic {
   virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
-  virtual string DebugString() const { return "Simulated Annealing"; }
+  virtual std::string DebugString() const { return "Simulated Annealing"; }
 
  private:
   float Temperature() const;
@@ -3213,7 +3212,7 @@ class GuidedLocalSearch : public Metaheuristic {
                                     int64 index, int* container_index,
                                     int64* penalty) = 0;
   virtual IntExpr* MakeElementPenalty(int index) = 0;
-  virtual string DebugString() const { return "Guided Local Search"; }
+  virtual std::string DebugString() const { return "Guided Local Search"; }
 
  protected:
   struct Comparator {
@@ -3372,11 +3371,11 @@ bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
       if (maximize_) {
         delta->SetObjectiveMin(
             std::max(std::min(current_ + step_ - penalty, best_ + step_),
-                     delta->ObjectiveMin()));
+                delta->ObjectiveMin()));
       } else {
         delta->SetObjectiveMax(
             std::min(std::max(current_ - step_ - penalty, best_ - step_),
-                     delta->ObjectiveMax()));
+                delta->ObjectiveMax()));
       }
     }
   }
@@ -3694,7 +3693,7 @@ class RegularLimit : public SearchLimit {
                     int64 solutions);
   int64 wall_time() { return wall_time_; }
   virtual int ProgressPercent();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
@@ -3791,9 +3790,9 @@ int RegularLimit::ProgressPercent() {
   Solver* const s = solver();
   int64 progress = GetPercent(s->branches(), branches_offset_, branches_);
   progress = std::max(progress,
-                      GetPercent(s->failures(), failures_offset_, failures_));
-  progress = std::max(
-      progress, GetPercent(s->solutions(), solutions_offset_, solutions_));
+                 GetPercent(s->failures(), failures_offset_, failures_));
+  progress = std::max(progress,
+                 GetPercent(s->solutions(), solutions_offset_, solutions_));
   if (wall_time_ < kint64max) {
     progress = std::max(progress, (100 * TimeDelta()) / wall_time_);
   }
@@ -3830,7 +3829,7 @@ void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
   solutions_ = solutions;
 }
 
-string RegularLimit::DebugString() const {
+std::string RegularLimit::DebugString() const {
   return StringPrintf("RegularLimit(crossed = %i, wall_time = %" GG_LL_FORMAT
                       "d, "
                       "branches = %" GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT
@@ -3951,7 +3950,7 @@ class ORLimit : public SearchLimit {
     limit_1_->RefuteDecision(d);
     limit_2_->RefuteDecision(d);
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat("OR limit (", limit_1_->DebugString(), " OR ",
                   limit_2_->DebugString(), ")");
   }
@@ -4048,7 +4047,7 @@ class SolveOnce : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("SolveOnce(%s)", db_->DebugString().c_str());
   }
 
@@ -4162,7 +4161,7 @@ class NestedOptimize : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("NestedOptimize(db = %s, maximize = %d, step = %lld)",
                         db_->DebugString().c_str(), maximize_, step_);
   }
@@ -4280,7 +4279,7 @@ class LubyRestart : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("LubyRestart(%i)", scale_factor_);
   }
 
@@ -4315,7 +4314,7 @@ class ConstantRestart : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("ConstantRestart(%i)", frequency_);
   }
 
@@ -4426,7 +4425,7 @@ class SymmetryManager : public SearchMonitor {
     clauses_[visitor->index_in_symmetry_manager()].Push(solver(), term);
   }
 
-  string DebugString() const { return "SymmetryManager"; }
+  std::string DebugString() const { return "SymmetryManager"; }
 
  private:
   const std::vector<SymmetryBreaker*> visitors_;

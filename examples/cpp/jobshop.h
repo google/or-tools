@@ -90,7 +90,7 @@ class JobShopData {
   // --data_file for a description of the format. Note that the format
   // is only partially checked: bad inputs might cause undefined
   // behavior.
-  void Load(const string& filename) {
+  void Load(const std::string& filename) {
     FileLineReader reader(filename.c_str());
     reader.set_line_callback(NewPermanentCallback(
         this,
@@ -108,7 +108,7 @@ class JobShopData {
   int job_count() const { return job_count_; }
 
   // The name of the jobshop instance.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // The horizon of the workshop (the sum of all durations), which is
   // a trivial upper bound of the optimal make_span.
@@ -123,7 +123,7 @@ class JobShopData {
   void ProcessNewLine(char* const line) {
     // TODO(user): more robust logic to support single-task jobs.
     static const char kWordDelimiters[] = " ";
-    std::vector<string> words;
+    std::vector<std::string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
     switch (problem_type_) {
       case UNDEFINED: {
@@ -216,7 +216,7 @@ class JobShopData {
     horizon_ += duration;
   }
 
-  string name_;
+  std::string name_;
   int machine_count_;
   int job_count_;
   int horizon_;

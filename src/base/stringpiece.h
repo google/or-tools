@@ -11,25 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A string-like object that points to a sized piece of memory.
+// A std::string-like object that points to a sized piece of memory.
 //
 // Functions or methods may use const StringPiece& parameters to accept either
-// a "const char*" or a "string" value that will be implicitly converted to
+// a "const char*" or a "std::string" value that will be implicitly converted to
 // a StringPiece.  The implicit conversion means that it is often appropriate
 // to include this .h file in other files rather than forward-declaring
 // StringPiece as would be appropriate for most other Google classes.
 //
 // Systematic usage of StringPiece is encouraged as it will reduce unnecessary
-// conversions from "const char*" to "string" and back again.
+// conversions from "const char*" to "std::string" and back again.
 
 #ifndef OR_TOOLS_BASE_STRINGPIECE_H_
 #define OR_TOOLS_BASE_STRINGPIECE_H_
 
 #include <string.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <iosfwd>
 #include <string>
-#include <cstddef>
 
 namespace operations_research {
 
@@ -40,7 +41,7 @@ class StringPiece {
 
  public:
   // We provide non-explicit singleton constructors so users can pass
-  // in a "const char*" or a "string" wherever a "StringPiece" is
+  // in a "const char*" or a "std::string" wherever a "StringPiece" is
   // expected.
   StringPiece() : ptr_(NULL), length_(0) { }
   StringPiece(const char* str)  // NOLINT
@@ -52,7 +53,7 @@ class StringPiece {
   // data() may return a pointer to a buffer with embedded NULs, and the
   // returned buffer may or may not be null terminated.  Therefore it is
   // typically a mistake to pass data() to a routine that expects a NUL
-  // terminated string.
+  // terminated std::string.
   const char* data() const { return ptr_; }
   int size() const { return length_; }
   int length() const { return length_; }
@@ -94,8 +95,8 @@ class StringPiece {
   std::string as_string() const {
     return std::string(data(), size());
   }
-  // We also define ToString() here, since many other string-like
-  // interfaces name the routine that converts to a C++ string
+  // We also define ToString() here, since many other std::string-like
+  // interfaces name the routine that converts to a C++ std::string
   // "ToString", and it's confusing to have the method that does that
   // for a StringPiece be called "as_string()".  We also leave the
   // "as_string()" method defined here for existing code.

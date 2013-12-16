@@ -45,7 +45,7 @@ class IntervalUnaryRelation : public Constraint {
 
   virtual void InitialPropagate();
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString().c_str(),
                         kUnaryNames[rel_], d_);
   }
@@ -130,7 +130,7 @@ class IntervalBinaryRelation : public Constraint {
 
   virtual void InitialPropagate();
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s %s %s)", t1_->DebugString().c_str(),
                         kBinaryNames[rel_], t2_->DebugString().c_str());
   }
@@ -262,7 +262,7 @@ class TemporalDisjunction : public Constraint {
 
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   void RangeDemon1();
   void RangeDemon2();
@@ -313,8 +313,8 @@ void TemporalDisjunction::InitialPropagate() {
   }
 }
 
-string TemporalDisjunction::DebugString() const {
-  string out;
+std::string TemporalDisjunction::DebugString() const {
+  std::string out;
   SStringPrintf(&out, "TemporalDisjunction(%s, %s", t1_->DebugString().c_str(),
                 t2_->DebugString().c_str());
   if (alt_ != nullptr) {

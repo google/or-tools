@@ -27,7 +27,6 @@
 
 DECLARE_bool(logging);
 
-using std::string;
 namespace operations_research {
 namespace {
 class FzLog : public SearchLog {
@@ -37,7 +36,7 @@ class FzLog : public SearchLog {
   virtual ~FzLog() {}
 
  protected:
-  virtual void OutputLine(const string& line) {
+  virtual void OutputLine(const std::string& line) {
     std::cout << "%% " << line << std::endl;
   }
 };
@@ -109,7 +108,7 @@ class SequentialSupport : public FzParallelSupport {
 
   virtual ~SequentialSupport() {}
 
-  virtual void Init(int worker_id, const string& init_string) {
+  virtual void Init(int worker_id, const std::string& init_string) {
     std::cout << init_string << std::endl;
   }
 
@@ -122,7 +121,7 @@ class SequentialSupport : public FzParallelSupport {
     }
   }
 
-  virtual void SatSolution(int worker_id, const string& solution_string) {
+  virtual void SatSolution(int worker_id, const std::string& solution_string) {
     if (NumSolutions() < num_solutions_ || print_all_) {
       std::cout << solution_string << std::endl;
     }
@@ -130,7 +129,7 @@ class SequentialSupport : public FzParallelSupport {
   }
 
   virtual void OptimizeSolution(int worker_id, int64 value,
-                                const string& solution_string) {
+                                const std::string& solution_string) {
     best_solution_ = value;
     if (print_all_ || num_solutions_ > 1) {
       std::cout << solution_string << std::endl;
@@ -140,7 +139,7 @@ class SequentialSupport : public FzParallelSupport {
     IncrementSolutions();
   }
 
-  virtual void FinalOutput(int worker_id, const string& final_output) {
+  virtual void FinalOutput(int worker_id, const std::string& final_output) {
     std::cout << final_output << std::endl;
   }
 
@@ -162,7 +161,7 @@ class SequentialSupport : public FzParallelSupport {
 
   virtual SearchLimit* Limit(Solver* const s, int worker_id) { return nullptr; }
 
-  virtual void Log(int worker_id, const string& message) {
+  virtual void Log(int worker_id, const std::string& message) {
     std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
   }
 
@@ -173,7 +172,7 @@ class SequentialSupport : public FzParallelSupport {
   const bool verbose_;
   const int num_solutions_;
   Type type_;
-  string last_solution_;
+  std::string last_solution_;
   int64 best_solution_;
   bool interrupted_;
 };
@@ -192,7 +191,7 @@ class MtSupport : public FzParallelSupport {
 
   virtual ~MtSupport() {}
 
-  virtual void Init(int worker_id, const string& init_string) {
+  virtual void Init(int worker_id, const std::string& init_string) {
     MutexLock lock(&mutex_);
     if (worker_id == 0) {
       std::cout << init_string << std::endl;
@@ -212,7 +211,7 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
-  virtual void SatSolution(int worker_id, const string& solution_string) {
+  virtual void SatSolution(int worker_id, const std::string& solution_string) {
     MutexLock lock(&mutex_);
     if (NumSolutions() < num_solutions_ || print_all_) {
       LogNoLock(worker_id, "solution found");
@@ -223,7 +222,7 @@ class MtSupport : public FzParallelSupport {
   }
 
   virtual void OptimizeSolution(int worker_id, int64 value,
-                                const string& solution_string) {
+                                const std::string& solution_string) {
     MutexLock lock(&mutex_);
     if (!should_finish_) {
       switch (type_) {
@@ -267,7 +266,7 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
-  virtual void FinalOutput(int worker_id, const string& final_output) {
+  virtual void FinalOutput(int worker_id, const std::string& final_output) {
     MutexLock lock(&mutex_);
     std::cout << final_output << std::endl;
   }
@@ -301,7 +300,7 @@ class MtSupport : public FzParallelSupport {
     return s->RevAlloc(new MtCustomLimit(s, this, worker_id));
   }
 
-  virtual void Log(int worker_id, const string& message) {
+  virtual void Log(int worker_id, const std::string& message) {
     if (verbose_) {
       MutexLock lock(&mutex_);
       std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
@@ -310,7 +309,7 @@ class MtSupport : public FzParallelSupport {
 
   virtual bool Interrupted() const { return interrupted_; }
 
-  void LogNoLock(int worker_id, const string& message) {
+  void LogNoLock(int worker_id, const std::string& message) {
     if (verbose_) {
       std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
     }
@@ -322,7 +321,7 @@ class MtSupport : public FzParallelSupport {
   const bool verbose_;
   Mutex mutex_;
   Type type_;
-  string last_solution_;
+  std::string last_solution_;
   int last_worker_;
   int64 best_solution_;
   bool should_finish_;
@@ -381,7 +380,7 @@ void SortVariableByDegree(const std::vector<int>& occurrences,
 }
 
 // Report memory usage in a nice way.
-string FlatZincMemoryUsage() {
+std::string FlatZincMemoryUsage() {
   static const int64 kDisplayThreshold = 2;
   static const int64 kKiloByte = 1024;
   static const int64 kMegaByte = kKiloByte * kKiloByte;
@@ -803,7 +802,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 
   bool breaked = false;
-  string solution_string;
+  std::string solution_string;
   const int64 build_time = solver_->wall_time();
   solver_->NewSearch(db, monitors);
   while (solver_->NextSolution()) {
@@ -847,7 +846,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   const int num_solutions = parallel_support->NumSolutions();
   bool proven = false;
   bool timeout = false;
-  string final_output;
+  std::string final_output;
   if (p.worker_id <= 0) {
     if (p.worker_id == 0) {
       // Recompute the breaked variable.
@@ -906,12 +905,12 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       }
     }
     const bool no_solutions = num_solutions == 0;
-    const string status_string =
+    const std::string status_string =
         (no_solutions
          ? (timeout ? "**timeout**" : "**unsat**")
          : (objective_ == nullptr ? "**sat**" : (timeout ? "**feasible**"
                                                  : "**proven**")));
-    const string obj_string = (objective_ != nullptr && !no_solutions
+    const std::string obj_string = (objective_ != nullptr && !no_solutions
                                    ? StringPrintf("%" GG_LL_FORMAT "d", best)
                                    : "");
     final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "

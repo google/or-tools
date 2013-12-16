@@ -346,13 +346,13 @@ int64 KnapsackCapacityPropagator::GetAdditionalProfit(int64 remaining_capacity,
   }
 
   const int64 additional_profit = std::max(additional_profit_when_no_break_item,
-                                           additional_profit_when_break_item);
+                                      additional_profit_when_break_item);
   CHECK_GE(additional_profit, 0);
   return additional_profit;
 }
 
 // ----- KnapsackGenericSolver -----
-KnapsackGenericSolver::KnapsackGenericSolver(const string& solver_name)
+KnapsackGenericSolver::KnapsackGenericSolver(const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       propagators_(),
       master_propagator_id_(kMasterPropagatorId),
@@ -558,7 +558,7 @@ void KnapsackGenericSolver::UpdateBestSolution() {
 // number of items is less than 15.
 class KnapsackBruteForceSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackBruteForceSolver(const string& solver_name);
+  explicit KnapsackBruteForceSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits,
@@ -583,7 +583,7 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
   DISALLOW_COPY_AND_ASSIGN(KnapsackBruteForceSolver);
 };
 
-KnapsackBruteForceSolver::KnapsackBruteForceSolver(const string& solver_name)
+KnapsackBruteForceSolver::KnapsackBruteForceSolver(const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       num_items_(0),
       capacity_(0LL),
@@ -687,7 +687,7 @@ struct KnapsackItemWithEfficiency {
 // than KnapsackGenericSolver.
 class Knapsack64ItemsSolver : public BaseKnapsackSolver {
  public:
-  explicit Knapsack64ItemsSolver(const string& solver_name);
+  explicit Knapsack64ItemsSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits,
@@ -735,7 +735,7 @@ bool CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder(
 }
 
 // ----- Knapsack64ItemsSolver -----
-Knapsack64ItemsSolver::Knapsack64ItemsSolver(const string& solver_name)
+Knapsack64ItemsSolver::Knapsack64ItemsSolver(const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       sorted_items_(),
       sum_profits_(),
@@ -946,7 +946,7 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
 // Ulrich Pferschy and David Pisinger, Springer book (ISBN 978-3540402862).
 class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackDynamicProgrammingSolver(const string& solver_name);
+  explicit KnapsackDynamicProgrammingSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits,
@@ -974,7 +974,7 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
 
 // ----- KnapsackDynamicProgrammingSolver -----
 KnapsackDynamicProgrammingSolver::KnapsackDynamicProgrammingSolver(
-    const string& solver_name) : BaseKnapsackSolver(solver_name),
+    const std::string& solver_name) : BaseKnapsackSolver(solver_name),
                                  profits_(),
                                  weights_(),
                                  capacity_(0),
@@ -1045,7 +1045,7 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
  public:
   KnapsackMIPSolver(
       MPSolver::OptimizationProblemType problem_type,
-      const string& solver_name);
+      const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits,
@@ -1069,7 +1069,7 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
 };
 
 KnapsackMIPSolver::KnapsackMIPSolver(
-    MPSolver::OptimizationProblemType problem_type, const string& solver_name)
+    MPSolver::OptimizationProblemType problem_type, const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       problem_type_(problem_type),
       profits_(),
@@ -1125,7 +1125,7 @@ int64 KnapsackMIPSolver::Solve() {
 }
 
 // ----- KnapsackSolver -----
-KnapsackSolver::KnapsackSolver(const string& solver_name)
+KnapsackSolver::KnapsackSolver(const std::string& solver_name)
     : solver_(new KnapsackGenericSolver(solver_name)),
       known_value_(),
       best_solution_(),
@@ -1136,7 +1136,7 @@ KnapsackSolver::KnapsackSolver(const string& solver_name)
 }
 
 KnapsackSolver::KnapsackSolver(SolverType solver_type,
-                               const string& solver_name)
+                               const std::string& solver_name)
     : solver_(),
       known_value_(),
       best_solution_(),
@@ -1303,7 +1303,7 @@ bool KnapsackSolver::BestSolutionContains(int item_id) const {
       : solver_->best_solution(mapped_item_id);
 }
 
-string KnapsackSolver::GetName() const {
+std::string KnapsackSolver::GetName() const {
   return solver_->GetName();
 }
 

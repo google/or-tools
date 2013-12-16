@@ -41,7 +41,7 @@
 // Let us pick 0 as the starting node.
 // Let d(i,j) denote the distance (or cost) from i to j.
 // f(S,j) where S is a set of nodes and j is a node is defined as follows:
-// f(S,j) = min(i in S, f(S\{i}, i) + d(i,j))
+// f(S,j) = std::min(i in S, f(S\{i}, i) + d(i,j))
 //
 // The set S can be represented by an integer where bit i corresponds to
 // element i in the set. In the following S denotes the integer corresponding

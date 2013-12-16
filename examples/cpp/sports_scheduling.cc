@@ -400,7 +400,7 @@ void SportsScheduling(int num_teams) {
     LOG(INFO) << "Solution found in " << solver.wall_time() << " ms, and "
               << solver.failures() << " failures.";
     for (int team_index = 0; team_index < num_teams; ++team_index) {
-      string line;
+      std::string line;
       for (int day = 0; day < full_season; ++day) {
         const int opponent = collector->Value(0, opponents[team_index][day]);
         const int home_away = collector->Value(0, home_aways[team_index][day]);

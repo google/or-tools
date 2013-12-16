@@ -182,7 +182,6 @@
 #include "util/permutation.h"
 #include "util/zvector.h"
 
-using std::string;
 
 namespace operations_research {
 
@@ -307,7 +306,7 @@ template <typename NodeIndexType, typename ArcIndexType,
     return head_[arc];
   }
 
-  string NodeDebugString(const NodeIndexType node) const {
+  std::string NodeDebugString(const NodeIndexType node) const {
     if (node == kNilNode) {
       return "NilNode";
     } else {
@@ -315,7 +314,7 @@ template <typename NodeIndexType, typename ArcIndexType,
     }
   }
 
-  string ArcDebugString(const ArcIndexType arc) const {
+  std::string ArcDebugString(const ArcIndexType arc) const {
     if (arc == kNilArc) {
       return "NilArc";
     } else {
@@ -730,8 +729,8 @@ class ForwardStaticGraph
         for (NodeIndexType node = 0; node < num_nodes; ++node) {
           ArcIndexType end = first_incident_arc_[node + 1];
           std::sort(&arc_permutation[begin], &arc_permutation[end],
-                    PermutationIndexComparisonByArcHead<NodeIndexType,
-                                                        ArcIndexType>(head_));
+               PermutationIndexComparisonByArcHead<NodeIndexType, ArcIndexType>(
+                   head_));
           begin = end;
         }
       } else {
@@ -746,7 +745,7 @@ class ForwardStaticGraph
           ArcIndexType end_index = (end > 0 ? end - 1 : end);
           ArcIndexType end_offset = (end > 0 ? 1 : 0);
           std::sort(&head_[begin_index] + begin_offset,
-                    &head_[end_index] + end_offset);
+               &head_[end_index] + end_offset);
           begin = end;
         }
       }
@@ -813,10 +812,10 @@ class ForwardStaticGraph
     }
   }
 
-  // Returns a debug string containing all the information contained in the
+  // Returns a debug std::string containing all the information contained in the
   // data structure in raw form.
-  string DebugString() const {
-    string result = "Arcs:(node) :\n";
+  std::string DebugString() const {
+    std::string result = "Arcs:(node) :\n";
     for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
       result += " " + ArcDebugString(arc) + ":("
           + NodeDebugString(head_[arc]) + ")\n";
@@ -1033,7 +1032,7 @@ class EbertGraphBase
       return kNilArc;
     }
     if (tail + 1 > num_nodes_) {
-      num_nodes_ = tail + 1;   // std::max does not work on int16.
+      num_nodes_ = tail + 1;   // max does not work on int16.
     }
     if (head + 1 > num_nodes_) {
       num_nodes_ = head + 1;
@@ -1060,8 +1059,8 @@ class EbertGraphBase
       arc_permutation[i] = i;
     }
     std::sort(&arc_permutation[kFirstArc],
-              &arc_permutation[end_arc_index()],
-              compare);
+         &arc_permutation[end_arc_index()],
+         compare);
 
     // Now we actually permute the head_ array and the
     // scaled_arc_cost_ array according to the sorting permutation.
@@ -1484,11 +1483,11 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     representation_clean_ = true;
   }
 
-  // Returns a debug string containing all the information contained in the
+  // Returns a debug std::string containing all the information contained in the
   // data structure in raw form.
-  string DebugString() const {
+  std::string DebugString() const {
     DCHECK(representation_clean_);
-    string result = "Arcs:(node, next arc) :\n";
+    std::string result = "Arcs:(node, next arc) :\n";
     for (ArcIndexType arc = -num_arcs_; arc < num_arcs_; ++arc) {
       result += " " + ArcDebugString(arc) + ":(" + NodeDebugString(head_[arc])
           + "," + ArcDebugString(next_adjacent_arc_[arc]) + ")\n";
@@ -1724,11 +1723,11 @@ class ForwardEbertGraph
     return true;
   }
 
-  // Returns a debug string containing all the information contained in the
+  // Returns a debug std::string containing all the information contained in the
   // data structure in raw form.
-  string DebugString() const {
+  std::string DebugString() const {
     DCHECK(representation_clean_);
-    string result = "Arcs:(node, next arc) :\n";
+    std::string result = "Arcs:(node, next arc) :\n";
     for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
       result += " " + ArcDebugString(arc) + ":("
           + NodeDebugString(head_[arc])

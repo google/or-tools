@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stddef.h>
 #include <algorithm>
+#include <cstddef>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <string>
@@ -92,7 +92,7 @@ class CPModelLoader {
                        std::vector<SequenceVar*>* to_fill);
 
   template <class P, class A>
-  bool ScanArguments(const string& type, const P& proto, A* to_fill) {
+  bool ScanArguments(const std::string& type, const P& proto, A* to_fill) {
     const int index = tags_.Index(type);
     for (int i = 0; i < proto.arguments_size(); ++i) {
       if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
@@ -102,9 +102,9 @@ class CPModelLoader {
     return false;
   }
 
-  int TagIndex(const string& tag) const { return tags_.Index(tag); }
+  int TagIndex(const std::string& tag) const { return tags_.Index(tag); }
 
-  void AddTag(const string& tag) { tags_.Add(tag); }
+  void AddTag(const std::string& tag) { tags_.Add(tag); }
 
   // TODO(user): Use.
   void SetSequenceVariable(int index, SequenceVar* const var) {}
@@ -114,7 +114,7 @@ class CPModelLoader {
   std::vector<IntExpr*> expressions_;
   std::vector<IntervalVar*> intervals_;
   std::vector<SequenceVar*> sequences_;
-  VectorMap<string> tags_;
+  VectorMap<std::string> tags_;
 };
 
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
@@ -136,10 +136,10 @@ class FirstPassVisitor : public ModelVisitor {
   FirstPassVisitor() {}  // Needed for Visual Studio.
   virtual ~FirstPassVisitor() {}
 
-  virtual string DebugString() const { return "FirstPassVisitor"; }
+  virtual std::string DebugString() const { return "FirstPassVisitor"; }
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const string& solver_name) {
+  virtual void BeginVisitModel(const std::string& solver_name) {
     // Reset statistics.
     expression_map_.clear();
     delegate_map_.clear();
@@ -149,12 +149,12 @@ class FirstPassVisitor : public ModelVisitor {
     sequence_list_.clear();
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     Register(constraint);
   }
 
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expression) {
     Register(expression);
   }
@@ -169,7 +169,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     delegate->Accept(this);
     delegate_map_[variable] = delegate;
@@ -177,7 +177,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     if (delegate != nullptr) {
       delegate->Accept(this);
@@ -193,39 +193,39 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitSequenceArrayArgument(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -307,7 +307,7 @@ class FirstPassVisitor : public ModelVisitor {
     }
   }
 
-  const string filename_;
+  const std::string filename_;
   hash_map<const IntExpr*, int> expression_map_;
   hash_map<const IntervalVar*, int> interval_map_;
   hash_map<const SequenceVar*, int> sequence_map_;
@@ -323,15 +323,15 @@ class FirstPassVisitor : public ModelVisitor {
 class ArgumentHolder {
  public:
   template <class P>
-  void ExportToProto(VectorMap<string>* const tags, P* const proto) const {
-    for (ConstIter<hash_map<string, int64>> it(integer_argument_); !it.at_end();
+  void ExportToProto(VectorMap<std::string>* const tags, P* const proto) const {
+    for (ConstIter<hash_map<std::string, int64>> it(integer_argument_); !it.at_end();
          ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
       arg_proto->set_integer_value(it->second);
     }
 
-    for (ConstIter<hash_map<string, std::vector<int64>>> it(integer_array_argument_);
+    for (ConstIter<hash_map<std::string, std::vector<int64>>> it(integer_array_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
@@ -340,7 +340,7 @@ class ArgumentHolder {
       }
     }
 
-    for (ConstIter<hash_map<string, std::pair<int, std::vector<int64>>>> it(
+    for (ConstIter<hash_map<std::string, std::pair<int, std::vector<int64>>>> it(
              integer_matrix_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
@@ -357,14 +357,14 @@ class ArgumentHolder {
       }
     }
 
-    for (ConstIter<hash_map<string, int>> it(integer_expression_argument_);
+    for (ConstIter<hash_map<std::string, int>> it(integer_expression_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
       arg_proto->set_integer_expression_index(it->second);
     }
 
-    for (ConstIter<hash_map<string, std::vector<int>>> it(
+    for (ConstIter<hash_map<std::string, std::vector<int>>> it(
              integer_variable_array_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
@@ -374,14 +374,14 @@ class ArgumentHolder {
       }
     }
 
-    for (ConstIter<hash_map<string, int>> it(interval_argument_); !it.at_end();
+    for (ConstIter<hash_map<std::string, int>> it(interval_argument_); !it.at_end();
          ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
       arg_proto->set_interval_index(it->second);
     }
 
-    for (ConstIter<hash_map<string, std::vector<int>>> it(interval_array_argument_);
+    for (ConstIter<hash_map<std::string, std::vector<int>>> it(interval_array_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
@@ -390,14 +390,14 @@ class ArgumentHolder {
       }
     }
 
-    for (ConstIter<hash_map<string, int>> it(sequence_argument_); !it.at_end();
+    for (ConstIter<hash_map<std::string, int>> it(sequence_argument_); !it.at_end();
          ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
       arg_proto->set_sequence_index(it->second);
     }
 
-    for (ConstIter<hash_map<string, std::vector<int>>> it(sequence_array_argument_);
+    for (ConstIter<hash_map<std::string, std::vector<int>>> it(sequence_array_argument_);
          !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
@@ -407,24 +407,24 @@ class ArgumentHolder {
     }
   }
 
-  const string& type_name() const { return type_name_; }
+  const std::string& type_name() const { return type_name_; }
 
-  void set_type_name(const string& type_name) { type_name_ = type_name; }
+  void set_type_name(const std::string& type_name) { type_name_ = type_name; }
 
-  void set_integer_argument(const string& arg_name, int64 value) {
+  void set_integer_argument(const std::string& arg_name, int64 value) {
     integer_argument_[arg_name] = value;
   }
 
-  void set_integer_array_argument(const string& arg_name,
+  void set_integer_array_argument(const std::string& arg_name,
                                   const std::vector<int64>& values) {
     integer_array_argument_[arg_name] = values;
   }
 
-  void set_integer_matrix_argument(const string& arg_name,
+  void set_integer_matrix_argument(const std::string& arg_name,
                                    const IntTupleSet& values) {
     const int rows = values.NumTuples();
     const int columns = values.Arity();
-    std::pair<int, std::vector<int64>> matrix = make_pair(columns, std::vector<int64>());
+    std::pair<int, std::vector<int64>> matrix = std::make_pair(columns, std::vector<int64>());
     integer_matrix_argument_[arg_name] = matrix;
     std::vector<int64>* const vals = &integer_matrix_argument_[arg_name].second;
     for (int i = 0; i < rows; ++i) {
@@ -434,62 +434,62 @@ class ArgumentHolder {
     }
   }
 
-  void set_integer_expression_argument(const string& arg_name, int index) {
+  void set_integer_expression_argument(const std::string& arg_name, int index) {
     integer_expression_argument_[arg_name] = index;
   }
 
-  void set_integer_variable_array_argument(const string& arg_name,
+  void set_integer_variable_array_argument(const std::string& arg_name,
                                            const int* const indices, int size) {
     for (int i = 0; i < size; ++i) {
       integer_variable_array_argument_[arg_name].push_back(indices[i]);
     }
   }
 
-  void set_interval_argument(const string& arg_name, int index) {
+  void set_interval_argument(const std::string& arg_name, int index) {
     interval_argument_[arg_name] = index;
   }
 
-  void set_interval_array_argument(const string& arg_name,
+  void set_interval_array_argument(const std::string& arg_name,
                                    const int* const indices, int size) {
     for (int i = 0; i < size; ++i) {
       interval_array_argument_[arg_name].push_back(indices[i]);
     }
   }
 
-  void set_sequence_argument(const string& arg_name, int index) {
+  void set_sequence_argument(const std::string& arg_name, int index) {
     sequence_argument_[arg_name] = index;
   }
 
-  void set_sequence_array_argument(const string& arg_name,
+  void set_sequence_array_argument(const std::string& arg_name,
                                    const int* const indices, int size) {
     for (int i = 0; i < size; ++i) {
       sequence_array_argument_[arg_name].push_back(indices[i]);
     }
   }
 
-  int64 FindIntegerArgumentWithDefault(const string& arg_name, int64 def) {
+  int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) {
     return FindWithDefault(integer_argument_, arg_name, def);
   }
 
-  int64 FindIntegerArgumentOrDie(const string& arg_name) {
+  int64 FindIntegerArgumentOrDie(const std::string& arg_name) {
     return FindOrDie(integer_argument_, arg_name);
   }
 
-  int64 FindIntegerExpressionArgumentOrDie(const string& arg_name) {
+  int64 FindIntegerExpressionArgumentOrDie(const std::string& arg_name) {
     return FindOrDie(integer_expression_argument_, arg_name);
   }
 
  private:
-  string type_name_;
-  hash_map<string, int> integer_expression_argument_;
-  hash_map<string, int64> integer_argument_;
-  hash_map<string, int> interval_argument_;
-  hash_map<string, int> sequence_argument_;
-  hash_map<string, std::vector<int64>> integer_array_argument_;
-  hash_map<string, std::pair<int, std::vector<int64>>> integer_matrix_argument_;
-  hash_map<string, std::vector<int>> integer_variable_array_argument_;
-  hash_map<string, std::vector<int>> interval_array_argument_;
-  hash_map<string, std::vector<int>> sequence_array_argument_;
+  std::string type_name_;
+  hash_map<std::string, int> integer_expression_argument_;
+  hash_map<std::string, int64> integer_argument_;
+  hash_map<std::string, int> interval_argument_;
+  hash_map<std::string, int> sequence_argument_;
+  hash_map<std::string, std::vector<int64>> integer_array_argument_;
+  hash_map<std::string, std::pair<int, std::vector<int64>>> integer_matrix_argument_;
+  hash_map<std::string, std::vector<int>> integer_variable_array_argument_;
+  hash_map<std::string, std::vector<int>> interval_array_argument_;
+  hash_map<std::string, std::vector<int>> sequence_array_argument_;
 };
 
 // ----- Second Pass Visitor -----
@@ -515,9 +515,9 @@ class SecondPassVisitor : public ModelVisitor {
 
   virtual ~SecondPassVisitor() {}
 
-  virtual string DebugString() const { return "SecondPassVisitor"; }
+  virtual std::string DebugString() const { return "SecondPassVisitor"; }
 
-  virtual void BeginVisitModel(const string& model_name) {
+  virtual void BeginVisitModel(const std::string& model_name) {
     model_proto_->set_model(model_name);
     model_proto_->set_version(kModelVersion);
     PushArgumentHolder();
@@ -537,7 +537,7 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void EndVisitModel(const string& model_name) {
+  virtual void EndVisitModel(const std::string& model_name) {
     for (ConstIter<std::vector<ArgumentHolder*>> it(extensions_); !it.at_end();
          ++it) {
       WriteModelExtension(*it);
@@ -549,12 +549,12 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint) {
     PushArgumentHolder();
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     // We ignore cast constraints, they will be regenerated automatically.
     if (constraint->IsCastConstraint()) {
@@ -570,12 +570,12 @@ class SecondPassVisitor : public ModelVisitor {
     PopArgumentHolder();
   }
 
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expression) {
     PushArgumentHolder();
   }
 
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expression) {
     const int index = model_proto_->expressions_size();
     CPIntegerExpressionProto* const expression_proto =
@@ -584,36 +584,36 @@ class SecondPassVisitor : public ModelVisitor {
     PopArgumentHolder();
   }
 
-  virtual void BeginVisitExtension(const string& type_name) {
+  virtual void BeginVisitExtension(const std::string& type_name) {
     PushExtension(type_name);
   }
 
-  virtual void EndVisitExtension(const string& type_name) {
+  virtual void EndVisitExtension(const std::string& type_name) {
     PopAndSaveExtension();
   }
 
-  virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
     top()->set_integer_argument(arg_name, value);
   }
 
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
     top()->set_integer_array_argument(arg_name, values);
   }
 
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
                                           const IntTupleSet& values) {
     top()->set_integer_matrix_argument(arg_name, values);
   }
 
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     top()->set_integer_expression_argument(arg_name,
                                            FindExpressionIndexOrDie(argument));
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindExpressionIndexOrDie(arguments[i]));
@@ -622,13 +622,13 @@ class SecondPassVisitor : public ModelVisitor {
                                                indices.size());
   }
 
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* argument) {
     top()->set_interval_argument(arg_name, FindIntervalIndexOrDie(argument));
   }
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindIntervalIndexOrDie(arguments[i]));
@@ -637,13 +637,13 @@ class SecondPassVisitor : public ModelVisitor {
                                        indices.size());
   }
 
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* argument) {
     top()->set_sequence_argument(arg_name, FindSequenceIndexOrDie(argument));
   }
 
   virtual void VisitSequenceArrayArgument(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindSequenceIndexOrDie(arguments[i]));
@@ -696,7 +696,7 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     const int index = model_proto_->expressions_size();
     CPIntegerExpressionProto* const var_proto = model_proto_->add_expressions();
@@ -711,7 +711,7 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     if (delegate != nullptr) {
       const int index = model_proto_->intervals_size();
@@ -782,7 +782,7 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  int TagIndex(const string& tag) { return tags_.Add(tag); }
+  int TagIndex(const std::string& tag) { return tags_.Add(tag); }
 
  private:
   void WriteModelExtension(ArgumentHolder* const holder) {
@@ -834,7 +834,7 @@ class SecondPassVisitor : public ModelVisitor {
 
   template <class A, class P>
   void ExportToProto(const A* const argument, P* const proto,
-                     const string& type_name, int index) {
+                     const std::string& type_name, int index) {
     CHECK(proto != nullptr);
     CHECK(argument != nullptr);
     proto->set_index(index);
@@ -861,7 +861,7 @@ class SecondPassVisitor : public ModelVisitor {
     extensions_.clear();
   }
 
-  void PushExtension(const string& type_name) {
+  void PushExtension(const std::string& type_name) {
     PushArgumentHolder();
     holders_.back()->set_type_name(type_name);
   }
@@ -901,7 +901,7 @@ class SecondPassVisitor : public ModelVisitor {
 
   std::vector<ArgumentHolder*> holders_;
   std::vector<ArgumentHolder*> extensions_;
-  VectorMap<string> tags_;
+  VectorMap<std::string> tags_;
 };
 
 // ---------- Model Protocol Reader ----------
@@ -932,7 +932,7 @@ class ArrayWithOffset : public BaseObject {
     values_[index - index_min_] = value;
   }
 
-  virtual string DebugString() const { return "ArrayWithOffset"; }
+  virtual std::string DebugString() const { return "ArrayWithOffset"; }
 
  private:
   const int64 index_min_;
@@ -1053,11 +1053,11 @@ Constraint* BuildCircuit(CPModelLoader* const builder,
   std::vector<IntVar*> vars;
   VERIFY(builder->ScanArguments(ModelVisitor::kNextsArgument, proto, &vars));
   int64 v;
-  VERIFY(builder->ScanArguments(ModelVisitor::kCompleteArgument, proto, &v));
+  VERIFY(builder->ScanArguments(ModelVisitor::kPartialArgument, proto, &v));
   if (v == 1) {
-    return builder->solver()->MakeCircuit(vars);
-  } else {
     return builder->solver()->MakeSubCircuit(vars);
+  } else {
+    return builder->solver()->MakeCircuit(vars);
   }
 }
 
@@ -1128,7 +1128,7 @@ Constraint* BuildCumulative(CPModelLoader* const builder,
   int64 capacity;
   VERIFY(builder->ScanArguments(ModelVisitor::kCapacityArgument, proto,
                                 &capacity));
-  string name;
+  std::string name;
   if (proto.has_name()) {
     name = proto.name();
   }
@@ -1522,7 +1522,7 @@ IntervalVar* BuildIntervalVariable(CPModelLoader* const builder,
     VERIFY_EQ(duration_max, duration_min);
     VERIFY_EQ(end_max - duration_max, start_max);
     VERIFY_EQ(end_min - duration_min, start_min);
-    const string name = proto.name();
+    const std::string name = proto.name();
     if (start_min == start_max) {
       return solver->MakeFixedInterval(start_min, duration_min, name);
     } else {
@@ -2591,45 +2591,45 @@ bool Solver::UpgradeModel(CPModelProto* const proto) {
   return true;
 }
 
-void Solver::RegisterBuilder(const string& tag,
+void Solver::RegisterBuilder(const std::string& tag,
                              ConstraintBuilder* const builder) {
   InsertOrDie(&constraint_builders_, tag, builder);
 }
 
-void Solver::RegisterBuilder(const string& tag,
+void Solver::RegisterBuilder(const std::string& tag,
                              IntegerExpressionBuilder* const builder) {
   InsertOrDie(&expression_builders_, tag, builder);
 }
 
-void Solver::RegisterBuilder(const string& tag,
+void Solver::RegisterBuilder(const std::string& tag,
                              IntervalVariableBuilder* const builder) {
   InsertOrDie(&interval_builders_, tag, builder);
 }
 
-void Solver::RegisterBuilder(const string& tag,
+void Solver::RegisterBuilder(const std::string& tag,
                              SequenceVariableBuilder* const builder) {
   InsertOrDie(&sequence_builders_, tag, builder);
 }
 
-Solver::ConstraintBuilder* Solver::GetConstraintBuilder(const string& tag)
+Solver::ConstraintBuilder* Solver::GetConstraintBuilder(const std::string& tag)
     const {
   return FindPtrOrNull(constraint_builders_, tag);
 }
 
 Solver::IntegerExpressionBuilder* Solver::GetIntegerExpressionBuilder(
-    const string& tag) const {
+    const std::string& tag) const {
   return FindPtrOrNull(expression_builders_, tag);
 }
 
 Solver::IntervalVariableBuilder* Solver::GetIntervalVariableBuilder(
-    const string& tag) const {
+    const std::string& tag) const {
   IntervalVariableBuilder* const builder =
       FindPtrOrNull(interval_builders_, tag);
   return builder;
 }
 
 Solver::SequenceVariableBuilder* Solver::GetSequenceVariableBuilder(
-    const string& tag) const {
+    const std::string& tag) const {
   SequenceVariableBuilder* const builder =
       FindPtrOrNull(sequence_builders_, tag);
   return builder;

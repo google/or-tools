@@ -85,7 +85,7 @@ class TimePlacement : public DecisionBuilder {
       : data_(data),
         all_sequences_(all_sequences),
         jobs_to_tasks_(jobs_to_tasks),
-        mp_solver_("TimePlacement", MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING) {}
+        mp_solver_("TimePlacement", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING) {}
 
   virtual ~TimePlacement() {}
 
@@ -100,7 +100,7 @@ class TimePlacement : public DecisionBuilder {
     for (int s = 0; s < jobs_to_tasks_.size(); ++s) {
       for (int t = 0; t < jobs_to_tasks_[s].size(); ++t) {
         IntervalVar* const task = jobs_to_tasks_[s][t];
-        const string name = StringPrintf("J%dT%d", s, t);
+        const std::string name = StringPrintf("J%dT%d", s, t);
         MPVariable* const var =
             mp_solver_.MakeIntVar(task->StartMin(), task->StartMax(), name);
         mapping[task] = var;
@@ -192,7 +192,7 @@ class TimePlacement : public DecisionBuilder {
     return NULL;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "TimePlacement";
   }
 
@@ -224,7 +224,7 @@ void EtJobShop(const EtJobShopData& data) {
     for (int task_index = 0; task_index < tasks.size(); ++task_index) {
       const Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
-      const string name = StringPrintf("J%dM%dI%dD%d",
+      const std::string name = StringPrintf("J%dM%dI%dD%d",
                                        task.job_id,
                                        task.machine_id,
                                        task_index,
@@ -283,7 +283,7 @@ void EtJobShop(const EtJobShopData& data) {
   // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = StringPrintf("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);
@@ -340,21 +340,18 @@ void EtJobShop(const EtJobShopData& data) {
     std::vector<LocalSearchOperator*> operators;
     LOG(INFO) << "  - use swap operator";
     LocalSearchOperator* const swap_operator =
-        solver.RevAlloc(new SwapIntervals(all_sequences.data(),
-                                          all_sequences.size()));
+        solver.RevAlloc(new SwapIntervals(all_sequences));
     operators.push_back(swap_operator);
     LOG(INFO) << "  - use shuffle operator with a max length of "
               << FLAGS_shuffle_length;
     LocalSearchOperator* const shuffle_operator =
-        solver.RevAlloc(new ShuffleIntervals(all_sequences.data(),
-                                             all_sequences.size(),
+        solver.RevAlloc(new ShuffleIntervals(all_sequences,
                                              FLAGS_shuffle_length));
     operators.push_back(shuffle_operator);
     LOG(INFO) << "  - use free sub sequences of length "
               << FLAGS_sub_sequence_length << " lns operator";
     LocalSearchOperator* const lns_operator =
-        solver.RevAlloc(new SequenceLns(all_sequences.data(),
-                                        all_sequences.size(),
+        solver.RevAlloc(new SequenceLns(all_sequences,
                                         FLAGS_lns_seed,
                                         FLAGS_sub_sequence_length));
     operators.push_back(lns_operator);

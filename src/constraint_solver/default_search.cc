@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
 #include "base/hash.h"
 #include <limits>
 #include "base/unique_ptr.h"
@@ -30,8 +29,8 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/cached_log.h"
-#include "base/random.h"
 #include "util/string_array.h"
+#include "base/random.h"
 
 DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 
@@ -122,7 +121,7 @@ class FindVar : public DecisionVisitor {
     return value_;
   }
 
-  virtual string DebugString() const { return "FindVar decision visitor"; }
+  virtual std::string DebugString() const { return "FindVar decision visitor"; }
 
  private:
   IntVar* var_;
@@ -575,7 +574,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const { return "ImpactRecorder"; }
+  virtual std::string DebugString() const { return "ImpactRecorder"; }
 
  private:
   // A container for the variables needed in FirstRun that is reversibly
@@ -599,7 +598,7 @@ class ImpactRecorder : public SearchMonitor {
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
 
-    virtual string DebugString() const { return "FirstRunVariableContainers"; }
+    virtual std::string DebugString() const { return "FirstRunVariableContainers"; }
 
    private:
     std::unique_ptr<Callback2<int, int64> > update_impact_callback_;
@@ -651,7 +650,7 @@ class ChoiceInfo {
   ChoiceInfo(IntVar* const var, int64 value, bool left)
       : value_(value), var_(var), left_(left) {}
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("%s %s %lld", var_->name().c_str(),
                         (left_ ? "==" : "!="), value_);
   }
@@ -761,7 +760,7 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const { return "RestartMonitor"; }
+  virtual std::string DebugString() const { return "RestartMonitor"; }
 
  private:
   // Called before applying the refutation of the decision.  This
@@ -1032,7 +1031,7 @@ class RunHeuristicsAsDives : public Decision {
     HeuristicWrapper(Solver* const solver, const std::vector<IntVar*>& vars,
                      Solver::IntVarStrategy var_strategy,
                      Solver::IntValueStrategy value_strategy,
-                     const string& heuristic_name, int heuristic_runs)
+                     const std::string& heuristic_name, int heuristic_runs)
         : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
           name(heuristic_name),
           runs(heuristic_runs) {}
@@ -1040,7 +1039,7 @@ class RunHeuristicsAsDives : public Decision {
     // The decision builder we are going to use in this dive.
     DecisionBuilder* const phase;
     // A name for logging purposes.
-    const string name;
+    const std::string name;
     // How many times we will run this particular heuristic in case the
     // parameter run_all_heuristics is true. This is useful for random
     // heuristics where it makes sense to run them more than once.
@@ -1110,8 +1109,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
-  virtual string DebugString() const {
-    string out = "DefaultIntegerSearch(";
+  virtual std::string DebugString() const {
+    std::string out = "DefaultIntegerSearch(";
 
     if (parameters_.decision_builder == nullptr) {
       out.append("Impact Based Search, ");

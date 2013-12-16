@@ -68,7 +68,6 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 
-using std::string;
 
 namespace operations_research {
 
@@ -125,8 +124,8 @@ class KnapsackSolver {
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER
   };
 
-  explicit KnapsackSolver(const string& solver_name);
-  KnapsackSolver(SolverType solver_type, const string& solver_name);
+  explicit KnapsackSolver(const std::string& solver_name);
+  KnapsackSolver(SolverType solver_type, const std::string& solver_name);
   virtual ~KnapsackSolver();
 
   // Initializes the solver and enters the problem to be solved.
@@ -139,7 +138,7 @@ class KnapsackSolver {
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool BestSolutionContains(int item_id) const;
-  string GetName() const;
+  std::string GetName() const;
 
   bool use_reduction() const { return use_reduction_; }
   void set_use_reduction(bool use_reduction) { use_reduction_ = use_reduction; }
@@ -469,7 +468,7 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
 // This the base class for knapsack solvers.
 class BaseKnapsackSolver {
  public:
-  explicit BaseKnapsackSolver(const string& solver_name)
+  explicit BaseKnapsackSolver(const std::string& solver_name)
   : solver_name_(solver_name) {}
   virtual ~BaseKnapsackSolver() {}
 
@@ -492,10 +491,10 @@ class BaseKnapsackSolver {
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   virtual bool best_solution(int item_id) const = 0;
 
-  virtual string GetName() const { return solver_name_; }
+  virtual std::string GetName() const { return solver_name_; }
 
  private:
-  const string solver_name_;
+  const std::string solver_name_;
 };
 
 // ----- KnapsackGenericSolver -----
@@ -509,7 +508,7 @@ class BaseKnapsackSolver {
 // to select next item (see for instance Dobson's aggregated efficiency).
 class KnapsackGenericSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackGenericSolver(const string& solver_name);
+  explicit KnapsackGenericSolver(const std::string& solver_name);
   virtual ~KnapsackGenericSolver();
 
   // Initializes the solver and enters the problem to be solved.

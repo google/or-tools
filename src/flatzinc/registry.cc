@@ -88,30 +88,30 @@ class ModelBuilder {
   // Type of constraint posting function
   typedef void (*Builder)(FlatZincModel* const model, CtSpec* const spec);
   // Add posting function \a p with identifier \a id
-  void Register(const string& id, Builder p);
+  void Register(const std::string& id, Builder p);
   // Post constraint specified by \a ce
   void Post(FlatZincModel* const model, CtSpec* const spec);
 
  private:
   // The actual builders.
-  std::map<string, Builder> r;
+  std::map<std::string, Builder> r;
 };
 
 static ModelBuilder global_model_builder;
 
 void ModelBuilder::Post(FlatZincModel* const model, CtSpec* const spec) {
   if (!spec->Nullified()) {
-    const string& id = spec->Id();
-    std::map<string, Builder>::iterator i = r.find(id);
+    const std::string& id = spec->Id();
+    std::map<std::string, Builder>::iterator i = r.find(id);
     if (i == r.end()) {
       throw FzError("ModelBuilder",
-                    string("Constraint ") + spec->Id() + " not found");
+                    std::string("Constraint ") + spec->Id() + " not found");
     }
     i->second(model, spec);
   }
 }
 
-void ModelBuilder::Register(const string& id, Builder p) { r[id] = p; }
+void ModelBuilder::Register(const std::string& id, Builder p) { r[id] = p; }
 
 void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
@@ -411,7 +411,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
       } else {
         throw FzError(
             "ModelBuilder",
-            string("Constraint ") + spec->Id() +
+            std::string("Constraint ") + spec->Id() +
                 " cannot define an integer variable with a coefficient"
                 " different from -1");
       }
@@ -437,7 +437,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
           if (array_coefficients->a[i]->getInt() != -1) {
             throw FzError(
                 "ModelBuilder",
-                string("Constraint ") + spec->Id() +
+                std::string("Constraint ") + spec->Id() +
                     " cannot define an integer variable with a coefficient"
                     " different from -1");
           }
@@ -3482,7 +3482,7 @@ void p_set_in(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else {
-    throw FzError("ModelBuilder", string("Constraint ") + spec->Id() +
+    throw FzError("ModelBuilder", std::string("Constraint ") + spec->Id() +
                                       " does not support variable sets");
   }
 }
@@ -3503,7 +3503,7 @@ void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
       model->AddConstraint(spec, ct);
     }
   } else {
-    throw FzError("ModelBuilder", string("Constraint ") + spec->Id() +
+    throw FzError("ModelBuilder", std::string("Constraint ") + spec->Id() +
                                       " does not support variable sets");
   }
 }

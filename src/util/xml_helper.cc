@@ -28,7 +28,7 @@ void XmlHelper::StartDocument() {
   direction_down_ = false;
 }
 
-void XmlHelper::StartElement(const string& name) {
+void XmlHelper::StartElement(const std::string& name) {
   if (direction_down_) {
     content_.append(">\n");
   }
@@ -37,14 +37,14 @@ void XmlHelper::StartElement(const string& name) {
   direction_down_ = true;
 }
 
-void XmlHelper::AddAttribute(const string& key, int value) {
+void XmlHelper::AddAttribute(const std::string& key, int value) {
   AddAttribute(key, StringPrintf("%d", value));
 }
 
-void XmlHelper::AddAttribute(const string& key, const string& value) {
+void XmlHelper::AddAttribute(const std::string& key, const std::string& value) {
   std::ostringstream escaped_value;
 
-  for (string::const_iterator it = value.begin(); it != value.end(); ++it) {
+  for (std::string::const_iterator it = value.begin(); it != value.end(); ++it) {
     unsigned char c = (unsigned char)*it;
 
     switch (c) {
@@ -73,7 +73,7 @@ void XmlHelper::AddAttribute(const string& key, const string& value) {
 }
 
 void XmlHelper::EndElement() {
-  string tag = tags_.top();
+  std::string tag = tags_.top();
 
   if (direction_down_) {
     content_.append(" />\n");
@@ -87,5 +87,5 @@ void XmlHelper::EndElement() {
 
 void XmlHelper::EndDocument() {}
 
-const string& XmlHelper::GetContent() const { return content_; }
+const std::string& XmlHelper::GetContent() const { return content_; }
 }  // namespace operations_research

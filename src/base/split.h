@@ -26,7 +26,7 @@
 namespace operations_research {
 // ----------------------------------------------------------------------
 // SplitStringUsing()
-//    Split a string using a character delimiter. Append the components
+//    Split a std::string using a character delimiter. Append the components
 //    to 'result'.  If there are consecutive delimiters, this function skips
 //    over all of them.
 // ----------------------------------------------------------------------
@@ -36,12 +36,11 @@ void SplitStringUsing(const std::string& full, const char* delim,
 // We define here a very truncated version of the powerful strings::Split()
 // function. As of 2013-04, it can only be used like this:
 // const char* separators = ...;
-// std::vector<string> x = strings::Split(
+// std::vector<std::string> x = strings::Split(
 //     full, strings::delimiter::AnyOf(separators), strings::SkipEmpty());
 namespace strings {
-// Slightly different API that directly returns the std::vector<string>.
-std::vector<std::string> Split(const std::string& full, const char* delim,
-                               int flags);
+// Slightly different API that directly returns the std::vector<std::string>.
+std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }
 }  // namespace delimiter

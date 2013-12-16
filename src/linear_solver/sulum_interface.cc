@@ -131,7 +131,7 @@ class SLMInterface : public MPSolverInterface {
 
   // ----- Misc -----
   // Write model
-  virtual void WriteModel(const string& filename);
+  virtual void WriteModel(const std::string& filename);
 
   // Query problem type.
   virtual bool IsContinuous() const { return IsLP(); }
@@ -142,7 +142,7 @@ class SLMInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     int major,minor,interim;
 
     SlmGetSulumVersion(&major,&minor,&interim);
@@ -232,7 +232,7 @@ void SLMInterface::Reset() {
   ResetExtractionInformation();
 }
 
-void SLMInterface::WriteModel(const string& filename) {
+void SLMInterface::WriteModel(const std::string& filename) {
   CheckReturnKey(SlmWriteProblem(model_, filename.c_str()));
 }
 

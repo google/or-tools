@@ -304,7 +304,7 @@ bool MPSolver::Minimization() const {
 
 // ----- Version -----
 
-string MPSolver::SolverVersion() const {
+std::string MPSolver::SolverVersion() const {
   return interface_->SolverVersion();
 }
 
@@ -316,7 +316,7 @@ void* MPSolver::underlying_solver() {
 
 // ---- Solver-specific parameters ----
 
-bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
+bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters) {
   if (parameters.empty()) return true;
   solver_specific_parameter_string_ = parameters;
 
@@ -324,8 +324,8 @@ bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
   // immediately, so we also perform the actual parameter parsing right away.
   // Some implementations will keep them forever and won't need to re-parse
   // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
-  // they do Solve(). We just store the parameters string anyway.
-  string extension = interface_->ValidFileExtensionForParameterFile();
+  // they do Solve(). We just store the parameters std::string anyway.
+  std::string extension = interface_->ValidFileExtensionForParameterFile();
 #if defined(__linux)
   int32 tid = static_cast<int32>(pthread_self());
 #else  // defined(__linux__)
@@ -337,7 +337,7 @@ bool MPSolver::SetSolverSpecificParametersAsString(const string& parameters) {
   int32 pid = 456;
 #endif  // _MSC_VER
   int64 now = WallTimer::GetTimeInMicroSeconds();
-  string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
+  std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
       tid, pid, now, extension.c_str());
   bool no_error_so_far = true;
   if (no_error_so_far) {
@@ -431,7 +431,7 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 namespace {
 int NumDigits(int n) {
   // Number of digits needed to write a non-negative integer in base 10.
-  // Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
+  // Note(user): std::max(1, log(0) + 1) == std::max(1, -inf) == 1.
 #if defined(_MSC_VER)
   return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
 #else
@@ -440,7 +440,7 @@ int NumDigits(int n) {
 }
 }  // namespace
 
-MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
+MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type)
     : name_(name),
       problem_type_(problem_type),
 #if !defined(_MSC_VER)
@@ -462,16 +462,16 @@ MPSolver::~MPSolver() {
 }
 
 
-MPVariable* MPSolver::LookupVariableOrNull(const string& var_name) const {
-  hash_map<string, int>::const_iterator it =
+MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
+  hash_map<std::string, int>::const_iterator it =
       variable_name_to_index_.find(var_name);
   if (it == variable_name_to_index_.end()) return NULL;
   return variables_[it->second];
 }
 
 MPConstraint* MPSolver::LookupConstraintOrNull(
-    const string& constraint_name) const {
-  hash_map<string, int>::const_iterator it =
+    const std::string& constraint_name) const {
+  hash_map<std::string, int>::const_iterator it =
       constraint_name_to_index_.find(constraint_name);
   if (it == constraint_name_to_index_.end()) return NULL;
   return constraints_[it->second];
@@ -482,10 +482,10 @@ MPConstraint* MPSolver::LookupConstraintOrNull(
 MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   // TODO(user): clear the previous data in the solver, and re-use the
   // existing hash maps!
-  hash_map<string, MPVariable*> variables;
+  hash_map<std::string, MPVariable*> variables;
   for (int i = 0; i < input_model.variables_size(); ++i) {
     const MPVariableProto& var_proto = input_model.variables(i);
-    const string& id = var_proto.id();
+    const std::string& id = var_proto.id();
     if (!ContainsKey(variables, id)) {
       if (var_and_constraint_names_allow_export_) {
         // TODO(user): unit test this clause and the similar one below.
@@ -506,7 +506,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   for (int i = 0; i < input_model.constraints_size(); ++i) {
     tmp_variable_set.clear();
     const MPConstraintProto& ct_proto = input_model.constraints(i);
-    const string& ct_id = ct_proto.id();
+    const std::string& ct_id = ct_proto.id();
     if (var_and_constraint_names_allow_export_) {
       var_and_constraint_names_allow_export_ &=
           MPModelProtoExporter::CheckNameValidity(ct_id);
@@ -516,7 +516,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
                                                ct_id);
     for (int j = 0; j < ct_proto.terms_size(); ++j) {
       const MPTermProto& term_proto = ct_proto.terms(j);
-      const string& id = term_proto.variable_id();
+      const std::string& id = term_proto.variable_id();
       MPVariable* variable = FindPtrOrNull(variables, id);
       if (variable == NULL) {
         return MPSolver::UNKNOWN_VARIABLE_ID;
@@ -535,7 +535,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   tmp_variable_set.clear();
   for (int i = 0; i < input_model.objective_terms_size(); ++i) {
     const MPTermProto& term_proto = input_model.objective_terms(i);
-    const string& id = term_proto.variable_id();
+    const std::string& id = term_proto.variable_id();
     MPVariable* variable = FindPtrOrNull(variables, id);
     if (variable == NULL) {
       return MPSolver::UNKNOWN_VARIABLE_ID;
@@ -579,16 +579,23 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
     MPConstraint* const ct = MakeRowConstraint(ct_proto.lower_bound(),
                                                ct_proto.upper_bound(),
                                                ct_proto.name());
-    for (int j = 0; j < ct_proto.linear_term_size(); ++j) {
-      const new_proto::MPConstraintProto::UnaryTerm& term_proto =
-          ct_proto.linear_term(j);
-      if (term_proto.var_index() >= variables_.size()) {
+    if (ct_proto.var_index_size() != ct_proto.coefficient_size()) {
+      LOG(ERROR) << "In constraint #" << i << " (name: '" << ct_proto.name()
+                 << "'):" << " var_index_size() != coefficient_size()"
+                 << ct_proto.DebugString();
+      // TODO(user): add new error type to MPSolver and return it here.
+      // TODO(user): add unit test of this error.
+      return MPSolver::UNKNOWN_VARIABLE_ID;
+    }
+    for (int j = 0; j < ct_proto.var_index_size(); ++j) {
+      if (ct_proto.var_index(j) >= variables_.size() ||
+          ct_proto.var_index(j) < 0) {
         LOG(ERROR) << "Variable index out of bound in constraint named "
-                    << ct_proto.name() << ".";
+                   << ct_proto.name() << ".";
         return MPSolver::UNKNOWN_VARIABLE_ID;
       }
-      ct->SetCoefficient(variables_[term_proto.var_index()],
-                         term_proto.coefficient());
+      ct->SetCoefficient(variables_[ct_proto.var_index(j)],
+                         ct_proto.coefficient(j));
     }
   }
   SetOptimizationDirection(input_model.maximize());
@@ -842,16 +849,9 @@ void MPSolver::ExportModelToNewProto(
     // few terms.
     std::sort(linear_term.begin(), linear_term.end());
     // Now use linear term.
-    for (int k = 0; k < linear_term.size(); ++k) {
-      const std::pair<int, double>& p = linear_term[k];
-      const int var_index = p.first;
-      const double coeff = p.second;
-      new_proto::MPConstraintProto_UnaryTerm* unary_term
-          = constraint_proto->add_linear_term();
-      unary_term->set_var_index(var_index);
-      unary_term->set_coefficient(coeff);
-      constraint_proto->add_var_index(var_index);
-      constraint_proto->add_coefficient(coeff);
+    for (const std::pair<int, double> var_and_coeff : linear_term) {
+      constraint_proto->add_var_index(var_and_coeff.first);
+      constraint_proto->add_coefficient(var_and_coeff.second);
     }
   }
   output_model->set_maximize(Objective().maximization());
@@ -937,9 +937,9 @@ void MPSolver::SuppressOutput() {
 }
 
 MPVariable* MPSolver::MakeVar(
-    double lb, double ub, bool integer, const string& name) {
+    double lb, double ub, bool integer, const std::string& name) {
   const int var_index = NumVariables();
-  const string fixed_name = name.empty()
+  const std::string fixed_name = name.empty()
       ? StringPrintf("auto_v_%09d", var_index) : name;
   if (var_and_constraint_names_allow_export_) {
     var_and_constraint_names_allow_export_ &=
@@ -953,16 +953,16 @@ MPVariable* MPSolver::MakeVar(
 }
 
 MPVariable* MPSolver::MakeNumVar(
-    double lb, double ub, const string& name) {
+    double lb, double ub, const std::string& name) {
   return MakeVar(lb, ub, false, name);
 }
 
 MPVariable* MPSolver::MakeIntVar(
-    double lb, double ub, const string& name) {
+    double lb, double ub, const std::string& name) {
   return MakeVar(lb, ub, true, name);
 }
 
-MPVariable* MPSolver::MakeBoolVar(const string& name) {
+MPVariable* MPSolver::MakeBoolVar(const std::string& name) {
   return MakeVar(0.0, 1.0, true, name);
 }
 
@@ -970,7 +970,7 @@ void MPSolver::MakeVarArray(int nb,
                             double lb,
                             double ub,
                             bool integer,
-                            const string& name,
+                            const std::string& name,
                             std::vector<MPVariable*>* vars) {
   DCHECK_GE(nb, 0);
   if (nb <= 0) return;
@@ -979,7 +979,7 @@ void MPSolver::MakeVarArray(int nb,
     if (name.empty()) {
       vars->push_back(MakeVar(lb, ub, integer, name));
     } else {
-      string vname = StringPrintf("%s%0*d", name.c_str(), num_digits, i);
+      std::string vname = StringPrintf("%s%0*d", name.c_str(), num_digits, i);
       vars->push_back(MakeVar(lb, ub, integer, vname));
     }
   }
@@ -988,7 +988,7 @@ void MPSolver::MakeVarArray(int nb,
 void MPSolver::MakeNumVarArray(int nb,
                                double lb,
                                double ub,
-                               const string& name,
+                               const std::string& name,
                                std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, false, name, vars);
 }
@@ -996,13 +996,13 @@ void MPSolver::MakeNumVarArray(int nb,
 void MPSolver::MakeIntVarArray(int nb,
                                double lb,
                                double ub,
-                               const string& name,
+                               const std::string& name,
                                std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, true, name, vars);
 }
 
 void MPSolver::MakeBoolVarArray(int nb,
-                                const string& name,
+                                const std::string& name,
                                 std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, 0.0, 1.0, true, name, vars);
 }
@@ -1016,9 +1016,9 @@ MPConstraint* MPSolver::MakeRowConstraint() {
 }
 
 MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
-                                          const string& name) {
+                                          const std::string& name) {
   const int constraint_index = NumConstraints();
-  const string fixed_name = name.empty()
+  const std::string fixed_name = name.empty()
       ? StringPrintf("auto_c_%09d", constraint_index) : name;
   if (var_and_constraint_names_allow_export_) {
     var_and_constraint_names_allow_export_ &=
@@ -1032,7 +1032,7 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   return constraint;
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(const string& name) {
+MPConstraint* MPSolver::MakeRowConstraint(const std::string& name) {
   return MakeRowConstraint(-infinity(), infinity(), name);
 }
 
@@ -1095,8 +1095,8 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters &param) {
 }
 
 namespace {
-string PrettyPrintVar(const MPVariable& var) {
-  const string prefix = "Variable '" + var.name() + "': domain = ";
+std::string PrettyPrintVar(const MPVariable& var) {
+  const std::string prefix = "Variable '" + var.name() + "': domain = ";
   if (var.lb() >= MPSolver::infinity() ||
       var.ub() <= -MPSolver::infinity() ||
       var.lb() > var.ub()) {
@@ -1123,14 +1123,14 @@ string PrettyPrintVar(const MPVariable& var) {
     + (var.integer() ? "Integer" : "Real")
     + " in "
     + (var.lb() <= -MPSolver::infinity()
-       ? string("]-∞") : StringPrintf("[%f", var.lb()))
+       ? std::string("]-∞") : StringPrintf("[%f", var.lb()))
     + ", "
     + (var.ub() >= MPSolver::infinity()
-       ? string("+∞[") : StringPrintf("%f]", var.ub()));
+       ? std::string("+∞[") : StringPrintf("%f]", var.ub()));
 }
 
-string PrettyPrintConstraint(const MPConstraint& constraint) {
-  string prefix = "Constraint '" + constraint.name() + "': ";
+std::string PrettyPrintConstraint(const MPConstraint& constraint) {
+  std::string prefix = "Constraint '" + constraint.name() + "': ";
   if (constraint.lb() >= MPSolver::infinity() ||
       constraint.ub() <= -MPSolver::infinity() ||
       constraint.lb() > constraint.ub()) {
@@ -1197,7 +1197,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (fabs(value - round(value)) > tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error,
-                                      fabs(value - round(value)));
+                                 fabs(value - round(value)));
         LOG_IF(ERROR, log_errors)
             << "Non-integer value "<< value << " for " << PrettyPrintVar(var);
       }
@@ -1229,7 +1229,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (activity < constraint.lb() - tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error,
-                                      constraint.lb() - activity);
+                                 constraint.lb() - activity);
         LOG_IF(ERROR, log_errors)
             << "Activity " << activity << " too low for "
             << PrettyPrintConstraint(constraint);
@@ -1244,7 +1244,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (activity > constraint.ub() + tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error,
-                                      activity - constraint.ub());
+                                 activity - constraint.ub());
         LOG_IF(ERROR, log_errors)
             << "Activity " << activity << " too high for "
             << PrettyPrintConstraint(constraint);
@@ -1321,7 +1321,7 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
 }
 
 
-bool MPSolver::ExportModelAsLpFormat(bool obfuscate, string* output) {
+bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* output) {
   MPModelProto proto;
   ExportModel(&proto);
   MPModelProtoExporter exporter(proto);
@@ -1329,7 +1329,7 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate, string* output) {
 }
 
 bool MPSolver::ExportModelAsMpsFormat(
-    bool fixed_format, bool obfuscate, string* output) {
+    bool fixed_format, bool obfuscate, std::string* output) {
   MPModelProto proto;
   ExportModel(&proto);
   MPModelProtoExporter exporter(proto);
@@ -1488,12 +1488,12 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
                << " to an unsupported value: " << value;
 }
 
-bool MPSolverInterface::ReadParameterFile(const string& filename) {
+bool MPSolverInterface::ReadParameterFile(const std::string& filename) {
   LOG(WARNING) << "ReadParameterFile() not supported by this solver.";
   return false;
 }
 
-string MPSolverInterface::ValidFileExtensionForParameterFile() const {
+std::string MPSolverInterface::ValidFileExtensionForParameterFile() const {
   return ".tmp";
 }
 
@@ -1712,7 +1712,7 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   std::vector<bool> variable_has_solution_value(variables_.size(), false);
   int num_vars_out_of_bounds = 0;
   for (int i = 0; i < response.solution_values_size(); ++i) {
-    const string& var_name = response.solution_values(i).variable_id();
+    const std::string& var_name = response.solution_values(i).variable_id();
     const int var_index =
         FindWithDefault(variable_name_to_index_, var_name, -1);
     if (var_index < 0) {

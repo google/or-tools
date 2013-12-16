@@ -13,9 +13,8 @@
 
 //  Packing constraints
 
-#include <stddef.h>
-#include <string.h>
 #include <algorithm>
+#include <cstddef>
 #include "base/unique_ptr.h"
 #include <string>
 #include <utility>
@@ -51,7 +50,7 @@ class Dimension : public BaseObject {
   virtual void PropagateUnassigned(const std::vector<int>& assigned,
                                    const std::vector<int>& unassigned) = 0;
   virtual void EndPropagate() = 0;
-  virtual string DebugString() const { return "Dimension"; }
+  virtual std::string DebugString() const { return "Dimension"; }
   virtual void Accept(ModelVisitor* const visitor) const = 0;
 
   Solver* solver() const { return solver_; }
@@ -177,7 +176,7 @@ class InitialPropagateData : public BaseObject {
   const std::vector<int>& assigned() const { return assigned_; }
   const std::vector<int>& unassigned() const { return unassigned_; }
 
-  virtual string DebugString() const { return "InitialPropagateData"; }
+  virtual std::string DebugString() const { return "InitialPropagateData"; }
 
  private:
   std::vector<std::vector<int>> undecided_;
@@ -381,8 +380,8 @@ void Pack::OneDomain(int var_index) {
   EnqueueDelayedDemon(demon_);
 }
 
-string Pack::DebugString() const {
-  string result = "Pack([";
+std::string Pack::DebugString() const {
+  std::string result = "Pack([";
   for (int i = 0; i < vars_.size(); ++i) {
     result += vars_[i]->DebugString() + " ";
   }
@@ -896,7 +895,7 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   virtual ~DimensionWeightedSumEqVar() {}
 
-  virtual string DebugString() const { return "DimensionWeightedSumEqVar"; }
+  virtual std::string DebugString() const { return "DimensionWeightedSumEqVar"; }
 
   virtual void Post() {
     for (int i = 0; i < bins_count_; ++i) {
@@ -1034,7 +1033,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
 
   virtual ~DimensionWeightedCallback2SumEqVar() {}
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "DimensionWeightedCallback2SumEqVar";
   }
 
@@ -1503,7 +1502,7 @@ class VariableUsageDimension : public Dimension {
                                    const std::vector<int>& unassigned) {}
   virtual void EndPropagate() {}
 
-  virtual string DebugString() const { return "VariableUsageDimension"; }
+  virtual std::string DebugString() const { return "VariableUsageDimension"; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(

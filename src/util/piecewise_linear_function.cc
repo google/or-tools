@@ -251,8 +251,8 @@ void PiecewiseSegment::AddConstantToY(int64 constant) {
   reference_y_ = CapAdd(reference_y_, constant);
 }
 
-string PiecewiseSegment::DebugString() const {
-  string result = StringPrintf(
+std::string PiecewiseSegment::DebugString() const {
+  std::string result = StringPrintf(
     "PiecewiseSegment(<start: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d), "
                       "end: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d), "
                       "reference: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d), "
@@ -584,8 +584,8 @@ void PiecewiseLinearFunction::DecomposeToConvexFunctions(
   }
 }
 
-string PiecewiseLinearFunction::DebugString() const {
-  string result = "PiecewiseLinearFunction(";
+std::string PiecewiseLinearFunction::DebugString() const {
+  std::string result = "PiecewiseLinearFunction(";
   for (int i = 0; i < segments_.size(); ++i) {
     result.append(segments_[i].DebugString());
     result.append(" ");

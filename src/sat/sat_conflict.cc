@@ -381,8 +381,8 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
     }
   }
   std::sort(variables_sorted_by_level.begin(),
-            variables_sorted_by_level.end(),
-            VariableWithLargerWeightFirst());
+       variables_sorted_by_level.end(),
+       VariableWithLargerWeightFirst());
 
   // Then process the reason of the variable with highest level first.
   std::vector<VariableIndex> to_remove;

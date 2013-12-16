@@ -205,7 +205,7 @@ class MtSolutionReceiver : public SearchMonitor {
   virtual void EnterSearch() { support_->MasterEnterSearch(); }
   virtual void ExitSearch() { support_->MasterExitSearch(); }
 
-  virtual string DebugString() const { return "MtSolutionReceiver"; }
+  virtual std::string DebugString() const { return "MtSolutionReceiver"; }
 
  private:
   MtSolveSupport* const support_;
@@ -235,7 +235,7 @@ class MtSolutionDispatcher : public SearchMonitor {
     return false;
   }
 
-  virtual string DebugString() const { return "MtSolutionDispatcher"; }
+  virtual std::string DebugString() const { return "MtSolutionDispatcher"; }
 
  private:
   MtSolveSupport* const support_;
@@ -534,7 +534,7 @@ class MTSharingSolutionPool : public SolutionPool {
     }
   }
 
-  virtual string DebugString() const { return "MTSharingSolutionPool"; }
+  virtual std::string DebugString() const { return "MTSharingSolutionPool"; }
 
  private:
   std::unique_ptr<Assignment> reference_assignment_;

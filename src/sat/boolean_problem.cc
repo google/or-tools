@@ -169,8 +169,8 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 // max-sat problem. Namely that the slack variable from the constraints are
 // always in first position, and appears in the same order in the objective and
 // in the constraints.
-string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem) {
-  string output;
+std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem) {
+  std::string output;
   const bool is_wcnf = (problem.type() == LinearBooleanProblem::MINIMIZATION);
   const LinearObjective& objective = problem.objective();
 

@@ -281,8 +281,8 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
 }
 
 template<typename Graph>
-string GenericMaxFlow<Graph>::DebugString(
-    const string& context, ArcIndex arc) const {
+std::string GenericMaxFlow<Graph>::DebugString(
+    const std::string& context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
   return StringPrintf("%s Arc %d, from %d to %d, "

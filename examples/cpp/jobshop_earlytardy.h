@@ -78,7 +78,7 @@ class EtJobShopData {
 
   ~EtJobShopData() {}
 
-  void LoadJetFile(const string& filename) {
+  void LoadJetFile(const std::string& filename) {
     LOG(INFO) << "Reading jet file " << filename;
     name_ = StringPrintf("JetData(%s)", filename.c_str());
     FileLineReader reader(filename.c_str());
@@ -143,7 +143,7 @@ class EtJobShopData {
   int job_count() const { return job_count_; }
 
   // The name of the jobshop instance.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // The horizon of the workshop (the sum of all durations), which is
   // a trivial upper bound of the optimal make_span.
@@ -158,7 +158,7 @@ class EtJobShopData {
   void ProcessNewJetLine(char* const line) {
     // TODO(user): more robust logic to support single-task jobs.
     static const char kWordDelimiters[] = " ";
-    std::vector<string> words;
+    std::vector<std::string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
     if (words.size() == 2) {
       job_count_ = atoi32(words[0]);
@@ -187,12 +187,11 @@ class EtJobShopData {
     }
   }
 
-  string name_;
+  std::string name_;
   int machine_count_;
   int job_count_;
   int horizon_;
   std::vector<Job> all_jobs_;
 };
 }  // namespace operations_research
-#endif OR_TOOLS_EXAMPLES_JOBSHOP_EARLYTARDY_H_
-
+#endif // OR_TOOLS_EXAMPLES_JOBSHOP_EARLYTARDY_H_

@@ -195,7 +195,7 @@ class HungarianOptimizer {
   // Return to Step 4 without altering any stars, primes, or covered lines.
   void AugmentPath();
 
-  // The size of the problem, i.e. max(#agents, #tasks).
+  // The size of the problem, i.e. std::max(#agents, #tasks).
   int matrix_size_;
 
   // The expanded cost matrix.

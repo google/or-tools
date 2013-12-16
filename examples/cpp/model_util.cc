@@ -61,28 +61,28 @@ static const char kYellow[] = "#FFF68F";
 static const char kRed[] = "#A52A2A";
 
 // Creates node labels.
-string ExprLabel(int index) {
+std::string ExprLabel(int index) {
   return StringPrintf("expr_%i", index);
 }
 
-string IntervalLabel(int index) {
+std::string IntervalLabel(int index) {
   return StringPrintf("interval_%i", index);
 }
 
-string SequenceLabel(int index) {
+std::string SequenceLabel(int index) {
   return StringPrintf("sequence_%i", index);
 }
 
-string ConstraintLabel(int index) {
+std::string ConstraintLabel(int index) {
   return StringPrintf("ct_%i", index);
 }
 
 // Scans argument to add links in the graph.
 template <class T> void ExportLinks(const CPModelProto& model,
-                                    const string& source,
+                                    const std::string& source,
                                     const T& proto,
                                     GraphExporter* const exporter) {
-  const string& arg_name = model.tags(proto.argument_index());
+  const std::string& arg_name = model.tags(proto.argument_index());
   if (proto.has_integer_expression_index()) {
     exporter->WriteLink(source,
                         ExprLabel(proto.integer_expression_index()),
@@ -151,7 +151,7 @@ void DeclareExpression(int index,
                        const CPModelProto& proto,
                        GraphExporter* const exporter) {
   const CPIntegerExpressionProto& expr = proto.expressions(index);
-  const string label = ExprLabel(index);
+  const std::string label = ExprLabel(index);
   int64 value = 0;
   if (expr.has_name()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
@@ -161,7 +161,7 @@ void DeclareExpression(int index,
                         "oval",
                         kYellow);
   } else {
-    const string& type = proto.tags(expr.type_index());
+    const std::string& type = proto.tags(expr.type_index());
     exporter->WriteNode(label, type, "oval", kWhite);
   }
 }
@@ -170,11 +170,11 @@ void DeclareInterval(int index,
                      const CPModelProto& proto,
                      GraphExporter* const exporter) {
   const CPIntervalVariableProto& interval = proto.intervals(index);
-  const string label = IntervalLabel(index);
+  const std::string label = IntervalLabel(index);
   if (interval.has_name()) {
     exporter->WriteNode(label, interval.name(), "circle", kGreen2);
   } else {
-    const string& type = proto.tags(interval.type_index());
+    const std::string& type = proto.tags(interval.type_index());
     exporter->WriteNode(label, type, "circle", kWhite);
   }
 }
@@ -183,11 +183,11 @@ void DeclareSequence(int index,
                      const CPModelProto& proto,
                      GraphExporter* const exporter) {
   const CPSequenceVariableProto& sequence = proto.sequences(index);
-  const string label = SequenceLabel(index);
+  const std::string label = SequenceLabel(index);
   if (sequence.has_name()) {
     exporter->WriteNode(label, sequence.name(), "circle", kGreen3);
   } else {
-    const string& type = proto.tags(sequence.type_index());
+    const std::string& type = proto.tags(sequence.type_index());
     exporter->WriteNode(label, type, "circle", kWhite);
   }
 }
@@ -196,8 +196,8 @@ void DeclareConstraint(int index,
                        const CPModelProto& proto,
                        GraphExporter* const exporter) {
   const CPConstraintProto& ct = proto.constraints(index);
-  const string& type = proto.tags(ct.type_index());
-  const string label = ConstraintLabel(index);
+  const std::string& type = proto.tags(ct.type_index());
+  const std::string label = ConstraintLabel(index);
   exporter->WriteNode(label, type, "rectangle", kBlue);
 }
 
@@ -226,13 +226,13 @@ void ExportToGraphFile(const CPModelProto& proto,
 
   const char kObjLabel[] = "obj";
   if (proto.has_objective()) {
-    const string name = proto.objective().maximize() ? "Maximize" : "Minimize";
+    const std::string name = proto.objective().maximize() ? "Maximize" : "Minimize";
     exporter->WriteNode(kObjLabel, name, "diamond", kRed);
   }
 
   for (int i = 0; i < proto.expressions_size(); ++i) {
     const CPIntegerExpressionProto& expr = proto.expressions(i);
-    const string label = ExprLabel(i);
+    const std::string label = ExprLabel(i);
     for (int j = 0; j < expr.arguments_size(); ++j) {
       ExportLinks(proto, label, expr.arguments(j), exporter.get());
     }
@@ -240,7 +240,7 @@ void ExportToGraphFile(const CPModelProto& proto,
 
   for (int i = 0; i < proto.intervals_size(); ++i) {
     const CPIntervalVariableProto& interval = proto.intervals(i);
-    const string label = IntervalLabel(i);
+    const std::string label = IntervalLabel(i);
     for (int j = 0; j < interval.arguments_size(); ++j) {
       ExportLinks(proto, label, interval.arguments(j), exporter.get());
     }
@@ -248,7 +248,7 @@ void ExportToGraphFile(const CPModelProto& proto,
 
   for (int i = 0; i < proto.sequences_size(); ++i) {
     const CPSequenceVariableProto& sequence = proto.sequences(i);
-    const string label = SequenceLabel(i);
+    const std::string label = SequenceLabel(i);
     for (int j = 0; j < sequence.arguments_size(); ++j) {
       ExportLinks(proto, label, sequence.arguments(j), exporter.get());
     }
@@ -256,7 +256,7 @@ void ExportToGraphFile(const CPModelProto& proto,
 
   for (int i = 0; i < proto.constraints_size(); ++i) {
     const CPConstraintProto& ct = proto.constraints(i);
-    const string label = ConstraintLabel(i);
+    const std::string label = ConstraintLabel(i);
     for (int j = 0; j < ct.arguments_size(); ++j) {
       ExportLinks(proto, label, ct.arguments(j), exporter.get());
     }

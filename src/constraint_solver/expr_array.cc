@@ -13,8 +13,8 @@
 //
 //  Array Expression constraints
 
-#include <string.h>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -55,13 +55,13 @@ class TreeArrayConstraint : public CastConstraint {
     root_node_ = &tree_[0][0];
   }
 
-  string DebugStringInternal(const string& name) const {
+  std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("%s(%s) == %s", name.c_str(),
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -277,7 +277,7 @@ class SumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  string DebugString() const { return DebugStringInternal("Sum"); }
+  std::string DebugString() const { return DebugStringInternal("Sum"); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
@@ -467,7 +467,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  string DebugString() const { return DebugStringInternal("Sum"); }
+  std::string DebugString() const { return DebugStringInternal("Sum"); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
@@ -504,7 +504,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
 
 // ---------- Min Array ----------
 
-// This constraint implements min(vars) == min_var.
+// This constraint implements std::min(vars) == min_var.
 class MinConstraint : public TreeArrayConstraint {
  public:
   MinConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
@@ -647,7 +647,7 @@ class MinConstraint : public TreeArrayConstraint {
     MinVarChanged();
   }
 
-  string DebugString() const { return DebugStringInternal("Min"); }
+  std::string DebugString() const { return DebugStringInternal("Min"); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     AcceptInternal(ModelVisitor::kMinEqual, visitor);
@@ -659,7 +659,7 @@ class MinConstraint : public TreeArrayConstraint {
 
 // ---------- Max Array ----------
 
-// This constraint implements max(vars) == max_var.
+// This constraint implements std::max(vars) == max_var.
 class MaxConstraint : public TreeArrayConstraint {
  public:
   MaxConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
@@ -801,7 +801,7 @@ class MaxConstraint : public TreeArrayConstraint {
     MaxVarChanged();
   }
 
-  string DebugString() const { return DebugStringInternal("Max"); }
+  std::string DebugString() const { return DebugStringInternal("Max"); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     AcceptInternal(ModelVisitor::kMaxEqual, visitor);
@@ -901,7 +901,7 @@ class ArrayBoolAndEq : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("And(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
@@ -1031,7 +1031,7 @@ class ArrayBoolOrEq : public CastConstraint {
     }
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("Or(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
@@ -1082,7 +1082,7 @@ class BaseSumBooleanConstraint : public Constraint {
   virtual ~BaseSumBooleanConstraint() {}
 
  protected:
-  string DebugStringInternal(const string& name) const {
+  std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
@@ -1137,7 +1137,7 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return DebugStringInternal("SumBooleanLessOrEqualToOne");
   }
 
@@ -1165,7 +1165,7 @@ class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
   void Update(int index);
   void UpdateVar();
 
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
@@ -1226,7 +1226,7 @@ void SumBooleanGreaterOrEqualToOne::Update(int index) {
   }
 }
 
-string SumBooleanGreaterOrEqualToOne::DebugString() const {
+std::string SumBooleanGreaterOrEqualToOne::DebugString() const {
   return DebugStringInternal("SumBooleanGreaterOrEqualToOne");
 }
 
@@ -1316,7 +1316,7 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return DebugStringInternal("SumBooleanEqualToOne");
   }
 
@@ -1447,7 +1447,7 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("%s == %s", DebugStringInternal("SumBoolean").c_str(),
                         sum_var_->DebugString().c_str());
   }
@@ -1598,7 +1598,7 @@ class BooleanScalProdLessConstant : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str(), upper_bound_);
@@ -1715,7 +1715,7 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     Propagate();
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("PositiveBooleanScal([%s], [%s]) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str(),
@@ -1828,7 +1828,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(coefs_, ", ").c_str());
@@ -1956,7 +1956,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     Propagate();
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT
                         "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
@@ -1995,33 +1995,33 @@ class ExprLinearizer : public ModelParser {
   virtual ~ExprLinearizer() {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const string& solver_name) {
+  virtual void BeginVisitModel(const std::string& solver_name) {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void EndVisitModel(const string& solver_name) {
+  virtual void EndVisitModel(const std::string& solver_name) {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint) {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void BeginVisitExtension(const string& type) {}
+  virtual void BeginVisitExtension(const std::string& type) {}
 
-  virtual void EndVisitExtension(const string& type) {}
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitExtension(const std::string& type) {}
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expr) {
     BeginVisit(true);
   }
 
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expr) {
     if (IS_TYPE(type_name, kSum)) {
       VisitSum(expr);
@@ -2042,7 +2042,7 @@ class ExprLinearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
@@ -2075,37 +2075,37 @@ class ExprLinearizer : public ModelParser {
   }
 
   // Visit integer arguments.
-  virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
     Top()->SetIntegerArgument(arg_name, value);
   }
 
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
     Top()->SetIntegerArrayArgument(arg_name, values);
   }
 
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
                                           const IntTupleSet& values) {
     Top()->SetIntegerMatrixArgument(arg_name, values);
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     Top()->SetIntegerExpressionArgument(arg_name, argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {}
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& argument) {}
+      const std::string& arg_name, const std::vector<IntervalVar*>& argument) {}
 
   void Visit(const IntExpr* const expr, int64 multiplier) {
     if (expr->Min() == expr->Max()) {
@@ -2119,7 +2119,7 @@ class ExprLinearizer : public ModelParser {
 
   int64 Constant() const { return constant_; }
 
-  virtual string DebugString() const { return "ExprLinearizer"; }
+  virtual std::string DebugString() const { return "ExprLinearizer"; }
 
  private:
   void BeginVisit(bool active) { PushArgumentHolder(); }
@@ -2577,7 +2577,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
   if (cache != nullptr) {
     return solver->MakeSum(cache, constant);
   } else {
-    const string name =
+    const std::string name =
         StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
     IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
     if (AreAllBooleans(vars)) {
@@ -2704,15 +2704,15 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
     return solver->MakeIntConst(constant);
   }
   // Can we simplify using some gcd computation.
-  int64 gcd = std::abs(coefs[0]);
+  int64 gcd = abs(coefs[0]);
   for (int i = 1; i < coefs.size(); ++i) {
-    gcd = MathUtil::GCD64(gcd, std::abs(coefs[i]));
+    gcd = MathUtil::GCD64(gcd, abs(coefs[i]));
     if (gcd == 1) {
       break;
     }
   }
   if (constant != 0 && gcd != 1) {
-    gcd = MathUtil::GCD64(gcd, std::abs(constant));
+    gcd = MathUtil::GCD64(gcd, abs(constant));
   }
   if (gcd > 1) {
     for (int i = 0; i < coefs.size(); ++i) {
@@ -2772,7 +2772,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       IntVar* sum_var = nullptr;
       const bool all_booleans = AreAllBooleans(vars);
       if (all_booleans) {
-        const string name =
+        const std::string name =
             StringPrintf("BooleanSum([%s])",
                          JoinNamePtr(vars, ", ").c_str());
         sum_var = MakeIntVar(new_min, new_max, name);
@@ -2780,7 +2780,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       } else if (new_min != kint64min && new_max != kint64max) {
         sum_var = MakeSumFct(this, vars)->Var();
       } else {
-        const string name =
+        const std::string name =
             StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
         sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));

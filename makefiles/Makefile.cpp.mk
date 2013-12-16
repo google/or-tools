@@ -306,6 +306,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/expressions.$O\
 	$(OBJ_DIR)/gcc.$O\
 	$(OBJ_DIR)/hybrid.$O\
+    $(OBJ_DIR)/graph_constraints.$O\
 	$(OBJ_DIR)/interval.$O\
 	$(OBJ_DIR)/io.$O\
 	$(OBJ_DIR)/local_search.$O\
@@ -395,6 +396,9 @@ $(OBJ_DIR)/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc
 
 $(OBJ_DIR)/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/gcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sgcc.$O
+
+$(OBJ_DIR)/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_constraints.$O
 
 $(OBJ_DIR)/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Shybrid.$O

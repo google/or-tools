@@ -16,7 +16,8 @@
 #ifndef OR_TOOLS_UTIL_BITSET_H_
 #define OR_TOOLS_UTIL_BITSET_H_
 
-#include <string>
+#include <string.h>
+#include <algorithm>
 #include <vector>
 
 #include "base/basictypes.h"

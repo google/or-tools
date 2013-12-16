@@ -19,7 +19,6 @@
 #include <utility>
 #include "base/macros.h"
 
-using std::string;
 
 namespace operations_research {
 
@@ -34,13 +33,13 @@ class XmlHelper {
   void StartDocument();
 
   // Starts a new element
-  void StartElement(const string& name);
+  void StartElement(const std::string& name);
 
   // Adds a key-value pair to the current element.
-  void AddAttribute(const string& key, int value);
+  void AddAttribute(const std::string& key, int value);
 
   // Adds a key-value pair to the current element.
-  void AddAttribute(const string& key, const string& value);
+  void AddAttribute(const std::string& key, const std::string& value);
 
   // Ends the current element and goes back to the previous element.
   void EndElement();
@@ -49,12 +48,12 @@ class XmlHelper {
   void EndDocument();
 
   // Returns the XML content written so far.
-  const string& GetContent() const;
+  const std::string& GetContent() const;
 
  private:
-  typedef std::pair<char, string> EscapePair;
-  string content_;
-  std::stack<string> tags_;
+  typedef std::pair<char, std::string> EscapePair;
+  std::string content_;
+  std::stack<std::string> tags_;
   bool direction_down_;
 
   DISALLOW_COPY_AND_ASSIGN(XmlHelper);

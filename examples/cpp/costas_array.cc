@@ -20,7 +20,7 @@
 // This example contains two separate implementations. CostasHard()
 // uses hard constraints, whereas CostasSoft() uses a minimizer to
 // minimize the number of duplicates.
-#include <time.h>
+#include <ctime>
 #include <set>
 #include <utility>
 #include "base/callback.h"
@@ -359,7 +359,7 @@ void CostasSoft(const int dim) {
 
   if (collector->solution_count() > 0) {
     std::vector<int64> costas_matrix;
-    string output;
+    std::string output;
 
     for (int n = 0; n < dim; ++n) {
       const int64 v = collector->Value(0, vars[n]);
@@ -414,7 +414,7 @@ void CostasHard(const int dim) {
 
   if (solver.NextSolution()) {
     std::vector<int64> costas_matrix;
-    string output;
+    std::string output;
 
     for (int n = 0; n < dim; ++n) {
       const int64 v = vars[n]->Value();

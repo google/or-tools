@@ -181,7 +181,6 @@
 #include "util/stats.h"
 #include "util/zvector.h"
 
-using std::string;
 
 namespace operations_research {
 
@@ -427,7 +426,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Returns context concatenated with information about a given arc
   // in a human-friendly way.
-  string DebugString(const string& context, ArcIndex arc) const;
+  std::string DebugString(const std::string& context, ArcIndex arc) const;
 
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.

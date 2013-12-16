@@ -57,7 +57,7 @@ inline int64 atoi64(const char *nptr) {
   return strto64(nptr, NULL, 10);
 }
 
-// Convenience versions of the above that take a string argument.
+// Convenience versions of the above that take a std::string argument.
 inline int32 atoi32(const std::string &s) {
   return atoi32(s.c_str());
 }

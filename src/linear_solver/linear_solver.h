@@ -144,7 +144,6 @@
 #include "base/timer.h"
 
 
-using std::string;
 
 
 namespace operations_research {
@@ -207,11 +206,11 @@ class MPSolver {
     #endif
   };
 
-  MPSolver(const string& name, OptimizationProblemType problem_type);
+  MPSolver(const std::string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
 
-  string Name() const {
+  std::string Name() const {
     return name_;  // Set at construction.
   }
 
@@ -231,20 +230,20 @@ class MPSolver {
   // (They are listed in the order in which they were created.)
   const std::vector<MPVariable*>& variables() const { return variables_; }
   // Look up a variable by name, and return NULL if it does not exist.
-  MPVariable* LookupVariableOrNull(const string& var_name) const;
+  MPVariable* LookupVariableOrNull(const std::string& var_name) const;
 
   // Creates a variable with the given bounds, integrality requirement
   // and name. Bounds can be finite or +/- MPSolver::infinity().
   // The MPSolver owns the variable (i.e. the returned pointer is borrowed).
   // Variable names must be unique (it may crash otherwise). Empty variable
   // names are allowed, an automated variable name will then be assigned.
-  MPVariable* MakeVar(double lb, double ub, bool integer, const string& name);
+  MPVariable* MakeVar(double lb, double ub, bool integer, const std::string& name);
   // Creates a continuous variable.
-  MPVariable* MakeNumVar(double lb, double ub, const string& name);
+  MPVariable* MakeNumVar(double lb, double ub, const std::string& name);
   // Creates an integer variable.
-  MPVariable* MakeIntVar(double lb, double ub, const string& name);
+  MPVariable* MakeIntVar(double lb, double ub, const std::string& name);
   // Creates a boolean variable.
-  MPVariable* MakeBoolVar(const string& name);
+  MPVariable* MakeBoolVar(const std::string& name);
 
   // Creates an array of variables. All variables created have the
   // same bounds and integrality requirement. If nb <= 0, no variables are
@@ -255,23 +254,23 @@ class MPSolver {
                     double lb,
                     double ub,
                     bool integer,
-                    const string& name_prefix,
+                    const std::string& name_prefix,
                     std::vector<MPVariable*>* vars);
   // Creates an array of continuous variables.
   void MakeNumVarArray(int nb,
                        double lb,
                        double ub,
-                       const string& name,
+                       const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of integer variables.
   void MakeIntVarArray(int nb,
                        double lb,
                        double ub,
-                       const string& name,
+                       const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of boolean variables.
   void MakeBoolVarArray(int nb,
-                        const string& name,
+                        const std::string& name,
                         std::vector<MPVariable*>* vars);
 
   // ----- Constraints -----
@@ -281,7 +280,7 @@ class MPSolver {
   // (They are listed in the order in which they were created.)
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
   // Look up a constraint by name, and return NULL if it does not exist.
-  MPConstraint* LookupConstraintOrNull(const string& constraint_name) const;
+  MPConstraint* LookupConstraintOrNull(const std::string& constraint_name) const;
 
   // Creates a linear constraint with given bounds. Bounds can be
   // finite or +/- MPSolver::infinity(). The MPSolver class assumes
@@ -291,9 +290,9 @@ class MPSolver {
   // Creates a constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint();
   // Creates a named constraint with given bounds.
-  MPConstraint* MakeRowConstraint(double lb, double ub, const string& name);
+  MPConstraint* MakeRowConstraint(double lb, double ub, const std::string& name);
   // Creates a named constraint with -infinity and +infinity bounds.
-  MPConstraint* MakeRowConstraint(const string& name);
+  MPConstraint* MakeRowConstraint(const std::string& name);
 
   // ----- Objective -----
   // Note that the objective is owned by the solver, and is initialized to
@@ -416,9 +415,9 @@ class MPSolver {
 
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
   // exporting to a MPModelProto with ExportModelToNewProto() (see above).
-  bool ExportModelAsLpFormat(bool obfuscated, string* model_str);
+  bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
   bool ExportModelAsMpsFormat(
-      bool fixed_format, bool obfuscated, string* model_str);
+      bool fixed_format, bool obfuscated, std::string* model_str);
 
   // ----- Misc -----
 
@@ -429,7 +428,7 @@ class MPSolver {
   // TODO(user): Currently SCIP will always return true even if the format is
   // wrong (you can check the log if you suspect an issue there). This seems to
   // be a bug in SCIP though.
-  bool SetSolverSpecificParametersAsString(const string& parameters);
+  bool SetSolverSpecificParametersAsString(const std::string& parameters);
 
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
@@ -492,8 +491,8 @@ class MPSolver {
     return var_and_constraint_names_allow_export_;
   }
 
-  // Returns a string describing the underlying solver and its version.
-  string SolverVersion() const;
+  // Returns a std::string describing the underlying solver and its version.
+  std::string SolverVersion() const;
 
   // Advanced usage: returns the underlying solver so that the user
   // can use solver-specific features or features that are not exposed
@@ -579,7 +578,7 @@ class MPSolver {
   bool HasInfeasibleConstraints() const;
 
   // The name of the linear programming problem.
-  const string name_;
+  const std::string name_;
 
   // The type of the linear programming problem.
   const OptimizationProblemType problem_type_;
@@ -590,12 +589,12 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  hash_map<string, int> variable_name_to_index_;
+  hash_map<std::string, int> variable_name_to_index_;
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  hash_map<string, int> constraint_name_to_index_;
+  hash_map<std::string, int> constraint_name_to_index_;
 
   // The linear objective function.
   std::unique_ptr<MPObjective> objective_;
@@ -609,7 +608,7 @@ class MPSolver {
   WallTimer timer_;
 
   // Permanent storage for SetSolverSpecificParametersAsString().
-  string solver_specific_parameter_string_;
+  std::string solver_specific_parameter_string_;
 
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
@@ -714,7 +713,7 @@ class MPObjective {
 class MPVariable {
  public:
   // Returns the name of the variable.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // Sets the integrality requirement of the variable.
   void SetInteger(bool integer);
@@ -766,7 +765,7 @@ class MPVariable {
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
   // several models.
-  MPVariable(double lb, double ub, bool integer, const string& name,
+  MPVariable(double lb, double ub, bool integer, const std::string& name,
              MPSolverInterface* const interface)
       : lb_(lb), ub_(ub), integer_(integer), name_(name), index_(-1),
         solution_value_(0.0), reduced_cost_(0.0), interface_(interface) {}
@@ -779,7 +778,7 @@ class MPVariable {
   double lb_;
   double ub_;
   bool integer_;
-  const string name_;
+  const std::string name_;
   int index_;
   double solution_value_;
   double reduced_cost_;
@@ -792,7 +791,7 @@ class MPVariable {
 class MPConstraint {
  public:
   // Returns the name of the constraint.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // Clears all variables and coefficients. Does not clear the bounds.
   void Clear();
@@ -860,7 +859,7 @@ class MPConstraint {
   // to several models.
   MPConstraint(double lb,
                double ub,
-               const string& name,
+               const std::string& name,
                MPSolverInterface* const interface)
       : coefficients_(1), lb_(lb), ub_(ub), name_(name), is_lazy_(false),
         index_(-1), dual_value_(0.0), activity_(0.0), interface_(interface) {}
@@ -884,7 +883,7 @@ class MPConstraint {
   double ub_;
 
   // Name.
-  const string name_;
+  const std::string name_;
 
   // True if the constraint is "lazy", i.e. the constraint is added to the
   // underlying Linear Programming solver only if it is violated.
@@ -1203,8 +1202,8 @@ class MPSolverInterface {
     return result_status_;
   }
 
-  // Returns a string describing the underlying solver and its version.
-  virtual string SolverVersion() const = 0;
+  // Returns a std::string describing the underlying solver and its version.
+  virtual std::string SolverVersion() const = 0;
 
   // Returns the underlying solver.
   virtual void* underlying_solver() = 0;
@@ -1282,12 +1281,12 @@ class MPSolverInterface {
 
   // Reads a solver-specific file of parameters and set them.
   // Returns true if there was no errors.
-  virtual bool ReadParameterFile(const string& filename);
+  virtual bool ReadParameterFile(const std::string& filename);
 
   // Returns a file extension like ".tmp", this is needed because some solvers
   // require a given extension for the ReadParameterFile() filename and we need
   // to know it to generate a temporary parameter file.
-  virtual string ValidFileExtensionForParameterFile() const;
+  virtual std::string ValidFileExtensionForParameterFile() const;
 
   // Sets the scaling mode.
   virtual void SetScalingMode(int value) = 0;

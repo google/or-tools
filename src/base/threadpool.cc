@@ -14,8 +14,8 @@
 #include "tinythread.h"  // NOLINT
 #include "base/macros.h"
 #include "base/mutex.h"
-#include "base/threadpool.h"
 #include "base/synchronization.h"
+#include "base/threadpool.h"
 
 namespace operations_research {
 void RunWorker(void* data) {

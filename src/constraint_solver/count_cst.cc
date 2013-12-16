@@ -13,7 +13,6 @@
 //
 //  Count constraints
 
-#include <string.h>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -85,7 +84,7 @@ class Distribute : public Constraint {
   void CountVar(int cindex);
   void CardMin(int cindex);
   void CardMax(int cindex);
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         IntVectorToString(values_, ", ").c_str(),
@@ -249,7 +248,7 @@ class FastDistribute : public Constraint {
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -304,7 +303,7 @@ FastDistribute::FastDistribute(Solver* const s, const std::vector<IntVar*>& vars
   }
 }
 
-string FastDistribute::DebugString() const {
+std::string FastDistribute::DebugString() const {
   return StringPrintf("FastDistribute(vars = [%s], cards = [%s])",
                       JoinDebugStringPtr(vars_, ", ").c_str(),
                       JoinDebugStringPtr(cards_, ", ").c_str());
@@ -437,7 +436,7 @@ class BoundedDistribute : public Constraint {
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -504,7 +503,7 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
   }
 }
 
-string BoundedDistribute::DebugString() const {
+std::string BoundedDistribute::DebugString() const {
   return StringPrintf(
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = [%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
@@ -640,7 +639,7 @@ class BoundedFastDistribute : public Constraint {
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -703,7 +702,7 @@ BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
   }
 }
 
-string BoundedFastDistribute::DebugString() const {
+std::string BoundedFastDistribute::DebugString() const {
   return StringPrintf(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
@@ -857,7 +856,7 @@ class SetAllToZero : public Constraint {
     }
   }
 
-  virtual string DebugString() const { return "SetAllToZero()"; }
+  virtual std::string DebugString() const { return "SetAllToZero()"; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);

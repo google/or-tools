@@ -103,12 +103,12 @@ int64 Demand(const std::vector<int64>* const demands,
   return demands->at(from.value());
 }
 
-// Outputs a solution to the current model in a string.
-string VerboseOutput(const RoutingModel& routing,
+// Outputs a solution to the current model in a std::string.
+std::string VerboseOutput(const RoutingModel& routing,
                      const Assignment& assignment,
                      const Coordinates& coords,
                      const std::vector<int64>& service_times) {
-  string output;
+  std::string output;
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
   for (int i = 0; i < routing.vehicles(); ++i) {
@@ -156,10 +156,10 @@ string VerboseOutput(const RoutingModel& routing,
 
 namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
-// of integers. Returns true iff the input string was entirely valid and parsed.
-bool SafeParseInt64Array(const string& str, std::vector<int64>* parsed_int) {
+// of integers. Returns true iff the input std::string was entirely valid and parsed.
+bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int) {
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
-  std::vector<string> items = strings::Split(
+  std::vector<std::string> items = strings::Split(
       str, strings::delimiter::AnyOf(kWhiteSpaces), strings::SkipEmpty());
   parsed_int->assign(items.size(), 0);
   for (int i = 0; i < items.size(); ++i) {
@@ -175,13 +175,13 @@ bool SafeParseInt64Array(const string& str, std::vector<int64>* parsed_int) {
 
 // Builds and solves a model from a file in the format defined by Li & Lim
 // (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).
-bool LoadAndSolve(const string& pdp_file) {
+bool LoadAndSolve(const std::string& pdp_file) {
   // Load all the lines of the file in RAM (it shouldn't be too large anyway).
-  std::vector<string> lines;
+  std::vector<std::string> lines;
   {
     const int64 kMaxInputFileSize = 1 << 30;  // 1GB
     File* data_file = File::OpenOrDie(pdp_file, "r");
-    string contents;
+    std::string contents;
     data_file->ReadToString(&contents, kMaxInputFileSize);
     data_file->Close();
     if (contents.size() == kMaxInputFileSize) {

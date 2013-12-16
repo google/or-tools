@@ -18,8 +18,6 @@
 #include <string>
 #include "base/stringpiece.h"
 
-using std::string;
-
 namespace operations_research {
 // ----------------------------------------------------------------------
 // HasSuffixString()
@@ -31,65 +29,65 @@ inline bool HasSuffixString(const StringPiece& str,
   return str.ends_with(suffix);
 }
 
-inline string StrCat(const string& str1, const string& str2) {
+inline std::string StrCat(const std::string& str1, const std::string& str2) {
   return str1 + str2;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3) {
   return str1 + str2 + str3;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4) {
   return str1 + str2 + str3 + str4;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4,
-                     const string& str5) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4,
+                     const std::string& str5) {
   return str1 + str2 + str3 + str4 + str5;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4,
-                     const string& str5, const string& str6) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4,
+                     const std::string& str5, const std::string& str6) {
   return str1 + str2 + str3 + str4 + str5 + str6;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4,
-                     const string& str5, const string& str6,
-                     const string& str7) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4,
+                     const std::string& str5, const std::string& str6,
+                     const std::string& str7) {
   return str1 + str2 + str3 + str4 + str5 + str6 + str7;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4,
-                     const string& str5, const string& str6,
-                     const string& str7, const string& str8) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4,
+                     const std::string& str5, const std::string& str6,
+                     const std::string& str7, const std::string& str8) {
   return str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
 }
 
-inline string StrCat(const string& str1, const string& str2,
-                     const string& str3, const string& str4,
-                     const string& str5, const string& str6,
-                     const string& str7, const string& str8,
-                     const string& str9) {
+inline std::string StrCat(const std::string& str1, const std::string& str2,
+                     const std::string& str3, const std::string& str4,
+                     const std::string& str5, const std::string& str6,
+                     const std::string& str7, const std::string& str8,
+                     const std::string& str9) {
   return str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8 + str9;
 }
 
 
-inline void StrAppend(string* str1, const string& str2) {
+inline void StrAppend(std::string* str1, const std::string& str2) {
   *str1 += str2;
 }
 
-inline void StrAppend(string* str1, const string& str2, const string& str3) {
+inline void StrAppend(std::string* str1, const std::string& str2, const std::string& str3) {
   *str1 += str2 + str3;
 }
 
-inline void StrAppend(string* str1, const string& str2, const string& str3,
-                      const string& str4) {
+inline void StrAppend(std::string* str1, const std::string& str2, const std::string& str3,
+                      const std::string& str4) {
   *str1 += str2 + str3 + str4;
 }
 }  // namespace operations_research

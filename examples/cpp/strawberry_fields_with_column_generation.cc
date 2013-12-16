@@ -51,8 +51,8 @@
 //
 // No attempt is made to force integrality.
 
-#include <stdio.h>
-#include <string.h>  // strlen
+#include <cstdio>
+#include <cstring>  // strlen
 #include <map>
 #include "base/unique_ptr.h"
 #include <string>
@@ -66,7 +66,6 @@
 #include "base/stringprintf.h"
 #include "linear_solver/linear_solver.h"
 
-using std::string;
 
 DEFINE_bool(colgen_verbose, false, "print verbosely");
 DEFINE_bool(colgen_complete, false, "generate all columns initially");
@@ -289,7 +288,7 @@ class Box {
         + kFixedCost;
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("[%d,%dx%d,%d]c%d",
                         x_min(), y_min(), x_max(), y_max(), Cost());
   }
@@ -311,7 +310,7 @@ struct BoxLessThan {
 
 class CoveringProblem {
  public:
-  // Grid is a row-major string of length width*height with '@' for an
+  // Grid is a row-major std::string of length width*height with '@' for an
   // occupied cell (strawberry) and '.' for an empty cell.  Solver is
   // not owned.
   CoveringProblem(MPSolver* const solver, const Instance& instance)
@@ -455,15 +454,15 @@ class CoveringProblem {
     return var;
   }
 
-  string PrintGrid() const {
-    string output = StringPrintf("width = %d, height = %d, max_boxes = %d\n",
+  std::string PrintGrid() const {
+    std::string output = StringPrintf("width = %d, height = %d, max_boxes = %d\n",
                                  width_,
                                  height_,
                                  max_boxes_);
     for (int y = 0; y < height_; ++y) {
       StringAppendF(&output,
                     "%s\n",
-                    string(grid_ + width_ * y, width_).c_str());
+                    std::string(grid_ + width_ * y, width_).c_str());
     }
     return output;
   }
@@ -472,10 +471,10 @@ class CoveringProblem {
   // and graphical depiction of covering using upper case letters for
   // integral coverage and lower case for coverage using combination
   // of fractional boxes.
-  string PrintCovering() const {
+  std::string PrintCovering() const {
     static const double kTolerance = 1e-5;
-    string output = StringPrintf("cost = %lf\n", solver_->objective_value());
-    scoped_ptr<char[]> display(new char[(width_ + 1) * height_ + 1]);
+    std::string output = StringPrintf("cost = %lf\n", solver_->objective_value());
+    std::unique_ptr<char[]> display(new char[(width_ + 1) * height_ + 1]);
     for (int y = 0; y < height_; ++y) {
       memcpy(display.get() + y * (width_ + 1),
              grid_ + width_ * y,
@@ -617,7 +616,7 @@ void SolveInstance(const Instance& instance,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  string usage = "column_generation\n";
+  std::string usage = "column_generation\n";
   usage += "  --colgen_verbose             print verbosely\n";
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";

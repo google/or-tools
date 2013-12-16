@@ -63,12 +63,10 @@ DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 DECLARE_bool(log_prefix);
 DECLARE_bool(logging);
 
-using std::string;
-using operations_research::scoped_ptr;
 using operations_research::ThreadPool;
 
 namespace operations_research {
-int Run(const string& file, const FlatZincSearchParameters& parameters,
+int Run(const std::string& file, const FlatZincSearchParameters& parameters,
         FzParallelSupport* const parallel_support) {
   FlatZincModel fz_model;
   if (file == "-") {
@@ -217,7 +215,6 @@ int main(int argc, char** argv) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
-
   // Fix the number of solutions.
   if (FLAGS_num_solutions == 0) {  // not specified
     FLAGS_num_solutions = FLAGS_all ? kint32max : 1;

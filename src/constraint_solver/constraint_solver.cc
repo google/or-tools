@@ -16,8 +16,8 @@
 
 #include "constraint_solver/constraint_solver.h"
 
-#include <setjmp.h>
-#include <string.h>
+#include <csetjmp>
+#include <string>
 #include <iosfwd>
 #include "base/unique_ptr.h"
 
@@ -108,7 +108,7 @@ Solver::DemonPriority Demon::priority() const {
   return Solver::NORMAL_PRIORITY;
 }
 
-string Demon::DebugString() const { return "Demon"; }
+std::string Demon::DebugString() const { return "Demon"; }
 
 void Demon::inhibit(Solver* const s) {
   if (stamp_ < kuint64max) {
@@ -124,7 +124,7 @@ void Demon::desinhibit(Solver* const s) {
 
 // ------------------ Action class ------------------
 
-string Action::DebugString() const { return "Action"; }
+std::string Action::DebugString() const { return "Action"; }
 
 // ------------------ Queue class ------------------
 
@@ -493,8 +493,8 @@ class TrailPacker {
   explicit TrailPacker(int block_size) : block_size_(block_size) {}
   virtual ~TrailPacker() {}
   int input_size() const { return block_size_ * sizeof(addrval<T>); }
-  virtual void Pack(const addrval<T>* block, string* packed_block) = 0;
-  virtual void Unpack(const string& packed_block, addrval<T>* block) = 0;
+  virtual void Pack(const addrval<T>* block, std::string* packed_block) = 0;
+  virtual void Unpack(const std::string& packed_block, addrval<T>* block) = 0;
 
  private:
   const int block_size_;
@@ -508,14 +508,14 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
   explicit NoCompressionTrailPacker(int block_size)
       : TrailPacker<T>(block_size) {}
   virtual ~NoCompressionTrailPacker() {}
-  virtual void Pack(const addrval<T>* block, string* packed_block) {
+  virtual void Pack(const addrval<T>* block, std::string* packed_block) {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
     StringPiece block_str;
     block_str.set(block, this->input_size());
     block_str.CopyToString(packed_block);
   }
-  virtual void Unpack(const string& packed_block, addrval<T>* block) {
+  virtual void Unpack(const std::string& packed_block, addrval<T>* block) {
     DCHECK(block != nullptr);
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
@@ -534,7 +534,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
 
   virtual ~ZlibTrailPacker() {}
 
-  virtual void Pack(const addrval<T>* block, string* packed_block) {
+  virtual void Pack(const addrval<T>* block, std::string* packed_block) {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
     uLongf size = tmp_size_;
@@ -547,7 +547,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
     block_str.CopyToString(packed_block);
   }
 
-  virtual void Unpack(const string& packed_block, addrval<T>* block) {
+  virtual void Unpack(const std::string& packed_block, addrval<T>* block) {
     DCHECK(block != nullptr);
     uLongf size = this->input_size();
     const int result =
@@ -642,7 +642,7 @@ class CompressedTrail {
 
  private:
   struct Block {
-    string compressed;
+    std::string compressed;
     Block* next;
   };
 
@@ -1077,7 +1077,7 @@ void Search::JumpBack() {
     jmpbuf_filled_ = false;
     CP_DO_FAIL(this);
   } else {
-    string explanation = "Failure outside of search";
+    std::string explanation = "Failure outside of search";
     solver_->AddConstraint(solver_->MakeFalseConstraint(explanation));
   }
 }
@@ -1094,7 +1094,7 @@ class UndoBranchSelector : public Action {
       s->ActiveSearch()->SetBranchSelector(nullptr);
     }
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("UndoBranchSelector(%i)", depth_);
   }
 
@@ -1114,7 +1114,7 @@ class ApplyBranchSelector : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const { return "Apply(BranchSelector)"; }
+  virtual std::string DebugString() const { return "Apply(BranchSelector)"; }
 
  private:
   ResultCallback1<Solver::DecisionModification, Solver*>* const selector_;
@@ -1392,9 +1392,9 @@ extern PropagationMonitor* BuildTrace(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
 extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
 
-string Solver::model_name() const { return name_; }
+std::string Solver::model_name() const { return name_; }
 
-Solver::Solver(const string& name, const SolverParameters& parameters)
+Solver::Solver(const std::string& name, const SolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
       queue_(new Queue(this)),
@@ -1426,7 +1426,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
   Init();
 }
 
-Solver::Solver(const string& name)
+Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(),
       queue_(new Queue(this)),
@@ -1501,8 +1501,8 @@ const SolverParameters::TraceLevel SolverParameters::kDefaultTraceLevel =
     SolverParameters::NO_TRACE;
 const bool SolverParameters::kDefaultNameAllVariables = false;
 
-string Solver::DebugString() const {
-  string out = "Solver(name = \"" + name_ + "\", state = ";
+std::string Solver::DebugString() const {
+  std::string out = "Solver(name = \"" + name_ + "\", state = ";
   switch (state_) {
     case OUTSIDE_SEARCH:
       out += "OUTSIDE_SEARCH";
@@ -2128,8 +2128,8 @@ class ReverseDecision : public Decision {
     decision_->Accept(visitor);
   }
 
-  virtual string DebugString() const {
-    string str = "Reverse(";
+  virtual std::string DebugString() const {
+    std::string str = "Reverse(";
     str += decision_->DebugString();
     str += ")";
     return str;
@@ -2394,7 +2394,7 @@ class AddConstraintDecisionBuilder : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("AddConstraintDecisionBuilder(%s)",
                         constraint_->DebugString().c_str());
   }
@@ -2475,8 +2475,8 @@ IntExpr* Solver::CastExpression(const IntVar* const var) const {
 
 // --- Propagation object names ---
 
-string Solver::GetName(const PropagationBaseObject* object) {
-  const string* name = FindOrNull(propagation_object_names_, object);
+std::string Solver::GetName(const PropagationBaseObject* object) {
+  const std::string* name = FindOrNull(propagation_object_names_, object);
   if (name != nullptr) {
     return *name;
   }
@@ -2489,15 +2489,15 @@ string Solver::GetName(const PropagationBaseObject* object) {
       return StringPrintf("Var<%s>",
                           cast_info->expression->DebugString().c_str());
     } else {
-      const string new_name =
+      const std::string new_name =
           StringPrintf("CastVar<%d>", anonymous_variable_index_++);
       propagation_object_names_[object] = new_name;
       return new_name;
     }
   }
-  const string base_name = object->BaseName();
+  const std::string base_name = object->BaseName();
   if (FLAGS_cp_name_variables && !base_name.empty()) {
-    const string new_name =
+    const std::string new_name =
         StringPrintf("%s_%d", base_name.c_str(), anonymous_variable_index_++);
     propagation_object_names_[object] = new_name;
     return new_name;
@@ -2505,7 +2505,7 @@ string Solver::GetName(const PropagationBaseObject* object) {
   return empty_name_;
 }
 
-void Solver::SetName(const PropagationBaseObject* object, const string& name) {
+void Solver::SetName(const PropagationBaseObject* object, const std::string& name) {
   if (parameters_.store_names &&
       GetName(object).compare(name) != 0) {  // in particular if name.empty()
     propagation_object_names_[object] = name;
@@ -2533,18 +2533,18 @@ std::ostream& operator<<(std::ostream& out,
 
 // ---------- PropagationBaseObject ---------
 
-string PropagationBaseObject::name() const {
-  // TODO(user) : merge with GetName() code to remove a string copy.
+std::string PropagationBaseObject::name() const {
+  // TODO(user) : merge with GetName() code to remove a std::string copy.
   return solver_->GetName(this);
 }
 
-void PropagationBaseObject::set_name(const string& name) {
+void PropagationBaseObject::set_name(const std::string& name) {
   solver_->SetName(this, name);
 }
 
 bool PropagationBaseObject::HasName() const { return solver_->HasName(this); }
 
-string PropagationBaseObject::BaseName() const { return ""; }
+std::string PropagationBaseObject::BaseName() const { return ""; }
 
 void PropagationBaseObject::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
   solver_->ExecuteAll(demons);
@@ -2556,7 +2556,7 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
 
 // ---------- Decision Builder ----------
 
-string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
+std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
 
 void DecisionBuilder::AppendMonitors(Solver* const solver,
                                      std::vector<SearchMonitor*>* const extras) {}
@@ -2684,7 +2684,6 @@ const char ModelVisitor::kBranchesLimitArgument[] = "branches_limit";
 const char ModelVisitor::kCapacityArgument[] = "capacity";
 const char ModelVisitor::kCardsArgument[] = "cardinalities";
 const char ModelVisitor::kCoefficientsArgument[] = "coefficients";
-const char ModelVisitor::kCompleteArgument[] = "complete";
 const char ModelVisitor::kCountArgument[] = "count";
 const char ModelVisitor::kCumulativeArgument[] = "cumulative";
 const char ModelVisitor::kCumulsArgument[] = "cumuls";
@@ -2713,6 +2712,7 @@ const char ModelVisitor::kMinArgument[] = "min_value";
 const char ModelVisitor::kModuloArgument[] = "modulo";
 const char ModelVisitor::kNextsArgument[] = "nexts";
 const char ModelVisitor::kOptionalArgument[] = "optional";
+const char ModelVisitor::kPartialArgument[] = "partial";
 const char ModelVisitor::kPositionXArgument[] = "position_x";
 const char ModelVisitor::kPositionYArgument[] = "position_y";
 const char ModelVisitor::kRangeArgument[] = "range";
@@ -2751,20 +2751,20 @@ const char ModelVisitor::kTraceOperation[] = "trace";
 
 ModelVisitor::~ModelVisitor() {}
 
-void ModelVisitor::BeginVisitModel(const string& type_name) {}
-void ModelVisitor::EndVisitModel(const string& type_name) {}
+void ModelVisitor::BeginVisitModel(const std::string& type_name) {}
+void ModelVisitor::EndVisitModel(const std::string& type_name) {}
 
-void ModelVisitor::BeginVisitConstraint(const string& type_name,
+void ModelVisitor::BeginVisitConstraint(const std::string& type_name,
                                         const Constraint* const constraint) {}
-void ModelVisitor::EndVisitConstraint(const string& type_name,
+void ModelVisitor::EndVisitConstraint(const std::string& type_name,
                                       const Constraint* const constraint) {}
 
-void ModelVisitor::BeginVisitExtension(const string& type) {}
-void ModelVisitor::EndVisitExtension(const string& type) {}
+void ModelVisitor::BeginVisitExtension(const std::string& type) {}
+void ModelVisitor::EndVisitExtension(const std::string& type) {}
 
-void ModelVisitor::BeginVisitIntegerExpression(const string& type_name,
+void ModelVisitor::BeginVisitIntegerExpression(const std::string& type_name,
                                                const IntExpr* const expr) {}
-void ModelVisitor::EndVisitIntegerExpression(const string& type_name,
+void ModelVisitor::EndVisitIntegerExpression(const std::string& type_name,
                                              const IntExpr* const expr) {}
 
 void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
@@ -2775,7 +2775,7 @@ void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
 }
 
 void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
-                                        const string& operation, int64 value,
+                                        const std::string& operation, int64 value,
                                         IntVar* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
@@ -2783,7 +2783,7 @@ void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
 }
 
 void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
-                                         const string& operation, int64 value,
+                                         const std::string& operation, int64 value,
                                          IntervalVar* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
@@ -2796,45 +2796,45 @@ void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
   }
 }
 
-void ModelVisitor::VisitIntegerArgument(const string& arg_name, int64 value) {}
+void ModelVisitor::VisitIntegerArgument(const std::string& arg_name, int64 value) {}
 
-void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
+void ModelVisitor::VisitIntegerArrayArgument(const std::string& arg_name,
                                              const std::vector<int64>& values) {}
 
-void ModelVisitor::VisitIntegerMatrixArgument(const string& arg_name,
+void ModelVisitor::VisitIntegerMatrixArgument(const std::string& arg_name,
                                               const IntTupleSet& tuples) {}
 
-void ModelVisitor::VisitIntegerExpressionArgument(const string& arg_name,
+void ModelVisitor::VisitIntegerExpressionArgument(const std::string& arg_name,
                                                   IntExpr* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
-    const string& arg_name, const std::vector<IntVar*>& arguments) {
+    const std::string& arg_name, const std::vector<IntVar*>& arguments) {
   for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntervalArgument(const string& arg_name,
+void ModelVisitor::VisitIntervalArgument(const std::string& arg_name,
                                          IntervalVar* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntervalArrayArgument(
-    const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+    const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
   for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
 }
 
-void ModelVisitor::VisitSequenceArgument(const string& arg_name,
+void ModelVisitor::VisitSequenceArgument(const std::string& arg_name,
                                          SequenceVar* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitSequenceArrayArgument(
-    const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+    const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
   for (int i = 0; i < arguments.size(); ++i) {
     arguments[i]->Accept(this);
   }
@@ -2876,7 +2876,7 @@ void ModelVisitor::VisitInt64ToInt64Extension(
 }
 
 void ModelVisitor::VisitInt64ToInt64AsArray(
-    Solver::IndexEvaluator1* const callback, const string& arg_name,
+    Solver::IndexEvaluator1* const callback, const std::string& arg_name,
     int64 index_max) {
   if (callback == nullptr) {
     return;
@@ -3000,7 +3000,7 @@ class Trace : public PropagationMonitor {
     }
   }
 
-  virtual void PushContext(const string& context) {
+  virtual void PushContext(const std::string& context) {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->PushContext(context);
     }
@@ -3188,7 +3188,7 @@ class Trace : public PropagationMonitor {
   // events.
   virtual void Install() { SearchMonitor::Install(); }
 
-  virtual string DebugString() const { return "Trace"; }
+  virtual std::string DebugString() const { return "Trace"; }
 
  private:
   std::vector<PropagationMonitor*> monitors_;
@@ -3207,7 +3207,7 @@ PropagationMonitor* Solver::GetPropagationMonitor() const {
 
 // ----------------- Constraint class -------------------
 
-string Constraint::DebugString() const { return "Constraint"; }
+std::string Constraint::DebugString() const { return "Constraint"; }
 
 void Constraint::PostAndPropagate() {
   FreezeQueue();

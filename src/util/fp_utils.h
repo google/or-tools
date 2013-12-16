@@ -32,6 +32,7 @@
 #include <xmmintrin.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -87,7 +88,7 @@ inline bool IsPositiveOrNegativeInfinity(FloatType x) {
 // tolerances.
 // Returns true if |x - y| <= a (with a being the absolute_tolerance).
 // The above case is useful for values that are close to zero.
-// Returns true if |x - y| <= max(|x|, |y|) * r. (with r being the relative
+// Returns true if |x - y| <= std::max(|x|, |y|) * r. (with r being the relative
 //                                                tolerance.)
 // The cases for infinities are treated separately to avoid generating NaNs.
 template<typename FloatType> bool AreWithinAbsoluteOrRelativeTolerances(

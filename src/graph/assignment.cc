@@ -13,8 +13,8 @@
 #include "graph/assignment.h"
 
 #include "base/commandlineflags.h"
-#include "graph/linear_assignment.h"
 #include "graph/ebert_graph.h"
+#include "graph/linear_assignment.h"
 
 namespace operations_research {
 
@@ -55,6 +55,15 @@ SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   optimal_cost_ = 0;
   assignment_arcs_.clear();
   if (NumNodes() == 0) return OPTIMAL;
+  // HACK(user): Detect overflows early. In ./linear_assignment.h, the cost of
+  // each arc is internally multiplied by cost_scaling_factor_ (which is equal
+  // to (num_nodes + 1)) without overflow checking.
+  const CostValue max_supported_arc_cost =
+      std::numeric_limits<CostValue>::max() / (NumNodes() + 1);
+  for (const CostValue unscaled_arc_cost : arc_cost_) {
+    if (unscaled_arc_cost > max_supported_arc_cost) return POSSIBLE_OVERFLOW;
+  }
+
   const ArcIndex num_arcs = arc_cost_.size();
   ForwardStarGraph graph(2 * num_nodes_, num_arcs);
   LinearSumAssignment<ForwardStarGraph> assignment(graph, num_nodes_);

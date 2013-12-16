@@ -55,7 +55,7 @@ inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
   return Boolean((uint8)(a.value() ^ (uint8) b));
 }
-inline string ToString(Boolean b) {
+inline std::string ToString(Boolean b) {
   switch (b.value()) {
     case 0:
       return "true";
@@ -524,7 +524,7 @@ class SatPropagator : public Constraint {
     return result;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("SatConstraint(%d variables, %d clauses)",
                         sat_.NumVariables(), sat_.NumClauses());
   }

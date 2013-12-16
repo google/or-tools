@@ -78,7 +78,7 @@ void FlatZincModel::InitSolver() {
   }
 }
 
-void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
+void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs,
                               bool active) {
   IntVar* var = nullptr;
   if (vs->alias) {
@@ -113,7 +113,7 @@ void FlatZincModel::NewIntVar(const string& name, IntVarSpec* const vs,
 
 void FlatZincModel::SkipIntVar() { integer_variables_[int_var_count++] = nullptr; }
 
-void FlatZincModel::NewBoolVar(const string& name, BoolVarSpec* const vs) {
+void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   IntVar* var = nullptr;
   if (vs->alias) {
     var = boolean_variables_[vs->i]->Var();
@@ -138,7 +138,7 @@ void FlatZincModel::SkipBoolVar() {
   boolean_variables_[bool_var_count++] = nullptr;
 }
 
-void FlatZincModel::NewSetVar(const string& name, SetVarSpec* vs) {
+void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
   // if (vs->alias) {
   //   set_variables_[set_var_count++] = set_variables_[vs->i];
   // } else {
@@ -229,8 +229,8 @@ void FlatZincModel::CollectOutputVariables(AstNode* const node) {
   }
 }
 
-string FlatZincModel::DebugString(AstNode* const ai) const {
-  string output;
+std::string FlatZincModel::DebugString(AstNode* const ai) const {
+  std::string output;
   int k;
   if (ai->isArray()) {
     AstArray* aia = ai->getArray();
@@ -269,7 +269,7 @@ string FlatZincModel::DebugString(AstNode* const ai) const {
       }
     }
   } else if (ai->isString()) {
-    string s = ai->getString();
+    std::string s = ai->getString();
     for (unsigned int i = 0; i < s.size(); i++) {
       if (s[i] == '\\' && i < s.size() - 1) {
         switch (s[i + 1]) {

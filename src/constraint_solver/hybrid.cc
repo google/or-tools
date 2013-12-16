@@ -105,7 +105,7 @@ class SimplexConnection : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const { return "SimplexConnection"; }
+  virtual std::string DebugString() const { return "SimplexConnection"; }
 
  private:
   std::unique_ptr<Callback1<MPSolver*> > builder_;
@@ -139,11 +139,11 @@ class Linearizer : public ModelParser {
   virtual ~Linearizer() {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const string& solver_name) { BeginVisit(true); }
+  virtual void BeginVisitModel(const std::string& solver_name) { BeginVisit(true); }
 
-  virtual void EndVisitModel(const string& solver_name) { EndVisit(); }
+  virtual void EndVisitModel(const std::string& solver_name) { EndVisit(); }
 
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint) {
     if (!constraint->IsCastConstraint() &&
         (IS_TYPE(type_name, kEquality) || IS_TYPE(type_name, kLessOrEqual) ||
@@ -155,7 +155,7 @@ class Linearizer : public ModelParser {
     }
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     if (!constraint->IsCastConstraint()) {
       if (IS_TYPE(type_name, kEquality)) {
@@ -170,18 +170,18 @@ class Linearizer : public ModelParser {
     }
     EndVisit();
   }
-  virtual void BeginVisitExtension(const string& type) { BeginVisit(true); }
-  virtual void EndVisitExtension(const string& type) {
+  virtual void BeginVisitExtension(const std::string& type) { BeginVisit(true); }
+  virtual void EndVisitExtension(const std::string& type) {
     if (IS_TYPE(type, kObjectiveExtension)) {
       VisitObjective();
     }
     EndVisit();
   }
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expr) {
     BeginVisit(true);
   }
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expr) {
     if (IS_TYPE(type_name, kSum)) {
       VisitSum(expr);
@@ -200,7 +200,7 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     RegisterExpression(variable);
     RegisterExpression(delegate);
@@ -229,24 +229,24 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {}
 
   // Visit integer arguments.
-  virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
     if (DoVisit()) {
       Top()->SetIntegerArgument(arg_name, value);
     }
   }
 
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
     if (DoVisit()) {
       Top()->SetIntegerArrayArgument(arg_name, values);
     }
   }
 
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
                                           const IntTupleSet& values) {
     if (DoVisit()) {
       Top()->SetIntegerMatrixArgument(arg_name, values);
@@ -254,7 +254,7 @@ class Linearizer : public ModelParser {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     if (DoVisit()) {
       Top()->SetIntegerExpressionArgument(arg_name, argument);
@@ -263,7 +263,7 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     if (DoVisit()) {
       Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
       for (int i = 0; i < arguments.size(); ++i) {
@@ -273,13 +273,13 @@ class Linearizer : public ModelParser {
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {}
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& argument) {}
+      const std::string& arg_name, const std::vector<IntervalVar*>& argument) {}
 
-  virtual string DebugString() const { return "Linearizer"; }
+  virtual std::string DebugString() const { return "Linearizer"; }
 
  private:
   void BeginVisit(bool active) {
@@ -590,7 +590,7 @@ class AutomaticLinearization : public SearchMonitor {
     }
   }
 
-  virtual string DebugString() const { return "AutomaticLinearization"; }
+  virtual std::string DebugString() const { return "AutomaticLinearization"; }
 
  private:
   MPSolver mp_solver_;

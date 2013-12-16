@@ -58,15 +58,15 @@ inline void STLStringResizeUninitialized(std::string* s, size_t new_size) {
   s->resize(new_size);
 }
 
-// Return a mutable char* pointing to a string's internal buffer,
+// Return a mutable char* pointing to a std::string's internal buffer,
 // which may not be null-terminated. Writing through this pointer will
-// modify the string.
+// modify the std::string.
 //
 // string_as_array(&str)[i] is valid for 0 <= i < str.size() until the
-// next call to a string method that invalidates iterators.
+// next call to a std::string method that invalidates iterators.
 //
 // As of 2006-04, there is no standard-blessed way of getting a
-// mutable reference to a string's internal buffer. However, issue 530
+// mutable reference to a std::string's internal buffer. However, issue 530
 // (http://www.open-std.org/JTC1/SC22/WG21/docs/lwg-active.html#530)
 // proposes this as the method. According to Matt Austern, this should
 // already work on all current implementations.

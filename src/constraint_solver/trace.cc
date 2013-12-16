@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <math.h>
-#include <string.h>
 #include <algorithm>
+#include <cmath>
 #include "base/hash.h"
 #include <stack>
 #include <string>
@@ -150,7 +149,7 @@ class TraceIntVar : public IntVar {
     }
   }
 
-  virtual string DebugString() const { return inner_->DebugString(); }
+  virtual std::string DebugString() const { return inner_->DebugString(); }
 
   virtual IntVar* IsEqual(int64 constant) { return inner_->IsEqual(constant); }
 
@@ -223,7 +222,7 @@ class TraceIntExpr : public IntExpr {
     visitor->EndVisitIntegerExpression(ModelVisitor::kTrace, this);
   }
 
-  virtual string DebugString() const { return inner_->DebugString(); }
+  virtual std::string DebugString() const { return inner_->DebugString(); }
 
  private:
   IntExpr* const inner_;
@@ -381,7 +380,7 @@ class TraceIntervalVar : public IntervalVar {
     inner_->Accept(visitor);
   }
 
-  virtual string DebugString() const { return inner_->DebugString(); }
+  virtual std::string DebugString() const { return inner_->DebugString(); }
 
  private:
   IntervalVar* const inner_;
@@ -392,8 +391,8 @@ class TraceIntervalVar : public IntervalVar {
 class PrintTrace : public PropagationMonitor {
  public:
   struct Info {
-    explicit Info(const string& m) : message(m), displayed(false) {}
-    string message;
+    explicit Info(const std::string& m) : message(m), displayed(false) {}
+    std::string message;
     bool displayed;
   };
 
@@ -578,7 +577,7 @@ class PrintTrace : public PropagationMonitor {
     PopDelayedInfo();
   }
 
-  virtual void PushContext(const string& context) { PushDelayedInfo(context); }
+  virtual void PushContext(const std::string& context) { PushDelayedInfo(context); }
 
   virtual void PopContext() { PopDelayedInfo(); }
 
@@ -741,10 +740,10 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  virtual string DebugString() const { return "PrintTrace"; }
+  virtual std::string DebugString() const { return "PrintTrace"; }
 
  private:
-  void PushDelayedInfo(const string& delayed) {
+  void PushDelayedInfo(const std::string& delayed) {
     if (FLAGS_cp_full_trace) {
       LOG(INFO) << Indent() << delayed << " {";
       IncreaseIndent();
@@ -784,7 +783,7 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  void DisplayModification(const string& to_print) {
+  void DisplayModification(const std::string& to_print) {
     if (FLAGS_cp_full_trace) {
       LOG(INFO) << Indent() << to_print;
     } else {
@@ -812,7 +811,7 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  void DisplaySearch(const string& to_print) {
+  void DisplaySearch(const std::string& to_print) {
     const int solve_depth = solver()->SolveDepth();
     if (solve_depth <= 1) {
       LOG(INFO) << Indent() << "######## Top Level Search: " << to_print;
@@ -822,9 +821,9 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
-  string Indent() {
+  std::string Indent() {
     CHECK_GE(contexes_.top().indent, 0);
-    string output = " @ ";
+    std::string output = " @ ";
     for (int i = 0; i < contexes_.top().indent; ++i) {
       output.append("    ");
     }

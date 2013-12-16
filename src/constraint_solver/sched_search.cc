@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -36,7 +36,7 @@ int64 IndexToValue(int64 index) { return index + 1; }
 // that ranked_first, ranked_last, and unperformed are truly disjoint.
 
 SequenceVar::SequenceVar(Solver* const s, const std::vector<IntervalVar*>& intervals,
-                         const std::vector<IntVar*>& nexts, const string& name)
+                         const std::vector<IntVar*>& nexts, const std::string& name)
     : PropagationBaseObject(s),
       intervals_(intervals),
       nexts_(nexts),
@@ -52,7 +52,7 @@ IntervalVar* SequenceVar::Interval(int index) const {
 
 IntVar* SequenceVar::Next(int index) const { return nexts_[index]; }
 
-string SequenceVar::DebugString() const {
+std::string SequenceVar::DebugString() const {
   int64 hmin, hmax, dmin, dmax;
   HorizonRange(&hmin, &hmax);
   DurationRange(&dmin, &dmax);
@@ -403,7 +403,7 @@ class ScheduleOrPostpone : public Decision {
     visitor->VisitScheduleOrPostpone(var_, est_.Value());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), est_.Value());
   }
@@ -453,7 +453,7 @@ class SetTimesForward : public DecisionBuilder {
         vars_[support], vars_[support]->StartMin(), &markers_[support]));
   }
 
-  virtual string DebugString() const { return "SetTimesForward()"; }
+  virtual std::string DebugString() const { return "SetTimesForward()"; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
@@ -484,7 +484,7 @@ class RankFirst : public Decision {
     visitor->VisitRankFirstInterval(sequence_, index_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("RankFirst(%s, %d)", sequence_->DebugString().c_str(),
                         index_);
   }
@@ -508,7 +508,7 @@ class RankLast : public Decision {
     visitor->VisitRankLastInterval(sequence_, index_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("RankLast(%s, %d)", sequence_->DebugString().c_str(),
                         index_);
   }

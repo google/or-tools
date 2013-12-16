@@ -38,7 +38,6 @@
 #include "util/stats.h"
 #include "base/adjustable_priority_queue.h"
 
-using std::string;
 
 namespace operations_research {
 namespace sat {
@@ -186,7 +185,7 @@ class SatClause {
   // and actually detach it.
   void LazyDetach() { is_attached_ = false; }
 
-  string DebugString() const;
+  std::string DebugString() const;
 
  private:
   // The data is packed so that only 16 bytes are used for these fields.
@@ -461,7 +460,7 @@ class SatSolver {
     int literal_trail_index;
     Literal decision;
   };
-  const std::vector<ChoicePoint>& ChoicePoints() { return choice_points_; }
+  const std::vector<ChoicePoint>& ChoicePoints() const { return choice_points_; }
   const Trail& LiteralTrail() const { return trail_; }
   const VariablesAssignment& Assignment() const { return trail_.Assignment(); }
 
@@ -477,7 +476,7 @@ class SatSolver {
 
   // Utility function to insert spaces proportional to the search depth.
   // It is used in the pretty print of the search.
-  string Indent() const;
+  std::string Indent() const;
 
   // Returns the decision level of a given variable.
   int DecisionLevel(VariableIndex var) const {
@@ -566,9 +565,9 @@ class SatSolver {
 
   // Statistics on one clause, added indicates if we are adding the
   // clause, or deleting it.
-  template<typename Literals>
-  void UpdateStatisticsOnOneClause(
-      const Literals& literals, int size, bool added) {
+  template <typename Literals>
+  void UpdateStatisticsOnOneClause(const Literals& literals, int size,
+                                   bool added) {
     SCOPED_TIME_STAT(&stats_);
     for (const Literal literal : literals) {
       const VariableIndex var = literal.Variable();
@@ -682,9 +681,9 @@ class SatSolver {
 
   void SetNumVariables(int num_variables);
 
-  string DebugString(const SatClause& clause) const;
-  string StatusString() const;
-  string RunningStatisticsString() const;
+  std::string DebugString(const SatClause& clause) const;
+  std::string StatusString() const;
+  std::string RunningStatisticsString() const;
 
   VariableIndex num_variables_;
 

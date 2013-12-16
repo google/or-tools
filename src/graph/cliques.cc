@@ -143,7 +143,7 @@ class FindAndEliminate {
   bool GraphCallback(int node1, int node2) {
     if (visited_.find(
             std::make_pair(std::min(node1, node2),
-                           std::max(node1, node2))) != visited_.end()) {
+                      std::max(node1, node2))) != visited_.end()) {
       return false;
     }
     return graph_->Run(node1, node2);
@@ -155,7 +155,7 @@ class FindAndEliminate {
       for (int i = 0; i < size - 1; ++i) {
         for (int j = i + 1; j < size; ++j) {
           visited_.insert(std::make_pair(std::min(solution[i], solution[j]),
-                                         std::max(solution[i], solution[j])));
+                                    std::max(solution[i], solution[j])));
         }
       }
       callback_->Run(solution);

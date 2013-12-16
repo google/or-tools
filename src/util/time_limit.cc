@@ -12,6 +12,7 @@
 // limitations under the License.
 #include "util/time_limit.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace operations_research {

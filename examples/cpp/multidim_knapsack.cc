@@ -51,7 +51,7 @@ class MultiDimKnapsackData {
         problem_type_(-1) {}
 
 
-  void Load(const string& filename) {
+  void Load(const std::string& filename) {
     FileLineReader reader(filename.c_str());
     reader.set_line_callback(NewPermanentCallback(
         this,
@@ -77,7 +77,7 @@ class MultiDimKnapsackData {
   int dims() const { return num_dims_; }
 
   // Name of the problem.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   int capacity(int i) const { return dims_[i]; }
   int profit(int j) const { return profit_[j]; }
@@ -87,7 +87,7 @@ class MultiDimKnapsackData {
   // Used internally.
   void ProcessNewLine(char* const line) {
     const char* const kWordDelimiters(" ");
-    std::vector<string> words;
+    std::vector<std::string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
     line_read_++;
     if (problem_type_ == -1) {
@@ -233,7 +233,7 @@ class MultiDimKnapsackData {
   }
 
  private:
-  string name_;
+  std::string name_;
   std::vector<int> dims_;
   std::vector<int> profit_;
   std::vector<std::vector<int> > weight_;

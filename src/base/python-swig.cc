@@ -45,7 +45,7 @@ template <class T> PyObject* PyObjFrom(const T& c) {
 }
 
 #ifdef HAS_GLOBAL_STRING
-template <> bool PyObjAs(PyObject* pystr, ::string* cstr) {
+template <> bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
   char* buf;
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
@@ -75,7 +75,7 @@ template <class T> bool PyObjAs(PyObject* pystr, std::string* cstr) {
   return true;
 }
 #ifdef HAS_GLOBAL_STRING
-template <> PyObject* PyObjFrom(const ::string& c) {
+template <> PyObject* PyObjFrom(const ::std::string& c) {
   return PyString_FromStringAndSize(c.data(), c.size());
 }
 #endif

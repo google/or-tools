@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include <algorithm>
 #include "base/hash.h"
 #include "base/hash.h"
@@ -380,7 +379,7 @@ class SimpleLNS : public BaseLNS {
   ~SimpleLNS() {}
   virtual void InitFragments() { index_ = 0; }
   virtual bool NextFragment(std::vector<int>* fragment);
-  virtual string DebugString() const { return "SimpleLNS"; }
+  virtual std::string DebugString() const { return "SimpleLNS"; }
 
  private:
   int index_;
@@ -414,7 +413,7 @@ class RandomLNS : public BaseLNS {
   ~RandomLNS() {}
   virtual bool NextFragment(std::vector<int>* fragment);
 
-  virtual string DebugString() const { return "RandomLNS"; }
+  virtual std::string DebugString() const { return "RandomLNS"; }
 
  private:
   ACMRandom rand_;
@@ -462,7 +461,7 @@ class MoveTowardTargetLS : public IntVarLocalSearchOperator {
 
   virtual ~MoveTowardTargetLS() {}
 
-  virtual string DebugString() const { return "MoveTowardTargetLS"; }
+  virtual std::string DebugString() const { return "MoveTowardTargetLS"; }
 
  protected:
   // Make a neighbor assigning one variable to its target value.
@@ -559,7 +558,7 @@ class IncrementValue : public ChangeValue {
   virtual ~IncrementValue() {}
   virtual int64 ModifyValue(int64 index, int64 value) { return value + 1; }
 
-  virtual string DebugString() const { return "IncrementValue"; }
+  virtual std::string DebugString() const { return "IncrementValue"; }
 };
 
 // Decrements the current value of variables.
@@ -570,7 +569,7 @@ class DecrementValue : public ChangeValue {
   virtual ~DecrementValue() {}
   virtual int64 ModifyValue(int64 index, int64 value) { return value - 1; }
 
-  virtual string DebugString() const { return "DecrementValue"; }
+  virtual std::string DebugString() const { return "DecrementValue"; }
 };
 }  // namespace
 
@@ -880,7 +879,7 @@ class TwoOpt : public PathOperator {
   virtual bool MakeNeighbor();
   virtual bool IsIncremental() const { return true; }
 
-  virtual string DebugString() const { return "TwoOpt"; }
+  virtual std::string DebugString() const { return "TwoOpt"; }
 
  protected:
   virtual bool OnSamePathAsPreviousBase(int64 base_index) {
@@ -950,7 +949,7 @@ class Relocate : public PathOperator {
   virtual ~Relocate() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "Relocate"; }
+  virtual std::string DebugString() const { return "Relocate"; }
 
  protected:
   virtual bool OnSamePathAsPreviousBase(int64 base_index) {
@@ -995,7 +994,7 @@ class Exchange : public PathOperator {
   virtual ~Exchange() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "Exchange"; }
+  virtual std::string DebugString() const { return "Exchange"; }
 };
 
 bool Exchange::MakeNeighbor() {
@@ -1035,7 +1034,7 @@ class Cross : public PathOperator {
   virtual ~Cross() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "Cross"; }
+  virtual std::string DebugString() const { return "Cross"; }
 };
 
 bool Cross::MakeNeighbor() {
@@ -1117,7 +1116,7 @@ class MakeActiveOperator : public BaseInactiveNodeToPathOperator {
   virtual ~MakeActiveOperator() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "MakeActiveOperator"; }
+  virtual std::string DebugString() const { return "MakeActiveOperator"; }
 };
 
 bool MakeActiveOperator::MakeNeighbor() {
@@ -1146,7 +1145,7 @@ class MakeInactiveOperator : public PathOperator {
     return MakeChainInactive(base, Next(base));
   }
 
-  virtual string DebugString() const { return "MakeInactiveOperator"; }
+  virtual std::string DebugString() const { return "MakeInactiveOperator"; }
 };
 
 // ----- MakeChainInactiveOperator -----
@@ -1168,7 +1167,7 @@ class MakeChainInactiveOperator : public PathOperator {
     return MakeChainInactive(BaseNode(0), BaseNode(1));
   }
 
-  virtual string DebugString() const { return "MakeChainInactiveOperator"; }
+  virtual std::string DebugString() const { return "MakeChainInactiveOperator"; }
 
  protected:
   virtual bool OnSamePathAsPreviousBase(int64 base_index) {
@@ -1203,7 +1202,7 @@ class SwapActiveOperator : public BaseInactiveNodeToPathOperator {
   virtual ~SwapActiveOperator() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "SwapActiveOperator"; }
+  virtual std::string DebugString() const { return "SwapActiveOperator"; }
 };
 
 bool SwapActiveOperator::MakeNeighbor() {
@@ -1236,7 +1235,7 @@ class ExtendedSwapActiveOperator : public BaseInactiveNodeToPathOperator {
   virtual ~ExtendedSwapActiveOperator() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "ExtendedSwapActiveOperator"; }
+  virtual std::string DebugString() const { return "ExtendedSwapActiveOperator"; }
 };
 
 bool ExtendedSwapActiveOperator::MakeNeighbor() {
@@ -1271,7 +1270,7 @@ class TSPOpt : public PathOperator {
   virtual ~TSPOpt() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "TSPOpt"; }
+  virtual std::string DebugString() const { return "TSPOpt"; }
 
  private:
   std::vector<std::vector<int64> > cost_;
@@ -1337,7 +1336,7 @@ class TSPLns : public PathOperator {
   virtual ~TSPLns() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "TSPLns"; }
+  virtual std::string DebugString() const { return "TSPLns"; }
 
  protected:
   virtual bool MakeOneNeighbor();
@@ -1470,7 +1469,7 @@ class NearestNeighbors {
   void Initialize();
   const std::vector<int>& Neighbors(int index) const;
 
-  virtual string DebugString() const { return "NearestNeighbors"; }
+  virtual std::string DebugString() const { return "NearestNeighbors"; }
 
  private:
   void ComputeNearest(int row);
@@ -1578,7 +1577,7 @@ class LinKernighan : public PathOperator {
   virtual ~LinKernighan();
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "LinKernighan"; }
+  virtual std::string DebugString() const { return "LinKernighan"; }
 
  private:
   virtual void OnNodeInitialization();
@@ -1731,7 +1730,7 @@ class PathLNS : public PathOperator {
   virtual ~PathLNS() {}
   virtual bool MakeNeighbor();
 
-  virtual string DebugString() const { return "PathLNS"; }
+  virtual std::string DebugString() const { return "PathLNS"; }
 
  private:
   inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
@@ -1806,7 +1805,7 @@ class NeighborhoodLimit : public LocalSearchOperator {
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
 
-  virtual string DebugString() const { return "NeighborhoodLimit"; }
+  virtual std::string DebugString() const { return "NeighborhoodLimit"; }
 
  private:
   LocalSearchOperator* const operator_;
@@ -1831,7 +1830,7 @@ class CompoundOperator : public LocalSearchOperator {
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
-  virtual string DebugString() const { return "CompoundOperator"; }
+  virtual std::string DebugString() const { return "CompoundOperator"; }
 
  private:
   class OperatorComparator {
@@ -1891,7 +1890,7 @@ void CompoundOperator::Start(const Assignment* assignment) {
     }
     OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
     std::sort(operator_indices_.get(), operator_indices_.get() + size_,
-              comparator);
+         comparator);
     index_ = 0;
   }
 }
@@ -1963,7 +1962,7 @@ class RandomCompoundOperator : public LocalSearchOperator {
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
-  virtual string DebugString() const { return "RandomCompoundOperator"; }
+  virtual std::string DebugString() const { return "RandomCompoundOperator"; }
 
  private:
   const int size_;
@@ -2003,7 +2002,7 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   for (int i = 0; i < size_; ++i) {
     indices[i] = i;
   }
-  random_shuffle(indices.begin(), indices.end(), rand_);
+  std::random_shuffle(indices.begin(), indices.end(), rand_);
   for (int i = 0; i < size_; ++i) {
     if (operators_[indices[i]]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
@@ -2241,7 +2240,7 @@ class VariableDomainFilter : public LocalSearchFilter {
   virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
   virtual void Synchronize(const Assignment* assignment) {}
 
-  virtual string DebugString() const { return "VariableDomainFilter"; }
+  virtual std::string DebugString() const { return "VariableDomainFilter"; }
 };
 
 bool VariableDomainFilter::Accept(const Assignment* delta,
@@ -2329,7 +2328,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
                                     int64* obj_value) = 0;
   virtual bool IsIncremental() const { return true; }
 
-  virtual string DebugString() const { return "ObjectiveFilter"; }
+  virtual std::string DebugString() const { return "ObjectiveFilter"; }
 
  protected:
   const int primary_vars_size_;
@@ -2664,7 +2663,7 @@ class FindOneNeighbor : public DecisionBuilder {
                   const std::vector<LocalSearchFilter*>& filters);
   virtual ~FindOneNeighbor() {}
   virtual Decision* Next(Solver* const solver);
-  virtual string DebugString() const { return "FindOneNeighbor"; }
+  virtual std::string DebugString() const { return "FindOneNeighbor"; }
 
  private:
   bool FilterAccept(const Assignment* delta, const Assignment* deltadelta);
@@ -2835,7 +2834,7 @@ class LocalSearchPhaseParameters : public BaseObject {
         limit_(limit),
         filters_(filters) {}
   ~LocalSearchPhaseParameters() {}
-  virtual string DebugString() const { return "LocalSearchPhaseParameters"; }
+  virtual std::string DebugString() const { return "LocalSearchPhaseParameters"; }
 
   SolutionPool* solution_pool() const { return solution_pool_; }
   LocalSearchOperator* ls_operator() const { return ls_operator_; }
@@ -2924,7 +2923,7 @@ class NestedSolveDecision : public Decision {
   virtual ~NestedSolveDecision() {}
   virtual void Apply(Solver* const solver);
   virtual void Refute(Solver* const solver);
-  virtual string DebugString() const { return "NestedSolveDecision"; }
+  virtual std::string DebugString() const { return "NestedSolveDecision"; }
   int state() const { return state_; }
 
  private:
@@ -3001,7 +3000,7 @@ class LocalSearch : public DecisionBuilder {
               const std::vector<LocalSearchFilter*>& filters);
   virtual ~LocalSearch();
   virtual Decision* Next(Solver* const solver);
-  virtual string DebugString() const { return "LocalSearch"; }
+  virtual std::string DebugString() const { return "LocalSearch"; }
   virtual void Accept(ModelVisitor* const visitor) const;
 
  protected:
@@ -3213,7 +3212,7 @@ class DefaultSolutionPool : public SolutionPool {
 
   virtual bool SyncNeeded(Assignment* const local_assignment) { return false; }
 
-  virtual string DebugString() const { return "DefaultSolutionPool"; }
+  virtual std::string DebugString() const { return "DefaultSolutionPool"; }
 
  private:
   std::unique_ptr<Assignment> reference_assignment_;

@@ -13,7 +13,6 @@
 //
 // This file implements the table constraints.
 
-#include <string.h>
 #include <algorithm>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
@@ -73,7 +72,7 @@ struct AffineTransformation {  // y == a*x + b.
     b = 0;
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a, b);
   }
 };
@@ -85,7 +84,7 @@ class VarLinearizer : public ModelParser {
   virtual ~VarLinearizer() {}
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
@@ -122,7 +121,7 @@ class VarLinearizer : public ModelParser {
     CHECK(multipliers_.empty());
   }
 
-  virtual string DebugString() const { return "VarLinearizer"; }
+  virtual std::string DebugString() const { return "VarLinearizer"; }
 
  private:
   void AddConstant(int64 constant) {
@@ -194,7 +193,7 @@ class BasePositiveTableConstraint : public Constraint {
 
   virtual ~BasePositiveTableConstraint() {}
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
                         arity_, tuple_count_);
   }
@@ -376,7 +375,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     return false;
   }
 
-  virtual string DebugString() const { return "PositiveTableConstraint"; }
+  virtual std::string DebugString() const { return "PositiveTableConstraint"; }
 
  protected:
   void InitializeMask(int tuple_index) {
@@ -1281,7 +1280,7 @@ class TransitionConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kTransition, this);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",

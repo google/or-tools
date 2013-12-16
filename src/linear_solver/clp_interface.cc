@@ -108,7 +108,7 @@ class CLPInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     return "Clp " CLP_VERSION;
   }
 
@@ -274,10 +274,11 @@ void CLPInterface::AddVariable(MPVariable* const var) {
 void CLPInterface::CreateDummyVariableForEmptyConstraints() {
   clp_->setColumnBounds(kDummyVariableIndex, 0.0, 0.0);
   clp_->setObjectiveCoefficient(kDummyVariableIndex, 0.0);
-  // Workaround for peculiar signature of setColumnName.
-  std::string dummy_name = "dummy";
-  int var_index = kDummyVariableIndex;
-  clp_->setColumnName(var_index, dummy_name);
+  // Workaround for peculiar signature of setColumnName. Note that we do need
+  // std::string here, and not 'std::string', which aren't the same as of 2013-12
+  // (this will change later).
+  std::string dummy = "dummy";  // We do need to create this temporary variable.
+  clp_->setColumnName(kDummyVariableIndex, dummy);
 }
 
 // Define new variables and add them to existing constraints.
@@ -294,8 +295,8 @@ void CLPInterface::ExtractNewVariables() {
         int var_index = i + 1;  // offset by 1 because of dummy variable.
         var->set_index(var_index);
         if (!var->name().empty()) {
-          std::string std_name = var->name();
-          clp_->setColumnName(var_index, std_name);
+          std::string name = var->name();
+          clp_->setColumnName(var_index, name);
         }
         clp_->setColumnBounds(var_index, var->lb(), var->ub());
       }
@@ -314,8 +315,8 @@ void CLPInterface::ExtractNewVariables() {
         double tmp_obj_coef = 0.0;
         clp_->addColumn(0, NULL, NULL, var->lb(), var->ub(), tmp_obj_coef);
         if (!var->name().empty()) {
-          std::string std_name = var->name();
-          clp_->setColumnName(var_index, std_name);
+          std::string name = var->name();
+          clp_->setColumnName(var_index, name);
         }
       }
       // Add new variables to existing constraints.
@@ -383,8 +384,8 @@ void CLPInterface::ExtractNewConstraints() {
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       if (!ct->name().empty()) {
-        std::string std_name = ct->name();
-        clp_->setRowName(ct->index(), std_name);
+        std::string name = ct->name();
+        clp_->setRowName(ct->index(), name);
       }
     }
   }

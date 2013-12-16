@@ -76,7 +76,7 @@ typedef long sword_t;  // NOLINT
 #define GG_LONGLONG(x) x##I64
 #define GG_ULONGLONG(x) x##UI64
 
-// Length modifier in printf format string for int64's (e.g. within %d)
+// Length modifier in printf format std::string for int64's (e.g. within %d)
 #define GG_LL_FORMAT "I64"  // As in printf("%I64d", ...)
 #define GG_LL_FORMAT_W L"I64"
 

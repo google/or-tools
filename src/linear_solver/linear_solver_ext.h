@@ -31,14 +31,12 @@
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
-using std::string;
-
 #if defined(USE_SLM)
 
     extern "C" {
       #include "sulumc.h"
     }
-    
+
 #endif
 
 namespace operations_research {

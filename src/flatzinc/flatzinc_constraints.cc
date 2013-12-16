@@ -103,7 +103,7 @@ class BooleanSumOdd : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("BooleanSumOdd([%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
@@ -158,7 +158,7 @@ class VariableParity : public Constraint {
     var_->SetRange(new_vmin, new_vmax);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
   }
 
@@ -263,7 +263,7 @@ class IsBooleanSumInRange : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                         "d] == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
@@ -382,7 +382,7 @@ class BooleanSumInRange : public Constraint {
     Check();
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
                         JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
                         range_max_);
@@ -478,7 +478,7 @@ class Lex : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf(
         "Lex([%s], [%s]%s)", JoinDebugStringPtr(left_, ", ").c_str(),
         JoinDebugStringPtr(right_, ", ").c_str(), strict_ ? ", strict" : "");
@@ -569,7 +569,7 @@ class Inverse : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Inverse([%s], [%s])",
                         JoinDebugStringPtr(left_, ", ").c_str(),
                         JoinDebugStringPtr(right_, ", ").c_str());
@@ -646,7 +646,7 @@ class VariableCumulativeTask : public BaseObject {
   int64 StartMin() const { return start_->Min(); }
   int64 StartMax() const { return start_->Max(); }
   int64 EndMin() const { return start_->Min() + duration_->Min(); }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Task{ start: %s, duration: %s, demand: %s }",
                         start_->DebugString().c_str(),
                         duration_->DebugString().c_str(),
@@ -709,7 +709,7 @@ class VariableCumulativeTimeTable : public Constraint {
     LOG(FATAL) << "Should not be visited";
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("VariableCumulativeTimeTable([%s], capacity = %s)",
                         JoinDebugStringPtr(by_start_min_, ", ").c_str(),
                         capacity_->DebugString().c_str());

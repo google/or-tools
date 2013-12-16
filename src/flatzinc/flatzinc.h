@@ -116,12 +116,12 @@ class FzParallelSupport {
 
   FzParallelSupport() : num_solutions_found_(0) {}
   virtual ~FzParallelSupport() {}
-  virtual void Init(int worker_id, const string& init_string) = 0;
+  virtual void Init(int worker_id, const std::string& init_string) = 0;
   virtual void StartSearch(int worker_id, Type type) = 0;
-  virtual void SatSolution(int worker_id, const string& solution_string) = 0;
+  virtual void SatSolution(int worker_id, const std::string& solution_string) = 0;
   virtual void OptimizeSolution(int worker_id, int64 value,
-                                const string& solution_string) = 0;
-  virtual void FinalOutput(int worker_id, const string& final_output) = 0;
+                                const std::string& solution_string) = 0;
+  virtual void FinalOutput(int worker_id, const std::string& final_output) = 0;
   virtual bool ShouldFinish() const = 0;
   virtual void EndSearch(int worker_id, bool interrupted) = 0;
   virtual int64 BestSolution() const = 0;
@@ -129,7 +129,7 @@ class FzParallelSupport {
                                  IntVar* const var, int64 step,
                                  int worker_id) = 0;
   virtual SearchLimit* Limit(Solver* const s, int worker_id) = 0;
-  virtual void Log(int worker_id, const string& message) = 0;
+  virtual void Log(int worker_id, const std::string& message) = 0;
   virtual bool Interrupted() const = 0;
 
   void IncrementSolutions() { num_solutions_found_++; }
@@ -169,15 +169,15 @@ class FlatZincModel {
   void InitOutput(AstArray* const output);
 
   // Creates a new integer variable from specification.
-  void NewIntVar(const string& name, IntVarSpec* const vs, bool active);
+  void NewIntVar(const std::string& name, IntVarSpec* const vs, bool active);
   // Skips the creation of the variable.
   void SkipIntVar();
   // Creates a new boolean variable from specification.
-  void NewBoolVar(const string& name, BoolVarSpec* const vs);
+  void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   // Skips the creation of the variable.
   void SkipBoolVar();
   // Creates a new set variable from specification.
-  void NewSetVar(const string& name, SetVarSpec* const vs);
+  void NewSetVar(const std::string& name, SetVarSpec* const vs);
 
   // Adds a constraint to the model.
   void AddConstraint(CtSpec* const spec, Constraint* const ct);
@@ -231,7 +231,7 @@ class FlatZincModel {
              FzParallelSupport* const parallel_support);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
-  bool Parse(const string& fileName);
+  bool Parse(const std::string& fileName);
 
   // \brief Parse FlatZinc from \a is into \a fzs and return it.
   bool Parse(std::istream& is);  // NOLINT
@@ -263,7 +263,7 @@ class FlatZincModel {
   Meth ProblemType() const { return method_; }
 
  private:
-  string DebugString(AstNode* const ai) const;
+  std::string DebugString(AstNode* const ai) const;
 
   void CollectOutputVariables(AstNode* const node);
 
@@ -297,8 +297,8 @@ class FlatZincModel {
   std::vector<IntVar*> introduced_variables_;
   std::vector<IntVar*> output_variables_;
   bool parsed_ok_;
-  string search_name_;
-  string filename_;
+  std::string search_name_;
+  std::string filename_;
   SatPropagator* sat_;
   std::vector<Constraint*> postponed_constraints_;
   std::vector<int> integer_occurrences_;
@@ -308,12 +308,12 @@ class FlatZincModel {
 // %Exception class for %FlatZinc errors
 class FzError {
  private:
-  const string msg;
+  const std::string msg;
 
  public:
-  FzError(const string& where, const string& what)
+  FzError(const std::string& where, const std::string& what)
       : msg(where + ": " + what) {}
-  const string& DebugString(void) const { return msg; }
+  const std::string& DebugString(void) const { return msg; }
 };
 
 }  // namespace operations_research

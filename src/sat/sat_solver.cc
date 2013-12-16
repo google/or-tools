@@ -453,8 +453,8 @@ bool SatClause::IsSatisfied(const VariablesAssignment& assignment) const {
   return false;
 }
 
-string SatClause::DebugString() const {
-  string result;
+std::string SatClause::DebugString() const {
+  std::string result;
   for (const Literal literal : *this) {
     if (!result.empty()) result.append(" ");
     result.append(literal.DebugString());
@@ -521,10 +521,10 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   parameters_ = parameters;
 }
 
-string SatSolver::Indent() const {
+std::string SatSolver::Indent() const {
   SCOPED_TIME_STAT(&stats_);
   const int level = choice_points_.size();
-  string result;
+  std::string result;
   for (int i = 0; i < level; ++i) {
     result.append("|   ");
   }
@@ -986,7 +986,7 @@ int SatSolver::ComputeLbd(const LiteralList& literals) {
   return is_level_marked_.NumberOfSetCallsWithDifferentArguments();
 }
 
-string SatSolver::StatusString() const {
+std::string SatSolver::StatusString() const {
   const double time_in_s = timer_.Get();
   return
      StringPrintf("  time: %fs\n", time_in_s)
@@ -1025,7 +1025,7 @@ string SatSolver::StatusString() const {
      + StringPrintf("  num restarts: %d\n", restart_count_);
 }
 
-string SatSolver::RunningStatisticsString() const {
+std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
   const int learned = learned_clauses_.size();
   return StringPrintf("%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT "d, "
@@ -1321,7 +1321,7 @@ bool SatSolver::IsAssignmentValid(const VariablesAssignment& assignment) const {
       return false;
     }
   }
-  string result;
+  std::string result;
   for (VariableIndex var(0); var < num_variables_; ++var) {
     result.append(trail_.Assignment()
         .GetTrueLiteralForAssignedVariable(var).DebugString());
@@ -1330,13 +1330,13 @@ bool SatSolver::IsAssignmentValid(const VariablesAssignment& assignment) const {
   return true;
 }
 
-string SatSolver::DebugString(const SatClause& clause) const {
-  string result;
+std::string SatSolver::DebugString(const SatClause& clause) const {
+  std::string result;
   for (const Literal literal : clause) {
     if (!result.empty()) {
       result.append(" || ");
     }
-    const string value = trail_.Assignment().IsLiteralTrue(literal)
+    const std::string value = trail_.Assignment().IsLiteralTrue(literal)
         ? "true" : (trail_.Assignment().IsLiteralFalse(literal) ? "false"
                                                                 : "undef");
     result.append(

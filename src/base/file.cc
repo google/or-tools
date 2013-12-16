@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #if defined(_MSC_VER)
@@ -22,6 +21,7 @@
 #include <unistd.h>
 #endif
 
+#include <cstring>
 #include <string>
 
 #include "base/file.h"
@@ -164,23 +164,23 @@ Status GetContents(const std::string& filename, std::string* output,
   return Status(size == file->ReadToString(output, size));
 }
 
-bool ReadFileToString(const string& file_name, string* output) {
+bool ReadFileToString(const std::string& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const string& data, const string& file_name) {
+bool WriteStringToFile(const std::string& data, const std::string& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
 namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
  public:
-  virtual void AddError(int line, int column, const string& message) { }
+  virtual void AddError(int line, int column, const std::string& message) { }
 };
 }  // namespace
 
-bool ReadFileToProto(const string& file_name, google::protobuf::Message* proto) {
-  string str;
+bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
+  std::string str;
   if (!ReadFileToString(file_name, &str)) {
     LOG(INFO) << "Could not read " << file_name;
     return false;
@@ -207,30 +207,30 @@ bool ReadFileToProto(const string& file_name, google::protobuf::Message* proto) 
   return false;
 }
 
-void ReadFileToProtoOrDie(const string& file_name, google::protobuf::Message* proto) {
+void ReadFileToProtoOrDie(const std::string& file_name, google::protobuf::Message* proto) {
   CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           const string& file_name) {
-  string proto_string;
+                           const std::string& file_name) {
+  std::string proto_string;
   return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                const string& file_name) {
+                                const std::string& file_name) {
   CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-bool WriteProtoToFile(const google::protobuf::Message& proto, const string& file_name) {
-  string proto_string;
+bool WriteProtoToFile(const google::protobuf::Message& proto, const std::string& file_name) {
+  std::string proto_string;
   return proto.AppendToString(&proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           const string& file_name) {
+                           const std::string& file_name) {
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 

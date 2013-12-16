@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       const int route_number = 0;
-      string route;
+      std::string route;
       for (int64 node = routing.Start(route_number);
            !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {

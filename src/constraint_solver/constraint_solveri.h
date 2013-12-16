@@ -520,26 +520,26 @@ class RevBitMatrix : private RevBitSet {
 template <class T>
 class CallMethod0 : public Demon {
  public:
-  CallMethod0(T* const ct, void (T::*method)(), const string& name)
+  CallMethod0(T* const ct, void (T::*method)(), const std::string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
   virtual ~CallMethod0() {}
 
   virtual void Run(Solver* const s) { (constraint_->*method_)(); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
   }
 
  private:
   T* const constraint_;
   void (T::*const method_)();
-  const string name_;
+  const std::string name_;
 };
 
 template <class T>
 Demon* MakeConstraintDemon0(Solver* const s, T* const ct, void (T::*method)(),
-                            const string& name) {
+                            const std::string& name) {
   return s->RevAlloc(new CallMethod0<T>(ct, method, name));
 }
 
@@ -547,14 +547,14 @@ Demon* MakeConstraintDemon0(Solver* const s, T* const ct, void (T::*method)(),
 template <class T, class P>
 class CallMethod1 : public Demon {
  public:
-  CallMethod1(T* const ct, void (T::*method)(P), const string& name, P param1)
+  CallMethod1(T* const ct, void (T::*method)(P), const std::string& name, P param1)
       : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
   virtual ~CallMethod1() {}
 
   virtual void Run(Solver* const s) { (constraint_->*method_)(param1_); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
@@ -563,13 +563,13 @@ class CallMethod1 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)(P);
-  const string name_;
+  const std::string name_;
   P param1_;
 };
 
 template <class T, class P>
 Demon* MakeConstraintDemon1(Solver* const s, T* const ct, void (T::*method)(P),
-                            const string& name, P param1) {
+                            const std::string& name, P param1) {
   return s->RevAlloc(new CallMethod1<T, P>(ct, method, name, param1));
 }
 
@@ -577,7 +577,7 @@ Demon* MakeConstraintDemon1(Solver* const s, T* const ct, void (T::*method)(P),
 template <class T, class P, class Q>
 class CallMethod2 : public Demon {
  public:
-  CallMethod2(T* const ct, void (T::*method)(P, Q), const string& name,
+  CallMethod2(T* const ct, void (T::*method)(P, Q), const std::string& name,
               P param1, Q param2)
       : constraint_(ct),
         method_(method),
@@ -591,7 +591,7 @@ class CallMethod2 : public Demon {
     (constraint_->*method_)(param1_, param2_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_, ")"));
@@ -600,14 +600,14 @@ class CallMethod2 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)(P, Q);
-  const string name_;
+  const std::string name_;
   P param1_;
   Q param2_;
 };
 
 template <class T, class P, class Q>
 Demon* MakeConstraintDemon2(Solver* const s, T* const ct,
-                            void (T::*method)(P, Q), const string& name,
+                            void (T::*method)(P, Q), const std::string& name,
                             P param1, Q param2) {
   return s->RevAlloc(
       new CallMethod2<T, P, Q>(ct, method, name, param1, param2));
@@ -616,7 +616,7 @@ Demon* MakeConstraintDemon2(Solver* const s, T* const ct,
 template <class T, class P, class Q, class R>
 class CallMethod3 : public Demon {
  public:
-  CallMethod3(T* const ct, void (T::*method)(P, Q, R), const string& name,
+  CallMethod3(T* const ct, void (T::*method)(P, Q, R), const std::string& name,
               P param1, Q param2, R param3)
       : constraint_(ct),
         method_(method),
@@ -631,7 +631,7 @@ class CallMethod3 : public Demon {
     (constraint_->*method_)(param1_, param2_, param3_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_),
@@ -641,7 +641,7 @@ class CallMethod3 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)(P, Q, R);
-  const string name_;
+  const std::string name_;
   P param1_;
   Q param2_;
   R param3_;
@@ -649,7 +649,7 @@ class CallMethod3 : public Demon {
 
 template <class T, class P, class Q, class R>
 Demon* MakeConstraintDemon3(Solver* const s, T* const ct,
-                            void (T::*method)(P, Q, R), const string& name,
+                            void (T::*method)(P, Q, R), const std::string& name,
                             P param1, Q param2, R param3) {
   return s->RevAlloc(
       new CallMethod3<T, P, Q, R>(ct, method, name, param1, param2, param3));
@@ -665,7 +665,7 @@ Demon* MakeConstraintDemon3(Solver* const s, T* const ct,
 template <class T>
 class DelayedCallMethod0 : public Demon {
  public:
-  DelayedCallMethod0(T* const ct, void (T::*method)(), const string& name)
+  DelayedCallMethod0(T* const ct, void (T::*method)(), const std::string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
   virtual ~DelayedCallMethod0() {}
@@ -676,7 +676,7 @@ class DelayedCallMethod0 : public Demon {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "DelayedCallMethod_" + name_ + "(" + constraint_->DebugString() +
            ")";
   }
@@ -684,12 +684,12 @@ class DelayedCallMethod0 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)();
-  const string name_;
+  const std::string name_;
 };
 
 template <class T>
 Demon* MakeDelayedConstraintDemon0(Solver* const s, T* const ct,
-                                   void (T::*method)(), const string& name) {
+                                   void (T::*method)(), const std::string& name) {
   return s->RevAlloc(new DelayedCallMethod0<T>(ct, method, name));
 }
 
@@ -697,7 +697,7 @@ Demon* MakeDelayedConstraintDemon0(Solver* const s, T* const ct,
 template <class T, class P>
 class DelayedCallMethod1 : public Demon {
  public:
-  DelayedCallMethod1(T* const ct, void (T::*method)(P), const string& name,
+  DelayedCallMethod1(T* const ct, void (T::*method)(P), const std::string& name,
                      P param1)
       : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
@@ -709,7 +709,7 @@ class DelayedCallMethod1 : public Demon {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
@@ -718,13 +718,13 @@ class DelayedCallMethod1 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)(P);
-  const string name_;
+  const std::string name_;
   P param1_;
 };
 
 template <class T, class P>
 Demon* MakeDelayedConstraintDemon1(Solver* const s, T* const ct,
-                                   void (T::*method)(P), const string& name,
+                                   void (T::*method)(P), const std::string& name,
                                    P param1) {
   return s->RevAlloc(new DelayedCallMethod1<T, P>(ct, method, name, param1));
 }
@@ -733,7 +733,7 @@ Demon* MakeDelayedConstraintDemon1(Solver* const s, T* const ct,
 template <class T, class P, class Q>
 class DelayedCallMethod2 : public Demon {
  public:
-  DelayedCallMethod2(T* const ct, void (T::*method)(P, Q), const string& name,
+  DelayedCallMethod2(T* const ct, void (T::*method)(P, Q), const std::string& name,
                      P param1, Q param2)
       : constraint_(ct),
         method_(method),
@@ -751,7 +751,7 @@ class DelayedCallMethod2 : public Demon {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_, ")"));
@@ -760,14 +760,14 @@ class DelayedCallMethod2 : public Demon {
  private:
   T* const constraint_;
   void (T::*const method_)(P, Q);
-  const string name_;
+  const std::string name_;
   P param1_;
   Q param2_;
 };
 
 template <class T, class P, class Q>
 Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
-                                   void (T::*method)(P, Q), const string& name,
+                                   void (T::*method)(P, Q), const std::string& name,
                                    P param1, Q param2) {
   return s->RevAlloc(
       new DelayedCallMethod2<T, P, Q>(ct, method, name, param1, param2));
@@ -1213,7 +1213,7 @@ class PropagationMonitor : public SearchMonitor {
   virtual void EndDemonRun(Demon* const demon) = 0;
   virtual void StartProcessingIntegerVariable(IntVar* const var) = 0;
   virtual void EndProcessingIntegerVariable(IntVar* const var) = 0;
-  virtual void PushContext(const string& context) = 0;
+  virtual void PushContext(const std::string& context) = 0;
   virtual void PopContext() = 0;
   // IntExpr modifiers.
   virtual void SetMin(IntExpr* const expr, int64 new_min) = 0;
@@ -1261,7 +1261,7 @@ class BooleanVar : public IntVar {
  public:
   static const int kUnboundBooleanVarValue;
 
-  BooleanVar(Solver* const s, const string& name = "")
+  BooleanVar(Solver* const s, const std::string& name = "")
       : IntVar(s, name), value_(kUnboundBooleanVarValue) {}
 
   virtual ~BooleanVar() {}
@@ -1285,7 +1285,7 @@ class BooleanVar : public IntVar {
   virtual bool Contains(int64 v) const;
   virtual IntVarIterator* MakeHoleIterator(bool reversible) const;
   virtual IntVarIterator* MakeDomainIterator(bool reversible) const;
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual int VarType() const { return BOOLEAN_VAR; }
 
   virtual IntVar* IsEqual(int64 constant);
@@ -1294,7 +1294,7 @@ class BooleanVar : public IntVar {
   virtual IntVar* IsLessOrEqual(int64 constant);
 
   virtual void RestoreValue() = 0;
-  virtual string BaseName() const { return "BooleanVar"; }
+  virtual std::string BaseName() const { return "BooleanVar"; }
 
   int RawValue() const { return value_; }
 
@@ -1345,7 +1345,7 @@ class SymmetryBreaker : public DecisionVisitor {
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-            ResultCallback<string>* display_callback, int period);
+            ResultCallback<std::string>* display_callback, int period);
   virtual ~SearchLog();
   virtual void EnterSearch();
   virtual void ExitSearch();
@@ -1358,20 +1358,20 @@ class SearchLog : public SearchMonitor {
   void Maintain();
   virtual void BeginInitialPropagation();
   virtual void EndInitialPropagation();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
  protected:
   /* Bottleneck function used for all UI related output. */
-  virtual void OutputLine(const string& line);
+  virtual void OutputLine(const std::string& line);
 
  private:
-  static string MemoryUsage();
+  static std::string MemoryUsage();
 
   const int period_;
   std::unique_ptr<WallTimer> timer_;
   IntVar* const var_;
   OptimizeVar* const obj_;
-  std::unique_ptr<ResultCallback<string> > display_callback_;
+  std::unique_ptr<ResultCallback<std::string> > display_callback_;
   int nsol_;
   int64 tick_;
   int64 objective_min_;
@@ -1676,53 +1676,53 @@ class DependencyGraph : public BaseObject {
 class ArgumentHolder {
  public:
   // Type of the argument.
-  const string& TypeName() const;
-  void SetTypeName(const string& type_name);
+  const std::string& TypeName() const;
+  void SetTypeName(const std::string& type_name);
 
   // Setters.
-  void SetIntegerArgument(const string& arg_name, int64 value);
-  void SetIntegerArrayArgument(const string& arg_name,
+  void SetIntegerArgument(const std::string& arg_name, int64 value);
+  void SetIntegerArrayArgument(const std::string& arg_name,
                                const std::vector<int64>& values);
-  void SetIntegerMatrixArgument(const string& arg_name,
+  void SetIntegerMatrixArgument(const std::string& arg_name,
                                 const IntTupleSet& values);
-  void SetIntegerExpressionArgument(const string& arg_name,
+  void SetIntegerExpressionArgument(const std::string& arg_name,
                                     IntExpr* const expr);
-  void SetIntegerVariableArrayArgument(const string& arg_name,
+  void SetIntegerVariableArrayArgument(const std::string& arg_name,
                                        const std::vector<IntVar*>& vars);
-  void SetIntervalArgument(const string& arg_name, IntervalVar* const var);
-  void SetIntervalArrayArgument(const string& arg_name,
+  void SetIntervalArgument(const std::string& arg_name, IntervalVar* const var);
+  void SetIntervalArrayArgument(const std::string& arg_name,
                                 const std::vector<IntervalVar*>& vars);
-  void SetSequenceArgument(const string& arg_name, SequenceVar* const var);
-  void SetSequenceArrayArgument(const string& arg_name,
+  void SetSequenceArgument(const std::string& arg_name, SequenceVar* const var);
+  void SetSequenceArrayArgument(const std::string& arg_name,
                                 const std::vector<SequenceVar*>& vars);
 
   // Checks if arguments exist.
-  bool HasIntegerExpressionArgument(const string& arg_name) const;
-  bool HasIntegerVariableArrayArgument(const string& arg_name) const;
+  bool HasIntegerExpressionArgument(const std::string& arg_name) const;
+  bool HasIntegerVariableArrayArgument(const std::string& arg_name) const;
 
   // Getters.
-  int64 FindIntegerArgumentWithDefault(const string& arg_name, int64 def) const;
-  int64 FindIntegerArgumentOrDie(const string& arg_name) const;
-  const std::vector<int64>& FindIntegerArrayArgumentOrDie(const string& arg_name)
+  int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) const;
+  int64 FindIntegerArgumentOrDie(const std::string& arg_name) const;
+  const std::vector<int64>& FindIntegerArrayArgumentOrDie(const std::string& arg_name)
       const;
-  const IntTupleSet& FindIntegerMatrixArgumentOrDie(const string& arg_name)
+  const IntTupleSet& FindIntegerMatrixArgumentOrDie(const std::string& arg_name)
       const;
 
-  IntExpr* FindIntegerExpressionArgumentOrDie(const string& arg_name) const;
+  IntExpr* FindIntegerExpressionArgumentOrDie(const std::string& arg_name) const;
   const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(
-      const string& arg_name) const;
+      const std::string& arg_name) const;
 
  private:
-  string type_name_;
-  hash_map<string, int64> integer_argument_;
-  hash_map<string, std::vector<int64> > integer_array_argument_;
-  hash_map<string, IntTupleSet> matrix_argument_;
-  hash_map<string, IntExpr*> integer_expression_argument_;
-  hash_map<string, IntervalVar*> interval_argument_;
-  hash_map<string, SequenceVar*> sequence_argument_;
-  hash_map<string, std::vector<IntVar*> > integer_variable_array_argument_;
-  hash_map<string, std::vector<IntervalVar*> > interval_array_argument_;
-  hash_map<string, std::vector<SequenceVar*> > sequence_array_argument_;
+  std::string type_name_;
+  hash_map<std::string, int64> integer_argument_;
+  hash_map<std::string, std::vector<int64> > integer_array_argument_;
+  hash_map<std::string, IntTupleSet> matrix_argument_;
+  hash_map<std::string, IntExpr*> integer_expression_argument_;
+  hash_map<std::string, IntervalVar*> interval_argument_;
+  hash_map<std::string, SequenceVar*> sequence_argument_;
+  hash_map<std::string, std::vector<IntVar*> > integer_variable_array_argument_;
+  hash_map<std::string, std::vector<IntervalVar*> > interval_array_argument_;
+  hash_map<std::string, std::vector<SequenceVar*> > sequence_array_argument_;
 };
 
 // Model Parser
@@ -1734,46 +1734,46 @@ class ModelParser : public ModelVisitor {
   virtual ~ModelParser();
 
   // Header/footers.
-  virtual void BeginVisitModel(const string& solver_name);
-  virtual void EndVisitModel(const string& solver_name);
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitModel(const std::string& solver_name);
+  virtual void EndVisitModel(const std::string& solver_name);
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint);
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint);
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expr);
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expr);
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     IntExpr* const delegate);
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate);
   virtual void VisitSequenceVariable(const SequenceVar* const variable);
   // Integer arguments
-  virtual void VisitIntegerArgument(const string& arg_name, int64 value);
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value);
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values);
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
                                           const IntTupleSet& values);
   // Variables.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument);
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments);
+      const std::string& arg_name, const std::vector<IntVar*>& arguments);
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument);
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments);
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments);
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument);
   virtual void VisitSequenceArrayArgument(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments);
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments);
 
  protected:
   void PushArgumentHolder();
@@ -2032,8 +2032,8 @@ class RevPartialSequence {
             position > last_ranked_.Value());
   }
 
-  string DebugString() const {
-    string result = "[";
+  std::string DebugString() const {
+    std::string result = "[";
     for (int i = 0; i < first_ranked_.Value(); ++i) {
       result.append(StringPrintf("%d", elements_[i]));
       if (i != first_ranked_.Value() - 1) {

@@ -872,7 +872,7 @@ class SoftGCC : public Constraint{
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "SoftGCC";
   }
 

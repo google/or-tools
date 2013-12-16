@@ -108,7 +108,7 @@ class NetworkRoutingData {
         fixed_charge_cost_(-1) {}
 
   // Name of the problem.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // Properties of the model.
   int num_nodes() const { return num_nodes_; }
@@ -121,7 +121,7 @@ class NetworkRoutingData {
   int Capacity(int node1, int node2) const {
     return FindWithDefault(all_arcs_,
                            std::make_pair(std::min(node1, node2),
-                                          std::max(node1, node2)),
+                                     std::max(node1, node2)),
                            0);
   }
 
@@ -136,17 +136,17 @@ class NetworkRoutingData {
   void set_num_nodes(int num_nodes) { num_nodes_ = num_nodes; }
   void AddArc(int node1, int node2, int capacity) {
     all_arcs_[std::make_pair(std::min(node1, node2),
-                             std::max(node1, node2))] = capacity;
+                        std::max(node1, node2))] = capacity;
   }
   void AddDemand(int source, int destination, int traffic) {
     all_demands_[std::make_pair(source, destination)] = traffic;
   }
-  void set_name(const string& name) { name_ = name; }
+  void set_name(const std::string& name) { name_ = name; }
   void set_max_capacity(int max_capacity) { max_capacity_ = max_capacity; }
   void set_fixed_charge_cost(int cost) { fixed_charge_cost_ = cost; }
 
  private:
-  string name_;
+  std::string name_;
   int num_nodes_;
   int max_capacity_;
   int fixed_charge_cost_;
@@ -338,7 +338,7 @@ class NetworkRoutingDataBuilder {
                 NetworkRoutingData* const data) {
     const int size = num_backbones + num_clients;
 
-    const string name =
+    const std::string name =
         StringPrintf("mp_c%i_b%i_d%i.t%i-%i.cd%i-%i.bd%i-%i.mc%i.fc%i.s%i",
                      num_clients,
                      num_backbones,
@@ -618,7 +618,7 @@ class NetworkRoutingSolver {
       tuple_set.Insert(tuple);
     }
 
-    const string name = StringPrintf("PathDecision_%i", demand_index);
+    const std::string name = StringPrintf("PathDecision_%i", demand_index);
     IntVar* const var = solver->MakeIntVar(0, tuple_set.NumTuples() - 1, name);
     std::vector<IntVar*> tmp_vars;
     tmp_vars.push_back(var);
@@ -780,7 +780,7 @@ class NetworkRoutingSolver {
       return NULL;
     }
 
-    virtual string DebugString() const {
+    virtual std::string DebugString() const {
       return "ApplyMaxDiscrepancy";
     }
   };

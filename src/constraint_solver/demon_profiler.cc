@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <math.h>
-#include <stddef.h>
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include "base/hash.h"
 #include <string>
 #include <utility>
@@ -164,7 +164,7 @@ class DemonProfiler : public PropagationMonitor {
 
   virtual void StartProcessingIntegerVariable(IntVar* const var) {}
   virtual void EndProcessingIntegerVariable(IntVar* const var) {}
-  virtual void PushContext(const string& context) {}
+  virtual void PushContext(const std::string& context) {}
   virtual void PopContext() {}
 
   virtual void BeginFail() {
@@ -246,7 +246,7 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // Exports collected data as human-readable text.
-  void PrintOverview(Solver* const solver, const string& filename) {
+  void PrintOverview(Solver* const solver, const std::string& filename) {
     const char* const kConstraintFormat =
         "  - Constraint: %s\n                failures=%" GG_LL_FORMAT
         "d, initial propagation runtime=%" GG_LL_FORMAT
@@ -257,7 +257,7 @@ class DemonProfiler : public PropagationMonitor {
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* const file = File::Open(filename, "w");
-    const string model =
+    const std::string model =
         StringPrintf("Model %s:\n", solver->model_name().c_str());
     if (file) {
       file->Write(model.c_str(), model.length());
@@ -296,7 +296,7 @@ class DemonProfiler : public PropagationMonitor {
                           &demon_invocations,
                           &total_demon_runtime,
                           &demon_count);
-        const string constraint_message =
+        const std::string constraint_message =
             StringPrintf(kConstraintFormat, ct->DebugString().c_str(), fails,
                          initial_propagation_runtime, demon_count,
                          demon_invocations, total_demon_runtime);
@@ -314,7 +314,7 @@ class DemonProfiler : public PropagationMonitor {
           ExportInformation(demon_runs, &invocations, &fails, &runtime,
                             &mean_runtime, &median_runtime,
                             &standard_deviation);
-          const string runs = StringPrintf(
+          const std::string runs = StringPrintf(
               kDemonFormat, demon_runs->demon_id().c_str(), invocations, fails,
               runtime, mean_runtime, median_runtime, standard_deviation);
           file->Write(runs.c_str(), runs.length());
@@ -414,7 +414,7 @@ class DemonProfiler : public PropagationMonitor {
   // start of the search.
   virtual void Install() { SearchMonitor::Install(); }
 
-  virtual string DebugString() const { return "DemonProfiler"; }
+  virtual std::string DebugString() const { return "DemonProfiler"; }
 
  private:
   Constraint* active_constraint_;
@@ -425,7 +425,7 @@ class DemonProfiler : public PropagationMonitor {
   hash_map<const Constraint*, std::vector<DemonRuns*> > demons_per_constraint_;
 };
 
-void Solver::ExportProfilingOverview(const string& filename) {
+void Solver::ExportProfilingOverview(const std::string& filename) {
   if (demon_profiler_ != nullptr) {
     demon_profiler_->PrintOverview(this, filename);
   }

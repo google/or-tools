@@ -73,7 +73,7 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c) {
 }
 
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                   const AlphaNum &d) {
+              const AlphaNum &d) {
   std::string result;
   result.resize(a.size() + b.size() + c.size() + d.size());
   char *const begin = &*result.begin();
@@ -83,7 +83,7 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 }
 
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                   const AlphaNum &d, const AlphaNum &e) {
+              const AlphaNum &d, const AlphaNum &e) {
   std::string result;
   result.resize(a.size() + b.size() + c.size() + d.size() + e.size());
   char *const begin = &*result.begin();
@@ -94,7 +94,7 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 }
 
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                   const AlphaNum &d, const AlphaNum &e, const AlphaNum &f) {
+              const AlphaNum &d, const AlphaNum &e, const AlphaNum &f) {
   std::string result;
   result.resize(a.size() + b.size() + c.size() + d.size() + e.size()
                 + f.size());
@@ -106,8 +106,8 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 }
 
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                   const AlphaNum &d, const AlphaNum &e, const AlphaNum &f,
-                   const AlphaNum &g) {
+              const AlphaNum &d, const AlphaNum &e, const AlphaNum &f,
+              const AlphaNum &g) {
   std::string result;
   result.resize(a.size() + b.size() + c.size() + d.size() + e.size()
                 + f.size() + g.size());
@@ -120,8 +120,8 @@ std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
 }
 
 std::string StrCat(const AlphaNum &a, const AlphaNum &b, const AlphaNum &c,
-                   const AlphaNum &d, const AlphaNum &e, const AlphaNum &f,
-                   const AlphaNum &g, const AlphaNum &h) {
+              const AlphaNum &d, const AlphaNum &e, const AlphaNum &f,
+              const AlphaNum &g, const AlphaNum &h) {
   std::string result;
   result.resize(a.size() + b.size() + c.size() + d.size() + e.size()
                 + f.size() + g.size() + h.size());

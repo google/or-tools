@@ -50,7 +50,7 @@ class IntervalVarStartExpr : public BaseIntExpr {
 
   virtual void WhenRange(Demon* d) { interval_->WhenStartRange(d); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("start(%s)", interval_->DebugString().c_str());
   }
 
@@ -89,7 +89,7 @@ class IntervalVarEndExpr : public BaseIntExpr {
 
   virtual void WhenRange(Demon* d) { interval_->WhenEndRange(d); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("end(%s)", interval_->DebugString().c_str());
   }
 
@@ -128,7 +128,7 @@ class IntervalVarDurationExpr : public BaseIntExpr {
 
   virtual void WhenRange(Demon* d) { interval_->WhenDurationRange(d); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("duration(%s)", interval_->DebugString().c_str());
   }
 

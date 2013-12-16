@@ -278,7 +278,7 @@ struct RoutingSearchParameters {
   bool dfs;
   // Routing: first solution heuristic. See RoutingStrategyName() in
   // the code to get a full list.
-  string first_solution;
+  std::string first_solution;
   // Dive (left-branch) for first solution.
   bool use_first_solution_dive;
   // Optimization step.
@@ -409,7 +409,7 @@ class RoutingModel {
     // their transit evaluator (the raw version that takes var index, not Node
     // Index) and their span cost coefficient, we just store those.
     // This is sorted by the natural operator < (and *not* by DimensionIndex).
-    std::vector<std::pair<Solver::IndexEvaluator2*, int64> >
+    std::vector<std::pair<Solver::IndexEvaluator2*, int64>>
         dimension_transit_evaluator_and_cost_coefficient;
 
     explicit CostClass(NodeEvaluator2* arc_cost_evaluator)
@@ -478,13 +478,13 @@ class RoutingModel {
   // (and doesn't create the new dimension).
   // Takes ownership of the callback 'evaluator'.
   bool AddDimension(NodeEvaluator2* evaluator, int64 slack_max, int64 capacity,
-                    bool fix_start_cumul_to_zero, const string& name);
+                    bool fix_start_cumul_to_zero, const std::string& name);
   // Takes ownership of both 'evaluator' and 'vehicle_capacity' callbacks.
   bool AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
                                        int64 slack_max,
                                        VehicleEvaluator* vehicle_capacity,
                                        bool fix_start_cumul_to_zero,
-                                       const string& name);
+                                       const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   // 'name' is the name used to reference the dimension; this name is used to
@@ -492,7 +492,7 @@ class RoutingModel {
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
   bool AddConstantDimension(int64 value, int64 capacity,
-                            bool fix_start_cumul_to_zero, const string& name);
+                            bool fix_start_cumul_to_zero, const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i]' for node i; 'capacity' is the upper bound of
   // the cumul variables. 'name' is the name used to reference the dimension;
@@ -501,7 +501,7 @@ class RoutingModel {
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
   bool AddVectorDimension(const int64* values, int64 capacity,
-                          bool fix_start_cumul_to_zero, const string& name);
+                          bool fix_start_cumul_to_zero, const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
   // the cumul variables. 'name' is the name used to reference the dimension;
@@ -510,27 +510,27 @@ class RoutingModel {
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
   bool AddMatrixDimension(const int64* const* values, int64 capacity,
-                          bool fix_start_cumul_to_zero, const string& name);
+                          bool fix_start_cumul_to_zero, const std::string& name);
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
-  void GetAllDimensions(std::vector<string>* dimension_names) const;
+  void GetAllDimensions(std::vector<std::string>* dimension_names) const;
   // Returns true if a dimension exists for a given dimension name.
-  bool HasDimension(const string& dimension_name) const;
+  bool HasDimension(const std::string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
-  const RoutingDimension& GetDimensionOrDie(const string& dimension_name) const;
+  const RoutingDimension& GetDimensionOrDie(const std::string& dimension_name) const;
   // Returns a dimension from its name. Returns nullptr if the dimension does
   // not exist.
-  RoutingDimension* GetMutableDimension(const string& dimension_name) const;
+  RoutingDimension* GetMutableDimension(const std::string& dimension_name) const;
   // Set the given dimension as "primary constrained". As of August 2013, this
   // is only used by ArcIsMoreConstrainedThanArc().
   // "dimension" must be the name of an existing dimension, or be empty, in
   // which case there will not be a primary dimension after this call.
-  void SetPrimaryConstrainedDimension(const string& dimension_name) {
+  void SetPrimaryConstrainedDimension(const std::string& dimension_name) {
     DCHECK(dimension_name.empty() || HasDimension(dimension_name));
     primary_constrained_dimension_ = dimension_name;
   }
-  // Get the primary constrained dimension, or an empty string if it is unset.
-  const string& GetPrimaryConstrainedDimension() const {
+  // Get the primary constrained dimension, or an empty std::string if it is unset.
+  const std::string& GetPrimaryConstrainedDimension() const {
     return primary_constrained_dimension_;
   }
   // Constrains all nodes to be active (to belong to a route).
@@ -607,6 +607,12 @@ class RoutingModel {
     pickup_delivery_pairs_.push_back(
         std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
   }
+#ifndef SWIG
+  // Returns pickup and delivery pairs currently in the model.
+  const NodePairs& GetPickupAndDeliveryPairs() const {
+    return pickup_delivery_pairs_;
+  }
+#endif
   // Get the "unperformed" penalty of a node. This is only well defined if the
   // node is only part of a single Disjunction involving only itself, and that
   // disjunction has a penalty. In all other cases, including forced active
@@ -729,11 +735,11 @@ class RoutingModel {
   // Writes the current solution to a file containing an AssignmentProto.
   // Returns false if the file cannot be opened or if there is no current
   // solution.
-  bool WriteAssignment(const string& file_name) const;
+  bool WriteAssignment(const std::string& file_name) const;
   // Reads an assignment from a file and returns the current solution.
   // Returns nullptr if the file cannot be opened or if the assignment is not
   // valid.
-  Assignment* ReadAssignment(const string& file_name);
+  Assignment* ReadAssignment(const std::string& file_name);
   // Restores an assignment as a solution in the routing model and returns the
   // new solution. Returns nullptr if the assignment is not valid.
   Assignment* RestoreAssignment(const Assignment& solution);
@@ -889,8 +895,8 @@ class RoutingModel {
   // feasible intervals of the CumulVar for dimension "dimension_to_print"
   // at each step of the routes.
   // If "dimension_to_print" is omitted, all dimensions will be printed.
-  string DebugOutputAssignment(const Assignment& solution_assignment,
-                               const string& dimension_to_print) const;
+  std::string DebugOutputAssignment(const Assignment& solution_assignment,
+                               const std::string& dimension_to_print) const;
 
   // Returns the underlying constraint solver. Can be used to add extra
   // constraints and/or modify search algoithms.
@@ -928,11 +934,11 @@ class RoutingModel {
   // values. See the .cc for the name conversions. The rule of thumb is:
   // RoutingModel::ROUTING_PATH_CHEAPEST_ARC <-> "PathCheapestArc".
   static const char* RoutingStrategyName(RoutingStrategy strategy);
-  static bool ParseRoutingStrategy(const string& strategy_str,
+  static bool ParseRoutingStrategy(const std::string& strategy_str,
                                    RoutingStrategy* strategy);
   static const char* RoutingMetaheuristicName(
       RoutingMetaheuristic metaheuristic);
-  static bool ParseRoutingMetaheuristic(const string& metaheuristic_str,
+  static bool ParseRoutingMetaheuristic(const std::string& metaheuristic_str,
                                         RoutingMetaheuristic* metaheuristic);
 
   // DEPRECATED METHODS.
@@ -952,31 +958,31 @@ class RoutingModel {
   int64 GetVehicleClassCost(int64 i, int64 j, int64 c);  // GetArcCostForClass()
   // All the methods below are replaced by public methods of the
   // RoutingDimension class. See that class.
-  void SetDimensionTransitCost(const string& d, int64 c);
-  int64 GetDimensionTransitCost(const string& d) const;
-  void SetDimensionSpanCost(const string& d, int64 c);
-  int64 GetDimensionSpanCost(const string& d) const;
-  int64 GetTransitValue(const string& d, int64 from, int64 to) const;
+  void SetDimensionTransitCost(const std::string& d, int64 c);
+  int64 GetDimensionTransitCost(const std::string& d) const;
+  void SetDimensionSpanCost(const std::string& d, int64 c);
+  int64 GetDimensionSpanCost(const std::string& d) const;
+  int64 GetTransitValue(const std::string& d, int64 from, int64 to) const;
 #ifndef SWIG
-  const std::vector<IntVar*>& CumulVars(const string& dimension_name) const;
+  const std::vector<IntVar*>& CumulVars(const std::string& dimension_name) const;
 #endif
   // All the methods below are replaced by public methods with the same name
   // on the RoutingDimension class. See those.
-  IntVar* CumulVar(int64 index, const string& dimension_name) const;
-  IntVar* TransitVar(int64 index, const string& dimension_name) const;
-  IntVar* SlackVar(int64 index, const string& dimension_name) const;
-  void SetCumulVarSoftUpperBound(NodeIndex, const string&, int64, int64);
-  bool HasCumulVarSoftUpperBound(NodeIndex, const string&) const;
-  int64 GetCumulVarSoftUpperBound(NodeIndex, const string&) const;
-  int64 GetCumulVarSoftUpperBoundCoefficient(NodeIndex, const string&) const;
-  void SetStartCumulVarSoftUpperBound(int, const string&, int64, int64);
-  bool HasStartCumulVarSoftUpperBound(int, const string&) const;
-  int64 GetStartCumulVarSoftUpperBound(int, const string&) const;
-  int64 GetStartCumulVarSoftUpperBoundCoefficient(int, const string&) const;
-  void SetEndCumulVarSoftUpperBound(int, const string&, int64, int64);
-  bool HasEndCumulVarSoftUpperBound(int, const string&) const;
-  int64 GetEndCumulVarSoftUpperBound(int, const string&) const;
-  int64 GetEndCumulVarSoftUpperBoundCoefficient(int, const string&) const;
+  IntVar* CumulVar(int64 index, const std::string& dimension_name) const;
+  IntVar* TransitVar(int64 index, const std::string& dimension_name) const;
+  IntVar* SlackVar(int64 index, const std::string& dimension_name) const;
+  void SetCumulVarSoftUpperBound(NodeIndex, const std::string&, int64, int64);
+  bool HasCumulVarSoftUpperBound(NodeIndex, const std::string&) const;
+  int64 GetCumulVarSoftUpperBound(NodeIndex, const std::string&) const;
+  int64 GetCumulVarSoftUpperBoundCoefficient(NodeIndex, const std::string&) const;
+  void SetStartCumulVarSoftUpperBound(int, const std::string&, int64, int64);
+  bool HasStartCumulVarSoftUpperBound(int, const std::string&) const;
+  int64 GetStartCumulVarSoftUpperBound(int, const std::string&) const;
+  int64 GetStartCumulVarSoftUpperBoundCoefficient(int, const std::string&) const;
+  void SetEndCumulVarSoftUpperBound(int, const std::string&, int64, int64);
+  bool HasEndCumulVarSoftUpperBound(int, const std::string&) const;
+  int64 GetEndCumulVarSoftUpperBound(int, const std::string&) const;
+  int64 GetEndCumulVarSoftUpperBoundCoefficient(int, const std::string&) const;
 
  private:
   // Local search move operator usable in routing.
@@ -1032,8 +1038,8 @@ class RoutingModel {
                                         int64 slack_max, int64 capacity,
                                         VehicleEvaluator* vehicle_capacity,
                                         bool fix_start_cumul_to_zero,
-                                        const string& dimension_name);
-  DimensionIndex GetDimensionIndex(const string& dimension_name) const;
+                                        const std::string& dimension_name);
+  DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
   void ComputeCostClasses();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
                                    CostClassIndex cost_class_index);
@@ -1116,9 +1122,9 @@ class RoutingModel {
   // - or nexts_[i] is bound and is_bound_to_end_[nexts_[i].Value()] is true.
   std::vector<IntVar*> is_bound_to_end_;
   // Dimensions
-  hash_map<string, DimensionIndex> dimension_name_to_index_;
+  hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
-  string primary_constrained_dimension_;
+  std::string primary_constrained_dimension_;
   // Costs
   IntVar* cost_;
   std::vector<NodeEvaluator2*> transit_cost_of_vehicle_;
@@ -1297,7 +1303,7 @@ class RoutingDimension {
   // for a variable index. If no soft upper bound has been set, 0 is returned.
   int64 GetCumulVarSoftUpperBoundCoefficientFromIndex(int64 index) const;
   // Returns the name of the dimension.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // Accessors.
   int64 GetSpanCostCoefficientForVehicle(int vehicle) const {
@@ -1320,7 +1326,7 @@ class RoutingDimension {
     int64 coefficient;
   };
 
-  RoutingDimension(RoutingModel* model, const string& name);
+  RoutingDimension(RoutingModel* model, const std::string& name);
   void Initialize(RoutingModel::VehicleEvaluator* vehicle_capacity,
                   int64 capacity,
                   RoutingModel::NodeEvaluator2* transit_evaluator,
@@ -1345,7 +1351,7 @@ class RoutingDimension {
   std::vector<int64> vehicle_span_cost_coefficients_;
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
   RoutingModel* const model_;
-  const string name_;
+  const std::string name_;
 
   friend class RoutingModel;
 
@@ -1405,24 +1411,29 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
   bool Commit();
   // Modifies the current solution by setting the variable of index 'index' to
   // value 'value'.
-  void SetValue(int index, int64 value) {
-    delta_->FastAdd(vars_[index])->SetValue(value);
-    delta_indices_.push_back(index);
+  void SetValue(int64 index, int64 value) {
+    if (!is_in_delta_[index]) {
+      delta_->FastAdd(vars_[index])->SetValue(value);
+      delta_indices_.push_back(index);
+      is_in_delta_[index] = true;
+    } else {
+      delta_->SetValue(vars_[index], value);
+    }
   }
   // Returns the value of the variable of index 'index' in the last committed
   // solution.
-  int64 Value(int index) const {
+  int64 Value(int64 index) const {
     return assignment_->IntVarContainer().Element(index).Value();
   }
   // Returns true if the variable of index 'index' is in the current solution.
-  bool Contains(int index) const {
+  bool Contains(int64 index) const {
     return assignment_->IntVarContainer().Element(index).Var() != nullptr;
   }
   // Returns the number of variables the decision builder is trying to
   // instantiate.
   int Size() const { return vars_.size(); }
   // Returns the variable of index 'index'.
-  IntVar* Var(int index) const { return vars_[index]; }
+  IntVar* Var(int64 index) const { return vars_[index]; }
 
  private:
   // Sets all variables currently bound to their value in the current solution.
@@ -1437,6 +1448,7 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
   Assignment* const assignment_;
   Assignment* const delta_;
   std::vector<int> delta_indices_;
+  std::vector<bool> is_in_delta_;
   const Assignment* const empty_;
   std::vector<LocalSearchFilter*> filters_;
 };
@@ -1452,14 +1464,34 @@ class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
   bool InitializeRoutes();
   // Returns the end of the start chain of vehicle,
   int GetStartChainEnd(int vehicle) const { return start_chain_ends_[vehicle]; }
-  // Make nodes in the same disjunction as node unperformed.
-  void MakeDisjunctionNodesUnperformed(int node);
+  // Make nodes in the same disjunction as 'node' unperformed. 'node' is a
+  // variable index corresponding to a node.
+  void MakeDisjunctionNodesUnperformed(int64 node);
   // Make all unassigned nodes unperformed.
   void MakeUnassignedNodesUnperformed();
 
  private:
   RoutingModel* const model_;
-  std::vector<int> start_chain_ends_;
+  std::vector<int64> start_chain_ends_;
+};
+
+class CheapestInsertionFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  // Takes ownership of evaluator.
+  CheapestInsertionFilteredDecisionBuilder(
+      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~CheapestInsertionFilteredDecisionBuilder() {}
+
+ protected:
+  // Inserts 'node' just after 'predecessor', and just before 'successor',
+  // resulting in the following subsequence: predecessor -> node -> successor.
+  // If 'node' is part of a disjunction, other nodes of the disjunction are made
+  // unperformed.
+  void InsertBetween(int64 node, int64 predecessor, int64 successor);
+
+  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
 
 // Filtered-base decision builder which builds a solution by inserting
@@ -1467,7 +1499,7 @@ class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
 // an arc-based cost callback. The node selected for insertion is the one
 // which minimizes insertion cost.
 class GlobalCheapestInsertionFilteredDecisionBuilder
-    : public RoutingFilteredDecisionBuilder {
+    : public CheapestInsertionFilteredDecisionBuilder {
  public:
   // Takes ownership of evaluator.
   GlobalCheapestInsertionFilteredDecisionBuilder(
@@ -1479,10 +1511,11 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
  private:
   // Computes the possible insertions for all non-inserted nodes and sorts them
   // according to the current cost evaluator.
+  // Each std::pair<int64, int64> of the output represents an already performed node,
+  // followed by a non-inserted node that should be set as the "Next" of the
+  // former.
   void ComputeEvaluatorSortedInsertions(
-      std::vector<std::pair<int, int> >* sorted_insertions);
-
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+      std::vector<std::pair<int64, int64> >* sorted_insertions);
 };
 
 // Filtered-base decision builder which builds a solution by inserting
@@ -1490,7 +1523,7 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
 // an arc-based cost callback. Node selected for insertion are considered in
 // the order they were created in the model.
 class LocalCheapestInsertionFilteredDecisionBuilder
-    : public RoutingFilteredDecisionBuilder {
+    : public CheapestInsertionFilteredDecisionBuilder {
  public:
   // Takes ownership of evaluator.
   LocalCheapestInsertionFilteredDecisionBuilder(
@@ -1500,12 +1533,25 @@ class LocalCheapestInsertionFilteredDecisionBuilder
   virtual bool BuildSolution();
 
  private:
-  // Computes the possible insertion neighbors of node 'index' and sorts them
+  // Computes the possible insertion positions of 'node' and sorts them
   // according to the current cost evaluator.
-  void ComputeEvaluatorSortedNeighbors(int index,
-                                       std::vector<int>* sorted_neighbors);
-
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+  // 'node' is a variable index corresponding to a node, 'sorted_positions' is a
+  // vector of variable indices corresponding to nodes after which 'node' can be
+  // inserted.
+  void ComputeEvaluatorSortedPositions(int64 node,
+                                       std::vector<int64>* sorted_positions);
+  // Like ComputeEvaluatorSortedPositions, subject to the additional
+  // restrictions that the node may only be inserted after node 'start' on the
+  // route. For convenience, this method also needs the node that is right after
+  // 'start' on the route.
+  void ComputeEvaluatorSortedPositionsOnRouteAfter(
+      int64 node, int64 start, int64 next_after_start,
+      std::vector<int64>* sorted_positions);
+  // Helper method to the ComputeEvaluatorSortedPositions* methods; the output
+  // is a list of unsorted pairs of (cost, position to insert the node).
+  void AppendEvaluatedPositionsAfter(
+      int64 node_to_insert, int64 start, int64 next_after_start,
+      std::vector<std::pair<int64, int64> >* valued_positions);
 };
 
 // Filtered-base decision builder based on the addition heuristic, extending
@@ -1531,7 +1577,9 @@ class CheapestAdditionFilteredDecisionBuilder
   };
   // Returns a sorted vector of nodes which can come next in the route after
   // node 'from'.
-  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts) = 0;
+  // 'from' is a variable index corresponding to a node, 'sorted_nexts' is a
+  // vector of variable indices corresponding to nodes which can follow 'from'.
+  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) = 0;
 };
 
 // A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
@@ -1548,7 +1596,7 @@ class EvaluatorCheapestAdditionFilteredDecisionBuilder
 
  private:
   // Next nodes are sorted according to the current evaluator.
-  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts);
+  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts);
 
   std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
@@ -1567,7 +1615,7 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
 
  private:
   // Next nodes are sorted according to the current comparator.
-  virtual void SortPossibleNexts(int from, std::vector<int>* sorted_nexts);
+  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts);
 
   std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
 };
@@ -1594,8 +1642,7 @@ class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
 };
 
 RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model,
-    Callback1<int64>* objective_callback);
+    const RoutingModel& routing_model, Callback1<int64>* objective_callback);
 RoutingLocalSearchFilter* MakePathCumulFilter(
     const RoutingModel& routing_model, const RoutingDimension& dimension,
     Callback1<int64>* objective_callback);

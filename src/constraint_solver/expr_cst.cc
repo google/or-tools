@@ -13,7 +13,7 @@
 //
 //  Expression constraints
 
-#include <stddef.h>
+#include <cstddef>
 #include <set>
 #include <string>
 #include <vector>
@@ -46,7 +46,7 @@ class EqualityExprCst : public Constraint {
   virtual IntVar* Var() {
     return solver()->MakeIsEqualCstVar(expr_->Var(), value_);
   }
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
@@ -73,7 +73,7 @@ void EqualityExprCst::Post() {
 
 void EqualityExprCst::InitialPropagate() { expr_->SetValue(value_); }
 
-string EqualityExprCst::DebugString() const {
+std::string EqualityExprCst::DebugString() const {
   return StringPrintf("(%s == %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
@@ -119,7 +119,7 @@ class GreaterEqExprCst : public Constraint {
   virtual ~GreaterEqExprCst() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() {
     return solver()->MakeIsGreaterOrEqualCstVar(expr_->Var(), value_);
   }
@@ -149,7 +149,7 @@ void GreaterEqExprCst::Post() {
 
 void GreaterEqExprCst::InitialPropagate() { expr_->SetMin(value_); }
 
-string GreaterEqExprCst::DebugString() const {
+std::string GreaterEqExprCst::DebugString() const {
   return StringPrintf("(%s >= %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
@@ -185,7 +185,7 @@ class LessEqExprCst : public Constraint {
   virtual ~LessEqExprCst() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() {
     return solver()->MakeIsLessOrEqualCstVar(expr_->Var(), value_);
   }
@@ -214,7 +214,7 @@ void LessEqExprCst::Post() {
 
 void LessEqExprCst::InitialPropagate() { expr_->SetMax(value_); }
 
-string LessEqExprCst::DebugString() const {
+std::string LessEqExprCst::DebugString() const {
   return StringPrintf("(%s <= %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
@@ -251,7 +251,7 @@ class DiffCst : public Constraint {
   virtual void Post() {}
   virtual void InitialPropagate();
   void BoundPropagate();
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual IntVar* Var() {
     return solver()->MakeIsDifferentCstVar(var_, value_);
   }
@@ -297,7 +297,7 @@ void DiffCst::BoundPropagate() {
   }
 }
 
-string DiffCst::DebugString() const {
+std::string DiffCst::DebugString() const {
   return StringPrintf("(%s != %" GG_LL_FORMAT "d)", var_->DebugString().c_str(),
                       value_);
 }
@@ -361,7 +361,7 @@ class IsEqualCstCt : public CastConstraint {
       demon_->inhibit(solver());
     }
   }
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("IsEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
@@ -477,7 +477,7 @@ class IsDiffCstCt : public CastConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IsDiffCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
@@ -576,7 +576,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
       demon_->inhibit(solver());
     }
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IsGreaterEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
@@ -676,7 +676,7 @@ class IsLessEqualCstCt : public CastConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
@@ -753,7 +753,7 @@ class BetweenCt : public Constraint {
 
   virtual void InitialPropagate() { var_->SetRange(min_, max_); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), min_, max_);
   }
@@ -821,7 +821,7 @@ class IsBetweenCt : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
                         "d, %s)",
                         var_->DebugString().c_str(), min_, max_,
@@ -879,7 +879,7 @@ class MemberCt : public Constraint {
 
   virtual void InitialPropagate() { var_->SetValues(values_); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Member(%s, %s)", var_->DebugString().c_str(),
                         IntVectorToString(values_, ", ").c_str());
   }
@@ -963,7 +963,7 @@ class IsMemberCt : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IsMemberCt(%s, %s, %s)", var_->DebugString().c_str(),
                         IntVectorToString(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());

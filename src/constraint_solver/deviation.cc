@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stdlib.h>
-#include <string.h>
 #include <algorithm>
+#include <cstdlib>
 #include "base/unique_ptr.h"
 #include <string>
 #include <vector>
@@ -72,7 +71,7 @@ class Deviation : public Constraint {
     PropagateBounds(delta_min);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         deviation_var_->DebugString().c_str(), total_sum_);

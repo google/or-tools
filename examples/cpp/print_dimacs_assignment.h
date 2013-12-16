@@ -37,7 +37,7 @@ template<typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
-    const string& output_filename);
+    const std::string& output_filename);
 
 // Implementation is below here.
 namespace internal {
@@ -60,10 +60,10 @@ template<typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
-    const string& output_filename) {
+    const std::string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const GraphType& graph(assignment.Graph());
-  string output_line = StringPrintf("p asn %d %d\n",
+  std::string output_line = StringPrintf("p asn %d %d\n",
                                     graph.num_nodes(),
                                     graph.num_arcs());
   internal::WriteOrDie(output_line.c_str(), 1,

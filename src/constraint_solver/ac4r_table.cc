@@ -382,7 +382,7 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
                         table_->NumVars(), table_->NumTuples());
   }

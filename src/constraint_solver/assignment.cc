@@ -97,7 +97,7 @@ void IntVarElement::WriteToProto(
   int_var_assignment_proto->set_active(Activated());
 }
 
-string IntVarElement::DebugString() const {
+std::string IntVarElement::DebugString() const {
   if (Activated()) {
     if (min_ == max_) {
       return StringPrintf("(%" GG_LL_FORMAT "d)", min_);
@@ -218,9 +218,9 @@ void IntervalVarElement::WriteToProto(
   interval_var_assignment_proto->set_active(Activated());
 }
 
-string IntervalVarElement::DebugString() const {
+std::string IntervalVarElement::DebugString() const {
   if (Activated()) {
-    string out;
+    std::string out;
     SStringPrintf(&out, "(start = %" GG_LL_FORMAT "d", start_min_);
     if (start_max_ != start_min_) {
       StringAppendF(&out, "..%" GG_LL_FORMAT "d", start_max_);
@@ -336,7 +336,7 @@ void SequenceVarElement::WriteToProto(
   }
 }
 
-string SequenceVarElement::DebugString() const {
+std::string SequenceVarElement::DebugString() const {
   if (Activated()) {
     return StringPrintf("[forward %s, backward %s, unperformed [%s]]",
                         IntVectorToString(forward_sequence_, " -> ").c_str(),
@@ -464,13 +464,13 @@ namespace {
 
 template <class V, class E>
 void IdToElementMap(AssignmentContainer<V, E>* container,
-                    hash_map<string, E*>* id_to_element_map) {
+                    hash_map<std::string, E*>* id_to_element_map) {
   CHECK(id_to_element_map != nullptr);
   id_to_element_map->clear();
   for (int i = 0; i < container->Size(); ++i) {
     E* const element = container->MutableElement(i);
     const V* const var = element->Var();
-    const string& name = var->name();
+    const std::string& name = var->name();
     if (name.empty()) {
       LOG(INFO) << "Cannot save/load variables with empty name"
                 << "; variable will be ignored";
@@ -484,9 +484,9 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
 }
 
 template <class E, class P>
-void LoadElement(const hash_map<string, E*>& id_to_element_map,
+void LoadElement(const hash_map<std::string, E*>& id_to_element_map,
                  const P& proto) {
-  const string& var_id = proto.var_id();
+  const std::string& var_id = proto.var_id();
   CHECK(!var_id.empty());
   E* element = nullptr;
   if (FindCopy(id_to_element_map, var_id, &element)) {
@@ -499,7 +499,7 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
 
 }  // namespace
 
-bool Assignment::Load(const string& filename) {
+bool Assignment::Load(const std::string& filename) {
   File* file = File::Open(filename, "r");
   if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
@@ -536,7 +536,7 @@ void RealLoad(const AssignmentProto& assignment_proto,
     }
   }
   if (!fast_load) {
-    hash_map<string, Element*> id_to_element_map;
+    hash_map<std::string, Element*> id_to_element_map;
     IdToElementMap<Var, Element>(container, &id_to_element_map);
     for (int i = 0; i < (assignment_proto.*GetSize)(); ++i) {
       LoadElement<Element, Proto>(id_to_element_map,
@@ -560,7 +560,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
                               &AssignmentProto::sequence_var_assignment);
   if (assignment_proto.has_objective()) {
     const IntVarAssignmentProto& objective = assignment_proto.objective();
-    const string objective_id = objective.var_id();
+    const std::string objective_id = objective.var_id();
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
       const int64 obj_min = objective.min();
@@ -575,7 +575,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
   }
 }
 
-bool Assignment::Save(const string& filename) const {
+bool Assignment::Save(const std::string& filename) const {
   File* file = File::Open(filename, "w");
   if (file == nullptr) {
     LOG(INFO) << "Cannot open " << filename;
@@ -598,7 +598,7 @@ void RealSave(AssignmentProto* const assignment_proto,
   for (int i = 0; i < container.Size(); ++i) {
     const Element& element = container.Element(i);
     const Var* const var = element.Var();
-    const string& name = var->name();
+    const std::string& name = var->name();
     if (!name.empty()) {
       Proto* const var_assignment_proto = (assignment_proto->*Add)();
       element.WriteToProto(var_assignment_proto);
@@ -619,7 +619,7 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
                               &AssignmentProto::add_sequence_var_assignment);
   if (HasObjective()) {
     const IntVar* objective = Objective();
-    const string& name = objective->name();
+    const std::string& name = objective->name();
     if (!name.empty()) {
       IntVarAssignmentProto* objective = assignment_proto->mutable_objective();
       objective->set_var_id(name);
@@ -635,7 +635,7 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
 }
 
 template <class Container, class Element>
-void RealDebugString(const Container& container, string* const out) {
+void RealDebugString(const Container& container, std::string* const out) {
   for (int i = 0; i < container.Size(); ++i) {
     const Element& element = container.Element(i);
     if (element.Var() != nullptr) {
@@ -645,8 +645,8 @@ void RealDebugString(const Container& container, string* const out) {
   }
 }
 
-string Assignment::DebugString() const {
-  string out = "Assignment(";
+std::string Assignment::DebugString() const {
+  std::string out = "Assignment(";
   RealDebugString<IntContainer, IntVarElement>(int_var_container_, &out);
   RealDebugString<IntervalContainer, IntervalVarElement>(
       interval_var_container_, &out);
@@ -1046,7 +1046,7 @@ class RestoreAssignment : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const { return "RestoreAssignment"; }
+  virtual std::string DebugString() const { return "RestoreAssignment"; }
 
  private:
   Assignment* const assignment_;
@@ -1063,7 +1063,7 @@ class StoreAssignment : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual string DebugString() const { return "StoreAssignment"; }
+  virtual std::string DebugString() const { return "StoreAssignment"; }
 
  private:
   Assignment* const assignment_;

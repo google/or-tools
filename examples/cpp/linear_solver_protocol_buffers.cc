@@ -21,10 +21,10 @@
 namespace operations_research {
 void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   const double kObjCoef[] = {10.0, 6.0, 4.0};
-  const string kVarName[] = {"x1", "x2", "x3"};
+  const std::string kVarName[] = {"x1", "x2", "x3"};
   const int numVars = 3;
   const int kNumConstraints = 3;
-  const string kConstraintName[] = {"c1", "c2", "c3"};
+  const std::string kConstraintName[] = {"c1", "c2", "c3"};
   const double kConstraintCoef1[] = {1.0, 1.0, 1.0};
   const double kConstraintCoef2[] = {10.0, 4.0, 5.0};
   const double kConstraintCoef3[] = {2.0, 2.0, 6.0};

@@ -73,12 +73,11 @@
 #include "base/scoped_ptr.h"
 #include "base/timer.h"
 
-using std::string;
 
 namespace operations_research {
 
-// Returns the current thread's total memory usage in an human-readable string.
-string MemoryUsage();
+// Returns the current thread's total memory usage in an human-readable std::string.
+std::string MemoryUsage();
 
 // Forward declaration.
 class StatsGroup;
@@ -87,20 +86,20 @@ class TimeDistribution;
 // Base class for a statistic that can be pretty-printed.
 class Stat {
  public:
-  explicit Stat(const string& name) : name_(name) {}
+  explicit Stat(const std::string& name) : name_(name) {}
 
   // Also add this stat to the given group.
-  Stat(const string& name, StatsGroup * group);
+  Stat(const std::string& name, StatsGroup * group);
   virtual ~Stat() {}
 
   // Only used for display purpose.
-  string Name() const { return name_; }
+  std::string Name() const { return name_; }
 
   // Returns a human-readable formated line of the form "name: ValueAsString()".
-  string StatString() const;
+  std::string StatString() const;
 
   // Prints information about this statistic.
-  virtual string ValueAsString() const = 0;
+  virtual std::string ValueAsString() const = 0;
 
   // Is this stat worth printing? usually false if nothing was measured.
   virtual bool WorthPrinting() const = 0;
@@ -109,37 +108,37 @@ class Stat {
   virtual void Reset() = 0;
 
  private:
-  const string name_;
+  const std::string name_;
 };
 
 // Base class to print a nice summary of a group of statistics.
 class StatsGroup {
  public:
-  explicit StatsGroup(const string& name)
+  explicit StatsGroup(const std::string& name)
       : name_(name), stats_(), time_distributions_() {}
   ~StatsGroup();
 
-  // Registers a Stat, which will appear in the string returned by StatString().
+  // Registers a Stat, which will appear in the std::string returned by StatString().
   // The Stat object must live as long as this StatsGroup.
   void Register(Stat* stat);
 
   // Returns this group name, followed by one line per Stat registered with this
   // group (this includes the ones created by LookupOrCreateTimeDistribution()).
   // Note that only the stats WorthPrinting() are printed.
-  string StatString() const;
+  std::string StatString() const;
 
   // Returns and if needed creates and registers a TimeDistribution with the
   // given name. Note that this involve a map lookup and his thus slower than
   // directly accessing a TimeDistribution variable.
-  TimeDistribution *LookupOrCreateTimeDistribution(string name);
+  TimeDistribution *LookupOrCreateTimeDistribution(std::string name);
 
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
 
  private:
-  string name_;
+  std::string name_;
   std::vector<Stat*> stats_;
-  std::map<string, TimeDistribution *> time_distributions_;
+  std::map<std::string, TimeDistribution *> time_distributions_;
 
   DISALLOW_COPY_AND_ASSIGN(StatsGroup);
 };
@@ -149,14 +148,14 @@ class StatsGroup {
 // the values are added to the sequence and in the way the stats are printed.
 class DistributionStat : public Stat {
  public:
-  explicit DistributionStat(const string& name);
-  DistributionStat(const string& name, StatsGroup* group);
+  explicit DistributionStat(const std::string& name);
+  DistributionStat(const std::string& name, StatsGroup* group);
   virtual ~DistributionStat() {}
   virtual void Reset();
   virtual bool WorthPrinting() const { return num_ != 0; }
 
   // Implemented by the subclasses.
-  virtual string ValueAsString() const = 0;
+  virtual std::string ValueAsString() const = 0;
 
   // Trivial statistics on all the values added so far.
   double Sum() const { return sum_; }
@@ -194,11 +193,11 @@ class DistributionStat : public Stat {
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
  public:
-  explicit TimeDistribution(const string& name)
+  explicit TimeDistribution(const std::string& name)
       : DistributionStat(name), timer_() {}
-  TimeDistribution(const string& name, StatsGroup* group)
+  TimeDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group), timer_() {}
-  virtual string ValueAsString() const;
+  virtual std::string ValueAsString() const;
 
   // Internaly the TimeDistribution stores cpu cycles (to do a bit less work
   // on each StopTimerAndAddElapsedTime()). Use this function to convert
@@ -227,37 +226,37 @@ class TimeDistribution : public DistributionStat {
  private:
   // Converts and prints a number of cycles in an human readable way using the
   // proper time unit depending on the value (ns, us, ms, s, m or h).
-  static string PrintCyclesAsTime(double cycles);
+  static std::string PrintCyclesAsTime(double cycles);
   CycleTimer timer_;
 };
 
 // Statistic on the distribution of a sequence of ratios, displayed as %.
 class RatioDistribution : public DistributionStat {
  public:
-  explicit RatioDistribution(const string& name) : DistributionStat(name) {}
-  RatioDistribution(const string& name, StatsGroup* group)
+  explicit RatioDistribution(const std::string& name) : DistributionStat(name) {}
+  RatioDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual string ValueAsString() const;
+  virtual std::string ValueAsString() const;
   void Add(double value);
 };
 
 // Statistic on the distribution of a sequence of doubles.
 class DoubleDistribution : public DistributionStat {
  public:
-  explicit DoubleDistribution(const string& name) : DistributionStat(name) {}
-  DoubleDistribution(const string& name, StatsGroup* group)
+  explicit DoubleDistribution(const std::string& name) : DistributionStat(name) {}
+  DoubleDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual string ValueAsString() const;
+  virtual std::string ValueAsString() const;
   void Add(double value);
 };
 
 // Statistic on the distribution of a sequence of integers.
 class IntegerDistribution : public DistributionStat {
  public:
-  explicit IntegerDistribution(const string& name) : DistributionStat(name) {}
-  IntegerDistribution(const string& name, StatsGroup* group)
+  explicit IntegerDistribution(const std::string& name) : DistributionStat(name) {}
+  IntegerDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual string ValueAsString() const;
+  virtual std::string ValueAsString() const;
   void Add(int64 value);
 };
 

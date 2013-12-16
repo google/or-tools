@@ -63,13 +63,13 @@ class TreeArrayConstraint : public Constraint {
     root_node_ = &tree_[0][0];
   }
 
-  string DebugStringInternal(const string& name) const {
+  std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("Cover(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -476,7 +476,7 @@ class CoverConstraint : public TreeArrayConstraint {
     PropagateRoot();
   }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return DebugStringInternal(ModelVisitor::kCover);
   }
 
@@ -567,7 +567,7 @@ class IntervalEquality : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Equality(%s, %s)", var1_->DebugString().c_str(),
                         var2_->DebugString().c_str());
   }

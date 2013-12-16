@@ -44,7 +44,7 @@ struct Interval {
   int64 max_value;  // start, end of Interval
   int64 min_rank;
   int64 max_rank;  // rank of min & max in bounds_[]
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf("Interval(value = [%lld, %lld], rank = [%lld, %lld])",
                         min_value, max_value, min_rank, max_rank);
   }
@@ -148,7 +148,7 @@ class PartialSum {
 
   int64 last_value() const { return last_value_; }
 
-  string DebugString() const {
+  std::string DebugString() const {
     return StringPrintf(
         "PartialSum(offset=%lld, last_value = %lld, sum = %s, ds = %s)",
         offset_, last_value_, IntVectorToString(sum_, ", ").c_str(),
@@ -330,7 +330,7 @@ class GccConstraint : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     // TODO(user): Improve me.
     return "GccConstraint";
   }

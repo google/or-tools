@@ -524,7 +524,7 @@ namespace operations_research {
 %ignore MPSolver::MakeNumVarArray;
 %ignore MPSolver::MakeIntVarArray;
 %ignore MPSolver::MakeBoolVarArray;
-// The following 3 methods that use protocol buffers as output
+// The following 6 methods that use protocol buffers as output
 // arguments are replaced by methods that return a protocol buffer,
 // see code below.
 %ignore MPSolver::ExportModelToNewProto;

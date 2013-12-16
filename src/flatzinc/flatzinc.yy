@@ -272,7 +272,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->int_var_map_[$4] = pp->int_variables_.size();
   if (print) {
-    pp->output(string($4), new AstIntVar(pp->int_variables_.size()));
+    pp->output(std::string($4), new AstIntVar(pp->int_variables_.size()));
   }
   if ($6.defined()) {
     AstNode* arg = $6.value();
@@ -299,7 +299,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->bool_var_map_[$4] = pp->bool_variables_.size();
   if (print) {
-    pp->output(string($4), new AstBoolVar(pp->bool_variables_.size()));
+    pp->output(std::string($4), new AstBoolVar(pp->bool_variables_.size()));
   }
   if ($6.defined()) {
     AstNode* arg = $6.value();
@@ -333,7 +333,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $7->hasAtom("var_is_introduced");
   pp->set_var_map_[$6] = pp->set_variables_.size();
   if (print) {
-    pp->output(string($6), new AstSetVar(pp->set_variables_.size()));
+    pp->output(std::string($6), new AstSetVar(pp->set_variables_.size()));
   }
   if ($8.defined()) {
     AstNode* arg = $8.value();
@@ -413,7 +413,7 @@ var_par_id annotations vardecl_int_var_array_init
         if ($5 > 0) {
           for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->int_variables_.size();
-            const string var_name = StringPrintf("%s[%d]", $11, i + 1);
+            const std::string var_name = StringPrintf("%s[%d]", $11, i + 1);
             if ($9.defined()) {
               Option<AstSetLit*> copy =
                   Option<AstSetLit*>::some($9.value()->Copy());
@@ -425,7 +425,7 @@ var_par_id annotations vardecl_int_var_array_init
             }
           }
           vars[$5 - 1] = pp->int_variables_.size();
-          const string var_name =
+          const std::string var_name =
               StringPrintf("%s[%" GG_LL_FORMAT "d]", $11, $5);
           pp->int_variables_.push_back(
               new IntVarSpec(var_name, $9, false, true));
@@ -440,7 +440,7 @@ var_par_id annotations vardecl_int_var_array_init
         output->a.push_back(new AstIntVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(string($11), a);
+      pp->output(std::string($11), a);
     }
     pp->int_var_array_map_[$11] = vars;
   }
@@ -465,7 +465,7 @@ var_par_id annotations vardecl_bool_var_array_init
             vars[i] = bvsv->i;
           else {
             vars[i] = pp->bool_variables_.size();
-            const string var_name = StringPrintf("%s[%d]", $11, i + 1);
+            const std::string var_name = StringPrintf("%s[%d]", $11, i + 1);
             (*vsv)[i]->SetName(var_name);
             pp->bool_variables_.push_back((*vsv)[i]);
           }
@@ -479,7 +479,7 @@ var_par_id annotations vardecl_bool_var_array_init
     } else {
       for (int i = 0; i < $5; i++) {
         vars[i] = pp->bool_variables_.size();
-        const string var_name = StringPrintf("%s[%d]", $11, i + 1);
+        const std::string var_name = StringPrintf("%s[%d]", $11, i + 1);
         pp->bool_variables_.push_back(
             new BoolVarSpec(var_name, $9, !print, (i == $5 - 1)));
       }
@@ -492,7 +492,7 @@ var_par_id annotations vardecl_bool_var_array_init
         output->a.push_back(new AstBoolVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(string($11), a);
+      pp->output(std::string($11), a);
     }
     pp->bool_var_array_map_[$11] = vars;
   }
@@ -536,7 +536,7 @@ var_par_id annotations vardecl_set_var_array_init
       delete vsv;
     } else {
       if ($5>0) {
-        string arrayname = "["; arrayname += $13;
+        std::string arrayname = "["; arrayname += $13;
         for (int i=0; i<$5-1; i++) {
           vars[i] = pp->set_variables_.size();
           pp->set_variables_.push_back(
@@ -554,7 +554,7 @@ var_par_id annotations vardecl_set_var_array_init
         output->a.push_back(new AstSetVar(vars[i]));
       a->a.push_back(output);
       a->a.push_back(new AstString(")"));
-      pp->output(string($13), a);
+      pp->output(std::string($13), a);
     }
     pp->set_var_array_map_[$13] = vars;
   }

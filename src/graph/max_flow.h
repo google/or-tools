@@ -127,7 +127,6 @@
 #include "util/stats.h"
 #include "util/zvector.h"
 
-using std::string;
 
 namespace operations_research {
 
@@ -417,7 +416,7 @@ template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Returns context concatenated with information about arc
   // in a human-friendly way.
-  string DebugString(const string& context, ArcIndex arc) const;
+  std::string DebugString(const std::string& context, ArcIndex arc) const;
 
   // Initializes the container active_nodes_.
   virtual void InitializeActiveNodeContainer();

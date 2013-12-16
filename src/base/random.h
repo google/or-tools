@@ -58,7 +58,7 @@ class ACMRandom {
 
   // RandomNumberGenerator concept. Example:
   //   ACMRandom rand(my_seed);
-  //   random_shuffle(myvec.begin(), myvec.end(), rand);
+  //   std::random_shuffle(myvec.begin(), myvec.end(), rand);
 #if defined(_MSC_VER)
   typedef __int64 difference_type;  // NOLINT
 #else
@@ -78,7 +78,7 @@ class ACMRandom {
 class MTRandom : public ACMRandom {
  public:
   explicit MTRandom(int32 seed) : ACMRandom(seed) { }
-  // MTRandom also supports a string seed.
+  // MTRandom also supports a std::string seed.
   explicit MTRandom(const std::string& str_seed)
       : ACMRandom(GenerateInt32SeedFromString(str_seed)) {
   }

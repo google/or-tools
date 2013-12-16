@@ -117,7 +117,7 @@ class SCIPInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     return StringPrintf("SCIP %d.%d.%d [LP solver: %s]",
                         SCIPmajorVersion(), SCIPminorVersion(),
                         SCIPtechVersion(), SCIPlpiGetSolverName());
@@ -138,8 +138,8 @@ class SCIPInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  virtual bool ReadParameterFile(const string& filename);
-  virtual string ValidFileExtensionForParameterFile() const;
+  virtual bool ReadParameterFile(const std::string& filename);
+  virtual std::string ValidFileExtensionForParameterFile() const;
 
   void CreateSCIP();
   void DeleteSCIP();
@@ -654,11 +654,11 @@ void SCIPInterface::SetLpAlgorithm(int value) {
   }
 }
 
-bool SCIPInterface::ReadParameterFile(const string& filename) {
+bool SCIPInterface::ReadParameterFile(const std::string& filename) {
   return SCIPreadParams(scip_, filename.c_str()) == SCIP_OKAY;
 }
 
-string SCIPInterface::ValidFileExtensionForParameterFile() const {
+std::string SCIPInterface::ValidFileExtensionForParameterFile() const {
   return ".set";
 }
 

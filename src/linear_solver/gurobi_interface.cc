@@ -10,8 +10,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include <math.h>
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 #include "base/hash.h"
 #include <limits>
 #include "base/unique_ptr.h"
@@ -103,7 +103,7 @@ class GurobiInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     int major, minor, technical;
     GRBversion(&major, &minor, &technical);
     return StringPrintf("Gurobi library version %d.%d.%d\n",
@@ -152,8 +152,8 @@ class GurobiInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  virtual bool ReadParameterFile(const string& filename);
-  virtual string ValidFileExtensionForParameterFile() const;
+  virtual bool ReadParameterFile(const std::string& filename);
+  virtual std::string ValidFileExtensionForParameterFile() const;
 
   MPSolver::BasisStatus
   TransformGRBVarBasisStatus(int gurobi_basis_status) const;
@@ -804,12 +804,12 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-bool GurobiInterface::ReadParameterFile(const string& filename) {
+bool GurobiInterface::ReadParameterFile(const std::string& filename) {
   // A non-zero return value indicates that a problem occurred.
   return GRBreadparams(GRBgetenv(model_), filename.c_str()) == 0;
 }
 
-string GurobiInterface::ValidFileExtensionForParameterFile() const {
+std::string GurobiInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
 }
 

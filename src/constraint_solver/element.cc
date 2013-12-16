@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include <algorithm>
 #include "base/unique_ptr.h"
 #include <string>
@@ -235,7 +234,7 @@ class IntElementConstraint : public CastConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntElementConstraint(%s, %s, %s)",
                         IntVectorToString(values_, ", ").c_str(),
                         index_->DebugString().c_str(),
@@ -270,7 +269,7 @@ class IntExprElement : public BaseIntExprElement {
 
   virtual ~IntExprElement() {}
 
-  virtual string name() const {
+  virtual std::string name() const {
     const int size = values_.size();
     if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)", size,
@@ -282,7 +281,7 @@ class IntExprElement : public BaseIntExprElement {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     const int size = values_.size();
     if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)", size,
@@ -340,12 +339,12 @@ class IncreasingIntExprElement : public BaseIntExpr {
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const { return (index_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IntElement(%s, %s)",
                         IntVectorToString(values_, ", ").c_str(),
                         index_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntElement(%s, %s)",
                         IntVectorToString(values_, ", ").c_str(),
                         index_->DebugString().c_str());
@@ -541,11 +540,11 @@ class IntExprFunctionElement : public BaseIntExprElement {
                          IntVar* const expr, bool del);
   virtual ~IntExprFunctionElement();
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IntFunctionElement(%s)", expr_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntFunctionElement(%s)", expr_->DebugString().c_str());
   }
 
@@ -655,12 +654,12 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     index_->SetRange(nmin, nmax);
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
                         index_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
                         index_->DebugString().c_str());
   }
@@ -708,7 +707,7 @@ class OppositeCallback : public BaseObject {
 
   int64 Run(int64 index) { return -values_->Run(index); }
 
-  virtual string DebugString() const { return "OppositeCallback"; }
+  virtual std::string DebugString() const { return "OppositeCallback"; }
 
  public:
   std::unique_ptr<ResultCallback1<int64, int64>> values_;
@@ -740,7 +739,7 @@ class IntIntExprFunctionElement : public BaseIntExpr {
                             ResultCallback2<int64, int64, int64>* values,
                             IntVar* const expr1, IntVar* const expr2);
   virtual ~IntIntExprFunctionElement();
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntIntFunctionElement(%s,%s)",
                         expr1_->DebugString().c_str(),
                         expr2_->DebugString().c_str());
@@ -984,7 +983,7 @@ class IntExprArrayElementCt : public CastConstraint {
   void Update(int index);
   void UpdateExpr();
 
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
@@ -1096,7 +1095,7 @@ void IntExprArrayElementCt::UpdateExpr() {
   }
 }
 
-string IntExprArrayElementCt::DebugString() const {
+std::string IntExprArrayElementCt::DebugString() const {
   if (size() > 10) {
     return StringPrintf("IntExprArrayElement(var array of size %" GG_LL_FORMAT
                         "d, %s) == %s",
@@ -1158,7 +1157,7 @@ class IntExprArrayElementCstCt : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
@@ -1253,7 +1252,7 @@ class IntExprIndexOfCt : public Constraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
@@ -1318,7 +1317,7 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
       emax = std::max(emax, vars[index_value]->Max());
     }
   }
-  const string vname =
+  const std::string vname =
       size > 10
           ? StringPrintf("ElementVar(var array of size %d, %s)", size,
                          index->DebugString().c_str())
@@ -1395,7 +1394,7 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 val
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+    const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
                                      JoinNamePtr(vars, ", ").c_str(),
                                      value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);

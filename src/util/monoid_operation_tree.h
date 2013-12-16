@@ -46,7 +46,7 @@ namespace operations_research {
 //   * Have a = operator method that sets its value to the given one.
 //   * Have a Compute(const T& left, const T& right) method that sets its value
 //        to the result of the binary operation for the two given operands.
-//   * Have a string DebugString() const method.
+//   * Have a std::string DebugString() const method.
 //
 // Possible use cases are:
 // * Maintain a sum or a product of doubles, with a guarantee that the queried
@@ -82,7 +82,7 @@ class MonoidOperationTree {
     DiveInTree(0, diver);
   }
 
-  string DebugString() const;
+  std::string DebugString() const;
 
  private:
   // Computes the index of the first leaf for the given size.
@@ -206,8 +206,8 @@ void MonoidOperationTree<T>::Compute(int position) {
 }
 
 template<class T>
-string MonoidOperationTree<T>::DebugString() const {
-  string out;
+std::string MonoidOperationTree<T>::DebugString() const {
+  std::string out;
   int layer = 0;
   for (int i = 0; i < num_nodes_; ++i) {
     if (((i+1) & i) == 0) {

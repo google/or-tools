@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <math.h>
-#include <string.h>
 #include <algorithm>
+#include <cmath>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <string>
@@ -44,7 +43,7 @@ namespace operations_research {
 
 // ---------- IntExpr ----------
 
-IntVar* IntExpr::VarWithName(const string& name) {
+IntVar* IntExpr::VarWithName(const std::string& name) {
   IntVar* const var = Var();
   var->set_name(name);
   return var;
@@ -54,7 +53,7 @@ IntVar* IntExpr::VarWithName(const string& name) {
 
 IntVar::IntVar(Solver* const s) : IntExpr(s) {}
 
-IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
+IntVar::IntVar(Solver* const s, const std::string& name) : IntExpr(s) {
   set_name(name);
 }
 
@@ -167,9 +166,9 @@ IntVar* BooleanVar::IsLessOrEqual(int64 constant) {
   }
 }
 
-string BooleanVar::DebugString() const {
-  string out;
-  const string& var_name = name();
+std::string BooleanVar::DebugString() const {
+  std::string out;
+  const std::string& var_name = name();
   if (!var_name.empty()) {
     out = var_name + "(";
   } else {
@@ -222,7 +221,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    virtual string DebugString() const { return "BitSetIterator"; }
+    virtual std::string DebugString() const { return "BitSetIterator"; }
 
    private:
     uint64* const bitset_;
@@ -245,7 +244,7 @@ class DomainIntVar : public IntVar {
     virtual void DelayRemoveValue(int64 val) = 0;
     virtual void ApplyRemovedValues(DomainIntVar* var) = 0;
     virtual void ClearRemovedValues() = 0;
-    virtual string pretty_DebugString(int64 min, int64 max) const = 0;
+    virtual std::string pretty_DebugString(int64 min, int64 max) const = 0;
     virtual BitSetIterator* MakeIterator() = 0;
 
     void InitHoles() {
@@ -282,7 +281,7 @@ class DomainIntVar : public IntVar {
     virtual Solver::DemonPriority priority() const {
       return Solver::VAR_PRIORITY;
     }
-    virtual string DebugString() const {
+    virtual std::string DebugString() const {
       return StringPrintf("Handler(%s)", var_->DebugString().c_str());
     }
 
@@ -359,9 +358,9 @@ class DomainIntVar : public IntVar {
         if (variable_->Bound()) {
           boolvar = solver()->MakeIntConst(1);
         } else {
-          const string vname = variable_->HasName() ? variable_->name()
+          const std::string vname = variable_->HasName() ? variable_->name()
                                                     : variable_->DebugString();
-          const string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
+          const std::string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
                                             vname.c_str(), value);
           boolvar = solver()->MakeBoolVar(bname);
         }
@@ -497,7 +496,7 @@ class DomainIntVar : public IntVar {
       visitor->EndVisitConstraint(ModelVisitor::kVarValueWatcher, this);
     }
 
-    virtual string DebugString() const {
+    virtual std::string DebugString() const {
       return StringPrintf("ValueWatcher(%s)", variable_->DebugString().c_str());
     }
 
@@ -602,9 +601,9 @@ class DomainIntVar : public IntVar {
         if (variable_->Min() >= value) {
           boolvar = solver()->MakeIntConst(1);
         } else {
-          const string vname = variable_->HasName() ? variable_->name()
+          const std::string vname = variable_->HasName() ? variable_->name()
                                                     : variable_->DebugString();
-          const string bname = StringPrintf("Watch<%s >= %" GG_LL_FORMAT "d>",
+          const std::string bname = StringPrintf("Watch<%s >= %" GG_LL_FORMAT "d>",
                                             vname.c_str(), value);
           boolvar = solver()->MakeBoolVar(bname);
         }
@@ -729,7 +728,7 @@ class DomainIntVar : public IntVar {
       visitor->EndVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
     }
 
-    virtual string DebugString() const {
+    virtual std::string DebugString() const {
       return StringPrintf("BoundWatcher(%s)", variable_->DebugString().c_str());
     }
 
@@ -765,9 +764,9 @@ class DomainIntVar : public IntVar {
   };
 
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64 vmin, int64 vmax, const string& name);
+  DomainIntVar(Solver* const s, int64 vmin, int64 vmax, const std::string& name);
   DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
-               const string& name);
+               const std::string& name);
   virtual ~DomainIntVar();
 
   virtual int64 Min() const { return min_.Value(); }
@@ -954,10 +953,10 @@ class DomainIntVar : public IntVar {
   virtual int64 OldMin() const { return std::min(old_min_, min_.Value()); }
   virtual int64 OldMax() const { return std::max(old_max_, max_.Value()); }
 
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   BitSet* bitset() const { return bits_; }
   virtual int VarType() const { return DOMAIN_INT_VAR; }
-  virtual string BaseName() const { return "IntegerVar"; }
+  virtual std::string BaseName() const { return "IntegerVar"; }
 
   friend class PlusCstDomainIntVar;
   friend class LinkExprAndDomainIntVar;
@@ -1132,8 +1131,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   }
   virtual uint64 Size() const { return size_.Value(); }
 
-  virtual string DebugString() const {
-    string out;
+  virtual std::string DebugString() const {
+    std::string out;
     SStringPrintf(&out,
                   "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ",
                   omin_, omax_);
@@ -1156,8 +1155,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual void ClearRemovedValues() { removed_.clear(); }
 
-  virtual string pretty_DebugString(int64 min, int64 max) const {
-    string out;
+  virtual std::string pretty_DebugString(int64 min, int64 max) const {
+    std::string out;
     DCHECK(bit(min));
     DCHECK(bit(max));
     if (max != min) {
@@ -1349,7 +1348,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   virtual uint64 Size() const { return size_.Value(); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                         "d : %llx)",
                         omin_, omax_, bits_);
@@ -1371,8 +1370,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   virtual void ClearRemovedValues() { removed_.clear(); }
 
-  virtual string pretty_DebugString(int64 min, int64 max) const {
-    string out;
+  virtual std::string pretty_DebugString(int64 min, int64 max) const {
+    std::string out;
     DCHECK(bit(min));
     DCHECK(bit(max));
     if (max != min) {
@@ -1603,7 +1602,7 @@ class UnaryIterator : public IntVarIterator {
 };
 
 DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
-                           const string& name)
+                           const std::string& name)
     : IntVar(s, name),
       min_(vmin),
       max_(vmax),
@@ -1618,7 +1617,7 @@ DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
       bound_watcher_(nullptr) {}
 
 DomainIntVar::DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
-                           const string& name)
+                           const std::string& name)
     : IntVar(s, name),
       min_(kint64max),
       max_(kint64min),
@@ -1881,9 +1880,9 @@ IntVarIterator* DomainIntVar::MakeDomainIterator(bool reversible) const {
                         new DomainIntVarDomainIterator(this, reversible));
 }
 
-string DomainIntVar::DebugString() const {
-  string out;
-  const string& var_name = name();
+std::string DomainIntVar::DebugString() const {
+  std::string out;
+  const std::string& var_name = name();
   if (!var_name.empty()) {
     out = var_name + "(";
   } else {
@@ -1919,7 +1918,7 @@ class ConcreteBooleanVar : public BooleanVar {
     virtual Solver::DemonPriority priority() const {
       return Solver::VAR_PRIORITY;
     }
-    virtual string DebugString() const {
+    virtual std::string DebugString() const {
       return StringPrintf("Handler(%s)", var_->DebugString().c_str());
     }
 
@@ -1927,7 +1926,7 @@ class ConcreteBooleanVar : public BooleanVar {
     ConcreteBooleanVar* const var_;
   };
 
-  ConcreteBooleanVar(Solver* const s, const string& name)
+  ConcreteBooleanVar(Solver* const s, const std::string& name)
       : BooleanVar(s, name), handler_(this) {}
 
   virtual ~ConcreteBooleanVar() {}
@@ -1967,7 +1966,7 @@ class ConcreteBooleanVar : public BooleanVar {
 
 class IntConst : public IntVar {
  public:
-  IntConst(Solver* const s, int64 value, const string& name = "")
+  IntConst(Solver* const s, int64 value, const std::string& name = "")
       : IntVar(s, name), value_(value) {}
   virtual ~IntConst() {}
 
@@ -2018,10 +2017,10 @@ class IntConst : public IntVar {
   }
   virtual int64 OldMin() const { return value_; }
   virtual int64 OldMax() const { return value_; }
-  virtual string DebugString() const {
-    string out;
+  virtual std::string DebugString() const {
+    std::string out;
     if (solver()->HasName(this)) {
-      const string& var_name = name();
+      const std::string& var_name = name();
       SStringPrintf(&out, "%s(%" GG_LL_FORMAT "d)", var_name.c_str(), value_);
     } else {
       SStringPrintf(&out, "IntConst(%" GG_LL_FORMAT "d)", value_);
@@ -2055,7 +2054,7 @@ class IntConst : public IntVar {
     return solver()->MakeIntConst(value_ <= constant);
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     if (solver()->HasName(this)) {
       return PropagationBaseObject::name();
     } else {
@@ -2086,7 +2085,7 @@ class PlusCstVar : public IntVar {
 
   virtual int64 OldMax() const { return CapAdd(var_->OldMax(), cst_); }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     if (HasName()) {
       return StringPrintf("%s(%s + %" GG_LL_FORMAT "d)", name().c_str(),
                           var_->DebugString().c_str(), cst_);
@@ -2327,7 +2326,7 @@ class SubCstIntVar : public IntVar {
   }
   virtual int64 OldMin() const { return CapSub(cst_, var_->OldMax()); }
   virtual int64 OldMax() const { return CapSub(cst_, var_->OldMin()); }
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual int VarType() const { return CST_SUB_VAR; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -2398,7 +2397,7 @@ uint64 SubCstIntVar::Size() const { return var_->Size(); }
 
 bool SubCstIntVar::Contains(int64 v) const { return var_->Contains(cst_ - v); }
 
-string SubCstIntVar::DebugString() const {
+std::string SubCstIntVar::DebugString() const {
   if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
     return StringPrintf("Not(%s)", var_->DebugString().c_str());
   } else {
@@ -2448,7 +2447,7 @@ class OppIntVar : public IntVar {
   }
   virtual int64 OldMin() const { return CapOpp(var_->OldMax()); }
   virtual int64 OldMax() const { return CapOpp(var_->OldMin()); }
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
   virtual int VarType() const { return OPP_VAR; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -2514,7 +2513,7 @@ uint64 OppIntVar::Size() const { return var_->Size(); }
 
 bool OppIntVar::Contains(int64 v) const { return var_->Contains(-v); }
 
-string OppIntVar::DebugString() const {
+std::string OppIntVar::DebugString() const {
   return StringPrintf("-(%s)", var_->DebugString().c_str());
 }
 
@@ -2568,7 +2567,7 @@ class TimesCstIntVar : public IntVar {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), cst_);
   }
@@ -3000,12 +2999,12 @@ class PlusIntExpr : public BaseIntExpr {
     *ma = left_->Max() + right_->Max();
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s + %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s + %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3070,12 +3069,12 @@ class SafePlusIntExpr : public BaseIntExpr {
 
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s + %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s + %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3110,11 +3109,11 @@ class PlusIntCstExpr : public BaseIntExpr {
   virtual int64 Max() const { return CapAdd(expr_->Max(), value_); }
   virtual void SetMax(int64 m) { expr_->SetMax(CapSub(m, value_)); }
   virtual bool Bound() const { return (expr_->Bound()); }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s + %" GG_LL_FORMAT "d)", expr_->name().c_str(),
                         value_);
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s + %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
@@ -3199,12 +3198,12 @@ class SubIntExpr : public BaseIntExpr {
 
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s - %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s - %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3286,11 +3285,11 @@ class SubIntCstExpr : public BaseIntExpr {
   virtual int64 Max() const { return CapSub(value_, expr_->Min()); }
   virtual void SetMax(int64 m) { expr_->SetMin(CapSub(value_, m)); }
   virtual bool Bound() const { return (expr_->Bound()); }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%" GG_LL_FORMAT "d - %s)", value_,
                         expr_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%" GG_LL_FORMAT "d - %s)", value_,
                         expr_->DebugString().c_str());
   }
@@ -3332,10 +3331,10 @@ class OppIntExpr : public BaseIntExpr {
   virtual int64 Max() const { return (-expr_->Min()); }
   virtual void SetMax(int64 m) { expr_->SetMin(-m); }
   virtual bool Bound() const { return (expr_->Bound()); }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(-%s)", expr_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(-%s)", expr_->DebugString().c_str());
   }
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
@@ -3370,12 +3369,12 @@ class TimesIntCstExpr : public BaseIntExpr {
 
   virtual bool Bound() const { return (expr_->Bound()); }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)", expr_->name().c_str(),
                         value_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
@@ -3651,7 +3650,7 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::min(std::min(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-                    std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+               std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
@@ -3660,15 +3659,15 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::max(std::max(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-                    std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+               std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3723,11 +3722,11 @@ class TimesPosIntExpr : public BaseIntExpr {
   virtual int64 Max() const { return (left_->Max() * right_->Max()); }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3781,11 +3780,11 @@ class SafeTimesPosIntExpr : public BaseIntExpr {
     return (left_->Max() == 0 || right_->Max() == 0 ||
             (left_->Bound() && right_->Bound()));
   }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -3825,11 +3824,11 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
   virtual void Range(int64* mi, int64* ma);
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %s)", boolvar_->name().c_str(),
                         expr_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %s)", boolvar_->DebugString().c_str(),
                         expr_->DebugString().c_str());
   }
@@ -3938,11 +3937,11 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   virtual void Range(int64* mi, int64* ma);
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s * %s)", boolvar_->name().c_str(),
                         expr_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s * %s)", boolvar_->DebugString().c_str(),
                         expr_->DebugString().c_str());
   }
@@ -4104,12 +4103,12 @@ class DivPosIntCstExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s div %" GG_LL_FORMAT "d)", expr_->name().c_str(),
                         value_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s div %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
@@ -4180,11 +4179,11 @@ class DivPosIntExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s div %s)", num_->name().c_str(),
                         denom_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s div %s)", num_->DebugString().c_str(),
                         denom_->DebugString().c_str());
   }
@@ -4240,12 +4239,12 @@ class DivPosPosIntExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s div %s)", num_->name().c_str(),
                         denom_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s div %s)", num_->DebugString().c_str(),
                         denom_->DebugString().c_str());
   }
@@ -4411,11 +4410,11 @@ class DivIntExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("(%s div %s)", num_->name().c_str(),
                         denom_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("(%s div %s)", num_->DebugString().c_str(),
                         denom_->DebugString().c_str());
   }
@@ -4489,7 +4488,7 @@ class IntAbsConstraint : public CastConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntAbsConstraint(%s, %s)", sub_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -4586,11 +4585,11 @@ class IntAbs : public BaseIntExpr {
 
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IntAbs(%s)", expr_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntAbs(%s)", expr_->DebugString().c_str());
   }
 
@@ -4606,7 +4605,7 @@ class IntAbs : public BaseIntExpr {
     int64 max_value = 0;
     Range(&min_value, &max_value);
     Solver* const s = solver();
-    const string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
+    const std::string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
     IntVar* const target = s->MakeIntVar(min_value, max_value, name);
     CastConstraint* const ct =
         s->RevAlloc(new IntAbsConstraint(s, expr_->Var(), target));
@@ -4673,10 +4672,10 @@ class IntSquare : public BaseIntExpr {
   }
   virtual bool Bound() const { return expr_->Bound(); }
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IntSquare(%s)", expr_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntSquare(%s)", expr_->DebugString().c_str());
   }
 
@@ -4758,12 +4757,12 @@ class BasePower : public BaseIntExpr {
 
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("IntPower(%s, %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), pow_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("IntPower(%s, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), pow_);
   }
@@ -4976,11 +4975,11 @@ class MinIntExpr : public BaseIntExpr {
       left_->SetMax(m);
     }
   }
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("MinIntExpr(%s, %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("MinIntExpr(%s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -5032,12 +5031,12 @@ class MinCstIntExpr : public BaseIntExpr {
     return (expr_->Bound() || expr_->Min() >= value_);
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), value_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
@@ -5085,12 +5084,12 @@ class MaxIntExpr : public BaseIntExpr {
     right_->SetMax(m);
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("MaxIntExpr(%s, %s)", left_->name().c_str(),
                         right_->name().c_str());
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("MaxIntExpr(%s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
@@ -5143,12 +5142,12 @@ class MaxCstIntExpr : public BaseIntExpr {
     return (expr_->Bound() || expr_->Max() <= value_);
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), value_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
@@ -5256,7 +5255,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
                         "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
                         "d, lc = %" GG_LL_FORMAT "d)",
@@ -5264,7 +5263,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
                         late_date_, late_cost_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
                         "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
                         "d, lc = %" GG_LL_FORMAT "d)",
@@ -5344,13 +5343,13 @@ class SemiContinuousExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
                         "d, step = %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), fixed_charge_, step_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
                         "d, step = %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), fixed_charge_, step_);
@@ -5415,13 +5414,13 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf(
         "SemiContinuousStepOne(%s, fixed_charge = %" GG_LL_FORMAT "d)",
         expr_->name().c_str(), fixed_charge_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf(
         "SemiContinuousStepOne(%s, fixed_charge = %" GG_LL_FORMAT "d)",
         expr_->DebugString().c_str(), fixed_charge_);
@@ -5483,13 +5482,13 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
     }
   }
 
-  virtual string name() const {
+  virtual std::string name() const {
     return StringPrintf(
         "SemiContinuousStepZero(%s, fixed_charge = %" GG_LL_FORMAT "d)",
         expr_->name().c_str(), fixed_charge_);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf(
         "SemiContinuousStepZero(%s, fixed_charge = %" GG_LL_FORMAT "d)",
         expr_->DebugString().c_str(), fixed_charge_);
@@ -5534,7 +5533,7 @@ class LinkExprAndVar : public CastConstraint {
     target_var_->SetRange(l, u);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("cast(%s, %s)", expr_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -5638,7 +5637,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
     condition_->WhenBound(d);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("ConditionExpr(%s, %s, %" GG_LL_FORMAT "d)",
                         condition_->DebugString().c_str(),
                         expression_->DebugString().c_str(), unperformed_value_);
@@ -5703,7 +5702,7 @@ class LinkExprAndDomainIntVar : public CastConstraint {
     }
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("cast(%s, %s)", expr_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -5791,14 +5790,14 @@ void RestoreBoolValue(IntVar* const var) {
 
 // ----- API -----
 
-IntVar* Solver::MakeIntVar(int64 min, int64 max, const string& name) {
+IntVar* Solver::MakeIntVar(int64 min, int64 max, const std::string& name) {
   if (min == max) {
     return RevAlloc(new IntConst(this, min, name));
   }
   if (min == 0 && max == 1) {
     return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
   } else if (max - min == 1) {
-    const string inner_name = "inner_" + name;
+    const std::string inner_name = "inner_" + name;
     return RegisterIntVar(
         MakeSum(RevAlloc(new ConcreteBooleanVar(this, inner_name)), min)
             ->VarWithName(name));
@@ -5811,7 +5810,7 @@ IntVar* Solver::MakeIntVar(int64 min, int64 max) {
   return MakeIntVar(min, max, "");
 }
 
-IntVar* Solver::MakeBoolVar(const string& name) {
+IntVar* Solver::MakeBoolVar(const std::string& name) {
   return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
 }
 
@@ -5819,7 +5818,7 @@ IntVar* Solver::MakeBoolVar() {
   return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
   return RegisterIntVar(
       RevAlloc(new DomainIntVar(this, SortedNoDuplicates(values), name)));
 }
@@ -5828,7 +5827,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
   return MakeIntVar(values, "");
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int>& values, const string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int>& values, const std::string& name) {
   return RegisterIntVar(RevAlloc(
       new DomainIntVar(this, SortedNoDuplicates(ToInt64Vector(values)), name)));
 }
@@ -5837,7 +5836,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
   return MakeIntVar(values, "");
 }
 
-IntVar* Solver::MakeIntConst(int64 val, const string& name) {
+IntVar* Solver::MakeIntConst(int64 val, const std::string& name) {
   // If IntConst is going to be named after its creation,
   // cp_share_int_consts should be set to false otherwise names can potentially
   // be overwritten.
@@ -5853,7 +5852,7 @@ IntVar* Solver::MakeIntConst(int64 val) { return MakeIntConst(val, ""); }
 // ----- Int Var and associated methods -----
 
 namespace {
-string IndexedName(const string& prefix, int index, int max_index) {
+std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #if 0
 #if defined(_MSC_VER)
   const int digits = max_index > 0 ?
@@ -5870,7 +5869,7 @@ string IndexedName(const string& prefix, int index, int max_index) {
 }  // namespace
 
 void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                             const string& name, std::vector<IntVar*>* vars) {
+                             const std::string& name, std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
   }
@@ -5884,7 +5883,7 @@ void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
 }
 
 IntVar** Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                                 const string& name) {
+                                 const std::string& name) {
   IntVar** vars = new IntVar* [var_count];
   for (int i = 0; i < var_count; ++i) {
     vars[i] = MakeIntVar(vmin, vmax, IndexedName(name, i, var_count));
@@ -5892,7 +5891,7 @@ IntVar** Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
   return vars;
 }
 
-void Solver::MakeBoolVarArray(int var_count, const string& name,
+void Solver::MakeBoolVarArray(int var_count, const std::string& name,
                               std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeBoolVar(IndexedName(name, i, var_count)));
@@ -5905,7 +5904,7 @@ void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
   }
 }
 
-IntVar** Solver::MakeBoolVarArray(int var_count, const string& name) {
+IntVar** Solver::MakeBoolVarArray(int var_count, const std::string& name) {
   IntVar** vars = new IntVar* [var_count];
   for (int i = 0; i < var_count; ++i) {
     vars[i] = MakeBoolVar(IndexedName(name, i, var_count));
@@ -6352,7 +6351,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
     int64 coefficient = 1;
     IntExpr* expr = nullptr;
     if (IsProduct(e, &expr, &coefficient)) {
-      result = MakeProd(MakeAbs(expr), std::abs(coefficient));
+      result = MakeProd(MakeAbs(expr), abs(coefficient));
     } else {
       result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
     }

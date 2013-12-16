@@ -188,7 +188,6 @@
 #include "graph/ebert_graph.h"
 #include "util/permutation.h"
 
-using std::string;
 
 #ifndef SWIG
 DECLARE_int64(assignment_alpha);
@@ -334,7 +333,7 @@ template <typename GraphType> class LinearSumAssignment {
     return Head(matching_arc);
   }
 
-  string StatsString() const {
+  std::string StatsString() const {
     return total_stats_.StatsString();
   }
 
@@ -380,7 +379,7 @@ template <typename GraphType> class LinearSumAssignment {
       relabelings_ += that.relabelings_;
       refinements_ += that.refinements_;
     }
-    string StatsString() const {
+    std::string StatsString() const {
       return StringPrintf("%lld refinements; %lld relabelings; "
                           "%lld double pushes; %lld pushes",
                           refinements_,
@@ -1016,9 +1015,9 @@ void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
     DCHECK_LE(num_left_nodes_, head);
   }
   cost *= cost_scaling_factor_;
-  const CostValue cost_magnitude = std::abs(cost);
+  const CostValue cost_magnitude = abs(cost);
   largest_scaled_cost_magnitude_ = std::max(largest_scaled_cost_magnitude_,
-                                            cost_magnitude);
+                                       cost_magnitude);
   scaled_arc_cost_.Set(arc, cost);
 }
 
@@ -1391,7 +1390,7 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
   // where the largest arc cost is zero, we still do a Refine()
   // iteration.
   epsilon_ = std::max(largest_scaled_cost_magnitude_,
-                      kMinEpsilon + 1);
+                 kMinEpsilon + 1);
   VLOG(2) << "Largest given cost magnitude: " <<
       largest_scaled_cost_magnitude_ / cost_scaling_factor_;
   // Initialize left-side node-indexed arrays and check incidence

@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
 #include "base/hash.h"
 #include <string>
 #include <vector>
@@ -40,7 +39,7 @@ class CollectVariablesVisitor : public ModelParser {
 
   virtual ~CollectVariablesVisitor() {}
 
-  virtual void EndVisitModel(const string& solver_name) {
+  virtual void EndVisitModel(const std::string& solver_name) {
     PopArgumentHolder();
     primaries_->assign(primary_set_.begin(), primary_set_.end());
     std::sort(primaries_->begin(), primaries_->end());
@@ -52,7 +51,7 @@ class CollectVariablesVisitor : public ModelParser {
     std::sort(sequences_->begin(), sequences_->end());
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     if (type_name.compare(ModelVisitor::kLinkExprVar) == 0 ||
         (type_name.compare(ModelVisitor::kSumEqual) == 0 &&
@@ -164,14 +163,14 @@ class CollectVariablesVisitor : public ModelParser {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     delegate->Accept(this);
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     if (delegate != nullptr) {
       delegate->Accept(this);
@@ -189,7 +188,7 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
-  virtual string DebugString() const { return "CollectVariablesVisitor"; }
+  virtual std::string DebugString() const { return "CollectVariablesVisitor"; }
 
  private:
   void IgnoreIntegerVariable(IntVar* const var) {

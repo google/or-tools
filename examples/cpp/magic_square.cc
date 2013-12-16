@@ -134,7 +134,7 @@ void MagicSquare(int grid_size) {
   solver.NewSearch(db, monitors);
   if (solver.NextSolution()) {
     for (int n = 0; n < grid_size; ++n) {
-      string output;
+      std::string output;
       for (int m = 0; m < grid_size; ++m) {   // extract row indices
         int64 v = vars[n * grid_size + m]->Value();
         StringAppendF(&output, "%3lld ", v);

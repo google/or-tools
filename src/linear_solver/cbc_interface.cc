@@ -126,7 +126,7 @@ class CBCInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints() {}
   virtual void ExtractObjective() {}
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     return "Cbc " CBC_VERSION;
   }
 

@@ -23,7 +23,6 @@
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
 
-using std::string;
 
 namespace operations_research {
 namespace sat {
@@ -38,7 +37,7 @@ class SatCnfReader {
   SatCnfReader() {}
 
   // Loads the given cnf filename into the given problem.
-  bool Load(const string& filename, LinearBooleanProblem* problem) {
+  bool Load(const std::string& filename, LinearBooleanProblem* problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
     is_wcnf_ = false;
@@ -46,7 +45,7 @@ class SatCnfReader {
     slack_variable_weights_.clear();
 
     int num_lines = 0;
-    for (const string& line : FileLines(filename)) {
+    for (const std::string& line : FileLines(filename)) {
       ++num_lines;
       ProcessNewLine(problem, line);
     }
@@ -78,22 +77,19 @@ class SatCnfReader {
  private:
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
-  static string ExtractProblemName(const string& filename) {
+  static std::string ExtractProblemName(const std::string& filename) {
     const int found = filename.find_last_of("/");
-    const string problem_name = found != string::npos ?
+    const std::string problem_name = found != std::string::npos ?
         filename.substr(found + 1) : filename;
     return problem_name;
   }
 
-  void ProcessNewLine(LinearBooleanProblem* problem, const string& line) {
+  void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
     static const char kWordDelimiters[] = " ";
-    std::vector<string> words;
+    std::vector<std::string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
-    if (words.size() == 0 || words[0] == "c") return;
-
-    // TODO(user): It seems our files contains 2 lines of junk at the end.
-    // Hence this test. Clear them?
-    if (words[0] == "%" || end_marker_seen_) {
+    if (words.size() == 0 || words[0] == "c" || end_marker_seen_) return;
+    if (words[0] == "%") {
       end_marker_seen_ = true;
       return;
     }
@@ -141,9 +137,10 @@ class SatCnfReader {
 
   // Used for the wcnf format.
   bool is_wcnf_;
+  // Some files have text after %. This indicates if we have seen the '%'.
+  bool end_marker_seen_;
   std::vector<int64> slack_variable_weights_;
   int64 hard_weight_;
-  bool end_marker_seen_;
 
   DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };

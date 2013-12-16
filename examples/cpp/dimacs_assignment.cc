@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include "base/hash.h"
 #include <string>
@@ -23,10 +24,10 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "algorithms/hungarian.h"
-#include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
 #include "cpp/parse_dimacs_assignment.h"
 #include "cpp/print_dimacs_assignment.h"
+#include "graph/ebert_graph.h"
+#include "graph/linear_assignment.h"
 
 DEFINE_bool(assignment_compare_hungarian, false,
             "Compare result and speed against Hungarian method.");
@@ -59,8 +60,8 @@ template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
        arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    CostValue cost_magnitude = ::std::abs(assignment.ArcCost(arc));
-    largest_cost_magnitude = ::std::max(largest_cost_magnitude, cost_magnitude);
+    CostValue cost_magnitude = abs(assignment.ArcCost(arc));
+    largest_cost_magnitude = std::max(largest_cost_magnitude, cost_magnitude);
   }
   double missing_arc_cost = static_cast<double>((assignment.NumLeftNodes() *
                                                  largest_cost_magnitude) +
@@ -125,7 +126,7 @@ template<typename GraphType> void DisplayAssignment(
 
 template<typename GraphType>
 int SolveDimacsAssignment(int argc, char* argv[]) {
-  string error_message;
+  std::string error_message;
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
   GraphType* graph = NULL;
@@ -185,7 +186,7 @@ using ::operations_research::StarGraph;
 using ::operations_research::StringPrintf;
 
 int main(int argc, char* argv[]) {
-  string usage;
+  std::string usage;
   if (argc < 1) {
     usage = StringPrintf(kUsageTemplate, "solve_dimacs_assignment");
   } else {

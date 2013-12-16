@@ -24,7 +24,6 @@
 #include "base/int_type.h"
 #include "util/bitset.h"
 
-using std::string;
 
 namespace operations_research {
 namespace sat {
@@ -77,7 +76,7 @@ class Literal {
 
   Literal Negated() const { return Literal(NegatedIndex()); }
 
-  string DebugString() const { return StringPrintf("%+d", SignedValue()); }
+  std::string DebugString() const { return StringPrintf("%+d", SignedValue()); }
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
 
@@ -231,11 +230,11 @@ struct AssignmentInfo {
   // Some data about this assignment used to compute the reason clause when it
   // becomes needed. Note that depending on the type, these fields will not be
   // used and be left uninitialized.
-  #if defined(_MSC_VER)
+#if defined(_MSC_VER)
   struct {
-  #else
+#else
   union {
-  #endif
+#endif
     Literal literal;
     int source_trail_index;
   };

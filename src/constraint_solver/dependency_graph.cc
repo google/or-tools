@@ -54,7 +54,7 @@ class DependencyGraphNode {
   void SetMax(int64 new_max);
   virtual void SetMaxInternal(int64 new_max) = 0;
   virtual void SetState(PerformedState state) = 0;
-  virtual string DebugString() const = 0;
+  virtual std::string DebugString() const = 0;
 
   void AddMinDependency(DependencyGraphNode* const node, int64 offset);
   void AddMaxDependency(DependencyGraphNode* const node, int64 offset);
@@ -112,7 +112,7 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
     interval_var_->SetPerformed(state == PERFORMED);
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return StringPrintf("Node-Start(%s)", interval_var_->DebugString().c_str());
   }
 
@@ -168,7 +168,7 @@ class NonReversibleDependencyGraph : public DependencyGraph {
     ProcessQueue();
   }
 
-  virtual string DebugString() const { return "NonReversibleDependencyGraph"; }
+  virtual std::string DebugString() const { return "NonReversibleDependencyGraph"; }
 
  private:
   bool Dequeue(DependencyGraphNode** const node, bool* const changed_min) {

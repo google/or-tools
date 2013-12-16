@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include "base/hash.h"
 #include "base/hash.h"
 #include <string>
@@ -227,45 +226,45 @@ class PrintModelVisitor : public ModelVisitor {
   virtual ~PrintModelVisitor() {}
 
   // Header/footers.
-  virtual void BeginVisitModel(const string& solver_name) {
+  virtual void BeginVisitModel(const std::string& solver_name) {
     LOG(INFO) << "Model " << solver_name << " {";
     Increase();
   }
 
-  virtual void EndVisitModel(const string& solver_name) {
+  virtual void EndVisitModel(const std::string& solver_name) {
     LOG(INFO) << "}";
     Decrease();
     CHECK_EQ(0, indent_);
   }
 
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint) {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitConstraint(const string& type_name,
+  virtual void EndVisitConstraint(const std::string& type_name,
                                   const Constraint* const constraint) {
     Decrease();
   }
 
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expr) {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitIntegerExpression(const string& type_name,
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
                                          const IntExpr* const expr) {
     Decrease();
   }
 
-  virtual void BeginVisitExtension(const string& type_name) {
+  virtual void BeginVisitExtension(const std::string& type_name) {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitExtension(const string& type_name) { Decrease(); }
+  virtual void EndVisitExtension(const std::string& type_name) { Decrease(); }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     IntExpr* const delegate) {
@@ -281,7 +280,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     LOG(INFO) << Spaces() << "IntVar";
     Increase();
@@ -292,7 +291,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     if (delegate != nullptr) {
       LOG(INFO) << Spaces() << operation << " <" << value << ", ";
@@ -310,21 +309,21 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Variables.
-  virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
     LOG(INFO) << Spaces() << arg_name << ": " << value;
   }
 
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
     LOG(INFO) << Spaces() << arg_name << ": ["
               << IntVectorToString(values, ", ") << "]";
   }
 
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
                                           const IntTupleSet& values) {
     const int rows = values.NumTuples();
     const int columns = values.Arity();
-    string array = "[";
+    std::string array = "[";
     for (int i = 0; i < rows; ++i) {
       if (i != 0) {
         array.append(", ");
@@ -342,7 +341,7 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
@@ -351,7 +350,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -362,7 +361,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
@@ -371,7 +370,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalArgumentArray(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -382,7 +381,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument) {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
@@ -391,7 +390,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitSequenceArgumentArray(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -401,15 +400,15 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << "]";
   }
 
-  virtual string DebugString() const { return "PrintModelVisitor"; }
+  virtual std::string DebugString() const { return "PrintModelVisitor"; }
 
  private:
   void Increase() { indent_ += 2; }
 
   void Decrease() { indent_ -= 2; }
 
-  string Spaces() {
-    string result;
+  std::string Spaces() {
+    std::string result;
     for (int i = 0; i < indent_ - 2 * (!prefix_.empty()); ++i) {
       result.append(" ");
     }
@@ -420,10 +419,10 @@ class PrintModelVisitor : public ModelVisitor {
     return result;
   }
 
-  void set_prefix(const string& prefix) { prefix_ = prefix; }
+  void set_prefix(const std::string& prefix) { prefix_ = prefix; }
 
   int indent_;
-  string prefix_;
+  std::string prefix_;
 };
 
 // ---------- ModelStatisticsVisitor -----------
@@ -442,7 +441,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   virtual ~ModelStatisticsVisitor() {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const string& solver_name) {
+  virtual void BeginVisitModel(const std::string& solver_name) {
     // Reset statistics.
     num_constraints_ = 0;
     num_variables_ = 0;
@@ -457,17 +456,17 @@ class ModelStatisticsVisitor : public ModelVisitor {
     extension_types_.clear();
   }
 
-  virtual void EndVisitModel(const string& solver_name) {
+  virtual void EndVisitModel(const std::string& solver_name) {
     // Display statistics.
     LOG(INFO) << "Model has:";
     LOG(INFO) << "  - " << num_constraints_ << " constraints.";
-    for (ConstIter<hash_map<string, int> > it(constraint_types_); !it.at_end();
+    for (ConstIter<hash_map<std::string, int> > it(constraint_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
     LOG(INFO) << "  - " << num_variables_ << " integer variables.";
     LOG(INFO) << "  - " << num_expressions_ << " integer expressions.";
-    for (ConstIter<hash_map<string, int> > it(expression_types_); !it.at_end();
+    for (ConstIter<hash_map<std::string, int> > it(expression_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
@@ -475,25 +474,25 @@ class ModelStatisticsVisitor : public ModelVisitor {
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
     LOG(INFO) << "  - " << num_sequences_ << " sequence variables.";
     LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
-    for (ConstIter<hash_map<string, int> > it(extension_types_); !it.at_end();
+    for (ConstIter<hash_map<std::string, int> > it(extension_types_); !it.at_end();
          ++it) {
       LOG(INFO) << "    * " << it->second << " " << it->first;
     }
   }
 
-  virtual void BeginVisitConstraint(const string& type_name,
+  virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint) {
     num_constraints_++;
     AddConstraintType(type_name);
   }
 
-  virtual void BeginVisitIntegerExpression(const string& type_name,
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
                                            const IntExpr* const expr) {
     AddExpressionType(type_name);
     num_expressions_++;
   }
 
-  virtual void BeginVisitExtension(const string& type_name) {
+  virtual void BeginVisitExtension(const std::string& type_name) {
     AddExtensionType(type_name);
     num_extensions_++;
   }
@@ -509,7 +508,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     num_variables_++;
     Register(variable);
@@ -518,7 +517,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     num_intervals_++;
     if (delegate) {
@@ -534,45 +533,45 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitSequenceArrayArgument(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual string DebugString() const { return "ModelStatisticsVisitor"; }
+  virtual std::string DebugString() const { return "ModelStatisticsVisitor"; }
 
  private:
   void Register(const BaseObject* const object) {
@@ -592,21 +591,21 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
-  void AddConstraintType(const string& constraint_type) {
+  void AddConstraintType(const std::string& constraint_type) {
     constraint_types_[constraint_type]++;
   }
 
-  void AddExpressionType(const string& expression_type) {
+  void AddExpressionType(const std::string& expression_type) {
     expression_types_[expression_type]++;
   }
 
-  void AddExtensionType(const string& extension_type) {
+  void AddExtensionType(const std::string& extension_type) {
     extension_types_[extension_type]++;
   }
 
-  hash_map<string, int> constraint_types_;
-  hash_map<string, int> expression_types_;
-  hash_map<string, int> extension_types_;
+  hash_map<std::string, int> constraint_types_;
+  hash_map<std::string, int> expression_types_;
+  hash_map<std::string, int> extension_types_;
   int num_constraints_;
   int num_variables_;
   int num_expressions_;
@@ -638,7 +637,7 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const string& operation, int64 value,
+                                    const std::string& operation, int64 value,
                                     IntVar* const delegate) {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (ContainsKey(*map_, var)) {
@@ -648,7 +647,7 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string& operation, int64 value,
+                                     const std::string& operation, int64 value,
                                      IntervalVar* const delegate) {
     if (delegate) {
       VisitSubArgument(delegate);
@@ -662,45 +661,45 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const string& arg_name,
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
                                               IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name, const std::vector<IntVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
+  virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntervalArrayArgument(
-      const string& arg_name, const std::vector<IntervalVar*>& arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
+  virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitSequenceArrayArgument(
-      const string& arg_name, const std::vector<SequenceVar*>& arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual string DebugString() const { return "VariableDegreeVisitor"; }
+  virtual std::string DebugString() const { return "VariableDegreeVisitor"; }
 
  private:
   // T should derive from BaseObject

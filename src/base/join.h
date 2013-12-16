@@ -27,7 +27,7 @@ namespace operations_research {
 const int kFastToBufferSize = 32;
 
 // Writes output to the beginning of the given buffer. Returns a pointer to the
-// end of the string (i.e. to the NUL char). Buffer must be at least 12 bytes.
+// end of the std::string (i.e. to the NUL char). Buffer must be at least 12 bytes.
 // Not actually fast, but maybe someday!
 template <class T> char* NumToBuffer(T i, char* buffer) {
   std::stringstream ss;

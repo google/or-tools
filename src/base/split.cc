@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "base/split.h"
+
 #if defined(_MSC_VER)
 #include <iterator>
 #endif  // _MSC_VER
@@ -20,17 +21,17 @@
 namespace operations_research {
 // ----------------------------------------------------------------------
 // SplitStringUsing()
-//    Split a string using a character delimiter. Append the components
+//    Split a std::string using a character delimiter. Append the components
 //    to 'result'.
 //
 // Note: For multi-character delimiters, this routine will split on *ANY* of
-// the characters in the string, not the entire string as a single delimiter.
+// the characters in the std::string, not the entire std::string as a single delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
 static inline
 void SplitStringToIteratorUsing(const std::string& full,
                                 const char* delim,
-                                ITR& result) {
+                                ITR& result) {  // NOLINT
   // Optimize the common case where delim is a single character.
   if (delim[0] != '\0' && delim[1] == '\0') {
     char c = delim[0];
@@ -69,8 +70,7 @@ void SplitStringUsing(const std::string& full,
 }
 
 namespace strings {
-std::vector<std::string> Split(const std::string& full, const char* delim,
-                               int flags) {
+std::vector<std::string> Split(const std::string& full, const char* delim, int flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<std::string> out;
   SplitStringUsing(full, delim, &out);

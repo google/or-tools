@@ -84,16 +84,16 @@ int ParserState::FillBuffer(char* lexBuf, unsigned int lexBufSize) {
   return num;
 }
 
-void ParserState::output(string x, AstNode* n) {
-  output_.push_back(std::pair<string, AstNode*>(x, n));
+void ParserState::output(std::string x, AstNode* n) {
+  output_.push_back(std::pair<std::string, AstNode*>(x, n));
 }
 
 // Strict weak ordering for output items
 class OutputOrder {
  public:
   // Return if \a x is less than \a y, based on first component
-  bool operator()(const std::pair<string, AstNode*>& x,
-                  const std::pair<string, AstNode*>& y) {
+  bool operator()(const std::pair<std::string, AstNode*>& x,
+                  const std::pair<std::string, AstNode*>& y) {
     return x.first < y.first;
   }
 };
@@ -151,7 +151,7 @@ void ParserState::CollectRequired(AstArray* const args,
 
 void ParserState::ComputeViableTarget(CtSpec* const spec,
                                       NodeSet* const candidates) const {
-  const string& id = spec->Id();
+  const std::string& id = spec->Id();
   if (id == "bool2int" || id == "int_plus" || id == "int_minus" ||
       (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" || id == "int_abs" ||
@@ -235,7 +235,7 @@ void ParserState::MarkAllVariables(AstNode* const node,
 
 void ParserState::MarkComputedVariables(CtSpec* const spec,
                                         NodeSet* const computed) {
-  const string& id = spec->Id();
+  const std::string& id = spec->Id();
   if (id == "global_cardinality") {
     VLOG(2) << "  - marking " << spec->DebugString();
     MarkAllVariables(spec->Arg(2), computed);
@@ -328,7 +328,7 @@ void ParserState::CollectIgnored(NodeSet* const ignored) {
   }
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
-    const string& id = spec->Id();
+    const std::string& id = spec->Id();
     if (id == "array_bool_and" || id == "array_bool_or" ||
         id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
         id == "bool_ge_reif") {
@@ -348,7 +348,7 @@ void ParserState::ReuseIgnored(NodeSet* const ignored) {
   }
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
-    const string& id = spec->Id();
+    const std::string& id = spec->Id();
     AstNode* const bool_define = FindTarget(spec->annotations());
     AstNode* const last_arg = Copy(spec->LastArg());
     if (bool_define == nullptr && last_arg != nullptr &&
@@ -497,7 +497,7 @@ void ParserState::Presolve() {
 
   FZLOG << "Model statistics" << std::endl;
   BuildStatistics();
-  for (ConstIter<hash_map<string, std::vector<int>>> it(constraints_per_id_);
+  for (ConstIter<hash_map<std::string, std::vector<int>>> it(constraints_per_id_);
        !it.at_end(); ++it) {
     FZLOG << "  - " << it->first << ": " << it->second.size() << std::endl;
   }
@@ -731,7 +731,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
   for (unsigned int i = 0; i < int_variables_.size(); i++) {
     VLOG(2) << "xi(" << i << ") -> " << int_variables_[i]->DebugString();
     if (!hadError) {
-      const string& name = int_variables_[i]->Name();
+      const std::string& name = int_variables_[i]->Name();
       AstNode* const var = IntCopy(i);
       if (!ContainsKey(candidates, var) && !ContainsKey(int_aliases_, i)) {
         const bool active =
@@ -760,8 +760,8 @@ void ParserState::BuildModel(const NodeSet& candidates,
     VLOG(2) << var->DebugString() << " -> "
             << bool_variables_[i]->DebugString();
     if (!hadError) {
-      const string& raw_name = bool_variables_[i]->Name();
-      string name;
+      const std::string& raw_name = bool_variables_[i]->Name();
+      std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
       } else {
@@ -788,8 +788,8 @@ void ParserState::BuildModel(const NodeSet& candidates,
   array_index = 0;
   for (unsigned int i = 0; i < set_variables_.size(); i++) {
     if (!hadError) {
-      const string& raw_name = set_variables_[i]->Name();
-      string name;
+      const std::string& raw_name = set_variables_[i]->Name();
+      std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
       } else {
@@ -874,7 +874,7 @@ void ParserState::AnalyseAndCreateModel() {
   BuildModel(candidates, computed_variables);
 }
 
-AstNode* ParserState::ArrayElement(string id, unsigned int offset) {
+AstNode* ParserState::ArrayElement(std::string id, unsigned int offset) {
   if (offset > 0) {
     std::vector<int64> tmp;
     if (Get(int_var_array_map_, id, tmp) && offset <= tmp.size())
@@ -899,7 +899,7 @@ AstNode* ParserState::ArrayElement(string id, unsigned int offset) {
   return new AstIntVar(0);  // keep things consistent
 }
 
-AstNode* ParserState::VarRefArg(string id, bool annotation) {
+AstNode* ParserState::VarRefArg(std::string id, bool annotation) {
   int64 tmp;
   if (Get(int_var_map_, id, tmp)) return new AstIntVar(tmp);
   if (Get(bool_var_map_, id, tmp)) return new AstBoolVar(tmp);
@@ -1047,7 +1047,7 @@ bool ParserState::MergeIntDomain(IntVarSpec* const source,
 }
 
 bool ParserState::DiscoverAliases(CtSpec* const spec) {
-  const string& id = spec->Id();
+  const std::string& id = spec->Id();
   if (id == "int_eq") {
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isIntVar() &&
         !ContainsKey(stored_constraints_, spec)) {
@@ -1106,7 +1106,7 @@ bool ParserState::DiscoverAliases(CtSpec* const spec) {
 }
 
 bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
-  const string& id = spec->Id();
+  const std::string& id = spec->Id();
   if (id == "int_le") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
@@ -1293,13 +1293,13 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     spec->Nullify();
     return true;
   }
-  if (id.find("_reif") != string::npos && IsBound(spec->LastArg()) &&
+  if (id.find("_reif") != std::string::npos && IsBound(spec->LastArg()) &&
       GetBound(spec->LastArg()) == 1) {
     VLOG(2) << "  - presolve:  unreify " << spec->DebugString();
     spec->Unreify();
     return true;
   }
-  if (id.find("_reif") != string::npos && IsBound(spec->LastArg()) &&
+  if (id.find("_reif") != std::string::npos && IsBound(spec->LastArg()) &&
       GetBound(spec->LastArg()) == 0) {
     VLOG(2) << "  - presolve:  unreify and inverse " << spec->DebugString();
     spec->Unreify();
@@ -1750,7 +1750,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   return false;
 }
 
-void ParserState::RegroupAux(const string& ct_id, int start_index,
+void ParserState::RegroupAux(const std::string& ct_id, int start_index,
                              int end_index, int output_var_index,
                              const std::vector<int>& indices) {
   if (indices.size() == 1) {
@@ -1787,7 +1787,7 @@ void ParserState::RegroupAux(const string& ct_id, int start_index,
   }
 }
 
-void ParserState::Regroup(const string& ct_id, const std::vector<int>& ct_indices) {
+void ParserState::Regroup(const std::string& ct_id, const std::vector<int>& ct_indices) {
   int start_index = -1;
   int end_index = -1;
   std::vector<int> variables;
@@ -1848,7 +1848,7 @@ void ParserState::ReplaceAliases(CtSpec* const spec) {
   }
 }
 
-void ParserState::AddConstraint(const string& id, AstArray* const args,
+void ParserState::AddConstraint(const std::string& id, AstArray* const args,
                                 AstNode* const annotations) {
   constraints_.push_back(
       new CtSpec(constraints_.size(), id, args, annotations));
@@ -1875,11 +1875,11 @@ void ParserState::InitOutput(operations_research::FlatZincModel* const m) {
   m->InitOutput(Output());
 }
 
-bool FlatZincModel::Parse(const string& filename) {
+bool FlatZincModel::Parse(const std::string& filename) {
   filename_ = filename;
   filename_.resize(filename_.size() - 4);
   size_t found = filename_.find_last_of("/\\");
-  if (found != string::npos) {
+  if (found != std::string::npos) {
     filename_ = filename_.substr(found + 1);
   }
 #ifdef HAVE_MMAP
@@ -1910,7 +1910,7 @@ bool FlatZincModel::Parse(const string& filename) {
     LOG(ERROR) << "Cannot open file " << filename;
     return false;
   }
-  string s = string(std::istreambuf_iterator<char>(file),
+  std::string s = std::string(std::istreambuf_iterator<char>(file),
                     std::istreambuf_iterator<char>());
   ParserState pp(s, this);
 #endif
@@ -1927,7 +1927,7 @@ bool FlatZincModel::Parse(const string& filename) {
 
 bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
   filename_ = "stdin";
-  string s = string(std::istreambuf_iterator<char>(is),
+  std::string s = std::string(std::istreambuf_iterator<char>(is),
                     std::istreambuf_iterator<char>());
 
   ParserState pp(s, this);
@@ -1951,7 +1951,7 @@ AstNode* ArrayOutput(AstCall* ann) {
     a = new AstArray(ann->args);
   }
 
-  string out;
+  std::string out;
 
   out = StringPrintf("array%lud(", a->a.size());
   for (unsigned int i = 0; i < a->a.size(); i++) {

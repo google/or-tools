@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // Allows to read a text file line by line with:
-//   for (const string& line : FileLines("myfile.txt")) { ... }
+//   for (const std::string& line : FileLines("myfile.txt")) { ... }
 //
 // More details:
 // * The lines are separated by '\n' (which is removed) and have no size limits.
 // * Consecutive '\n' result in empty lines being produced.
-// * If not empty, the string after the last '\n' is produced as the last line.
+// * If not empty, the std::string after the last '\n' is produced as the last line.
 //
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
@@ -34,7 +34,7 @@ class FileLineIterator {
       : next_position_after_eol_(0), buffer_size_(0), file_(file) {
     ReadNextLine();
   }
-  const string& operator*() const { return line_; }
+  const std::string& operator*() const { return line_; }
   bool operator!=(const FileLineIterator& other) const {
     return file_ != other.file_;
   }
@@ -77,12 +77,12 @@ class FileLineIterator {
   int next_position_after_eol_;
   int buffer_size_;
   File* file_;
-  string line_;
+  std::string line_;
 };
 
 class FileLines {
  public:
-  explicit FileLines(const string& filename) {
+  explicit FileLines(const std::string& filename) {
     file_ = File::Open(filename, "r");
   }
   ~FileLines() {

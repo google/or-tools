@@ -20,7 +20,7 @@
 
 namespace operations_research {
 
-string MemoryUsage() {
+std::string MemoryUsage() {
 static const int64 kDisplayThreshold = 2;
   static const int64 kKiloByte = 1024;
   static const int64 kMegaByte = kKiloByte * kKiloByte;
@@ -40,12 +40,12 @@ static const int64 kDisplayThreshold = 2;
   }
 }
 
-Stat::Stat(const string& name, StatsGroup *group) : name_(name) {
+Stat::Stat(const std::string& name, StatsGroup *group) : name_(name) {
   group->Register(this);
 }
 
-string Stat::StatString() const {
-  return string(name_ + ": " + ValueAsString());
+std::string Stat::StatString() const {
+  return std::string(name_ + ": " + ValueAsString());
 }
 
 StatsGroup::~StatsGroup() {
@@ -68,7 +68,7 @@ bool CompareStatPointerByName(Stat* s1, Stat *s2) {
 }
 }  // namespace
 
-string StatsGroup::StatString() const {
+std::string StatsGroup::StatString() const {
   // Computes the longest name of all the stats we want to display.
   // Also create a temporary vector so we can sort the stats by names.
   int longest_name_size = 0;
@@ -85,7 +85,7 @@ string StatsGroup::StatString() const {
   if (sorted_stats.empty()) return "";
 
   // Pretty-print all the stats.
-  string result(name_ + " {\n");
+  std::string result(name_ + " {\n");
   for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
     result += sorted_stats[i]->Name();
@@ -96,7 +96,7 @@ string StatsGroup::StatString() const {
   return result;
 }
 
-TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(string name) {
+TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   TimeDistribution* &ref = time_distributions_[name];
   if (ref == NULL) {
     ref = new TimeDistribution(name);
@@ -105,12 +105,12 @@ TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(string name) {
   return ref;
 }
 
-DistributionStat::DistributionStat(const string& name)
+DistributionStat::DistributionStat(const std::string& name)
     : Stat(name),
       sum_(0.0), average_(0.0), sum_squares_from_average_(0.0),
       min_(0.0), max_(0.0), num_(0) {}
 
-DistributionStat::DistributionStat(const string& name, StatsGroup* group)
+DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
     : Stat(name, group),
       sum_(0.0), average_(0.0), sum_squares_from_average_(0.0),
       min_(0.0), max_(0.0), num_(0) {}
@@ -156,7 +156,7 @@ double TimeDistribution::CyclesToSeconds(double cycles) {
   return cycles * seconds_per_cycles;
 }
 
-string TimeDistribution::PrintCyclesAsTime(double cycles) {
+std::string TimeDistribution::PrintCyclesAsTime(double cycles) {
   DCHECK_GE(cycles, 0.0);
   // This epsilon is just to avoid displaying 1000.00ms instead of 1.00s.
   double eps1 = 1 + 1e-3;
@@ -180,7 +180,7 @@ void TimeDistribution::AddTimeInCycles(double cycles) {
   AddToDistribution(cycles);
 }
 
-string TimeDistribution::ValueAsString() const {
+std::string TimeDistribution::ValueAsString() const {
   return StringPrintf("%8llu [%8s, %8s] %8s %8s %8s\n",
       num_,
       PrintCyclesAsTime(min_).c_str(),
@@ -195,7 +195,7 @@ void RatioDistribution::Add(double value) {
   AddToDistribution(value);
 }
 
-string RatioDistribution::ValueAsString() const {
+std::string RatioDistribution::ValueAsString() const {
   return StringPrintf("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n",
       num_,
       100.0 * min_,
@@ -208,7 +208,7 @@ void DoubleDistribution::Add(double value) {
   AddToDistribution(value);
 }
 
-string DoubleDistribution::ValueAsString() const {
+std::string DoubleDistribution::ValueAsString() const {
   return StringPrintf("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n",
       num_,
       min_,
@@ -221,7 +221,7 @@ void IntegerDistribution::Add(int64 value) {
   AddToDistribution(static_cast<double>(value));
 }
 
-string IntegerDistribution::ValueAsString() const {
+std::string IntegerDistribution::ValueAsString() const {
   return StringPrintf("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n",
       num_,
       min_,

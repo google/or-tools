@@ -12,8 +12,8 @@
 // limitations under the License.
 //
 
-#include <math.h>
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 #include "base/hash.h"
 #include <limits>
 #include "base/unique_ptr.h"
@@ -158,7 +158,7 @@ class GLPKInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     return StringPrintf("GLPK %s", glp_version());
   }
 

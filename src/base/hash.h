@@ -148,7 +148,7 @@ template<class T> struct hash<T*> {
   size_t operator()(T *x) const { return reinterpret_cast<size_t>(x); }
 };
 
-// hash<int64> and hash<string> are already defined with STLport.
+// hash<int64> and hash<std::string> are already defined with STLport.
 #  ifndef STLPORT
 template<> struct hash<int64> {
   size_t operator()(int64 x) const { return static_cast<size_t>(x); }
