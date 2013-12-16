@@ -1614,10 +1614,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, long min, long max, std::string name) {
+  public IntVar[] MakeIntVarArray(int count, long min, long max, string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      std::string var_name = name + i;
+      string var_name = name + i;
       array[i] = MakeIntVar(min, max, var_name);
     }
     return array;
@@ -1631,10 +1631,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, long[] values, std::string name) {
+  public IntVar[] MakeIntVarArray(int count, long[] values, string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      std::string var_name = name + i;
+      string var_name = name + i;
       array[i] = MakeIntVar(values, var_name);
     }
     return array;
@@ -1648,10 +1648,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, int[] values, std::string name) {
+  public IntVar[] MakeIntVarArray(int count, int[] values, string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      std::string var_name = name + i;
+      string var_name = name + i;
       array[i] = MakeIntVar(values, var_name);
     }
     return array;
@@ -1665,10 +1665,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeBoolVarArray(int count, std::string name) {
+  public IntVar[] MakeBoolVarArray(int count, string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      std::string var_name = name + i;
+      string var_name = name + i;
       array[i] = MakeBoolVar(var_name);
     }
     return array;
@@ -1685,11 +1685,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    long min, long max, std::string name) {
+                                    long min, long max, string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        std::string var_name = name + "["+ i + ", " + j +"]";
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(min, max, var_name);
       }
     }
@@ -1707,11 +1707,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    long[] values, std::string name) {
+                                    long[] values, string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        std::string var_name = name + "["+ i + ", " + j +"]";
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1729,11 +1729,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    int[] values, std::string name) {
+                                    int[] values, string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        std::string var_name = name + "["+ i + ", " + j +"]";
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1750,11 +1750,11 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[,] MakeBoolVarMatrix(int rows, int cols, std::string name) {
+  public IntVar[,] MakeBoolVarMatrix(int rows, int cols, string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        std::string var_name = name + "["+ i + ", " + j +"]";
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeBoolVar(var_name);
       }
     }
@@ -1782,7 +1782,7 @@ namespace operations_research {
                                                          long start_max,
                                                          long duration,
                                                          bool optional,
-                                                         std::string name) {
+                                                         string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min,
@@ -1799,7 +1799,7 @@ namespace operations_research {
                                                          long[] start_max,
                                                          long[] duration,
                                                          bool optional,
-                                                         std::string name) {
+                                                         string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min[i],
@@ -1816,7 +1816,7 @@ namespace operations_research {
                                                          int[] start_max,
                                                          int[] duration,
                                                          bool optional,
-                                                         std::string name) {
+                                                         string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min[i],
