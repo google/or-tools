@@ -17,15 +17,14 @@
 #include <vector>
 #include "base/callback.h"
 #include "base/integral_types.h"
-using std::string;
 %}
 
 #if defined(SWIGPYTHON)
 namespace operations_research {
 // ----- Callback Wrapping -----
 %{
-static string PyCallbackString(PyObject* pyfunc) {
-   string result;
+static std::string PyCallbackString(PyObject* pyfunc) {
+   std::string result;
    PyObject* arglist = Py_BuildValue("()");
    PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
    Py_DECREF(arglist);
@@ -37,7 +36,7 @@ static string PyCallbackString(PyObject* pyfunc) {
 }
 %}
 
-%typemap(in) ResultCallback<string>* {
+%typemap(in) ResultCallback<std::string>* {
   if (!PyCallable_Check($input)) {
       PyErr_SetString(PyExc_TypeError, "Need a callable object!");
       SWIG_fail;
@@ -721,7 +720,6 @@ CTYPE** "IntPtr[]"
 #include <vector>
 #include "base/callback.h"
 #include "base/integral_types.h"
-using std::string;
 %}
 
 %{
