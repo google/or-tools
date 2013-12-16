@@ -91,8 +91,8 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     return result;
   }
 
-  virtual string DebugString() const {
-    string result = "PyDecisionBuilder";
+  virtual std::string DebugString() const {
+    std::string result = "PyDecisionBuilder";
     if (str_func_) {
       PyObject* pyresult = PyEval_CallObject(str_func_, nullptr);
       if (pyresult) {
@@ -156,7 +156,7 @@ class PyLNSNoValues : public operations_research::BaseLNS {
     return result;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "PyLNSNoValues()";
   }
  private:
@@ -216,7 +216,7 @@ class PyLNS : public operations_research::BaseLNS {
     return result;
   }
 
-  virtual string DebugString() const {
+  virtual std::string DebugString() const {
     return "PyLNS()";
   }
  private:
@@ -392,16 +392,16 @@ PY_CONVERT(LocalSearchFilter);
 // Add display methods on BaseObject and remove DebugString method.
 %ignore BaseObject::DebugString;
 %extend BaseObject {
-  string __str__() {
+  std::string __str__() {
     return self->DebugString();
   }
-  string __repr__() {
+  std::string __repr__() {
     return self->DebugString();
   }
 }
 
 %extend IntervalVar {
-  string __repr__() {
+  std::string __repr__() {
     return self->DebugString();
   }
   Constraint* EndsAfterEnd(IntervalVar* other) {
@@ -481,7 +481,7 @@ PY_CONVERT(LocalSearchFilter);
 
 %define PY_STRINGIFY_DEBUGSTRING(Class)
 %extend Class {
-  string __repr__() {
+  std::string __repr__() {
     return self->DebugString();
   }
 }
@@ -516,9 +516,9 @@ static void SetPythonFlags(bool trace_propagation,
                              bool trace_search,
                              bool print_model,
                              bool model_stats,
-                             const string& export_file,
+                             const std::string& export_file,
                              bool no_solve,
-                             const string& profile_file) {
+                             const std::string& profile_file) {
     FLAGS_cp_trace_propagation = trace_propagation;
     FLAGS_cp_trace_search = trace_search;
     FLAGS_cp_print_model = print_model;
@@ -535,7 +535,7 @@ static void SetPythonFlags(bool trace_propagation,
   }
 
   SearchMonitor* SearchLogWithCallback(int period,
-                                       ResultCallback<string>* callback) {
+                                       ResultCallback<std::string>* callback) {
     return self->MakeSearchLog(period, callback);
   }
 
@@ -543,7 +543,7 @@ static void SetPythonFlags(bool trace_propagation,
                            IntVar* const index) {
     return self->MakeElement(values, index);
   }
-  string __str__() {
+  std::string __str__() {
     return self->DebugString();
   }
 
@@ -1614,10 +1614,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, long min, long max, string name) {
+  public IntVar[] MakeIntVarArray(int count, long min, long max, std::string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      string var_name = name + i;
+      std::string var_name = name + i;
       array[i] = MakeIntVar(min, max, var_name);
     }
     return array;
@@ -1631,10 +1631,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, long[] values, string name) {
+  public IntVar[] MakeIntVarArray(int count, long[] values, std::string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      string var_name = name + i;
+      std::string var_name = name + i;
       array[i] = MakeIntVar(values, var_name);
     }
     return array;
@@ -1648,10 +1648,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeIntVarArray(int count, int[] values, string name) {
+  public IntVar[] MakeIntVarArray(int count, int[] values, std::string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      string var_name = name + i;
+      std::string var_name = name + i;
       array[i] = MakeIntVar(values, var_name);
     }
     return array;
@@ -1665,10 +1665,10 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[] MakeBoolVarArray(int count, string name) {
+  public IntVar[] MakeBoolVarArray(int count, std::string name) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
-      string var_name = name + i;
+      std::string var_name = name + i;
       array[i] = MakeBoolVar(var_name);
     }
     return array;
@@ -1685,11 +1685,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    long min, long max, string name) {
+                                    long min, long max, std::string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + "["+ i + ", " + j +"]";
+        std::string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(min, max, var_name);
       }
     }
@@ -1707,11 +1707,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    long[] values, string name) {
+                                    long[] values, std::string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + "["+ i + ", " + j +"]";
+        std::string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1729,11 +1729,11 @@ namespace operations_research {
   }
 
   public IntVar[,] MakeIntVarMatrix(int rows, int cols,
-                                    int[] values, string name) {
+                                    int[] values, std::string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + "["+ i + ", " + j +"]";
+        std::string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1750,11 +1750,11 @@ namespace operations_research {
     return array;
   }
 
-  public IntVar[,] MakeBoolVarMatrix(int rows, int cols, string name) {
+  public IntVar[,] MakeBoolVarMatrix(int rows, int cols, std::string name) {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + "["+ i + ", " + j +"]";
+        std::string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeBoolVar(var_name);
       }
     }
@@ -1782,7 +1782,7 @@ namespace operations_research {
                                                          long start_max,
                                                          long duration,
                                                          bool optional,
-                                                         string name) {
+                                                         std::string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min,
@@ -1799,7 +1799,7 @@ namespace operations_research {
                                                          long[] start_max,
                                                          long[] duration,
                                                          bool optional,
-                                                         string name) {
+                                                         std::string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min[i],
@@ -1816,7 +1816,7 @@ namespace operations_research {
                                                          int[] start_max,
                                                          int[] duration,
                                                          bool optional,
-                                                         string name) {
+                                                         std::string name) {
     IntervalVar[] array = new IntervalVar[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeFixedDurationIntervalVar(start_min[i],
