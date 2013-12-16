@@ -210,7 +210,7 @@ ifeq ($(PLATFORM),MACOSX)
   ARCH = -DARCH_K8
   SYS_LNK =
 
-  JAVA_INC = -I$(MAC_JDK_HEADERS)
+  JAVA_INC = -I$(MAC_JDK_HEADERS) -I$(MAC_JDK_HEADERS)/darwin
   JAVAC_BIN = javac
   JAVA_BIN = java
   JAR_BIN = jar
