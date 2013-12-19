@@ -1155,7 +1155,6 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\include\\base
 	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\gflags
-	mkdir temp\\or-tools.$(PORT)\\include\\gflags
 	mkdir temp\\or-tools.$(PORT)\\include\\google
 	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\util
