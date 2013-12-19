@@ -1155,7 +1155,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\include\\base
 	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\gflags
-	mkdir temp\\or-tools.$(PORT)\\include\\graph
+	mkdir temp\\or-tools.$(PORT)\\include\\gflags
+	mkdir temp\\or-tools.$(PORT)\\include\\google
 	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\util
 	mkdir temp\\or-tools.$(PORT)\\lib
@@ -1175,7 +1176,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	copy src\\gen\\linear_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\linear_solver
 	copy src\\util\\*.h temp\\or-tools.$(PORT)\\include\\util
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
-	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
+	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
 	-$(DELREC) temp
