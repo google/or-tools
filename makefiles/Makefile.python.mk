@@ -114,7 +114,7 @@ ifeq ($(SYSTEM),win)
 	@set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py
 else
 	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/python$S$(EX).py
+	@PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHON_VERSION) $(EX_DIR)/python$S$(EX).py
 endif
 
 
