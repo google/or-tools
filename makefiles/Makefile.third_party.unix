@@ -230,5 +230,6 @@ Makefile.local:
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
 	@echo # Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
+	@echo # Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
 	@echo $(MONO_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local

@@ -341,6 +341,7 @@ Makefile.local:
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
 	@echo $(SCIP_MAKEFILE)>> Makefile.local
 	@echo # Please define WINDOWS_SLM_DIR to use Sulum Optimization. >> Makefile.local
+	@echo # Please define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local
 	@echo WINDOWS_PYTHON_PATH = \# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default)>> Makefile.local
