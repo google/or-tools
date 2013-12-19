@@ -24,7 +24,7 @@ SCIP_TAG = 3.0.2
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
-    SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
+    SCIP_MAKEFILE = "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP."
 else
     SCIP_TARGET = dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
     SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
@@ -39,7 +39,7 @@ endif
 # Detect if GLPK archive is there.
 ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_TARGET =
-    GLPK_MAKEFILE = # GLPK support not included.
+    GLPK_MAKEFILE = "\# Please add glpk-$(GLPK_TAG).tar.gz in dependencies/archives to add support for GLPK."
 else
     GLPK_TARGET = dependencies/install/bin/glpsol
     GLPK_MAKEFILE = UNIX_GLPK_DIR = $(OR_ROOT_FULL)/dependencies/install
@@ -48,7 +48,7 @@ endif
 # Detect if mono archive is there
 ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.bz2),)
     MONO_TARGET =
-    MONO_MAKEFILE = # MONO support not included.
+    MONO_MAKEFILE = "\# Please add mono-$(MONO_TAG).tar.bz2 in dependencies/archives to add support for mono and .NET."
 else
     MONO_TARGET = dependencies/install/bin/gmcs
     MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
@@ -229,7 +229,7 @@ Makefile.local:
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
-	@echo # Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
-	@echo # Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
+	@echo \# Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
+	@echo \# Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
 	@echo $(MONO_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
