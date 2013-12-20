@@ -222,7 +222,7 @@ LPBINARIES = \
 # Makefile targets.
 
 # Main target
-cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe sat
+cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe sat fz
 
 # Clean target
 
@@ -236,6 +236,7 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)util.$(STATIC_LIB_SUFFIX)
@@ -245,9 +246,11 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(STATIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(BIN_DIR)$Sfz$E
+	-$(DEL) $(BIN_DIR)$Ssat_runner$E
 	-$(DEL) $(BIN_DIR)$Smtsearch_test$E
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
