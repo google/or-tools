@@ -1563,6 +1563,17 @@ IntervalVar* BuildIntervalVariable(CPModelLoader* const builder,
   return nullptr;
 }
 
+// ----- kInverse -----
+
+Constraint* BuildInverse(CPModelLoader* const builder,
+                         const CPConstraintProto& proto) {
+  std::vector<IntVar*> left;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
+  std::vector<IntVar*> right;
+  VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+  return builder->solver()->MakeInverse(left, right);
+}
+
 // ----- kIsBetween -----
 
 Constraint* BuildIsBetween(CPModelLoader* const builder,
@@ -1735,6 +1746,20 @@ Constraint* BuildLessOrEqual(CPModelLoader* const builder,
     return builder->solver()->MakeLessOrEqual(expr, value);
   }
   return nullptr;
+}
+
+// ----- kLexLess -----
+
+Constraint* BuildLexLess(CPModelLoader* const builder,
+                         const CPConstraintProto& proto) {
+  std::vector<IntVar*> left;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
+  std::vector<IntVar*> right;
+  VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+  int64 value = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+  return value == 1 ? builder->solver()->MakeLexicalLess(left, right)
+                    : builder->solver()->MakeLexicalLessOrEqual(left, right);
 }
 
 // ----- kMapDomain -----
@@ -2671,6 +2696,7 @@ void Solver::InitBuilders() {
   REGISTER(kIntervalDisjunction, BuildIntervalDisjunction);
   REGISTER(kIntervalUnaryRelation, BuildIntervalUnaryRelation);
   REGISTER(kIntervalVariable, BuildIntervalVariable);
+  REGISTER(kInverse, BuildInverse);
   REGISTER(kIsBetween, BuildIsBetween);
   REGISTER(kIsDifferent, BuildIsDifferent);
   REGISTER(kIsEqual, BuildIsEqual);
@@ -2681,6 +2707,7 @@ void Solver::InitBuilders() {
   REGISTER(kIsMember, BuildIsMember);
   REGISTER(kLess, BuildLess);
   REGISTER(kLessOrEqual, BuildLessOrEqual);
+  REGISTER(kLexLess, BuildLexLess);
   REGISTER(kMapDomain, BuildMapDomain);
   REGISTER(kMax, BuildMax);
   REGISTER(kMaxEqual, BuildMaxEqual);

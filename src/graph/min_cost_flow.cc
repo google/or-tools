@@ -995,40 +995,131 @@ ArcIndex SimpleMinCostFlow::AddArcWithCapacityAndUnitCost(NodeIndex tail,
   return arc;
 }
 
-SimpleMinCostFlow::Status SimpleMinCostFlow::Solve() {
+ArcIndex SimpleMinCostFlow::PermutedArc(ArcIndex arc) {
+  return arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
+}
+
+SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
+    SupplyAdjustment adjustment) {
   optimal_cost_ = 0;
+  maximum_flow_ = 0;
   arc_flow_.clear();
-  const ArcIndex num_nodes = node_supply_.size();
+  const NodeIndex num_nodes = node_supply_.size();
   const ArcIndex num_arcs = arc_capacity_.size();
   if (num_nodes == 0) return OPTIMAL;
-  Graph graph(num_nodes, num_arcs);
-  for (int arc = 0; arc < num_arcs; ++arc) {
+
+  int supply_node_count = 0, demand_node_count = 0;
+  FlowQuantity total_supply = 0, total_demand = 0;
+  for (NodeIndex node = 0; node < num_nodes; ++node) {
+    if (node_supply_[node] > 0) {
+      ++supply_node_count;
+      total_supply += node_supply_[node];
+    } else if (node_supply_[node] < 0) {
+      ++demand_node_count;
+      total_demand -= node_supply_[node];
+    }
+  }
+  if (adjustment == DONT_ADJUST && total_supply != total_demand) {
+    return UNBALANCED;
+  }
+
+  // Feasibility checking, and possible supply/demand adjustment, is done by:
+  // 1. Creating a new source and sink node.
+  // 2. Taking all nodes that have a non-zero supply or demand and
+  //    connecting them to the source or sink respectively. The arc thus
+  //    added has a capacity of the supply or demand.
+  // 3. Computing the max flow between the new source and sink.
+  // 4. If adjustment isn't being done, checking that the max flow is equal
+  //    to the total supply/demand (and returning INFEASIBLE if it isn't).
+  // 5. Running min-cost max-flow on this augmented graph, using the max
+  //    flow computed in step 3 as the supply of the source and demand of
+  //    the sink.
+  const ArcIndex augmented_num_arcs =
+      num_arcs + supply_node_count + demand_node_count;
+  const NodeIndex source = num_nodes;
+  const NodeIndex sink = num_nodes + 1;
+  const NodeIndex augmented_num_nodes = num_nodes + 2;
+
+  Graph graph(augmented_num_nodes, augmented_num_arcs);
+  for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     graph.AddArc(arc_tail_[arc], arc_head_[arc]);
   }
+
+  for (NodeIndex node = 0; node < num_nodes; ++node) {
+    if (node_supply_[node] > 0) {
+      graph.AddArc(source, node);
+    } else if (node_supply_[node] < 0) {
+      graph.AddArc(node, sink);
+    }
+  }
+
   graph.Build(&arc_permutation_);
+
+  {
+    GenericMaxFlow<Graph> max_flow(&graph, source, sink);
+    ArcIndex arc;
+    for (arc = 0; arc < num_arcs; ++arc) {
+      max_flow.SetArcCapacity(PermutedArc(arc), arc_capacity_[arc]);
+    }
+    for (NodeIndex node = 0; node < num_nodes; ++node) {
+      if (node_supply_[node] != 0) {
+        max_flow.SetArcCapacity(PermutedArc(arc), abs(node_supply_[node]));
+        ++arc;
+      }
+    }
+    CHECK_EQ(arc, augmented_num_arcs);
+    if (!max_flow.Solve()) {
+      LOG(ERROR) << "Max flow could not be computed.";
+      switch (max_flow.status()) {
+        case MaxFlowStatusClass::NOT_SOLVED:
+          return NOT_SOLVED;
+        case MaxFlowStatusClass::OPTIMAL:
+          LOG(ERROR)
+              << "Max flow failed but claimed to have an optimal solution";
+          FALLTHROUGH_INTENDED;
+        default:
+          return BAD_RESULT;
+      }
+    }
+    maximum_flow_ = max_flow.GetOptimalFlow();
+  }
+
+  if (adjustment == DONT_ADJUST && maximum_flow_ != total_supply) {
+    return INFEASIBLE;
+  }
+
   GenericMinCostFlow<Graph> min_cost_flow(&graph);
-  for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
-    ArcIndex permuted_arc =
-        arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
+  ArcIndex arc;
+  for (arc = 0; arc < num_arcs; ++arc) {
+    ArcIndex permuted_arc = PermutedArc(arc);
     min_cost_flow.SetArcUnitCost(permuted_arc, arc_cost_[arc]);
     min_cost_flow.SetArcCapacity(permuted_arc, arc_capacity_[arc]);
   }
   for (NodeIndex node = 0; node < num_nodes; ++node) {
-    min_cost_flow.SetNodeSupply(node, node_supply_[node]);
+    if (node_supply_[node] != 0) {
+      ArcIndex permuted_arc = PermutedArc(arc);
+      min_cost_flow.SetArcCapacity(permuted_arc, abs(node_supply_[node]));
+      min_cost_flow.SetArcUnitCost(permuted_arc, 0);
+      ++arc;
+    }
   }
+  min_cost_flow.SetNodeSupply(source, maximum_flow_);
+  min_cost_flow.SetNodeSupply(sink, -maximum_flow_);
+  min_cost_flow.SetCheckFeasibility(false);
+
   arc_flow_.resize(num_arcs);
   if (min_cost_flow.Solve()) {
     optimal_cost_ = min_cost_flow.GetOptimalCost();
-    for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
-      ArcIndex permuted_arc =
-          arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;
-      arc_flow_[arc] = min_cost_flow.Flow(permuted_arc);
+    for (arc = 0; arc < num_arcs; ++arc) {
+      arc_flow_[arc] = min_cost_flow.Flow(PermutedArc(arc));
     }
   }
   return min_cost_flow.status();
 }
 
 CostValue SimpleMinCostFlow::OptimalCost() const { return optimal_cost_; }
+
+FlowQuantity SimpleMinCostFlow::MaximumFlow() const { return maximum_flow_; }
 
 FlowQuantity SimpleMinCostFlow::Flow(ArcIndex arc) const {
   return arc_flow_[arc];

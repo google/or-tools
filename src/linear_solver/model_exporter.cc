@@ -21,11 +21,14 @@
 #include "base/strutil.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
-#include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver2.pb.h"
 #include "util/fp_utils.h"
 
 namespace operations_research {
+
+using new_proto::MPConstraintProto;
+using new_proto::MPModelProto;
+using new_proto::MPVariableProto;
 
 MPModelProtoExporter::MPModelProtoExporter(const MPModelProto& proto) :
   proto_(proto),
@@ -75,20 +78,20 @@ bool MPModelProtoExporter::CheckNameValidity(const std::string& name) {
 
 
 std::string MPModelProtoExporter::GetVariableName(int var_index) const {
-  const MPVariableProto& var_proto = proto_.variables(var_index);
-  if (use_obfuscated_names_ || !var_proto.has_id()) {
+  const new_proto::MPVariableProto& var_proto = proto_.variable(var_index);
+  if (use_obfuscated_names_ || !var_proto.has_name()) {
     return StringPrintf("V%0*d", num_digits_for_variables_, var_index);
   } else {
-    return var_proto.id();
+    return var_proto.name();
   }
 }
 
 std::string MPModelProtoExporter::GetConstraintName(int cst_index) const {
-  const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-  if (use_obfuscated_names_ || !ct_proto.has_id()) {
+  const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
+  if (use_obfuscated_names_ || !ct_proto.has_name()) {
     return StringPrintf("C%0*d", num_digits_for_constraints_, cst_index);
   } else {
-    return ct_proto.id();
+    return ct_proto.name();
   }
 }
 
@@ -101,9 +104,9 @@ void MPModelProtoExporter::AppendComments(
   StringAppendF(output, "%s   %-16s : %s\n", sep, "Format",
                 use_fixed_mps_format_ ? "Fixed" : "Free");
   StringAppendF(output, "%s   %-16s : %d\n", sep, "Constraints",
-                proto_.constraints_size());
+                proto_.constraint_size());
   StringAppendF(output, "%s   %-16s : %d\n", sep, "Variables",
-                proto_.variables_size());
+                proto_.variable_size());
   StringAppendF(output, "%s     %-14s : %d\n", sep, "Binary",
                 num_binary_variables_);
   StringAppendF(output, "%s     %-14s : %d\n", sep, "Integer",
@@ -112,64 +115,53 @@ void MPModelProtoExporter::AppendComments(
                 num_continuous_variables_);
 }
 
-bool MPModelProtoExporter::AppendLpTerm(const MPTermProto& term_proto,
+bool MPModelProtoExporter::AppendLpTerm(int var_index, double coefficient,
                                         std::string* output) const {
-  const std::string& id = term_proto.variable_id();
-  const int var_index = FindWithDefault(var_id_to_index_map_, id, -1);
-  if (var_index  == -1) {
-    LOG(DFATAL) << "Reference to non-existent variable with id " << id;
+  if (var_index < 0 || var_index >= proto_.variable_size()) {
+    LOG(DFATAL) << "Reference to out-of-bounds variable index # " << var_index;
     return false;
   }
-  const std::string var_name = GetVariableName(var_index);
-  const double coeff = term_proto.coefficient();
-  if (coeff == 0.0) return true;
-  StringAppendF(output, "%+.16G %-s ", coeff, var_name.c_str());
+  if (coefficient == 0.0) return true;
+  StringAppendF(output, "%+.16G %-s ",
+                coefficient, GetVariableName(var_index).c_str());
   return true;
 }
 
+namespace {
+bool IsBoolean(const MPVariableProto& var) {
+  return var.is_integer() && ceil(var.lower_bound()) == 0.0 &&
+      floor(var.upper_bound()) == 1.0;
+}
+}  // namespace
+
 bool MPModelProtoExporter::Setup() {
   num_digits_for_constraints_ =
-      StringPrintf("%d", proto_.constraints_size()).size();
+      StringPrintf("%d", proto_.constraint_size()).size();
   num_digits_for_variables_ =
-      StringPrintf("%d", proto_.variables_size()).size();
+      StringPrintf("%d", proto_.variable_size()).size();
   num_binary_variables_ = 0;
   num_integer_variables_ = 0;
-  var_id_to_index_map_.clear();
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variables(var_index);
-    const std::string& id = var_proto.id();
-    if (!ContainsKey(var_id_to_index_map_, id)) {
-      const double lb = var_proto.lb();
-      const double ub = var_proto.ub();
-      if (var_proto.integer()) {
-        if (lb == 0.0 && ub == 1.0) {
-          ++num_binary_variables_;
-        } else {
-          ++num_integer_variables_;
-        }
+  for (const MPVariableProto& var : proto_.variable()) {
+    if (var.is_integer()) {
+      if (IsBoolean(var)) {
+        ++num_binary_variables_;
+      } else {
+        ++num_integer_variables_;
       }
-      var_id_to_index_map_[id] = var_index;
-    } else {
-     LOG(DFATAL) << "Duplicate variable id found: " << id;
-     return false;
     }
   }
-  num_continuous_variables_ = proto_.variables_size() - num_binary_variables_
+  num_continuous_variables_ = proto_.variable_size() - num_binary_variables_
                               - num_integer_variables_;
   return true;
 }
 
 bool MPModelProtoExporter::CheckAllNamesValidity() const {
   // Note: CheckNameValidity() takes care of the logging.
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    if (!CheckNameValidity(GetVariableName(var_index))) {
-      return false;
-    }
+  for (int i = 0; i < proto_.variable_size(); ++i) {
+    if (!CheckNameValidity(GetVariableName(i))) return false;
   }
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    if (!CheckNameValidity(GetConstraintName(cst_index))) {
-      return false;
-    }
+  for (int i = 0; i < proto_.constraint_size(); ++i) {
+    if (!CheckNameValidity(GetConstraintName(i))) return false;
   }
   return true;
 }
@@ -197,29 +189,28 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   // Objective
   StringAppendF(output, proto_.maximize() ? "Maximize" : "Minimize");
   StringAppendF(output, "\n Obj: ");
-  const double offset = proto_.has_objective_offset() ?
-                        proto_.objective_offset() : 0.0;
-  if (offset != 0.0) {
+  if (proto_.objective_offset() != 0.0) {
     StringAppendF(output, "%-+.16G Constant ", proto_.objective_offset());
   }
-  for (int k = 0; k < proto_.objective_terms_size(); ++k) {
-    if (!AppendLpTerm(proto_.objective_terms(k), output)) {
+  for (int i = 0; i < proto_.variable_size(); ++i) {
+    if (!AppendLpTerm(i, proto_.variable(i).objective_coefficient(), output)) {
       return false;
     }
   }
 
   // Constraints
   StringAppendF(output, "\nSubject to\n");
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
+  for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
+    const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     std::string term;
-    for (int k = 0; k < ct_proto.terms_size(); ++k) {
-      if (!AppendLpTerm(ct_proto.terms(k), &term)) {
+    for (int i = 0; i < ct_proto.var_index_size(); ++i) {
+      if (!AppendLpTerm(ct_proto.var_index(i), ct_proto.coefficient(i),
+                        &term)) {
         return false;
       }
     }
-    const double lb = ct_proto.lb();
-    const double ub = ct_proto.ub();
+    const double lb = ct_proto.lower_bound();
+    const double ub = ct_proto.upper_bound();
     std::string name = GetConstraintName(cst_index);
     if (lb == ub) {
       StringAppendF(output, " %s: %s = %-.16G\n",
@@ -246,14 +237,14 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
 
   // Bounds
   StringAppendF(output, "Bounds\n");
-  if (offset != 0.0) {
+  if (proto_.objective_offset() != 0.0) {
     StringAppendF(output, " 1 <= Constant <= 1\n");
   }
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variables(var_index);
-    const double lb = var_proto.lb();
-    const double ub = var_proto.ub();
-    if (var_proto.integer() && lb == round(lb) && ub == round(ub)) {
+  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    const MPVariableProto& var_proto = proto_.variable(var_index);
+    const double lb = var_proto.lower_bound();
+    const double ub = var_proto.upper_bound();
+    if (var_proto.is_integer() && lb == round(lb) && ub == round(ub)) {
      StringAppendF(output, " %.0f <= %s <= %.0f\n",
                     lb, GetVariableName(var_index).c_str(), ub);
     } else {
@@ -271,10 +262,9 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   // Binaries
   if (num_binary_variables_ > 0) {
     StringAppendF(output, "Binaries\n");
-    for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-      const MPVariableProto& var_proto = proto_.variables(var_index);
-      if (var_proto.integer()
-          && var_proto.lb() == 0.0 && var_proto.ub() == 1.0) {
+    for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+      const MPVariableProto& var_proto = proto_.variable(var_index);
+      if (IsBoolean(var_proto)) {
         StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());
       }
     }
@@ -283,10 +273,9 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   // Generals
   if (num_integer_variables_ > 0) {
     StringAppendF(output, "Generals\n");
-    for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-      const MPVariableProto& var_proto = proto_.variables(var_index);
-      if (var_proto.integer()
-          && (var_proto.lb() != 0.0 || var_proto.ub() != 1.0)) {
+    for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+      const MPVariableProto& var_proto = proto_.variable(var_index);
+      if (var_proto.is_integer() && !IsBoolean(var_proto)) {
         StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());
       }
     }
@@ -359,19 +348,11 @@ bool MPModelProtoExporter::CanUseFixedMpsFormat() const {
     return num_digits_for_constraints_ < kMpsFieldSize
           && num_digits_for_variables_ < kMpsFieldSize;
   }
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-    const std::string& ct_id = ct_proto.id();
-    if (ct_id.size() > kMpsFieldSize) {
-      return false;
-    }
+  for (const MPConstraintProto& ct_proto : proto_.constraint()) {
+    if (ct_proto.name().size() > kMpsFieldSize) return false;
   }
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variables(var_index);
-    const std::string& var_id = var_proto.id();
-    if (var_id.size() > kMpsFieldSize) {
-      return false;
-    }
+  for (const MPVariableProto& var_proto : proto_.variable()) {
+    if (var_proto.name().size() > kMpsFieldSize) return false;
   }
   return true;
 }
@@ -406,10 +387,10 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   current_mps_column_ = 0;
   std::string rows_section;
   AppendMpsLineHeaderWithNewLine("N", "COST", &rows_section);
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-    const double lb = ct_proto.lb();
-    const double ub = ct_proto.ub();
+  for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
+    const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
+    const double lb = ct_proto.lower_bound();
+    const double ub = ct_proto.upper_bound();
     const std::string cst_name = GetConstraintName(cst_index);
     if (lb == ub && lb != 0.0) {
       AppendMpsLineHeaderWithNewLine("E", cst_name, &rows_section);
@@ -428,67 +409,46 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // As the information regarding a column needs to be contiguous, we create
   // a map associating a variable to a the vector containing the indices of the
   // constraints where this variable appears.
-  std::vector<std::vector<std::pair<int, double> > > transpose(proto_.variables_size());
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-    for (int k = 0; k < ct_proto.terms_size(); ++k) {
-      const MPTermProto& term_proto = ct_proto.terms(k);
-      const std::string& id = term_proto.variable_id();
-      const int var_index  = FindWithDefault(var_id_to_index_map_, id, -1);
-      if (var_index == -1) {
-        LOG(DFATAL) << "Non-existent variable with id " << id
-                    << " used in constraint # " << cst_index << ".";
+  std::vector<std::vector<std::pair<int, double> > > transpose(proto_.variable_size());
+  for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
+    const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
+    for (int k = 0; k < ct_proto.var_index_size(); ++k) {
+      const int var_index  = ct_proto.var_index(k);
+      if (var_index < 0 || var_index >= proto_.variable_size()) {
+        LOG(DFATAL) << "In constraint #" << cst_index << ", var_index #" << k
+                    << " is " << var_index << ", which is out of bounds.";
         return false;
       }
-      const double coeff = term_proto.coefficient();
+      const double coeff = ct_proto.coefficient(k);
       if (coeff != 0.0) {
         transpose[var_index].push_back(std::pair<int, double>(cst_index, coeff));
       }
     }
-  }
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    std::sort(transpose[var_index].begin(), transpose[var_index].end());
-  }
-
-  std::vector<double> objective(proto_.variables_size(), 0.0);
-  for (int k = 0; k < proto_.objective_terms_size(); ++k) {
-    const MPTermProto& term_proto = proto_.objective_terms(k);
-    const std::string& id = term_proto.variable_id();
-    const int var_index  = FindWithDefault(var_id_to_index_map_, id, -1);
-    if (var_index == -1) {
-      LOG(DFATAL) << "Non-existent variable with id " << id
-                  << " used in objective.";
-      return false;
-    }
-    objective[var_index] = term_proto.coefficient();
   }
 
   // COLUMNS section.
   current_mps_column_ = 0;
   std::string columns_section;
   const char* const kIntMarkerFormat = "  %-10s%-36s%-10s\n";
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variables(var_index);
+  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    const MPVariableProto& var_proto = proto_.variable(var_index);
     const std::string var_name = GetVariableName(var_index);
     current_mps_column_ = 0;
-    if (var_proto.integer()) {
+    if (var_proto.is_integer()) {
       StringAppendF(&columns_section, kIntMarkerFormat,
                                       "INTSTART", "'MARKER'", "'INTORG'");
     }
-    const double objective_coef = objective[var_index];
-    if (objective_coef != 0.0) {
+    if (var_proto.objective_coefficient() != 0.0) {
       AppendMpsTermWithContext(
-          var_name, "COST", objective_coef, &columns_section);
+          var_name, "COST", var_proto.objective_coefficient(),
+          &columns_section);
     }
-    for (int k = 0; k < transpose[var_index].size(); ++k) {
-      const std::pair<int, double> p = transpose[var_index][k];
-      const int cst_index = p.first;
-      const double coeff = p.second;
-      const std::string cst_name = GetConstraintName(cst_index);
+    for (const std::pair<int, double> cst_index_and_coeff : transpose[var_index]) {
+      const std::string cst_name = GetConstraintName(cst_index_and_coeff.first);
       AppendMpsTermWithContext(
-          var_name, cst_name, coeff, &columns_section);
+          var_name, cst_name, cst_index_and_coeff.second, &columns_section);
     }
-    if (var_proto.integer()) {
+    if (var_proto.is_integer()) {
       columns_section += "\n";
       current_mps_column_ = 0;
       StringAppendF(&columns_section, kIntMarkerFormat,
@@ -503,10 +463,10 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // RHS (right-hand-side) section.
   current_mps_column_ = 0;
   std::string rhs_section;
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-    const double lb = ct_proto.lb();
-    const double ub = ct_proto.ub();
+  for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
+    const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
+    const double lb = ct_proto.lower_bound();
+    const double ub = ct_proto.upper_bound();
     const std::string cst_name = GetConstraintName(cst_index);
     if (lb != -std::numeric_limits<double>::infinity()) {
       AppendMpsTermWithContext("RHS", cst_name, lb, &rhs_section);
@@ -522,9 +482,9 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // RANGES section.
   current_mps_column_ = 0;
   std::string ranges_section;
-  for (int cst_index = 0; cst_index < proto_.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = proto_.constraints(cst_index);
-    const double range = fabs(ct_proto.ub() - ct_proto.lb());
+  for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
+    const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
+    const double range = fabs(ct_proto.upper_bound() - ct_proto.lower_bound());
     if (range != 0.0 && range != +std::numeric_limits<double>::infinity()) {
       const std::string cst_name = GetConstraintName(cst_index);
       AppendMpsTermWithContext("RANGE", cst_name, range, &ranges_section);
@@ -538,13 +498,13 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // BOUNDS section.
   current_mps_column_ = 0;
   std::string bounds_section;
-  for (int var_index = 0; var_index < proto_.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variables(var_index);
-    const double lb = var_proto.lb();
-    const double ub = var_proto.ub();
+  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    const MPVariableProto& var_proto = proto_.variable(var_index);
+    const double lb = var_proto.lower_bound();
+    const double ub = var_proto.upper_bound();
     const std::string var_name = GetVariableName(var_index);
-    if (var_proto.integer()) {
-      if (lb == 0.0 && ub == 1.0) {
+    if (var_proto.is_integer()) {
+      if (IsBoolean(var_proto)) {
         AppendMpsLineHeader("BV", "BOUND", &bounds_section);
         StringAppendF(&bounds_section, "  %s\n", var_name.c_str());
       } else {

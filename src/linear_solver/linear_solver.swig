@@ -19,7 +19,6 @@
 // Include the file we want to wrap a first time.
 %{
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver_ext.h"
 %}

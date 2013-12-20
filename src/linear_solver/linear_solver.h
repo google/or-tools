@@ -149,10 +149,7 @@
 namespace operations_research {
 
 class MPConstraint;
-class MPModelProto;
-class MPModelRequest;
 class MPObjective;
-class MPSolutionResponse;
 class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
@@ -303,8 +300,8 @@ class MPSolver {
   // ----- Solve -----
 
   // The status of solving the problem. The straightfowrad translation to
-  // homonym enum values of MPSolutionResponse::ResultStatus
-  // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
+  // homonym enum values of MPSolutionResponse::Status
+  // (see ./linear_solver2.proto) is guaranteed by ./enum_consistency_test.cc,
   // you may rely on it.
   // TODO(user): Figure out once and for all what the status of
   // underlying solvers exactly mean, especially for feasible and
@@ -556,16 +553,6 @@ class MPSolver {
   void SetMaximization() { SetOptimizationDirection(true); }
   bool Maximization() const;
   bool Minimization() const;
-
-  // DEPRECATED methods. Use the explicitly listed replacement.
-  LoadStatus LoadModel(const MPModelProto& input_model);  // LoadModelFromProto
-  void FillSolutionResponse(  // FillSolutionResponseProto
-      MPSolutionResponse* response) const;
-  static void SolveWithProtocolBuffers(  // SolveWithProto
-      const MPModelRequest& model_request, MPSolutionResponse* response);
-  void ExportModel(MPModelProto* output_model) const;  // ExportModelToNewProto
-  bool LoadSolutionFromProto(  // LoadSolutionFromNewProto
-      const MPSolutionResponse& response);
 
  private:
   // Computes the size of the constraint with the largest number of

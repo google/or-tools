@@ -17,7 +17,7 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver2.pb.h"
 
 namespace operations_research {
 void RunLinearProgrammingExample(

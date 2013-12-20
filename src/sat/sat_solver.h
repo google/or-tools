@@ -129,8 +129,8 @@ class SatClause {
 
   // Returns the first and second literals. These are always the watched
   // literals if the clause is attached in the LiteralWatchers.
-  Literal GetFirstLiteral() const { return literals_[0]; }
-  Literal GetSecondLiteral() const { return literals_[1]; }
+  Literal FirstLiteral() const { return literals_[0]; }
+  Literal SecondLiteral() const { return literals_[1]; }
 
   // Tries to simplify the clause.
   enum SimplifyStatus {
@@ -141,10 +141,15 @@ class SatClause {
   };
   SimplifyStatus Simplify();
 
+  // Removes literals that are fixed. This should only be called at level 0
+  // where a literal is fixed iff it is assigned. Aborts and returns true if
+  // they are not all false.
+  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
+
   // Propagates watched_literal which just became false in the clause. Returns
   // false if an inconsistency was detected.
   //
-  // IMPORTANT: If a new literal needs watching instead, then GetFirstLiteral()
+  // IMPORTANT: If a new literal needs watching instead, then FirstLiteral()
   // will be the new watched literal, otherwise it will be equal to the given
   // watched_literal.
   bool PropagateOnFalse(Literal watched_literal, Trail* trail);
@@ -221,9 +226,13 @@ class LiteralWatchers {
   // Resizes the data structure.
   void Resize(int num_variables);
 
+  // Attaches the given clause. This eventually propagates a literal which is
+  // enqueued on the trail. Returns false if a contradiction was encountered.
+  bool AttachAndPropagate(SatClause* clause, Trail* trail);
+
   // Attaches the given clause to the event: the given literal becomes false.
   // The blocking_literal can be any literal from the clause, it is used to
-  // speed up PropagateOnTrue() by skipping the clause if it is true.
+  // speed up PropagateOnFalse() by skipping the clause if it is true.
   void AttachOnFalse(Literal literal,
                      Literal blocking_literal,
                      SatClause* clause);
@@ -234,17 +243,36 @@ class LiteralWatchers {
   void LazyDetach(SatClause* clause);
   void CleanUpWatchers();
 
-  // Launches all propagation when the given literal becomes true.
+  // Launches all propagation when the given literal becomes false.
   // Returns false if a contradiction was encountered.
-  bool PropagateOnTrue(Literal true_literal, Trail* trail);
+  bool PropagateOnFalse(Literal false_literal, Trail* trail);
 
-  // Total number of clauses inspected during calls to PropagateOnTrue().
+  // Total number of clauses inspected during calls to PropagateOnFalse().
   int64 num_inspected_clauses() const { return num_inspected_clauses_; }
 
+  // Number of clauses currently watched.
+  int64 num_watched_clauses() const {return num_watched_clauses_; }
+
+  // Returns some statistics on the number of appearance of this variable in
+  // all the attached clauses.
+  const VariableInfo& VariableStatistic(VariableIndex var) const {
+    return statistics_[var];
+  }
+
+  // Parameters management.
+  void SetParameters(const SatParameters& parameters) {
+    parameters_ = parameters;
+  }
+
  private:
+  // Updates statistics_ for the literals in the given clause. added indicates
+  // if we are adding the clause or deleting it.
+  void UpdateStatistics(const SatClause& clause, bool added);
+
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
   struct Watcher {
+    Watcher() {}
     Watcher(SatClause* c, Literal b) : clause(c), blocking_literal(b) {}
     SatClause* clause;
     Literal blocking_literal;
@@ -256,7 +284,10 @@ class LiteralWatchers {
   ITIVector<LiteralIndex, bool> needs_cleaning_;
   bool is_clean_;
 
+  ITIVector<VariableIndex, VariableInfo> statistics_;
+  SatParameters parameters_;
   int64 num_inspected_clauses_;
+  int64 num_watched_clauses_;
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(LiteralWatchers);
 };
@@ -504,7 +535,7 @@ class SatSolver {
   // the second position. See SatClause::PropagateOnFalse() and
   // SatClause::AttachAndEnqueuePotentialUnitPropagation().
   bool IsClauseUsedAsReason(SatClause* clause) const {
-    const VariableIndex var = clause->GetSecondLiteral().Variable();
+    const VariableIndex var = clause->SecondLiteral().Variable();
     return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION
         && trail_.Info(var).sat_clause == clause;
   }
@@ -554,33 +585,8 @@ class SatSolver {
   // and add them to the priority queue with the correct weight.
   void Untrail(int trail_index);
 
-  // Preprocess the model in order to simplify it.
-  bool Preprocess();
-
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
-
-  // Statistics.
-  void ComputeStatistics();
-
-  // Statistics on one clause, added indicates if we are adding the
-  // clause, or deleting it.
-  template <typename Literals>
-  void UpdateStatisticsOnOneClause(const Literals& literals, int size,
-                                   bool added) {
-    SCOPED_TIME_STAT(&stats_);
-    for (const Literal literal : literals) {
-      const VariableIndex var = literal.Variable();
-      const int direction = added ? 1 : -1;
-      statistics_[var].num_appearances += direction;
-      statistics_[var].weighted_num_appearances += 1.0 / size * direction;
-      if (literal.IsPositive()) {
-        statistics_[var].num_positive_clauses += direction;
-      } else {
-        statistics_[var].num_negative_clauses += direction;
-      }
-    }
-  }
 
   // Compute an initial variable ordering.
   void ComputeInitialVariableOrdering();
@@ -642,10 +648,6 @@ class SatSolver {
   // the variable_ordering parameter.
   double ComputeInitialVariableWeight(VariableIndex var) const;
 
-  // Uses num_inactive_variables_ and the current trail to update the priority
-  // queue of active variables. This should be called before each NextBranch().
-  void MakeAllTrailVariablesInactive();
-
   // Bumps the activity of all variables appearing in the conflict.
   // See VSIDS decision heuristic: Chaff: Engineering an Efficient SAT Solver.
   // M.W. Moskewicz et al. ANNUAL ACM IEEE DESIGN AUTOMATION CONFERENCE 2001.
@@ -694,9 +696,6 @@ class SatSolver {
   std::vector<SatClause*> problem_clauses_;
   std::vector<SatClause*> learned_clauses_;
 
-  // Statistics.
-  ITIVector<VariableIndex, VariableInfo> statistics_;
-
   // Observers of literals.
   LiteralWatchers watched_clauses_;
   BinaryImplicationGraph binary_implication_graph_;
@@ -713,13 +712,6 @@ class SatSolver {
   // clauses propagation.
   int propagation_trail_index_;
   int binary_propagation_trail_index_;
-
-  // All the variables on the trail should be inactive, however we lazily update
-  // them, so this is the number of inactive variables. It is always lower or
-  // equals to processed_trail_.size(). and the first num_inactive_variables_ of
-  // the trail are not in the priority queue. This is updated by Untrail() and
-  // MakeAllTrailVariablesInactive().
-  int num_inactive_variables_;
 
   // The size of the trail when ProcessNewlyFixedVariables() was last called.
   // Note that the trail contains only fixed literals (that is literals of
@@ -780,10 +772,12 @@ class SatSolver {
   // If true, leave the initial variable activities to their current value.
   bool leave_initial_activities_unchanged_;
 
-  // Current maximum size of the learned clause store and number of time
-  // the learned clauses where cleaned.
-  int learned_clause_limit_;
-  int clause_cleanup_count_;
+  // This counter is decremented each time we learn a clause. When it reaches
+  // zero, a clause cleanup is triggered. Note that only the clauses added to
+  // learned_clauses_ are counted, so we exclude binary clauses if
+  // parameters_.treat_binary_clauses_separately() is true.
+  int num_learned_clause_before_cleanup_;
+  int target_number_of_learned_clauses_;
 
   // Conflicts credit to create until the next restart.
   int conflicts_until_next_restart_;
@@ -793,6 +787,10 @@ class SatSolver {
   SparseBitset<VariableIndex> is_marked_;
   SparseBitset<VariableIndex> is_independent_;
   std::vector<int> min_trail_index_per_level_;
+
+  // Temporary members used by CanBeInferedFromConflictVariables().
+  std::vector<VariableIndex> dfs_stack_;
+  std::vector<VariableIndex> variable_to_process_;
 
   // Temporary member used by AddLinearConstraintInternal().
   std::vector<Literal> literals_scratchpad_;
@@ -806,7 +804,7 @@ class SatSolver {
   PbReasonCache reason_cache_;
 
   // A random number generator.
-  MTRandom random_;
+  mutable MTRandom random_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);

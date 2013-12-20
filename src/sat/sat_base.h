@@ -323,14 +323,14 @@ class Trail {
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
 
   // Getters.
-  int NumberOfEnqueues() const { return num_enqueues_; }
+  int64 NumberOfEnqueues() const { return num_enqueues_; }
   int Index() const { return trail_index_; }
   const Literal operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
   const AssignmentInfo& Info(VariableIndex var) const { return info_[var]; }
 
  private:
-  int num_enqueues_;
+  int64 num_enqueues_;
   int trail_index_;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;

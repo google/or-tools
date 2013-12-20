@@ -1597,12 +1597,26 @@ class Solver {
   // TODO(user): Add void MakeSortedArray(const std::vector<IntVar*>& vars,
   //                                         std::vector<IntVar*>* const sorted);
 
-  // Creates a constraint that states that all variables in the first
-  // vector are different from all variables from the second
-  // group. Thus the set of values in the first vector does not
-  // intersect the set of values in the second vector.
-  Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
-                                const std::vector<IntVar*>& second_vars);
+  // Creates the constraint that enforces that left is lexicographically less
+  // than right.
+  Constraint* MakeLexicalLess(const std::vector<IntVar*>& left,
+                              const std::vector<IntVar*>& right);
+
+  // Creates the constraint that enforces that left is lexicographically less
+  // or equal than right.
+  Constraint* MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
+                                     const std::vector<IntVar*>& right);
+
+  // Creates the constraints that enforces left[i] == j <=> right[j] == i.
+  Constraint* MakeInverse(const std::vector<IntVar*>& left,
+                          const std::vector<IntVar*>& right);
+
+      // Creates a constraint that states that all variables in the first
+      // vector are different from all variables from the second
+      // group. Thus the set of values in the first vector does not
+      // intersect the set of values in the second vector.
+      Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                    const std::vector<IntVar*>& second_vars);
 
   // Creates a constraint that states that all variables in the first
   // vector are different from all variables from the second group,
@@ -3253,6 +3267,7 @@ class ModelVisitor : public BaseObject {
   static const char kIntervalDisjunction[];
   static const char kIntervalUnaryRelation[];
   static const char kIntervalVariable[];
+  static const char kInverse[];
   static const char kIsBetween[];
   static const char kIsDifferent[];
   static const char kIsEqual[];
@@ -3263,6 +3278,7 @@ class ModelVisitor : public BaseObject {
   static const char kIsMember[];
   static const char kLess[];
   static const char kLessOrEqual[];
+  static const char kLexLess[];
   static const char kLinkExprVar[];
   static const char kMapDomain[];
   static const char kMax[];

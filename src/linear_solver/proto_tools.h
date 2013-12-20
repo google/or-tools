@@ -14,21 +14,9 @@
 #define OR_TOOLS_LINEAR_SOLVER_PROTO_TOOLS_H_
 
 #include <string>
-
-#include "linear_solver/linear_solver.pb.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "google/protobuf/message.h"
 
 namespace operations_research {
-
-// Converts an old-style MPModelProto to a new-style MPModelProto.
-// Returns false if the conversion could not be performed.
-bool ConvertOldMPModelProtoToNew(const MPModelProto& src_proto,
-                                 new_proto::MPModelProto* dest_proto);
-
-// Converts a new-style MPModelProto to an old-style MPModelProto.
-// Returns false if the conversion could not be performed.
-bool ConvertNewMPModelProtoToOld(const new_proto::MPModelProto& src_proto,
-                                 MPModelProto* dest_proto);
 
 // Exactly like file::ReadFileToProto() but also supports GZipped files.
 // TODO(user): move this to ../util ?

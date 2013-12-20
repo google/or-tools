@@ -22,6 +22,7 @@
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "base/strutil.h"
@@ -32,132 +33,6 @@ using google::protobuf::Reflection;
 using google::protobuf::TextFormat;
 
 namespace operations_research {
-
-bool ConvertOldMPModelProtoToNew(const MPModelProto& src_proto,
-                                 new_proto::MPModelProto* dest_proto) {
-  dest_proto->set_maximize(src_proto.maximize());
-  if (src_proto.has_objective_offset()) {
-    dest_proto->set_objective_offset(src_proto.objective_offset());
-  }
-  dest_proto->set_name(src_proto.name());
-
-  hash_map<std::string, int> var_id_to_index_map;
-  for (int var_index = 0; var_index < src_proto.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = src_proto.variables(var_index);
-    const std::string& id = var_proto.id();
-    if (ContainsKey(var_id_to_index_map, id)) {
-      LOG(DFATAL) << "Duplicate variable id found: " << id;
-      return false;
-    }
-    var_id_to_index_map[id] = var_index;
-  }
-  std::vector<double> objective(src_proto.variables_size(), 0.0);
-  for (int k = 0; k < src_proto.objective_terms_size(); ++k) {
-    const MPTermProto& term_proto = src_proto.objective_terms(k);
-    const std::string& id = term_proto.variable_id();
-    const int var_index  = FindWithDefault(var_id_to_index_map, id, -1);
-    if (var_index == -1) {
-      LOG(DFATAL) << "Non-existent variable with id " << id
-                  << " used in objective.";
-      return false;
-    }
-    objective[var_index] = term_proto.coefficient();
-  }
-  for (int var_index = 0; var_index < src_proto.variables_size(); ++var_index) {
-    const MPVariableProto& var_proto = src_proto.variables(var_index);
-    new_proto::MPVariableProto* const new_var = dest_proto->add_variable();
-    new_var->set_lower_bound(var_proto.lb());
-    new_var->set_upper_bound(var_proto.ub());
-    new_var->set_name(var_proto.id());
-    new_var->set_is_integer(var_proto.integer());
-    new_var->set_objective_coefficient(objective[var_index]);
-  }
-  for (int cst_index = 0;
-       cst_index < src_proto.constraints_size(); ++cst_index) {
-    const MPConstraintProto& ct_proto = src_proto.constraints(cst_index);
-    new_proto::MPConstraintProto* new_cst = dest_proto->add_constraint();
-    new_cst->set_lower_bound(ct_proto.lb());
-    new_cst->set_upper_bound(ct_proto.ub());
-    new_cst->set_name(ct_proto.id());
-    for (int k = 0; k < ct_proto.terms_size(); ++k) {
-      const MPTermProto& term_proto = ct_proto.terms(k);
-      const std::string& id = term_proto.variable_id();
-      const int var_index  = FindWithDefault(var_id_to_index_map, id, -1);
-      if (var_index == -1) {
-        LOG(DFATAL) << "Non-existent variable with id " << id
-                    << " used in constraint # " << cst_index << ".";
-        return false;
-      }
-      new_cst->add_var_index(var_index);
-      new_cst->add_coefficient(term_proto.coefficient());
-    }
-  }
-  return true;
-}
-
-bool ConvertNewMPModelProtoToOld(const new_proto::MPModelProto& src_proto,
-                                 MPModelProto* dest_proto) {
-  dest_proto->set_maximize(src_proto.maximize());
-  if (src_proto.has_objective_offset()) {
-    dest_proto->set_objective_offset(src_proto.objective_offset());
-  }
-  dest_proto->set_name(src_proto.name());
-
-  // Note(user): we assume the name to be suitable as ids. If not, the generated
-  // proto will be invalid (which will be detected when trying to solve it).
-  // TODO(user): detect this now?
-  std::vector<std::string> var_index_to_id;
-  for (int i = 0; i < src_proto.variable_size(); ++i) {
-    const new_proto::MPVariableProto& var_proto = src_proto.variable(i);
-    const std::string& id = var_proto.name();
-    var_index_to_id.push_back(id);
-
-    // Create the variables.
-    MPVariableProto* new_var = dest_proto->add_variables();
-    new_var->set_lb(var_proto.lower_bound());
-    new_var->set_ub(var_proto.upper_bound());
-    new_var->set_id(id);
-    new_var->set_integer(var_proto.is_integer());
-
-    // Create the objective for this variable.
-    if (var_proto.objective_coefficient() != 0.0) {
-      MPTermProto* new_objective_term = dest_proto->add_objective_terms();
-      new_objective_term->set_variable_id(id);
-      new_objective_term->set_coefficient(var_proto.objective_coefficient());
-    }
-  }
-  for (int i = 0; i < src_proto.constraint_size(); ++i) {
-    const new_proto::MPConstraintProto& cst_proto = src_proto.constraint(i);
-
-    // Create the constraint.
-    MPConstraintProto* new_cst = dest_proto->add_constraints();
-    new_cst->set_lb(cst_proto.lower_bound());
-    new_cst->set_ub(cst_proto.upper_bound());
-    new_cst->set_id(cst_proto.name());
-
-    // Copy the linear terms.
-    // TODO(user): test this error in unittests.
-    if (cst_proto.var_index_size() != cst_proto.coefficient_size()) {
-      LOG(ERROR) << "In constraint #" << i << " (name: '" << cst_proto.name()
-                 << "'):" << " var_index_size() != coefficient_size()"
-                 << cst_proto.DebugString();
-      return false;
-    }
-    for (int k = 0; k < cst_proto.var_index_size(); ++k) {
-      const int var_index = cst_proto.var_index(k);
-      MPTermProto* new_term = new_cst->add_terms();
-      if (var_index >= var_index_to_id.size() ||
-          var_index < 0) {
-        LOG(DFATAL) << "Variable index out of bound in constraint named "
-                    << cst_proto.name() << ".";
-        return false;
-      }
-      new_term->set_variable_id(var_index_to_id[var_index]);
-      new_term->set_coefficient(cst_proto.coefficient(k));
-    }
-  }
-  return true;
-}
 
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
   std::string data;

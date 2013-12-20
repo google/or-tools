@@ -233,12 +233,30 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   // is modeled as a negative supply.
   void SetNodeSupply(NodeIndex node, FlowQuantity supply);
 
-  // Solves the problem, and returns the problem status.
-  Status Solve();
+  // Solves the problem, and returns the problem status. This function
+  // requires that the sum of all node supply minus node demand is zero and
+  // that the graph has enough capacity to send all supplies and serve all
+  // demands. Otherwise, it will return INFEASIBLE.
+  Status Solve() {
+    return SolveWithPossibleAdjustment(SupplyAdjustment::DONT_ADJUST);
+  }
+
+  // Same as Solve(), but does not have the restriction that the supply
+  // must match the demand or that the graph has enough capacity to serve
+  // all the demand or use all the supply. This will compute a maximum-flow
+  // with minimum cost. The value of the maximum-flow will be given by
+  // MaximumFlow().
+  Status SolveMaxFlowWithMinCost() {
+    return SolveWithPossibleAdjustment(SupplyAdjustment::ADJUST);
+  }
 
   // Returns the cost of the minimum-cost flow found by the algorithm when
   // the returned Status is OPTIMAL.
   CostValue OptimalCost() const;
+
+  // Returns the total flow of the minimum-cost flow found by the algorithm
+  // when the returned Status is OPTIMAL.
+  FlowQuantity MaximumFlow() const;
 
   // Returns the flow on arc, this only make sense for a successful Solve().
   //
@@ -260,6 +278,16 @@ class SimpleMinCostFlow : public MinCostFlowBase {
 
  private:
   typedef ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
+  enum SupplyAdjustment {
+    ADJUST,
+    DONT_ADJUST
+  };
+
+  // Applies the permutation in arc_permutation_ to the given arc index.
+  ArcIndex PermutedArc(ArcIndex arc);
+  // Solves the problem, potentially applying supply and demand adjustment,
+  // and returns the problem status.
+  Status SolveWithPossibleAdjustment(SupplyAdjustment adjustment);
   void ResizeNodeVectors(NodeIndex node);
 
   std::vector<NodeIndex> arc_tail_;
@@ -270,6 +298,7 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   std::vector<ArcIndex> arc_permutation_;
   std::vector<FlowQuantity> arc_flow_;
   CostValue optimal_cost_;
+  FlowQuantity maximum_flow_;
 
   DISALLOW_COPY_AND_ASSIGN(SimpleMinCostFlow);
 };

@@ -207,3 +207,17 @@ message MPSolutionResponse {
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double dual_value = 4 [packed = true];
 }
+
+// Error codes used as RPC Application error codes in the stubby service
+// (see ./linear_solver_service.proto), but also for some proto-based APIs.
+// TODO(user): tidy this up and unify it with MPSolutionResponse.Status.
+message Error {
+  enum Code {
+    NO_ERROR = 0;
+    INVALID_PROBLEM_TYPE = 1;
+    DUPLICATE_VARIABLE_ID = 2;
+    UNKNOWN_VARIABLE_ID = 3;
+    REQUEST_IS_QOD = 4;
+    RPC_DEADLINE_TOO_SMALL = 5;
+  }
+}

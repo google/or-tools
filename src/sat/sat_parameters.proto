@@ -17,22 +17,14 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 message SatParameters {
-  // Specifies how variables should be ordered during search.
-  enum VariableOrdering {
-    // Variables will be instantiated in the order of creation.
-    STATIC_IN_ORDER = 0;
-    // Variables appearing in the smallest number of clauses will be
-    // chosen first.
-    STATIC_MIN_USAGE_FIRST = 1;
-    // Variables appearing in the largest number of clauses will be
-    // chosen first.
-    STATIC_MAX_USAGE_FIRST = 2;
-    // Variables with the highest activity (number of appearances in
-    // conflict creation) will be chosen first.
-    DYNAMIC_MAX_ACTIVITY_FIRST = 3;
+  // Specifies how the variable activities should be initialized.
+  // Variable with high activity are selected first for branching.
+  enum InitialActivity {
+    ALL_ZERO_ACTIVITY = 0;
+    RANDOM_ACTIVITY = 1;
+    SCALED_USAGE_ACTIVITY = 2;
   }
-  optional VariableOrdering variable_ordering = 1
-      [default = DYNAMIC_MAX_ACTIVITY_FIRST];
+  optional InitialActivity initial_activity = 1 [default = ALL_ZERO_ACTIVITY];
 
   // Specifies how branching on variable should be done.
   enum VariableBranching {
@@ -70,7 +62,7 @@ message SatParameters {
     // problem.
     VAR_MAX_USAGE = 2;
   }
-  optional LiteralOrdering literal_ordering = 3 [default = VAR_MIN_USAGE];
+  optional LiteralOrdering literal_ordering = 3 [default = LITERAL_IN_ORDER];
 
   // Do we try to minimize conflicts (greedily) when creating them.
   enum ConflictMinimizationAlgorithm {
@@ -82,19 +74,13 @@ message SatParameters {
   optional ConflictMinimizationAlgorithm minimization_algorithm = 4
       [default = RECURSIVE];
 
-  // Initial ratio learned_clauses / problem clauses before starting deletion.
-  // If it falls under the minimum size, the minimum size is used instead.
-  optional double initial_conflict_size_ratio = 10 [default = 0.25];
-  optional double initial_minimum_conflict_size = 11 [default = 3000];
+  // Each time the learned clause database is cleaned, we want the target size
+  // of the next cleaning to be equals to the current database after it has just
+  // been cleaned plus this parameter.
+  optional double clause_cleanup_increment = 11 [default = 2000];
 
-  // Growing rate of the learned clause limit after each stage of cleaning.
-  // the limit is increased by this ratio times the initial conflict size.
-  // Each time we learn that much conflicts, a new cleaning is triggered.
-  optional double conflict_size_growing_ratio = 12 [default = 0.1];
-
-  // Each time the clause database is cleaned, we only keep this ratio of all
-  // the clauses that can be deleted.
-  optional double learned_clauses_deletion_ratio = 13 [default = 0.5];
+  // Deletes this ratio of clauses during each cleanup.
+  optional double clause_cleanup_ratio = 13 [default = 0.5];
 
   // Variable activity parameters.
   //
@@ -106,8 +92,17 @@ message SatParameters {
   // decayed at each conflict. Instead, the activity increment is multiplied by
   // 1 / decay. When an activity reach max_variable_activity_value, all the
   // activity are multiplied by 1 / max_variable_activity_value.
-  optional double variable_activity_decay = 15 [default = 0.95];
+  optional double variable_activity_decay = 15 [default = 0.8];
   optional double max_variable_activity_value = 16 [default = 1e100];
+
+  // The activity starts at 0.8 and increment by 0.01 every 5000 conflicts until
+  // 0.95. This "hack" seems to work well and comes from:
+  //
+  // Glucose 2.3 in the SAT 2013 Competition - SAT Competition 2013
+  // http://edacc4.informatik.uni-ulm.de/SC13/solver-description-download/136
+  optional double glucose_max_decay = 22 [default = 0.95];
+  optional double glucose_decay_increment = 23 [default = 0.01];
+  optional double glucose_decay_increment_period = 24 [default = 5000];
 
   // Clause activity parameters (same effect as the one on the variables).
   optional double clause_activity_decay = 17 [default = 0.999];
@@ -122,7 +117,7 @@ message SatParameters {
   // To try to reward good variables, Glucose bumps again the variable from the
   // last decision level and with a learned reason of smaller LBD than the 1 UIP
   // conflict. This needs use_lbd() to be true.
-  optional bool use_glucose_bump_again_strategy = 21 [ default = false];
+  optional bool use_glucose_bump_again_strategy = 21 [ default = true];
 
   // Frequecy of periodic restart if > 0. A negative value indicates
   // no restart.
@@ -140,7 +135,7 @@ message SatParameters {
   // A number between 0 and 1 that indicates the proportion of branching
   // variables that are selected randomly instead of choosing the first variable
   // from the given variable_ordering strategy.
-  optional double random_branches_ratio = 32 [default = 0.01];
+  optional double random_branches_ratio = 32 [default = 0];
 
   // If true, the binary clauses are treated separately from the others. This
   // should be faster and uses less memory. However it changes the propagation

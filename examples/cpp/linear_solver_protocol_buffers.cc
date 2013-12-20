@@ -16,7 +16,7 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver2.pb.h"
 
 namespace operations_research {
 void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
@@ -34,63 +34,57 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   const double kConstraintUb[] = {100.0, 600.0, 300.0};
 
   const double infinity = MPSolver::infinity();
-  MPModelProto model_proto;
+  new_proto::MPModelProto model_proto;
   model_proto.set_name("Max_Example");
 
   // Create variables and objective function
   for (int j = 0; j < numVars; ++j) {
-    MPVariableProto* x = model_proto.add_variables();
-    x->set_id(kVarName[j]);
-    x->set_lb(0.0);
-    x->set_ub(infinity);
-    x->set_integer(false);
-    MPTermProto* obj_term = model_proto.add_objective_terms();
-    obj_term->set_variable_id(kVarName[j]);
-    obj_term->set_coefficient(kObjCoef[j]);
+    new_proto::MPVariableProto* x = model_proto.add_variable();
+    x->set_name(kVarName[j]);  // Could be skipped (optional).
+    x->set_lower_bound(0.0);
+    x->set_upper_bound(infinity);  // Could be skipped (default value).
+    x->set_is_integer(false);  // Could be skipped (default value).
+    x->set_objective_coefficient(kObjCoef[j]);
   }
   model_proto.set_maximize(true);
 
   // Create constraints
   for (int i = 0; i < kNumConstraints; ++i) {
-    MPConstraintProto* constraint_proto = model_proto.add_constraints();
-    constraint_proto->set_id(kConstraintName[i]);
-    constraint_proto->set_lb(-infinity);
-    constraint_proto->set_ub(kConstraintUb[i]);
+    new_proto::MPConstraintProto* constraint_proto =
+        model_proto.add_constraint();
+    constraint_proto->set_name(kConstraintName[i]);  // Could be skipped.
+    constraint_proto->set_lower_bound(-infinity);  // Could be skipped.
+    constraint_proto->set_upper_bound(kConstraintUb[i]);
     for (int j = 0; j < numVars; ++j) {
-      MPTermProto* term = constraint_proto->add_terms();
-      term->set_variable_id(kVarName[j]);
-      term->set_coefficient(kConstraintCoef[i][j]);
+      // These two lines may be skipped when the coefficient is zero.
+      constraint_proto->add_var_index(j);
+      constraint_proto->add_coefficient(kConstraintCoef[i][j]);
     }
   }
 
-  MPModelRequest model_request;
+  new_proto::MPModelRequest model_request;
   model_request.mutable_model()->CopyFrom(model_proto);
 #if defined(USE_GLPK)
   if (type == MPSolver::GLPK_LINEAR_PROGRAMMING) {
-    model_request.set_problem_type(MPModelRequest::GLPK_LINEAR_PROGRAMMING);
+    model_request.set_solver_type(new_proto::MPModelRequest::GLPK_LINEAR_PROGRAMMING);
   }
 #endif  // USE_GLPK
 #if defined(USE_CLP)
   if (type == MPSolver::CLP_LINEAR_PROGRAMMING) {
-    model_request.set_problem_type(MPModelRequest::CLP_LINEAR_PROGRAMMING);
+    model_request.set_solver_type(new_proto::MPModelRequest::CLP_LINEAR_PROGRAMMING);
   }
 #endif  // USE_CLP
 
-  MPSolutionResponse solution_response;
-  MPSolver::SolveWithProtocolBuffers(model_request, &solution_response);
+  new_proto::MPSolutionResponse solution_response;
+  MPSolver::SolveWithProto(model_request, &solution_response);
 
   // The problem has an optimal solution.
-  CHECK_EQ(MPSolutionResponse::OPTIMAL, solution_response.result_status());
+  CHECK_EQ(new_proto::MPSolutionResponse::OPTIMAL, solution_response.status());
 
   LOG(INFO) << "objective = " <<  solution_response.objective_value();
-  const int num_non_zeros = solution_response.solution_values_size();
-  for (int j = 0; j < num_non_zeros; ++j) {
-    MPSolutionValue solution_value = solution_response.solution_values(j);
-    LOG(INFO) << solution_value.variable_id() << " = "
-              << solution_value.value();
-  }
-  if (num_non_zeros != numVars) {
-    LOG(INFO) << "All other variables have zero value";
+  for (int j = 0; j < numVars; ++j) {
+    LOG(INFO) << model_proto.variable(j).name() << " = "
+              << solution_response.variable_value(j);
   }
 }
 

@@ -3214,7 +3214,7 @@ void p_lex_less_int(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  Constraint* const ct = MakeLexLess(solver, left, right, true);
+  Constraint* const ct = solver->MakeLexicalLess(left, right);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
@@ -3233,7 +3233,7 @@ void p_lex_lesseq_int(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  Constraint* const ct = MakeLexLess(solver, left, right, false);
+  Constraint* const ct = solver->MakeLexicalLessOrEqual(left, right);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }
@@ -3256,7 +3256,7 @@ void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i + 1] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  Constraint* const ct = MakeInverse(solver, left, right);
+  Constraint* const ct = solver->MakeInverse(left, right);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }

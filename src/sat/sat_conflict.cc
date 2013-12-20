@@ -192,7 +192,10 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // conflict literals. The too set are exclusive for non-conflict literals, but
   // a conflict literal (which is always marked) can be independent if we showed
   // that it can't be removed from the clause.
-  is_marked_.ClearAndResize(num_variables_);
+  //
+  // Optimization: There is no need to call is_marked_.ClearAndResize() or to
+  // mark the conflict literals since this was already done by
+  // ComputeFirstUIPConflict().
   is_independent_.ClearAndResize(num_variables_);
 
   // min_trail_index_per_level_ will always be reset to all
@@ -204,15 +207,13 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
                                       std::numeric_limits<int>::max());
   }
 
-  // First, mark as dependent all the variable in the conflict.
-  // Also compute the number of variable at each decision levels. This will be
-  // used to pruned the DFS because we know that the minimized conflict will
-  // have at least one variable of each decision levels. Because such variable
-  // can't be eliminated using lower decision levels variable otherwise it will
-  // have been propagated.
+  // Compute the number of variable at each decision levels. This will be used
+  // to pruned the DFS because we know that the minimized conflict will have at
+  // least one variable of each decision levels. Because such variable can't be
+  // eliminated using lower decision levels variable otherwise it will have been
+  // propagated.
   for (Literal literal : *conflict) {
     const VariableIndex var = literal.Variable();
-    is_marked_.Set(var);
     const int level = DecisionLevel(var);
     min_trail_index_per_level_[level] = std::min(
         min_trail_index_per_level_[level], trail_.Info(var).trail_index);
@@ -234,12 +235,13 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
     }
   }
 
-  // Reset min_trail_index_per_level_.
+  // Reset min_trail_index_per_level_. This works since we can never eliminate
+  // all the literals from the same level.
+  conflict->resize(index);
   for (Literal literal : *conflict) {
     min_trail_index_per_level_[DecisionLevel(literal.Variable())]
         = std::numeric_limits<int>::max();
   }
-  conflict->resize(index);
 }
 
 bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
@@ -251,12 +253,12 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   }
 
   // This function implement an iterative DFS from the given variable. It uses
-  // the reason clause as adjacency lists. dfs_stack can be seens as the
+  // the reason clause as adjacency lists. dfs_stack_ can be seens as the
   // recursive call stack of the variable we are currently processing. All its
-  // adjacent variable will be pushed into variable_to_process, and we will then
-  // dequeue them one by one and process them.
-  std::vector<VariableIndex> dfs_stack(1, variable);
-  std::vector<VariableIndex> variable_to_process(1, variable);
+  // adjacent variable will be pushed into variable_to_process_, and we will
+  // then dequeue them one by one and process them.
+  dfs_stack_.assign(1, variable);
+  variable_to_process_.assign(1, variable);
 
   // First we expand the reason for the given variable.
   DCHECK(!Reason(variable).IsEmpty());
@@ -267,27 +269,27 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
     if (level == 0 || is_marked_[var]) continue;
     if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level]
         || is_independent_[var]) return false;
-    variable_to_process.push_back(var);
+    variable_to_process_.push_back(var);
   }
 
   // Then we start the DFS.
-  while (!variable_to_process.empty()) {
-    const VariableIndex current_var = variable_to_process.back();
-    if (current_var == dfs_stack.back()) {
-      // We finished the DFS of the variable dfs_stack.back(), this can be seen
+  while (!variable_to_process_.empty()) {
+    const VariableIndex current_var = variable_to_process_.back();
+    if (current_var == dfs_stack_.back()) {
+      // We finished the DFS of the variable dfs_stack_.back(), this can be seen
       // as a recursive call terminating.
-      if (dfs_stack.size() > 1) {
+      if (dfs_stack_.size() > 1) {
         DCHECK(!is_marked_[current_var]);
         is_marked_.Set(current_var);
       }
-      variable_to_process.pop_back();
-      dfs_stack.pop_back();
+      variable_to_process_.pop_back();
+      dfs_stack_.pop_back();
       continue;
     }
 
     // If this variable became marked since the we pushed it, we can skip it.
     if (is_marked_[current_var]) {
-      variable_to_process.pop_back();
+      variable_to_process_.pop_back();
       continue;
     }
 
@@ -302,13 +304,13 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
       if (v != current_var) {
         if (is_independent_[v]) break;
         DCHECK(is_marked_[v]);
-        variable_to_process.pop_back();
+        variable_to_process_.pop_back();
         continue;
       }
     }
 
     // Expand the variable. This can be seen as making a recursive call.
-    dfs_stack.push_back(current_var);
+    dfs_stack_.push_back(current_var);
     bool abort_early = false;
     DCHECK(!Reason(current_var).IsEmpty());
     for (Literal literal : Reason(current_var)) {
@@ -321,16 +323,16 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
         abort_early = true;
         break;
       }
-      variable_to_process.push_back(var);
+      variable_to_process_.push_back(var);
     }
     if (abort_early) break;
   }
 
-  // All the variable left on the dfs_stack are independent.
-  for (const VariableIndex var : dfs_stack) {
+  // All the variable left on the dfs_stack_ are independent.
+  for (const VariableIndex var : dfs_stack_) {
     is_independent_.Set(var);
   }
-  return dfs_stack.empty();
+  return dfs_stack_.empty();
 }
 
 namespace {
@@ -455,16 +457,19 @@ bool ClauseOrdering(SatClause* a, SatClause* b) {
 }  // namespace
 
 void SatSolver::InitLearnedClauseLimit() {
-  int n = problem_clauses_.size() * parameters_.initial_conflict_size_ratio();
-  if (n < parameters_.initial_minimum_conflict_size()) {
-    n = parameters_.initial_minimum_conflict_size();
-  }
-  learned_clause_limit_ = learned_clauses_.size() + n *
-    (1 + clause_cleanup_count_ * parameters_.conflict_size_growing_ratio());
+  const int num_learned_clauses = learned_clauses_.size();
+  target_number_of_learned_clauses_ =
+      num_learned_clauses + parameters_.clause_cleanup_increment();
+  num_learned_clause_before_cleanup_ =
+      target_number_of_learned_clauses_ / parameters_.clause_cleanup_ratio()
+      - num_learned_clauses;
+  VLOG(1) << "reduced learned database to " << num_learned_clauses
+          << " clauses. Next cleanup in " << num_learned_clause_before_cleanup_
+          << " conflicts.";
 }
 
 void SatSolver::CompressLearnedClausesIfNeeded() {
-  if (learned_clauses_.size() < learned_clause_limit_) return;
+  if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
 
   // Move the clause that should be kept at the beginning and sort the other
@@ -477,15 +482,13 @@ void SatSolver::CompressLearnedClausesIfNeeded() {
 
   // Compute the index of the first clause to delete.
   const int num_learned_clauses = learned_clauses_.size();
-  int first_clause_to_delete = clause_to_keep_end - learned_clauses_.begin();
-  first_clause_to_delete += static_cast<int>(
-      parameters_.learned_clauses_deletion_ratio()
-      * (num_learned_clauses - first_clause_to_delete));
+  const int first_clause_to_delete = std::max(
+    static_cast<int>(clause_to_keep_end - learned_clauses_.begin()),
+    std::min(num_learned_clauses, target_number_of_learned_clauses_));
 
   // Delete all the learned clause after 'first_clause_to_delete'.
   for (int i = first_clause_to_delete; i < num_learned_clauses; ++i) {
     SatClause* clause = learned_clauses_[i];
-    UpdateStatisticsOnOneClause(*clause, clause->Size(), /*added=*/ false);
     watched_clauses_.LazyDetach(clause);
   }
   watched_clauses_.CleanUpWatchers();
@@ -494,12 +497,7 @@ void SatSolver::CompressLearnedClausesIfNeeded() {
     delete learned_clauses_[i];
   }
   learned_clauses_.resize(first_clause_to_delete);
-
-  // Increase the limit.
-  ++clause_cleanup_count_;
   InitLearnedClauseLimit();
-
-  LOG(INFO) << RunningStatisticsString();
 }
 
 bool SatSolver::ShouldRestart() {

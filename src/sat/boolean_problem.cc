@@ -24,8 +24,10 @@ bool LoadBooleanProblem(
             << problem.constraints_size() << " constraints.";
   solver->Reset(problem.num_variables());
   std::vector<LiteralWithCoeff> cst;
+  int64 num_terms = 0;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     cst.clear();
+    num_terms += constraint.literals_size();
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const Literal literal(constraint.literals(i));
       if (literal.Variable() >= problem.num_variables()) {
@@ -41,6 +43,7 @@ bool LoadBooleanProblem(
       return false;
     }
   }
+  LOG(INFO) << "The problem contains " << num_terms << " terms.";
 
   // Initialize the heuristic to look for a good solution.
   if (problem.type() == LinearBooleanProblem::MINIMIZATION
