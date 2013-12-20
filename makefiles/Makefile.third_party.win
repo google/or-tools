@@ -316,10 +316,9 @@ clean_third_party:
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glpk*
 	-$(DELREC) dependencies\sources\google*
-	-$(DELREC) dependencies\sources\mono*
-	-$(DELREC) dependencies\sources\pcre*
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\sparsehash*
+	-$(DELREC) dependencies\sources\zlib*
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
