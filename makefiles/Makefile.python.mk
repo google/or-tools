@@ -46,7 +46,7 @@ $(OBJ_DIR)/knapsack_solver_python_wrap.$O: $(GEN_DIR)/ortools/algorithms/knapsac
 $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/knapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_LIBS) $(STATIC_LP_LIBS) $(STATIC_BASE_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sknapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywrapknapsack_solver.dll $(PY_GEN_DIR)\\algorithms\\_pywrapknapsack_solver.pyd
+	copy $(LIB_DIR)\\_pywrapknapsack_solver.dll $(GEN_DIR)\\ortools\\algorithms\\_pywrapknapsack_solver.pyd
 endif
 
 # pywrapgraph
@@ -63,7 +63,7 @@ $(OBJ_DIR)/pywrapgraph_python_wrap.$O: $(GEN_DIR)/ortools/graph/pywrapgraph_pyth
 $(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/pywrapgraph_python_wrap.$O $(STATIC_GRAPH_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Spywrapgraph_python_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywrapgraph.dll $(PY_GEN_DIR)\\graph\\_pywrapgraph.pyd
+	copy $(LIB_DIR)\\_pywrapgraph.dll $(GEN_DIR)\\ortools\\graph\\_pywrapgraph.pyd
 endif
 
 # pywrapcp
@@ -81,7 +81,7 @@ $(OBJ_DIR)/constraint_solver_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solve
 $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/constraint_solver_python_wrap.$O $(STATIC_CP_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(STATIC_CP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywrapcp.dll $(PY_GEN_DIR)\\constraint_solver\\_pywrapcp.pyd
+	copy $(LIB_DIR)\\_pywrapcp.dll $(GEN_DIR)\\ortools\\constraint_solver\\_pywrapcp.pyd
 endif
 
 # pywraprouting
@@ -97,7 +97,7 @@ $(OBJ_DIR)/routing_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solver/routing_
 $(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/routing_python_wrap.$O $(STATIC_ROUTING_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Srouting_python_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywraprouting.dll $(PY_GEN_DIR)\\constraint_solver\\_pywraprouting.pyd
+	copy $(LIB_DIR)\\_pywraprouting.dll $(GEN_DIR)\\ortools\\constraint_solver\\_pywraprouting.pyd
 endif
 
 # pywraplp
@@ -115,7 +115,7 @@ $(OBJ_DIR)/linear_solver_python_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear
 $(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/linear_solver_python_wrap.$O $(STATIC_LP_DEPS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Slinear_solver_python_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywraplp.dll $(PY_GEN_DIR)\\linear_solver\\_pywraplp.pyd
+	copy $(LIB_DIR)\\_pywraplp.dll $(GEN_DIR)\\ortools\\linear_solver\\_pywraplp.pyd
 endif
 
 # Run a single example
