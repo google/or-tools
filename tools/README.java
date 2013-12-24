@@ -4,10 +4,8 @@ OR-Tools is located at http://code.google.com/p/or-tools
 
 This module has been tested under:
   - ubuntu 10.04 and up (32 and 64 bit).
-  - Mac OS X Snow Leopard with xcode 3.2.x and 4.x (64 bit)
   - Mac OS X Lion with xcode 4.x (64 bit).
-  - Microsoft Windows with Visual Studio 2010 express C++ and
-    Visual studio 2010 (32 and 64 bit).
+  - Microsoft Windows with Visual Studio 2012 and 2013 (32 and 64 bit).
 
 Upon decompressing the archive, you will get the following structure:
 
