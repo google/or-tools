@@ -23,7 +23,7 @@ Each letter corresponds to one figure and all letters have different values.
 
 from google.apputils import app
 import gflags
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 FLAGS = gflags.FLAGS
 

@@ -23,7 +23,7 @@ flavors of constraint programming interfaces.
 
 
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main():

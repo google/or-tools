@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def dudeney(n):
   solver = pywrapcp.Solver('Dudeney')

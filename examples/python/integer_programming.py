@@ -17,7 +17,7 @@
 
 from google.apputils import app
 
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 
 def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):

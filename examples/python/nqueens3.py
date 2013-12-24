@@ -27,7 +27,7 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 import sys, string
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main(n=8, num_sol=0, print_sol=1):

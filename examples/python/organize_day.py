@@ -33,7 +33,7 @@
 """
 
 import sys
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 #
 # No overlapping of tasks s1 and s2

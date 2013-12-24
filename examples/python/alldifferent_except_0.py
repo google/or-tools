@@ -51,7 +51,7 @@
 
 
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 #
 # Decomposition of alldifferent_except_0

@@ -18,7 +18,7 @@
 
 from google.apputils import app
 import gflags
-from algorithms import pywrapknapsack_solver
+from ortools.algorithms import pywrapknapsack_solver
 
 FLAGS = gflags.FLAGS
 

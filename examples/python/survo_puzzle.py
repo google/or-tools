@@ -60,7 +60,7 @@
 """
 
 import sys
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main(r=0, c=0, rowsums=[], colsums=[], game=[]):

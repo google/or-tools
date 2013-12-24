@@ -49,7 +49,7 @@
 import sys
 import string
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main(show_all_max=0):

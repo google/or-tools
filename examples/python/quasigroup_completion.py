@@ -51,7 +51,7 @@
 """
 
 import sys
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 default_n = 5
 X = 0

@@ -47,7 +47,7 @@
 import sys
 import string
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main(k=8, num_sol=0):

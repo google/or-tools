@@ -30,7 +30,7 @@ in the meeting and a maximum of non mandatory people are also in the meeting.
 
 from google.apputils import app
 import gflags
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 FLAGS = gflags.FLAGS
 

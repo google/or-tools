@@ -60,7 +60,7 @@
 """
 from collections import defaultdict
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def var_matrix_array(solver, rows, cols, lb, ub, name):
     x = []

@@ -26,7 +26,7 @@
 
 
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 #
 # converts a number (s) <-> an array of integers (t) in the specific base.

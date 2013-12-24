@@ -57,7 +57,7 @@
 """
 
 import sys
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def minus(solver, x, y, z):
     solver.Add(z == abs(x - y))

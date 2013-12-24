@@ -46,7 +46,7 @@
 """
 import sys, string, re
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def main(problem, rows, cols, max_steps):
 

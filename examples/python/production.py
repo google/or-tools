@@ -17,16 +17,16 @@
   Production planning problem in Google or-tools.
 
   From the OPL model production.mod.
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 
 import sys
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -65,7 +65,7 @@ def main(sol = 'GLPK'):
   inside = [solver.NumVar(0, 10000, 'inside[%i]' % p )
             for p in range(num_products)]
   outside = [solver.NumVar(0, 10000, 'outside[%i]' % p )
-             for p in range(num_products)]  
+             for p in range(num_products)]
 
   # to minimize
   z = solver.Sum([inside_cost[p] * inside[p] + outside_cost[p] * outside[p]
@@ -93,7 +93,7 @@ def main(sol = 'GLPK'):
      print 'outside:', outside[p].SolutionValue(), ' (ReducedCost:', outside[p].ReducedCost(), ')'
   print
 
- 
+
 if __name__ == '__main__':
 
   sol = 'GLPK'
@@ -102,5 +102,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

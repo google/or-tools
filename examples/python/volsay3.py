@@ -23,7 +23,7 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 def main(unused_argv):
 

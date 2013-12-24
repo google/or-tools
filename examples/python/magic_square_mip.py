@@ -42,7 +42,7 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 import sys
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 #
 # main(n, use_output_matrix)

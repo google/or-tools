@@ -67,7 +67,7 @@
 
 import sys
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 #

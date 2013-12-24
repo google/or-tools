@@ -26,7 +26,7 @@
 """
 
 from google.apputils import app
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def BuildPairs(rows, cols):

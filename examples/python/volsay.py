@@ -22,10 +22,10 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 def main(unused_argv):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -65,6 +65,6 @@ def main(unused_argv):
   print 'objective = ', solver.ObjectiveValue()
   print 'Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost()
   print 'Chloride:', Chloride.SolutionValue(), 'ReducedCost =', Chloride.ReducedCost()
- 
+
 if __name__ == '__main__':
     main('Volsay')

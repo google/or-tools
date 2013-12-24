@@ -25,7 +25,7 @@
 """
 
 import sys
-from linear_solver import pywraplp
+from ortools.linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
 

@@ -38,7 +38,7 @@ Who owns a zebra and who drinks water?
 
 from google.apputils import app
 import gflags
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 FLAGS = gflags.FLAGS
 

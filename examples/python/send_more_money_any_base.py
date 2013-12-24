@@ -44,7 +44,7 @@
 
 import sys
 import string
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def main(base=10):
 

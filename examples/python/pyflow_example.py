@@ -16,7 +16,7 @@
 
 
 from google.apputils import app
-from graph import pywrapgraph
+from ortools.graph import pywrapgraph
 
 
 def MaxFlow():

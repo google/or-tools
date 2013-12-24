@@ -63,7 +63,7 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 import sys
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 default_r = 8
 default_c = 8

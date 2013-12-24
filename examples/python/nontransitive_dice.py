@@ -68,7 +68,7 @@
 """
 import sys
 import string
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 def main(m=3, n=6, minimize_val=0):
 

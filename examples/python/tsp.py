@@ -30,7 +30,7 @@ import random
 
 from google.apputils import app
 import gflags
-from constraint_solver import pywraprouting
+from ortools.constraint_solver import pywraprouting
 
 FLAGS = gflags.FLAGS
 
