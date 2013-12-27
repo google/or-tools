@@ -198,7 +198,7 @@ pypi_archive: python
 	$(TOUCH) temp$Sor-tools$Sortools$Slinear_solver$S__init__.py
 	$(TOUCH) temp$Sor-tools$Sortools$Sgraph$S__init__.py
 	$(TOUCH) temp$Sor-tools$Sortools$Salgorithms$S__init__.py
-	$(COPY) tools$SREADME.python temp$Sor-tools$SREADME.txt
+	$(COPY) tools$SREADME.pypi temp$Sor-tools$SREADME.txt
 	$(COPY) tools$Ssetup.py temp$Sor-tools
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools$Ssetup.py
 ifeq ($(SYSTEM),win)
@@ -217,4 +217,12 @@ else
 	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools/setup.py
 	-rm temp/or-tools/setup.py-e
+endif
+
+pypi_upload: pypi_archive
+	@echo Uploading Pypi module.
+ifeq ($(SYSTEM),win)
+	cd temp$Sortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist upload
+else
+	python$(PYTHON_VERSION) setup.py bdist upload
 endif
