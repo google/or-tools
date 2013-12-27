@@ -182,41 +182,41 @@ endif
 pypi_archive: python
 	-$(DELREC) temp
 	$(MKDIR) temp
-	$(MKDIR) temp$Sor-tools
-	$(MKDIR) temp$Sor-tools$Sortools
-	$(MKDIR) temp$Sor-tools$Sortools$Sconstraint_solver
-	$(MKDIR) temp$Sor-tools$Sortools$Slinear_solver
-	$(MKDIR) temp$Sor-tools$Sortools$Sgraph
-	$(MKDIR) temp$Sor-tools$Sortools$Salgorithms
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sor-tools$Sortools$Sconstraint_solver
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywraprouting.py temp$Sor-tools$Sortools$Sconstraint_solver
-	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sor-tools$Sortools$Slinear_solver
-	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sor-tools$Sortools$Sgraph
-	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools$Sortools$Salgorithms
-	$(TOUCH) temp$Sor-tools$Sortools$S__init__.py
-	$(TOUCH) temp$Sor-tools$Sortools$Sconstraint_solver$S__init__.py
-	$(TOUCH) temp$Sor-tools$Sortools$Slinear_solver$S__init__.py
-	$(TOUCH) temp$Sor-tools$Sortools$Sgraph$S__init__.py
-	$(TOUCH) temp$Sor-tools$Sortools$Salgorithms$S__init__.py
-	$(COPY) tools$SREADME.pypi temp$Sor-tools$SREADME.txt
-	$(COPY) tools$Ssetup.py temp$Sor-tools
-	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools$Ssetup.py
+	$(MKDIR) temp$Sortools
+	$(MKDIR) temp$Sortools$Sortools
+	$(MKDIR) temp$Sortools$Sortools$Sconstraint_solver
+	$(MKDIR) temp$Sortools$Sortools$Slinear_solver
+	$(MKDIR) temp$Sortools$Sortools$Sgraph
+	$(MKDIR) temp$Sortools$Sortools$Salgorithms
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sortools$Sortools$Sconstraint_solver
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywraprouting.py temp$Sortools$Sortools$Sconstraint_solver
+	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sortools$Sortools$Slinear_solver
+	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sortools$Sortools$Sgraph
+	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sortools$Sortools$Salgorithms
+	$(TOUCH) temp$Sortools$Sortools$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Sconstraint_solver$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Slinear_solver$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Sgraph$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Salgorithms$S__init__.py
+	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
+	$(COPY) tools$Ssetup.py temp$Sortools
+	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
-	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools$Sortools$Sconstraint_solver
-	copy src\gen\ortools\constraint_solver\_pywraprouting.pyd temp$Sor-tools$Sortools$Sconstraint_solver
-	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sor-tools$Sortools$Slinear_solver
-	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sor-tools$Sortools$Sgraph
-	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools$Sortools$Salgorithms
-	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools/setup.py
-	-del temp\or-tools\setup.py-e
+	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
+	copy src\gen\ortools\constraint_solver\_pywraprouting.pyd temp$Sortools$Sortools$Sconstraint_solver
+	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver
+	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sortools$Sortools$Sgraph
+	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sortools$Sortools$Salgorithms
+	$(SED) -i -e 's/\.dll/\.pyd/' temp/ortools/setup.py
+	-del temp\ortools\setup.py-e
 else
-	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Sconstraint_solver
-	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Sconstraint_solver
-	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Slinear_solver
-	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Sgraph
-	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Salgorithms
-	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools/setup.py
-	-rm temp/or-tools/setup.py-e
+	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sconstraint_solver
+	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sconstraint_solver
+	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Slinear_solver
+	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sgraph
+	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Salgorithms
+	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
+	-rm temp/ortools/setup.py-e
 endif
 
 pypi_upload: pypi_archive
