@@ -3,11 +3,18 @@ made available as open source.
 
 The project contains several tools:
 
- - A Constraint Programming solver.
- - A wrapper around third-party linear solvers
-    - GLPK, CLP, CBC, SCIP, Sulum, and Gurobi
- - Knapsack algorithms.
- - Graph algorithms
-   - min-cost flow
-   - max flow
-   - linear sum assignment
+- A Constraint Programming solver.
+
+- A wrapper around third-party linear solvers
+
+  - GLPK, CLP, CBC, SCIP, Sulum, and Gurobi
+
+- Knapsack algorithms.
+
+- Graph algorithms
+
+  - min-cost flow
+
+  - max flow
+
+  - linear sum assignment
