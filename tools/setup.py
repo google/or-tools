@@ -10,7 +10,7 @@ def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
 setup(
-    name='or-tools',
+    name='ortools',
     version='1.VVVV',
     packages=['ortools'],
     install_requires = ['google-apputils >= 0.4'],
