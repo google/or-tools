@@ -209,7 +209,6 @@ ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools/setup.py
 	-del temp\or-tools\setup.py-e
-	cd temp && ..\tools\zip.exe -r ..\ortools.pypi.$(PORT).$(SVNVERSION).zip or-tools
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Sconstraint_solver
 	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Sconstraint_solver
@@ -218,5 +217,4 @@ else
 	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools/setup.py
 	-rm temp/or-tools/setup.py-e
-	cd temp && tar cvzf ../ortools.py.$(PORT).$(SVNVERSION).tar.gz or-tools
 endif
