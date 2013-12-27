@@ -222,7 +222,7 @@ endif
 pypi_upload: pypi_archive
 	@echo Uploading Pypi module.
 ifeq ($(SYSTEM),win)
-	cd temp$Sortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist upload
+	cd temp\\ortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist upload
 else
-	python$(PYTHON_VERSION) setup.py bdist upload
+	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist upload
 endif
