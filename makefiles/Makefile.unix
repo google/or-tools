@@ -34,6 +34,7 @@ SED = sed
 
 # This is needed to find python.h
 PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)
+PYTHON_VERSION = $(UNIX_PYTHON_VER)
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.

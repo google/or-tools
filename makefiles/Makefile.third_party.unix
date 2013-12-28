@@ -219,7 +219,7 @@ install_python_modules:
 
 Makefile.local:
 	@echo Generating Makefile.local
-	@echo UNIX_PYTHON_VER = $(PYTHON_VERSION) > Makefile.local
+	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION) > Makefile.local
 	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
 	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
 	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local

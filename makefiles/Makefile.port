@@ -14,10 +14,10 @@ ifeq ("$(SYSTEM)","unix")
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
   ifneq ($(shell which python2.7),)
-    PYTHON_VERSION = 2.7
+    DETECTED_PYTHON_VERSION = 2.7
   else
     ifneq ($(shell which python2.6),)
-      PYTHON_VERSION = 2.6
+      DETECTED_PYTHON_VERSION = 2.6
     endif
   endif
   ifeq ($(OS),Linux)
@@ -120,7 +120,7 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
-	@echo PYTHON_VERSION = $(PYTHON_VERSION)
+	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
 	@echo SVNVERSION = $(SVNVERSION)
 	@echo PORT = $(PORT)
