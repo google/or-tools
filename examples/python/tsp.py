@@ -107,7 +107,7 @@ def main(_):
       from_node = rand.randrange(FLAGS.tsp_size - 1)
       to_node = rand.randrange(FLAGS.tsp_size - 1) + 1
       if routing.NextVar(from_node).Contains(to_node):
-        print('Forbidding connection ' + str(from_node) + ' -> ' + str(to_node))
+        print('Forbidding connection %i -> %i' % (from_node, to_node))
         routing.NextVar(from_node).RemoveValue(to_node)
         forbidden_connections += 1
 

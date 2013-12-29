@@ -46,7 +46,7 @@ def main(unused_argv):
   solver.Init(profits, weights, capacities)
   computed_profit = solver.Solve()
 
-  print('optimal profit = ' + str(computed_profit) + '/' + str(optimal_profit))
+  print('optimal profit = %i/%i' % (computed_profit, optimal_profit))
 
 
 if __name__ == '__main__':

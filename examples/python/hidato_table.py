@@ -168,10 +168,10 @@ def Solve(model):
 
   solver.EndSearch()
 
-  print('num_solutions:', num_solutions)
-  print('failures:', solver.Failures())
-  print('branches:', solver.Branches())
-  print('wall time:', solver.WallTime())
+  print('num_solutions: %i' % num_solutions)
+  print('failures: %i' % solver.Failures())
+  print('branches: %i' % solver.Branches())
+  print('wall time:%i' % solver.WallTime())
 
 
 def PrintOneSolution(positions, rows, cols, num_solution):
