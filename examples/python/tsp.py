@@ -62,9 +62,9 @@ class RandomMatrix(object):
     rand.seed(FLAGS.tsp_random_seed)
     distance_max = 100
     self.matrix = {}
-    for from_node in xrange(size):
+    for from_node in range(size):
       self.matrix[from_node] = {}
-      for to_node in xrange(size):
+      for to_node in range(size):
         if from_node == to_node:
           self.matrix[from_node][to_node] = 0
         else:
@@ -107,7 +107,7 @@ def main(_):
       from_node = rand.randrange(FLAGS.tsp_size - 1)
       to_node = rand.randrange(FLAGS.tsp_size - 1) + 1
       if routing.NextVar(from_node).Contains(to_node):
-        print 'Forbidding connection ' + str(from_node) + ' -> ' + str(to_node)
+        print('Forbidding connection ' + str(from_node) + ' -> ' + str(to_node))
         routing.NextVar(from_node).RemoveValue(to_node)
         forbidden_connections += 1
 
@@ -115,7 +115,7 @@ def main(_):
     assignment = routing.SolveWithParameters(parameters, None)
     if assignment:
       # Solution cost.
-      print assignment.ObjectiveValue()
+      print(assignment.ObjectiveValue())
       # Inspect solution.
       # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       route_number = 0
@@ -125,11 +125,11 @@ def main(_):
         route += str(node) + ' -> '
         node = assignment.Value(routing.NextVar(node))
       route += '0'
-      print route
+      print(route)
     else:
-      print 'No solution found.'
+      print('No solution found.')
   else:
-    print 'Specify an instance greater than 0.'
+    print('Specify an instance greater than 0.')
 
 if __name__ == '__main__':
   app.run()

@@ -7,7 +7,7 @@ def Sum(arg):
   sum = 0;
   for i in arg:
     sum += i
-  print arg, sum
+  print(arg, sum)
 
 def test_sum_no_brackets():
   Sum(x for x in range(10) if x % 2 == 0)

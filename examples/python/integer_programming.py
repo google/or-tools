@@ -58,25 +58,25 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
 
 def SolveAndPrint(solver, variable_list):
   """Solve the problem and print the solution."""
-  print 'Number of variables = %d' % solver.NumVariables()
-  print 'Number of constraints = %d' % solver.NumConstraints()
+  print('Number of variables = %d' % solver.NumVariables())
+  print('Number of constraints = %d' % solver.NumConstraints())
 
   result_status = solver.Solve()
 
   # The problem has an optimal solution.
   assert result_status == pywraplp.Solver.OPTIMAL
 
-  print 'Problem solved in %f milliseconds' % solver.WallTime()
+  print('Problem solved in %f milliseconds' % solver.WallTime())
 
   # The objective value of the solution.
-  print 'Optimal objective value = %f' % solver.ObjectiveValue()
+  print('Optimal objective value = %f' % solver.ObjectiveValue())
 
   # The value of each variable in the solution.
   for variable in variable_list:
-    print '%s = %f' % (variable.name(), variable.SolutionValue())
+    print('%s = %f' % (variable.name(), variable.SolutionValue()))
 
-  print 'Advanced usage:'
-  print 'Problem solved in %d branch-and-bound nodes' % solver.Nodes()
+  print('Advanced usage:')
+  print('Problem solved in %d branch-and-bound nodes' % solver.Nodes())
 
 
 def Announce(solver, api_type):

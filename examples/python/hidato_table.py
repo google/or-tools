@@ -52,7 +52,7 @@ def BuildPairs(rows, cols):
 def main(unused_argv):
   for model in range(1, 7):
     print
-    print '----- Solving problem %i -----' % model
+    print('----- Solving problem %i -----' % model)
     print
     Solve(model)
 
@@ -123,7 +123,7 @@ def Solve(model):
   r = len(puzzle)
   c = len(puzzle[0])
 
-  print 'Initial game (%i x %i)' % (r, c)
+  print('Initial game (%i x %i)' % (r, c))
   PrintMatrix(puzzle)
 
   #
@@ -168,15 +168,15 @@ def Solve(model):
 
   solver.EndSearch()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'wall time:', solver.WallTime()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('wall time:', solver.WallTime())
 
 
 def PrintOneSolution(positions, rows, cols, num_solution):
   """Print a current solution."""
-  print 'Solution %i:' % num_solution
+  print('Solution %i:' % num_solution)
   # Create empty board.
   board = []
   for unused_i in range(rows):
@@ -184,7 +184,7 @@ def PrintOneSolution(positions, rows, cols, num_solution):
   # Fill board with solution value.
   for k in range(rows * cols):
     position = positions[k].Value()
-    board[position / cols][position % cols] = k + 1
+    board[position // cols][position % cols] = k + 1
   # Print the board.
   PrintMatrix(board)
 
@@ -194,12 +194,13 @@ def PrintMatrix(game):
   rows = len(game)
   cols = len(game[0])
   for i in range(rows):
+    line = ""
     for j in range(cols):
       if game[i][j] == 0:
-        print ' .',
+        line += '  .'
       else:
-        print '% 2s' % game[i][j],
-    print
+        line += '% 3s' % game[i][j]
+    print(line)
   print
 
 
