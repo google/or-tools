@@ -69,7 +69,8 @@
 namespace operations_research {
 %pythoncode {
 
-import types;
+import types
+import sys
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
@@ -95,47 +96,58 @@ class LinearExpr(object):
     """Value of this linear expr, using the solution_value of its vars."""
     coeffs = {}
     constant = self.Visit(coeffs)
-    return constant + sum(
-        [var.solution_value() * coeff for var, coeff in coeffs.iteritems()])
+    if sys.version_info[0] >= 3: # Python 3
+      return constant + sum(
+          [var.solution_value() * coeff for var, coeff in coeffs.items()])
+    else:
+      return constant + sum(
+          [var.solution_value() * coeff for var, coeff in coeffs.iteritems()])
+
+
+  def IsConstant(self, expr):
+    if sys.version_info[0] >= 3: # Python 3
+      return  isinstance(expr, (int, float))
+    else:
+      return  isinstance(expr, (int, long, float))
 
   def __add__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, expr)
     else:
       return Sum(self, expr)
 
   def __radd__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(self, cst)
     else:
       raise TypeError
 
   def __sub__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, -expr)
     else:
       return Sum(self, ProductCst(expr, -1))
 
   def __rsub__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(ProductCst(self, -1), cst)
     else:
       raise TypeError
 
   def __mul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __rmul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __div__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -144,7 +156,7 @@ class LinearExpr(object):
       raise TypeError
 
   def __truediv__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -156,19 +168,19 @@ class LinearExpr(object):
     return ProductCst(self, -1)
 
   def __eq__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
   def __ge__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, 1e308)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
 
   def __le__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, -1e308, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
@@ -219,7 +231,7 @@ class SumArray(LinearExpr):
   def DoVisit(self, coeffs, multiplier):
     constant = 0.0
     for t in self.__array:
-      if isinstance(t, (int, long, float)):
+      if self.IsConstant(t):
         constant += t * multiplier
       else:
         constant += t.DoVisit(coeffs, multiplier)
@@ -270,8 +282,12 @@ class LinearConstraint(object):
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in coeffs.iteritems():
-      constraint.SetCoefficient(v, float(c))
+    if sys.version_info[0] >= 3: # Python 3
+      for v, c, in coeffs.items():
+        constraint.SetCoefficient(v, float(c))
+    else:
+      for v, c, in coeffs.iteritems():
+        constraint.SetCoefficient(v, float(c))
     return constraint
 }
 
@@ -284,44 +300,52 @@ class LinearConstraint(object):
     return self->name();
   }
   %pythoncode {
+  def IsConstant(self, expr):
+    if sys.version_info[0] >= 3: # Python 3
+      return  isinstance(expr, (int, float))
+    else:
+      return  isinstance(expr, (int, long, float))
+
+  __hash__ = object.__hash__
+
   def __add__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, expr)
     else:
       return Sum(self, expr)
 
   def __radd__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(self, cst)
     else:
       raise TypeError
 
   def __sub__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, -expr)
     else:
       return Sum(self, ProductCst(expr, -1))
 
   def __rsub__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(ProductCst(self, -1), cst)
     else:
       raise TypeError
 
   def __mul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __rmul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __div__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -330,7 +354,7 @@ class LinearConstraint(object):
       raise TypeError
 
   def __truediv__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -342,19 +366,19 @@ class LinearConstraint(object):
     return ProductCst(self, -1)
 
   def __eq__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
   def __ge__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, 1e308)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
 
   def __le__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, -1e308, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
@@ -389,6 +413,12 @@ class LinearConstraint(object):
   }
 
   %pythoncode {
+    def IsConstant(self, expr):
+      if sys.version_info[0] >= 3: # Python 3
+        return  isinstance(expr, (int, float))
+      else:
+        return  isinstance(expr, (int, long, float))
+
     def Add(self, constraint, name=''):
       if isinstance(constraint, bool):
         if constraint:
@@ -412,8 +442,12 @@ class LinearConstraint(object):
       coeffs = {}
       offset = expr.Visit(coeffs)
       self.AddObjectiveOffset(offset)
-      for v, c, in coeffs.iteritems():
-        self.SetObjectiveCoefficient(v, float(c))
+      if sys.version_info[0] >= 3: # Python 3
+        for v, c, in coeffs.items():
+          self.SetObjectiveCoefficient(v, float(c))
+      else:
+        for v, c, in coeffs.iteritems():
+          self.SetObjectiveCoefficient(v, float(c))
 
     def Maximize(self, expr):
       self.ClearObjective()
@@ -421,8 +455,12 @@ class LinearConstraint(object):
       coeffs = {}
       offset = expr.Visit(coeffs)
       self.AddObjectiveOffset(offset)
-      for v, c, in coeffs.iteritems():
-        self.SetObjectiveCoefficient(v, float(c))
+      if sys.version_info[0] >= 3: # Python 3
+        for v, c, in coeffs.items():
+          self.SetObjectiveCoefficient(v, float(c))
+      else:
+        for v, c, in coeffs.iteritems():
+          self.SetObjectiveCoefficient(v, float(c))
   }
 }
 
