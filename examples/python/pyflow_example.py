@@ -30,7 +30,7 @@ def MaxFlow():
   for i in range(0, len(tails)):
     max_flow.AddArcWithCapacity(tails[i], heads[i], capacities[i])
   if max_flow.Solve(0, 5) == max_flow.OPTIMAL:
-    print('Total flow', max_flow.OptimalFlow(), '/', expected_total_flow)
+    print('Total flow %i/%i' % (max_flow.OptimalFlow(), expected_total_flow))
     for i in range(max_flow.NumArcs()):
       print('From source %d to target %d: %d / %d' % (
           max_flow.Tail(i),
@@ -67,7 +67,7 @@ def MinCostFlow():
     min_cost_flow.SetNodeSupply(num_sources + node, -1)
   status = min_cost_flow.Solve()
   if status == min_cost_flow.OPTIMAL:
-    print('Total flow', min_cost_flow.OptimalCost(), '/', expected_cost)
+    print('Total flow %i/%i' % (min_cost_flow.OptimalCost(), expected_cost))
     for i in range(0, min_cost_flow.NumArcs()):
       if min_cost_flow.Flow(i) > 0:
         print('From source %d to target %d: cost %d' % (
