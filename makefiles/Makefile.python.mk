@@ -89,14 +89,19 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_
 $(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/model.proto
 
+$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_solver/assignment.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/assignment.proto
+
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(SRC_DIR)/base/base.swig \
 		$(SRC_DIR)/util/data.swig \
 		$(SRC_DIR)/constraint_solver/constraint_solver.swig \
 		$(SRC_DIR)/constraint_solver/constraint_solver.h \
 		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
+		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
+		$(GEN_DIR)/constraint_solver/assignment.pb.h \
 		$(GEN_DIR)/constraint_solver/model.pb.h \
 		$(GEN_DIR)/constraint_solver/search_limit.pb.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Sconstraint_solver.swig
@@ -124,8 +129,10 @@ $(GEN_DIR)/ortools/constraint_solver/pywraprouting.py: \
 		$(SRC_DIR)/constraint_solver/constraint_solver.h \
 		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
 		$(SRC_DIR)/constraint_solver/routing.h \
+		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
+		$(GEN_DIR)/constraint_solver/assignment.pb.h \
 		$(GEN_DIR)/constraint_solver/model.pb.h \
 		$(GEN_DIR)/constraint_solver/search_limit.pb.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_python_wrap.cc -module pywraprouting $(SRC_DIR)/constraint_solver$Srouting.swig

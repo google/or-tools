@@ -25,6 +25,7 @@
 %{
 #include <setjmp.h>
 
+#include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
@@ -232,8 +233,9 @@ class PyLNS : public operations_research::BaseLNS {
 namespace operations_research {
 %pythoncode {
 import gflags
-import ortools.constraint_solver.search_limit_pb2
+import ortools.constraint_solver.assignment_pb2
 import ortools.constraint_solver.model_pb2
+import ortools.constraint_solver.search_limit_pb2
 
 FLAGS = gflags.FLAGS
 gflags.DEFINE_boolean('cp_trace_propagation', False,
@@ -401,6 +403,9 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.model_pb2,
 PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  operations_research::SearchLimitProto,
                  SearchLimitProto);
+PY_PROTO_TYPEMAP(ortools.constraint_solver.assignment_pb2,
+                 operations_research::AssignmentProto,
+                 AssignmentProto);
 
 // Add display methods on BaseObject and remove DebugString method.
 %ignore BaseObject::DebugString;
