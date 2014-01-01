@@ -216,6 +216,7 @@ makefile_third_party: Makefile.local
 # Install python modules
 install_python_modules:
 	cd dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG) && python$(PYTHON_VERSION) setup.py install --user
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py build
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py install --user
 
 Makefile.local:
