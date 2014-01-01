@@ -17,8 +17,8 @@ import "constraint_solver/search_limit.proto";
 package operations_research;
 
 message CPIntegerMatrixProto {
-  required int32 rows = 1;
-  required int32 columns = 2;
+  optional int32 rows = 1;
+  optional int32 columns = 2;
   repeated int64 values = 3;
 }
 
@@ -26,7 +26,7 @@ message CPIntegerMatrixProto {
 // is referenced by the argument_name. Only one field apart the name
 // must be set.
 message CPArgumentProto {
-  required int32 argument_index = 1;
+  optional int32 argument_index = 1;
   optional int64 integer_value = 2;
   repeated int64 integer_array = 3;
   optional int32 integer_expression_index = 4;
@@ -39,44 +39,44 @@ message CPArgumentProto {
 }
 
 message CPExtensionProto {
-  required int32 type_index = 1;
+  optional int32 type_index = 1;
   repeated CPArgumentProto arguments = 2;
 }
 
 message CPIntegerExpressionProto {
-  required int32 index = 1;
-  required int32 type_index = 2;
+  optional int32 index = 1;
+  optional int32 type_index = 2;
   optional string name = 3;
   repeated CPArgumentProto arguments = 4;
   repeated CPExtensionProto extensions = 5;
 }
 
 message CPIntervalVariableProto {
-  required int32 index = 1;
-  required int32 type_index = 2;
+  optional int32 index = 1;
+  optional int32 type_index = 2;
   optional string name = 3;
   repeated CPArgumentProto arguments = 4;
 }
 
 message CPSequenceVariableProto {
-  required int32 index = 1;
-  required int32 type_index = 2;
+  optional int32 index = 1;
+  optional int32 type_index = 2;
   optional string name = 3;
   repeated CPArgumentProto arguments = 4;
 }
 
 message CPConstraintProto {
-  required int32 index = 1;
-  required int32 type_index = 2;
+  optional int32 index = 1;
+  optional int32 type_index = 2;
   optional string name = 3;
   repeated CPArgumentProto arguments = 4;
   repeated CPExtensionProto extensions = 5;
 }
 
 message CPObjectiveProto {
-  required bool maximize = 1;
-  required int64 step = 2;
-  required int32 objective_index = 3;
+  optional bool maximize = 1;
+  optional int64 step = 2;
+  optional int32 objective_index = 3;
 }
 
 message CPVariableGroup {
@@ -85,8 +85,8 @@ message CPVariableGroup {
 }
 
 message CPModelProto {
-  required string model = 1;
-  required int32 version = 2;
+  optional string model = 1;
+  optional int32 version = 2;
   repeated string tags = 3;
   repeated CPIntegerExpressionProto expressions = 4;
   repeated CPIntervalVariableProto intervals = 5;

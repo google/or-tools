@@ -3833,7 +3833,7 @@ std::string RegularLimit::DebugString() const {
   return StringPrintf("RegularLimit(crossed = %i, wall_time = %" GG_LL_FORMAT
                       "d, "
                       "branches = %" GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT
-                      "d, solutions = %" GG_LL_FORMAT "d cumulative = %s",
+                      "d, solutions = %" GG_LL_FORMAT "d cumulative = %s)",
                       crossed(), wall_time_, branches_, failures_, solutions_,
                       (cumulative_ ? "true" : "false"));
 }

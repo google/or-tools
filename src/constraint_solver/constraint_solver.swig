@@ -27,6 +27,8 @@
 
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/model.pb.h"
+#include "constraint_solver/search_limit.pb.h"
 
 DECLARE_bool(cp_trace_propagation);
 DECLARE_bool(cp_trace_search);
@@ -230,6 +232,9 @@ class PyLNS : public operations_research::BaseLNS {
 namespace operations_research {
 %pythoncode {
 import gflags
+import ortools.constraint_solver.search_limit_pb2
+import ortools.constraint_solver.model_pb2
+
 FLAGS = gflags.FLAGS
 gflags.DEFINE_boolean('cp_trace_propagation', False,
                       'trace all propagation events.')
@@ -389,6 +394,14 @@ PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
+// Support protobuf.
+PY_PROTO_TYPEMAP(ortools.constraint_solver.model_pb2,
+                 operations_research::CPModelProto,
+                 CPModelProto);
+PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
+                 operations_research::SearchLimitProto,
+                 SearchLimitProto);
+
 // Add display methods on BaseObject and remove DebugString method.
 %ignore BaseObject::DebugString;
 %extend BaseObject {
@@ -543,6 +556,7 @@ static void SetPythonFlags(bool trace_propagation,
                            IntVar* const index) {
     return self->MakeElement(values, index);
   }
+
   std::string __str__() {
     return self->DebugString();
   }

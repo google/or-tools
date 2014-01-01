@@ -326,6 +326,7 @@ makefile_third_party: Makefile.local
 # Install python modules
 install_python_modules:
 	cd dependencies\sources\google-apputils && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
 
 Makefile.local:
 	@echo Generating Makefile.local

@@ -283,6 +283,89 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     $1 = failed ? 0 : 1;
   }
 }
+
+%define PY_PROTO_TYPEMAP(PythonModule, CppType, PythonType)
+%typecheck(SWIG_TYPECHECK_POINTER) const CppType&, CppType* {
+  bool ok = false;
+  PyObject* const module = PyImport_ImportModule("PythonModule");
+  if (module != nullptr) {
+    PyObject* const dict = PyModule_GetDict(module);
+    if (dict != nullptr) {
+      PyObject* const clss = PyDict_GetItemString(dict, "PythonType");
+      if (clss != nullptr) {
+        if (PyObject_IsInstance($input, clss)) {
+          ok = true;
+        }
+        Py_DECREF(clss);
+      }
+      Py_DECREF(dict);
+    }
+    Py_DECREF(module);
+  }
+  $1 = ok ? 1 : 0;
+}
+
+%typemap(in) const CppType&, CppType* const, CppType* {
+  $1 = new CppType;
+  PyObject* const pyresult = PyObject_CallMethod(
+      $input, const_cast<char*>("SerializeToString"), nullptr);
+  if (pyresult != nullptr) {
+    const char* const encoded_protobuf = PyString_AsString(pyresult);
+    if (encoded_protobuf != nullptr) {
+      $1->ParseFromString(encoded_protobuf);
+    }
+    Py_DECREF(pyresult);
+  }
+}
+%typemap(freearg) const CppType&, CppType* const, CppType* {
+  delete $1;
+}
+
+%typemap(argout) CppType* const, CppType* {
+  std::string encoded_protobuf;
+  $1->SerializeToString(&encoded_protobuf);
+  PyObject* const python_encoded_protobuf =
+      PyString_FromStringAndSize(encoded_protobuf.c_str(),
+                                 encoded_protobuf.size());
+  if (python_encoded_protobuf != nullptr) {
+    PyObject* const result = PyObject_CallMethod(
+        $input, const_cast<char*>("ParseFromString"),
+        const_cast<char*>("(O)"), python_encoded_protobuf);
+    PyObject_Print($input, stdout, 0);
+    Py_DECREF(python_encoded_protobuf);
+    if (result != nullptr) { Py_DECREF(result); }
+  }
+}
+
+%typemap(out) CppType* {
+  PyObject* const module = PyImport_ImportModule("PythonModule");
+  if (module != nullptr) {
+    PyObject* const dict = PyModule_GetDict(module);
+    if (dict != nullptr) {
+      PyObject* const clss = PyDict_GetItemString(dict, "PythonType");
+      if (clss != nullptr) {
+        PyObject* const proto = _PyObject_New(clss);
+        if (proto != nullptr) {
+          std::string encoded_protobuf;
+          $1->SerializeToString(&encoded_protobuf);
+          PyObject* const python_encoded_protobuf = PyString_FromStringAndSize(
+              encoded_protobuf.c_str(), encoded_protobuf.size());
+          PyObject* const result = PyObject_CallMethod(
+              proto, const_cast<char*>("ParseFromString"),
+              const_cast<char*>("(O)"),
+              python_encoded_protobuf);
+          if (result != nullptr) { Py_DECREF(result); }
+          $result = proto;
+        }
+        Py_DECREF(clss);
+      }
+      Py_DECREF(dict);
+    }
+    Py_DECREF(module);
+  }
+}
+%enddef  // PY_PROTO_TYPEMAP
+
 }  // namespace operations_research
 #endif  // SWIGPYTHON
 
