@@ -81,7 +81,7 @@ endif
 
 # pywrapcp
 
-pycp: $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py $(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver/pywraprouting.py
+pycp: $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
 
 $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_solver/search_limit.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/search_limit.proto
@@ -96,6 +96,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(SRC_DIR)/base/base.swig \
 		$(SRC_DIR)/util/data.swig \
 		$(SRC_DIR)/constraint_solver/constraint_solver.swig \
+		$(SRC_DIR)/constraint_solver/routing.swig \
 		$(SRC_DIR)/constraint_solver/constraint_solver.h \
 		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
 		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
@@ -104,50 +105,19 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(GEN_DIR)/constraint_solver/assignment.pb.h \
 		$(GEN_DIR)/constraint_solver/model.pb.h \
 		$(GEN_DIR)/constraint_solver/search_limit.pb.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Sconstraint_solver.swig
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Srouting.swig
 
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc: $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
 
 $(OBJ_DIR)/constraint_solver_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver_python_wrap.$O
 
-$(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/constraint_solver_python_wrap.$O $(STATIC_CP_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(STATIC_CP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/constraint_solver_python_wrap.$O $(STATIC_ROUTING_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywrapcp.dll $(GEN_DIR)\\ortools\\constraint_solver\\_pywrapcp.pyd
 else
 	cp $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver
-endif
-
-# pywraprouting
-
-$(GEN_DIR)/ortools/constraint_solver/pywraprouting.py: \
-		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/data.swig \
-		$(SRC_DIR)/constraint_solver/constraint_solver.swig \
-		$(SRC_DIR)/constraint_solver/routing.swig \
-		$(SRC_DIR)/constraint_solver/constraint_solver.h \
-		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
-		$(SRC_DIR)/constraint_solver/routing.h \
-		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
-		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
-		$(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
-		$(GEN_DIR)/constraint_solver/assignment.pb.h \
-		$(GEN_DIR)/constraint_solver/model.pb.h \
-		$(GEN_DIR)/constraint_solver/search_limit.pb.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_python_wrap.cc -module pywraprouting $(SRC_DIR)/constraint_solver$Srouting.swig
-
-$(GEN_DIR)/ortools/constraint_solver/routing_python_wrap.cc: $(GEN_DIR)/ortools/constraint_solver/pywraprouting.py
-
-$(OBJ_DIR)/routing_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solver/routing_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/ortools/constraint_solver/routing_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting_python_wrap.$O
-
-$(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/routing_python_wrap.$O $(STATIC_ROUTING_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Srouting_python_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
-ifeq "$(SYSTEM)" "win"
-	copy $(LIB_DIR)\\_pywraprouting.dll $(GEN_DIR)\\ortools\\constraint_solver\\_pywraprouting.pyd
-else
-	cp $(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver
 endif
 
 # pywraplp
@@ -177,7 +147,7 @@ endif
 
 # Run a single example
 
-rpy: $(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) $(EX_DIR)/python/$(EX).py
+rpy: $(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(EX_DIR)/python/$(EX).py
 ifeq ($(SYSTEM),win)
 	@echo Running python$S$(EX).py
 	@set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py
@@ -201,7 +171,6 @@ python_archive: python
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
 	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywraprouting.py temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
 	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools.$(PORT)$Sortools$Salgorithms
@@ -217,7 +186,6 @@ python_archive: python
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	copy src\gen\ortools\constraint_solver\_pywraprouting.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
 	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Sortools$Salgorithms
@@ -227,7 +195,6 @@ ifeq ($(SYSTEM),win)
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
 	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
@@ -247,7 +214,6 @@ pypi_archive: python
 	$(MKDIR) temp$Sortools$Sortools$Sgraph
 	$(MKDIR) temp$Sortools$Sortools$Salgorithms
 	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sortools$Sortools$Sconstraint_solver
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywraprouting.py temp$Sortools$Sortools$Sconstraint_solver
 	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sortools$Sortools$Slinear_solver
 	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sortools$Sortools$Sgraph
 	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sortools$Sortools$Salgorithms
@@ -262,7 +228,6 @@ pypi_archive: python
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
-	copy src\gen\ortools\constraint_solver\_pywraprouting.pyd temp$Sortools$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver
 	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sortools$Sortools$Sgraph
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sortools$Sortools$Salgorithms
@@ -270,7 +235,6 @@ ifeq ($(SYSTEM),win)
 	-del temp\ortools\setup.py-e
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sconstraint_solver
-	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sconstraint_solver
 	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Slinear_solver
 	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sgraph
 	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Salgorithms

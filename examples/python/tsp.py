@@ -30,7 +30,7 @@ import random
 
 from google.apputils import app
 import gflags
-from ortools.constraint_solver import pywraprouting
+from ortools.constraint_solver import pywrapcp
 
 FLAGS = gflags.FLAGS
 
@@ -81,9 +81,9 @@ def main(_):
     # Second argument = 1 to build a single tour (it's a TSP).
     # Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     # the route is node 0.
-    routing = pywraprouting.RoutingModel(FLAGS.tsp_size, 1)
+    routing = pywrapcp.RoutingModel(FLAGS.tsp_size, 1)
 
-    parameters = pywraprouting.RoutingSearchParameters()
+    parameters = pywrapcp.RoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
     parameters.first_solution = 'PathCheapestArc'
     # Disabling Large Neighborhood Search, comment out to activate it.
