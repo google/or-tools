@@ -223,7 +223,7 @@ pypi_archive: python
 	$(TOUCH) temp$Sortools$Sortools$Slinear_solver$S__init__.py
 	$(TOUCH) temp$Sortools$Sortools$Sgraph$S__init__.py
 	$(TOUCH) temp$Sortools$Sortools$Salgorithms$S__init__.py
-	$(COPY) tools\dummy_ortools_dependency.cc temp$Sortools$Sdummy
+	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sortools$Sdummy
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup.py temp$Sortools
