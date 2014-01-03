@@ -32,9 +32,9 @@ class Tsp
       }
     }
 
-    public override long Run(int firstIndex, int secondIndex) {
-      return Math.Abs(xs_[firstIndex] - xs_[secondIndex]) +
-          Math.Abs(ys_[firstIndex] - ys_[secondIndex]);
+    public override long Run(int first_index, int second_index) {
+      return Math.Abs(xs_[first_index] - xs_[second_index]) +
+          Math.Abs(ys_[first_index] - ys_[second_index]);
     }
 
     private int[] xs_;
@@ -42,7 +42,7 @@ class Tsp
   };
 
   class ConstantCallback : NodeEvaluator2 {
-    public override long Run(int firstIndex, int secondIndex) {
+    public override long Run(int first_index, int second_index) {
       return 1;
     }
   };

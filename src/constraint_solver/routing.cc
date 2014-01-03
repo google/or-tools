@@ -2754,6 +2754,7 @@ bool RoutingModel::ParseRoutingStrategy(const std::string& strategy_str,
       return true;
     }
   }
+  return false;
 }
 
 // static

@@ -182,43 +182,93 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 %}
 
-class NodeEvaluator2 {
+class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  virtual ~NodeEvaluator2();
+  NodeEvaluator2() : used_as_permanent_handler_(false) {}
   virtual int64 run(int i, int j) = 0;
-  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback();
+  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+  virtual ~NodeEvaluator2() {}
+
+ private:
+  virtual bool IsRepeatable() const { return true; }
+  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
+                    operations_research::RoutingModel::NodeIndex j) {
+    return run(i.value(), j.value());
+  }
+  bool used_as_permanent_handler_;
 };
 
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($javainput.getPermanentCallback())";
 #endif  // SWIGJAVA
+
 #ifdef SWIGCSHARP
 %module(directors="1") main
 %feature("director") NodeEvaluator2;
 %{
-class NodeEvaluator2 {
+class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  int64 RunAux(operations_research::RoutingModel::NodeIndex i,
-               operations_research::RoutingModel::NodeIndex j) {
-    return Run(i.value(), j.value());
-  }
+  NodeEvaluator2() : used_as_permanent_handler_(false) {}
   virtual int64 Run(int i, int j) = 0;
   operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback() {
-    return NewPermanentCallback(this, &NodeEvaluator2::RunAux);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
+
   virtual ~NodeEvaluator2() {}
+
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
+                    operations_research::RoutingModel::NodeIndex j) {
+    return Run(i.value(), j.value());
+  }
+
+  bool used_as_permanent_handler_;
 };
 %}
 
-class NodeEvaluator2 {
+%typemap(cscode) NodeEvaluator2 %{
+  public SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t DisownAndGetPermanentCallback() {
+    swigCMemOwn = false;
+    return GetPermanentCallback();
+  }
+%}
+
+class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  virtual ~NodeEvaluator2();
+  NodeEvaluator2() : used_as_permanent_handler_(false) {}
+
+  virtual ~NodeEvaluator2() {}
+
   virtual int64 Run(int i, int j) = 0;
-  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
+
+  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
+                    operations_research::RoutingModel::NodeIndex j) {
+    return Run(i.value(), j.value());
+  }
+
+  bool used_as_permanent_handler_;
 };
 
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
+
 #endif  // SWIGCSHARP
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,

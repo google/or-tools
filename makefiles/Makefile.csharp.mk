@@ -31,6 +31,7 @@ CSHARPEXE = \
 	$(BIN_DIR)/furniture_moving_intervals.exe \
 	$(BIN_DIR)/organize_day_intervals.exe \
 	$(BIN_DIR)/csls_api.exe \
+	$(BIN_DIR)/cscvrptw.exe \
 	$(BIN_DIR)/cstsp.exe
 
 csharpexe: $(CSHARPEXE)
@@ -128,6 +129,9 @@ $(BIN_DIR)/organize_day_intervals.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolve
 
 $(BIN_DIR)/cstsp.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/cstsp.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scstsp.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scstsp.cs
+
+$(BIN_DIR)/cscvrptw.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/cscvrptw.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scscvrptw.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scscvrptw.cs
 
 $(BIN_DIR)/csls_api.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/csls_api.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsls_api.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scsls_api.cs

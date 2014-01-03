@@ -29,8 +29,6 @@ test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp.exe $(BIN_DIR)/testcp.exe
 	$(BIN_DIR)\\furniture_moving_intervals.exe
 	$(BIN_DIR)\\organize_day_intervals.exe
 	$(BIN_DIR)\\cstsp.exe
+	$(BIN_DIR)\\cscvrptw.exe
 	$(BIN_DIR)\\testlp.exe
 	$(BIN_DIR)\\testcp.exe
-
-
-

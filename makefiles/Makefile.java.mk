@@ -360,7 +360,7 @@ $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class: javacp $(EX_
 
 cjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class com.google.ortools.constraintsolver.jar
 
-rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT) com.google.ortools.constraintsolver.jar
+rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT) $(LIB_DIR)/com.google.ortools.constraintsolver.jar
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.$(EX)
 
 # Build stand-alone archive file for redistribution.
