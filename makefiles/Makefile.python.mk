@@ -212,6 +212,7 @@ python_archive: python
 	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Sgraph$S__init__.py
 	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Salgorithms$S__init__.py
 	$(COPY) tools$SREADME.python temp$Sor-tools.$(PORT)$SREADME
+	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
@@ -256,6 +257,7 @@ pypi_archive: python
 	$(TOUCH) temp$Sortools$Sortools$Sgraph$S__init__.py
 	$(TOUCH) temp$Sortools$Sortools$Salgorithms$S__init__.py
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
+	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup.py temp$Sortools
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
@@ -279,7 +281,7 @@ endif
 pypi_upload: pypi_archive
 	@echo Uploading Pypi module.
 ifeq ($(SYSTEM),win)
-	cd temp\\ortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist_wininst upload
+	cd temp\\ortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist_egg upload
 else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
 endif

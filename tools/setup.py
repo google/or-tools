@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, Extension
 from os.path import join as pjoin
 from os.path import dirname
 
@@ -9,11 +9,17 @@ from os.path import dirname
 def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
+dummy_module = Extension('dummy',
+                         sources = [])
+
 setup(
     name='ortools',
     version='1.VVVV',
     packages=['ortools'],
-    install_requires = ['google-apputils >= 0.4'],
+    ext_modules = [dummy_module],
+    install_requires = [
+        'google-apputils >= 0.4',
+        'protobuf >= 2.5.0'],
     dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
     data_files=[(pjoin('ortools', 'constraint_solver'),
                  [pjoin('ortools', 'constraint_solver', '_pywrapcp.dll'),
