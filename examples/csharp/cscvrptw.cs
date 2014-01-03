@@ -233,13 +233,10 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     // Setting up dimensions
     const int big_number = 100000;
-    List<NodeEvaluator2> copies = new List<NodeEvaluator2>();
     NodeEvaluator2 manhattan_callback = new Manhattan(locations_, 1);
-    copies.Add(manhattan_callback);
     model.AddDimension(
         manhattan_callback, big_number, big_number, false, "time");
     NodeEvaluator2 demand_callback = new Demand(order_demands_);
-    copies.Add(demand_callback);
     model.AddDimension(demand_callback, 0, vehicle_capacity_, true, "capacity");
 
     // Setting up vehicles
@@ -250,7 +247,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       model.SetVehicleCost(vehicle, manhattan_cost_callback);
       model.CumulVar(model.End(vehicle), "time").SetMax(
           vehicle_end_time_[vehicle]);
-      copies.Add(manhattan_cost_callback);
     }
 
     // Setting up orders
