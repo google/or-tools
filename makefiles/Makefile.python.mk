@@ -213,6 +213,7 @@ pypi_archive: python
 	$(MKDIR) temp$Sortools$Sortools$Slinear_solver
 	$(MKDIR) temp$Sortools$Sortools$Sgraph
 	$(MKDIR) temp$Sortools$Sortools$Salgorithms
+	$(MKDIR) temp$Sortools$Sdummy
 	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sortools$Sortools$Sconstraint_solver
 	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sortools$Sortools$Slinear_solver
 	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sortools$Sortools$Sgraph
@@ -222,6 +223,7 @@ pypi_archive: python
 	$(TOUCH) temp$Sortools$Sortools$Slinear_solver$S__init__.py
 	$(TOUCH) temp$Sortools$Sortools$Sgraph$S__init__.py
 	$(TOUCH) temp$Sortools$Sortools$Salgorithms$S__init__.py
+	$(COPY) tools\dummy_ortools_dependency.cc temp$Sortools$Sdummy
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup.py temp$Sortools
@@ -245,7 +247,8 @@ endif
 pypi_upload: pypi_archive
 	@echo Uploading Pypi module.
 ifeq ($(SYSTEM),win)
-	cd temp\\ortools && $(WINDOWS_PYTHON_PATH)$Spython setup.py bdist_egg upload
+	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg upload"
 else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
 endif

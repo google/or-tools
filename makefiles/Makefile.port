@@ -79,13 +79,16 @@ ifeq ("$(SYSTEM)","win")
   ifeq ("$(VisualStudioVersion)", "12.0")
     VISUAL_STUDIO=2013
     VS_RELEASE=v120
+    VS_COMTOOLS=120
   else
     ifeq ("$(VisualStudioVersion)", "11.0")
       VISUAL_STUDIO=2012
       VS_RELEASE=v110
+      VS_COMTOOLS=110	
     else
       VISUAL_STUDIO=2010
       VS_RELEASE=v100
+      VS_COMTOOLS=100	
     endif
   endif
   ifeq ("$(Platform)", "X64")

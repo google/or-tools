@@ -9,8 +9,8 @@ from os.path import dirname
 def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
-dummy_module = Extension('dummy',
-                         sources = [])
+dummy_module = Extension('dummy_ortools_dependency',
+                         sources = ['dummy/dummy_ortools_dependency.cc'])
 
 setup(
     name='ortools',
