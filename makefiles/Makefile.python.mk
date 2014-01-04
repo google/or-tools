@@ -236,7 +236,7 @@ pypi_archive: python
 	$(MKDIR) temp$Sortools$Sortools$Sgraph
 	$(MKDIR) temp$Sortools$Sortools$Salgorithms
 	$(MKDIR) temp$Sortools$Sdummy
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sortools$Sortools$Sconstraint_solver
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py temp$Sortools$Sortools$Sconstraint_solver
 	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sortools$Sortools$Slinear_solver
 	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sortools$Sortools$Sgraph
 	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sortools$Sortools$Salgorithms
