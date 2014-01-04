@@ -213,7 +213,7 @@ python_examples_archive: python
 	$(MKDIR) temp$Sortools_examples$Sexamples
 	$(MKDIR) temp$Sortools_examples$Sdata
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples
-	$(COPY) tools$SREADME.python temp$Sortools_examples$SREADME
+	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools_examples$Ssetup.py
