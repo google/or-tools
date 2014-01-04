@@ -165,6 +165,7 @@ python_archive: python
 	$(MKDIR) temp$Sor-tools.$(PORT)
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sdata
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sdummy
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
@@ -183,6 +184,7 @@ python_archive: python
 	$(COPY) tools$SREADME.python temp$Sor-tools.$(PORT)$SREADME
 	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
+	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sortools.$(PORT)$Sdummy
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
