@@ -88,7 +88,7 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_
 
 $(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/model.proto
-	$(SED) -i -e "s/import constraint_solver.search_limit_pb2/import ortools.constraint_solver.search_limit_pb2/g" $(GEN_DIR)/ortools/constraint_solver/model_pb2.py
+	$(SED) -i -e "s/constraint_solver.search_limit_pb2/ortools.constraint_solver.search_limit_pb2/g" $(GEN_DIR)/ortools/constraint_solver/model_pb2.py
 
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/assignment.proto
