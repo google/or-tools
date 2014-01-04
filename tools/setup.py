@@ -15,7 +15,12 @@ dummy_module = Extension('dummy_ortools_dependency',
 setup(
     name='ortools',
     version='1.VVVV',
-    packages=['ortools'],
+    packages=[
+        'ortools',
+        'ortools.algorithms',
+        'ortools.constraint_solver',
+        'ortools.graph',
+        'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
         'google-apputils >= 0.4',
