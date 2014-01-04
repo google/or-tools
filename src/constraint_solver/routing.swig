@@ -143,24 +143,6 @@ static int64 PyCallbackNodeEvaluator2(
   Py_XDECREF(pyresult);
   return result;
 }
-
-static int64 PyCallbackNodeEvaluator2(
-    PyObject* pyfunc,
-    operations_research::RoutingModel::NodeIndex i,
-    operations_research::RoutingModel::NodeIndex j) {
-  int64 result = 0;
-  // Cast to int needed, no int64 support
-  PyObject* arglist = Py_BuildValue("ll",
-                                    i.value<int>(),
-                                    j.value<int>());
-  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-  Py_DECREF(arglist);
-  if (pyresult) {
-    result = PyInt_AsLong(pyresult);
-  }
-  Py_XDECREF(pyresult);
-  return result;
-}
 %}
 %typemap(in) operations_research::RoutingModel::NodeEvaluator2* {
   if (!PyCallable_Check($input)) {

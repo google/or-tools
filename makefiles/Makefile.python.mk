@@ -206,6 +206,25 @@ else
 	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 endif
 
+python_examples_archive: python
+	-$(DELREC) temp
+	$(MKDIR) temp
+	$(MKDIR) temp$Sortools_examples
+	$(MKDIR) temp$Sortools_examples$Sexamples
+	$(MKDIR) temp$Sortools_examples$Sdata
+	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples
+	$(COPY) tools$SREADME.python temp$Sortools_examples$SREADME
+	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
+	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools_examples$Ssetup.py
+ifeq ($(SYSTEM),win)
+	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(SVNVERSION).zip ortools_examples
+else
+	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
+	cd temp && tar cvzf ../Google.OrTools.python.examples.$(SVNVERSION).tar.gz ortools_examples
+endif
+
 pypi_archive: python
 	-$(DELREC) temp
 	$(MKDIR) temp
