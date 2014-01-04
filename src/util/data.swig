@@ -818,61 +818,114 @@ CTYPE** "IntPtr[]"
 #include "base/callback.h"
 #include "base/integral_types.h"
 
-class LongResultCallback1 {
+class LongResultCallback1 : public ResultCallback1<int64, int64> {
  public:
-  virtual int64 Run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback1::Run);
-  }
+  LongResultCallback1() : used_as_permanent_handler_(false) {}
   virtual ~LongResultCallback1() {}
+  virtual int64 Run(int64 i) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback2 {
+
+class LongResultCallback2 : public ResultCallback2<int64, int64, int64> {
  public:
+  LongResultCallback2() : used_as_permanent_handler_(false) {}
+  virtual ~LongResultCallback2() {}
   virtual int64 Run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback2::Run);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
-  virtual ~LongResultCallback2() {}
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback3 {
+
+class LongResultCallback3 : public ResultCallback3<int64, int64, int64, int64> {
  public:
-  virtual int64 Run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback3::Run);
-  }
+  LongResultCallback3() : used_as_permanent_handler_(false) {}
   virtual ~LongResultCallback3() {}
+  virtual int64 Run(int64, int64, int64) = 0;
+    ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  bool used_as_permanent_handler_;
 };
 
 %}
 
-class LongResultCallback1 {
+%typemap(cscode) LongResultCallback1 %{
+  public SWIGTYPE_p_ResultCallback1T_long_long_long_long_t DisownAndGetPermanentCallback() {
+    swigCMemOwn = false;
+    return GetPermanentCallback();
+  }
+%}
+
+%typemap(cscode)  LongResultCallback2 %{
+  public SWIGTYPE_p_ResultCallback2T_long_long_long_long_long_long_t DisownAndGetPermanentCallback() {
+    swigCMemOwn = false;
+    return GetPermanentCallback();
+  }
+%}
+
+%typemap(cscode)  LongResultCallback3 %{
+  public SWIGTYPE_p_ResultCallback3T_long_long_long_long_long_long_long_long_t DisownAndGetPermanentCallback() {
+    swigCMemOwn = false;
+    return GetPermanentCallback();
+  }
+%}
+
+class LongResultCallback1 : private ResultCallback1<int64, int64> {
  public:
-  virtual int64 Run(int64) = 0;
+  virtual int64 Run(int64 i) = 0;
   ResultCallback1<int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback1();
+ private:
+  virtual bool IsRepeatable() const;
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback2 {
+class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
  public:
   virtual int64 Run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback2();
+ private:
+  virtual bool IsRepeatable() const;
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback3 {
+class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
  public:
   virtual int64 Run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback3();
+ private:
+  virtual bool IsRepeatable() const;
+  bool used_as_permanent_handler_;
 };
 
 // Typemaps for callbacks in csharp.
 %typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(csin) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
 %typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(csin) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
 %typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
 "LongResultCallback3";
 %typemap(csin) ResultCallback3<int64, int64, int64, int64>*
-"$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($csinput.GetPermanentCallback())";
+"$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
 
 CS_TYPEMAP_STDVECTOR(int64, int64, long)
 CS_TYPEMAP_STDVECTOR(int, int, int)

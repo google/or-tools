@@ -126,7 +126,25 @@ CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int)
 // Create input mapping for NodeEvaluator2
 #ifdef SWIGPYTHON
 %{
-static int64 PyCallback2NodeIndexNodeIndex(
+static int64 PyCallbackNodeEvaluator2(
+    PyObject* pyfunc,
+    operations_research::RoutingModel::NodeIndex i,
+    operations_research::RoutingModel::NodeIndex j) {
+  int64 result = 0;
+  // Cast to int needed, no int64 support
+  PyObject* arglist = Py_BuildValue("ll",
+                                    i.value<int>(),
+                                    j.value<int>());
+  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+  Py_DECREF(arglist);
+  if (pyresult) {
+    result = PyInt_AsLong(pyresult);
+  }
+  Py_XDECREF(pyresult);
+  return result;
+}
+
+static int64 PyCallbackNodeEvaluator2(
     PyObject* pyfunc,
     operations_research::RoutingModel::NodeIndex i,
     operations_research::RoutingModel::NodeIndex j) {
@@ -149,7 +167,7 @@ static int64 PyCallback2NodeIndexNodeIndex(
     PyErr_SetString(PyExc_TypeError, "Need a callable object!");
     SWIG_fail;
   }
-  $1 = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, $input);
+  $1 = NewPermanentCallback(&PyCallbackNodeEvaluator2, $input);
 }
 #endif
 #ifdef SWIGJAVA
@@ -268,6 +286,52 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
+
+// Add a reference to callbacks on the routing model such that they
+// are not garbaged out.
+
+%typemap(cscode) operations_research::RoutingModel %{
+  public bool AddDimension(NodeEvaluator2 evaluator, long slack_max,
+                           long capacity, bool fix_start_cumul_to_zero,
+                           string name) {
+    pinned_node_evaluator2_.Add(evaluator);
+    return AddDimensionAux(evaluator, slack_max, capacity,
+                           fix_start_cumul_to_zero, name);
+  }
+
+  public bool AddDimensionWithVehicleCapacity(
+      NodeEvaluator2 evaluator, long slack_max,
+      LongResultCallback1 vehicle_capacity, bool fix_start_cumul_to_zero,
+      string name) {
+    pinned_node_evaluator2_.Add(evaluator);
+    pinned_long_result_callback_1_.Add(vehicle_capacity);
+    return AddDimensionWithVehicleCapacityAux(
+        evaluator, slack_max, vehicle_capacity, fix_start_cumul_to_zero, name);
+  }
+
+  public void SetArcCostEvaluatorOfAllVehicles(NodeEvaluator2 evaluator) {
+    pinned_node_evaluator2_.Add(evaluator);
+    SetArcCostEvaluatorOfAllVehiclesAux(evaluator);
+  }
+
+  public void SetArcCostEvaluatorOfVehicle(NodeEvaluator2 evaluator,
+                                           int vehicle) {
+    pinned_node_evaluator2_.Add(evaluator);
+    SetArcCostEvaluatorOfVehicleAux(evaluator, vehicle);
+  }
+
+  private System.Collections.Generic.List<NodeEvaluator2>
+      pinned_node_evaluator2_ =
+          new System.Collections.Generic.List<NodeEvaluator2>();
+  private System.Collections.Generic.List<LongResultCallback1>
+      pinned_long_result_callback_1_ =
+          new System.Collections.Generic.List<LongResultCallback1>();
+%}
+
+%rename (AddDimensionAux) operations_research::RoutingModel::AddDimension;
+%rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;
+%rename (SetArcCostEvaluatorOfAllVehiclesAux) operations_research::RoutingModel::SetArcCostEvaluatorOfAllVehicles;
+%rename (SetArcCostEvaluatorOfVehicleAux) operations_research::RoutingModel::SetArcCostEvaluatorOfVehicle;
 
 #endif  // SWIGCSHARP
 %ignore operations_research::RoutingModel::AddVectorDimension(
