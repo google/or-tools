@@ -88,6 +88,7 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_
 
 $(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/model.proto
+	$(SED) -i -e "s/import constraint_solver.search_limit_pb2/import ortools.constraint_solver.search_limit_pb2/g" $(GEN_DIR)/ortools/constraint_solver/model_pb2.py
 
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/constraint_solver/assignment.proto
@@ -171,7 +172,7 @@ python_archive: python
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$Spywrapcp.py temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
 	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sor-tools.$(PORT)$Sortools$Sgraph
 	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools.$(PORT)$Sortools$Salgorithms
