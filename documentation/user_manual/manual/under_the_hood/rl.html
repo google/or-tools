@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>14.11. The Routing Library (RL) &mdash; or-tools User&#39;s Manual</title>
+    <title>13.11. The Routing Library (RL) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -25,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="14. Under the hood" href="../under_the_hood.html" />
-    <link rel="next" title="14.12. Summary" href="summary.html" />
-    <link rel="prev" title="14.10. Meta-heuristics and SearchMonitors" href="metaheuristics.html" /> 
+    <link rel="up" title="13. Under the hood" href="../under_the_hood.html" />
+    <link rel="next" title="13.12. Summary" href="summary.html" />
+    <link rel="prev" title="13.10. Meta-heuristics and SearchMonitors" href="metaheuristics.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="summary.html" title="14.12. Summary"
+          <a href="summary.html" title="13.12. Summary"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="14.10. Meta-heuristics and SearchMonitors"
+          <a href="metaheuristics.html" title="13.10. Meta-heuristics and SearchMonitors"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../under_the_hood.html" accesskey="U">14. Under the hood</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" accesskey="U">13. Under the hood</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="the-routing-library-rl">
-<span id="hood-rl"></span><h1>14.11. The Routing Library (RL)</h1>
+<span id="hood-rl"></span><h1>13.11. The Routing Library (RL)</h1>
 <div class="files-sidebar container">
 <ol>
   <li>C++ code:
@@ -68,7 +70,7 @@ The model is explained in broad terms in the section <a class="reference interna
 <p>All components are defined or accessible within the <tt class="docutils literal"><span class="pre">RoutingModel</span> <span class="pre">class</span></tt>. To use this class,
 include the mandatory <tt class="file docutils literal"><span class="pre">constraint_solver/routing.h</span></tt> header.</p>
 <div class="section" id="global-constants">
-<h2>14.11.1. Global constants</h2>
+<h2>13.11.1. Global constants</h2>
 <p>Some global constant basic paratemers of the model are:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -128,10 +130,10 @@ exactly the minimal number of variables needed to model the problem at hand with
 subsection). <tt class="docutils literal"><span class="pre">kUnassigned</span></tt> is used for unassigned indices.</p>
 </div>
 <div class="section" id="the-auxiliary-graph">
-<span id="auxiliary-graph-detailed"></span><h2>14.11.2. The auxiliary graph</h2>
+<span id="auxiliary-graph-detailed"></span><h2>13.11.2. The auxiliary graph</h2>
 <p>You can find the source code in the file <tt class="file docutils literal"><span class="pre">rl_auxiliary_graph.cc</span></tt>.</p>
 <p>The auxiliary graph is a graph constructed from the original graph. Let&#8217;s examine the original graph of the next figure:</p>
-<a class="reference internal image-reference" href="../../_images/rl_original_graph1.png"><img alt="../../_images/rl_original_graph1.png" class="align-center" src="../../_images/rl_original_graph1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_original_graph1.png" class="align-center" src="../../_images/rl_original_graph1.png" style="width: 250px;" />
 <p>There are nine nodes, two of which are starting depots (1 and 3), one is an ending
 depot (7) and one is a starting and ending depot (4). The <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es range from 0 to 8.</p>
 <p>There are <tt class="docutils literal"><span class="pre">start_end_count_</span> <span class="pre">=</span> <span class="pre">4</span></tt> distinct depots (nodes 1, 3, 4 and 7) and <tt class="docutils literal"><span class="pre">nodes_</span> <span class="pre">-</span> <span class="pre">start_end_count_</span> <span class="pre">=</span> <span class="pre">5</span></tt>
@@ -157,7 +159,7 @@ transit nodes (nodes 0, 2, 5, 6 and 8).</p>
 <p>The auxiliary graph is obtained by keeping the transit nodes and
 adding a starting and ending depot for each vehicle/route if needed
 as shown in the following figure:</p>
-<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph1.png"><img alt="../../_images/rl_auxiliary_graph1.png" class="align-center" src="../../_images/rl_auxiliary_graph1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_auxiliary_graph1.png" class="align-center" src="../../_images/rl_auxiliary_graph1.png" style="width: 250px;" />
 <p>Node 1 is not duplicated because there is only one route (route 0) that starts from 1. Node 3
 is duplicated once because there are two routes (routes 1 and 2) that start from 3. Node 7 is
 duplicated once because two routes (routes 2 and 3) end at 7 and finally there are two copies
@@ -168,7 +170,7 @@ of node 4 because two routes (routes 0 and 4) end at 4 and one route (route 3) s
 </div><p>These nine variables correspond to all the nodes in the auxiliary graph leading somewhere, i.e. starting depots
 and transit nodes in the auxiliary graph.</p>
 <div class="section" id="nexts-variables">
-<span id="uth-next-variables-details"></span><h3>14.11.2.1. <tt class="docutils literal"><span class="pre">nexts_</span></tt> variables</h3>
+<span id="uth-next-variables-details"></span><h3>13.11.2.1. <tt class="docutils literal"><span class="pre">nexts_</span></tt> variables</h3>
 <p>The main decision variables are <tt class="docutils literal"><span class="pre">IntVar*</span></tt> stored in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> <tt class="docutils literal"><span class="pre">nexts_</span></tt> and can be accessed with the
 <tt class="docutils literal"><span class="pre">NextVar()</span></tt> method.
 The model uses one <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable for each node that can be linked to another node. If a node is the ending node
@@ -198,7 +200,7 @@ pairs of depots are given.</p>
 one index for each combination of depots and vehicles.</p>
 </div>
 <p>For our example, this numbering is as follows:</p>
-<a class="reference internal image-reference" href="../../_images/rl_auxiliary_graph_numberred1.png"><img alt="../../_images/rl_auxiliary_graph_numberred1.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_auxiliary_graph_numberred1.png" class="align-center" src="../../_images/rl_auxiliary_graph_numberred1.png" style="width: 250px;" />
 <p>If you set the <tt class="docutils literal"><span class="pre">FLAGS_log_level</span></tt> to 2 and skip the log prefix:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./rl_auxiliary_graph --log_level<span class="o">=</span>2 --log_prefix<span class="o">=</span><span class="nb">false</span>
 </pre></div>
@@ -234,7 +236,7 @@ Node index 8 -&gt; Variable index 7
 unique <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es of each node in the original graph. Note that <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> 7 doesn&#8217;t have a
 corresponding <tt class="docutils literal"><span class="pre">int64</span></tt> index (-1 means exactly that) and that <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> 8 corresponds to <tt class="docutils literal"><span class="pre">int64</span></tt> 7 (not 8!).</p>
 <p>Here is one possible solution:</p>
-<a class="reference internal image-reference" href="../../_images/rl_sol1.png"><img alt="../../_images/rl_sol1.png" class="align-center" src="../../_images/rl_sol1.png" style="width: 250px;" /></a>
+<img alt="../../_images/rl_sol1.png" class="align-center" src="../../_images/rl_sol1.png" style="width: 250px;" />
 <p>We output the routes, first with the <tt class="docutils literal"><span class="pre">NodeIndex</span></tt>es and then with the internal <tt class="docutils literal"><span class="pre">int64</span></tt> indices with:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">p</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="n">VRP</span><span class="p">.</span><span class="n">vehicles</span><span class="p">();</span> <span class="o">++</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">LG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Route: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">p</span><span class="p">;</span>
@@ -287,18 +289,18 @@ to end depots. The method <tt class="docutils literal"><span class="pre">IsEnd(i
 </div>
 </div>
 <div class="section" id="variables">
-<h2>14.11.3. Variables</h2>
+<h2>13.11.3. Variables</h2>
 <div class="section" id="path-variables">
-<h3>14.11.3.1. Path variables</h3>
+<h3>13.11.3.1. Path variables</h3>
 </div>
 <div class="section" id="dimension-variables">
-<h3>14.11.3.2. Dimension variables</h3>
+<h3>13.11.3.2. Dimension variables</h3>
 </div>
 </div>
 <div class="section" id="constraints">
-<h2>14.11.4. Constraints</h2>
+<h2>13.11.4. Constraints</h2>
 <div class="section" id="nocycle-constraint">
-<span id="uth-nocycle-constraint"></span><h3>14.11.4.1. <tt class="docutils literal"><span class="pre">NoCycle</span></tt> constraint</h3>
+<span id="uth-nocycle-constraint"></span><h3>13.11.4.1. <tt class="docutils literal"><span class="pre">NoCycle</span></tt> constraint</h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -377,28 +379,28 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../under_the_hood.html"
-                        title="previous chapter">14. Under the hood</a></p>
+                        title="previous chapter">13. Under the hood</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="metaheuristics.html"
-                        title="previous chapter">14.10. Meta-heuristics and <tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
+                        title="previous chapter">13.10. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="summary.html"
-                        title="next chapter">14.12. Summary</a></p>
+                        title="next chapter">13.12. Summary</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">14.11. The Routing Library (RL)</a><ul>
-<li><a class="reference internal" href="#global-constants">14.11.1. Global constants</a></li>
-<li><a class="reference internal" href="#the-auxiliary-graph">14.11.2. The auxiliary graph</a><ul>
-<li><a class="reference internal" href="#nexts-variables">14.11.2.1. <tt class="docutils literal"><span class="pre">nexts_</span></tt> variables</a></li>
+<li><a class="reference internal" href="#">13.11. The Routing Library (RL)</a><ul>
+<li><a class="reference internal" href="#global-constants">13.11.1. Global constants</a></li>
+<li><a class="reference internal" href="#the-auxiliary-graph">13.11.2. The auxiliary graph</a><ul>
+<li><a class="reference internal" href="#nexts-variables">13.11.2.1. <tt class="docutils literal"><span class="pre">nexts_</span></tt> variables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#variables">14.11.3. Variables</a><ul>
-<li><a class="reference internal" href="#path-variables">14.11.3.1. Path variables</a></li>
-<li><a class="reference internal" href="#dimension-variables">14.11.3.2. Dimension variables</a></li>
+<li><a class="reference internal" href="#variables">13.11.3. Variables</a><ul>
+<li><a class="reference internal" href="#path-variables">13.11.3.1. Path variables</a></li>
+<li><a class="reference internal" href="#dimension-variables">13.11.3.2. Dimension variables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#constraints">14.11.4. Constraints</a><ul>
-<li><a class="reference internal" href="#nocycle-constraint">14.11.4.1. <tt class="docutils literal"><span class="pre">NoCycle</span></tt> constraint</a></li>
+<li><a class="reference internal" href="#constraints">13.11.4. Constraints</a><ul>
+<li><a class="reference internal" href="#nocycle-constraint">13.11.4.1. <tt class="docutils literal"><span class="pre">NoCycle</span></tt> constraint</a></li>
 </ul>
 </li>
 </ul>
@@ -416,18 +418,18 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="summary.html" title="14.12. Summary"
+          <a href="summary.html" title="13.12. Summary"
              >next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics.html" title="14.10. Meta-heuristics and SearchMonitors"
+          <a href="metaheuristics.html" title="13.10. Meta-heuristics and SearchMonitors"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../under_the_hood.html" >14. Under the hood</a> &raquo;</li> 
+          <li><a href="../under_the_hood.html" >13. Under the hood</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

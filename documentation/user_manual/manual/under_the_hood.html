@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>14. Under the hood &mdash; or-tools User&#39;s Manual</title>
+    <title>13. Under the hood &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -25,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="14.1. Main files and directories" href="under_the_hood/files.html" />
-    <link rel="prev" title="13.3. What are my solving options?" href="modeling_tricks/solving_options.html" /> 
+    <link rel="next" title="13.1. Main files and directories" href="under_the_hood/files.html" />
+    <link rel="prev" title="12.3. What are my solving options?" href="modeling_tricks/solving_options.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="under_the_hood/files.html" title="14.1. Main files and directories"
+          <a href="under_the_hood/files.html" title="13.1. Main files and directories"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="modeling_tricks/solving_options.html" title="13.3. What are my solving options?"
+          <a href="modeling_tricks/solving_options.html" title="12.3. What are my solving options?"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -51,52 +53,52 @@
           <div class="body">
             
   <div class="section" id="under-the-hood">
-<span id="chapter-under-the-hood"></span><h1>14. Under the hood</h1>
+<span id="chapter-under-the-hood"></span><h1>13. Under the hood</h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/files.html">14.1. Main files and directories</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/conventions.html">14.2. Naming conventions and programming idioms</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/conventions.html#naming-conventions">14.2.1. Naming conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/conventions.html#programming-idioms">14.2.2. Programming idioms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/files.html">13.1. Main files and directories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/conventions.html">13.2. Naming conventions and programming idioms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/conventions.html#naming-conventions">13.2.1. Naming conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/conventions.html#programming-idioms">13.2.2. Programming idioms</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/classes.html">14.3. Main classes, structures and typedefs</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#baseobjects">14.3.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#propagationbaseobjects">14.3.2. <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#callbacks">14.3.3. Callbacks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/classes.html">13.3. Main classes, structures and typedefs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#baseobjects">13.3.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#propagationbaseobjects">13.3.2. <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/classes.html#callbacks">13.3.3. Callbacks</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/trail.html">14.4. The <tt class="docutils literal"><span class="pre">Trail</span></tt> struct</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search.html">14.5. The <tt class="docutils literal"><span class="pre">Search</span></tt> class</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#nested-searches">14.5.1. Nested searches</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#search-and-the-callbacks-from-searchmonitors">14.5.2. <tt class="docutils literal"><span class="pre">Search</span></tt> and the callbacks from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/trail.html">13.4. The <tt class="docutils literal"><span class="pre">Trail</span></tt> struct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search.html">13.5. The <tt class="docutils literal"><span class="pre">Search</span></tt> class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#nested-searches">13.5.1. Nested searches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#search-and-the-callbacks-from-searchmonitors">13.5.2. <tt class="docutils literal"><span class="pre">Search</span></tt> and the callbacks from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/queue.html">14.6. The <tt class="docutils literal"><span class="pre">Queue</span></tt> class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/assignment.html">14.7. Variables and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/assignment.html#variables">14.7.1. Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/assignment.html#assignments">14.7.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/queue.html">13.6. The <tt class="docutils literal"><span class="pre">Queue</span></tt> class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/assignment.html">13.7. Variables and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/assignment.html#variables">13.7.1. Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/assignment.html#assignments">13.7.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search_monitors.html">14.8. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search_monitors.html#list-of-callbacks">14.8.1. List of callbacks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search_monitors.html#ending-or-restarting-the-current-search">14.8.2. Ending or restarting the current <tt class="docutils literal"><span class="pre">Search</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search_monitors.html">13.8. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search_monitors.html#list-of-callbacks">13.8.1. List of callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search_monitors.html#ending-or-restarting-the-current-search">13.8.2. Ending or restarting the current <tt class="docutils literal"><span class="pre">Search</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/ls.html">14.9. Local Search (LS)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/metaheuristics.html">14.10. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/metaheuristics.html#the-metaheuristic-class">14.10.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/metaheuristics.html#callbacks-to-implement">14.10.2. Callbacks to implement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/ls.html">13.9. Local Search (LS)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/metaheuristics.html">13.10. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/metaheuristics.html#the-metaheuristic-class">13.10.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/metaheuristics.html#callbacks-to-implement">13.10.2. Callbacks to implement</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/rl.html">14.11. The Routing Library (RL)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#global-constants">14.11.1. Global constants</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#the-auxiliary-graph">14.11.2. The auxiliary graph</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#variables">14.11.3. Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#constraints">14.11.4. Constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/rl.html">13.11. The Routing Library (RL)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#global-constants">13.11.1. Global constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#the-auxiliary-graph">13.11.2. The auxiliary graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#variables">13.11.3. Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/rl.html#constraints">13.11.4. Constraints</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/summary.html">14.12. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/summary.html">13.12. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
@@ -194,14 +196,13 @@ Search:
 <ul>
 <li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
 <li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">11. ARP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="#">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">12. Modeling tricks</a></li>
+<li><a class="reference internal" href="#">13. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -219,17 +220,17 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="under_the_hood/files.html" title="14.1. Main files and directories"
+          <a href="under_the_hood/files.html" title="13.1. Main files and directories"
              >next</a> |</li>
         <li class="right" >
-          <a href="modeling_tricks/solving_options.html" title="13.3. What are my solving options?"
+          <a href="modeling_tricks/solving_options.html" title="12.3. What are my solving options?"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

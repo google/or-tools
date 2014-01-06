@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -81,7 +83,7 @@ although it restricts the search tree<a class="footnote-reference" href="#tsptw-
 the problem even more difficult in practice! Indeed, the beautiful symmetry of the
 TSP<a class="footnote-reference" href="#tsptw-depot-is-important" id="id2">[2]</a> (any permutation
 of cities is a feasible solution) is broken and even the search for feasible solutions is
-difficult <a class="reference internal" href="#savelsbergh1985" id="id3">[Savelsbergh1985]</a>.</p>
+difficult <a class="reference internal" href="#savelsbergh1985">[Savelsbergh1985]</a>.</p>
 <p>We present the TSPTW and two instances formats: the López-Ibáñez-Blum and the da Silva-Urrutia formats. As in the case
 of the
 TSP, we have implemented a class to read those instances: the <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class. We also use the <em>ePix</em> library to
@@ -109,7 +111,7 @@ Annals of Operations Research 4, 285–305, 1985.</td></tr>
 <h2>9.8.1. The Travelling Salesman Problem with Time Windows</h2>
 <p>You might be surprised to learn that there is no common definition that is widely accepted within the scientific
 community. The basic idea is to find a &#8220;tour&#8221; that visits each node within a time window but several variants exist.</p>
-<p>We will use the definition given in Rodrigo Ferreira da Silva and Sebastián Urrutia&#8217;s 2010 article <a class="reference internal" href="#ferreira2010" id="id4">[Ferreira2010]</a>.
+<p>We will use the definition given in Rodrigo Ferreira da Silva and Sebastián Urrutia&#8217;s 2010 article <a class="reference internal" href="#ferreira2010">[Ferreira2010]</a>.
 Instead of visiting cities as in the TSP, we visit and service customers.</p>
 <table class="docutils citation" frame="void" id="ferreira2010" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
@@ -138,11 +140,11 @@ due time are considered infeasible.</p>
 <li>the <em>arrival time</em> <img class="math" src="../../_images/math/273e0046b505d99f3d1167caa82b2ac76c96d075.png" alt="t_i" style="vertical-align: -3px"/>: the time you arrive at the client and</li>
 <li>the <em>service start time</em> <img class="math" src="../../_images/math/d3b63c17213f84d730e0de1f8c08597f7a648e37.png" alt="s_i" style="vertical-align: -3px"/>: the time you start to service the client.</li>
 </ul>
-<a class="reference internal image-reference" href="../../_images/servicing_client_in_tsptw.png"><img alt="../../_images/servicing_client_in_tsptw.png" class="align-center" src="../../_images/servicing_client_in_tsptw.png" style="width: 400pt;" /></a>
+<img alt="../../_images/servicing_client_in_tsptw.png" class="align-center" src="../../_images/servicing_client_in_tsptw.png" style="width: 400pt;" />
 <p>In real application, the time spent at a client might be limited to the service. For instance, you might wait in front
 of the client&#8217;s office. It&#8217;s common to consider that you start to service and leave as soon as possible and
 this is our assumption in this chapter</p>
-<p>Some authors (<a class="reference internal" href="#dash2010" id="id5">[Dash2010]</a> for instance) assign two costs on the edges: a <em>travel cost</em> and a <em>travel time</em>. While
+<p>Some authors (<a class="reference internal" href="#dash2010">[Dash2010]</a> for instance) assign two costs on the edges: a <em>travel cost</em> and a <em>travel time</em>. While
 the travel times must respect the time windows constraints, the objective value is the sum of the travel costs on the
 edges. In this chapter, we only have one cost on the edges. The objective value and the <em>real</em> travel time are different: you might
 have to wait before servicing a client.</p>
@@ -196,7 +198,7 @@ contains about 100 instances.</p>
 <p>Both pages provide best solutions and sum up the relevant literature.</p>
 <div class="section" id="the-lopez-ibanez-blum-format">
 <h3>9.8.2.1. The López-Ibáñez-Blum format</h3>
-<p>We present the same instance proposed by Dumas et al. <a class="reference internal" href="#dumas1995" id="id8">[Dumas1995]</a> in both formats.</p>
+<p>We present the same instance proposed by Dumas et al. <a class="reference internal" href="#dumas1995">[Dumas1995]</a> in both formats.</p>
 <table class="docutils citation" frame="void" id="dumas1995" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -535,7 +537,7 @@ Its unique constructor reads:</p>
 </pre></div>
 </div>
 <p>Here is an example of the solution in the file <tt class="file docutils literal"><span class="pre">n20w20.001.sol</span></tt>:</p>
-<a class="reference internal image-reference" href="../../_images/n20w20_001_sol.png"><img alt="../../_images/n20w20_001_sol.png" class="align-center" src="../../_images/n20w20_001_sol.png" style="width: 300pt;" /></a>
+<img alt="../../_images/n20w20_001_sol.png" class="align-center" src="../../_images/n20w20_001_sol.png" style="width: 300pt;" />
 <p>The dot in red in the center represents the depot or first node. The arrows indicate the direction of the tour. Because of the time
 windows, the solution is no longer planar, i.e. the tour crosses itself.</p>
 <p>You can also print the node labels and the time windows with the flags:</p>
@@ -676,7 +678,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

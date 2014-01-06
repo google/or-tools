@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -52,7 +54,39 @@
             
   <div class="section" id="vehicule-routing-problems-with-constraints-the-capacitated-vehicle-routing-problem">
 <span id="chapter-vrp-with-constraints"></span><h1>10. Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</h1>
+<p>The <em>Vehicle Routing Problem</em> (VRP) is a Routing Problem where you seek to service a number of customers with a
+fleet of (homogeneous or heterogeneous) vehicles starting from one depot. The basic idea is to service clients - represented
+by nodes in a graph - by the
+vehicles. Lots of theoric and industrial problems can be modelled as a VRP.
+The problem&#8217;s origins can be traced back to the fifties
+(see <a class="reference internal" href="#dantzig1959">[Dantzig1959]</a> for instance). It includes the TSP (a VRP with one vehicle) as a special case, and is, as such, a computationally complex problem.</p>
+<table class="docutils citation" frame="void" id="dantzig1959" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Dantzig1959]</a></td><td><ol class="first last upperalpha simple" start="7">
+<li><ol class="first upperalpha" start="2">
+<li>Dantzig and J. H. Ramser. <em>The Truck Dispatching Problem</em>, Management Science v. 6, pp 80-91, 1959.</li>
+</ol>
+</li>
+</ol>
+</td></tr>
+</tbody>
+</table>
+<p>We again use the excellent <tt class="docutils literal"><span class="pre">C++</span></tt> <a class="reference external" href="http://mathcs.holycross.edu/~ahwang/current/ePiX.html">ePiX library</a><a class="footnote-reference" href="#epix-latex" id="id2">[1]</a>
+to visualize VRP and CVRP solutions in <em>TSPLIB</em> format.</p>
+<table class="docutils footnote" frame="void" id="epix-latex" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The ePiX library uses the <img class="math" src="../_images/math/6e706c7be892b58ea1c3ab147eaae242299cf3da.png" alt="\text{\TeX/\LaTeX}" style="vertical-align: -4px"/> engine to create beautiful graphics.</td></tr>
+</tbody>
+</table>
 <p class="rubric">Overview:</p>
+<p>We first introduce the VRP and the TSPLIB instances for the Capacitated Routing Vehicle Problem. The TPSLIB
+instance format is the de facto format to represent CVRP instances in the scientific community. We then
+present a basic program to solve the bare VRP. To do so, we show how to interact directly with the underlying CP solver.
+Next, the CVRP is introduced and explained. Capacities are modelled with <tt class="docutils literal"><span class="pre">Dimension</span></tt>s. Finally, we discuss the
+multi-depots variant of the VRP in general and how to fix some parts of the routes while letting the CP solver
+assign the other clients to vehicles, i.e. how to complete the partial solution.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
@@ -67,6 +101,23 @@
 </li>
 </ul>
 <p class="rubric">Files:</p>
+<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap10</span></tt>.</p>
+<p>The files in this directory are:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">cvrp_data_generator.h</span></tt>: Contains the <tt class="docutils literal"><span class="pre">CVRPDataGenerator</span></tt> class that generates random CVRP instances.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_data_generator.cc</span></tt>: Generates random CVRP instances.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_data.h</span></tt>: Contains the <tt class="docutils literal"><span class="pre">CVRPData</span></tt> class used in this chapter to encode a CVRP instance.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_solution.h</span></tt>: Povides the <tt class="docutils literal"><span class="pre">CVRPSolution</span></tt> used to represent CVRP solutions.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_epix_data.h</span></tt>: Provides the helper functions to visualize CVRP solutions with the ePiX library.</li>
+<li><tt class="file docutils literal"><span class="pre">vrp_solution_to_epix.cc</span></tt>: Permits the visualization of a VRP solution with the help of the ePiX library.</li>
+<li><tt class="file docutils literal"><span class="pre">vrp.cc</span></tt>: A basic implementation to solve the VRP.</li>
+<li><tt class="file docutils literal"><span class="pre">check_vrp_solution.cc</span></tt>: Checks if a VRP solution is feasible.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_basic.cc</span></tt>: A basic implementation to solve the CVRP.</li>
+<li><tt class="file docutils literal"><span class="pre">cvrp_solution_to_epix.cc</span></tt>: Permits the visualization of a CVRP solution with the help of the ePiX library.</li>
+<li><tt class="file docutils literal"><span class="pre">check_cvrp_solution.cc</span></tt>: Checks if a CVRP solution is feasible.</li>
+<li><tt class="file docutils literal"><span class="pre">vrp_IO.cc</span></tt>: Simple program to apply and test the IO mechanism of the RL with a multi-VRP.</li>
+<li><tt class="file docutils literal"><span class="pre">vrp_locks.cc</span></tt>: Simple program to apply and test locks in a multi-VRP.</li>
+</ul>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
@@ -95,7 +146,7 @@
 <li class="toctree-l2"><a class="reference internal" href="vrp/first_cvrp_implementation.html#the-demands-as-a-dimension">10.4.1. The demands as a <tt class="docutils literal"><span class="pre">Dimension</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="vrp/first_cvrp_implementation.html#an-initial-solution">10.4.2. An initial solution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vrp/first_cvrp_implementation.html#different-search-strategies">10.4.3. Different search strategies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="vrp/first_cvrp_implementation.html#what-about-individualizing-the-vehicles">10.4.4. What about individualizing the vehicles?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vrp/first_cvrp_implementation.html#what-about-customizing-the-vehicles">10.4.4. What about customizing the vehicles?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="vrp/multi_depots.html">10.5. Multi-depots and vehicles</a><ul>
@@ -106,7 +157,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="vrp/partial_routes.html">10.6. Partial routes and Assigments</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="vrp/partial_routes.html#a-little-bit-of-vocabulary">10.6.1. A little bit of vocabulary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vrp/partial_routes.html#a-little-bit-of-terminology">10.6.1. A little bit of terminology</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vrp/partial_routes.html#locks-and-the-applylockstoallvehicles-method">10.6.2. <em>Locks</em> and the <tt class="docutils literal"><span class="pre">ApplyLocksToAllVehicles()</span></tt> method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vrp/partial_routes.html#assignments-and-partial-assignments">10.6.3. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s and partial <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
 </ul>
@@ -209,14 +260,13 @@ Search:
 <ul>
 <li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
 <li><a class="reference internal" href="#">10. VRP with constraints</a></li>
-<li><a class="reference internal" href="arc_routing.html">11. ARP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">12. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">13. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -244,7 +294,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

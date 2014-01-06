@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -274,7 +276,7 @@ the</p>
 <p>At each leaf of the search tree corresponding to the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt>, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
 <tt class="docutils literal"><span class="pre">db2</span></tt> is called.</p>
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt> search tree will be as follows:</p>
-<a class="reference internal image-reference" href="../../_images/compose.png"><img alt="../../_images/compose.png" class="align-center" src="../../_images/compose.png" style="width: 250pt;" /></a>
+<img alt="../../_images/compose.png" class="align-center" src="../../_images/compose.png" style="width: 250pt;" />
 <p>This composition of <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s frequently happens in scheduling. For instance, in
 the section <a class="reference internal" href="../ls/jobshop_implementation.html#jobshop-decision-builders-compose"><em>The DecisionBuilders</em></a> where we try to solve a Job-Shop Problem,
 the solving process is done in two consecutive phases:
@@ -300,7 +302,7 @@ To do so, we <tt class="docutils literal"><span class="pre">Compose()</span></tt
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt> and the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db2</span></tt> are each called from the top of the search tree
 one after the other.</p>
 <p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt> search tree will be as follows:</p>
-<a class="reference internal image-reference" href="../../_images/try.png"><img alt="../../_images/try.png" class="align-center" src="../../_images/try.png" style="width: 200pt;" /></a>
+<img alt="../../_images/try.png" class="align-center" src="../../_images/try.png" style="width: 200pt;" />
 <p>This combination is handy to try a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db1</span></tt> which partially explores the
 search space. If it fails, you can use the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db2</span></tt> as a backup.</p>
 <p>As with <tt class="docutils literal"><span class="pre">Compose()</span></tt>, you can <tt class="docutils literal"><span class="pre">Try()</span></tt> up to four <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and use</p>
@@ -602,7 +604,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

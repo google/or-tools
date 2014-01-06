@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -175,7 +177,7 @@ to itself. Thus, and again with an abuse of notation, we have:</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">ActiveVar(i)</span> <span class="pre">==</span> <span class="pre">(NextVar(i)</span> <span class="pre">!=</span> <span class="pre">i)</span></tt>.</div></blockquote>
 <p>We&#8217;ll discuss <tt class="docutils literal"><span class="pre">Disjunction</span></tt>s and optional nodes  in details in the
-section <a class="reference internal" href="../arc_routing/disjunctions.html#disjunctions"><em>Disjunctions</em></a> when we will transform
+section <em class="xref std std-ref">disjunctions</em> when we will transform
 a Cumulative Chinese Postman Problem (CCPP) into a <em>Generalized TSP</em> (GTSP). A GTSP is similar to a TSP except that you have
 clusters of nodes you want to visit, i.e. you only want to visit 1 node in each cluster.</p>
 </div>
@@ -224,7 +226,7 @@ constraints to model the <tt class="docutils literal"><span class="pre">Disjunct
 <p>One of the most difficult constraint to model is a constraint to
 avoid cycles in the solutions. For one tour, we don&#8217;t want to revisit some nodes.
 Often, we get partial solutions like the one depicted on figure (a):</p>
-<a class="reference internal image-reference" href="../../_images/cycles.png"><img alt="../../_images/cycles.png" class="align-center" src="../../_images/cycles.png" style="width: 400px;" /></a>
+<img alt="../../_images/cycles.png" class="align-center" src="../../_images/cycles.png" style="width: 400px;" />
 <p>It is often easy to obtain optimal solutions when we allow cycles (like in figure (a)) but difficult to obtain
 a real solution (like in figure (b)), i.e. without cycles. Several constraints have been proposed in the scientific literature,
 each with its cons and pros. Sometimes, we can avoid this constraint by modelling the problem in such a way that only
@@ -456,7 +458,7 @@ arc between a left node <tt class="docutils literal"><span class="pre">l</span><
 node following <tt class="docutils literal"><span class="pre">l</span></tt> in a route (<tt class="docutils literal"><span class="pre">NextVar(l)</span> <span class="pre">=</span> <span class="pre">r</span></tt>). The cost of the arc is the transit
 cost between <tt class="docutils literal"><span class="pre">l</span></tt> and <tt class="docutils literal"><span class="pre">r</span></tt> in the routing problem. Solving a <em>Linear Assignment Problem</em>
 (minimum-cost perfect bipartite matching) returns a lower bound. Did you get it? Let&#8217;s draw a figure.</p>
-<a class="reference internal image-reference" href="../../_images/lb_assignment_problem.png"><img alt="../../_images/lb_assignment_problem.png" class="align-center" src="../../_images/lb_assignment_problem.png" style="width: 400pt;" /></a>
+<img alt="../../_images/lb_assignment_problem.png" class="align-center" src="../../_images/lb_assignment_problem.png" style="width: 400pt;" />
 <p>On the left (figure (a)), we have an original graph with two depots: a starting depot <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/> and an ending depot
 <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5" style="vertical-align: 0px"/> and three transit nodes <img class="math" src="../../_images/math/e776ea524ca7e92dff794b92acf711ed57cd9367.png" alt="2,3" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/>. On the right (figure (b)), we have a bipartite
 graph<a class="footnote-reference" href="#bipartite-graph-not-really" id="id5">[5]</a> with the same number of left and right nodes. The cost on an arc <tt class="docutils literal"><span class="pre">(l,r)</span></tt> is
@@ -481,7 +483,7 @@ nodes) and <em>non-homogenous costs</em> are not supported yet (the method retur
 these cases).</p>
 </div>
 <p>If your model is <em>linear</em>, you also can use the <em>linear relaxation</em> of your model.</p>
-<p>We will explore these and other lower bounds in the section <a class="reference internal" href="../arc_routing/lower_bounds.html#lower-bounds"><em>Lower bounds</em></a> when we&#8217;ll try to solve the Cumulative
+<p>We will explore these and other lower bounds in the section <em class="xref std std-ref">lower_bounds</em> when we&#8217;ll try to solve the Cumulative
 Chinese Postman Problem.</p>
 </div>
 </div>
@@ -517,7 +519,7 @@ easily be achieved by using <em>locks</em>.</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">NextVar(lock[i])</span> <span class="pre">==</span> <span class="pre">lock[i+1]</span></tt></div></blockquote>
 <p>is <tt class="docutils literal"><span class="pre">true</span></tt> in the current solution.</p>
-<p>We will use locks in the section <a class="reference internal" href="../arc_routing/partial_routes.html#partial-routes"><em>Partial routes and locks</em></a> when we will try to solve the Cumulative Chinese Postman
+<p>We will use locks in the section <em class="xref std std-ref">partial_routes</em> when we will try to solve the Cumulative Chinese Postman
 Problem.</p>
 </div>
 </div>
@@ -664,7 +666,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

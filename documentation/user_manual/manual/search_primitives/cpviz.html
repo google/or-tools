@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -113,7 +115,7 @@ typing:</p>
 </pre></div>
 </div>
 <p>on a command line into a terminal near you. This will produce the following picture of the search tree:</p>
-<a class="reference internal image-reference" href="../../_images/tree8.png"><img alt="alternate text" class="align-center" src="../../_images/tree8.png" style="width: 350px;" /></a>
+<img alt="alternate text" class="align-center" src="../../_images/tree8.png" style="width: 350px;" />
 <p><strong class="program">cpviz</strong> produces the construction of the search tree, step by step. In our case we try to solve the
 n-queens problem with <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4" style="vertical-align: -1px"/> and <strong class="program">cpviz</strong>
 generates 8 files.</p>
@@ -168,7 +170,7 @@ are all <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> 
 <h3>5.4.2.1. The search tree</h3>
 <p>By reading the file <tt class="file docutils literal"><span class="pre">cpviz_nqueens4_basic.txt</span></tt>, we can retrace the search and reconstruct the search tree:</p>
 <div class="figure align-center" id="search-tree-of-nqueens-with-n-equal-to-4">
-<a class="reference internal image-reference" href="../../_images/search_tree1.png"><img alt="alternate text" src="../../_images/search_tree1.png" style="width: 297px; height: 286px;" /></a>
+<img alt="alternate text" src="../../_images/search_tree1.png" style="width: 297px; height: 286px;" />
 <p class="caption">The actual search tree of our search</p>
 </div>
 <p>As you can see, at each node, the solver took a <tt class="docutils literal"><span class="pre">Decision</span></tt>: the left branch to <em>apply</em> the <tt class="docutils literal"><span class="pre">Decision</span></tt> and the right branch
@@ -236,19 +238,19 @@ time. We construct the real tree node by node from the tree produced by <strong 
 while the right image is the actual tree.</p>
 <hr>
 <strong>Step 0:</strong><p>We start with a dummy node. This node is needed in our construction. You&#8217;ll see in a moment why.</p>
-<a class="reference internal image-reference" href="../../_images/tree0.png"><img alt="../../_images/tree0.png" class="align-center" src="../../_images/tree0.png" style="width: 70pt;" /></a>
+<img alt="../../_images/tree0.png" class="align-center" src="../../_images/tree0.png" style="width: 70pt;" />
 <hr>
 <strong>Step 1:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree1_w.png"><img alt="../../_images/tree1_w.png" src="../../_images/tree1_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree1.png"><img alt="../../_images/real_tree1.png" src="../../_images/real_tree1.png" style="height: 100pt;" /></a>
+<div align="center"><img alt="../../_images/tree1_w.png" src="../../_images/tree1_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree1.png" src="../../_images/real_tree1.png" style="height: 100pt;" />
 </div><p>Next, we start with the actual root node. As you can see in our <strong class="program">cpviz</strong> output, the dummy root node doesn&#8217;t even
 have a name and the little number <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> next to this non existing name doesn&#8217;t mean anything.</p>
 <hr>
 <strong>Step 2:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree2_w.png"><img alt="../../_images/tree2_w.png" src="../../_images/tree2_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree2.png"><img alt="../../_images/real_tree2.png" src="../../_images/real_tree2.png" style="height: 100pt;" /></a>
+<div align="center"><img alt="../../_images/tree2_w.png" src="../../_images/tree2_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree2.png" src="../../_images/real_tree2.png" style="height: 100pt;" />
 </div><p>You can see in our <strong class="program">cpviz</strong> output that the solver has applied the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/703a273fa3aa141626b1ad39e100d61bc0d369ed.png" alt="x_0 = 0" style="vertical-align: -3px"/>
 but that it couldn&#8217;t decide
 if this was a good choice or not. The little number <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> next to the variable name <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> means that before
@@ -256,46 +258,46 @@ the decision was applied, the number of values in its domain was <img class="mat
 assigned the value <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>.</p>
 <hr>
 <strong>Step 3:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree3_w.png"><img alt="../../_images/tree3_w.png" src="../../_images/tree3_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree3.png"><img alt="../../_images/real_tree3.png" src="../../_images/real_tree3.png" style="height: 150pt;" /></a>
+<div align="center"><img alt="../../_images/tree3_w.png" src="../../_images/tree3_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree3.png" src="../../_images/real_tree3.png" style="height: 150pt;" />
 </div><p>After having applied the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/703a273fa3aa141626b1ad39e100d61bc0d369ed.png" alt="x_0 = 0" style="vertical-align: -3px"/> at step 2, the solver now applies the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/d8cf7a3120b7d7d866d4559e44ddcf1882fb079c.png" alt="x_1 = 2" style="vertical-align: -4px"/> which
 leads, after propagation, to a failure.</p>
 <hr>
 <strong>Step 4:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree4_w.png"><img alt="../../_images/tree4_w.png" src="../../_images/tree4_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree4.png"><img alt="../../_images/real_tree4.png" src="../../_images/real_tree4.png" style="height: 150pt;" /></a>
+<div align="center"><img alt="../../_images/tree4_w.png" src="../../_images/tree4_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree4.png" src="../../_images/real_tree4.png" style="height: 150pt;" />
 </div><p>Our <strong class="program">cpviz</strong> output clearly warns that setting <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> to <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/> does not lead to a feasible solution. This can
 only mean that the solver tried also to refute the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/d8cf7a3120b7d7d866d4559e44ddcf1882fb079c.png" alt="x_1 = 2" style="vertical-align: -4px"/>. So we know that the branch <img class="math" src="../../_images/math/e198c995ea649ec8e2e697eb631109a7dadf5f4a.png" alt="x_1 \neq 2" style="vertical-align: -4px"/>
 after the branch <img class="math" src="../../_images/math/703a273fa3aa141626b1ad39e100d61bc0d369ed.png" alt="x_0 = 0" style="vertical-align: -3px"/> is leading nowhere. We have to backtrack and to refute the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/703a273fa3aa141626b1ad39e100d61bc0d369ed.png" alt="x_0 = 0" style="vertical-align: -3px"/>.
 We have then a new branch <img class="math" src="../../_images/math/990e8ae397b3f059937259be686dd889af9e432f.png" alt="x_0 \neq 0" style="vertical-align: -4px"/> in the real search tree.</p>
 <hr>
 <strong>Step 5:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree5_w.png"><img alt="../../_images/tree5_w.png" src="../../_images/tree5_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree5.png"><img alt="../../_images/real_tree5.png" src="../../_images/real_tree5.png" style="height: 170pt;" /></a>
+<div align="center"><img alt="../../_images/tree5_w.png" src="../../_images/tree5_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree5.png" src="../../_images/real_tree5.png" style="height: 170pt;" />
 </div><p>We find a feasible solution when <img class="math" src="../../_images/math/fcb3fc2febb1988b36512463c821633812603961.png" alt="x_0 = 1" style="vertical-align: -3px"/>. Thus we add the branch <img class="math" src="../../_images/math/fcb3fc2febb1988b36512463c821633812603961.png" alt="x_0 = 1" style="vertical-align: -3px"/> and indicate success.</p>
 <hr>
 <strong>Step 6:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree6_w.png"><img alt="../../_images/tree6_w.png" src="../../_images/tree6_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree6.png"><img alt="../../_images/real_tree6.png" src="../../_images/real_tree6.png" style="height: 200pt;" /></a>
+<div align="center"><img alt="../../_images/tree6_w.png" src="../../_images/tree6_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree6.png" src="../../_images/real_tree6.png" style="height: 200pt;" />
 </div><p>We find a second feasible solution when <img class="math" src="../../_images/math/39e43a623eb7e4d4904323f2eff89d7b81a38ec6.png" alt="x_0 = 2" style="vertical-align: -3px"/>. Before we can proceed by applying <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/39e43a623eb7e4d4904323f2eff89d7b81a38ec6.png" alt="x_0 = 2" style="vertical-align: -3px"/>.
 we first have to refute the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/fcb3fc2febb1988b36512463c821633812603961.png" alt="x_0 = 1" style="vertical-align: -3px"/>.</p>
 <hr>
 <strong>Step 7:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree7_w.png"><img alt="../../_images/tree7_w.png" src="../../_images/tree7_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree7.png"><img alt="../../_images/real_tree7.png" src="../../_images/real_tree7.png" style="height: 200pt;" /></a>
+<div align="center"><img alt="../../_images/tree7_w.png" src="../../_images/tree7_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree7.png" src="../../_images/real_tree7.png" style="height: 200pt;" />
 </div><p>We add a tentative branch in the <strong class="program">cpviz</strong> output. The branch before we applied the <tt class="docutils literal"><span class="pre">Decision</span></tt>
 <img class="math" src="../../_images/math/05828ed4feb79128b2e290b0ec46e6fa8f16a5ab.png" alt="x_2 = 0" style="vertical-align: -3px"/> that lead to a feasible solution, so now we know that the solver is trying to refute that decision:
 <img class="math" src="../../_images/math/81857f3f6eb5b0d2f20fa149b98301b2141e55f3.png" alt="x_2 \neq 0" style="vertical-align: -4px"/>.</p>
 <hr>
 <strong>Step 8:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree8_w.png"><img alt="../../_images/tree8_w.png" src="../../_images/tree8_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree8.png"><img alt="../../_images/real_tree8.png" src="../../_images/real_tree8.png" style="height: 200pt;" /></a>
+<div align="center"><img alt="../../_images/tree8_w.png" src="../../_images/tree8_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree8.png" src="../../_images/real_tree8.png" style="height: 200pt;" />
 </div><p>The final step is the branch <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/> that leads to a failure. This means that when we apply
 and refute <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>, we get a failure. Thus we know that <img class="math" src="../../_images/math/fcb3fc2febb1988b36512463c821633812603961.png" alt="x_0 = 1" style="vertical-align: -3px"/> and <img class="math" src="../../_images/math/f7632fc477a5b7070d827d4d0f91754a9db040ca.png" alt="x_0 \neq 1" style="vertical-align: -4px"/> both fail.</p>
 </div>
@@ -315,12 +317,12 @@ then at our <strong class="program">cpviz</strong> output.</p>
 <div class="math">
 <p><img src="../../_images/math/6467bedb3ce6da264fb69bb790412a7919d34c7b.png" alt="\textrm{AllDifferent}(x_0, x_1 -1, x_2 - 2, x_3 - 3):\\
 x_1: \cancel{1}, x_2: \cancel{2}, x_3: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation13.png"><img alt="alternate text" class="align-center" src="../../_images/propagation13.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation13.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/a307219065401375facb3c53344b697d6f24d863.png" alt="x_0 \in \{0\}, x_1 \in \{0,2,3\}, x_2 \in \{0,1,3\}, x_3 \in \{0,1,2\}" style="vertical-align: -5px"/></p>
 <div class="math">
 <p><img src="../../_images/math/490d1f90a772bcc516767b9064b7bbad8208c9b0.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_1: \cancel{0}, x_2: \cancel{0}, x_3: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation21.png"><img alt="alternate text" class="align-center" src="../../_images/propagation21.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation21.png" style="width: 162px; height: 162px;" />
 <p class="last"><img class="math" src="../../_images/math/897b0e9c33d353a7c71418936cff6056bfc4410b.png" alt="x_0 \in \{0\}, x_1 \in \{2,3\}, x_2 \in \{1,3\}, x_3 \in \{1,2\}" style="vertical-align: -5px"/>. No more
 propagation is possible. We then apply the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/d8cf7a3120b7d7d866d4559e44ddcf1882fb079c.png" alt="x_1 = 2" style="vertical-align: -4px"/></p>
 </dd>
@@ -331,12 +333,12 @@ propagation is possible. We then apply the <tt class="docutils literal"><span cl
 <div class="math">
 <p><img src="../../_images/math/e91682d0dec52d6609b8da6b89e65cf17decaa0f.png" alt="\textrm{AllDifferent}(x_0, x_1 -1, x_2-2, x_3-3):\\
 x_2: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation31.png"><img alt="alternate text" class="align-center" src="../../_images/propagation31.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation31.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/be0913c8416e373e2dba06aa19d21fd274ddf39c.png" alt="x_0 \in \{0\}, x_1 \in \{2\}, x_2 \in \{1\}, x_3 \in \{1,2\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/41c0a3d1370f38792296513c1dbbb9bd1db50aae.png" alt="\textrm{AllDifferent}(x_0, x_1 +1, x_2+2, x_3+3):\\
 x_2: \cancel{1}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation41.png"><img alt="alternate text" class="align-center" src="../../_images/propagation41.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation41.png" style="width: 162px; height: 162px;" />
 <p class="last"><img class="math" src="../../_images/math/b6315e8d5dfc4f6cbbdccc34880251ff5d3e1380.png" alt="x_0 \in \{0\}, x_1 \in \{2\}, x_2 \in \emptyset, x_3 \in \{1,2\}" style="vertical-align: -5px"/>.
 We have a failure as the domain of <img class="math" src="../../_images/math/6a7d010bbff66a0c41e43310a51efbaa6bf63396.png" alt="x_2" style="vertical-align: -3px"/> is empty. We backtrack to node <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>
 and refute the <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/d8cf7a3120b7d7d866d4559e44ddcf1882fb079c.png" alt="x_1 = 2" style="vertical-align: -4px"/>.</p>
@@ -350,12 +352,12 @@ and refute the <tt class="docutils literal"><span class="pre">Decision</span></t
 <div class="math">
 <p><img src="../../_images/math/c1e7a0718f946a94cf0a6f93ea0f64a8a3f4bd47.png" alt="\textrm{AllDifferent}(x_0, x_1 +1, x_2+2, x_3+3):\\
 x_3: \cancel{1}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation51.png"><img alt="alternate text" class="align-center" src="../../_images/propagation51.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation51.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/ef5536bb071882e7f020e2e7feac151f0ea73ac6.png" alt="x_0 \in \{0\}, x_1 \in \{3\}, x_2 \in \{1,3\}, x_3 \in \{2\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/06fcac553b54d9fb0c3f072b6feed9c39bdd321f.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_2: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation61.png"><img alt="alternate text" class="align-center" src="../../_images/propagation61.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation61.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/94750b2bc2b20d6d3ed70c3a9a61c6108d49cc6b.png" alt="x_0 \in \{0\}, x_1 \in \{3\}, x_2 \in \{1\}, x_3 \in \{2\}" style="vertical-align: -5px"/>.</p>
 <p>This is of course not possible and the following propagation detects this impossibility:</p>
 <div class="math">
@@ -376,32 +378,32 @@ to backtrack to the root node and refute the <tt class="docutils literal"><span 
 <div class="math">
 <p><img src="../../_images/math/dd397d8def3a5a7dd167cd399a5a0674aacf560e.png" alt="\textrm{AllDifferent}(x_0, x_1 -1, x_2-2, x_3-3):\\
 x_1: \cancel{2}, x_2: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation71.png"><img alt="alternate text" class="align-center" src="../../_images/propagation71.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation71.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/9a18801f39a657a5fccb48af5cff99dfa4695fba.png" alt="x_0 \in \{1\}, x_1 \in \{0,1,3\}, x_2 \in \{0,1,2\}, x_3 \in \{0,1,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/0f44c53c4598708f1c0bc27cc9d8a8fa03535040.png" alt="\textrm{AllDifferent}(x_0, x_1 +1, x_2+2, x_3+3):\\
 x_1: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation81.png"><img alt="alternate text" class="align-center" src="../../_images/propagation81.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation81.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/5f9365dbbf9a4cdda70b775f6b5df4918b527948.png" alt="x_0 \in \{1\}, x_1 \in \{1,3\}, x_2 \in \{0,1,2\}, x_3 \in \{0,1,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/ce3fcccfef04018015af1775215d9e3eb82b295f.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_1: \cancel{1}, x_2: \cancel{1}, x_3: \cancel{1}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation91.png"><img alt="alternate text" class="align-center" src="../../_images/propagation91.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation91.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/3754536c9c1cd392d8933745666adcaa1af5b5d6.png" alt="x_0 \in \{1\}, x_1 \in \{3\}, x_2 \in \{0,2\}, x_3 \in \{0,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/acb0701acf6cf225316e7f712ead6c61e0a10b0c.png" alt="\textrm{AllDifferent}(x_0, x_1+1, x_2+2, x_3+3):\\
 x_2: \cancel{2}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation101.png"><img alt="alternate text" class="align-center" src="../../_images/propagation101.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation101.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/eb28e413420df5e912009aaf1aafe2b8cce87128.png" alt="x_0 \in \{1\}, x_1 \in \{3\}, x_2 \in \{0\}, x_3 \in \{0,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/5eb925f1c131aa231081d40756325d7283948b7b.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_3: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation111.png"><img alt="alternate text" class="align-center" src="../../_images/propagation111.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation111.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/edc192c60682c8ee326585b52a14041e291d7f08.png" alt="x_0 \in \{1\}, x_1 \in \{3\}, x_2 \in \{0\}, x_3 \in \{0,2\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/4b95454e4e4578ef9b61a0bf9cee18632334081e.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_3: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation121.png"><img alt="alternate text" class="align-center" src="../../_images/propagation121.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation121.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/b75c1f7a133332eafb10c0f52c901175966a4541.png" alt="x_0 \in \{1\}, x_1 \in \{3\}, x_2 \in \{0\}, x_3 \in \{2\}" style="vertical-align: -5px"/>.</p>
 <p class="last">We have a solution! We have now to backtrack to node <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> and refute
 <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/fcb3fc2febb1988b36512463c821633812603961.png" alt="x_0 = 1" style="vertical-align: -3px"/>.</p>
@@ -417,32 +419,32 @@ x_3: \cancel{0}"/></p>
 <div class="math">
 <p><img src="../../_images/math/682dd6e84239ee19126bdb5e29938d3909948723.png" alt="\textrm{AllDifferent}(x_0, x_1 -1, x_2-2, x_3-3):\\
 x_1: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation131.png"><img alt="alternate text" class="align-center" src="../../_images/propagation131.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation131.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/519395b8e5ffcd55d8ed93dde117eb309491e450.png" alt="x_0 \in \{2\}, x_1 \in \{0,1,2\}, x_2 \in \{0,1,2, 3\}, x_3 \in \{0,1,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/f9b82fcf42e3610651e0df3b67ca7932db11fa5e.png" alt="\textrm{AllDifferent}(x_0, x_1 +1, x_2+2, x_3+3):\\
 x_1: \cancel{1}, x_2: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation14.png"><img alt="alternate text" class="align-center" src="../../_images/propagation14.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation14.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/c71fb9d092e4878f53dae70880f3da0a22fa62c4.png" alt="x_0 \in \{2\}, x_1 \in \{0,2\}, x_2 \in \{1,2, 3\}, x_3 \in \{0,1,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/51b77cd9d55f5b78c0484ba456927a1cd229c6c7.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_1: \cancel{2}, x_2: \cancel{2}, x_3: \cancel{2}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation15.png"><img alt="alternate text" class="align-center" src="../../_images/propagation15.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation15.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/09c6a4c23512ce6acb6f16073a3c44b839ebe9d1.png" alt="x_0 \in \{2\}, x_1 \in \{0\}, x_2 \in \{1,3\}, x_3 \in \{0,1,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/aa10f00713901c4c64f4238b6ef615278ea5f1fe.png" alt="\textrm{AllDifferent}(x_0, x_1-1, x_2-2, x_3-3):\\
 x_2: \cancel{1}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation16.png"><img alt="alternate text" class="align-center" src="../../_images/propagation16.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation16.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/f49ccac35dc3554852bc9486d20fa6fe394496df.png" alt="x_0 \in \{2\}, x_1 \in \{0\}, x_2 \in \{3\}, x_3 \in \{0,1,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/4b95454e4e4578ef9b61a0bf9cee18632334081e.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_3: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation17.png"><img alt="alternate text" class="align-center" src="../../_images/propagation17.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation17.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/9038ff218816c5ac691e048c91bc12ce6b4e5449.png" alt="x_0 \in \{2\}, x_1 \in \{0\}, x_2 \in \{3\}, x_3 \in \{1,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/5eb925f1c131aa231081d40756325d7283948b7b.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_3: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation18.png"><img alt="alternate text" class="align-center" src="../../_images/propagation18.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation18.png" style="width: 162px; height: 162px;" />
 <p class="last"><img class="math" src="../../_images/math/6e21615a49bd89628f5622af95828f9668ff3627.png" alt="x_0 \in \{2\}, x_1 \in \{0\}, x_2 \in \{3\}, x_3 \in \{1\}" style="vertical-align: -5px"/> and
 we have a second distinct solution! We backtrack to node <img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6" style="vertical-align: 0px"/> and
 refute <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/39e43a623eb7e4d4904323f2eff89d7b81a38ec6.png" alt="x_0 = 2" style="vertical-align: -3px"/>.</p>
@@ -455,12 +457,12 @@ refute <tt class="docutils literal"><span class="pre">Decision</span></tt> <img 
 <div class="math">
 <p><img src="../../_images/math/c677eaa7ded8f5406bb25dd9919f1f42590287f0.png" alt="\textrm{AllDifferent}(x_0, x_1 +1, x_2+2, x_3+3):\\
 x_1: \cancel{2}, x_2: \cancel{1}, x_3: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation19.png"><img alt="alternate text" class="align-center" src="../../_images/propagation19.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation19.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/a73d3ebc103dab0b6c1d7c2f91193eb5801d5d8c.png" alt="x_0 \in \{3\}, x_1 \in \{0,1,3\}, x_2 \in \{0,2, 3\}, x_3 \in \{1,2,3\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/1d02162a15833ea9ad85c57cefdb6b487ba1a495.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_1: \cancel{3}, x_2: \cancel{3}, x_3: \cancel{3}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation20.png"><img alt="alternate text" class="align-center" src="../../_images/propagation20.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation20.png" style="width: 162px; height: 162px;" />
 <p class="last"><img class="math" src="../../_images/math/deb5864d9249a7bf76a7447e5367f4ea7abd74cb.png" alt="x_0 \in \{3\}, x_1 \in \{0,1\}, x_2 \in \{0,2\}, x_3 \in \{1,2\}" style="vertical-align: -5px"/>.
 No more propagation. We thus apply our search strategy and apply <tt class="docutils literal"><span class="pre">Decision</span></tt> <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>.</p>
 </dd>
@@ -471,12 +473,12 @@ No more propagation. We thus apply our search strategy and apply <tt class="docu
 <div class="math">
 <p><img src="../../_images/math/d3ccf0d24a3d230842f9721f627a592725f5b6fa.png" alt="\textrm{AllDifferent}(x_0, x_1-1, x_2-2, x_3-3):\\
 x_3: \cancel{2}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation211.png"><img alt="alternate text" class="align-center" src="../../_images/propagation211.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation211.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/4b15899db07d556f09660c476b38f743fecd25bd.png" alt="x_0 \in \{3\}, x_1 \in \{0\}, x_2 \in \{0,2\}, x_3 \in \{1\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/4b95454e4e4578ef9b61a0bf9cee18632334081e.png" alt="\textrm{AllDifferent}(x_0, x_1, x_2, x_3):\\
 x_3: \cancel{0}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation22.png"><img alt="alternate text" class="align-center" src="../../_images/propagation22.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation22.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/24bd55b9a58c667253a8bad7daece54e7151ef60.png" alt="x_0 \in \{3\}, x_1 \in \{0\}, x_2 \in \{2\}, x_3 \in \{1\}" style="vertical-align: -5px"/> which is impossible as the next propagation shows:</p>
 <div class="math">
 <p><img src="../../_images/math/acb0701acf6cf225316e7f712ead6c61e0a10b0c.png" alt="\textrm{AllDifferent}(x_0, x_1+1, x_2+2, x_3+3):\\
@@ -491,7 +493,7 @@ we have failure and have to backtrack to node <img class="math" src="../../_imag
 <div class="math">
 <p><img src="../../_images/math/a4acb54383f7abc266e6499d145463a4e95c637d.png" alt="\textrm{AllDifferent}(x_0, x_1-1, x_2-2, x_3-3):\\
 x_2: \cancel{2}"/></p>
-</div><a class="reference internal image-reference" href="../../_images/propagation23.png"><img alt="alternate text" class="align-center" src="../../_images/propagation23.png" style="width: 162px; height: 162px;" /></a>
+</div><img alt="alternate text" class="align-center" src="../../_images/propagation23.png" style="width: 162px; height: 162px;" />
 <p><img class="math" src="../../_images/math/fc257965bf8f625a19f23d3c3dbbe28630b2738d.png" alt="x_0 \in \{3\}, x_1 \in \{0\}, x_2 \in \{0\}, x_3 \in \{1,2\}" style="vertical-align: -5px"/>.</p>
 <div class="math">
 <p><img src="../../_images/math/beab9d4decc2e61e4fe5aedf349bb5c63b15fa61.png" alt="\textrm{AllDifferent}(x_0, x_1+1, x_2+2, x_3+3):\\
@@ -519,78 +521,69 @@ very little information about the propagation process. In short, if we find</p>
 actual search tree and in the right column our <strong class="program">cpviz</strong> output of the propagation.</p>
 <hr>
 <strong>Step 0:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree0.png"><img alt="../../_images/tree0.png" src="../../_images/tree0.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz0.svg"><img height="200pt" src="../../_images/viz0.svg" /></a>
-</div><p>Nothing happens as we add a dummy root node. Notice that the variables are numbered from 1 to 4.</p>
+<div align="center"><img alt="../../_images/tree0.png" src="../../_images/tree0.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz0.svg" /></div><p>Nothing happens as we add a dummy root node. Notice that the variables are numbered from 1 to 4.</p>
 <hr>
 <strong>Step 1:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree1_w.png"><img alt="../../_images/tree1_w.png" src="../../_images/tree1_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree1.png"><img alt="../../_images/real_tree1.png" src="../../_images/real_tree1.png" style="height: 100pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz1.svg"><img height="200pt" src="../../_images/viz1.svg" /></a>
-</div><p>The yellow rectangle tells us that the focus is on variable <img class="math" src="../../_images/math/e6420cff7f40f2201f5d7d9c1b4259c13d6791dc.png" alt="1 (x_0)" style="vertical-align: -4px"/>, which means that at the next step a value will
+<div align="center"><img alt="../../_images/tree1_w.png" src="../../_images/tree1_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree1.png" src="../../_images/real_tree1.png" style="height: 100pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz1.svg" /></div><p>The yellow rectangle tells us that the focus is on variable <img class="math" src="../../_images/math/e6420cff7f40f2201f5d7d9c1b4259c13d6791dc.png" alt="1 (x_0)" style="vertical-align: -4px"/>, which means that at the next step a value will
 be assigned to this variable.</p>
 <hr>
 <strong>Step 2:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree2_w.png"><img alt="../../_images/tree2_w.png" src="../../_images/tree2_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree2.png"><img alt="../../_images/real_tree2.png" src="../../_images/real_tree2.png" style="height: 100pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz2.svg"><img height="200pt" src="../../_images/viz2.svg" /></a>
-</div><p>The red square indicates that the variable <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> was fixed to <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>.
+<div align="center"><img alt="../../_images/tree2_w.png" src="../../_images/tree2_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree2.png" src="../../_images/real_tree2.png" style="height: 100pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz2.svg" /></div><p>The red square indicates that the variable <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> was fixed to <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>.
 The dark green squares show the propagation. The focus is on variable <img class="math" src="../../_images/math/aca44f04a0f1129e39921542cc229076a0b358e4.png" alt="2 (x_1)" style="vertical-align: -4px"/>.</p>
 <hr>
 <strong>Step 3:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree3_w.png"><img alt="../../_images/tree3_w.png" src="../../_images/tree3_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree3.png"><img alt="../../_images/real_tree3.png" src="../../_images/real_tree3.png" style="height: 150pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz3.svg"><img height="200pt" src="../../_images/viz3.svg" /></a>
-</div><p>The red rectangle warns of a failure: there is no feasible solution with
+<div align="center"><img alt="../../_images/tree3_w.png" src="../../_images/tree3_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree3.png" src="../../_images/real_tree3.png" style="height: 150pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz3.svg" /></div><p>The red rectangle warns of a failure: there is no feasible solution with
 <img class="math" src="../../_images/math/703a273fa3aa141626b1ad39e100d61bc0d369ed.png" alt="x_0 = 0" style="vertical-align: -3px"/> and <img class="math" src="../../_images/math/d8cf7a3120b7d7d866d4559e44ddcf1882fb079c.png" alt="x_1 = 2" style="vertical-align: -4px"/>.</p>
 <hr>
 <strong>Step 4:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree4_w.png"><img alt="../../_images/tree4_w.png" src="../../_images/tree4_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree4.png"><img alt="../../_images/real_tree4.png" src="../../_images/real_tree4.png" style="height: 150pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz4.svg"><img height="200pt" src="../../_images/viz4.svg" /></a>
-</div><p>There is not much information here: only that the last variable tried
+<div align="center"><img alt="../../_images/tree4_w.png" src="../../_images/tree4_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree4.png" src="../../_images/real_tree4.png" style="height: 150pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz4.svg" /></div><p>There is not much information here: only that the last variable tried
 was <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce6f96bf.png" alt="x_1" style="vertical-align: -4px"/> and that we ended up with a failure.</p>
 <hr>
 <strong>Step 5:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree5_w.png"><img alt="../../_images/tree5_w.png" src="../../_images/tree5_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree5.png"><img alt="../../_images/real_tree5.png" src="../../_images/real_tree5.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz5.svg"><img height="200pt" src="../../_images/viz5.svg" /></a>
-</div><p>Solution found.</p>
+<div align="center"><img alt="../../_images/tree5_w.png" src="../../_images/tree5_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree5.png" src="../../_images/real_tree5.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz5.svg" /></div><p>Solution found.</p>
 <hr>
 <strong>Step 6:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree6_w.png"><img alt="../../_images/tree6_w.png" src="../../_images/tree6_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree6.png"><img alt="../../_images/real_tree6.png" src="../../_images/real_tree6.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz6.svg"><img height="200pt" src="../../_images/viz6.svg" /></a>
-</div><p>Solution found.</p>
+<div align="center"><img alt="../../_images/tree6_w.png" src="../../_images/tree6_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree6.png" src="../../_images/real_tree6.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz6.svg" /></div><p>Solution found.</p>
 <hr>
 <strong>Step 7:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree7_w.png"><img alt="../../_images/tree7_w.png" src="../../_images/tree7_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree7.png"><img alt="../../_images/real_tree7.png" src="../../_images/real_tree7.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz7.svg"><img height="200pt" src="../../_images/viz7.svg" /></a>
-</div><p>End of propagation at node 8 and focus on variable <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce6f96bf.png" alt="x_1" style="vertical-align: -4px"/>.</p>
+<div align="center"><img alt="../../_images/tree7_w.png" src="../../_images/tree7_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree7.png" src="../../_images/real_tree7.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz7.svg" /></div><p>End of propagation at node 8 and focus on variable <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce6f96bf.png" alt="x_1" style="vertical-align: -4px"/>.</p>
 <hr>
 <strong>Step 8:</strong>
-<div align="center"><a class="reference internal image-reference" href="../../_images/tree8_w.png"><img alt="../../_images/tree8_w.png" src="../../_images/tree8_w.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/real_tree8.png"><img alt="../../_images/real_tree8.png" src="../../_images/real_tree8.png" style="height: 200pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/transparent.png"><img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" /></a>
-<a class="reference internal image-reference" href="../../_images/viz8.svg"><img height="200pt" src="../../_images/viz8.svg" /></a>
-</div><p>Failure. The first failure was when <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>.</p>
+<div align="center"><img alt="../../_images/tree8_w.png" src="../../_images/tree8_w.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img alt="../../_images/real_tree8.png" src="../../_images/real_tree8.png" style="height: 200pt;" />
+<img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
+<img height="200pt" src="../../_images/viz8.svg" /></div><p>Failure. The first failure was when <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>.</p>
 </div>
 </div>
 </div>
@@ -712,7 +705,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -72,7 +74,7 @@
 </ol></div>
 <p>We describe the job-shop problem, a first model and the benchmark data. The job-shop problem belongs to the
 intractable problems (<img class="math" src="../../_images/math/134004c561e4c0cca193dbf5122e5ca963dd5b7f.png" alt="\in" style="vertical-align: -1px"/> NP). Only few very special cases can be solved in
-polynomial time (see <a class="reference internal" href="#garey1976" id="id1">[Garey1976]</a> and <a class="reference internal" href="#kis2002" id="id2">[Kis2002]</a>). The definition of this fascinating problem is not that complicated but you
+polynomial time (see <a class="reference internal" href="#garey1976">[Garey1976]</a> and <a class="reference internal" href="#kis2002">[Kis2002]</a>). The definition of this fascinating problem is not that complicated but you
 probably will need some extra attention if this is your first encounter with it. Once you grasp its
 definition, the next subsections should flow easily.</p>
 <table class="docutils citation" frame="void" id="garey1976" rules="none">
@@ -90,7 +92,7 @@ Mathematics of Operations Research, volume 1, pp 117-129, 1976.</td></tr>
 </tbody>
 </table>
 <div class="section" id="description-of-the-problem-difficulty">
-<h2>6.1.1. Description of the problem <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a></h2>
+<h2>6.1.1. Description of the problem <img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></h2>
 <p>In the classical job-shop problem there are <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> jobs that must be processed on <img class="math" src="../../_images/math/f5047d1e0cbb50ec208923a22cd517c55100fa7b.png" alt="m" style="vertical-align: 0px"/> machines.
 Each job consists of a sequence of different tasks<a class="footnote-reference" href="#tasks-operations" id="id3">[1]</a>. Each task needs to be processed during an
 uninterrupted period of time on a given machine.</p>
@@ -143,11 +145,11 @@ the starting time of the last task of job <img class="math" src="../../_images/m
 </div><p>Let&#8217;s try to find a schedule for our example. Suppose you want to favour job 1 because not only did you see that
 it is the longest job to process but its last task takes 4 units of time. Here is the <em>Gantt chart</em> of a possible
 schedule:</p>
-<a class="reference internal image-reference" href="../../_images/schedule1.png"><img alt="../../_images/schedule1.png" class="align-center" src="../../_images/schedule1.png" style="width: 500pt;" /></a>
+<img alt="../../_images/schedule1.png" class="align-center" src="../../_images/schedule1.png" style="width: 500pt;" />
 <p>This is a feasible schedule since tasks within every job are processed one after the other in the right sequence and
 each task is processed on the right machine. The makespan
 is 12 units of time. Can we do better? Focusing on one job is probably not the best strategy. Here is an optimal solution:</p>
-<a class="reference internal image-reference" href="../../_images/schedule2.png"><img alt="../../_images/schedule2.png" class="align-center" src="../../_images/schedule2.png" style="width: 500pt;" /></a>
+<img alt="../../_images/schedule2.png" class="align-center" src="../../_images/schedule2.png" style="width: 500pt;" />
 <p>Its makespan is 11 units of time.</p>
 <p>How can we simply describe a schedule? Let us define <img class="math" src="../../_images/math/9d9454be3db1a8cbe0b9f0a7926a43da92cb0785.png" alt="t_{ij}" style="vertical-align: -6px"/> as the starting time of task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/>. A feasible
 <em>schedule</em> can then be defined as a set<a class="footnote-reference" href="#set-and-a-correspondence-rule" id="id5">[3]</a> of non negative integers <img class="math" src="../../_images/math/e58a84f399d89acb26b4718c4dcdccea6ea15762.png" alt="\{t_{ij}\}" style="vertical-align: -6px"/>
@@ -200,7 +202,7 @@ allows a better understanding of the structure of the problem.</p>
 represents the <em>disjunctive graph</em> of
 our example.</p>
 <div class="figure align-center" id="disjunctive-graph1">
-<a class="reference internal image-reference" href="../../_images/disjunctive_graph1.png"><img alt="A disjunctive graph." src="../../_images/disjunctive_graph1.png" style="width: 400pt;" /></a>
+<img alt="A disjunctive graph." src="../../_images/disjunctive_graph1.png" style="width: 400pt;" />
 <p class="caption">A disjunctive graph.</p>
 </div>
 <p>The disjunctive graph is <img class="math" src="../../_images/math/c247af1094223517669e65d6e5512f7a2b9957f5.png" alt="G = (V, C \cup D)" style="vertical-align: -4px"/> where</p>
@@ -226,13 +228,13 @@ a total order on its vertices, i.e. a complete directed acyclic graph lets you o
 </tbody>
 </table>
 <p>Our first schedule is represented in the next figure.</p>
-<a class="reference internal image-reference" href="../../_images/disjunctive_graph2.png"><img alt="../../_images/disjunctive_graph2.png" class="align-center" src="../../_images/disjunctive_graph2.png" style="width: 400pt;" /></a>
+<img alt="../../_images/disjunctive_graph2.png" class="align-center" src="../../_images/disjunctive_graph2.png" style="width: 400pt;" />
 <p>We also want to avoid cycles between disjunctive and conjunctive arcs because they lead to infeasible schedules.
 A feasible schedule is represented by a directed acyclic disjunctive graph. In fact, the opposite is also true. A complete orientation
 of the edges in <img class="math" src="../../_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D" style="vertical-align: 0px"/> defines a feasible schedule if and only if the resulting directed disjunctive graph is acyclic.</p>
 <p>The makespan is given by the longest weighted path from <img class="math" src="../../_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s" style="vertical-align: 0px"/> to <img class="math" src="../../_images/math/e0d2bf360290fd61d1c1557e763f2622363b3d35.png" alt="t" style="vertical-align: 0px"/>. This path - thickened in the next figure -
 is called the <em>critical path</em>.</p>
-<a class="reference internal image-reference" href="../../_images/disjunctive_graph3.png"><img alt="../../_images/disjunctive_graph3.png" class="align-center" src="../../_images/disjunctive_graph3.png" style="width: 400pt;" /></a>
+<img alt="../../_images/disjunctive_graph3.png" class="align-center" src="../../_images/disjunctive_graph3.png" style="width: 400pt;" />
 <p>Its length is <img class="math" src="../../_images/math/b81fd03335422b410055cdc7d94a398b26cd71da.png" alt="0+4+4+2+2+0=12" style="vertical-align: -1px"/>.</p>
 <p>We can now define the job-shop problem as a graph problem: find a complete
 orientation of the edges of a disjunctive graph such that the resulting directed graph is acyclic and the longest weighted path
@@ -269,7 +271,7 @@ cycles in a clique corresponding to a machine<a class="footnote-reference" href=
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id9">[7]</a></td><td><p class="first">Here is why. Consider the following situation</p>
-<a class="reference internal image-reference" href="../../_images/no_cycle.png"><img alt="../../_images/no_cycle.png" class="align-center" src="../../_images/no_cycle.png" style="width: 100pt;" /></a>
+<img alt="../../_images/no_cycle.png" class="align-center" src="../../_images/no_cycle.png" style="width: 100pt;" />
 <p class="last">We have <img class="math" src="../../_images/math/2a0d4aca2ede03ed690aa6b8156cf1365c2092c4.png" alt="t_1 + p_1 \leqslant t_2" style="vertical-align: -4px"/>, <img class="math" src="../../_images/math/0aba1ad3e71e836ae6be0c10d98009225cc7d536.png" alt="t_2 + p_2 \leqslant t_3" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/f8a3ac00f959fceb468597db76b05b631793553f.png" alt="t_3 + p_3 \leqslant t_1" style="vertical-align: -4px"/>. Add
 these three inequalities and you obtain <img class="math" src="../../_images/math/ae74ef04a3cb82e2385581b032b5eaca8261783b.png" alt="p_1 + p_2 + p_3 \leqslant 0" style="vertical-align: -4px"/>. This is impossible if one of the
 <img class="math" src="../../_images/math/245a5501248a6ea24f520f76d4140cedf08e1674.png" alt="p_i" style="vertical-align: -4px"/> is greater than 0 as every <img class="math" src="../../_images/math/c4142f7b4dd824daf7e343ac3673560bcc04c2ed.png" alt="p_i \geqslant 0" style="vertical-align: -4px"/>.</p>
@@ -389,7 +391,7 @@ actually</p>
 <div class="math">
 <p><img src="../../_images/math/7b12ec61702503b7f01013a26b6af63aacc6136b.png" alt="[(0,54), (1,79), (2,16), (3,66), (4,58)]"/></p>
 </div><p>Because of this trick, one can not easily define our problem instance above in this format and we don&#8217;t attempt to do it.</p>
-<p>You can find anything you ever wanted to know and more about this format in <a class="reference internal" href="#taillard1993" id="id12">[Taillard1993]</a>.</p>
+<p>You can find anything you ever wanted to know and more about this format in <a class="reference internal" href="#taillard1993">[Taillard1993]</a>.</p>
 <table class="docutils citation" frame="void" id="taillard1993" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -600,7 +602,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

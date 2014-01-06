@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -161,15 +163,15 @@ depending on the definition of a neighborhood.</p>
 find a good (or the best) solution in this neighborhood and start all over again until a stopping criterion is met.</p>
 <p>Let&#8217;s denote by  <img class="math" src="../../_images/math/1746aa479b05328a5a521f914f9359d54a17853d.png" alt="\mathcal{N}_x" style="vertical-align: -3px"/> the neighborhood of a solution <img class="math" src="../../_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x" style="vertical-align: 0px"/>.</p>
 <p>In its very basic form, we could formulate local search like this:</p>
-<a class="reference internal image-reference" href="../../_images/local_search_basic_pseudo_code.png"><img alt="../../_images/local_search_basic_pseudo_code.png" class="align-center" src="../../_images/local_search_basic_pseudo_code.png" style="height: 100pt;" /></a>
+<img alt="../../_images/local_search_basic_pseudo_code.png" class="align-center" src="../../_images/local_search_basic_pseudo_code.png" style="height: 100pt;" />
 <p>Often, steps 1. and 2. are done simultaneously. This is the case in <em>or-tools</em>.</p>
 <p>The following figure illustrates this process:</p>
-<a class="reference internal image-reference" href="../../_images/local_search_basic.png"><img alt="../../_images/local_search_basic.png" class="align-center" src="../../_images/local_search_basic.png" style="height: 350pt;" /></a>
+<img alt="../../_images/local_search_basic.png" class="align-center" src="../../_images/local_search_basic.png" style="height: 350pt;" />
 <p>This figure depicts a function <img class="math" src="../../_images/math/bb2c93730dbb48558bb3c4738c956c4e8f816437.png" alt="f" style="vertical-align: -4px"/> to minimize. Don&#8217;t be fooled by its 2-dimensionality. The <img class="math" src="../../_images/math/26eeb5258ca5099acf8fe96b2a1049c48c89a5e6.png" alt="x" style="vertical-align: 0px"/>-axis
 represents solutions in a multi-dimensional space. The <img class="math" src="../../_images/math/b13f21416d84e13708696f34dea81026cda583c9.png" alt="z" style="vertical-align: 0px"/>-axis represents a 1-dimensional space with the values
 of the objective function <img class="math" src="../../_images/math/bb2c93730dbb48558bb3c4738c956c4e8f816437.png" alt="f" style="vertical-align: -4px"/>.</p>
 <p>Let&#8217;s zoom in on the neighborhoods and found solutions:</p>
-<a class="reference internal image-reference" href="../../_images/local_search_basic_zoom.png"><img alt="../../_images/local_search_basic_zoom.png" class="align-center" src="../../_images/local_search_basic_zoom.png" style="height: 150pt;" /></a>
+<img alt="../../_images/local_search_basic_zoom.png" class="align-center" src="../../_images/local_search_basic_zoom.png" style="height: 150pt;" />
 <p>The local search procedure starts from an initial feasible solution <img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> and searches the neighborhood
 <img class="math" src="../../_images/math/854fdd1c13fecf3dd523f70c6920c1dbecbdc8e4.png" alt="\mathcal{N}_{x_0}" style="vertical-align: -4px"/> of this solution. The &#8220;best&#8221; solution found is <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce6f96bf.png" alt="x_1" style="vertical-align: -4px"/>. The local search procedure
 starts over again but with <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce6f96bf.png" alt="x_1" style="vertical-align: -4px"/> as starting solution. In the neighborhood <img class="math" src="../../_images/math/9b7d8d158752c51d5ac33069fe6ef47d0a566193.png" alt="\mathcal{N}_{x_1}" style="vertical-align: -5px"/>, the best solution found is
@@ -331,7 +333,7 @@ for the best.</p>
 <p class="topic-title first">What do we mean by a <em>guarantee</em> on the solution?</p>
 <p>Several concepts of <em>guarantee</em> have been developed. We will not go into details<a class="footnote-reference" href="#details-guarantee-sol-quality" id="id12">[11]</a>
 about the concept of
-<em>guarantee</em> but let&#8217;s give an example. In a now famous report <a class="reference internal" href="#christofides1976" id="id13">[Christofides1976]</a>, Christofides proposed and analyzed a
+<em>guarantee</em> but let&#8217;s give an example. In a now famous report <a class="reference internal" href="#christofides1976">[Christofides1976]</a>, Christofides proposed and analyzed a
 heuristic that is guaranteed to solve the metric Travelling Salesman Problem<a class="footnote-reference" href="#metrictsp" id="id14">[12]</a> within a 3/2 factor, i.e.
 no matter the instance, this heuristic will always return a solution whose cost is at most 3/2 times
 the cost of the optimal solution. This means that in the worst case, the returned solution costs
@@ -516,7 +518,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

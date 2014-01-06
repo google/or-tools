@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -79,7 +81,7 @@ can be restarted again around a new initial solution. The <tt class="docutils li
 chapter <a class="reference internal" href="../metaheuristics.html#chapter-metaheuristics"><em>Meta-heuristics: several previous problems</em></a> when we implement (meta-)heuristics based on local searches that restart
 from a given solution.</p>
 <p>Wow, this went fast! Let&#8217;s summarize all this in the next picture:</p>
-<a class="reference internal image-reference" href="../../_images/ls_basic_idea1.png"><img alt="../../_images/ls_basic_idea1.png" class="align-center" src="../../_images/ls_basic_idea1.png" style="width: 500pt;" /></a>
+<img alt="../../_images/ls_basic_idea1.png" class="align-center" src="../../_images/ls_basic_idea1.png" style="width: 500pt;" />
 <p><tt class="docutils literal"><span class="pre">ls</span></tt> is the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> that constructs the candidate solutions. The search
 tree very quickly becomes completely unbalanced if we only keep finding solutions in the left branches. We&#8217;ll see a balancing
 mechanism that involves one <tt class="docutils literal"><span class="pre">BalancingDecision</span></tt> at the end of this section.</p>
@@ -94,7 +96,7 @@ the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <
 stopping criteria is met or the neighborhood has been exhausted, the current solution of the CP solver is the next starting
 solution.</p>
 <p>Let&#8217;s illustrate this:</p>
-<a class="reference internal image-reference" href="../../_images/ls_basic_idea2.png"><img alt="../../_images/ls_basic_idea2.png" class="align-center" src="../../_images/ls_basic_idea2.png" style="width: 500pt;" /></a>
+<img alt="../../_images/ls_basic_idea2.png" class="align-center" src="../../_images/ls_basic_idea2.png" style="width: 500pt;" />
 <p>The code consistently use the term <em>neighbor</em> to denote what we call a <em>candidate solution</em> in this manual.
 We prefer to emphasize the fact
 that this <em>neighbor</em> solution is in fact a feasible solution that the CP solver tests and accepts or rejects.</p>
@@ -123,7 +125,7 @@ by <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> to
 <div class="section" id="overview-of-the-local-search-mechanism-in-or-tools">
 <span id="local-search-mechanism"></span><h2>6.5.2. Overview of the Local Search Mechanism in <em>or-tools</em></h2>
 <p>The next figure illustrates the basic mechanism of local search in <em>or-tools</em>:</p>
-<a class="reference internal image-reference" href="../../_images/lsn_mechanism.png"><img alt="../../_images/lsn_mechanism.png" class="align-center" src="../../_images/lsn_mechanism.png" style="width: 500pt;" /></a>
+<img alt="../../_images/lsn_mechanism.png" class="align-center" src="../../_images/lsn_mechanism.png" style="width: 500pt;" />
 <p>We start with an initial feasible solution. The <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> callback method
 from the local search operator(s)<a class="footnote-reference" href="#local-search-operator-singular" id="id1">[1]</a>
 constructs candidate solutions one by one<a class="footnote-reference" href="#makeoneneighbor-convenience-fct" id="id2">[2]</a>. These solutions are checked by the CP solver and completed if needed.
@@ -313,7 +315,7 @@ for the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></t
 </div>
 </div>
 <div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">
-<span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a> <a class="reference internal" href="../../_images/android1.png"><img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></a></h2>
+<span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <img alt="*" src="../../_images/android1.png" style="height: 15pt;" /> <img alt="*" src="../../_images/android1.png" style="height: 15pt;" /></h2>
 <p>We feel compelled to use our warning box again:</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -981,7 +983,7 @@ Search:
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Google.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>
