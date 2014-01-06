@@ -1,4 +1,13 @@
 
+v.0.2.8: (2014-01-05 19:26:05)
+------------------------------
+* Major enhancements to the manual:
+  - chapter 10 corrected and published.
+* adapt to Google drive.
+* update to 2014.
+* Back to Sphinx 1.1.3
+
+
 v.0.2.7: (2013-06-21 14:49:53)
 ------------------------------
 * Minor enhancements to the manual:
