@@ -56,6 +56,7 @@ class CycleTimer {
   int64 GetCycles() const;
   int64 GetInUsec() const;
   int64 GetInMs() const;
+
  private:
   enum State {
     INIT,
@@ -74,9 +75,7 @@ class CycleTimerBase {
     return static_cast<double>(cycles) / 1000000.0;
   }
 
-  static int64 UsecToCycles(int64 usec) {
-    return usec;
-  }
+  static int64 UsecToCycles(int64 usec) { return usec; }
 };
 
 class ScopedWallTime {

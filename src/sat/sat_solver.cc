@@ -20,6 +20,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/join.h"
+#include "util/time_limit.h"
 #include "base/stl_util.h"
 
 namespace operations_research {
@@ -28,7 +29,7 @@ namespace sat {
 namespace {
 
 // Returns true if the given watcher list contains the given clause.
-template<typename Watcher>
+template <typename Watcher>
 bool WatcherListContains(const std::vector<Watcher>& list,
                          const SatClause& candidate) {
   for (const Watcher& watcher : list) {
@@ -38,30 +39,25 @@ bool WatcherListContains(const std::vector<Watcher>& list,
 }
 
 // A simple wrapper to simplify the erase(std::remove_if()) pattern.
-template<typename Container, typename Predicate>
+template <typename Container, typename Predicate>
 void RemoveIf(Container c, Predicate p) {
   c->erase(std::remove_if(c->begin(), c->end(), p), c->end());
 }
 
 // Removes dettached clauses from a watcher list.
-template<typename Watcher>
+template <typename Watcher>
 bool CleanUpPredicate(const Watcher& watcher) {
   return !watcher.clause->IsAttached();
 }
 
 // Compares literals by variable first, then sign.
-bool CompareLiteral(Literal l1, Literal l2) {
-  return l1.Index() < l2.Index();
-}
+bool CompareLiteral(Literal l1, Literal l2) { return l1.Index() < l2.Index(); }
 }  // namespace
 
 // ----- LiteralWatchers -----
 
 LiteralWatchers::LiteralWatchers()
-    : is_clean_(true),
-      num_inspected_clauses_(0),
-      stats_("LiteralWatchers")
-{}
+    : is_clean_(true), num_inspected_clauses_(0), stats_("LiteralWatchers") {}
 
 LiteralWatchers::~LiteralWatchers() {
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
@@ -112,8 +108,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     SatClause* clause = watchers[i].clause;
     if (!clause->PropagateOnFalse(false_literal, trail)) {
       // Conflict: All literals of this clause are false.
-      memmove(&watchers[new_index],
-              &watchers[i],
+      memmove(&watchers[new_index], &watchers[i],
               (initial_size - i) * sizeof(Watcher));
       watchers.resize(new_index + initial_size - i);
       return false;
@@ -134,14 +129,14 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
 
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   ++num_watched_clauses_;
-  UpdateStatistics(*clause, /*added=*/ true);
+  UpdateStatistics(*clause, /*added=*/true);
   clause->SortLiterals(statistics_, parameters_);
   return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
 }
 
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   --num_watched_clauses_;
-  UpdateStatistics(*clause, /*added=*/ false);
+  UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
   is_clean_ = false;
   needs_cleaning_[clause->FirstLiteral().Index()] = true;
@@ -190,8 +185,8 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   implications_[b.Negated().Index()].push_back(a);
 }
 
-void BinaryImplicationGraph::AddBinaryConflict(
-    Literal a, Literal b, Trail* trail) {
+void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
+                                               Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   AddBinaryClause(a, b);
   if (trail->Assignment().IsLiteralFalse(a)) {
@@ -201,8 +196,8 @@ void BinaryImplicationGraph::AddBinaryConflict(
   }
 }
 
-bool BinaryImplicationGraph::PropagateOnTrue(
-    Literal true_literal, Trail* trail) {
+bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
+                                             Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   const VariablesAssignment& assignment = trail->Assignment();
   for (Literal literal : implications_[true_literal.Index()]) {
@@ -220,8 +215,8 @@ bool BinaryImplicationGraph::PropagateOnTrue(
       // Conflict.
       temporary_clause_[0] = true_literal.Negated();
       temporary_clause_[1] = literal;
-      trail->SetFailingClause(ClauseRef(&temporary_clause_[0],
-                                        &temporary_clause_[0] + 2));
+      trail->SetFailingClause(
+          ClauseRef(&temporary_clause_[0], &temporary_clause_[0] + 2));
       return false;
     } else {
       // Propagation.
@@ -231,8 +226,8 @@ bool BinaryImplicationGraph::PropagateOnTrue(
   return true;
 }
 
-void BinaryImplicationGraph::MinimizeClause(
-    const Trail& trail, std::vector<Literal>* conflict) {
+void BinaryImplicationGraph::MinimizeClause(const Trail& trail,
+                                            std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   is_removed_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -259,8 +254,9 @@ void BinaryImplicationGraph::MinimizeClause(
     for (Literal implied : implications_[lit.Index()]) {
       if (is_marked_[implied.Index()]) {
         DCHECK_LE(lit_level, trail.Info(implied.Variable()).level);
-        if (lit_level == trail.Info(implied.Variable()).level
-            && is_removed_[implied.Index()]) continue;
+        if (lit_level == trail.Info(implied.Variable()).level &&
+            is_removed_[implied.Index()])
+          continue;
         keep_literal = false;
         break;
       }
@@ -309,7 +305,7 @@ void BinaryImplicationGraph::RemoveFixedVariables(
 SatClause* SatClause::Create(const std::vector<Literal>& literals, ClauseType type) {
   CHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
-      ::operator new (sizeof(SatClause) + literals.size() * sizeof(Literal)));
+      ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
   clause->size_ = literals.size();
   for (int i = 0; i < literals.size(); ++i) {
     clause->literals_[i] = literals[i];
@@ -336,8 +332,8 @@ SatClause::SimplifyStatus SatClause::Simplify() {
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment) {
   DCHECK(is_attached_);
-  if (assignment.IsVariableAssigned(literals_[0].Variable())
-      || assignment.IsVariableAssigned(literals_[1].Variable())) {
+  if (assignment.IsVariableAssigned(literals_[0].Variable()) ||
+      assignment.IsVariableAssigned(literals_[1].Variable())) {
     DCHECK(IsSatisfied(assignment));
     return true;
   }
@@ -368,7 +364,7 @@ struct WeightedLiteral {
 bool LiteralWithSmallerWeightFirst(const WeightedLiteral& wv1,
                                    const WeightedLiteral& wv2) {
   return (wv1.weight < wv2.weight) ||
-      (wv1.weight == wv2.weight &&
+         (wv1.weight == wv2.weight &&
           wv1.literal.SignedValue() < wv2.literal.SignedValue());
 }
 
@@ -376,7 +372,7 @@ bool LiteralWithSmallerWeightFirst(const WeightedLiteral& wv1,
 bool LiteralWithLargerWeightFirst(const WeightedLiteral& wv1,
                                   const WeightedLiteral& wv2) {
   return (wv1.weight > wv2.weight) ||
-      (wv1.weight == wv2.weight &&
+         (wv1.weight == wv2.weight &&
           wv1.literal.SignedValue() < wv2.literal.SignedValue());
 }
 
@@ -392,8 +388,8 @@ void SatClause::SortLiterals(
     std::vector<WeightedLiteral> order;
     for (Literal literal : *this) {
       int weight = literal.IsPositive()
-          ? statistics[literal.Variable()].num_positive_clauses
-          : statistics[literal.Variable()].num_negative_clauses;
+                       ? statistics[literal.Variable()].num_positive_clauses
+                       : statistics[literal.Variable()].num_negative_clauses;
       order.push_back(WeightedLiteral(literal, weight));
     }
     switch (literal_order) {
@@ -405,9 +401,7 @@ void SatClause::SortLiterals(
         std::sort(order.begin(), order.end(), LiteralWithLargerWeightFirst);
         break;
       }
-      default: {
-        break;
-      }
+      default: { break; }
     }
     for (int i = 0; i < order.size(); ++i) {
       literals_[i] = order[i].literal;
@@ -554,15 +548,12 @@ void SatSolver::SetNumVariables(int num_variables) {
   clause_activity_increment_ = 1.0;
   activities_.resize(num_variables, 0.0);
   objective_weights_.resize(num_variables << 1, 0.0);
+  decisions_.resize(num_variables);
 }
 
-int64 SatSolver::num_branches() const {
-  return counters_.num_branches;
-}
+int64 SatSolver::num_branches() const { return counters_.num_branches; }
 
-int64 SatSolver::num_failures() const {
-  return counters_.num_failures;
-}
+int64 SatSolver::num_failures() const { return counters_.num_failures; }
 
 int64 SatSolver::num_propagations() const {
   return trail_.NumberOfEnqueues() - counters_.num_branches;
@@ -581,7 +572,7 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
 
 std::string SatSolver::Indent() const {
   SCOPED_TIME_STAT(&stats_);
-  const int level = choice_points_.size();
+  const int level = CurrentDecisionLevel();
   std::string result;
   for (int i = 0; i < level; ++i) {
     result.append("|   ");
@@ -596,7 +587,7 @@ bool SatSolver::ModelUnsat() {
 
 bool SatSolver::AddProblemClause(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(choice_points_.empty());
+  CHECK_EQ(CurrentDecisionLevel(), 0);
 
   // Deals with clause of size 0 (always false) and 1 (set a literal) right away
   // so we guarantee that a SatClause is always of size greater than one. This
@@ -607,14 +598,17 @@ bool SatSolver::AddProblemClause(const std::vector<Literal>& literals) {
   std::unique_ptr<SatClause> clause(
       SatClause::Create(literals, SatClause::PROBLEM_CLAUSE));
   switch (clause->Simplify()) {
-    case SatClause::CLAUSE_ALWAYS_FALSE: return ModelUnsat();
-    case SatClause::CLAUSE_ALWAYS_TRUE: FALLTHROUGH_INTENDED;
-    case SatClause::CLAUSE_SUBSUMED: return true;
+    case SatClause::CLAUSE_ALWAYS_FALSE:
+      return ModelUnsat();
+    case SatClause::CLAUSE_ALWAYS_TRUE:
+      FALLTHROUGH_INTENDED;
+    case SatClause::CLAUSE_SUBSUMED:
+      return true;
     case SatClause::CLAUSE_ACTIVE: {
-      if (parameters_.treat_binary_clauses_separately()
-          && clause->Size() == 2) {
-        binary_implication_graph_.AddBinaryClause(
-            clause->FirstLiteral(), clause->SecondLiteral());
+      if (parameters_.treat_binary_clauses_separately() &&
+          clause->Size() == 2) {
+        binary_implication_graph_.AddBinaryClause(clause->FirstLiteral(),
+                                                  clause->SecondLiteral());
       } else {
         if (!watched_clauses_.AttachAndPropagate(clause.get(), &trail_)) {
           return ModelUnsat();
@@ -631,7 +625,7 @@ bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>&
                                             Coefficient max_value) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(LinearConstraintIsCannonical(cst));
-  if (rhs < 0) return ModelUnsat();  // Unsatisfiable constraint.
+  if (rhs < 0) return ModelUnsat();   // Unsatisfiable constraint.
   if (rhs >= max_value) return true;  // Always satisfied constraint.
 
   // A linear upper bounded constraint is a clause if the only problematic
@@ -651,18 +645,18 @@ bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>&
   return pb_constraints_.AddConstraint(cst, rhs);
 }
 
-bool SatSolver::AddLinearConstraint(
-    bool use_lower_bound, Coefficient lower_bound,
-    bool use_upper_bound, Coefficient upper_bound,
-    std::vector<LiteralWithCoeff>* cst) {
+bool SatSolver::AddLinearConstraint(bool use_lower_bound,
+                                    Coefficient lower_bound,
+                                    bool use_upper_bound,
+                                    Coefficient upper_bound,
+                                    std::vector<LiteralWithCoeff>* cst) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(choice_points_.empty());
+  CHECK_EQ(CurrentDecisionLevel(), 0);
   Coefficient bound_shift;
   Coefficient max_value;
   CHECK(PbCannonicalForm(cst, &bound_shift, &max_value));
   if (use_upper_bound) {
-    if (!AddLinearConstraintInternal(*cst,
-                                     upper_bound + bound_shift,
+    if (!AddLinearConstraintInternal(*cst, upper_bound + bound_shift,
                                      max_value)) {
       return ModelUnsat();
     }
@@ -671,9 +665,8 @@ bool SatSolver::AddLinearConstraint(
     for (int i = 0; i < cst->size(); ++i) {
       (*cst)[i].literal = (*cst)[i].literal.Negated();
     }
-    if (!AddLinearConstraintInternal(*cst,
-                                     max_value - (lower_bound + bound_shift),
-                                     max_value)) {
+    if (!AddLinearConstraintInternal(
+             *cst, max_value - (lower_bound + bound_shift), max_value)) {
       return ModelUnsat();
     }
   }
@@ -686,15 +679,15 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   if (literals.size() == 1) {
     // A length 1 clause fix a literal for all the search.
     // ComputeBacktrackLevel() should have returned 0.
-    CHECK(choice_points_.empty());
+    CHECK_EQ(CurrentDecisionLevel(), 0);
     trail_.Enqueue(literals[0], AssignmentInfo::UNIT_REASON);
   } else {
     if (parameters_.treat_binary_clauses_separately() && literals.size() == 2) {
-      binary_implication_graph_.AddBinaryConflict(
-          literals[0], literals[1], &trail_);
+      binary_implication_graph_.AddBinaryConflict(literals[0], literals[1],
+                                                  &trail_);
     } else {
-      SatClause* clause = SatClause::Create(
-          literals, SatClause::LEARNED_CLAUSE);
+      SatClause* clause =
+          SatClause::Create(literals, SatClause::LEARNED_CLAUSE);
       CompressLearnedClausesIfNeeded();
       --num_learned_clause_before_cleanup_;
       learned_clauses_.emplace_back(clause);
@@ -711,6 +704,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 // TODO(user): Clear the solver state and all the constraints.
 void SatSolver::Reset(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
+  current_decision_level_ = 0;
   SetNumVariables(num_variables);
   is_model_unsat_ = false;
   leave_initial_activities_unchanged_ = false;
@@ -724,14 +718,14 @@ void SatSolver::Reset(int num_variables) {
 
 bool SatSolver::InitialPropagation() {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(choice_points_.size(), 0);
+  CHECK_EQ(CurrentDecisionLevel(), 0);
   if (!Propagate()) {
     return ModelUnsat();
   }
   return true;
 }
 
-bool SatSolver::EnqueueDecision(Literal true_literal) {
+int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   // We are back at level 0. This can happen because of a restart, or because
   // we proved that some variables must take a given value in any satisfiable
@@ -740,23 +734,27 @@ bool SatSolver::EnqueueDecision(Literal true_literal) {
   //
   // TODO(user): Do not trigger it all the time if it takes too much time.
   // TODO(user): Do more advanced preprocessing?
-  if (choice_points_.empty()) {
+  if (CurrentDecisionLevel() == 0) {
     if (num_processed_fixed_variables_ < trail_.Index()) {
       ProcessNewlyFixedVariables();
     }
   }
 
-  NewChoicePoint(true_literal);
+  int first_propagation_index = trail_.Index();
+  NewDecision(true_literal);
   while (!Propagate()) {
     // If Propagate() fail at level 0, then the problem is UNSAT.
-    if (choice_points_.size() == 0) return ModelUnsat();
+    if (CurrentDecisionLevel() == 0) {
+      is_model_unsat_ = true;
+      return kUnsatTrailIndex;
+    }
     reason_cache_.Clear();
 
     // A conflict occured, compute a nice reason for this failure.
     std::vector<Literal> reason;
     std::vector<Literal> discarded_last_level_literals;
-    ComputeFirstUIPConflict(trail_.FailingClause(),
-                            &reason, &discarded_last_level_literals);
+    ComputeFirstUIPConflict(trail_.FailingClause(), &reason,
+                            &discarded_last_level_literals);
     DCHECK(IsConflictValid(reason));
 
     // Update the activity of all the variables in the first UIP clause.
@@ -764,8 +762,10 @@ bool SatSolver::EnqueueDecision(Literal true_literal) {
     // thus discarded) during the first UIP computation. Note that both
     // sets are disjoint.
     const int initial_lbd = ComputeLbd(reason);
-    const int lbd_limit = parameters_.use_lbd() &&
-        parameters_.use_glucose_bump_again_strategy() ? initial_lbd : 0;
+    const int lbd_limit =
+        parameters_.use_lbd() && parameters_.use_glucose_bump_again_strategy()
+            ? initial_lbd
+            : 0;
     BumpVariableActivities(reason, lbd_limit);
     BumpVariableActivities(discarded_last_level_literals, lbd_limit);
 
@@ -793,6 +793,7 @@ bool SatSolver::EnqueueDecision(Literal true_literal) {
     // Backtrack and add the reason to the set of learned clause.
     counters_.num_literals_learned += reason.size();
     Backtrack(ComputeBacktrackLevel(reason));
+    first_propagation_index = trail_.Index();
     AddLearnedClauseAndEnqueueUnitPropagation(reason);
 
     // Decay the activities.
@@ -810,22 +811,51 @@ bool SatSolver::EnqueueDecision(Literal true_literal) {
     if (counters_.num_failures % period == 0 &&
         parameters_.variable_activity_decay() < max_decay) {
       parameters_.set_variable_activity_decay(
-          parameters_.variable_activity_decay()
-          + parameters_.glucose_decay_increment());
+          parameters_.variable_activity_decay() +
+          parameters_.glucose_decay_increment());
     }
   }
-  return true;
+  return first_propagation_index;
+}
+
+int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
+  SCOPED_TIME_STAT(&stats_);
+  int max_level = current_decision_level_;
+  int first_propagation_index =
+      EnqueueDecisionAndBackjumpOnConflict(true_literal);
+  if (first_propagation_index == kUnsatTrailIndex) return kUnsatTrailIndex;
+  int i = current_decision_level_;
+  while (i < max_level) {
+    Literal previous_decision = decisions_[i].literal;
+    ++i;
+    if (Assignment().IsLiteralTrue(previous_decision)) continue;
+    if (Assignment().IsLiteralFalse(previous_decision)) {
+      return first_propagation_index;
+    }
+
+    // Not assigned, we try to take it.
+    first_propagation_index =
+        std::min(first_propagation_index,
+            EnqueueDecisionAndBackjumpOnConflict(previous_decision));
+    if (first_propagation_index == kUnsatTrailIndex) return kUnsatTrailIndex;
+    if (current_decision_level_ <= i) {
+      // Conflict. We know that decision #i can't be applied.
+      max_level = i - 1;
+      i = current_decision_level_;
+    }
+  }
+  return first_propagation_index;
 }
 
 void SatSolver::Backtrack(int target_level) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!choice_points_.empty());
+  DCHECK_GT(CurrentDecisionLevel(), 0);
+  DCHECK_GE(target_level, 0);
   ++counters_.num_failures;
   int target_trail_index = 0;
-  while (choice_points_.size() > target_level) {
-    VLOG(2) << Indent() << "Compress " << choice_points_.back().decision;
-    target_trail_index = choice_points_.back().literal_trail_index;
-    choice_points_.pop_back();
+  while (current_decision_level_ > target_level) {
+    --current_decision_level_;
+    target_trail_index = decisions_[current_decision_level_].trail_index;
   }
   Untrail(target_trail_index);
   trail_.SetDecisionLevel(target_level);
@@ -833,8 +863,9 @@ void SatSolver::Backtrack(int target_level) {
 
 SatSolver::Status SatSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
+  TimeLimit time_limit(parameters_.max_time_in_seconds());
   if (is_model_unsat_) return MODEL_UNSAT;
-  if (!choice_points_.empty()) {
+  if (CurrentDecisionLevel() > 0) {
     LOG(ERROR) << "Wrong state when calling SatSolver::Solve()";
     return INTERNAL_ERROR;
   }
@@ -842,8 +873,7 @@ SatSolver::Status SatSolver::Solve() {
 
   // Display initial statistics.
   LOG(INFO) << "Initial memory usage: " << MemoryUsage();
-  LOG(INFO) << "Number of clauses (size > 2): "
-            << problem_clauses_.size();
+  LOG(INFO) << "Number of clauses (size > 2): " << problem_clauses_.size();
   LOG(INFO) << "Number of binary clauses: "
             << binary_implication_graph_.NumberOfImplications();
   LOG(INFO) << "Number of linear constraints: "
@@ -871,12 +901,24 @@ SatSolver::Status SatSolver::Solve() {
   // Starts search.
   LOG(INFO) << "Start Search: " << parameters_.ShortDebugString();
   for (;;) {
+    // Test if a limit is reached.
+    if (time_limit.LimitReached()) {
+      LOG(INFO) << "The time limit has been reached. Aborting.";
+      LOG(INFO) << RunningStatisticsString();
+      return LIMIT_REACHED;
+    }
+    if (counters_.num_failures >= parameters_.max_number_of_conflicts()) {
+      LOG(INFO) << "The conflict limit has been reached. Aborting.";
+      LOG(INFO) << RunningStatisticsString();
+      return LIMIT_REACHED;
+    }
+
     // This is done this way because counters_.num_failures may augment by
     // more than one at each iterations.
     if (counters_.num_failures >= next_progression_display) {
       LOG(INFO) << RunningStatisticsString();
-      next_progression_display = kDisplayFrequency *
-          (1 + counters_.num_failures / kDisplayFrequency);
+      next_progression_display =
+          kDisplayFrequency * (1 + counters_.num_failures / kDisplayFrequency);
     }
 
     if (trail_.Index() == num_variables_.value()) {  // At a leaf.
@@ -890,8 +932,8 @@ SatSolver::Status SatSolver::Solve() {
     }
 
     // Note that ShouldRestart() comes first because it had side effects and
-    // should be executed even if choice_points_ is empty.
-    if (ShouldRestart() && !choice_points_.empty()) {
+    // should be executed even if CurrentDecisionLevel() is zero.
+    if (ShouldRestart() && CurrentDecisionLevel() > 0) {
       Backtrack(0);
     }
 
@@ -903,7 +945,7 @@ SatSolver::Status SatSolver::Solve() {
     if (objective_weights_[next_branch.Index()] != 0.0) {
       next_branch = next_branch.Negated();
     }
-    if (!EnqueueDecision(next_branch)) {
+    if (EnqueueDecisionAndBackjumpOnConflict(next_branch) == -1) {
       LOG(INFO) << "UNSAT \n" << StatusString();
       return MODEL_UNSAT;
     }
@@ -916,7 +958,7 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
   const double max_activity_value = parameters_.max_variable_activity_value();
   for (const Literal literal : literals) {
     const VariableIndex var = literal.Variable();
-    if (DecisionLevel(var) == choice_points_.size() &&
+    if (DecisionLevel(var) == CurrentDecisionLevel() &&
         trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
         trail_.Info(var).sat_clause->IsLearned() &&
         trail_.Info(var).sat_clause->Lbd() < bump_again_lbd_limit) {
@@ -993,7 +1035,7 @@ void SatSolver::UpdateClauseActivityIncrement() {
 bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
   if (literals.empty()) return false;
-  const int current_level = choice_points_.size();
+  const int current_level = CurrentDecisionLevel();
   int num_literal_at_current_level = 0;
   for (const Literal literal : literals) {
     const int level = DecisionLevel(literal.Variable());
@@ -1009,7 +1051,7 @@ bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
 
 int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!choice_points_.empty());
+  DCHECK_GT(CurrentDecisionLevel(), 0);
 
   // Note(user): if the learned clause is of size 1, we backtack all the way to
   // the beginning. It may be possible to follow another behavior, but then the
@@ -1023,7 +1065,7 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
 
   // We want the highest level which is not the current one.
   int backtrack_level = 0;
-  const int current_level = choice_points_.size();
+  const int current_level = CurrentDecisionLevel();
   for (const Literal literal : literals) {
     const int level = DecisionLevel(literal.Variable());
     if (level != current_level) {
@@ -1035,10 +1077,10 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
   return backtrack_level;
 }
 
-template<typename LiteralList>
+template <typename LiteralList>
 int SatSolver::ComputeLbd(const LiteralList& literals) {
   SCOPED_TIME_STAT(&stats_);
-  is_level_marked_.ClearAndResize(SatDecisionLevel(choice_points_.size() + 1));
+  is_level_marked_.ClearAndResize(SatDecisionLevel(CurrentDecisionLevel() + 1));
   for (const Literal literal : literals) {
     const SatDecisionLevel level(DecisionLevel(literal.Variable()));
     DCHECK_GE(level, 0);
@@ -1051,70 +1093,72 @@ int SatSolver::ComputeLbd(const LiteralList& literals) {
 
 std::string SatSolver::StatusString() const {
   const double time_in_s = timer_.Get();
-  return
-     StringPrintf("  time: %fs\n", time_in_s)
-     + StringPrintf("  memory: %s\n", MemoryUsage().c_str())
-     + StringPrintf(
-        "  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
-        counters_.num_failures,
-        static_cast<double>(counters_.num_failures) / time_in_s)
-     + StringPrintf("  num branches: %" GG_LL_FORMAT "d"
-        "  (%.2f%% random) (%.0f /sec)\n",
-        counters_.num_branches,
-        100.0 * static_cast<double>(counters_.num_random_branches)
-            / counters_.num_branches,
-        static_cast<double>(counters_.num_branches) / time_in_s)
-     + StringPrintf("  num propagations: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
-        num_propagations(),
-        static_cast<double>(num_propagations()) / time_in_s)
-     + StringPrintf("  num binary propagations: %" GG_LL_FORMAT "d\n",
-        binary_implication_graph_.num_propagations())
-     + StringPrintf("  num classic minimizations: %" GG_LL_FORMAT "d"
-                  "  (literals removed: %" GG_LL_FORMAT "d)\n",
-        counters_.num_minimizations,
-        counters_.num_literals_removed)
-     + StringPrintf("  num binary minimizations: %" GG_LL_FORMAT "d"
-                  "  (literals removed: %" GG_LL_FORMAT "d)\n",
-        binary_implication_graph_.num_minimization(),
-        binary_implication_graph_.num_literals_removed())
-     + StringPrintf("  num inspected clauses: %" GG_LL_FORMAT "d\n",
-                  watched_clauses_.num_inspected_clauses())
-     + StringPrintf("  num learned literals: %lld  (%.2f%% forgotten)\n",
-        counters_.num_literals_learned, 100.0 *
-            static_cast<double>(counters_.num_literals_forgotten)
-            / static_cast<double>(counters_.num_literals_learned))
-     + StringPrintf("  num restarts: %d\n", restart_count_);
+  return StringPrintf("  time: %fs\n", time_in_s) +
+         StringPrintf("  memory: %s\n", MemoryUsage().c_str()) +
+         StringPrintf("  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
+                      counters_.num_failures,
+                      static_cast<double>(counters_.num_failures) / time_in_s) +
+         StringPrintf("  num branches: %" GG_LL_FORMAT
+                      "d"
+                      "  (%.2f%% random) (%.0f /sec)\n",
+                      counters_.num_branches,
+                      100.0 *
+                          static_cast<double>(counters_.num_random_branches) /
+                          counters_.num_branches,
+                      static_cast<double>(counters_.num_branches) / time_in_s) +
+         StringPrintf("  num propagations: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
+                      num_propagations(),
+                      static_cast<double>(num_propagations()) / time_in_s) +
+         StringPrintf("  num binary propagations: %" GG_LL_FORMAT "d\n",
+                      binary_implication_graph_.num_propagations()) +
+         StringPrintf("  num classic minimizations: %" GG_LL_FORMAT
+                      "d"
+                      "  (literals removed: %" GG_LL_FORMAT "d)\n",
+                      counters_.num_minimizations,
+                      counters_.num_literals_removed) +
+         StringPrintf("  num binary minimizations: %" GG_LL_FORMAT
+                      "d"
+                      "  (literals removed: %" GG_LL_FORMAT "d)\n",
+                      binary_implication_graph_.num_minimization(),
+                      binary_implication_graph_.num_literals_removed()) +
+         StringPrintf("  num inspected clauses: %" GG_LL_FORMAT "d\n",
+                      watched_clauses_.num_inspected_clauses()) +
+         StringPrintf(
+             "  num learned literals: %lld  (%.2f%% forgotten)\n",
+             counters_.num_literals_learned,
+             100.0 * static_cast<double>(counters_.num_literals_forgotten) /
+                 static_cast<double>(counters_.num_literals_learned)) +
+         StringPrintf("  num restarts: %d\n", restart_count_);
 }
 
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
   const int learned = learned_clauses_.size();
-  return StringPrintf("%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT "d, "
+  return StringPrintf("%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
+                      "d, "
                       "depth:%d, learned:%d, restarts:%d, vars:%d",
-                      time_in_s,
-                      MemoryUsage().c_str(),
-                      counters_.num_failures,
-                      static_cast<int>(choice_points_.size()),
-                      learned,
-                      restart_count_,
+                      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
+                      CurrentDecisionLevel(), learned, restart_count_,
                       num_variables_.value() - num_processed_fixed_variables_);
 }
 
 double SatSolver::ComputeInitialVariableWeight(VariableIndex var) const {
   if (leave_initial_activities_unchanged_) return activities_[var];
   switch (parameters_.initial_activity()) {
-    case SatParameters::ALL_ZERO_ACTIVITY: return 0;
-    case SatParameters::RANDOM_ACTIVITY: return random_.RandDouble();
+    case SatParameters::ALL_ZERO_ACTIVITY:
+      return 0;
+    case SatParameters::RANDOM_ACTIVITY:
+      return random_.RandDouble();
     case SatParameters::SCALED_USAGE_ACTIVITY: {
-      return watched_clauses_.VariableStatistic(var).weighted_num_appearances
-          / static_cast<double>(watched_clauses_.num_watched_clauses());
+      return watched_clauses_.VariableStatistic(var).weighted_num_appearances /
+             static_cast<double>(watched_clauses_.num_watched_clauses());
     }
   }
 }
 
 void SatSolver::ProcessNewlyFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(choice_points_.empty());
+  DCHECK_EQ(CurrentDecisionLevel(), 0);
   int num_detached_clauses = 0;
   int num_binary = 0;
 
@@ -1131,8 +1175,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
           // The clause is always true, detach it.
           watched_clauses_.LazyDetach(clause);
           ++num_detached_clauses;
-        } else if (clause->Size() == 2
-            && parameters_.treat_binary_clauses_separately()) {
+        } else if (clause->Size() == 2 &&
+                   parameters_.treat_binary_clauses_separately()) {
           // The clause is now a binary clause, treat it separately.
           binary_implication_graph_.AddBinaryClause(clause->FirstLiteral(),
                                                     clause->SecondLiteral());
@@ -1145,14 +1189,13 @@ void SatSolver::ProcessNewlyFixedVariables() {
   watched_clauses_.CleanUpWatchers();
   if (num_detached_clauses > 0) {
     VLOG(1) << trail_.Index() << " fixed variables at level 0. "
-            << "Detached " << num_detached_clauses
-            << " clauses. " << num_binary << " converted to binary.";
+            << "Detached " << num_detached_clauses << " clauses. " << num_binary
+            << " converted to binary.";
 
     // Free-up learned clause memory. Note that this also postpone a bit the
     // next clause cleaning phase since we removed some clauses.
     std::vector<SatClause*>::iterator iter = std::partition(
-        learned_clauses_.begin(),
-        learned_clauses_.end(),
+        learned_clauses_.begin(), learned_clauses_.end(),
         std::bind1st(std::mem_fun(&SatSolver::IsClauseAttachedOrUsedAsReason),
                      this));
     STLDeleteContainerPointers(iter, learned_clauses_.end());
@@ -1190,7 +1233,7 @@ bool SatSolver::Propagate() {
     if (propagation_trail_index_ < trail_.Index()) {
       const Literal literal = trail_[propagation_trail_index_];
       ++propagation_trail_index_;
-      DCHECK_EQ(DecisionLevel(literal.Variable()), choice_points_.size());
+      DCHECK_EQ(DecisionLevel(literal.Variable()), CurrentDecisionLevel());
       if (!watched_clauses_.PropagateOnFalse(literal.Negated(), &trail_)) {
         return false;
       }
@@ -1233,11 +1276,12 @@ ClauseRef SatSolver::Reason(VariableIndex var) const {
   }
 }
 
-void SatSolver::NewChoicePoint(Literal literal) {
+void SatSolver::NewDecision(Literal literal) {
   SCOPED_TIME_STAT(&stats_);
   counters_.num_branches++;
-  choice_points_.push_back(ChoicePoint(trail_.Index(), literal));
-  trail_.SetDecisionLevel(choice_points_.size());
+  decisions_[current_decision_level_] = Decision(trail_.Index(), literal);
+  ++current_decision_level_;
+  trail_.SetDecisionLevel(current_decision_level_);
   trail_.Enqueue(literal, AssignmentInfo::SEARCH_DECISION);
 }
 
@@ -1251,8 +1295,8 @@ Literal SatSolver::NextBranch() {
     do {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      var = (*var_ordering_.Raw())[
-          random_.Uniform(var_ordering_.Raw()->size())]->variable();
+      var = (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())]
+                ->variable();
       var_ordering_.Remove(&queue_elements_[var]);
     } while (trail_.Assignment().IsVariableAssigned(var));
   } else {
@@ -1266,17 +1310,25 @@ Literal SatSolver::NextBranch() {
   }
 
   // Choose its assignment (i.e. True of False).
-  const bool sign = watched_clauses_.VariableStatistic(var).num_positive_clauses
-      > watched_clauses_.VariableStatistic(var).num_negative_clauses;
-  const bool polarity = trail_.Assignment()
-      .GetLastVariableValueIfEverAssignedOrDefault(var, sign);
+  const bool sign =
+      watched_clauses_.VariableStatistic(var).num_positive_clauses >
+      watched_clauses_.VariableStatistic(var).num_negative_clauses;
+  const bool polarity =
+      trail_.Assignment().GetLastVariableValueIfEverAssignedOrDefault(var,
+                                                                      sign);
   switch (parameters_.variable_branching()) {
-    case SatParameters::FIXED_POSITIVE: return Literal(var, true);
-    case SatParameters::FIXED_NEGATIVE: return Literal(var, false);
-    case SatParameters::SIGN: return Literal(var, sign);
-    case SatParameters::REVERSE_SIGN: return Literal(var, !sign);
-    case SatParameters::POLARITY: return Literal(var, polarity);
-    case SatParameters::REVERSE_POLARITY: return Literal(var, !polarity);
+    case SatParameters::FIXED_POSITIVE:
+      return Literal(var, true);
+    case SatParameters::FIXED_NEGATIVE:
+      return Literal(var, false);
+    case SatParameters::SIGN:
+      return Literal(var, sign);
+    case SatParameters::REVERSE_SIGN:
+      return Literal(var, !sign);
+    case SatParameters::POLARITY:
+      return Literal(var, polarity);
+    case SatParameters::REVERSE_POLARITY:
+      return Literal(var, !polarity);
   }
 }
 
@@ -1337,7 +1389,8 @@ bool SatSolver::IsAssignmentValid(const VariablesAssignment& assignment) const {
   std::string result;
   for (VariableIndex var(0); var < num_variables_; ++var) {
     result.append(trail_.Assignment()
-        .GetTrueLiteralForAssignedVariable(var).DebugString());
+                      .GetTrueLiteralForAssignedVariable(var)
+                      .DebugString());
     result.append(" ");
   }
   return true;
@@ -1349,9 +1402,10 @@ std::string SatSolver::DebugString(const SatClause& clause) const {
     if (!result.empty()) {
       result.append(" || ");
     }
-    const std::string value = trail_.Assignment().IsLiteralTrue(literal)
-        ? "true" : (trail_.Assignment().IsLiteralFalse(literal) ? "false"
-                                                                : "undef");
+    const std::string value =
+        trail_.Assignment().IsLiteralTrue(literal)
+            ? "true"
+            : (trail_.Assignment().IsLiteralFalse(literal) ? "false" : "undef");
     result.append(
         StringPrintf("%s(%s)", literal.DebugString().c_str(), value.c_str()));
   }

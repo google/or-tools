@@ -851,13 +851,13 @@ SequenceVarElement* Assignment::FastAdd(SequenceVar* const v) {
   return sequence_var_container_.FastAdd(v);
 }
 
-const std::vector<int>& Assignment::ForwardSequence(
-    const SequenceVar* const v) const {
+const std::vector<int>& Assignment::ForwardSequence(const SequenceVar* const v)
+    const {
   return sequence_var_container_.Element(v).ForwardSequence();
 }
 
-const std::vector<int>& Assignment::BackwardSequence(
-    const SequenceVar* const v) const {
+const std::vector<int>& Assignment::BackwardSequence(const SequenceVar* const v)
+    const {
   return sequence_var_container_.Element(v).BackwardSequence();
 }
 

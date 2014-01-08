@@ -33,7 +33,7 @@ class JNIUtil {
     if (str == NULL) return NULL;
     jsize length = env->GetStringUTFLength(str);
     const char* src = env->GetStringUTFChars(str, NULL);
-    char* dst = new char[length+1];
+    char* dst = new char[length + 1];
     memcpy(dst, src, length);
     dst[length] = '\0';
     env->ReleaseStringUTFChars(str, src);

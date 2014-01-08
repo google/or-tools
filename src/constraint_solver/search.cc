@@ -564,8 +564,8 @@ Decision* TryDecisionBuilder::Next(Solver* const solver) {
 }
 
 std::string TryDecisionBuilder::DebugString() const {
-  return StringPrintf(
-      "TryDecisionBuilder(%s)", JoinDebugStringPtr(builders_, ", ").c_str());
+  return StringPrintf("TryDecisionBuilder(%s)",
+                      JoinDebugStringPtr(builders_, ", ").c_str());
 }
 
 void TryDecisionBuilder::AdvanceToNextBuilder(Solver* const solver) {
@@ -2039,8 +2039,7 @@ DecisionBuilder* Solver::MakePhase(
 }
 
 DecisionBuilder* Solver::MakePhase(
-    const std::vector<IntVar*>& vars,
-    IntVarStrategy var_str,
+    const std::vector<IntVar*>& vars, IntVarStrategy var_str,
     ResultCallback3<bool, int64, int64, int64>* var_val1_val2_comparator) {
   VariableSelector* const var_selector =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
@@ -3216,8 +3215,7 @@ class GuidedLocalSearch : public Metaheuristic {
 
  protected:
   struct Comparator {
-    bool operator()(const std::pair<Arc, double>& i,
-                    const std::pair<Arc, double>& j) {
+    bool operator()(const std::pair<Arc, double>& i, const std::pair<Arc, double>& j) {
       return i.second > j.second;
     }
   };
@@ -3789,10 +3787,10 @@ bool RegularLimit::Check() {
 int RegularLimit::ProgressPercent() {
   Solver* const s = solver();
   int64 progress = GetPercent(s->branches(), branches_offset_, branches_);
-  progress = std::max(progress,
-                 GetPercent(s->failures(), failures_offset_, failures_));
-  progress = std::max(progress,
-                 GetPercent(s->solutions(), solutions_offset_, solutions_));
+  progress =
+      std::max(progress, GetPercent(s->failures(), failures_offset_, failures_));
+  progress =
+      std::max(progress, GetPercent(s->solutions(), solutions_offset_, solutions_));
   if (wall_time_ < kint64max) {
     progress = std::max(progress, (100 * TimeDelta()) / wall_time_);
   }
@@ -3833,7 +3831,7 @@ std::string RegularLimit::DebugString() const {
   return StringPrintf("RegularLimit(crossed = %i, wall_time = %" GG_LL_FORMAT
                       "d, "
                       "branches = %" GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT
-                      "d, solutions = %" GG_LL_FORMAT "d cumulative = %s)",
+                      "d, solutions = %" GG_LL_FORMAT "d cumulative = %s",
                       crossed(), wall_time_, branches_, failures_, solutions_,
                       (cumulative_ ? "true" : "false"));
 }

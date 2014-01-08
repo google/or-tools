@@ -45,8 +45,7 @@
 #include "util/string_array.h"
 
 DEFINE_string(
-    data_file,
-    "",
+    data_file, "",
     "Required: input file description the scheduling problem to solve, "
     "in our jssp format:\n"
     "  - the first line is \"instance <instance name>\"\n"
@@ -77,17 +76,11 @@ void Jobshop(const JobShopData& data) {
     for (int task_index = 0; task_index < tasks.size(); ++task_index) {
       const JobShopData::Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
-      const std::string name = StringPrintf("J%dM%dI%dD%d",
-                                       task.job_id,
-                                       task.machine_id,
-                                       task_index,
-                                       task.duration);
-      IntervalVar* const one_task =
-          solver.MakeFixedDurationIntervalVar(0,
-                                              horizon,
-                                              task.duration,
-                                              false,
-                                              name);
+      const std::string name =
+          StringPrintf("J%dM%dI%dD%d", task.job_id, task.machine_id, task_index,
+                       task.duration);
+      IntervalVar* const one_task = solver.MakeFixedDurationIntervalVar(
+          0, horizon, task.duration, false, name);
       jobs_to_tasks[task.job_id].push_back(one_task);
       machines_to_tasks[task.machine_id].push_back(one_task);
     }
@@ -144,15 +137,12 @@ void Jobshop(const JobShopData& data) {
   // we can schedule each task at its earliest start time. This is
   // conveniently done by fixing the objective variable to its
   // minimum value.
-  DecisionBuilder* const obj_phase =
-      solver.MakePhase(objective_var,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const obj_phase = solver.MakePhase(
+      objective_var, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
 
   // The main decision builder (ranks all tasks, then fixes the
   // objective_variable).
-  DecisionBuilder* const main_phase =
-      solver.Compose(sequence_phase, obj_phase);
+  DecisionBuilder* const main_phase = solver.Compose(sequence_phase, obj_phase);
 
   // Search log.
   const int kLogFrequency = 1000000;
@@ -164,15 +154,11 @@ void Jobshop(const JobShopData& data) {
     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
   }
 
-  SolutionCollector* const collector =
-      solver.MakeLastSolutionCollector();
+  SolutionCollector* const collector = solver.MakeLastSolutionCollector();
   collector->Add(all_sequences);
 
   // Search.
-  if (solver.Solve(main_phase,
-                   search_log,
-                   objective_monitor,
-                   limit,
+  if (solver.Solve(main_phase, search_log, objective_monitor, limit,
                    collector)) {
     for (int m = 0; m < machine_count; ++m) {
       SequenceVar* const seq = all_sequences[m];
@@ -187,7 +173,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a simple job shop optimization "
     "output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {

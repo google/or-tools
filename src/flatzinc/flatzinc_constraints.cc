@@ -420,96 +420,6 @@ class BooleanSumInRange : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
-// ----- Lex constraint -----
-
-class Lex : public Constraint {
- public:
-  Lex(Solver* const s, const std::vector<IntVar*>& left,
-      const std::vector<IntVar*>& right, bool strict)
-      : Constraint(s),
-        left_(left),
-        right_(right),
-        active_var_(0),
-        strict_(strict) {
-    CHECK_EQ(left.size(), right.size());
-  }
-
-  virtual ~Lex() {}
-
-  virtual void Post() {
-    const int position = FindNextValidVar(0);
-    active_var_.SetValue(solver(), position);
-    if (position < left_.size()) {
-      Demon* const demon = MakeConstraintDemon1(solver(), this, &Lex::Propagate,
-                                                "Propagate", position);
-      left_[position]->WhenRange(demon);
-      right_[position]->WhenRange(demon);
-    }
-  }
-
-  virtual void InitialPropagate() { Propagate(active_var_.Value()); }
-
-  void Propagate(int var_index) {
-    DCHECK_EQ(var_index, active_var_.Value());
-    const int position = FindNextValidVar(var_index);
-    if (position >= left_.size()) {
-      if (strict_) {
-        solver()->Fail();
-      }
-      return;
-    }
-    if (position != var_index) {
-      Demon* const demon = MakeConstraintDemon1(solver(), this, &Lex::Propagate,
-                                                "Propagate", position);
-      left_[position]->WhenRange(demon);
-      right_[position]->WhenRange(demon);
-      active_var_.SetValue(solver(), position);
-    }
-    if ((strict_ && position == left_.size() - 1) ||
-        (position < left_.size() - 1 &&
-         left_[position + 1]->Min() > right_[position + 1]->Max())) {
-      // We need to be strict if we are the last in the array, or if
-      // the next one is impossible.
-      left_[position]->SetMax(right_[position]->Max() - 1);
-      right_[position]->SetMin(left_[position]->Min() + 1);
-    } else {
-      left_[position]->SetMax(right_[position]->Max());
-      right_[position]->SetMin(left_[position]->Min());
-    }
-  }
-
-  virtual std::string DebugString() const {
-    return StringPrintf(
-        "Lex([%s], [%s]%s)", JoinDebugStringPtr(left_, ", ").c_str(),
-        JoinDebugStringPtr(right_, ", ").c_str(), strict_ ? ", strict" : "");
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint("Lex", this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
-                                               left_);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kRightArgument,
-                                               right_);
-    visitor->EndVisitConstraint("Lex", this);
-  }
-
- private:
-  int FindNextValidVar(int start_position) const {
-    int position = start_position;
-    while (position < left_.size() && left_[position]->Bound() &&
-           right_[position]->Bound() &&
-           left_[position]->Min() == right_[position]->Min()) {
-      position++;
-    }
-    return position;
-  }
-
-  std::vector<IntVar*> left_;
-  std::vector<IntVar*> right_;
-  NumericalRev<int> active_var_;
-  const bool strict_;
-};
-
 // ----- Inverse constraint -----
 
 // This constraints maintains: left[i] == j <=> right_[j] == i.
@@ -1001,11 +911,6 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
   FLAGS_cp_trace_search = trace;
   FLAGS_cp_trace_propagation = propag;
   return solver->MakeAllowedAssignments(variables, tuples);
-}
-
-Constraint* MakeLexLess(Solver* const solver, const std::vector<IntVar*>& left,
-                        const std::vector<IntVar*>& right, bool strict) {
-  return solver->RevAlloc(new Lex(solver, left, right, strict));
 }
 
 Constraint* MakeInverse(Solver* const solver, const std::vector<IntVar*>& left,

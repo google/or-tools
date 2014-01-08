@@ -71,9 +71,7 @@ class LocationContainer {
       : randomizer_(GetSeed()), speed_(speed) {
     CHECK_LT(0, speed_);
   }
-  void AddLocation(int64 x, int64 y) {
-    locations_.push_back(Location(x, y));
-  }
+  void AddLocation(int64 x, int64 y) { locations_.push_back(Location(x, y)); }
   void AddRandomLocation(int64 x_max, int64 y_max) {
     AddLocation(randomizer_.Uniform(x_max + 1), randomizer_.Uniform(y_max + 1));
   }
@@ -94,6 +92,7 @@ class LocationContainer {
     int64 DistanceTo(const Location& location) const {
       return Abs(x_ - location.x_) + Abs(y_ - location.y_);
     }
+
    private:
     static int64 Abs(int64 value) { return std::max(value, -value); }
 
@@ -127,8 +126,7 @@ class RandomDemand {
       }
     }
   }
-  int64 Demand(RoutingModel::NodeIndex from,
-               RoutingModel::NodeIndex to) const {
+  int64 Demand(RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) const {
     return demand_[from.value()];
   }
 
@@ -149,9 +147,10 @@ class ServiceTimePlusTransition {
         transition_time_(transition_time) {}
   int64 Compute(RoutingModel::NodeIndex from,
                 RoutingModel::NodeIndex to) const {
-    return time_per_demand_unit_ * demand_->Run(from, to)
-        + transition_time_->Run(from, to);
+    return time_per_demand_unit_ * demand_->Run(from, to) +
+           transition_time_->Run(from, to);
   }
+
  private:
   const int64 time_per_demand_unit_;
   std::unique_ptr<RoutingModel::NodeEvaluator2> demand_;
@@ -183,8 +182,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   const RoutingDimension& capacity_dimension =
       routing.GetDimensionOrDie(kCapacity);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
-  for (int route_number = 0;
-       route_number < routing.vehicles();
+  for (int route_number = 0; route_number < routing.vehicles();
        ++route_number) {
     int64 order = routing.Start(route_number);
     StringAppendF(&plan_output, "Route %d: ", route_number);
@@ -195,9 +193,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
         IntVar* const load_var = capacity_dimension.CumulVar(order);
         IntVar* const time_var = time_dimension.CumulVar(order);
         StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
-                      order,
-                      plan.Value(load_var),
-                      plan.Min(time_var),
+                      order, plan.Value(load_var), plan.Min(time_var),
                       plan.Max(time_var));
         if (routing.IsEnd(order)) break;
         order = plan.Value(routing.NextVar(order));
@@ -207,7 +203,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   LOG(INFO) << plan_output;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
@@ -242,19 +238,17 @@ int main(int argc, char **argv) {
   demand.Initialize();
   routing.AddDimension(NewPermanentCallback(&demand, &RandomDemand::Demand),
                        kNullCapacitySlack, kVehicleCapacity,
-                       /*fix_start_cumul_to_zero=*/ true, kCapacity);
+                       /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
   const int64 kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
-      kTimePerDemandUnit,
-      NewPermanentCallback(&demand, &RandomDemand::Demand),
+      kTimePerDemandUnit, NewPermanentCallback(&demand, &RandomDemand::Demand),
       NewPermanentCallback(&locations, &LocationContainer::ManhattanTime));
   routing.AddDimension(
-      NewPermanentCallback(&time,
-                           &ServiceTimePlusTransition::Compute),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ true, kTime);
+      NewPermanentCallback(&time, &ServiceTimePlusTransition::Compute),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
   ACMRandom randomizer(GetSeed());

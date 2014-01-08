@@ -23,7 +23,8 @@
 
 namespace operations_research {
 
-template<typename T> class AdjustablePriorityQueue {
+template <typename T>
+class AdjustablePriorityQueue {
  public:
   AdjustablePriorityQueue() {}
 
@@ -117,9 +118,9 @@ template<typename T> class AdjustablePriorityQueue {
       }
       const int right_child = left_child + 1;
       const int next_i = (right_child < elems_.size() &&
-                          *elems_[left_child] < *elems_[right_child]) ?
-          right_child :
-          left_child;
+                          *elems_[left_child] < *elems_[right_child])
+                             ? right_child
+                             : left_child;
       if (!(*t < *elems_[next_i])) {
         break;
       }

@@ -51,7 +51,7 @@ namespace operations_research {
 // being modified. This can be used to avoid wrong over-optimizations by gcc.
 // See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=47617 for an explanation.
 #ifdef NDEBUG
-#define TOUCH(var) asm("":"+X"(var))
+#define TOUCH(var) asm("" : "+X"(var))
 #else
 #define TOUCH(var)
 #endif
@@ -78,10 +78,10 @@ inline void SetFPPrecision(fpu_control_t precision) {
 
 #undef TOUCH
 
-template<typename FloatType>
+template <typename FloatType>
 inline bool IsPositiveOrNegativeInfinity(FloatType x) {
-  return x == std::numeric_limits<FloatType>::infinity()
-      || x == -std::numeric_limits<FloatType>::infinity();
+  return x == std::numeric_limits<FloatType>::infinity() ||
+         x == -std::numeric_limits<FloatType>::infinity();
 }
 
 // Tests whether x and y are close to one another using absolute and relative
@@ -91,10 +91,10 @@ inline bool IsPositiveOrNegativeInfinity(FloatType x) {
 // Returns true if |x - y| <= std::max(|x|, |y|) * r. (with r being the relative
 //                                                tolerance.)
 // The cases for infinities are treated separately to avoid generating NaNs.
-template<typename FloatType> bool AreWithinAbsoluteOrRelativeTolerances(
-    FloatType x, FloatType y,
-    FloatType relative_tolerance,
-    FloatType absolute_tolerance) {
+template <typename FloatType>
+bool AreWithinAbsoluteOrRelativeTolerances(FloatType x, FloatType y,
+                                           FloatType relative_tolerance,
+                                           FloatType absolute_tolerance) {
   DCHECK_LE(0.0, relative_tolerance);
   DCHECK_LE(0.0, absolute_tolerance);
   DCHECK_GT(1.0, relative_tolerance);
@@ -112,9 +112,9 @@ template<typename FloatType> bool AreWithinAbsoluteOrRelativeTolerances(
 // Tests whether x and y are close to one another using an absolute tolerance.
 // Returns true if |x - y| <= a (with a being the absolute_tolerance).
 // The cases for infinities are treated separately to avoid generating NaNs.
-template<typename FloatType> bool AreWithinAbsoluteTolerance(
-    FloatType x, FloatType y,
-    FloatType absolute_tolerance) {
+template <typename FloatType>
+bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
+                                FloatType absolute_tolerance) {
   DCHECK_LE(0.0, absolute_tolerance);
   if (IsPositiveOrNegativeInfinity(x) || IsPositiveOrNegativeInfinity(y)) {
     return x == y;
@@ -125,18 +125,17 @@ template<typename FloatType> bool AreWithinAbsoluteTolerance(
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
 // TODO(user): investigate moving this to base/ or some other place.
-#define EXPECT_COMPARABLE(expected, obtained, epsilon)                      \
-  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances(   \
-      expected, obtained, epsilon, epsilon))                                \
-      << obtained << " != expected value " << expected                      \
+#define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
+  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
+      expected, obtained, epsilon, epsilon))                              \
+      << obtained << " != expected value " << expected                    \
       << " within epsilon = " << epsilon;
 
-#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                   \
-  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances(  \
-      expected, obtained, epsilon, epsilon))                                \
-      << obtained << " == expected value " << expected                      \
+#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                  \
+  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
+      expected, obtained, epsilon, epsilon))                               \
+      << obtained << " == expected value " << expected                     \
       << " within epsilon = " << epsilon;
-
 
 }  // namespace operations_research
 

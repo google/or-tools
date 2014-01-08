@@ -111,7 +111,9 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs,
   integer_variables_[int_var_count++] = var;
 }
 
-void FlatZincModel::SkipIntVar() { integer_variables_[int_var_count++] = nullptr; }
+void FlatZincModel::SkipIntVar() {
+  integer_variables_[int_var_count++] = nullptr;
+}
 
 void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   IntVar* var = nullptr;

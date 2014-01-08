@@ -37,7 +37,7 @@ namespace operations_research {
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
   std::string data;
   file::GetContents(file_name, &data, file::Defaults()).CheckSuccess();
-// Note that gzipped files are currently not supported.
+  // Note that gzipped files are currently not supported.
   // Try binary format first, then text format, then give up.
   if (proto->ParseFromString(data)) return true;
   if (google::protobuf::TextFormat::ParseFromString(data, proto)) return true;
@@ -45,11 +45,10 @@ bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* pr
   return false;
 }
 
-bool WriteProtoToFile(
-    const std::string& file_name, const google::protobuf::Message& proto,
-    bool binary, bool gzipped) {
-// Note that gzipped files are currently not supported.
-  gzipped = false;
+bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Message& proto,
+                      bool binary, bool gzipped) {
+  // Note that gzipped files are currently not supported.
+    gzipped = false;
 
   std::string output_string;
   google::protobuf::io::StringOutputStream stream(&output_string);
@@ -68,7 +67,7 @@ bool WriteProtoToFile(
   VLOG(1) << "Writing " << output_string.size() << " bytes to "
           << output_file_name;
   if (!file::SetContents(output_file_name, output_string, file::Defaults())
-      .ok()) {
+           .ok()) {
     LOG(WARNING) << "Writing to file failed.";
     return false;
   }
@@ -76,8 +75,8 @@ bool WriteProtoToFile(
 }
 
 namespace {
-void WriteFullProtocolMessage(const google::protobuf::Message& message,
-                              int indent_level, std::string* out) {
+void WriteFullProtocolMessage(const google::protobuf::Message& message, int indent_level,
+                              std::string* out) {
   std::string temp_string;
   const std::string indent(indent_level * 2, ' ');
   const Descriptor* desc = message.GetDescriptor();
@@ -91,9 +90,9 @@ void WriteFullProtocolMessage(const google::protobuf::Message& message,
       StrAppend(out, indent, fd->name());
       if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
         StrAppend(out, " {\n");
-        const google::protobuf::Message& nested_message = repeated
-            ? refl->GetRepeatedMessage(message, fd, j)
-            : refl->GetMessage(message, fd);
+        const google::protobuf::Message& nested_message =
+            repeated ? refl->GetRepeatedMessage(message, fd, j)
+                     : refl->GetMessage(message, fd);
         WriteFullProtocolMessage(nested_message, indent_level + 1, out);
         StrAppend(out, indent, "}\n");
       } else {
@@ -105,8 +104,8 @@ void WriteFullProtocolMessage(const google::protobuf::Message& message,
 }
 }  // namespace
 
-std::string FullProtocolMessageAsString(
-    const google::protobuf::Message& message, int indent_level) {
+std::string FullProtocolMessageAsString(const google::protobuf::Message& message,
+                                   int indent_level) {
   std::string message_str;
   WriteFullProtocolMessage(message, indent_level, &message_str);
   return message_str;

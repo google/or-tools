@@ -137,8 +137,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
         sequence_backup[i] = sequence[i + current_first_];
       }
       for (int i = 0; i < current_length_; ++i) {
-        sequence[i + current_first_] =
-            sequence_backup[current_permutation_[i]];
+        sequence[i + current_first_] = sequence_backup[current_permutation_[i]];
       }
       SetForwardSequence(current_var_, sequence);
       if (ApplyChanges(delta, deltadelta)) {
@@ -191,9 +190,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
 
 class SequenceLns : public SequenceVarLocalSearchOperator {
  public:
-  SequenceLns(const std::vector<SequenceVar*>& vars,
-              int seed,
-              int max_length)
+  SequenceLns(const std::vector<SequenceVar*>& vars, int seed, int max_length)
       : SequenceVarLocalSearchOperator(vars),
         random_(seed),
         max_length_(max_length) {}
@@ -230,8 +227,7 @@ class SequenceLns : public SequenceVarLocalSearchOperator {
         forward.push_back(sequence[j]);
       }
       std::vector<int> backward;
-      for (int j = sequence.size() - 1;
-           j >= start_position + current_length;
+      for (int j = sequence.size() - 1; j >= start_position + current_length;
            --j) {
         backward.push_back(sequence[j]);
       }

@@ -67,18 +67,17 @@ namespace operations_research {
 
 class ConnectedComponents {
  public:
-  ConnectedComponents() : min_index_(0),
-                          max_index_(StarGraph::kMaxNumNodes),
-                          max_seen_index_(0),
-                          class_(),
-                          class_size_() {}
+  ConnectedComponents()
+      : min_index_(0),
+        max_index_(StarGraph::kMaxNumNodes),
+        max_seen_index_(0),
+        class_(),
+        class_size_() {}
 
   ~ConnectedComponents() {}
 
   // Reserves memory for num_nodes and resets the data structures.
-  void Init(NodeIndex num_nodes) {
-    Init(0, num_nodes - 1);
-  }
+  void Init(NodeIndex num_nodes) { Init(0, num_nodes - 1); }
 
   // Adds the information that NodeIndex tail and NodeIndex head are connected.
   void AddArc(NodeIndex tail, NodeIndex head);
@@ -106,14 +105,14 @@ class ConnectedComponents {
   void Init(NodeIndex min_index, NodeIndex max_index);
 
   // The minimum index for nodes in the graph.
-  NodeIndex      min_index_;
+  NodeIndex min_index_;
 
   // The exact number of nodes in the graph.
-  NodeIndex      max_index_;
+  NodeIndex max_index_;
 
   // The maximum node index seen during AddArc. (set to Graph::num_nodes() by
   // AddGraph.)
-  NodeIndex      max_seen_index_;
+  NodeIndex max_seen_index_;
 
   // The equivalence class representative for each node.
   NodeIndexArray class_;

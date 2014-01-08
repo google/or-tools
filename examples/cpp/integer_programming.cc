@@ -27,8 +27,9 @@ void RunIntegerProgrammingExample(
   MPVariable* const x2 = solver.MakeIntVar(0.0, infinity, "x2");
 
   // Minimize x1 + 2 * x2.
-  solver.SetObjectiveCoefficient(x1, 1);
-  solver.SetObjectiveCoefficient(x2, 2);
+  MPObjective* const objective = solver.MutableObjective();
+  objective->SetCoefficient(x1, 1);
+  objective->SetCoefficient(x2, 2);
 
   // 2 * x2 + 3 * x1 >= 17.
   MPConstraint* const c0 = solver.MakeRowConstraint(17, infinity);
@@ -45,7 +46,7 @@ void RunIntegerProgrammingExample(
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
 
   // The objective value of the solution.
-  LOG(INFO) << "Optimal objective value = " <<  solver.objective_value();
+  LOG(INFO) << "Optimal objective value = " << objective->Value();
 
   // The value of each variable in the solution.
   LOG(INFO) << "x1 = " << x1->solution_value();
@@ -55,7 +56,6 @@ void RunIntegerProgrammingExample(
   LOG(INFO) << "Problem solved in " << solver.nodes()
             << " branch-and-bound nodes";
 }
-
 
 void RunAllExamples() {
   #if defined(USE_GLPK)
@@ -77,8 +77,8 @@ void RunAllExamples() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;
 }

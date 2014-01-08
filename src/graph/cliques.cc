@@ -29,11 +29,8 @@ namespace {
 // TODO(user) : rewrite this algorithm without the recursivity.
 void Search(ResultCallback2<bool, int, int>* const graph,
             ResultCallback1<bool, const std::vector<int>&>* const callback,
-            int* input_candidates,
-            int input_size,
-            int input_candidate_size,
-            std::vector<int>* actual,
-            bool* stop) {
+            int* input_candidates, int input_size, int input_candidate_size,
+            std::vector<int>* actual, bool* stop) {
   std::vector<int> actual_candidates(input_candidate_size);
   int pre_increment = 0;
   int pivot = 0;
@@ -107,8 +104,8 @@ void Search(ResultCallback2<bool, int, int>* const graph,
       *stop = callback->Run(*actual);
     } else {
       if (actual_candidate_size < actual_size) {
-         Search(graph, callback, actual_candidates.data(),
-                actual_candidate_size, actual_size, actual, stop);
+        Search(graph, callback, actual_candidates.data(), actual_candidate_size,
+               actual_size, actual, stop);
         if (*stop) {
           return;
         }
@@ -135,15 +132,13 @@ void Search(ResultCallback2<bool, int, int>* const graph,
 
 class FindAndEliminate {
  public:
-  FindAndEliminate(ResultCallback2<bool, int, int>* const graph,
-                   int node_count,
+  FindAndEliminate(ResultCallback2<bool, int, int>* const graph, int node_count,
                    ResultCallback1<bool, const std::vector<int>&>* const callback)
       : graph_(graph), node_count_(node_count), callback_(callback) {}
 
   bool GraphCallback(int node1, int node2) {
-    if (visited_.find(
-            std::make_pair(std::min(node1, node2),
-                      std::max(node1, node2))) != visited_.end()) {
+    if (visited_.find(std::make_pair(std::min(node1, node2), std::max(node1, node2))) !=
+        visited_.end()) {
       return false;
     }
     return graph_->Run(node1, node2);
@@ -177,8 +172,7 @@ class FindAndEliminate {
 
 // This method implements the 'version2' of the Bron-Kerbosch
 // algorithm to find all maximal cliques in a undirected graph.
-void FindCliques(ResultCallback2<bool, int, int>* const graph,
-                 int node_count,
+void FindCliques(ResultCallback2<bool, int, int>* const graph, int node_count,
                  ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
@@ -198,10 +192,8 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
          &stop);
 }
 
-
 void CoverArcsByCliques(
-    ResultCallback2<bool, int, int>* const graph,
-    int node_count,
+    ResultCallback2<bool, int, int>* const graph, int node_count,
     ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
@@ -224,10 +216,8 @@ void CoverArcsByCliques(
   }
 
   bool stop = false;
-  Search(cached_graph.get(), cached_callback.get(),
-         initial_candidates.get(), 0,
+  Search(cached_graph.get(), cached_callback.get(), initial_candidates.get(), 0,
          node_count, &actual, &stop);
 }
-
 
 }  // namespace operations_research

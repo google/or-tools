@@ -66,10 +66,7 @@ double RunningMax::GetCurrentMax() {
 }
 
 TimeLimit::TimeLimit(double limit_in_seconds)
-  : timer_(),
-    last_(0.0),
-    limit_(0.0),
-    running_max_(kValues) {
+    : timer_(), last_(0.0), limit_(0.0), running_max_(kValues) {
   timer_.Start();
   last_ = timer_.Get();
   limit_ = last_ + limit_in_seconds;

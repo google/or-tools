@@ -26,8 +26,7 @@
 namespace operations_research {
 class OneVarLns : public BaseLNS {
  public:
-  explicit OneVarLns(const std::vector<IntVar*>& vars)
-      : BaseLNS(vars), index_(0) {}
+  explicit OneVarLns(const std::vector<IntVar*>& vars) : BaseLNS(vars), index_(0) {}
 
   ~OneVarLns() {}
 
@@ -48,7 +47,7 @@ class OneVarLns : public BaseLNS {
   int index_;
 };
 
-class MoveOneVar: public IntVarLocalSearchOperator {
+class MoveOneVar : public IntVarLocalSearchOperator {
  public:
   explicit MoveOneVar(const std::vector<IntVar*>& variables)
       : IntVarLocalSearchOperator(variables),
@@ -62,10 +61,10 @@ class MoveOneVar: public IntVarLocalSearchOperator {
   virtual bool MakeOneNeighbor() {
     const int64 current_value = OldValue(variable_index_);
     if (move_up_) {
-      SetValue(variable_index_, current_value  + 1);
+      SetValue(variable_index_, current_value + 1);
       variable_index_ = (variable_index_ + 1) % Size();
     } else {
-      SetValue(variable_index_, current_value  - 1);
+      SetValue(variable_index_, current_value - 1);
     }
     move_up_ = !move_up_;
     return true;
@@ -85,8 +84,8 @@ class MoveOneVar: public IntVarLocalSearchOperator {
 
 class SumFilter : public IntVarLocalSearchFilter {
  public:
-  explicit SumFilter(const std::vector<IntVar*>& vars) :
-      IntVarLocalSearchFilter(vars), sum_(0) {}
+  explicit SumFilter(const std::vector<IntVar*>& vars)
+      : IntVarLocalSearchFilter(vars), sum_(0) {}
 
   ~SumFilter() {}
 
@@ -121,12 +120,11 @@ class SumFilter : public IntVarLocalSearchFilter {
     // of this file.
     for (int i = 0; i < solution_delta_size; ++i) {
       if (!solution_delta.Element(i).Activated()) {
-        VLOG(1)
-            << "Element #" << i << " of the delta assignment given to"
-            << " SumFilter::Accept() is not activated (i.e. its variable"
-            << " is not bound to a single value anymore). This means that"
-            << " we are in a LNS phase, and the DobbleFilter won't be able"
-            << " to filter anything. Returning true.";
+        VLOG(1) << "Element #" << i << " of the delta assignment given to"
+                << " SumFilter::Accept() is not activated (i.e. its variable"
+                << " is not bound to a single value anymore). This means that"
+                << " we are in a LNS phase, and the DobbleFilter won't be able"
+                << " to filter anything. Returning true.";
         return true;
       }
     }
@@ -160,15 +158,12 @@ void SolveProblem(SolveType solve_type) {
   IntVar* const sum_var = s.MakeSum(vars)->Var();
   OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
   DecisionBuilder* const db =
-      s.MakePhase(vars,
-                  Solver::CHOOSE_FIRST_UNBOUND,
-                  Solver::ASSIGN_MAX_VALUE);
+      s.MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MAX_VALUE);
   DecisionBuilder* ls = NULL;
   switch (solve_type) {
     case LNS: {
       LOG(INFO) << "Large Neighborhood Search";
-      OneVarLns* const one_var_lns =
-          s.RevAlloc(new OneVarLns(vars));
+      OneVarLns* const one_var_lns = s.RevAlloc(new OneVarLns(vars));
       LocalSearchPhaseParameters* const ls_params =
           s.MakeLocalSearchPhaseParameters(one_var_lns, db);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);

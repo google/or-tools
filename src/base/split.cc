@@ -28,10 +28,9 @@ namespace operations_research {
 // the characters in the std::string, not the entire std::string as a single delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
-static inline
-void SplitStringToIteratorUsing(const std::string& full,
-                                const char* delim,
-                                ITR& result) {  // NOLINT
+static inline void SplitStringToIteratorUsing(const std::string& full,
+                                              const char* delim,
+                                              ITR& result) {  // NOLINT
   // Optimize the common case where delim is a single character.
   if (delim[0] != '\0' && delim[1] == '\0') {
     char c = delim[0];
@@ -42,7 +41,8 @@ void SplitStringToIteratorUsing(const std::string& full,
         ++p;
       } else {
         const char* start = p;
-        while (++p != end && *p != c) { }
+        while (++p != end && *p != c) {
+        }
         *result++ = std::string(start, p - start);
       }
     }
@@ -62,10 +62,9 @@ void SplitStringToIteratorUsing(const std::string& full,
   }
 }
 
-void SplitStringUsing(const std::string& full,
-                      const char* delim,
+void SplitStringUsing(const std::string& full, const char* delim,
                       std::vector<std::string>* result) {
-  std::back_insert_iterator< std::vector<std::string> > it(*result);
+  std::back_insert_iterator<std::vector<std::string> > it(*result);
   SplitStringToIteratorUsing(full, delim, it);
 }
 

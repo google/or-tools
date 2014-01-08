@@ -19,7 +19,6 @@
 #include <utility>
 #include "base/macros.h"
 
-
 namespace operations_research {
 
 // Lightweight XML writer that is optimized for CPViz output. As it only

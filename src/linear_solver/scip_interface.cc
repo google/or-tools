@@ -76,8 +76,7 @@ class SCIPInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
-                              double new_value,
-                              double old_value);
+                              double new_value, double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
@@ -118,14 +117,12 @@ class SCIPInterface : public MPSolverInterface {
   virtual void ExtractObjective();
 
   virtual std::string SolverVersion() const {
-    return StringPrintf("SCIP %d.%d.%d [LP solver: %s]",
-                        SCIPmajorVersion(), SCIPminorVersion(),
-                        SCIPtechVersion(), SCIPlpiGetSolverName());
+    return StringPrintf("SCIP %d.%d.%d [LP solver: %s]", SCIPmajorVersion(),
+                        SCIPminorVersion(), SCIPtechVersion(),
+                        SCIPlpiGetSolverName());
   }
 
-  virtual void* underlying_solver() {
-    return reinterpret_cast<void*>(scip_);
-  }
+  virtual void* underlying_solver() { return reinterpret_cast<void*>(scip_); }
 
  private:
   // Set all parameters in the underlying solver.
@@ -156,9 +153,7 @@ SCIPInterface::SCIPInterface(MPSolver* const solver)
 }
 
 // Frees the LP memory allocations.
-SCIPInterface::~SCIPInterface() {
-  DeleteSCIP();
-}
+SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
 
 void SCIPInterface::Reset() {
   DeleteSCIP();
@@ -169,9 +164,8 @@ void SCIPInterface::Reset() {
 void SCIPInterface::CreateSCIP() {
   ORTOOLS_SCIP_CALL(SCIPcreate(&scip_));
   ORTOOLS_SCIP_CALL(SCIPincludeDefaultPlugins(scip_));
-  ORTOOLS_SCIP_CALL(SCIPcreateProb(
-      scip_, solver_->name_.c_str(),
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  ORTOOLS_SCIP_CALL(SCIPcreateProb(scip_, solver_->name_.c_str(), NULL, NULL,
+                                   NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPsetObjsense(
       scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
   // SCIPaddObjoffset cannot be used at the problem building stage. So
@@ -179,11 +173,9 @@ void SCIPInterface::CreateSCIP() {
   SCIP_VAR* scip_var = NULL;
   // The true objective coefficient will be set in ExtractObjective.
   double dummy_obj_coef = 0.0;
-  ORTOOLS_SCIP_CALL(SCIPcreateVar(
-      scip_, &scip_var, "dummy",
-      1.0, 1.0, dummy_obj_coef,
-      SCIP_VARTYPE_CONTINUOUS,
-      true, false, NULL, NULL, NULL, NULL, NULL));
+  ORTOOLS_SCIP_CALL(SCIPcreateVar(scip_, &scip_var, "dummy", 1.0, 1.0,
+                                  dummy_obj_coef, SCIP_VARTYPE_CONTINUOUS, true,
+                                  false, NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
   scip_variables_.push_back(scip_var);
 }
@@ -234,8 +226,7 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
     SCIP_Bool infeasible = false;
     ORTOOLS_SCIP_CALL(SCIPchgVarType(
         scip_, scip_variables_[var_index],
-        integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS,
-        &infeasible));
+        integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, &infeasible));
 #else
     ORTOOLS_SCIP_CALL(SCIPchgVarType(
         scip_, scip_variables_[var_index],
@@ -261,8 +252,7 @@ void SCIPInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void SCIPInterface::SetCoefficient(MPConstraint* const constraint,
                                    const MPVariable* const variable,
-                                   double new_value,
-                                   double old_value) {
+                                   double new_value, double old_value) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   const int variable_index = variable->index();
@@ -296,16 +286,16 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
       DCHECK_NE(kNoIndex, var_index);
       ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
       // Set coefficient to zero by substracting the old coefficient value.
-      ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
-          scip_, scip_constraints_[constraint_index],
-          scip_variables_[var_index], -old_coef_value));
+      ORTOOLS_SCIP_CALL(
+          SCIPaddCoefLinear(scip_, scip_constraints_[constraint_index],
+                            scip_variables_[var_index], -old_coef_value));
     }
   }
 }
 
 // Cached
 void SCIPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
-                                           double coefficient) {
+                                            double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
 
@@ -354,10 +344,10 @@ void SCIPInterface::ExtractNewVariables() {
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
       ORTOOLS_SCIP_CALL(SCIPcreateVar(
-          scip_, &scip_var, var->name().c_str(),
-          var->lb(), var->ub(), tmp_obj_coef,
-          var->integer() ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS,
-          true, false, NULL, NULL, NULL, NULL, NULL));
+          scip_, &scip_var, var->name().c_str(), var->lb(), var->ub(),
+          tmp_obj_coef,
+          var->integer() ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, true,
+          false, NULL, NULL, NULL, NULL, NULL));
       ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
       scip_variables_.push_back(scip_var);
     }
@@ -371,9 +361,9 @@ void SCIPInterface::ExtractNewVariables() {
           // The variable is new (index offset by 1 because of the
           // dummy variable), so we know the previous coefficient
           // value was 0 and we can directly add the coefficient.
-          ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
-              scip_, scip_constraints_[i],
-              scip_variables_[var_index], entry.second));
+          ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(scip_, scip_constraints_[i],
+                                              scip_variables_[var_index],
+                                              entry.second));
         }
       }
     }
@@ -416,10 +406,8 @@ void SCIPInterface::ExtractNewConstraints() {
       // http://scip.zib.de/doc/html/cons__linear_8h.shtml#aa7aed137a4130b35b168812414413481
       // for an explanation of the parameters.
       ORTOOLS_SCIP_CALL(SCIPcreateConsLinear(
-          scip_, &scip_constraint,
-          ct->name().empty() ? "" : ct->name().c_str(),
-          size, vars.get(), coefs.get(),
-          ct->lb(), ct->ub(),
+          scip_, &scip_constraint, ct->name().empty() ? "" : ct->name().c_str(),
+          size, vars.get(), coefs.get(), ct->lb(), ct->ub(),
           !is_lazy,  // 'initial' parameter.
           true,      // 'separate' parameter.
           true,      // 'enforce' parameter.
@@ -443,13 +431,13 @@ void SCIPInterface::ExtractObjective() {
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
     int var_index = entry.first->index();
     double obj_coef = entry.second;
-    ORTOOLS_SCIP_CALL(SCIPchgVarObj(
-        scip_, scip_variables_[var_index], obj_coef));
+    ORTOOLS_SCIP_CALL(
+        SCIPchgVarObj(scip_, scip_variables_[var_index], obj_coef));
   }
 
   // Constant term: change objective coefficient of dummy variable.
-  ORTOOLS_SCIP_CALL(SCIPchgVarObj(
-      scip_, scip_variables_[0], solver_->Objective().offset()));
+  ORTOOLS_SCIP_CALL(
+      SCIPchgVarObj(scip_, scip_variables_[0], solver_->Objective().offset()));
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -480,9 +468,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   // Time limit.
   if (solver_->time_limit() != 0) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    ORTOOLS_SCIP_CALL(SCIPsetRealParam(scip_,
-                                       "limits/time",
-                                       solver_->time_limit_in_secs()));
+    ORTOOLS_SCIP_CALL(
+        SCIPsetRealParam(scip_, "limits/time", solver_->time_limit_in_secs()));
   } else {
     ORTOOLS_SCIP_CALL(SCIPresetParam(scip_, "limits/time"));
   }
@@ -507,21 +494,18 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     for (int i = 0; i < solver_->variables_.size(); ++i) {
       MPVariable* const var = solver_->variables_[i];
       const int var_index = var->index();
-      const double val = SCIPgetSolVal(scip_, solution,
-                                       scip_variables_[var_index]);
+      const double val =
+          SCIPgetSolVal(scip_, solution, scip_variables_[var_index]);
       var->set_solution_value(val);
       VLOG(3) << var->name() << "=" << val;
     }
     for (int i = 0; i < solver_->constraints_.size(); ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       const int constraint_index = ct->index();
-      const double row_activity =
-          SCIPgetActivityLinear(scip_,
-                                scip_constraints_[constraint_index],
-                                solution);
+      const double row_activity = SCIPgetActivityLinear(
+          scip_, scip_constraints_[constraint_index], solution);
       ct->set_activity(row_activity);
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity;
+      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
     }
   } else {
     VLOG(1) << "No feasible solution found.";

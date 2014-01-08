@@ -36,19 +36,21 @@ namespace operations_research {
 
 class StringPiece {
  private:
-  const char*   ptr_;
-  int           length_;
+  const char* ptr_;
+  int length_;
 
  public:
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "std::string" wherever a "StringPiece" is
   // expected.
-  StringPiece() : ptr_(NULL), length_(0) { }
+  StringPiece() : ptr_(NULL), length_(0) {}
   StringPiece(const char* str)  // NOLINT
-    : ptr_(str), length_((str == NULL) ? 0 : static_cast<int>(strlen(str))) { }
+      : ptr_(str),
+        length_((str == NULL) ? 0 : static_cast<int>(strlen(str))) {}
   StringPiece(const std::string& str)  // NOLINT
-    : ptr_(str.data()), length_(static_cast<int>(str.size())) { }
-  StringPiece(const char* offset, int len) : ptr_(offset), length_(len) { }
+      : ptr_(str.data()),
+        length_(static_cast<int>(str.size())) {}
+  StringPiece(const char* offset, int len) : ptr_(offset), length_(len) {}
 
   // data() may return a pointer to a buffer with embedded NULs, and the
   // returned buffer may or may not be null terminated.  Therefore it is
@@ -86,37 +88,30 @@ class StringPiece {
     length_ -= n;
   }
 
-  void remove_suffix(int n) {
-    length_ -= n;
-  }
+  void remove_suffix(int n) { length_ -= n; }
 
   int compare(const StringPiece& x) const;
 
-  std::string as_string() const {
-    return std::string(data(), size());
-  }
+  std::string as_string() const { return std::string(data(), size()); }
   // We also define ToString() here, since many other std::string-like
   // interfaces name the routine that converts to a C++ std::string
   // "ToString", and it's confusing to have the method that does that
   // for a StringPiece be called "as_string()".  We also leave the
   // "as_string()" method defined here for existing code.
-  std::string ToString() const {
-    return std::string(data(), size());
-  }
+  std::string ToString() const { return std::string(data(), size()); }
 
   void CopyToString(std::string* target) const;
   void AppendToString(std::string* target) const;
 
   // Does "this" start with "x"
   bool starts_with(const StringPiece& x) const {
-    return ((length_ >= x.length_) &&
-            (memcmp(ptr_, x.ptr_, x.length_) == 0));
+    return ((length_ >= x.length_) && (memcmp(ptr_, x.ptr_, x.length_) == 0));
   }
 
   // Does "this" end with "x"
   bool ends_with(const StringPiece& x) const {
     return ((length_ >= x.length_) &&
-            (memcmp(ptr_ + (length_-x.length_), x.ptr_, x.length_) == 0));
+            (memcmp(ptr_ + (length_ - x.length_), x.ptr_, x.length_) == 0));
   }
 
   // standard STL container boilerplate
@@ -136,9 +131,7 @@ class StringPiece {
   const_reverse_iterator rbegin() const {
     return const_reverse_iterator(ptr_ + length_);
   }
-  const_reverse_iterator rend() const {
-    return const_reverse_iterator(ptr_);
-  }
+  const_reverse_iterator rend() const { return const_reverse_iterator(ptr_); }
   // STLS says return size_type, but Google says return int
   int max_size() const { return length_; }
   int capacity() const { return length_; }

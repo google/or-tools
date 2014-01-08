@@ -33,9 +33,7 @@ class Bitmap {
   }
 
   // Destructor : clean up if we allocated
-  ~Bitmap() {
-    delete [] map_;
-  }
+  ~Bitmap() { delete[] map_; }
 
   // Resizes the bitmap.
   // If size < bits(), the extra bits will be discarded.
@@ -48,7 +46,7 @@ class Bitmap {
   }
   void Set(uint32 index, bool value) {
     assert(max_size_ == 0 || index < max_size_);
-    if ( value ) {
+    if (value) {
       SetBit64(map_, index);
     } else {
       ClearBit64(map_, index);
@@ -64,9 +62,9 @@ class Bitmap {
   void Clear() { SetAll(false); }
 
  private:
-  uint32 max_size_;          // the upper bound of the bitmap
+  uint32 max_size_;  // the upper bound of the bitmap
   uint32 array_size_;
-  uint64* map_;             // the bitmap
+  uint64* map_;  // the bitmap
 };
 
 }  // namespace operations_research

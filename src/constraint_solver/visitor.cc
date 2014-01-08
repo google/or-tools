@@ -81,13 +81,13 @@ void ArgumentHolder::SetSequenceArrayArgument(
   sequence_array_argument_[arg_name] = vars;
 }
 
-bool ArgumentHolder::HasIntegerExpressionArgument(
-    const std::string& arg_name) const {
+bool ArgumentHolder::HasIntegerExpressionArgument(const std::string& arg_name)
+    const {
   return ContainsKey(integer_expression_argument_, arg_name);
 }
 
-bool ArgumentHolder::HasIntegerVariableArrayArgument(
-    const std::string& arg_name) const {
+bool ArgumentHolder::HasIntegerVariableArrayArgument(const std::string& arg_name)
+    const {
   return ContainsKey(integer_variable_array_argument_, arg_name);
 }
 

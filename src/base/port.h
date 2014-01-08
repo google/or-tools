@@ -10,7 +10,7 @@
 #if defined(SWIG)
 #define MUST_USE_RESULT
 #elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
-#define MUST_USE_RESULT __attribute__ ((warn_unused_result))
+#define MUST_USE_RESULT __attribute__((warn_unused_result))
 #else
 #define MUST_USE_RESULT
 #endif

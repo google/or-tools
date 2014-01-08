@@ -24,7 +24,6 @@
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
 
-
 namespace operations_research {
 namespace sat {
 
@@ -59,8 +58,8 @@ class OpbReader {
   // the file name.
   static std::string ExtractProblemName(const std::string& filename) {
     const int found = filename.find_last_of("/");
-    const std::string problem_name = found != std::string::npos ?
-        filename.substr(found + 1) : filename;
+    const std::string problem_name =
+        found != std::string::npos ? filename.substr(found + 1) : filename;
     return problem_name;
   }
 
@@ -98,12 +97,12 @@ class OpbReader {
       CHECK(!word.empty());
       if (word == ">=") {
         CHECK_LT(i + 1, words.size());
-        constraint->set_lower_bound(atoi64(words[i+1]));
+        constraint->set_lower_bound(atoi64(words[i + 1]));
         break;
       } else if (word == "=") {
         CHECK_LT(i + 1, words.size());
-        constraint->set_upper_bound(atoi64(words[i+1]));
-        constraint->set_lower_bound(atoi64(words[i+1]));
+        constraint->set_upper_bound(atoi64(words[i + 1]));
+        constraint->set_lower_bound(atoi64(words[i + 1]));
         break;
       } else {
         if (word[0] == 'x') {

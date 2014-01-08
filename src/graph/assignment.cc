@@ -20,8 +20,9 @@ namespace operations_research {
 
 SimpleLinearSumAssignment::SimpleLinearSumAssignment() : num_nodes_(0) {}
 
-ArcIndex SimpleLinearSumAssignment::AddArcWithCost(
-    NodeIndex left_node, NodeIndex righ_node, CostValue cost) {
+ArcIndex SimpleLinearSumAssignment::AddArcWithCost(NodeIndex left_node,
+                                                   NodeIndex righ_node,
+                                                   CostValue cost) {
   const ArcIndex num_arcs = arc_cost_.size();
   num_nodes_ = std::max(num_nodes_, left_node + 1);
   num_nodes_ = std::max(num_nodes_, righ_node + 1);
@@ -31,13 +32,9 @@ ArcIndex SimpleLinearSumAssignment::AddArcWithCost(
   return num_arcs;
 }
 
-NodeIndex SimpleLinearSumAssignment::NumNodes() const {
-  return num_nodes_;
-}
+NodeIndex SimpleLinearSumAssignment::NumNodes() const { return num_nodes_; }
 
-ArcIndex SimpleLinearSumAssignment::NumArcs() const {
-  return arc_cost_.size();
-}
+ArcIndex SimpleLinearSumAssignment::NumArcs() const { return arc_cost_.size(); }
 
 NodeIndex SimpleLinearSumAssignment::LeftNode(ArcIndex arc) const {
   return arc_tail_[arc];

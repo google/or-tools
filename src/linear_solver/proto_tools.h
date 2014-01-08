@@ -33,8 +33,8 @@ bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Mess
 // Prints a proto2 message as a std::string, it behaves like TextFormat::Print()
 // but also prints the default values of unset fields which is useful for
 // printing parameters.
-std::string FullProtocolMessageAsString(
-    const google::protobuf::Message& message, int indent_level);
+std::string FullProtocolMessageAsString(const google::protobuf::Message& message,
+                                   int indent_level);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_TOOLS_H_

@@ -264,19 +264,15 @@ class DemonProfiler : public PropagationMonitor {
       std::vector<Container> to_sort;
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
-           it != constraint_map_.end();
-           ++it) {
+           it != constraint_map_.end(); ++it) {
         const Constraint* const ct = it->first;
         int64 fails = 0;
         int64 demon_invocations = 0;
         int64 initial_propagation_runtime = 0;
         int64 total_demon_runtime = 0;
         int demon_count = 0;
-        ExportInformation(ct,
-                          &fails,
-                          &initial_propagation_runtime,
-                          &demon_invocations,
-                          &total_demon_runtime,
+        ExportInformation(ct, &fails, &initial_propagation_runtime,
+                          &demon_invocations, &total_demon_runtime,
                           &demon_count);
         to_sort.push_back(
             Container(ct, total_demon_runtime + initial_propagation_runtime));
@@ -290,11 +286,8 @@ class DemonProfiler : public PropagationMonitor {
         int64 initial_propagation_runtime = 0;
         int64 total_demon_runtime = 0;
         int demon_count = 0;
-        ExportInformation(ct,
-                          &fails,
-                          &initial_propagation_runtime,
-                          &demon_invocations,
-                          &total_demon_runtime,
+        ExportInformation(ct, &fails, &initial_propagation_runtime,
+                          &demon_invocations, &total_demon_runtime,
                           &demon_count);
         const std::string constraint_message =
             StringPrintf(kConstraintFormat, ct->DebugString().c_str(), fails,

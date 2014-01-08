@@ -61,10 +61,10 @@ namespace operations_research {
 //   }
 // }
 
-template<class Container>
+template <class Container>
 class Eraser;
 
-template<class Container>
+template <class Container>
 class ConstIter {
  public:
   typedef Container container_type;
@@ -77,12 +77,12 @@ class ConstIter {
     container_ = source.container_;
     iterator_ = source.iterator_;
   }
-  ConstIter& operator= (const ConstIter& source) {
+  ConstIter& operator=(const ConstIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
     return *this;
   }
-  bool operator== (const ConstIter& iter) const {
+  bool operator==(const ConstIter& iter) const {
     return iterator_ == iter.iterator_;
   }
   const value_type* operator->() const { return iterator_.operator->(); }
@@ -107,7 +107,7 @@ class ConstIter {
 
 // Note: this class is not compatible with sets (operator* returns a non-const
 // reference).
-template<class Container>
+template <class Container>
 class MutableIter {
  public:
   typedef Container container_type;
@@ -116,17 +116,18 @@ class MutableIter {
   typedef typename Container::const_iterator const_iterator_type;
 
   explicit MutableIter(container_type& container)  // NOLINT
-      : container_(&container), iterator_(container.begin()) {}
+      : container_(&container),
+        iterator_(container.begin()) {}
   MutableIter(const MutableIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
   }
-  MutableIter& operator= (const MutableIter& source) {
+  MutableIter& operator=(const MutableIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
     return *this;
   }
-  bool operator== (const MutableIter& iter) const {
+  bool operator==(const MutableIter& iter) const {
     return iterator_ == iter.iterator_;
   }
   value_type* operator->() const { return iterator_.operator->(); }
@@ -155,7 +156,7 @@ class MutableIter {
   iterator_type iterator_;
 };
 
-template<class Container>
+template <class Container>
 class ConstReverseIter {
  public:
   typedef Container container_type;
@@ -169,19 +170,20 @@ class ConstReverseIter {
     container_ = source.container_;
     iterator_ = source.iterator_;
   }
-  ConstReverseIter& operator= (const ConstReverseIter& source) {
+  ConstReverseIter& operator=(const ConstReverseIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
     return *this;
   }
-  bool operator== (const ConstReverseIter& iter) const {
+  bool operator==(const ConstReverseIter& iter) const {
     return iterator_ == iter.iterator_;
   }
   const value_type* operator->() const { return iterator_.operator->(); }
   const value_type& operator*() const { return iterator_.operator*(); }
   const container_type* const_container() const { return container_; }
   const_reverse_iterator_type const_reverse_iterator() const {
-    return iterator_; }
+    return iterator_;
+  }
   ConstReverseIter& operator++() {
     ++iterator_;
     return *this;
@@ -198,7 +200,7 @@ class ConstReverseIter {
   const_reverse_iterator_type iterator_;
 };
 
-template<class Container>
+template <class Container>
 class MutableReverseIter {
  public:
   typedef Container container_type;
@@ -208,24 +210,26 @@ class MutableReverseIter {
       const_reverse_iterator_type;
 
   explicit MutableReverseIter(container_type& container)  // NOLINT
-      : container_(&container), iterator_(container.rbegin()) {}
+      : container_(&container),
+        iterator_(container.rbegin()) {}
   MutableReverseIter(const MutableReverseIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
   }
-  MutableReverseIter& operator= (const MutableReverseIter& source) {
+  MutableReverseIter& operator=(const MutableReverseIter& source) {
     container_ = source.container_;
     iterator_ = source.iterator_;
     return *this;
   }
-  bool operator== (const MutableReverseIter& iter) const {
+  bool operator==(const MutableReverseIter& iter) const {
     return iterator_ == iter.iterator_;
   }
   value_type* operator->() const { return iterator_.operator->(); }
   value_type& operator*() const { return iterator_.operator*(); }
   const container_type* const_container() const { return container_; }
   const_reverse_iterator_type const_reverse_iterator() const {
-    return iterator_; }
+    return iterator_;
+  }
   container_type* container() const { return container_; }
   reverse_iterator_type reverse_iterator() const { return iterator_; }
   MutableReverseIter& operator++() {
@@ -251,7 +255,7 @@ class MutableReverseIter {
 // This is only valid for set, multiset, map, multimap and list.
 // Vectors and Deques are special cases that need specialized processing
 // defined in the specific template classes below.
-template<class Container>
+template <class Container>
 class Eraser {
  public:
   typedef typename Container::iterator iterator_type;
@@ -262,22 +266,22 @@ class Eraser {
 };
 
 // This version of the Eraser works for vectors
-template<class T> class Eraser<std::vector<T> > {
+template <class T>
+class Eraser<std::vector<T> > {
  public:
   typedef typename std::vector<T>::iterator iterator_type;
-  static iterator_type* erase(std::vector<T>* container,
-                              iterator_type* iterator) {
+  static iterator_type* erase(std::vector<T>* container, iterator_type* iterator) {
     *iterator = container->erase(*iterator);
     return iterator;
   }
 };
 
 // This version of the Eraser works for deques
-template<class T> class Eraser<std::deque<T> > {
+template <class T>
+class Eraser<std::deque<T> > {
  public:
   typedef typename std::deque<T>::iterator iterator_type;
-  static iterator_type* erase(std::deque<T>* container,
-                              iterator_type* iterator) {
+  static iterator_type* erase(std::deque<T>* container, iterator_type* iterator) {
     *iterator = container->erase(*iterator);
     return iterator;
   }

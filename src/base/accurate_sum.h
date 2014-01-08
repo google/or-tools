@@ -20,7 +20,7 @@ namespace operations_research {
 // Kahan summation compensation algorithm.
 //
 //   http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-template<typename FpNumber>
+template <typename FpNumber>
 class AccurateSum {
  public:
   // You may copy-construct an AccurateSum.

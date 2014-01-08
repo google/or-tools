@@ -29,8 +29,7 @@ namespace operations_research {
 // advanced, which could result in the hash function trying to deference a
 // stale pointer.
 template <class ForwardIterator>
-void STLDeleteContainerPointers(ForwardIterator begin,
-                                ForwardIterator end) {
+void STLDeleteContainerPointers(ForwardIterator begin, ForwardIterator end) {
   while (begin != end) {
     ForwardIterator temp = begin;
     ++begin;
@@ -85,7 +84,7 @@ inline char* string_as_array(std::string* str) {
 // ElementDeleter (defined below), which ensures that your container's elements
 // are deleted when the ElementDeleter goes out of scope.
 template <class T>
-void STLDeleteElements(T *container) {
+void STLDeleteElements(T* container) {
   if (!container) return;
   STLDeleteContainerPointers(container->begin(), container->end());
   container->clear();
@@ -96,7 +95,7 @@ void STLDeleteElements(T *container) {
 // in the case it's given a NULL pointer.
 
 template <class T>
-void STLDeleteValues(T *v) {
+void STLDeleteValues(T* v) {
   if (!v) return;
   for (typename T::iterator i = v->begin(); i != v->end(); ++i) {
     delete i->second;
@@ -104,7 +103,7 @@ void STLDeleteValues(T *v) {
   v->clear();
 }
 
-template<typename T>
+template <typename T>
 void STLClearObject(T* obj) {
   T tmp;
   tmp.swap(*obj);

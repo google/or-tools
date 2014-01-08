@@ -102,7 +102,7 @@ class RandomMatrix {
   const int size_;
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_tsp_size > 0) {
     // TSP of size FLAGS_tsp_size.
@@ -149,8 +149,7 @@ int main(int argc, char **argv) {
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       const int route_number = 0;
       std::string route;
-      for (int64 node = routing.Start(route_number);
-           !routing.IsEnd(node);
+      for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
         route = StrCat(route, StrCat(node, " -> "));
       }

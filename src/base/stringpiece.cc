@@ -30,19 +30,17 @@ bool operator==(const StringPiece& x, const StringPiece& y) {
   const char* p = x.data();
   const char* p2 = y.data();
   // Test last byte in case strings share large common prefix
-  if ((len > 0) && (p[len-1] != p2[len-1])) return false;
+  if ((len > 0) && (p[len - 1] != p2[len - 1])) return false;
   const char* p_limit = p + len;
   for (; p < p_limit; p++, p2++) {
-    if (*p != *p2)
-      return false;
+    if (*p != *p2) return false;
   }
   return true;
 }
 
 bool operator<(const operations_research::StringPiece& x,
                const operations_research::StringPiece& y) {
-  const int r = memcmp(x.data(), y.data(),
-                       std::min(x.size(), y.size()));
+  const int r = memcmp(x.data(), y.data(), std::min(x.size(), y.size()));
   return ((r < 0) || ((r == 0) && (x.size() < y.size())));
 }
 
@@ -57,11 +55,10 @@ int StringPiece::copy(char* buf, size_type n, size_type pos) const {
 }
 
 int StringPiece::find(const StringPiece& s, size_type pos) const {
-  if (length_ < 0 || pos > static_cast<size_type>(length_))
-    return npos;
+  if (length_ < 0 || pos > static_cast<size_type>(length_)) return npos;
 
-  const char* result = std::search(ptr_ + pos, ptr_ + length_,
-                                   s.ptr_, s.ptr_ + s.length_);
+  const char* result =
+      std::search(ptr_ + pos, ptr_ + length_, s.ptr_, s.ptr_ + s.length_);
   const size_type xpos = result - ptr_;
   return xpos + s.length_ <= length_ ? xpos : npos;
 }
@@ -69,8 +66,10 @@ int StringPiece::find(const StringPiece& s, size_type pos) const {
 int StringPiece::compare(const StringPiece& x) const {
   int r = memcmp(ptr_, x.ptr_, std::min(length_, x.length_));
   if (r == 0) {
-    if (length_ < x.length_) r = -1;
-    else if (length_ > x.length_) r = +1;
+    if (length_ < x.length_)
+      r = -1;
+    else if (length_ > x.length_)
+      r = +1;
   }
   return r;
 }
@@ -95,8 +94,7 @@ int StringPiece::rfind(const StringPiece& s, size_type pos) const {
 
 int StringPiece::rfind(char c, size_type pos) const {
   if (length_ <= 0) return npos;
-  for (int i = std::min(pos, static_cast<size_type>(length_ - 1));
-       i >= 0; --i) {
+  for (int i = std::min(pos, static_cast<size_type>(length_ - 1)); i >= 0; --i) {
     if (ptr_[i] == c) {
       return i;
     }

@@ -12,14 +12,14 @@
 // limitations under the License.
 
 #if defined(__GNUC__) && defined(__linux__)
-# include <unistd.h>
+#include <unistd.h>
 #endif
 #if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
-# include <mach/mach_init.h>
-# include <mach/task.h>
+#include <mach/mach_init.h>
+#include <mach/task.h>
 #elif defined(_MSC_VER)  // WINDOWS
-# include <windows.h>
-# include <psapi.h>
+#include <windows.h>
+#include <psapi.h>
 #endif
 
 #include <cstdio>
@@ -36,16 +36,14 @@ int64 GetProcessMemoryUsage() {
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
 
-  if (KERN_SUCCESS != task_info(mach_task_self(),
-                                TASK_BASIC_INFO,
-                                (task_info_t)&t_info,
-                                &t_info_count)) {
+  if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO,
+                                (task_info_t) & t_info, &t_info_count)) {
     return -1;
   }
   int64 resident_memory = t_info.resident_size;
   return resident_memory;
 }
-#elif defined(__GNUC__)   // LINUX
+#elif defined(__GNUC__)  // LINUX
 int64 GetProcessMemoryUsage() {
   unsigned size = 0;
   int result;
@@ -62,8 +60,7 @@ int64 GetProcessMemoryUsage() {
 int64 GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
-  hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                         FALSE,
+  hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE,
                          GetCurrentProcessId());
   int64 memory = 0;
   if (hProcess) {
@@ -75,9 +72,7 @@ int64 GetProcessMemoryUsage() {
   return memory;
 }
 #else  // Unknown, returning 0.
-int64 GetProcessMemoryUsage() {
-  return 0;
-}
+int64 GetProcessMemoryUsage() { return 0; }
 #endif
 
 }  // namespace operations_research

@@ -1318,12 +1318,11 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
     }
   }
   const std::string vname =
-      size > 10
-          ? StringPrintf("ElementVar(var array of size %d, %s)", size,
-                         index->DebugString().c_str())
-          : StringPrintf("ElementVar([%s], %s)",
-                         JoinNamePtr(vars, ", ").c_str(),
-                         index->name().c_str());
+      size > 10 ? StringPrintf("ElementVar(var array of size %d, %s)", size,
+                               index->DebugString().c_str())
+                : StringPrintf("ElementVar([%s], %s)",
+                               JoinNamePtr(vars, ", ").c_str(),
+                               index->name().c_str());
   IntVar* const element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(
       RevAlloc(new IntExprArrayElementCt(this, vars, index, element_var)));
@@ -1395,8 +1394,7 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 val
     return cache->Var();
   } else {
     const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                                     JoinNamePtr(vars, ", ").c_str(),
-                                     value);
+                                     JoinNamePtr(vars, ", ").c_str(), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

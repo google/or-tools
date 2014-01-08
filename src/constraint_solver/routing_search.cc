@@ -652,9 +652,9 @@ bool PathCumulFilter::FinalizeAcceptPath() {
         if (ContainsKey(delta_paths_, r)) {
           continue;
         }
-        new_min_start = std::min(new_min_start,
-                            ComputePathMaxStartFromEndCumul(
-                                current_path_transits_, r, new_max_end));
+        new_min_start =
+            std::min(new_min_start, ComputePathMaxStartFromEndCumul(
+                                   current_path_transits_, r, new_max_end));
       }
     } else if (new_min_start > current_min_start_.cumul_value) {
       // Delta min start is greater than the current solution one.

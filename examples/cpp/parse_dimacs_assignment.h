@@ -36,14 +36,14 @@ DECLARE_bool(assignment_optimize_layout);
 
 namespace operations_research {
 
-template <typename GraphType> class LinearSumAssignment;
+template <typename GraphType>
+class LinearSumAssignment;
 
-template <typename GraphType> class DimacsAssignmentParser {
+template <typename GraphType>
+class DimacsAssignmentParser {
  public:
   explicit DimacsAssignmentParser(const std::string filename)
-      : filename_(filename),
-        graph_builder_(NULL),
-        assignment_(NULL) { }
+      : filename_(filename), graph_builder_(NULL), assignment_(NULL) {}
 
   // Reads an assignment problem description from the given file in
   // DIMACS format and returns a LinearSumAssignment object representing
@@ -82,7 +82,7 @@ template <typename GraphType> class DimacsAssignmentParser {
           nodes_described(false),
           reason(NULL),
           num_left_nodes(0),
-          num_arcs(0) { }
+          num_arcs(0) {}
 
     bool bad;
     bool expect_last_line;
@@ -102,8 +102,7 @@ template <typename GraphType> class DimacsAssignmentParser {
 
 // Implementation is below here.
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseProblemLine(
-    const char* line) {
+void DimacsAssignmentParser<GraphType>::ParseProblemLine(const char* line) {
   static const char* kIncorrectProblemLine =
       "Incorrect assignment problem line.";
   static const char* kAssignmentProblemType = "asn";
@@ -111,12 +110,8 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
   NodeIndex num_nodes;
   ArcIndex num_arcs;
 
-  if ((sscanf(line, "%*c%3s%d%d",
-              problem_type,
-              &num_nodes,
-              &num_arcs) != 3) ||
-      (strncmp(kAssignmentProblemType,
-               problem_type,
+  if ((sscanf(line, "%*c%3s%d%d", problem_type, &num_nodes, &num_arcs) != 3) ||
+      (strncmp(kAssignmentProblemType, problem_type,
                strlen(kAssignmentProblemType)) != 0)) {
     state_.bad = true;
     state_.reason = kIncorrectProblemLine;
@@ -148,8 +143,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const char* line) {
 }
 
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseArcLine(
-    const char* line) {
+void DimacsAssignmentParser<GraphType>::ParseArcLine(const char* line) {
   if (graph_builder_ == NULL) {
     state_.bad = true;
     state_.reason =
@@ -160,8 +154,8 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(
   if (!state_.nodes_described) {
     state_.nodes_described = true;
     DCHECK(assignment_ == NULL);
-    assignment_ = new LinearSumAssignment<GraphType>(
-        state_.num_left_nodes, state_.num_arcs);
+    assignment_ = new LinearSumAssignment<GraphType>(state_.num_left_nodes,
+                                                     state_.num_arcs);
   }
   NodeIndex tail;
   NodeIndex head;
@@ -225,7 +219,7 @@ void DimacsAssignmentParser<GraphType>::ParseOneLine(char* line) {
     }
     case '0':
     case '\n':
-        break;
+      break;
     default: {
       state_.bad = true;
       state_.reason = "Unknown line type in the input.";
@@ -270,13 +264,11 @@ void DimacsAssignmentParser<GraphType>::ParseFileByLines(
 // LinearAssignment instance).
 template <typename GraphType>
 LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
-    std::string* error_message,
-    GraphType** graph_handle) {
+    std::string* error_message, GraphType** graph_handle) {
   CHECK_NOTNULL(error_message);
   CHECK_NOTNULL(graph_handle);
-  Callback1<char*>* cb =
-      NewPermanentCallback(
-          this, &DimacsAssignmentParser<GraphType>::ParseOneLine);
+  Callback1<char*>* cb = NewPermanentCallback(
+      this, &DimacsAssignmentParser<GraphType>::ParseOneLine);
   // ParseFileByLines takes ownership of cb and deletes it.
   ParseFileByLines(filename_, cb);
 

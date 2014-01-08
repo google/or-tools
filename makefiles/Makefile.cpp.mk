@@ -48,7 +48,7 @@ DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_L
 
 DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_BASE_LIBS)
 
-DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_ALGORITHMS_LIBS) $(DYNAMIC_BASE_LIBS)
+DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_ALGORITHMS_LIBS) $(DYNAMIC_BASE_LIBS)
 
 DYNAMIC_FAP_DEPS = \
 	$(DYNAMIC_FAP_LIBS) \
@@ -558,6 +558,7 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/piecewise_linear_function.$O \
 	$(OBJ_DIR)/saturated_arithmetic.$O \
 	$(OBJ_DIR)/stats.$O \
+	$(OBJ_DIR)/time_limit.$O \
 	$(OBJ_DIR)/xml_helper.$O
 
 $(OBJ_DIR)/bitset.$O:$(SRC_DIR)/util/bitset.cc
@@ -577,6 +578,9 @@ $(OBJ_DIR)/saturated_arithmetic.$O:$(SRC_DIR)/util/saturated_arithmetic.cc
 
 $(OBJ_DIR)/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sstats.$O
+
+$(OBJ_DIR)/time_limit.$O:$(SRC_DIR)/util/time_limit.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/time_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Stime_limit.$O
 
 $(OBJ_DIR)/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sxml_helper.$O

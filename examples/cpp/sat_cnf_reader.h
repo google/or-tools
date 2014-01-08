@@ -23,7 +23,6 @@
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
 
-
 namespace operations_research {
 namespace sat {
 
@@ -52,8 +51,7 @@ class SatCnfReader {
     if (num_lines == 0) {
       LOG(FATAL) << "File '" << filename << "' is empty or can't be read.";
     }
-    problem->set_num_variables(
-        num_variables_ + slack_variable_weights_.size());
+    problem->set_num_variables(num_variables_ + slack_variable_weights_.size());
 
     // Add the slack variables (to convert max-sat to an pseudo-Boolean
     // optimization problem).
@@ -79,8 +77,8 @@ class SatCnfReader {
   // the file name.
   static std::string ExtractProblemName(const std::string& filename) {
     const int found = filename.find_last_of("/");
-    const std::string problem_name = found != std::string::npos ?
-        filename.substr(found + 1) : filename;
+    const std::string problem_name =
+        found != std::string::npos ? filename.substr(found + 1) : filename;
     return problem_name;
   }
 

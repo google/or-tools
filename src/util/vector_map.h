@@ -25,7 +25,8 @@ namespace operations_research {
 // This class stores a vector of distinct elements, as well as a map
 // from elements to index to find the index in the vector.
 // This is useful to store mapping between objects and indices.
-template <class T> class VectorMap {
+template <class T>
+class VectorMap {
  public:
   // Adds an element if not already present, and returns its index in
   // the vector-map.
@@ -57,9 +58,7 @@ template <class T> class VectorMap {
   // TODO(user): explore a int-type version.
 
   // Returns wether the element has already been added to the vector-map.
-  bool Contains(const T& element) const {
-    return ContainsKey(map_, element);
-  }
+  bool Contains(const T& element) const { return ContainsKey(map_, element); }
 
   // Returns the element at position index.
   const T& Element(int index) const {
@@ -68,9 +67,7 @@ template <class T> class VectorMap {
     return list_[index];
   }
 
-  const T& operator[](int index) const {
-    return Element(index);
-  }
+  const T& operator[](int index) const { return Element(index); }
 
   // Returns the number of distinct elements added to the vector-map.
   int size() const { return list_.size(); }

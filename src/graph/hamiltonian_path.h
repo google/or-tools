@@ -90,17 +90,19 @@ namespace operations_research {
 
 typedef int PathNodeIndex;
 
-template <typename T> class HamiltonianPathSolver {
-// HamiltonianPathSolver computes a minimum Hamiltonian path over a graph
-// defined by a cost matrix. The cost matrix need not be symmetric.
-// The Hamiltonian path can be closed, in this case it's a Hamiltonian cycle,
-// i.e. the algorithm solves the Travelling Salesman Problem.
-// Example:
+template <typename T>
+class HamiltonianPathSolver {
+  // HamiltonianPathSolver computes a minimum Hamiltonian path over a graph
+  // defined by a cost matrix. The cost matrix need not be symmetric.
+  // The Hamiltonian path can be closed, in this case it's a Hamiltonian cycle,
+  // i.e. the algorithm solves the Travelling Salesman Problem.
+  // Example:
 
-// std::vector<std::vector<int> > cost_mat;
-// ... fill in cost matrix
-// HamiltonianPathSolver<int> mhp(cost_mat);     // no computation done
-// printf("%d\n", mhp.TravelingSalesmanCost());  // computation done and stored
+  // std::vector<std::vector<int> > cost_mat;
+  // ... fill in cost matrix
+  // HamiltonianPathSolver<int> mhp(cost_mat);     // no computation done
+  // printf("%d\n", mhp.TravelingSalesmanCost());  // computation done and
+  // stored
 
  public:
   // Currently in 2010, 26 is the maximum you can solve with
@@ -156,21 +158,20 @@ template <typename T> class HamiltonianPathSolver {
   void Free();
 
   // Computes path by looking at the information in memory_.
-  void Path(PathNodeIndex end,
-            std::vector<PathNodeIndex>* path);
+  void Path(PathNodeIndex end, std::vector<PathNodeIndex>* path);
 
   // Does all the Dynamic Progamming iterations. Calls ComputeShortestPath.
   void Solve();
 
-  bool               robust_;
-  bool               triangle_inequality_ok_;
-  bool               robustness_checked_;
-  bool               triangle_inequality_checked_;
-  bool               solved_;
-  PathNodeIndex      num_nodes_;
-  T**                cost_;
-  NodeSet            two_power_num_nodes_;
-  T**                memory_;
+  bool robust_;
+  bool triangle_inequality_ok_;
+  bool robustness_checked_;
+  bool triangle_inequality_checked_;
+  bool solved_;
+  PathNodeIndex num_nodes_;
+  T** cost_;
+  NodeSet two_power_num_nodes_;
+  T** memory_;
 };
 
 static const int kHamiltonianPathSolverPadValue = 1557;
@@ -189,26 +190,26 @@ HamiltonianPathSolver<T>::HamiltonianPathSolver(const std::vector<std::vector<T>
   Init(cost);
 }
 
-template <typename T> HamiltonianPathSolver<T>::~HamiltonianPathSolver() {
+template <typename T>
+HamiltonianPathSolver<T>::~HamiltonianPathSolver() {
   Free();
 }
 
 template <typename T>
 void HamiltonianPathSolver<T>::Free() {
   if (num_nodes_ > 0) {
-    delete [] memory_[0];
-    delete [] memory_;
+    delete[] memory_[0];
+    delete[] memory_;
     for (int i = 0; i < num_nodes_; ++i) {
-      delete [] cost_[i];
+      delete[] cost_[i];
     }
-    delete [] cost_;
+    delete[] cost_;
   }
 }
 
-
-
-template <typename T> void HamiltonianPathSolver<T>::
-                           ChangeCostMatrix(const std::vector<std::vector<T> >& cost) {
+template <typename T>
+void HamiltonianPathSolver<T>::ChangeCostMatrix(
+    const std::vector<std::vector<T> >& cost) {
   robustness_checked_ = false;
   triangle_inequality_checked_ = false;
   solved_ = false;
@@ -264,8 +265,8 @@ void HamiltonianPathSolver<T>::CheckRobustness() {
   if (min_cost < 0) {
     robust_ = false;
   } else {
-    robust_ = (min_cost >
-               num_nodes_ * max_cost * std::numeric_limits<T>::epsilon());
+    robust_ =
+        (min_cost > num_nodes_ * max_cost * std::numeric_limits<T>::epsilon());
   }
   robustness_checked_ = true;
 }
@@ -291,7 +292,7 @@ template <typename T>
 void HamiltonianPathSolver<T>::Init(const std::vector<std::vector<T> >& cost) {
   num_nodes_ = cost.size();
   if (num_nodes_ > 0) {
-    cost_ = new T*[num_nodes_];
+    cost_ = new T* [num_nodes_];
     for (int i = 0; i < num_nodes_; ++i) {
       cost_[i] = new T[num_nodes_];
     }
@@ -308,12 +309,12 @@ void HamiltonianPathSolver<T>::Init(const std::vector<std::vector<T> >& cost) {
     // number.
     // This results in a 20 to 30% gain depending on architectures.
 
-    const int padded_size = two_power_num_nodes_
-                          + kHamiltonianPathSolverPadValue;
-    memory_ = new T * [num_nodes_];
+    const int padded_size =
+        two_power_num_nodes_ + kHamiltonianPathSolverPadValue;
+    memory_ = new T* [num_nodes_];
     memory_[0] = new T[num_nodes_ * padded_size];
     for (int i = 1; i < num_nodes_; ++i) {
-      memory_[i] = memory_[i-1] + padded_size;
+      memory_[i] = memory_[i - 1] + padded_size;
     }
   }
 }
@@ -330,7 +331,7 @@ void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset,
 
   const NodeSet first_singleton = LeastSignificantBitWord32(subset);
   const PathNodeIndex first_src =
-                                 LeastSignificantBitPosition32(first_singleton);
+      LeastSignificantBitPosition32(first_singleton);
   NodeSet start_subset = subset - first_singleton;
   T min_cost = memory_[first_src][start_subset] + cost_[first_src][dest];
   NodeSet copy = start_subset;
@@ -347,7 +348,8 @@ void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset,
   memory_[dest][subset] = min_cost;
 }
 
-template <typename T> void HamiltonianPathSolver<T>::Solve() {
+template <typename T>
+void HamiltonianPathSolver<T>::Solve() {
   if (solved_) return;
   for (PathNodeIndex dest = 0; dest < num_nodes_; ++dest) {
     memory_[dest][0] = cost_[0][dest];
@@ -360,8 +362,8 @@ template <typename T> void HamiltonianPathSolver<T>::Solve() {
   solved_ = true;
 }
 
-
-template <typename T> T HamiltonianPathSolver<T>::HamiltonianCost() {
+template <typename T>
+T HamiltonianPathSolver<T>::HamiltonianCost() {
   if (num_nodes_ <= 1) {
     return 0;
   }
@@ -369,8 +371,8 @@ template <typename T> T HamiltonianPathSolver<T>::HamiltonianCost() {
   return memory_[num_nodes_ - 1][two_power_num_nodes_ - 1];
 }
 
-template <typename T> void HamiltonianPathSolver<T>::
-    HamiltonianPath(std::vector<PathNodeIndex>* path) {
+template <typename T>
+void HamiltonianPathSolver<T>::HamiltonianPath(std::vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;
@@ -426,12 +428,12 @@ void HamiltonianPathSolver<T>::Path(PathNodeIndex end,
       const PathNodeIndex src = LeastSignificantBitPosition32(singleton);
       const NodeSet incumbent_set = current_set - singleton;
       const double current_cost = memory_[dest][current_set];
-      const double incumbent_cost = memory_[src][incumbent_set]
-                                  + cost_[src][dest];
+      const double incumbent_cost =
+          memory_[src][incumbent_set] + cost_[src][dest];
       // We take precision into account in case T is float or double.
       // There is no visible penalty in the case T is an integer type.
-      if (fabs(current_cost - incumbent_cost)
-          <=  std::numeric_limits<T>::epsilon() * current_cost) {
+      if (fabs(current_cost - incumbent_cost) <=
+          std::numeric_limits<T>::epsilon() * current_cost) {
         current_set = incumbent_set;
         dest = src;
         (*path)[i] = dest;
@@ -443,7 +445,8 @@ void HamiltonianPathSolver<T>::Path(PathNodeIndex end,
   }
 }
 
-template <typename T> T HamiltonianPathSolver<T>::TravelingSalesmanCost() {
+template <typename T>
+T HamiltonianPathSolver<T>::TravelingSalesmanCost() {
   if (num_nodes_ <= 1) {
     return 0;
   }
@@ -451,8 +454,9 @@ template <typename T> T HamiltonianPathSolver<T>::TravelingSalesmanCost() {
   return memory_[0][two_power_num_nodes_ - 1];
 }
 
-template <typename T> void HamiltonianPathSolver<T>::
-    TravelingSalesmanPath(std::vector<PathNodeIndex>* path) {
+template <typename T>
+void HamiltonianPathSolver<T>::TravelingSalesmanPath(
+    std::vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;

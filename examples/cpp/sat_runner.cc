@@ -30,47 +30,38 @@
 #include "sat/sat_solver.h"
 
 DEFINE_string(
-    input,
-    "",
+    input, "",
     "Required: input file of the problem to solve. Many format are supported:"
     ".cnf (sat, max-sat, weighted max-sat), .opb (pseudo-boolean sat/optim) "
     "and by default the LinearBooleanProblem proto (binary or text).");
 
 DEFINE_string(
-    output,
-    "",
+    output, "",
     "If non-empty, write the input problem as a LinearBooleanProblem proto to "
     "this file. By default it uses the binary format except if the file "
     "extension is '.txt'. If the problem is SAT, a satisfiable assignment is "
     "also writen to the file.");
 
 DEFINE_string(
-    expected_result,
-    "undefined",
+    expected_result, "undefined",
     "Checks the result against expected. Possible values are undefined, "
     "sat, unsat");
 
-DEFINE_string(
-    params,
-    "",
-    "Parameters for the sat solver in a text format of the "
-    "SatParameters proto, example: --params=use_conflicts:true.");
+DEFINE_string(params, "",
+              "Parameters for the sat solver in a text format of the "
+              "SatParameters proto, example: --params=use_conflicts:true.");
 
 DEFINE_string(
-    lower_bound,
-    "",
+    lower_bound, "",
     "If not empty, look for a solution with an objective value >= this bound.");
 
 DEFINE_string(
-    upper_bound,
-    "",
+    upper_bound, "",
     "If not empty, look for a solution with an objective value <= this bound.");
 
-DEFINE_bool(
-    search_optimal,
-    false,
-    "If true, search for the optimal solution. "
-    "The algorithm is currently really basic.");
+DEFINE_bool(search_optimal, false,
+            "If true, search for the optimal solution. "
+            "The algorithm is currently really basic.");
 
 // TODO(user): Adds minisat to the mix.
 
@@ -97,13 +88,13 @@ int Run() {
   // Read the problem.
   LinearBooleanProblem problem;
   if (HasSuffixString(FLAGS_input, ".opb") ||
-      HasSuffixString(FLAGS_input, ".opb.bz2")) {
+             HasSuffixString(FLAGS_input, ".opb.bz2")) {
     OpbReader reader;
     if (!reader.Load(FLAGS_input, &problem)) {
       LOG(FATAL) << "Cannot load file '" << FLAGS_input << "'.";
     }
-  } else if (HasSuffixString(FLAGS_input, ".cnf")
-          || HasSuffixString(FLAGS_input, ".wcnf")) {
+  } else if (HasSuffixString(FLAGS_input, ".cnf") ||
+             HasSuffixString(FLAGS_input, ".wcnf")) {
     SatCnfReader reader;
     if (!reader.Load(FLAGS_input, &problem)) {
       LOG(FATAL) << "Cannot load file '" << FLAGS_input << "'.";
@@ -117,16 +108,14 @@ int Run() {
     LOG(FATAL) << "Couldn't load problem '" << FLAGS_input << "'.";
   }
   if (!AddObjectiveConstraint(
-      problem,
-      !FLAGS_lower_bound.empty(), atoi64(FLAGS_lower_bound),
-      !FLAGS_upper_bound.empty(), atoi64(FLAGS_upper_bound),
-      &solver)) {
+           problem, !FLAGS_lower_bound.empty(), atoi64(FLAGS_lower_bound),
+           !FLAGS_upper_bound.empty(), atoi64(FLAGS_upper_bound), &solver)) {
     LOG(FATAL) << "Issue when setting the objective bounds.";
   }
 
   // Basic search for the optimal value by calling multiple times the solver.
-  if (FLAGS_search_optimal
-      && problem.type() == LinearBooleanProblem::MINIMIZATION) {
+  if (FLAGS_search_optimal &&
+      problem.type() == LinearBooleanProblem::MINIMIZATION) {
     Coefficient objective = std::numeric_limits<Coefficient>::max();
     while (solver.Solve() == SatSolver::MODEL_SAT) {
       CHECK(IsAssignmentValid(problem, solver.Assignment()));
@@ -134,8 +123,8 @@ int Run() {
       objective = ComputeObjectiveValue(problem, solver.Assignment());
       CHECK_LT(objective, old_objective);
       solver.Backtrack(0);
-      if (!AddObjectiveConstraint(
-          problem, false, 0, true, objective - 1, &solver)) {
+      if (!AddObjectiveConstraint(problem, false, 0, true, objective - 1,
+                                  &solver)) {
         LOG(INFO) << "UNSAT (when tightenning the objective constraint).";
         break;
       }
@@ -152,8 +141,7 @@ int Run() {
 
   if (!FLAGS_output.empty()) {
     if (result == SatSolver::MODEL_SAT) {
-      StoreAssignment(
-          solver.Assignment(), problem.mutable_assignment());
+      StoreAssignment(solver.Assignment(), problem.mutable_assignment());
     }
     if (HasSuffixString(FLAGS_output, ".txt")) {
       file::WriteProtoToASCIIFileOrDie(problem, FLAGS_output);
@@ -175,7 +163,7 @@ static const char kUsage[] =
     "Usage: see flags.\n"
     "This program solves a given sat problem.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   return operations_research::sat::Run();

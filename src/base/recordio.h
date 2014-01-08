@@ -36,7 +36,8 @@ class RecordWriter {
 
   explicit RecordWriter(File* const file);
 
-  template <class P> bool WriteProtocolMessage(const P& proto) {
+  template <class P>
+  bool WriteProtocolMessage(const P& proto) {
     std::string uncompressed_buffer;
     proto.SerializeToString(&uncompressed_buffer);
     const uint64 uncompressed_size = uncompressed_buffer.size();
@@ -85,7 +86,8 @@ class RecordReader {
  public:
   explicit RecordReader(File* const file);
 
-  template <class P> bool ReadProtocolMessage(P* const proto) {
+  template <class P>
+  bool ReadProtocolMessage(P* const proto) {
     uint64 usize = 0;
     uint64 csize = 0;
     int magic_number = 0;
@@ -123,10 +125,8 @@ class RecordReader {
   bool Close();
 
  private:
-  void Uncompress(const char* const source,
-                  uint64 source_size,
-                  char* const output_buffer,
-                  uint64 output_size) const;
+  void Uncompress(const char* const source, uint64 source_size,
+                  char* const output_buffer, uint64 output_size) const;
 
   File* const file_;
 };

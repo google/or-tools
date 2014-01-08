@@ -17,8 +17,8 @@
 namespace operations_research {
 namespace sat {
 
-bool LoadBooleanProblem(
-    const LinearBooleanProblem& problem, SatSolver* solver) {
+bool LoadBooleanProblem(const LinearBooleanProblem& problem,
+                        SatSolver* solver) {
   LOG(INFO) << "Loading problem '" << problem.name() << "', "
             << problem.num_variables() << " variables, "
             << problem.constraints_size() << " constraints.";
@@ -37,24 +37,23 @@ bool LoadBooleanProblem(
       cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
     }
     if (!solver->AddLinearConstraint(
-        constraint.has_lower_bound(), constraint.lower_bound(),
-        constraint.has_upper_bound(), constraint.upper_bound(),
-        &cst)) {
+             constraint.has_lower_bound(), constraint.lower_bound(),
+             constraint.has_upper_bound(), constraint.upper_bound(), &cst)) {
       return false;
     }
   }
   LOG(INFO) << "The problem contains " << num_terms << " terms.";
 
   // Initialize the heuristic to look for a good solution.
-  if (problem.type() == LinearBooleanProblem::MINIMIZATION
-      || problem.type() == LinearBooleanProblem::MAXIMIZATION) {
+  if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
+      problem.type() == LinearBooleanProblem::MAXIMIZATION) {
     const int sign =
         (problem.type() == LinearBooleanProblem::MAXIMIZATION) ? -1 : 1;
     const LinearObjective& objective = problem.objective();
     double max_weight = 0;
     for (int i = 0; i < objective.literals_size(); ++i) {
-      max_weight = std::max(
-          max_weight, fabs(static_cast<double>(objective.coefficients(i))));
+      max_weight =
+          std::max(max_weight, fabs(static_cast<double>(objective.coefficients(i))));
     }
     for (int i = 0; i < objective.literals_size(); ++i) {
       const double weight =
@@ -89,8 +88,7 @@ bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
     cst.push_back(LiteralWithCoeff(literal, objective.coefficients(i)));
   }
   return solver->AddLinearConstraint(use_lower_bound, lower_bound,
-                                     use_upper_bound, upper_bound,
-                                     &cst);
+                                     use_upper_bound, upper_bound, &cst);
 }
 
 Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
@@ -183,15 +181,13 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       hard_weigth = std::max(hard_weigth, weight + 1);
     }
     CHECK_GT(hard_weigth, 0);
-    output += StringPrintf(
-        "p wcnf %d %d %lld\n",
-        problem.num_variables() - objective.literals().size(),
-        problem.constraints_size(),
-        hard_weigth);
+    output +=
+        StringPrintf("p wcnf %d %d %lld\n",
+                     problem.num_variables() - objective.literals().size(),
+                     problem.constraints_size(), hard_weigth);
   } else {
-     output += StringPrintf("p cnf %d %d\n",
-                            problem.num_variables(),
-                            problem.constraints_size());
+    output += StringPrintf("p cnf %d %d\n", problem.num_variables(),
+                           problem.constraints_size());
   }
 
   int slack_index = 0;
@@ -200,8 +196,8 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
     for (int i = 0; i < constraint.literals_size(); ++i) {
       if (constraint.coefficients(i) != 1) return "";
       if (i == 0 && is_wcnf) {
-        if (slack_index < objective.literals_size()
-            && constraint.literals(0) == objective.literals(slack_index)) {
+        if (slack_index < objective.literals_size() &&
+            constraint.literals(0) == objective.literals(slack_index)) {
           output += StringPrintf("%lld ", objective.coefficients(slack_index));
           ++slack_index;
           continue;

@@ -70,16 +70,13 @@ DEFINE_int32(num_teams, 10, "Number of teams in the problem.");
 DEFINE_int32(time_limit, 20000, "Time limit in ms.");
 
 // Search tweaking parameters. These are defined to illustrate their effect.
-DEFINE_bool(run_all_heuristics,
-            true,
+DEFINE_bool(run_all_heuristics, true,
             "Run all heuristics in impact search, see DefaultPhaseParameters"
             " in constraint_solver/constraint_solver.h for details.");
-DEFINE_int32(heuristics_period,
-             30,
+DEFINE_int32(heuristics_period, 30,
              "Frequency to run all heuristics, see DefaultPhaseParameters"
              " in constraint_solver/constraint_solver.h for details.");
-DEFINE_double(restart_log_size,
-              8.0,
+DEFINE_double(restart_log_size, 8.0,
               "Threshold for automatic restarting the search in default phase,"
               " see DefaultPhaseParameters in "
               "constraint_solver/constraint_solver.h for details.");
@@ -99,8 +96,7 @@ void ComputeOneDayOneTeamTuples(int num_teams, IntTupleSet* const tuples) {
   }
 }
 
-void AddOneDayOneTeamConstraint(Solver* const solver,
-                                IntVar* const opponent,
+void AddOneDayOneTeamConstraint(Solver* const solver, IntVar* const opponent,
                                 IntVar* const home_away,
                                 IntVar* const signed_opponent,
                                 const IntTupleSet& intra_day_tuples) {
@@ -126,10 +122,7 @@ void ComputeOneDayTuples(int num_teams, IntTupleSet* const day_tuples) {
   std::vector<IntVar*> signed_opponents;
   solver.MakeIntVarArray(num_teams, 0, num_teams - 1, "opponent_", &opponents);
   solver.MakeBoolVarArray(num_teams, "home_away_", &home_aways);
-  solver.MakeIntVarArray(num_teams,
-                         0,
-                         2 * num_teams - 1,
-                         "signed_opponent_",
+  solver.MakeIntVarArray(num_teams, 0, 2 * num_teams - 1, "signed_opponent_",
                          &signed_opponents);
 
   // All Diff constraint.
@@ -178,9 +171,8 @@ void ComputeOneDayTuples(int num_teams, IntTupleSet* const day_tuples) {
   }
 
   // Search for solutions and fill day_tuples.
-  DecisionBuilder* const db = solver.MakePhase(signed_opponents,
-                                               Solver::CHOOSE_FIRST_UNBOUND,
-                                               Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = solver.MakePhase(
+      signed_opponents, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
   while (solver.NextSolution()) {
     std::vector<int> solution;
@@ -200,8 +192,7 @@ void AddOneTeamConstraints(Solver* const solver,
                            const std::vector<IntVar*>& home_aways,
                            const std::vector<IntVar*>& signed_opponents,
                            const IntTupleSet& home_away_tuples,
-                           IntVar* const break_var,
-                           int num_teams) {
+                           IntVar* const break_var, int num_teams) {
   const int half_season = num_teams - 1;
 
   // Each team meet all opponents once by half season.
@@ -250,9 +241,8 @@ void ComputeOneTeamHomeAwayTuples(int num_teams,
     IntVar* const partial_sum = solver.MakeSum(tmp_vars)->Var();
     solver.AddConstraint(solver.MakeBetweenCt(partial_sum, 1, 2));
   }
-  DecisionBuilder* const db = solver.MakePhase(home_aways,
-                                               Solver::CHOOSE_FIRST_UNBOUND,
-                                               Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = solver.MakePhase(
+      home_aways, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
   while (solver.NextSolution()) {
     std::vector<int> solution;
@@ -290,17 +280,13 @@ void SportsScheduling(int num_teams) {
   // home_away result.
   std::vector<std::vector<IntVar*> > signed_opponents(num_teams);
   for (int team_index = 0; team_index < num_teams; ++team_index) {
-    solver.MakeIntVarArray(full_season,
-                           0,
-                           num_teams - 1,
+    solver.MakeIntVarArray(full_season, 0, num_teams - 1,
                            StringPrintf("opponent_%d_", team_index),
                            &opponents[team_index]);
     solver.MakeBoolVarArray(full_season,
                             StringPrintf("home_away_%d_", team_index),
                             &home_aways[team_index]);
-    solver.MakeIntVarArray(full_season,
-                           0,
-                           2 * num_teams - 1,
+    solver.MakeIntVarArray(full_season, 0, 2 * num_teams - 1,
                            StringPrintf("signed_opponent_%d", team_index),
                            &signed_opponents[team_index]);
   }
@@ -323,11 +309,9 @@ void SportsScheduling(int num_teams) {
   ComputeOneDayOneTeamTuples(num_teams, &one_day_one_team_tuples);
   for (int day = 0; day < full_season; ++day) {
     for (int team_index = 0; team_index < num_teams; ++team_index) {
-      AddOneDayOneTeamConstraint(&solver,
-                                 opponents[team_index][day],
-                                 home_aways[team_index][day],
-                                 signed_opponents[team_index][day],
-                                 one_day_one_team_tuples);
+      AddOneDayOneTeamConstraint(
+          &solver, opponents[team_index][day], home_aways[team_index][day],
+          signed_opponents[team_index][day], one_day_one_team_tuples);
     }
   }
 
@@ -335,19 +319,12 @@ void SportsScheduling(int num_teams) {
   IntTupleSet home_away_tuples(full_season + 1);
   ComputeOneTeamHomeAwayTuples(num_teams, &home_away_tuples);
   std::vector<IntVar*> team_breaks;
-  solver.MakeIntVarArray(num_teams,
-                         0,
-                         full_season,
-                         "team_break_",
+  solver.MakeIntVarArray(num_teams, 0, full_season, "team_break_",
                          &team_breaks);
   for (int team = 0; team < num_teams; ++team) {
-    AddOneTeamConstraints(&solver,
-                          opponents[team],
-                          home_aways[team],
-                          signed_opponents[team],
-                          home_away_tuples,
-                          team_breaks[team],
-                          num_teams);
+    AddOneTeamConstraints(&solver, opponents[team], home_aways[team],
+                          signed_opponents[team], home_away_tuples,
+                          team_breaks[team], num_teams);
   }
 
   // ----- Search -----
@@ -385,7 +362,7 @@ void SportsScheduling(int num_teams) {
   monitors.push_back(limit);
 
   // Solution collector.
-  SolutionCollector* const collector =  solver.MakeLastSolutionCollector();
+  SolutionCollector* const collector = solver.MakeLastSolutionCollector();
   for (int team_index = 0; team_index < num_teams; ++team_index) {
     collector->Add(opponents[team_index]);
     collector->Add(home_aways[team_index]);
@@ -416,7 +393,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."
     "There is no output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   CHECK_EQ(0, FLAGS_num_teams % 2) << "The number of teams must be even";

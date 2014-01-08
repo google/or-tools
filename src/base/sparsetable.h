@@ -19,7 +19,8 @@
 
 namespace operations_research {
 // This class implement a simple block based sparse vector.
-template <class T> class sparsetable {
+template <class T>
+class sparsetable {
  public:
   sparsetable() : size_(0) {}
 

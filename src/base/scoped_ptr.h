@@ -29,9 +29,12 @@
 
 namespace operations_research {
 
-template <class C> class scoped_ptr;
-template <class C, class Free> class scoped_ptr_malloc;
-template <class C> scoped_ptr<C> make_scoped_ptr(C * param);
+template <class C>
+class scoped_ptr;
+template <class C, class Free>
+class scoped_ptr_malloc;
+template <class C>
+scoped_ptr<C> make_scoped_ptr(C* param);
 
 // A scoped_ptr<T> is like a T*, except that the destructor of scoped_ptr<T>
 // automatically deletes the pointer it holds (if any).
@@ -49,12 +52,14 @@ class scoped_ptr {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized scoped_ptr.
   // The input parameter must be allocated with new.
-  explicit scoped_ptr(C* p = NULL) : ptr_(p) { }
+  explicit scoped_ptr(C* p = NULL) : ptr_(p) {}
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
   ~scoped_ptr() {
-    enum { type_must_be_complete = sizeof(C) };
+    enum {
+      type_must_be_complete = sizeof(C)
+    };
     delete ptr_;
   }
 
@@ -63,7 +68,9 @@ class scoped_ptr {
   // this->reset(this->get()) works.
   void reset(C* p = NULL) {
     if (p != ptr_) {
-      enum { type_must_be_complete = sizeof(C) };
+      enum {
+        type_must_be_complete = sizeof(C)
+      };
       delete ptr_;
       ptr_ = p;
     }
@@ -75,7 +82,7 @@ class scoped_ptr {
     assert(ptr_ != NULL);
     return *ptr_;
   }
-  C* operator->() const  {
+  C* operator->() const {
     assert(ptr_ != NULL);
     return ptr_;
   }
@@ -110,13 +117,15 @@ class scoped_ptr {
 
   // friend class that can access copy ctor (although if it actually
   // calls a copy ctor, there will be a problem) see below
-  friend scoped_ptr<C> make_scoped_ptr<C>(C *p);
+  friend scoped_ptr<C> make_scoped_ptr<C>(C* p);
 
   // Forbid comparison of scoped_ptr types.  If C2 != C, it totally doesn't
   // make sense, and if C2 == C, it still doesn't make sense because you should
   // never have the same object owned by two different scoped_ptrs.
-  template <class C2> bool operator==(scoped_ptr<C2> const& p2) const;
-  template <class C2> bool operator!=(scoped_ptr<C2> const& p2) const;
+  template <class C2>
+  bool operator==(scoped_ptr<C2> const& p2) const;
+  template <class C2>
+  bool operator!=(scoped_ptr<C2> const& p2) const;
 
   DISALLOW_COPY_AND_ASSIGN(scoped_ptr);
 };
@@ -138,7 +147,7 @@ bool operator!=(C* p1, const scoped_ptr<C>& p2) {
 }
 
 template <class C>
-scoped_ptr<C> make_scoped_ptr(C *p) {
+scoped_ptr<C> make_scoped_ptr(C* p) {
   // This does nothing but to return a scoped_ptr of the type that the passed
   // pointer is of.  (This eliminates the need to specify the name of T when
   // making a scoped_ptr that is used anonymously/temporarily.)  From an
@@ -167,13 +176,15 @@ class scoped_ptr<C[]> {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized scoped_ptr.
   // The input parameter must be allocated with new.
-  explicit scoped_ptr(C* p = NULL) : ptr_(p) { }
+  explicit scoped_ptr(C* p = NULL) : ptr_(p) {}
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
   ~scoped_ptr() {
-    enum { type_must_be_complete = sizeof(C) };
-    delete [] ptr_;
+    enum {
+      type_must_be_complete = sizeof(C)
+    };
+    delete[] ptr_;
   }
 
   // Reset.  Deletes the current owned object, if any.
@@ -181,15 +192,17 @@ class scoped_ptr<C[]> {
   // this->reset(this->get()) works.
   void reset(C* p = NULL) {
     if (p != ptr_) {
-      enum { type_must_be_complete = sizeof(C) };
-      delete [] ptr_;
+      enum {
+        type_must_be_complete = sizeof(C)
+      };
+      delete[] ptr_;
       ptr_ = p;
     }
   }
 
   // Accessors to get the owned object.
   // operator[] and operator-> will assert() if there is no current object.
-  C& operator[] (size_t i) const {
+  C& operator[](size_t i) const {
     assert(ptr_ != NULL);
     return ptr_[i];
   }
@@ -229,15 +242,13 @@ class scoped_ptr<C[]> {
 // passed as a template argument to scoped_ptr_malloc below.
 class ScopedPtrMallocFree {
  public:
-  inline void operator()(void* x) const {
-    free(x);
-  }
+  inline void operator()(void* x) const { free(x); }
 };
 
 // scoped_ptr_malloc<> is similar to scoped_ptr<>, but it accepts a
 // second template argument, the functor used to free the object.
 
-template<class C, class FreeProc = ScopedPtrMallocFree>
+template <class C, class FreeProc = ScopedPtrMallocFree>
 class scoped_ptr_malloc {
  public:
   // The element type
@@ -248,12 +259,10 @@ class scoped_ptr_malloc {
   // The input parameter must be allocated with an allocator that matches the
   // Free functor.  For the default Free functor, this is malloc, calloc, or
   // realloc.
-  explicit scoped_ptr_malloc(C* p = NULL): ptr_(p) {}
+  explicit scoped_ptr_malloc(C* p = NULL) : ptr_(p) {}
 
   // Destructor.  If there is a C object, call the Free functor.
-  ~scoped_ptr_malloc() {
-    free_(ptr_);
-  }
+  ~scoped_ptr_malloc() { free_(ptr_); }
 
   // Reset.  Calls the Free functor on the current owned object, if any.
   // Then takes ownership of a new object, if given.
@@ -278,25 +287,19 @@ class scoped_ptr_malloc {
     return ptr_;
   }
 
-  C* get() const {
-    return ptr_;
-  }
+  C* get() const { return ptr_; }
 
   // Comparison operators.
   // These return whether a scoped_ptr_malloc and a plain pointer refer
   // to the same object, not just to two different but equal objects.
   // For compatibility wwith the boost-derived implementation, these
   // take non-const arguments.
-  bool operator==(C* p) const {
-    return ptr_ == p;
-  }
+  bool operator==(C* p) const { return ptr_ == p; }
 
-  bool operator!=(C* p) const {
-    return ptr_ != p;
-  }
+  bool operator!=(C* p) const { return ptr_ != p; }
 
   // Swap two scoped pointers.
-  void swap(scoped_ptr_malloc & b) {
+  void swap(scoped_ptr_malloc& b) {
     C* tmp = b.ptr_;
     b.ptr_ = ptr_;
     ptr_ = tmp;
@@ -327,21 +330,21 @@ class scoped_ptr_malloc {
   DISALLOW_COPY_AND_ASSIGN(scoped_ptr_malloc);
 };
 
-template<class C, class FP>
+template <class C, class FP>
 FP const scoped_ptr_malloc<C, FP>::free_ = FP();
 
-template<class C, class FP> inline
-void swap(scoped_ptr_malloc<C, FP>& a, scoped_ptr_malloc<C, FP>& b) {
+template <class C, class FP>
+inline void swap(scoped_ptr_malloc<C, FP>& a, scoped_ptr_malloc<C, FP>& b) {
   a.swap(b);
 }
 
-template<class C, class FP> inline
-bool operator==(C* p, const scoped_ptr_malloc<C, FP>& b) {
+template <class C, class FP>
+inline bool operator==(C* p, const scoped_ptr_malloc<C, FP>& b) {
   return p == b.get();
 }
 
-template<class C, class FP> inline
-bool operator!=(C* p, const scoped_ptr_malloc<C, FP>& b) {
+template <class C, class FP>
+inline bool operator!=(C* p, const scoped_ptr_malloc<C, FP>& b) {
   return p != b.get();
 }
 }  // namespace operations_research

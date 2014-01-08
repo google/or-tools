@@ -178,10 +178,8 @@ class RangeBipartiteMatching {
   // This method sorts the min_sorted_ and max_sorted_ arrays and fill
   // the bounds_ array (and set the active_size_ counter).
   void SortArray() {
-    std::sort(min_sorted_.get(), min_sorted_.get() + size_,
-         CompareIntervalMin());
-    std::sort(max_sorted_.get(), max_sorted_.get() + size_,
-         CompareIntervalMax());
+    std::sort(min_sorted_.get(), min_sorted_.get() + size_, CompareIntervalMin());
+    std::sort(max_sorted_.get(), max_sorted_.get() + size_, CompareIntervalMax());
 
     int64 min = min_sorted_[0]->min;
     int64 max = max_sorted_[0]->max + 1;
@@ -571,8 +569,7 @@ class AllDifferentExcept : public Constraint {
 
   virtual std::string DebugString() const {
     return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        escape_value_);
+                        JoinDebugStringPtr(vars_, ", ").c_str(), escape_value_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {

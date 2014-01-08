@@ -23,7 +23,7 @@ namespace operations_research {
 
 // Since StarGraph does not have exactly the same interface as the other
 // graphs, we define a correspondance there.
-template<typename Graph>
+template <typename Graph>
 struct Graphs {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
@@ -39,15 +39,13 @@ struct Graphs {
   static ArcIndex ArcReservation(const Graph& graph) {
     return graph.arc_capacity();
   }
-  static void Build(Graph* graph) {
-    graph->Build();
-  }
-  static void Build(Graph* graph, std::vector<ArcIndex> *permutation) {
+  static void Build(Graph* graph) { graph->Build(); }
+  static void Build(Graph* graph, std::vector<ArcIndex>* permutation) {
     graph->Build(permutation);
   }
 };
 
-template<>
+template <>
 struct Graphs<operations_research::StarGraph> {
   typedef operations_research::StarGraph Graph;
 #if defined(_MSC_VER)
@@ -69,8 +67,8 @@ struct Graphs<operations_research::StarGraph> {
   static ArcIndex ArcReservation(const Graph& graph) {
     return graph.max_num_arcs();
   }
-  static void Build(Graph *graph) {}
-  static void Build(Graph* graph, std::vector<ArcIndex> *permutation) {
+  static void Build(Graph* graph) {}
+  static void Build(Graph* graph, std::vector<ArcIndex>* permutation) {
     permutation->clear();
   }
 };

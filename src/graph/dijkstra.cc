@@ -20,7 +20,6 @@
 #include "base/scoped_ptr.h"
 #include "base/adjustable_priority_queue.h"
 
-
 namespace operations_research {
 namespace {
 
@@ -28,7 +27,7 @@ namespace {
 class Element {
  public:
   Element() : heap_index_(-1), distance_(0), node_(-1) {}
-  bool operator <(const Element& other) const {
+  bool operator<(const Element& other) const {
     return distance_ > other.distance_;
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
@@ -37,6 +36,7 @@ class Element {
   int64 distance() const { return distance_; }
   void set_node(int node) { node_ = node; }
   int node() const { return node_; }
+
  private:
   int heap_index_;
   int64 distance_;
@@ -48,8 +48,7 @@ class DijkstraSP {
  public:
   static const int64 kInfinity = kint64max / 2;
 
-  DijkstraSP(int node_count,
-             int start_node,
+  DijkstraSP(int node_count, int start_node,
              ResultCallback2<int64, int, int>* const graph,
              int64 disconnected_distance)
       : node_count_(node_count),
@@ -105,8 +104,7 @@ int DijkstraSP::SelectClosestNode(int64* distance) {
 
 void DijkstraSP::Update(int node) {
   for (hash_set<int>::const_iterator it = not_visited_.begin();
-       it != not_visited_.end();
-       ++it) {
+       it != not_visited_.end(); ++it) {
     const int other_node = *it;
     const int64 graph_node_i = graph_->Run(node, other_node);
     if (graph_node_i != disconnected_distance_) {
@@ -155,12 +153,9 @@ bool DijkstraSP::ShortestPath(int end_node, std::vector<int>* nodes) {
   return found;
 }
 
-bool DijkstraShortestPath(int node_count,
-                          int start_node,
-                          int end_node,
+bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           ResultCallback2<int64, int, int>* const graph,
-                          int64 disconnected_distance,
-                          std::vector<int>* nodes) {
+                          int64 disconnected_distance, std::vector<int>* nodes) {
   DijkstraSP bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }

@@ -46,7 +46,8 @@ namespace operations_research {
 
 typedef ForwardStarStaticGraph GraphType;
 
-template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
+template <typename GraphType>
+CostValue BuildAndSolveHungarianInstance(
     const LinearSumAssignment<GraphType>& assignment) {
   const GraphType& graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
@@ -56,19 +57,16 @@ template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
   // First we have to find the biggest cost magnitude so we can
   // initialize the arc costs that aren't really there.
   CostValue largest_cost_magnitude = 0;
-  for (typename GraphType::ArcIterator arc_it(graph);
-       arc_it.Ok();
+  for (typename GraphType::ArcIterator arc_it(graph); arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
     CostValue cost_magnitude = abs(assignment.ArcCost(arc));
     largest_cost_magnitude = std::max(largest_cost_magnitude, cost_magnitude);
   }
-  double missing_arc_cost = static_cast<double>((assignment.NumLeftNodes() *
-                                                 largest_cost_magnitude) +
-                                                1);
+  double missing_arc_cost = static_cast<double>(
+      (assignment.NumLeftNodes() * largest_cost_magnitude) + 1);
   for (HungarianProblem::iterator row = hungarian_cost.begin();
-       row != hungarian_cost.end();
-       ++row) {
+       row != hungarian_cost.end(); ++row) {
     row->resize(assignment.NumNodes() - assignment.NumLeftNodes(),
                 missing_arc_cost);
   }
@@ -79,17 +77,15 @@ template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
   // hungarian algorithm). We opt for the alternative of iterating
   // over hte arcs via adjacency lists, which gives us the arc tails
   // implicitly.
-  for (typename GraphType::NodeIterator node_it(graph);
-       node_it.Ok();
+  for (typename GraphType::NodeIterator node_it(graph); node_it.Ok();
        node_it.Next()) {
     NodeIndex node = node_it.Index();
     NodeIndex tail = (node - GraphType::kFirstNode);
     for (typename GraphType::OutgoingArcIterator arc_it(graph, node);
-         arc_it.Ok();
-         arc_it.Next()) {
+         arc_it.Ok(); arc_it.Next()) {
       ArcIndex arc = arc_it.Index();
-      NodeIndex head = (graph.Head(arc) - assignment.NumLeftNodes() -
-                        GraphType::kFirstNode);
+      NodeIndex head =
+          (graph.Head(arc) - assignment.NumLeftNodes() - GraphType::kFirstNode);
       double cost = static_cast<double>(assignment.ArcCost(arc));
       hungarian_cost[tail][head] = cost;
     }
@@ -110,21 +106,20 @@ template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
   return static_cast<CostValue>(result_cost);
 }
 
-template<typename GraphType> void DisplayAssignment(
-    const LinearSumAssignment<GraphType>& assignment) {
+template <typename GraphType>
+void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
-       node_it.Ok();
-       node_it.Next()) {
+       node_it.Ok(); node_it.Next()) {
     const NodeIndex left_node = node_it.Index();
     const ArcIndex matching_arc = assignment.GetAssignmentArc(left_node);
     const NodeIndex right_node = assignment.Head(matching_arc);
-    VLOG(5) << "assigned (" << left_node << ", " << right_node << "): "
-            << assignment.ArcCost(matching_arc);
+    VLOG(5) << "assigned (" << left_node << ", " << right_node
+            << "): " << assignment.ArcCost(matching_arc);
   }
 }
 
-template<typename GraphType>
+template <typename GraphType>
 int SolveDimacsAssignment(int argc, char* argv[]) {
   std::string error_message;
   // Handle on the graph we will need to delete because the

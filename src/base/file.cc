@@ -30,16 +30,11 @@
 
 namespace operations_research {
 
-File::File(FILE* const f_des, const std::string& name)
-  : f_(f_des), name_(name) {}
+File::File(FILE* const f_des, const std::string& name) : f_(f_des), name_(name) {}
 
-bool File::Delete(const char* const name) {
-  return remove(name) == 0;
-}
+bool File::Delete(const char* const name) { return remove(name) == 0; }
 
-bool File::Exists(const char* const name) {
-  return access(name, F_OK) == 0;
-}
+bool File::Exists(const char* const name) { return access(name, F_OK) == 0; }
 
 size_t File::Size() {
   struct stat f_stat;
@@ -47,9 +42,7 @@ size_t File::Size() {
   return f_stat.st_size;
 }
 
-bool File::Flush() {
-  return fflush(f_) == 0;
-}
+bool File::Flush() { return fflush(f_) == 0; }
 
 bool File::Close() {
   if (fclose(f_) == 0) {
@@ -130,19 +123,14 @@ bool File::WriteLine(const std::string& line) {
   return Write("\n", 1) == 1;
 }
 
-std::string File::filename() const {
-  return name_;
-}
+std::string File::filename() const { return name_; }
 
-bool File::Open() const {
-  return f_ != NULL;
-}
+bool File::Open() const { return f_ != NULL; }
 
 void File::Init() {}
 
 namespace file {
-Status SetContents(const std::string& filename, const std::string& contents,
-                   int flags) {
+Status SetContents(const std::string& filename, const std::string& contents, int flags) {
   if (flags != Defaults()) {
     LOG(DFATAL) << "file::SetContents() with unsupported flags=" << flags;
     return Status(false);
@@ -152,8 +140,7 @@ Status SetContents(const std::string& filename, const std::string& contents,
   return Status(file->WriteString(contents) == contents.size());
 }
 
-Status GetContents(const std::string& filename, std::string* output,
-                   int flags) {
+Status GetContents(const std::string& filename, std::string* output, int flags) {
   if (flags != Defaults()) {
     LOG(DFATAL) << "file::GetContents() with unsupported flags=" << flags;
     return Status(false);
@@ -175,7 +162,7 @@ bool WriteStringToFile(const std::string& data, const std::string& file_name) {
 namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
  public:
-  virtual void AddError(int line, int column, const std::string& message) { }
+  virtual void AddError(int line, int column, const std::string& message) {}
 };
 }  // namespace
 

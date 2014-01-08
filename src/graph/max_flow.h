@@ -127,11 +127,11 @@
 #include "util/stats.h"
 #include "util/zvector.h"
 
-
 namespace operations_research {
 
 // Forward declaration.
-template<typename Graph> class GenericMaxFlow;
+template <typename Graph>
+class GenericMaxFlow;
 
 // A simple and efficient max-cost flow interface. This is as fast as
 // GenericMaxFlow<ReverseArcStaticGraph>, which is the fastest, but uses
@@ -150,8 +150,8 @@ class SimpleMaxFlow {
   // * Node indices and capacity must be non-negative (>= 0).
   // * Self-looping and duplicate arcs are supported.
   // * After the method finishes, NumArcs() == the returned ArcIndex + 1.
-  ArcIndex AddArcWithCapacity(
-      NodeIndex tail, NodeIndex head, FlowQuantity capacity);
+  ArcIndex AddArcWithCapacity(NodeIndex tail, NodeIndex head,
+                              FlowQuantity capacity);
 
   // Returns the current number of nodes. This is one more than the largest
   // node index seen so far in AddArcWithCapacity().
@@ -287,7 +287,8 @@ class MaxFlowStatusClass {
 // Generic MaxFlow (there is a default MaxFlow specialization defined below)
 // that works with StarGraph and all the reverse arc graphs from graph.h, see
 // the end of max_flow.cc for the exact types this class is compiled for.
-template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
+template <typename Graph>
+class GenericMaxFlow : public MaxFlowStatusClass {
  public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
@@ -348,8 +349,8 @@ template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
   // residual_arc_capacity_.
   FlowQuantity Capacity(ArcIndex arc) const {
     if (IsArcDirect(arc)) {
-      return residual_arc_capacity_[arc]
-           + residual_arc_capacity_[Opposite(arc)];
+      return residual_arc_capacity_[arc] +
+             residual_arc_capacity_[Opposite(arc)];
     } else {
       return 0;
     }
@@ -393,8 +394,8 @@ template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
  protected:
   // Returns true if arc is admissible.
   bool IsAdmissible(ArcIndex arc) const {
-    return residual_arc_capacity_[arc] > 0
-        && node_potential_[Tail(arc)] == node_potential_[Head(arc)] + 1;
+    return residual_arc_capacity_[arc] > 0 &&
+           node_potential_[Tail(arc)] == node_potential_[Head(arc)] + 1;
   }
 
   // Returns true if node is active, i.e. if its excess is positive and it
@@ -502,7 +503,7 @@ template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Returns the set of nodes reachable from start in the residual graph or in
   // the reverse residual graph (if reverse is true).
-  template<bool reverse>
+  template <bool reverse>
   void ComputeReachableNodes(NodeIndex start, std::vector<NodeIndex>* result);
 
   // Maximum manageable flow.
@@ -619,8 +620,7 @@ template<typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
 class MaxFlow : public GenericMaxFlow<StarGraph> {
  public:
   MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target)
-      : GenericMaxFlow(graph, source, target) {
-  }
+      : GenericMaxFlow(graph, source, target) {}
 };
 
 #endif  // SWIG

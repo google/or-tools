@@ -35,12 +35,9 @@ namespace operations_research {
 // two nodes. Ownership of the callback is taken by the function that
 // will delete it in the end.  This function returns true if
 // 'start_node' and 'end_node' are connected, false otherwise.
-bool DijkstraShortestPath(int node_count,
-                          int start_node,
-                          int end_node,
+bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           ResultCallback2<int64, int, int>* const graph,
-                          int64 disconnected_distance,
-                          std::vector<int>* nodes);
+                          int64 disconnected_distance, std::vector<int>* nodes);
 
 // Bellman-Ford Shortest path with callback-based description of the
 // graph.  The callback returns the distance between two nodes, a
@@ -50,12 +47,9 @@ bool DijkstraShortestPath(int node_count,
 // 'start_node' and 'end_node' are connected, false otherwise. If
 // true, it will fill the 'nodes' vector with the sequence of nodes on
 // the shortest path between 'start_node' and 'end_node'.
-bool BellmanFordShortestPath(int node_count,
-                             int start_node,
-                             int end_node,
+bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                              ResultCallback2<int64, int, int>* const graph,
-                             int64 disconnected_distance,
-                             std::vector<int>* nodes);
+                             int64 disconnected_distance, std::vector<int>* nodes);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

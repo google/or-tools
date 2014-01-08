@@ -99,7 +99,6 @@ template <typename T>
 class ResultCallback;
 
 
-
 namespace operations_research {
 
 class Action;
@@ -1101,8 +1100,8 @@ class Solver {
                        SequenceVariableBuilder* const builder);
 
   ConstraintBuilder* GetConstraintBuilder(const std::string& tag) const;
-  IntegerExpressionBuilder* GetIntegerExpressionBuilder(
-      const std::string& tag) const;
+  IntegerExpressionBuilder* GetIntegerExpressionBuilder(const std::string& tag)
+      const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const std::string& tag) const;
   SequenceVariableBuilder* GetSequenceVariableBuilder(const std::string& tag) const;
 #endif  // SWIG
@@ -1611,12 +1610,12 @@ class Solver {
   Constraint* MakeInverse(const std::vector<IntVar*>& left,
                           const std::vector<IntVar*>& right);
 
-      // Creates a constraint that states that all variables in the first
-      // vector are different from all variables from the second
-      // group. Thus the set of values in the first vector does not
-      // intersect the set of values in the second vector.
-      Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
-                                    const std::vector<IntVar*>& second_vars);
+  // Creates a constraint that states that all variables in the first
+  // vector are different from all variables from the second
+  // group. Thus the set of values in the first vector does not
+  // intersect the set of values in the second vector.
+  Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                const std::vector<IntVar*>& second_vars);
 
   // Creates a constraint that states that all variables in the first
   // vector are different from all variables from the second group,
@@ -2365,8 +2364,7 @@ class Solver {
                              IntVarStrategy var_str, IndexEvaluator2* val_eval);
 
   DecisionBuilder* MakePhase(
-      const std::vector<IntVar*>& vars,
-      IntVarStrategy var_str,
+      const std::vector<IntVar*>& vars, IntVarStrategy var_str,
       // var_val1_val2_comparator(var, val1, val2) is true iff assigning value
       // "val1" to variable "var" is better than assigning value "val2".
       // Takes ownership of "var_val1_val2_comparator".
@@ -2656,10 +2654,8 @@ class Solver {
       const std::vector<IntVar*>& vars, DecisionBuilder* const first_solution,
       LocalSearchPhaseParameters* const parameters);
   DecisionBuilder* MakeLocalSearchPhase(
-      const std::vector<SequenceVar*>& vars,
-      DecisionBuilder* const first_solution,
+      const std::vector<SequenceVar*>& vars, DecisionBuilder* const first_solution,
       LocalSearchPhaseParameters* const parameters);
-
 
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
@@ -4400,8 +4396,8 @@ class IntervalVarElement : public AssignmentElement {
   void Restore();
   void LoadFromProto(
       const IntervalVarAssignmentProto& interval_var_assignment_proto);
-  void WriteToProto(
-      IntervalVarAssignmentProto* interval_var_assignment_proto) const;
+  void WriteToProto(IntervalVarAssignmentProto* interval_var_assignment_proto)
+      const;
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -4512,8 +4508,8 @@ class SequenceVarElement : public AssignmentElement {
   void Restore();
   void LoadFromProto(
       const SequenceVarAssignmentProto& sequence_var_assignment_proto);
-  void WriteToProto(
-      SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
+  void WriteToProto(SequenceVarAssignmentProto* sequence_var_assignment_proto)
+      const;
 
   const std::vector<int>& ForwardSequence() const;
   const std::vector<int>& BackwardSequence() const;
@@ -4577,9 +4573,7 @@ class AssignmentContainer {
   }
   // Advanced usage: Resizes the container, potentially adding elements with
   // null variables.
-  void Resize(size_t size) {
-    elements_.resize(size);
-  }
+  void Resize(size_t size) { elements_.resize(size); }
   bool Empty() const { return elements_.empty(); }
   // Copies intersection of containers.
   void Copy(const AssignmentContainer<V, E>& container) {

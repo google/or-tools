@@ -1430,8 +1430,8 @@ Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(),
       queue_(new Queue(this)),
-      trail_(new Trail(parameters_.trail_block_size,
-                       parameters_.compress_trail)),
+      trail_(
+          new Trail(parameters_.trail_block_size, parameters_.compress_trail)),
       state_(OUTSIDE_SEARCH),
       branches_(0),
       fails_(0),
@@ -1948,9 +1948,9 @@ void Solver::NewSearch(DecisionBuilder* const db,
   // The print_trace needs to be last to detect propagation from the objective.
   if (nested) {
     if (print_trace_ != nullptr) {  // Was installed at the top level?
-      print_trace_->Install();   // Propagates to nested search.
+      print_trace_->Install();      // Propagates to nested search.
     }
-  } else {                // Top level search
+  } else {                   // Top level search
     print_trace_ = nullptr;  // Clears it first.
     if (FLAGS_cp_trace_propagation) {
       print_trace_ = BuildPrintTrace(this);

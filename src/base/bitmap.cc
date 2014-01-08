@@ -30,7 +30,7 @@ void Bitmap::Resize(uint32 size, bool fill) {
     max_size_ = size;
     uint64* new_map = new uint64[array_size_];
     memcpy(new_map, map_, old_array_size * sizeof(*map_));
-    delete [] map_;
+    delete[] map_;
     map_ = new_map;
   }
   // TODO(user) : optimize next loop.

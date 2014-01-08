@@ -1032,8 +1032,7 @@ class ArrayBoolOrEq : public CastConstraint {
   }
 
   std::string DebugString() const {
-    return StringPrintf("Or(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
+    return StringPrintf("Or(%s) == %s", JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -2773,8 +2772,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       const bool all_booleans = AreAllBooleans(vars);
       if (all_booleans) {
         const std::string name =
-            StringPrintf("BooleanSum([%s])",
-                         JoinNamePtr(vars, ", ").c_str());
+            StringPrintf("BooleanSum([%s])", JoinNamePtr(vars, ", ").c_str());
         sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(new SumBooleanEqualToVar(this, vars, sum_var)));
       } else if (new_min != kint64min && new_max != kint64max) {

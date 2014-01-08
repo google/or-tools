@@ -82,7 +82,7 @@ namespace std {
     Py_ssize_t len;
     if (PyString_AsStringAndSize($input, &buf, &len) == -1)
       return NULL;
-    $1 = std::string(buf, len);
+    $1 = string(buf, len);
   }
 
   %typemap(in) const string & (string temp) {
@@ -90,7 +90,7 @@ namespace std {
     Py_ssize_t len;
     if (PyString_AsStringAndSize($input, &buf, &len) == -1)
       return NULL;
-    temp = std::string(buf, len);
+    temp = string(buf, len);
     $1 = &temp;
   }
 
@@ -103,7 +103,7 @@ namespace std {
   }
 
   %typemap(in, numinputs = 0) string * OUTPUT (string temp) {
-    temp = std::string();
+    temp = string();
     $1 = &temp;
   }
 
@@ -146,7 +146,7 @@ class string;
   Py_ssize_t len;
   if (PyString_AsStringAndSize($input, &buf, &len) == -1)
     return NULL;
-  $1 = std::string(buf, len);
+  $1 = string(buf, len);
 }
 
 %typemap(in) const string & (string temp) {
@@ -154,7 +154,7 @@ class string;
   Py_ssize_t len;
   if (PyString_AsStringAndSize($input, &buf, &len) == -1)
     return NULL;
-  temp = std::string(buf, len);
+  temp = string(buf, len);
   $1 = &temp;
 }
 
@@ -167,7 +167,7 @@ class string;
 }
 
 %typemap(in, numinputs = 0) string * OUTPUT (string temp) {
-  temp = std::string();
+  temp = string();
   $1 = &temp;
 }
 

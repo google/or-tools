@@ -18,7 +18,6 @@
 #include "base/macros.h"
 #include "base/hash.h"
 
-
 namespace operations_research {
 
 class MPConstraint;
@@ -70,8 +69,7 @@ class MPModelProtoExporter {
   // http://tinyurl.com/mps-extensions-by-cplex
   // Gurobi's description:
   // http://www.gurobi.com/documentation/5.1/reference-manual/node869
-  bool ExportModelAsMpsFormat(bool fixed_format,
-                              bool obfuscated,
+  bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
                               std::string* model_str);
 
   // Checks the validity of a variable or constraint name.

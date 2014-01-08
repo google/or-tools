@@ -24,7 +24,6 @@
 #include "base/int_type.h"
 #include "util/bitset.h"
 
-
 namespace operations_research {
 namespace sat {
 
@@ -65,7 +64,7 @@ class Literal {
 
   VariableIndex Variable() const { return VariableIndex(index_ >> 1); }
   bool IsPositive() const { return !(index_ & 1); }
-  bool IsNegative() const { return  (index_ & 1); }
+  bool IsNegative() const { return (index_ & 1); }
 
   LiteralIndex Index() const { return LiteralIndex(index_); }
   LiteralIndex NegatedIndex() const { return LiteralIndex(index_ ^ 1); }
@@ -84,7 +83,7 @@ class Literal {
   int index_;
 };
 
-inline std::ostream &operator<<(std::ostream &os, Literal literal) {
+inline std::ostream& operator<<(std::ostream& os, Literal literal) {
   os << literal.DebugString();
   return os;
 }
@@ -179,15 +178,15 @@ class ClauseRef {
  public:
   ClauseRef() : begin_(nullptr), end_(nullptr) {}
   ClauseRef(Literal const* b, Literal const* e) : begin_(b), end_(e) {}
-  explicit ClauseRef(const std::vector<Literal>& literals) :
-      begin_(&literals[0]), end_(&literals[0] + literals.size()) {}
+  explicit ClauseRef(const std::vector<Literal>& literals)
+      : begin_(&literals[0]), end_(&literals[0] + literals.size()) {}
 
   // Allows for range based iteration: for (Literal literal : clause_ref) {}.
   Literal const* begin() const { return begin_; }
-  Literal const* end() const {return end_; }
+  Literal const* end() const { return end_; }
 
   // Returns true if this clause contains no literal.
-  bool IsEmpty() const {return begin_ == end_;}
+  bool IsEmpty() const { return begin_ == end_; }
 
  private:
   Literal const* begin_;
@@ -227,9 +226,9 @@ struct AssignmentInfo {
   // The index of this assignment in the trail.
   int trail_index;
 
-  // Some data about this assignment used to compute the reason clause when it
-  // becomes needed. Note that depending on the type, these fields will not be
-  // used and be left uninitialized.
+// Some data about this assignment used to compute the reason clause when it
+// becomes needed. Note that depending on the type, these fields will not be
+// used and be left uninitialized.
 #if defined(_MSC_VER)
   struct {
 #else
@@ -249,9 +248,7 @@ struct AssignmentInfo {
 // and the information of each assignment.
 class Trail {
  public:
-  Trail() : num_enqueues_(0), trail_index_(0) {
-    current_info_.level = 0;
-  }
+  Trail() : num_enqueues_(0), trail_index_(0) { current_info_.level = 0; }
 
   void Resize(int num_variables) {
     assignment_.Resize(num_variables);
@@ -282,8 +279,7 @@ class Trail {
     current_info_.sat_clause = clause;
     Enqueue(true_literal, AssignmentInfo::CLAUSE_PROPAGATION);
   }
-  void EnqueueWithPbReason(Literal true_literal,
-                           int source_trail_index,
+  void EnqueueWithPbReason(Literal true_literal, int source_trail_index,
                            UpperBoundedLinearConstraint* cst) {
     current_info_.source_trail_index = source_trail_index;
     current_info_.pb_constraint = cst;
@@ -299,9 +295,7 @@ class Trail {
   }
 
   // Changes the decision level used by the next Enqueue().
-  void SetDecisionLevel(int level) {
-    current_info_.level = level;
-  }
+  void SetDecisionLevel(int level) { current_info_.level = level; }
 
   // Wrapper to the same function of the underlying assignment.
   void SetLastAssignmentValue(Literal literal) {

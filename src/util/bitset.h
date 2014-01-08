@@ -38,9 +38,9 @@ inline uint32 OneBit32(int pos) { return 1U << pos; }
 
 // Returns the number of bits set in n.
 inline uint64 BitCount64(uint64 n) {
-  const uint64 m1  = GG_ULONGLONG(0x5555555555555555);
-  const uint64 m2  = GG_ULONGLONG(0x3333333333333333);
-  const uint64 m4  = GG_ULONGLONG(0x0F0F0F0F0F0F0F0F);
+  const uint64 m1 = GG_ULONGLONG(0x5555555555555555);
+  const uint64 m2 = GG_ULONGLONG(0x3333333333333333);
+  const uint64 m4 = GG_ULONGLONG(0x0F0F0F0F0F0F0F0F);
   const uint64 h01 = GG_ULONGLONG(0x0101010101010101);
   n -= (n >> 1) & m1;
   n = (n & m2) + ((n >> 2) & m2);
@@ -58,12 +58,8 @@ inline uint32 BitCount32(uint32 n) {
 }
 
 // Returns a word with only the least significant bit of n set.
-inline uint64 LeastSignificantBitWord64(uint64 n) {
-  return n & ~(n-1);
-}
-inline uint32 LeastSignificantBitWord32(uint32 n) {
-  return n & ~(n-1);
-}
+inline uint64 LeastSignificantBitWord64(uint64 n) { return n & ~(n - 1); }
+inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 
 // Returns the least significant bit position in n.
 // Discussions around lsb computation.
@@ -71,7 +67,7 @@ inline uint32 LeastSignificantBitWord32(uint32 n) {
 // win on PIII. On k8, bsf is much slower than the C-equivalent!
 // Using inline assembly code yields a 10% performance gain.
 // Use de Bruijn hashing instead of bsf is always a win, on both P3 and K8.
-#define USE_DEBRUIJN true       // if true, use de Bruijn bit forward scanner
+#define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner
 #if defined(ARCH_K8) || defined(ARCH_PIII)
 #define USE_ASM_LEAST_SIGNIFICANT_BIT true  // if true, use assembly lsb
 #endif
@@ -96,12 +92,11 @@ inline int LeastSignificantBitPosition64(uint64 n) {
   // de Bruijn sequence
   static const uint64 kSeq = GG_ULONGLONG(0x0218a392dd5fb34f);
   static const int kTab[64] = {
-    // initialized by 'kTab[(kSeq << i) >> 58] = i
-    0,  1,  2,  7,  3, 13,  8, 19,  4, 25, 14, 28,  9, 52, 20, 58,
-    5, 17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
-    63,  6, 12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
-    62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43,
-  };
+      // initialized by 'kTab[(kSeq << i) >> 58] = i
+      0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
+      5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
+      63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
+      62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43, };
   return kTab[((n & -n) * kSeq) >> 58];
 #else
   if (n == 0) {
@@ -119,22 +114,22 @@ inline int LeastSignificantBitPosition64(uint64 n) {
     n >>= 16;
   }
   if (n & 0x00000000000000FFLL) {
-    pos -=  8;
+    pos -= 8;
   } else {
-    n >>=  8;
+    n >>= 8;
   }
   if (n & 0x000000000000000FLL) {
-    pos -=  4;
+    pos -= 4;
   } else {
-    n >>=  4;
+    n >>= 4;
   }
   if (n & 0x0000000000000003LL) {
-    pos -=  2;
+    pos -= 2;
   } else {
-    n >>=  2;
+    n >>= 2;
   }
   if (n & 0x0000000000000001LL) {
-    pos -=  1;
+    pos -= 1;
   }
   return pos;
 #endif
@@ -148,10 +143,9 @@ inline int LeastSignificantBitPosition32(uint32 n) {
 #elif defined(USE_DEBRUIJN)
   static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
   static const int kTab[32] = {
-    // initialized by 'kTab[(kSeq << i) >> 27] = i
-     0,  1,  3,  7, 14, 29, 27, 23, 15, 31, 30, 28, 25, 18,  5, 11,
-    22, 13, 26, 21, 10, 20,  9, 19,  6, 12, 24, 17,  2,  4,  8, 16
-  };
+      // initialized by 'kTab[(kSeq << i) >> 27] = i
+      0,  1,  3,  7,  14, 29, 27, 23, 15, 31, 30, 28, 25, 18, 5, 11,
+      22, 13, 26, 21, 10, 20, 9,  19, 6,  12, 24, 17, 2,  4,  8, 16};
   return kTab[((n & -n) * kSeq) >> 27];
 #else
   if (n == 0) {
@@ -164,22 +158,22 @@ inline int LeastSignificantBitPosition32(uint32 n) {
     n >>= 16;
   }
   if (n & 0x000000FFL) {
-    pos -=  8;
+    pos -= 8;
   } else {
-    n >>=  8;
+    n >>= 8;
   }
   if (n & 0x0000000FL) {
-    pos -=  4;
+    pos -= 4;
   } else {
-    n >>=  4;
+    n >>= 4;
   }
   if (n & 0x00000003L) {
-    pos -=  2;
+    pos -= 2;
   } else {
-    n >>=  2;
+    n >>= 2;
   }
   if (n & 0x00000001L) {
-    pos -=  1;
+    pos -= 1;
   }
   return pos;
 #endif
@@ -359,16 +353,16 @@ bool IsEmptyRange64(const uint64* const bitset, uint64 start, uint64 end);
 bool IsEmptyRange32(const uint32* const bitset, uint32 start, uint32 end);
 
 // Returns the first bit set in bitset between start and max_bit.
-int64 LeastSignificantBitPosition64(const uint64* const bitset,
-                                    uint64 start, uint64 end);
-int LeastSignificantBitPosition32(const uint32* const bitset,
-                                  uint32 start, uint32 end);
+int64 LeastSignificantBitPosition64(const uint64* const bitset, uint64 start,
+                                    uint64 end);
+int LeastSignificantBitPosition32(const uint32* const bitset, uint32 start,
+                                  uint32 end);
 
 // Returns the last bit set in bitset between min_bit and start.
-int64 MostSignificantBitPosition64(const uint64* const bitset,
-                                   uint64 start, uint64 end);
-int MostSignificantBitPosition32(const uint32* const bitset,
-                                 uint32 start, uint32 end);
+int64 MostSignificantBitPosition64(const uint64* const bitset, uint64 start,
+                                   uint64 end);
+int MostSignificantBitPosition32(const uint32* const bitset, uint32 start,
+                                 uint32 end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
@@ -395,8 +389,7 @@ inline uint64 TwoBitsFromPos64(uint64 pos) {
 template <typename IndexType>
 class Bitset64 {
  public:
-  Bitset64() : size_(), data_(),
-      end_(*this, /*at_end=*/true) {}
+  Bitset64() : size_(), data_(), end_(*this, /*at_end=*/true) {}
   explicit Bitset64(IndexType size)
       : size_(size > 0 ? size : IndexType(0)),
         data_(BitLength64(size_.value())),
@@ -482,7 +475,7 @@ class Bitset64 {
   // Class to iterate over the bit positions at 1 of a Bitset64.
   class Iterator {
    public:
-    explicit Iterator(const Bitset64 &data_)
+    explicit Iterator(const Bitset64& data_)
         : bitset_(data_), index_(0), base_index_(0), current_(0) {
       if (bitset_.data_.empty()) {
         index_ = -1;
@@ -526,7 +519,7 @@ class Bitset64 {
     // STL version of the functions above to support range-based "for" loop.
     // These functions are only meant to be used with GetNonZeroPositions(), see
     // below.
-    Iterator(const Bitset64 &data_, bool at_end)
+    Iterator(const Bitset64& data_, bool at_end)
         : bitset_(data_), index_(0), base_index_(0), current_(0) {
       if (at_end || bitset_.data_.empty()) {
         index_ = -1;
@@ -538,12 +531,8 @@ class Bitset64 {
     bool operator!=(const Iterator& other) const {
       return index_ != other.index_;
     }
-    IndexType operator*() const {
-      return IndexType(index_);
-    }
-    void operator++() {
-      Next();
-    }
+    IndexType operator*() const { return IndexType(index_); }
+    void operator++() { Next(); }
 
    private:
     const Bitset64& bitset_;
@@ -564,18 +553,18 @@ class Bitset64 {
   // This is just an optimized version of a given piece of code and has probably
   // little general use. Sets the bit at position i to the result of
   // (other1[i] && use1) XOR (other2[i] && use2).
-  void SetBitFromOtherBitSets(IndexType i,
-                              const Bitset64<IndexType>& other1, uint64 use1,
-                              const Bitset64<IndexType>& other2, uint64 use2) {
+  void SetBitFromOtherBitSets(IndexType i, const Bitset64<IndexType>& other1,
+                              uint64 use1, const Bitset64<IndexType>& other2,
+                              uint64 use2) {
     DCHECK_EQ(data_.size(), other1.data_.size());
     DCHECK_EQ(data_.size(), other2.data_.size());
     DCHECK(use1 == 0 || use1 == 1);
     DCHECK(use2 == 0 || use2 == 1);
     const int bucket = BitOffset64(i.value());
     const int pos = BitPos64(i.value());
-    data_[bucket] ^= ((1ull << pos) & data_[bucket])
-                   ^ ((use1 << pos) & other1.data_[bucket])
-                   ^ ((use2 << pos) & other2.data_[bucket]);
+    data_[bucket] ^= ((1ull << pos) & data_[bucket]) ^
+                     ((use1 << pos) & other1.data_[bucket]) ^
+                     ((use2 << pos) & other2.data_[bucket]);
   }
 
  private:
@@ -604,18 +593,14 @@ class SparseBitset {
     }
     to_clear_.clear();
   }
-  bool operator[](IntegerType index) const {
-    return is_set_[index.value()];
-  }
+  bool operator[](IntegerType index) const { return is_set_[index.value()]; }
   void Set(IntegerType index) {
     if (!is_set_[index.value()]) {
       is_set_[index.value()] = true;
       to_clear_.push_back(index);
     }
   }
-  void Clear(IntegerType index) {
-    is_set_[index.value()] = false;
-  }
+  void Clear(IntegerType index) { is_set_[index.value()] = false; }
   int NumberOfSetCallsWithDifferentArguments() const {
     return to_clear_.size();
   }

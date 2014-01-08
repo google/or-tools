@@ -61,56 +61,41 @@ static const char kYellow[] = "#FFF68F";
 static const char kRed[] = "#A52A2A";
 
 // Creates node labels.
-std::string ExprLabel(int index) {
-  return StringPrintf("expr_%i", index);
-}
+std::string ExprLabel(int index) { return StringPrintf("expr_%i", index); }
 
-std::string IntervalLabel(int index) {
-  return StringPrintf("interval_%i", index);
-}
+std::string IntervalLabel(int index) { return StringPrintf("interval_%i", index); }
 
-std::string SequenceLabel(int index) {
-  return StringPrintf("sequence_%i", index);
-}
+std::string SequenceLabel(int index) { return StringPrintf("sequence_%i", index); }
 
-std::string ConstraintLabel(int index) {
-  return StringPrintf("ct_%i", index);
-}
+std::string ConstraintLabel(int index) { return StringPrintf("ct_%i", index); }
 
 // Scans argument to add links in the graph.
-template <class T> void ExportLinks(const CPModelProto& model,
-                                    const std::string& source,
-                                    const T& proto,
-                                    GraphExporter* const exporter) {
+template <class T>
+void ExportLinks(const CPModelProto& model, const std::string& source,
+                 const T& proto, GraphExporter* const exporter) {
   const std::string& arg_name = model.tags(proto.argument_index());
   if (proto.has_integer_expression_index()) {
-    exporter->WriteLink(source,
-                        ExprLabel(proto.integer_expression_index()),
+    exporter->WriteLink(source, ExprLabel(proto.integer_expression_index()),
                         arg_name);
   }
   for (int i = 0; i < proto.integer_expression_array_size(); ++i) {
-    exporter->WriteLink(source,
-                        ExprLabel(proto.integer_expression_array(i)),
+    exporter->WriteLink(source, ExprLabel(proto.integer_expression_array(i)),
                         arg_name);
   }
   if (proto.has_interval_index()) {
-    exporter->WriteLink(source,
-                        IntervalLabel(proto.interval_index()),
+    exporter->WriteLink(source, IntervalLabel(proto.interval_index()),
                         arg_name);
   }
   for (int i = 0; i < proto.interval_array_size(); ++i) {
-    exporter->WriteLink(source,
-                        IntervalLabel(proto.interval_array(i)),
+    exporter->WriteLink(source, IntervalLabel(proto.interval_array(i)),
                         arg_name);
   }
   if (proto.has_sequence_index()) {
-    exporter->WriteLink(source,
-                        SequenceLabel(proto.sequence_index()),
+    exporter->WriteLink(source, SequenceLabel(proto.sequence_index()),
                         arg_name);
   }
   for (int i = 0; i < proto.sequence_array_size(); ++i) {
-    exporter->WriteLink(source,
-                        SequenceLabel(proto.sequence_array(i)),
+    exporter->WriteLink(source, SequenceLabel(proto.sequence_array(i)),
                         arg_name);
   }
 }
@@ -147,8 +132,7 @@ bool GetValueIfConstant(const CPModelProto& model,
 }
 
 // Declares a labelled expression in the graph file.
-void DeclareExpression(int index,
-                       const CPModelProto& proto,
+void DeclareExpression(int index, const CPModelProto& proto,
                        GraphExporter* const exporter) {
   const CPIntegerExpressionProto& expr = proto.expressions(index);
   const std::string label = ExprLabel(index);
@@ -156,18 +140,14 @@ void DeclareExpression(int index,
   if (expr.has_name()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
-    exporter->WriteNode(label,
-                        StringPrintf("%lld", value),
-                        "oval",
-                        kYellow);
+    exporter->WriteNode(label, StringPrintf("%lld", value), "oval", kYellow);
   } else {
     const std::string& type = proto.tags(expr.type_index());
     exporter->WriteNode(label, type, "oval", kWhite);
   }
 }
 
-void DeclareInterval(int index,
-                     const CPModelProto& proto,
+void DeclareInterval(int index, const CPModelProto& proto,
                      GraphExporter* const exporter) {
   const CPIntervalVariableProto& interval = proto.intervals(index);
   const std::string label = IntervalLabel(index);
@@ -179,8 +159,7 @@ void DeclareInterval(int index,
   }
 }
 
-void DeclareSequence(int index,
-                     const CPModelProto& proto,
+void DeclareSequence(int index, const CPModelProto& proto,
                      GraphExporter* const exporter) {
   const CPSequenceVariableProto& sequence = proto.sequences(index);
   const std::string label = SequenceLabel(index);
@@ -192,8 +171,7 @@ void DeclareSequence(int index,
   }
 }
 
-void DeclareConstraint(int index,
-                       const CPModelProto& proto,
+void DeclareConstraint(int index, const CPModelProto& proto,
                        GraphExporter* const exporter) {
   const CPConstraintProto& ct = proto.constraints(index);
   const std::string& type = proto.tags(ct.type_index());
@@ -202,8 +180,7 @@ void DeclareConstraint(int index,
 }
 
 // Parses the proto and exports it to a graph file.
-void ExportToGraphFile(const CPModelProto& proto,
-                       File* const file,
+void ExportToGraphFile(const CPModelProto& proto, File* const file,
                        GraphExporter::GraphFormat format) {
   std::unique_ptr<GraphExporter> exporter(
       GraphExporter::MakeFileExporter(file, format));
@@ -264,8 +241,7 @@ void ExportToGraphFile(const CPModelProto& proto,
 
   if (proto.has_objective()) {
     const CPObjectiveProto& obj = proto.objective();
-    exporter->WriteLink(kObjLabel,
-                        ExprLabel(obj.objective_index()),
+    exporter->WriteLink(kObjLabel, ExprLabel(obj.objective_index()),
                         ModelVisitor::kExpressionArgument);
   }
   exporter->WriteFooter();
@@ -336,9 +312,7 @@ int Run() {
   if (FLAGS_print_proto) {
     LOG(INFO) << model_proto.DebugString();
   }
-  if (FLAGS_test_proto ||
-      FLAGS_model_stats ||
-      FLAGS_print_model ||
+  if (FLAGS_test_proto || FLAGS_model_stats || FLAGS_print_model ||
       FLAGS_collect_variables) {
     Solver solver(model_proto.model());
     std::vector<SearchMonitor*> monitors;
@@ -364,16 +338,15 @@ int Run() {
       std::vector<IntervalVar*> interval_variables;
       solver.CollectDecisionVariables(&primary_integer_variables,
                                       &secondary_integer_variables,
-                                      &sequence_variables,
-                                      &interval_variables);
+                                      &sequence_variables, &interval_variables);
       LOG(INFO) << "Primary integer variables = "
                 << JoinDebugStringPtr(primary_integer_variables, ", ");
       LOG(INFO) << "Secondary integer variables = "
                 << JoinDebugStringPtr(secondary_integer_variables, ", ");
-      LOG(INFO) << "Sequence variables = "
-                << JoinDebugStringPtr(sequence_variables, ", ");
-      LOG(INFO) << "Interval variables = "
-                << JoinDebugStringPtr(interval_variables, ", ");
+      LOG(INFO) << "Sequence variables = " << JoinDebugStringPtr(
+                                                  sequence_variables, ", ");
+      LOG(INFO) << "Interval variables = " << JoinDebugStringPtr(
+                                                  interval_variables, ", ");
     }
   }
 
@@ -416,7 +389,7 @@ int Run() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Filename not specified";

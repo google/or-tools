@@ -25,14 +25,14 @@ namespace operations_research {
 // ----- interval <unary relation> date -----
 
 namespace {
-const char* kUnaryNames[] = {"ENDS_AFTER", "ENDS_AT", "ENDS_BEFORE",
-                             "STARTS_AFTER", "STARTS_AT", "STARTS_BEFORE",
-                             "CROSS_DATE", "AVOID_DATE", };
+const char* kUnaryNames[] = {"ENDS_AFTER",   "ENDS_AT",    "ENDS_BEFORE",
+                             "STARTS_AFTER", "STARTS_AT",  "STARTS_BEFORE",
+                             "CROSS_DATE",   "AVOID_DATE", };
 
 const char* kBinaryNames[] = {
-    "ENDS_AFTER_END", "ENDS_AFTER_START", "ENDS_AT_END", "ENDS_AT_START",
-    "STARTS_AFTER_END", "STARTS_AFTER_START", "STARTS_AT_END",
-    "STARTS_AT_START", "STAYS_IN_SYNC"};
+    "ENDS_AFTER_END", "ENDS_AFTER_START", "ENDS_AT_END",
+    "ENDS_AT_START",  "STARTS_AFTER_END", "STARTS_AFTER_START",
+    "STARTS_AT_END",  "STARTS_AT_START",  "STAYS_IN_SYNC"};
 
 class IntervalUnaryRelation : public Constraint {
  public:

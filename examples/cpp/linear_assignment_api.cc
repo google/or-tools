@@ -25,16 +25,13 @@ void AssignmentOn4x4Matrix() {
   LOG(INFO) << "Assignment on 4x4 Matrix";
   const int kNumSources = 4;
   const int kNumTargets = 4;
-  const CostValue kCost[kNumSources][kNumTargets] = {
-    { 90, 76, 75, 80 },
-    { 35, 85, 55, 65 },
-    { 125, 95, 90, 105 },
-    { 45, 110, 95, 115 }
-  };
+  const CostValue kCost[kNumSources][kNumTargets] = {{90, 76, 75, 80},
+                                                     {35, 85, 55, 65},
+                                                     {125, 95, 90, 105},
+                                                     {45, 110, 95, 115}};
   const CostValue kExpectedCost =
       kCost[0][3] + kCost[1][2] + kCost[2][1] + kCost[3][0];
-  ForwardStarGraph graph(
-      kNumSources + kNumTargets, kNumSources * kNumTargets);
+  ForwardStarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
   LinearSumAssignment<ForwardStarGraph> assignment(graph, kNumSources);
   for (NodeIndex source = 0; source < kNumSources; ++source) {
     for (NodeIndex target = 0; target < kNumTargets; ++target) {
@@ -49,7 +46,7 @@ void AssignmentOn4x4Matrix() {
 
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
   return 0;

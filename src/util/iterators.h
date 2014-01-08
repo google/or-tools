@@ -29,12 +29,13 @@ namespace operations_research {
 //
 // And a client will use it like this:
 // for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
-template<typename Iterator>
+template <typename Iterator>
 class BeginEndWrapper {
  public:
   BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
+
  private:
   const Iterator begin_;
   const Iterator end_;
@@ -44,26 +45,25 @@ class BeginEndWrapper {
 // for loop over a container that support STL reverse iterators.
 // The syntax is:
 //   for (const type& t : Reverse(container_of_t)) { ... }
-template<typename Container>
+template <typename Container>
 class BeginEndReverseIteratorWrapper {
  public:
   explicit BeginEndReverseIteratorWrapper(const Container& c) : c_(c) {}
   typename Container::const_reverse_iterator begin() const {
-      return c_.rbegin();
+    return c_.rbegin();
   }
-  typename Container::const_reverse_iterator end() const {
-      return c_.rend();
-  }
+  typename Container::const_reverse_iterator end() const { return c_.rend(); }
+
  private:
   const Container& c_;
 };
-template<typename Container>
+template <typename Container>
 BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
 // Simple iterator on an integer range, see IntegerRange below.
-template<typename IntegerType>
+template <typename IntegerType>
 class IntegerRangeIterator {
  public:
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
@@ -72,12 +72,9 @@ class IntegerRangeIterator {
     // loop if one use IntegerRange<int>(1, 0) below for instance.
     return index_ < other.index_;
   }
-  IntegerType operator*() const {
-    return index_;
-  }
-  void operator++() {
-    ++index_;
-  }
+  IntegerType operator*() const { return index_; }
+  void operator++() { ++index_; }
+
  private:
   IntegerType index_;
 };
@@ -92,13 +89,13 @@ class IntegerRangeIterator {
 // for (const ArcIndex arc : graph.AllOutgoingArcs());
 // for (const NodeIndex node : graph.AllNodes());
 // for (const EntryIndex i : sparse_column.AllEntryIndex());
-template<typename IntegerType>
+template <typename IntegerType>
 class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
  public:
   IntegerRange(IntegerType begin, IntegerType end)
-      : BeginEndWrapper<IntegerRangeIterator<IntegerType>> (
-          IntegerRangeIterator<IntegerType>(begin),
-          IntegerRangeIterator<IntegerType>(end)) {}
+      : BeginEndWrapper<IntegerRangeIterator<IntegerType>>(
+            IntegerRangeIterator<IntegerType>(begin),
+            IntegerRangeIterator<IntegerType>(end)) {}
 };
 
 }  // namespace operations_research

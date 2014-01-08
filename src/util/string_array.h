@@ -19,17 +19,16 @@
 #include "base/integral_types.h"
 #include "base/stringprintf.h"
 
-
 namespace operations_research {
 // ---------- Pretty Print Helpers ----------
 
 // See the straightforward (and unique) usage of this macro below.
-#define RETURN_STRINGIFIED_VECTOR(vector, separator, method)\
-  std::string out;\
-  for (int i = 0; i < vector.size(); ++i) {\
-    if (i > 0) out += separator;\
-    out += vector[i] method;\
-  }\
+#define RETURN_STRINGIFIED_VECTOR(vector, separator, method) \
+  std::string out;                                                \
+  for (int i = 0; i < vector.size(); ++i) {                  \
+    if (i > 0) out += separator;                             \
+    out += vector[i] method;                                 \
+  }                                                          \
   return out
 
 // Converts a vector into a std::string by calling the given method (or simply

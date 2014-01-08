@@ -30,10 +30,11 @@ void RunLinearProgrammingExample(
   MPVariable* const x3 = solver.MakeNumVar(0.0, infinity, "x3");
 
   // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  solver.SetObjectiveCoefficient(x1, 10);
-  solver.SetObjectiveCoefficient(x2, 6);
-  solver.SetObjectiveCoefficient(x3, 4);
-  solver.SetMaximization();
+  MPObjective* const objective = solver.MutableObjective();
+  objective->SetCoefficient(x1, 10);
+  objective->SetCoefficient(x2, 6);
+  objective->SetCoefficient(x3, 4);
+  objective->SetMaximization();
 
   // x1 + x2 + x3 <= 100.
   MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 100.0);
@@ -68,7 +69,7 @@ void RunLinearProgrammingExample(
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
 
   // The objective value of the solution.
-  LOG(INFO) << "Optimal objective value = " <<  solver.objective_value();
+  LOG(INFO) << "Optimal objective value = " << objective->Value();
 
   // The value of each variable in the solution.
   LOG(INFO) << "x1 = " << x1->solution_value();
@@ -89,27 +90,27 @@ void RunLinearProgrammingExample(
 }
 
 void RunAllExamples() {
-#if defined(USE_GLPK)
+  #if defined(USE_GLPK)
   LOG(INFO) << "---- Linear programming example with GLPK ----";
   RunLinearProgrammingExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
-#endif  // USE_GLPK
-#if defined(USE_CLP)
+  #endif  // USE_GLPK
+  #if defined(USE_CLP)
   LOG(INFO) << "---- Linear programming example with CLP ----";
   RunLinearProgrammingExample(MPSolver::CLP_LINEAR_PROGRAMMING);
-#endif  // USE_CLP
-#if defined(USE_SLM)
+  #endif  // USE_CLP
+  #if defined(USE_SLM)
   LOG(INFO) << "---- Linear programming example with Sulum ----";
   RunLinearProgrammingExample(MPSolver::SULUM_LINEAR_PROGRAMMING);
-#endif  // USE_SLM
-#if defined(USE_GUROBI)
+  #endif  // USE_SLM
+  #if defined(USE_GUROBI)
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
-#endif  // USE_GUROBI
+  #endif  // USE_GUROBI
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;
 }

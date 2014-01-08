@@ -409,7 +409,7 @@ class RoutingModel {
     // their transit evaluator (the raw version that takes var index, not Node
     // Index) and their span cost coefficient, we just store those.
     // This is sorted by the natural operator < (and *not* by DimensionIndex).
-    std::vector<std::pair<Solver::IndexEvaluator2*, int64>>
+    std::vector<std::pair<Solver::IndexEvaluator2*, int64> >
         dimension_transit_evaluator_and_cost_coefficient;
 
     explicit CostClass(NodeEvaluator2* arc_cost_evaluator)
@@ -1364,8 +1364,8 @@ class RoutingDimension {
 // depot. Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(const ITIVector<RoutingModel::NodeIndex,
-                                         std::pair<int64, int64> >& points);
+  explicit SweepArranger(
+      const ITIVector<RoutingModel::NodeIndex, std::pair<int64, int64> >& points);
   virtual ~SweepArranger() {}
   void ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes);
   void SetSectors(int sectors) { sectors_ = sectors; }

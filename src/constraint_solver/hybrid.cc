@@ -501,8 +501,9 @@ class Linearizer : public ModelParser {
     *objective_ =
         const_cast<IntExpr*>(Top()->FindIntegerExpressionArgumentOrDie(
                                  ModelVisitor::kExpressionArgument))->Var();
-    mp_solver_->SetObjectiveCoefficient(Translated(*objective_), 1.0);
-    mp_solver_->SetOptimizationDirection(*maximize_);
+    MPObjective* const objective = mp_solver_->MutableObjective();
+    objective->SetCoefficient(Translated(*objective_), 1.0);
+    objective->SetOptimizationDirection(*maximize_);
   }
 
   MPSolver* const mp_solver_;
@@ -562,7 +563,7 @@ class AutomaticLinearization : public SearchMonitor {
     if (objective_ != nullptr) {
       switch (mp_solver_.Solve()) {
         case MPSolver::OPTIMAL: {
-          const double obj_value = mp_solver_.objective_value();
+          const double obj_value = mp_solver_.Objective().Value();
           if (maximize_) {
             const int64 int_obj_value = static_cast<int64>(ceil(obj_value));
             objective_->SetMax(int_obj_value);

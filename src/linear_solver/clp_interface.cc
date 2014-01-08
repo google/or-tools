@@ -72,8 +72,7 @@ class CLPInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
-                              double new_value,
-                              double old_value);
+                              double new_value, double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
 
@@ -108,9 +107,7 @@ class CLPInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual std::string SolverVersion() const {
-    return "Clp " CLP_VERSION;
-  }
+  virtual std::string SolverVersion() const { return "Clp " CLP_VERSION; }
 
   virtual void* underlying_solver() {
     return reinterpret_cast<void*>(clp_.get());
@@ -135,8 +132,8 @@ class CLPInterface : public MPSolverInterface {
   virtual void SetLpAlgorithm(int value);
 
   // Transforms basis status from CLP enum to MPSolver::BasisStatus.
-  MPSolver::BasisStatus
-  TransformCLPBasisStatus(ClpSimplex::Status clp_basis_status) const;
+  MPSolver::BasisStatus TransformCLPBasisStatus(
+      ClpSimplex::Status clp_basis_status) const;
 
   std::unique_ptr<ClpSimplex> clp_;    // TODO(user) : remove pointer.
   std::unique_ptr<ClpSolve> options_;  // For parameter setting.
@@ -146,10 +143,9 @@ class CLPInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 CLPInterface::CLPInterface(MPSolver* const solver)
-    : MPSolverInterface(solver),
-      clp_(new ClpSimplex), options_(new ClpSolve) {
-    clp_->setStrParam(ClpProbName, solver_->name_);
-    clp_->setOptimizationDirection(1);
+    : MPSolverInterface(solver), clp_(new ClpSimplex), options_(new ClpSolve) {
+  clp_->setStrParam(ClpProbName, solver_->name_);
+  clp_->setOptimizationDirection(1);
 }
 
 CLPInterface::~CLPInterface() {}
@@ -195,8 +191,7 @@ void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void CLPInterface::SetCoefficient(MPConstraint* const constraint,
                                   const MPVariable* const variable,
-                                  double new_value,
-                                  double old_value) {
+                                  double new_value, double old_value) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   const int variable_index = variable->index();
@@ -356,7 +351,7 @@ void CLPInterface::ExtractNewConstraints() {
     CoinBuild build_object;
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const  ct = solver_->constraints_[i];
+      MPConstraint* const ct = solver_->constraints_[i];
       DCHECK_NE(kNoIndex, ct->index());
       int size = ct->coefficients_.size();
       if (size == 0) {
@@ -373,11 +368,7 @@ void CLPInterface::ExtractNewConstraints() {
         coefs[j] = entry.second;
         j++;
       }
-      build_object.addRow(size,
-                          indices.get(),
-                          coefs.get(),
-                          ct->lb(),
-                          ct->ub());
+      build_object.addRow(size, indices.get(), coefs.get(), ct->lb(), ct->ub());
     }
     // Add and name the rows.
     clp_->addRows(build_object);
@@ -501,8 +492,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
       ct->set_activity(row_activity);
       const double dual_value = dual_values[constraint_index];
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity
+      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity
               << " dual value = " << dual_value;
     }
   }

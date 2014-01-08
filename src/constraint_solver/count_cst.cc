@@ -370,8 +370,8 @@ void FastDistribute::OneDomain(int index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, 0LL);
-       card_index < std::min(vmin, card_size()); ++card_index) {
+  for (int64 card_index = std::max(oldmin, 0LL); card_index < std::min(vmin, card_size());
+       ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }
@@ -786,8 +786,8 @@ void BoundedFastDistribute::OneDomain(int index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, 0LL);
-       card_index < std::min(vmin, card_size()); ++card_index) {
+  for (int64 card_index = std::max(oldmin, 0LL); card_index < std::min(vmin, card_size());
+       ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
     }

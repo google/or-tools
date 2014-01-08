@@ -38,7 +38,6 @@
 #include "util/stats.h"
 #include "base/adjustable_priority_queue.h"
 
-
 namespace operations_research {
 namespace sat {
 
@@ -71,10 +70,10 @@ inline int SUniv(int i) {
 // Variable information. This is updated each time we attach/detach a clause.
 struct VariableInfo {
   VariableInfo()
-  : num_positive_clauses(0),
-    num_negative_clauses(0),
-    num_appearances(0),
-    weighted_num_appearances(0.0) {}
+      : num_positive_clauses(0),
+        num_negative_clauses(0),
+        num_appearances(0),
+        weighted_num_appearances(0.0) {}
 
   int num_positive_clauses;
   int num_negative_clauses;
@@ -85,11 +84,10 @@ struct VariableInfo {
 // Priority queue element to support var ordering by lowest weight first.
 class WeightedVarQueueElement {
  public:
-  WeightedVarQueueElement()
-      : heap_index_(-1), weight_(0.0), var_(-1) {}
-  bool operator <(const WeightedVarQueueElement& other) const {
+  WeightedVarQueueElement() : heap_index_(-1), weight_(0.0), var_(-1) {}
+  bool operator<(const WeightedVarQueueElement& other) const {
     return weight_ < other.weight_ ||
-        (weight_ == other.weight_ && var_ < other.var_);
+           (weight_ == other.weight_ && var_ < other.var_);
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
@@ -197,9 +195,9 @@ class SatClause {
   // Note that the max lbd is the maximum depth of the search tree (decision
   // levels), so it should fit easily in 29 bits. Note that we can also upper
   // bound it without hurting too much the clause cleaning heuristic.
-  bool is_learned_: 1;
-  bool is_attached_: 1;
-  int lbd_  : 30;
+  bool is_learned_ : 1;
+  bool is_attached_ : 1;
+  int lbd_ : 30;
   int size_ : 32;
   double activity_;
 
@@ -233,8 +231,7 @@ class LiteralWatchers {
   // Attaches the given clause to the event: the given literal becomes false.
   // The blocking_literal can be any literal from the clause, it is used to
   // speed up PropagateOnFalse() by skipping the clause if it is true.
-  void AttachOnFalse(Literal literal,
-                     Literal blocking_literal,
+  void AttachOnFalse(Literal literal, Literal blocking_literal,
                      SatClause* clause);
 
   // Lazily detach the given clause. The deletion will actually occur when
@@ -251,7 +248,7 @@ class LiteralWatchers {
   int64 num_inspected_clauses() const { return num_inspected_clauses_; }
 
   // Number of clauses currently watched.
-  int64 num_watched_clauses() const {return num_watched_clauses_; }
+  int64 num_watched_clauses() const { return num_watched_clauses_; }
 
   // Returns some statistics on the number of appearance of this variable in
   // all the attached clauses.
@@ -327,7 +324,9 @@ class LiteralWatchers {
 class BinaryImplicationGraph {
  public:
   BinaryImplicationGraph()
-      : num_propagations_(0), num_minimization_(0), num_literals_removed_(0),
+      : num_propagations_(0),
+        num_minimization_(0),
+        num_literals_removed_(0),
         stats_("BinaryImplicationGraph") {}
   ~BinaryImplicationGraph() {
     IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
@@ -397,6 +396,9 @@ class BinaryImplicationGraph {
   DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);
 };
 
+// A constant used by the EnqueueDecision*() API.
+const int kUnsatTrailIndex = -1;
+
 // The main SAT solver.
 // It currently implements the CDCL algorithm. See
 //    http://en.wikipedia.org/wiki/Conflict_Driven_Clause_Learning
@@ -431,10 +433,9 @@ class SatSolver {
   // efficient.
   //
   // TODO(user): Add error handling for overflow/underflow.
-  bool AddLinearConstraint(
-      bool use_lower_bound, Coefficient lower_bound,
-      bool use_upper_bound, Coefficient upper_bound,
-      std::vector<LiteralWithCoeff>* cst);
+  bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
+                           bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<LiteralWithCoeff>* cst);
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // sets to true. The weight is a number in [0,1] reflecting the relative
@@ -457,6 +458,7 @@ class SatSolver {
   enum Status {
     MODEL_UNSAT,
     MODEL_SAT,
+    LIMIT_REACHED,
     INTERNAL_ERROR,
   };
   Status Solve();
@@ -474,10 +476,32 @@ class SatSolver {
   bool InitialPropagation();
 
   // Takes a new decision (the given true_literal must be unassigned) and
-  // propagates it. If it leads to conflict, the conflict is learned, and the
-  // trail is automatically backtracked to a valid state. Returns false if the
-  // problem is UNSAT.
-  bool EnqueueDecision(Literal true_literal);
+  // propagates it. Returns the trail index of the first newly propagated
+  // literal. If there is a conflict and the problem is detected to be UNSAT,
+  // returns kUnsatTrailIndex.
+  //
+  // A client can determine if there is a conflict by checking if the
+  // CurrentDecisionLevel() was increased by 1 or not.
+  //
+  // If there is a conflict, the given decision is not applied and:
+  // - The conflict is learned.
+  // - The decisions are potentially backtracked to the first decision that
+  //   propagates more variables because of the newly learned conflict.
+  // - The returned value is equal to trail_.Index() after this backtracking and
+  //   just before the new propagation (due to the conflict) which is also
+  //   performed by this function.
+  int EnqueueDecisionAndBackjumpOnConflict(Literal true_literal);
+
+  // This function starts by calling EnqueueDecisionAndBackjumpOnConflict(). If
+  // there is no conflict, it stops there. Otherwise, it tries to reapply all
+  // the decisions that where backjumped over until the first one that can't be
+  // taken because it is incompatible. Note that during this process, more
+  // conflicts may happen and the trail may be backtracked even further.
+  //
+  // In any case, the new decisions stack will be the largest valid prefix
+  // of the old stack. Hence, the first deleted decision will corresponds to a
+  // literal that was already propagated to its opposite value.
+  int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
 
   // Restores the state to the given target decision level. The decision at that
   // level and all its propagation will not be undone. But all the trail after
@@ -485,13 +509,15 @@ class SatSolver {
   // sate after InitialPropagation() was called.
   void Backtrack(int target_level);
 
-  // Returns the current choices, trail and variable assignement.
-  struct ChoicePoint {
-    ChoicePoint(int i, Literal d) : literal_trail_index(i), decision(d) {}
-    int literal_trail_index;
-    Literal decision;
+  // Returns the current decisions, trail and variable assignment.
+  struct Decision {
+    Decision() : trail_index(-1) {}
+    Decision(int i, Literal l) : trail_index(i), literal(l) {}
+    int trail_index;
+    Literal literal;
   };
-  const std::vector<ChoicePoint>& ChoicePoints() const { return choice_points_; }
+  int CurrentDecisionLevel() const { return current_decision_level_; }
+  const std::vector<Decision>& Decisions() const { return decisions_; }
   const Trail& LiteralTrail() const { return trail_; }
   const VariablesAssignment& Assignment() const { return trail_.Assignment(); }
 
@@ -510,9 +536,7 @@ class SatSolver {
   std::string Indent() const;
 
   // Returns the decision level of a given variable.
-  int DecisionLevel(VariableIndex var) const {
-    return trail_.Info(var).level;
-  }
+  int DecisionLevel(VariableIndex var) const { return trail_.Info(var).level; }
 
   // Returns the reason for a given variable assignment. The variable must be
   // assigned (this is DCHECKed). Note that the reason clause may or may not
@@ -536,8 +560,8 @@ class SatSolver {
   // SatClause::AttachAndEnqueuePotentialUnitPropagation().
   bool IsClauseUsedAsReason(SatClause* clause) const {
     const VariableIndex var = clause->SecondLiteral().Variable();
-    return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION
-        && trail_.Info(var).sat_clause == clause;
+    return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
+           trail_.Info(var).sat_clause == clause;
   }
 
   // Predicate used by ProcessNewlyFixedVariables().
@@ -547,9 +571,8 @@ class SatSolver {
 
   // Predicate used by CompressLearnedClausesIfNeeded().
   bool ClauseShouldBeKept(SatClause* clause) const {
-    return clause->Lbd() <= 2
-        || clause->Size() <= 2
-        || IsClauseUsedAsReason(clause);
+    return clause->Lbd() <= 2 || clause->Size() <= 2 ||
+           IsClauseUsedAsReason(clause);
   }
 
   // Returns false if the literal is already assigned to false.
@@ -560,8 +583,7 @@ class SatSolver {
   // infeasible/trivial constraints or clause constraints and takes the proper
   // action.
   bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
-                                   Coefficient rhs,
-                                   Coefficient max_value);
+                                   Coefficient rhs, Coefficient max_value);
 
   // Adds a learned clause to the problem. This should be called after
   // Backtrack(). The backtrack is such that after it is applied, all the
@@ -570,9 +592,9 @@ class SatSolver {
   void AddLearnedClauseAndEnqueueUnitPropagation(
       const std::vector<Literal>& literals);
 
-  // Creates a new choice point which corresponds to setting the given literal
-  // to True and Enqueue() this change.
-  void NewChoicePoint(Literal literal);
+  // Creates a new decision which corresponds to setting the given literal to
+  // True and Enqueue() this change.
+  void NewDecision(Literal literal);
 
   // Performs propagation of the recently enqueued elements.
   bool Propagate();
@@ -636,7 +658,7 @@ class SatSolver {
   // Solver" in Twenty-first International Joint Conference on Artificial
   // Intelligence (IJCAI'09), july 2009.
   // http://www.ijcai.org/papers09/Papers/IJCAI09-074.pdf
-  template<typename LiteralList>
+  template <typename LiteralList>
   int ComputeLbd(const LiteralList& literals);
 
   // Checks if we need to reduce the number of learned clauses and do
@@ -704,8 +726,12 @@ class SatSolver {
   // The solver trail.
   Trail trail_;
 
-  // The stack of choice points.
-  std::vector<ChoicePoint> choice_points_;
+  // The stack of decisions taken by the solver. They are stored in [0,
+  // current_decision_level_). The vector is of size num_variables_ so it can
+  // store all the decisions. This is done this way because in some situation we
+  // need to remember the previously taken decisions after a backtrack.
+  int current_decision_level_;
+  std::vector<Decision> decisions_;
 
   // The index of the first non-propagated literal on the trail. The first index
   // is for non-binary clauses propagation and the second index is for binary
@@ -733,9 +759,13 @@ class SatSolver {
     int64 num_literals_forgotten;
 
     Counters()
-        : num_branches(0), num_random_branches(0), num_failures(0),
-          num_minimizations(0), num_literals_removed(0),
-          num_literals_learned(0), num_literals_forgotten(0) { }
+        : num_branches(0),
+          num_random_branches(0),
+          num_failures(0),
+          num_minimizations(0),
+          num_literals_removed(0),
+          num_literals_learned(0),
+          num_literals_forgotten(0) {}
   };
   Counters counters_;
 

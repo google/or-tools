@@ -138,8 +138,7 @@ struct ThetaNode {
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
     total_processing = left.total_processing + right.total_processing;
-    total_ect =
-        std::max(left.total_ect + right.total_processing, right.total_ect);
+    total_ect = std::max(left.total_ect + right.total_processing, right.total_ect);
   }
 
   bool IsIdentity() const {
@@ -250,8 +249,8 @@ struct LambdaThetaNode {
   // associated with such sets.
   void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right) {
     energy = left.energy + right.energy;
-    energetic_end_min = std::max(right.energetic_end_min,
-                            left.energetic_end_min + right.energy);
+    energetic_end_min =
+        std::max(right.energetic_end_min, left.energetic_end_min + right.energy);
     const int64 energy_left_opt = left.energy_opt + right.energy;
     const int64 energy_right_opt = left.energy + right.energy_opt;
     if (energy_left_opt > energy_right_opt) {
@@ -402,8 +401,7 @@ bool NotLast::Propagate() {
   // ---- Init ----
   std::sort(by_start_max_.begin(), by_start_max_.end(),
        StartMaxLessThan<DisjunctiveTask>);
-  std::sort(by_end_max_.begin(), by_end_max_.end(),
-       EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
   // Update start min positions
   std::sort(by_start_min_.begin(), by_start_min_.end(),
        StartMinLessThan<DisjunctiveTask>);
@@ -527,8 +525,7 @@ void EdgeFinderAndDetectablePrecedences::UpdateEst() {
 void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
   // Initialization.
   UpdateEst();
-  std::sort(by_end_max_.begin(), by_end_max_.end(),
-       EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
 
   for (int i = 0; i < size(); ++i) {
@@ -548,8 +545,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   }
 
   // Propagate in one direction
-  std::sort(by_end_min_.begin(), by_end_min_.end(),
-       EndMinLessThan<DisjunctiveTask>);
+  std::sort(by_end_min_.begin(), by_end_min_.end(), EndMinLessThan<DisjunctiveTask>);
   std::sort(by_start_max_.begin(), by_start_max_.end(),
        StartMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
@@ -600,8 +596,7 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   }
 
   // Push in one direction.
-  std::sort(by_end_max_.begin(), by_end_max_.end(),
-       EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
   lt_tree_.Clear();
   for (int i = 0; i < size(); ++i) {
     lt_tree_.Insert(*by_start_min_[i]);
@@ -1029,9 +1024,8 @@ struct DualCapacityThetaNode {
                         const CumulativeTask& task)
       : energy(task.EnergyMin()),
         energetic_end_min(capacity * task.interval->StartMin() + energy),
-        residual_energetic_end_min(residual_capacity *
-                                       task.interval->StartMin() +
-                                   energy) {}
+        residual_energetic_end_min(
+            residual_capacity * task.interval->StartMin() + energy) {}
 
   // Sets this DualCapacityThetaNode to the result of the natural binary
   // operation over the two given operands, corresponding to the following set
@@ -1042,8 +1036,8 @@ struct DualCapacityThetaNode {
   void Compute(const DualCapacityThetaNode& left,
                const DualCapacityThetaNode& right) {
     energy = left.energy + right.energy;
-    energetic_end_min = std::max(left.energetic_end_min + right.energy,
-                            right.energetic_end_min);
+    energetic_end_min =
+        std::max(left.energetic_end_min + right.energy, right.energetic_end_min);
     residual_energetic_end_min =
         std::max(left.residual_energetic_end_min + right.energy,
             right.residual_energetic_end_min);
@@ -1383,8 +1377,8 @@ class EdgeFinder : public Constraint {
       const int64 end_min = task->interval->EndMin();
       while (end_max_index < by_start_min_.size() &&
              by_end_max_[end_max_index]->interval->EndMax() <= end_min) {
-        max_start_min = std::max(
-            max_start_min, by_end_max_[end_max_index]->interval->StartMin());
+        max_start_min = std::max(max_start_min,
+                            by_end_max_[end_max_index]->interval->StartMin());
         ++end_max_index;
       }
       if (end_max_index > 0 && task->interval->StartMin() <= max_start_min &&

@@ -15,6 +15,7 @@
 
 syntax = "proto2";
 
+
 package operations_research;
 
 // A search limit

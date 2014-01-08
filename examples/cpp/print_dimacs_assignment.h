@@ -27,13 +27,14 @@
 
 namespace operations_research {
 
-template <typename GraphType> class LinearSumAssignment;
+template <typename GraphType>
+class LinearSumAssignment;
 
 // Given a LinearSumAssigment object representing an assignment problem
 // description, outputs the problem in DIMACS format in the output file.
 // For a description of the format, see
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
-template<typename GraphType>
+template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
@@ -56,23 +57,21 @@ void WriteOrDie(const char* buffer,
 }  // namespace internal
 
 
-template<typename GraphType>
+template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
     const std::string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const GraphType& graph(assignment.Graph());
-  std::string output_line = StringPrintf("p asn %d %d\n",
-                                    graph.num_nodes(),
-                                    graph.num_arcs());
+  std::string output_line =
+      StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   internal::WriteOrDie(output_line.c_str(), 1,
                        output_line.length(), output);
 
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
-       node_it.Ok();
-       node_it.Next()) {
+       node_it.Ok(); node_it.Next()) {
     output_line = StringPrintf("n %d\n", node_it.Index() + 1);
     internal::WriteOrDie(output_line.c_str(), 1,
                          output_line.length(), output);
@@ -80,14 +79,11 @@ void PrintDimacsAssignmentProblem(
 
   tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
 
-  for (typename GraphType::ArcIterator arc_it(assignment.Graph());
-       arc_it.Ok();
+  for (typename GraphType::ArcIterator arc_it(assignment.Graph()); arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    output_line = StringPrintf("a %d %d %lld\n",
-                               graph.Tail(arc) + 1,
-                               graph.Head(arc) + 1,
-                               assignment.ArcCost(arc));
+    output_line = StringPrintf("a %d %d %lld\n", graph.Tail(arc) + 1,
+                               graph.Head(arc) + 1, assignment.ArcCost(arc));
     internal::WriteOrDie(output_line.c_str(), 1,
                          output_line.length(), output);
   }

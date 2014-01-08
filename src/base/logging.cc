@@ -17,8 +17,7 @@
 #include "base/logging.h"
 
 DEFINE_int32(log_level, 0, "Log level (0 is the default).");
-DEFINE_bool(log_prefix,
-            true,
+DEFINE_bool(log_prefix, true,
             "Prefix all log lines with the date, source file and line number.");
 
 namespace operations_research {
@@ -35,8 +34,8 @@ char* const DateLogger::HumanDate() {
   time_t time_value = time(NULL);
   struct tm now;
   localtime_r(&time_value, &now);
-  snprintf(buffer_, sizeof(buffer_), "%02d:%02d:%02d\0",
-           now.tm_hour, now.tm_min, now.tm_sec);
+  snprintf(buffer_, sizeof(buffer_), "%02d:%02d:%02d\0", now.tm_hour,
+           now.tm_min, now.tm_sec);
 #endif
   return buffer_;
 }

@@ -18,14 +18,14 @@
 
 #ifndef SWIG
 // Standard typedefs
-typedef signed char         schar;
-typedef signed char         int8;
-typedef short               int16;  // NOLINT
-typedef int                 int32;
+typedef signed char schar;
+typedef signed char int8;
+typedef short int16;  // NOLINT
+typedef int int32;
 #ifdef COMPILER_MSVC
-typedef __int64             int64;  // NOLINT
+typedef __int64 int64;  // NOLINT
 #else
-typedef long long           int64;  // NOLINT
+typedef long long int64;            // NOLINT
 #endif /* COMPILER_MSVC */
 
 // NOTE: unsigned types are DANGEROUS in loops and other arithmetical
@@ -34,11 +34,11 @@ typedef long long           int64;  // NOLINT
 // use 'unsigned' to express "this value should always be positive";
 // use assertions for this.
 
-typedef unsigned char      uint8;
-typedef unsigned short     uint16;  // NOLINT
-typedef unsigned int       uint32;
+typedef unsigned char uint8;
+typedef unsigned short uint16;  // NOLINT
+typedef unsigned int uint32;
 #ifdef COMPILER_MSVC
-typedef unsigned __int64   uint64;
+typedef unsigned __int64 uint64;
 #else
 typedef unsigned long long uint64;  // NOLINT
 #endif /* COMPILER_MSVC */
@@ -47,7 +47,7 @@ typedef unsigned long long uint64;  // NOLINT
 // such values require up to 21 bits.
 // (For type-checking on pointers, make this explicitly signed,
 // and it should always be the signed version of whatever int32 is.)
-typedef signed int         char32;
+typedef signed int char32;
 
 //  A type to represent a natural machine word (for e.g. efficiently
 // scanning through memory for checksums or index searching). Don't use
@@ -56,7 +56,7 @@ typedef signed int         char32;
 // (http://www.opengroup.org/public/tech/aspen/lp64_wp.htm), hence
 // their ints are only 32 bits. We want to use the same fundamental
 // type on all archs if possible to preserve *printf() compatability.
-typedef unsigned long      uword_t;  // NOLINT
+typedef unsigned long uword_t;  // NOLINT
 
 // A signed natural machine word. In general you want to use "int"
 // rather than "sword_t"
@@ -70,7 +70,7 @@ typedef long sword_t;  // NOLINT
 #undef GG_ULONGLONG
 #undef GG_LL_FORMAT
 
-#ifdef COMPILER_MSVC     /* if Visual C++ */
+#ifdef COMPILER_MSVC /* if Visual C++ */
 
 // VC++ long long suffixes
 #define GG_LONGLONG(x) x##I64
@@ -80,7 +80,7 @@ typedef long sword_t;  // NOLINT
 #define GG_LL_FORMAT "I64"  // As in printf("%I64d", ...)
 #define GG_LL_FORMAT_W L"I64"
 
-#else   /* not Visual C++ */
+#else /* not Visual C++ */
 
 #define GG_LONGLONG(x) x##LL
 #define GG_ULONGLONG(x) x##ULL
@@ -89,21 +89,20 @@ typedef long sword_t;  // NOLINT
 
 #endif  // COMPILER_MSVC
 
-
-static const uint8  kuint8max  = static_cast<uint8>(0xFF);
+static const uint8 kuint8max = static_cast<uint8>(0xFF);
 static const uint16 kuint16max = static_cast<uint16>(0xFFFF);
 static const uint32 kuint32max = static_cast<uint32>(0xFFFFFFFF);
 static const uint64 kuint64max =
     static_cast<uint64>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF));
-static const  int8  kint8min   = static_cast<int8>(0x80);
-static const  int8  kint8max   = static_cast<int8>(0x7F);
-static const  int16 kint16min  = static_cast<int16>(0x8000);
-static const  int16 kint16max  = static_cast<int16>(0x7FFF);
-static const  int32 kint32min  = static_cast<int32>(0x80000000);
-static const  int32 kint32max  = static_cast<int32>(0x7FFFFFFF);
-static const  int64 kint64min  =
+static const int8 kint8min = static_cast<int8>(0x80);
+static const int8 kint8max = static_cast<int8>(0x7F);
+static const int16 kint16min = static_cast<int16>(0x8000);
+static const int16 kint16max = static_cast<int16>(0x7FFF);
+static const int32 kint32min = static_cast<int32>(0x80000000);
+static const int32 kint32max = static_cast<int32>(0x7FFFFFFF);
+static const int64 kint64min =
     static_cast<int64>(GG_LONGLONG(0x8000000000000000));
-static const  int64 kint64max  =
+static const int64 kint64max =
     static_cast<int64>(GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
 
 #ifdef STLPORT

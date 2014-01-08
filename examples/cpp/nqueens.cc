@@ -31,22 +31,20 @@
 DEFINE_bool(print, false, "If true, print one of the solution.");
 DEFINE_bool(print_all, false, "If true, print all the solutions.");
 DEFINE_int32(nb_loops, 1,
-  "Number of solving loops to perform, for performance timing.");
-DEFINE_int32(size, 0,
-  "Size of the problem. If equal to 0, will test several increasing sizes.");
+             "Number of solving loops to perform, for performance timing.");
+DEFINE_int32(
+    size, 0,
+    "Size of the problem. If equal to 0, will test several increasing sizes.");
 DEFINE_bool(use_symmetry, false, "Use Symmetry Breaking methods");
 DECLARE_bool(cp_no_solve);
 
 static const int kNumSolutions[] = {
-  1, 0, 0, 2, 10, 4, 40, 92, 352, 724,
-  2680, 14200, 73712, 365596, 2279184
-};
+    1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596, 2279184};
 static const int kKnownSolutions = 15;
 
 static const int kNumUniqueSolutions[] = {
-  1, 0, 0, 1, 2, 1, 6, 12, 46, 92, 341, 1787, 9233, 45752,
-  285053, 1846955, 11977939, 83263591, 621012754
-};
+    1,   0,    0,    1,     2,      1,       6,        12,       46,       92,
+    341, 1787, 9233, 45752, 285053, 1846955, 11977939, 83263591, 621012754};
 static const int kKnownUniqueSolutions = 19;
 
 namespace operations_research {
@@ -215,8 +213,7 @@ void NQueens(int size) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(solution_counter);
   monitors.push_back(collector);
-  DecisionBuilder* const db = s.MakePhase(queens,
-                                          Solver::CHOOSE_FIRST_UNBOUND,
+  DecisionBuilder* const db = s.MakePhase(queens, Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
   if (FLAGS_use_symmetry) {
     std::vector<SymmetryBreaker*> breakers;
@@ -260,9 +257,9 @@ void NQueens(int size) {
   printf("========= number of solutions:%d\n", num_solutions);
   printf("          number of failures: %lld\n", s.failures());
 }
-}   // namespace operations_research
+}  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_size != 0) {
     operations_research::NQueens(FLAGS_size);

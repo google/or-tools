@@ -86,17 +86,16 @@ bool CheckCostas(const std::vector<int64>& vars) {
 }
 
 // Cycles all possible permutations
-class OrderedLNS: public BaseLNS {
+class OrderedLNS : public BaseLNS {
  public:
-  OrderedLNS(const std::vector<IntVar*>& vars, int free_elements) :
-    BaseLNS(vars),
-    free_elements_(free_elements) {
+  OrderedLNS(const std::vector<IntVar*>& vars, int free_elements)
+      : BaseLNS(vars), free_elements_(free_elements) {
     index_ = 0;
 
     // Start of with the first free_elements_ as a permutations, eg. 0,1,2,3,...
     for (int i = 0; i < free_elements; ++i) {
-      index_ += i * pow(static_cast<double>(vars.size()),
-                        free_elements - i - 1);
+      index_ +=
+          i * pow(static_cast<double>(vars.size()), free_elements - i - 1);
     }
   }
 
@@ -114,8 +113,7 @@ class OrderedLNS: public BaseLNS {
         int current_index = work_index % dim;
         work_index = work_index / dim;
 
-        std::pair<std::set<int>::iterator, bool> ret =
-            fragment_set.insert(current_index);
+        std::pair<std::set<int>::iterator, bool> ret = fragment_set.insert(current_index);
 
         // Check if element has been used before
         if (ret.second) {
@@ -127,7 +125,7 @@ class OrderedLNS: public BaseLNS {
 
       // Go to next possible permutation
       ++index_;
-    // Try again if a duplicate index is used
+      // Try again if a duplicate index is used
     } while (fragment_set.size() < free_elements_);
 
     return true;
@@ -140,13 +138,12 @@ class OrderedLNS: public BaseLNS {
 
 // RandomLNS is used for the local search and frees the
 // number of elements specified in 'free_elements' randomly.
-class RandomLNS: public BaseLNS {
+class RandomLNS : public BaseLNS {
  public:
-  RandomLNS(const std::vector<IntVar*>& vars, int free_elements) :
-    BaseLNS(vars),
-    free_elements_(free_elements),
-    rand_(ACMRandom::HostnamePidTimeSeed()) {
-  }
+  RandomLNS(const std::vector<IntVar*>& vars, int free_elements)
+      : BaseLNS(vars),
+        free_elements_(free_elements),
+        rand_(ACMRandom::HostnamePidTimeSeed()) {}
 
   virtual bool NextFragment(std::vector<int>* const fragment) {
     std::vector<int> weighted_elements;
@@ -172,7 +169,7 @@ class RandomLNS: public BaseLNS {
 
       // Remove all elements with this index from weighted_elements
       for (std::vector<int>::iterator pos = weighted_elements.begin();
-           pos != weighted_elements.end(); ) {
+           pos != weighted_elements.end();) {
         if (*pos == index) {
           // Try to erase as many elements as possible at the same time
           std::vector<int>::iterator end = pos;
@@ -203,9 +200,7 @@ class Evaluator {
   explicit Evaluator(const std::vector<IntVar*>& vars) : vars_(vars) {}
 
   // Prefer the value with the smallest domain
-  int64 VarEvaluator(int64 index) {
-    return vars_[index]->Size();
-  }
+  int64 VarEvaluator(int64 index) { return vars_[index]->Size(); }
 
   // Penalize for each time the value appears in a different domain,
   // as values have to be unique
@@ -220,6 +215,7 @@ class Evaluator {
 
     return appearance;
   }
+
  private:
   std::vector<IntVar*> vars_;
 };
@@ -263,15 +259,14 @@ void CostasSoft(const int dim) {
   // them to be unique.
   std::vector<IntVar*> matrix_count;
   solver.MakeIntVarArray(2 * dim + 1, 0, dim, "matrix_count_", &matrix_count);
-  solver.AddConstraint(solver.MakeDistribute(matrix, possible_values,
-                                             matrix_count));
+  solver.AddConstraint(
+      solver.MakeDistribute(matrix, possible_values, matrix_count));
 
   // Here we only consider the elements from 1 to dim.
   for (int64 j = dim + 1; j <= 2 * dim; ++j) {
     // Penalize if an element occurs more than once.
-    vars[index]
-         = solver.MakeSemiContinuousExpr(solver.MakeSum(matrix_count[j], -1),
-                                         0, 1)->Var();
+    vars[index] = solver.MakeSemiContinuousExpr(
+                             solver.MakeSum(matrix_count[j], -1), 0, 1)->Var();
 
     occurences.push_back(vars[index++]);
   }
@@ -289,15 +284,14 @@ void CostasSoft(const int dim) {
     // Count the number of occurrences for all possible values
     std::vector<IntVar*> domain_count;
     solver.MakeIntVarArray(2 * dim + 1, 0, dim, "domain_count_", &domain_count);
-    solver.AddConstraint(solver.MakeDistribute(subset,
-                                               possible_values,
-                                               domain_count));
+    solver.AddConstraint(
+        solver.MakeDistribute(subset, possible_values, domain_count));
 
     // Penalize occurrences of more than one
     for (int64 j = 0; j <= 2 * dim; ++j) {
       vars[index] =
-          solver.MakeSemiContinuousExpr(solver.MakeSum(domain_count[j], -1),
-                                        0, dim - i)->Var();
+          solver.MakeSemiContinuousExpr(solver.MakeSum(domain_count[j], -1), 0,
+                                        dim - i)->Var();
 
       occurences.push_back(vars[index++]);
     }
@@ -315,19 +309,16 @@ void CostasSoft(const int dim) {
 
   // The first solution that the local optimization is based on
   Evaluator evaluator(matrix);
-  DecisionBuilder* const first_solution =
-      solver.MakePhase(matrix,
-                       NewPermanentCallback(&evaluator,
-                                            &Evaluator::VarEvaluator),
-                       NewPermanentCallback(&evaluator,
-                                            &Evaluator::ValueEvaluator));
+  DecisionBuilder* const first_solution = solver.MakePhase(
+      matrix, NewPermanentCallback(&evaluator, &Evaluator::VarEvaluator),
+      NewPermanentCallback(&evaluator, &Evaluator::ValueEvaluator));
 
   SearchLimit* const search_time_limit =
       solver.MakeLimit(FLAGS_timelimit, kint64max, kint64max, kint64max);
 
   // Locally optimize solutions for LNS
-  SearchLimit* const fail_limit = solver.MakeLimit(kint64max, kint64max,
-                                                   FLAGS_sublimit, kint64max);
+  SearchLimit* const fail_limit =
+      solver.MakeLimit(kint64max, kint64max, FLAGS_sublimit, kint64max);
 
   DecisionBuilder* const subdecision_builder =
       solver.MakeSolveOnce(first_solution, fail_limit);
@@ -351,10 +342,7 @@ void CostasSoft(const int dim) {
       solver.MakeLocalSearchPhase(matrix, first_solution, ls_params);
 
   // Try to find a solution
-  solver.Solve(second_phase,
-               collector,
-               log,
-               total_duplicates,
+  solver.Solve(second_phase, collector, log, total_duplicates,
                search_time_limit);
 
   if (collector->solution_count() > 0) {
@@ -407,9 +395,8 @@ void CostasHard(const int dim) {
     solver.AddConstraint(solver.MakeAllDifferent(subset));
   }
 
-  DecisionBuilder* const db = solver.MakePhase(vars,
-                                               Solver::CHOOSE_FIRST_UNBOUND,
-                                               Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = solver.MakePhase(
+      vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
 
   if (solver.NextSolution()) {
@@ -424,8 +411,8 @@ void CostasHard(const int dim) {
 
     LOG(INFO) << output << " (" << solver.wall_time() << "ms)";
 
-    CHECK(CheckCostas(costas_matrix)) <<
-        ": Solution is not a valid Costas Matrix.";
+    CHECK(CheckCostas(costas_matrix))
+        << ": Solution is not a valid Costas Matrix.";
   } else {
     LOG(INFO) << "No solution found.";
   }
@@ -435,7 +422,7 @@ void CostasHard(const int dim) {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   int min = 1;
   int max = 10;

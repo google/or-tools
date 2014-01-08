@@ -92,9 +92,8 @@ class JobShopData {
   // behavior.
   void Load(const std::string& filename) {
     FileLineReader reader(filename.c_str());
-    reader.set_line_callback(NewPermanentCallback(
-        this,
-        &JobShopData::ProcessNewLine));
+    reader.set_line_callback(
+        NewPermanentCallback(this, &JobShopData::ProcessNewLine));
     reader.Reload();
     if (!reader.loaded_successfully()) {
       LOG(ERROR) << "Could not open jobshop file";
@@ -146,8 +145,8 @@ class JobShopData {
           machine_count_ = atoi32(words[1]);
           CHECK_GT(machine_count_, 0);
           CHECK_GT(job_count_, 0);
-          LOG(INFO) << machine_count_ << " machines and "
-                    << job_count_ << " jobs";
+          LOG(INFO) << machine_count_ << " machines and " << job_count_
+                    << " jobs";
           all_tasks_.resize(job_count_);
         }
 

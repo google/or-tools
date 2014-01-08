@@ -25,9 +25,7 @@ tthread::mutex* Mutex::RealMutex() const { return real_mutex_.get(); }
 
 CondVar::CondVar() : real_condition_(new tthread::condition_variable) {}
 CondVar::~CondVar() {}
-void CondVar::Wait(Mutex* const mu) {
-  real_condition_->wait(*mu->RealMutex());
-}
+void CondVar::Wait(Mutex* const mu) { real_condition_->wait(*mu->RealMutex()); }
 void CondVar::Signal() { real_condition_->notify_one(); }
 void CondVar::SignalAll() { real_condition_->notify_all(); }
 }  // namespace operations_research

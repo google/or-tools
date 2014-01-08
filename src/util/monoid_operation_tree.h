@@ -53,7 +53,7 @@ namespace operations_research {
 //       result is independent of the order of past numerical issues
 // * Maintain a product of identically sized square matrices, which is an
 //       example of use with non-commutative operations.
-template<class T>
+template <class T>
 class MonoidOperationTree {
  public:
   // Constructs a MonoidOperationTree able to store 'size' operands.
@@ -132,7 +132,7 @@ class MonoidOperationTree {
   std::vector<T> nodes_;
 
   // A pointer to the root node
-  T const * result_;
+  T const* result_;
 
   DISALLOW_COPY_AND_ASSIGN(MonoidOperationTree);
 };
@@ -141,7 +141,7 @@ class MonoidOperationTree {
 //       Implementation
 // --------------------------------------------------------------------- //
 
-template<class T>
+template <class T>
 int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
   int smallest_pow_two_not_less_than_size = 1;
   while (smallest_pow_two_not_less_than_size < size) {
@@ -150,37 +150,36 @@ int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
   return std::max(1, smallest_pow_two_not_less_than_size - 1);
 }
 
-template<class T>
+template <class T>
 int MonoidOperationTree<T>::ComputeNumberOfNodes(int leaf_offset) {
   // leaf_offset should be a power of 2 minus 1.
-  DCHECK_EQ(0, (leaf_offset) & (leaf_offset+1));
+  DCHECK_EQ(0, (leaf_offset) & (leaf_offset + 1));
   const int num_leaves = leaf_offset + 1;
   const int num_nodes = leaf_offset + num_leaves;
   DCHECK_GE(num_nodes, 3);  // We need at least the root and its 2 children
   return num_nodes;
 }
 
-template<class T>
+template <class T>
 MonoidOperationTree<T>::MonoidOperationTree(int size)
-  : size_(size),
-    leaf_offset_(ComputeLeafOffset(size)),
-    num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
-    nodes_(num_nodes_, T()),
-    result_(&(nodes_[0])) {
-}
+    : size_(size),
+      leaf_offset_(ComputeLeafOffset(size)),
+      num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
+      nodes_(num_nodes_, T()),
+      result_(&(nodes_[0])) {}
 
-template<class T>
+template <class T>
 void MonoidOperationTree<T>::Clear() {
   const int size = nodes_.size();
   nodes_.assign(size, T());
 }
 
-template<class T>
+template <class T>
 void MonoidOperationTree<T>::Reset(int argument_index) {
   Set(argument_index, T());
 }
 
-template<class T>
+template <class T>
 void MonoidOperationTree<T>::Set(int argument_index, const T& argument) {
   CHECK_LT(argument_index, size_);
   const int position = leaf_offset_ + argument_index;
@@ -188,7 +187,7 @@ void MonoidOperationTree<T>::Set(int argument_index, const T& argument) {
   ComputeAbove(position);
 }
 
-template<class T>
+template <class T>
 void MonoidOperationTree<T>::ComputeAbove(int position) {
   int pos = father(position);
   while (pos > 0) {
@@ -198,19 +197,19 @@ void MonoidOperationTree<T>::ComputeAbove(int position) {
   Compute(0);
 }
 
-template<class T>
+template <class T>
 void MonoidOperationTree<T>::Compute(int position) {
   const T& left_child = nodes_[left(position)];
   const T& right_child = nodes_[right(position)];
   nodes_[position].Compute(left_child, right_child);
 }
 
-template<class T>
+template <class T>
 std::string MonoidOperationTree<T>::DebugString() const {
   std::string out;
   int layer = 0;
   for (int i = 0; i < num_nodes_; ++i) {
-    if (((i+1) & i) == 0) {
+    if (((i + 1) & i) == 0) {
       // New layer
       StringAppendF(&out, "-------------- Layer %d ---------------\n", layer);
       ++layer;

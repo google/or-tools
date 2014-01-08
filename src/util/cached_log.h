@@ -39,6 +39,7 @@ class CachedLog {
 
   // Returns the log2 of 'input'.
   double Log2(int64 input) const;
+
  private:
   std::vector<double> cache_;
   DISALLOW_COPY_AND_ASSIGN(CachedLog);

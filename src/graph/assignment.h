@@ -65,8 +65,8 @@ class SimpleLinearSumAssignment {
   //   must cover [0, n), same for "right_node".
   // * The arc cost can be any integer, negative, positive or zero.
   // * After the method finishes, NumArcs() == the returned ArcIndex + 1.
-  ArcIndex AddArcWithCost(
-      NodeIndex left_node, NodeIndex right_node, CostValue cost);
+  ArcIndex AddArcWithCost(NodeIndex left_node, NodeIndex right_node,
+                          CostValue cost);
 
   // Returns the current number of left nodes which is the same as the
   // number of right nodes. This is one greater than the largest node
@@ -93,9 +93,7 @@ class SimpleLinearSumAssignment {
 
   // Returns the cost of an assignment with minimal cost.
   // This is 0 if the last Solve() didn't return OPTIMAL.
-  CostValue OptimalCost() const {
-    return optimal_cost_;
-  }
+  CostValue OptimalCost() const { return optimal_cost_; }
 
   // Returns the right node assigned to the given left node in the
   // last solution computed by Solve(). This works only if Solve()

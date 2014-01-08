@@ -73,7 +73,6 @@
 #include "base/scoped_ptr.h"
 #include "base/timer.h"
 
-
 namespace operations_research {
 
 // Returns the current thread's total memory usage in an human-readable std::string.
@@ -89,7 +88,7 @@ class Stat {
   explicit Stat(const std::string& name) : name_(name) {}
 
   // Also add this stat to the given group.
-  Stat(const std::string& name, StatsGroup * group);
+  Stat(const std::string& name, StatsGroup* group);
   virtual ~Stat() {}
 
   // Only used for display purpose.
@@ -130,7 +129,7 @@ class StatsGroup {
   // Returns and if needed creates and registers a TimeDistribution with the
   // given name. Note that this involve a map lookup and his thus slower than
   // directly accessing a TimeDistribution variable.
-  TimeDistribution *LookupOrCreateTimeDistribution(std::string name);
+  TimeDistribution* LookupOrCreateTimeDistribution(std::string name);
 
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
@@ -138,7 +137,7 @@ class StatsGroup {
  private:
   std::string name_;
   std::vector<Stat*> stats_;
-  std::map<std::string, TimeDistribution *> time_distributions_;
+  std::map<std::string, TimeDistribution*> time_distributions_;
 
   DISALLOW_COPY_AND_ASSIGN(StatsGroup);
 };
@@ -211,9 +210,7 @@ class TimeDistribution : public DistributionStat {
   void AddTimeInCycles(double value);
 
   // Starts the timer in preparation of a StopTimerAndAddElapsedTime().
-  inline void StartTimer() {
-    timer_.Restart();
-  }
+  inline void StartTimer() { timer_.Restart(); }
 
   // Adds the elapsed time since the last StartTimer() to the distribution and
   // returns this time in cpu cycles.
@@ -286,13 +283,11 @@ class ScopedTimeDistributionUpdater {
   //   case TypeA : timer.AlsoUpdate(&typeA_timer); break;
   //   case TypeB : timer.AlsoUpdate(&typeB_timer); break;
   // }
-  void AlsoUpdate(TimeDistribution* also_update) {
-    also_update_ = also_update;
-  }
+  void AlsoUpdate(TimeDistribution* also_update) { also_update_ = also_update; }
 
  private:
-  TimeDistribution *stat_;
-  TimeDistribution *also_update_;
+  TimeDistribution* stat_;
+  TimeDistribution* also_update_;
   DISALLOW_COPY_AND_ASSIGN(ScopedTimeDistributionUpdater);
 };
 
@@ -316,9 +311,9 @@ class ScopedTimeDistributionUpdater {
 // Note(user): This adds more extra overhead around the measured code compared
 // to defining your own TimeDistribution stat in your StatsGroup. About 80ns
 // per measurement compared to about 20ns (as of 2012-06, on my workstation).
-#define SCOPED_TIME_STAT(stats) \
-    operations_research::ScopedTimeDistributionUpdater \
-    scoped_time_stat((stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
+#define SCOPED_TIME_STAT(stats)                                        \
+  operations_research::ScopedTimeDistributionUpdater scoped_time_stat( \
+      (stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
 
 #endif  // OR_STATS
 

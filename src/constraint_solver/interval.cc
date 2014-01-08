@@ -250,18 +250,10 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
     }
     return end_expr_;
   }
-  IntExpr* PerformedExpr() {
-    return solver()->MakeIntConst(1);
-  }
-  IntExpr* SafeStartExpr(int64 unperformed_value) {
-    return StartExpr();
-  }
-  IntExpr* SafeDurationExpr(int64 unperformed_value) {
-    return DurationExpr();
-  }
-  IntExpr* SafeEndExpr(int64 unperformed_value) {
-    return EndExpr();
-  }
+  IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
+  IntExpr* SafeStartExpr(int64 unperformed_value) { return StartExpr(); }
+  IntExpr* SafeDurationExpr(int64 unperformed_value) { return DurationExpr(); }
+  IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
 
  protected:
   IntervalVar* const underlying() const { return t_; }

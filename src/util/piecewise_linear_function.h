@@ -30,7 +30,6 @@
 
 #include "util/saturated_arithmetic.h"
 
-
 namespace operations_research {
 // This structure stores one straight line. It contains the start point, the
 // end point and the slope.
@@ -118,15 +117,15 @@ class PiecewiseLinearFunction {
   // The segments represented by these vectors should not be overlapping.
   // Common endpoints are allowed.
   static PiecewiseLinearFunction* CreatePiecewiseLinearFunction(
-    std::vector<int64> points_x, std::vector<int64> points_y,
-    std::vector<int64> slopes, std::vector<int64> other_points_x);
+      std::vector<int64> points_x, std::vector<int64> points_y, std::vector<int64> slopes,
+      std::vector<int64> other_points_x);
 
   // Builds a multiple-segment step function with continuous or non continuous
   // domain. The arguments have the same semantics with the generic builder of
   // the piecewise linear function. In the step function all the slopes are 0.
   static PiecewiseLinearFunction* CreateStepFunction(
-    std::vector<int64> points_x, std::vector<int64> points_y,
-    std::vector<int64> other_points_x);
+      std::vector<int64> points_x, std::vector<int64> points_y,
+      std::vector<int64> other_points_x);
 
   // Builds a multiple-segment piecewise linear function with domain from
   // from kint64min to kint64max with n points and n+1 slopes. Each slope
@@ -134,28 +133,32 @@ class PiecewiseLinearFunction {
   // which stops at kint64max. The first slope stops at the first point at
   // the level specified.
   static PiecewiseLinearFunction* CreateFullDomainFunction(
-    int64 initial_level, std::vector<int64> points_x, std::vector<int64> slopes);
+      int64 initial_level, std::vector<int64> points_x, std::vector<int64> slopes);
 
   // Builds a function consisting of one segment.
-  static PiecewiseLinearFunction* CreateOneSegmentFunction(
-    int64 point_x, int64 point_y, int64 slope, int64 other_point_x);
+  static PiecewiseLinearFunction* CreateOneSegmentFunction(int64 point_x,
+                                                           int64 point_y,
+                                                           int64 slope,
+                                                           int64 other_point_x);
 
   // Builds a function consisting of one ray starting at the specified
   // x and y coordinates with the specified slope.
-  static PiecewiseLinearFunction* CreateRightRayFunction(
-    int64 point_x, int64 point_y, int64 slope);
+  static PiecewiseLinearFunction* CreateRightRayFunction(int64 point_x,
+                                                         int64 point_y,
+                                                         int64 slope);
 
   // Builds a function consisting of one ray starting at the specified
   // x and y coordinates with the specified slope.
-  static PiecewiseLinearFunction* CreateLeftRayFunction(
-    int64 point_x, int64 point_y, int64 slope);
+  static PiecewiseLinearFunction* CreateLeftRayFunction(int64 point_x,
+                                                        int64 point_y,
+                                                        int64 slope);
 
   // Builds a two-segment fixed charge piecewise linear cost function. For
   // values less than zero, the cost is zero. For values greater than zero,
   // cost follows the line specified by the slope and the value given as
   // arguments. The slope and value are positive.
-  static PiecewiseLinearFunction* CreateFixedChargeFunction(
-    int64 slope, int64 value);
+  static PiecewiseLinearFunction* CreateFixedChargeFunction(int64 slope,
+                                                            int64 value);
 
   // Builds an earliness-tardiness two-segment piecewise linear cost function.
   // The reference specifies the point where the cost is zero. Before the
@@ -163,7 +166,7 @@ class PiecewiseLinearFunction {
   // referece, it increases with the tardiness slope. The absolute values of
   // the slopes are given.
   static PiecewiseLinearFunction* CreateEarlyTardyFunction(
-    int64 reference, int64 earliness_slope, int64 tardiness_slope);
+      int64 reference, int64 earliness_slope, int64 tardiness_slope);
 
   // Builds an earliness-tardiness three-segment piecewise linear cost function
   // with a slack period around the due date. The early slack is the point
@@ -172,8 +175,8 @@ class PiecewiseLinearFunction {
   // specified. Between the early and the late slack point, the cost is zero.
   // The absolute values of the slopes are given.
   static PiecewiseLinearFunction* CreateEarlyTardyFunctionWithSlack(
-    int64 early_slack, int64 late_slack,
-    int64 earliness_slope, int64 tardiness_slope);
+      int64 early_slack, int64 late_slack, int64 earliness_slope,
+      int64 tardiness_slope);
 
   // Returns if x is in the domain of the function.
   bool InDomain(int64 x) const;
@@ -213,8 +216,7 @@ class PiecewiseLinearFunction {
   void Subtract(const PiecewiseLinearFunction& function);
   // Decomposes the piecewise linear function in a set of convex piecewise
   // linear functions. The objects in the vector are owned by the client code.
-  void DecomposeToConvexFunctions(
-    std::vector<PiecewiseLinearFunction* >* convex_set);
+  void DecomposeToConvexFunctions(std::vector<PiecewiseLinearFunction*>* convex_set);
 
   const std::vector<PiecewiseSegment>& segments() const { return segments_; }
 

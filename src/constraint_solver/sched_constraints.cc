@@ -505,14 +505,12 @@ class CoverConstraint : public TreeArrayConstraint {
       if (performed != UNPERFORMED) {
         *bucket_start_min =
             std::min(*bucket_start_min, StartMin(parent_depth + 1, k));
-        *bucket_end_max =
-            std::max(*bucket_end_max, EndMax(parent_depth + 1, k));
+        *bucket_end_max = std::max(*bucket_end_max, EndMax(parent_depth + 1, k));
         may_be_performed_count++;
         if (performed == PERFORMED) {
           *bucket_start_max =
               std::min(*bucket_start_max, StartMax(parent_depth + 1, k));
-          *bucket_end_min =
-              std::max(*bucket_end_min, EndMin(parent_depth + 1, k));
+          *bucket_end_min = std::max(*bucket_end_min, EndMin(parent_depth + 1, k));
           must_be_performed_count++;
         }
       }

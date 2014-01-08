@@ -74,9 +74,8 @@ void Cryptoarithmetics() {
   v2 = solver.MakeSum(o, solver.MakeProd(m, 10))->Var();
   solver.AddConstraint(solver.MakeEquality(v1, v2));
 
-  DecisionBuilder* const db = solver.MakePhase(letters,
-                                               Solver::CHOOSE_FIRST_UNBOUND,
-                                               Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = solver.MakePhase(
+      letters, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
   if (solver.NextSolution()) {
     CHECK_EQ(s->Value(), 9);
@@ -103,9 +102,9 @@ void Cryptoarithmetics() {
   solver.EndSearch();
 }
 
-}   // namespace operations_research
+}  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::Cryptoarithmetics();
   return 0;

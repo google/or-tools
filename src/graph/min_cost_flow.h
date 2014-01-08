@@ -181,7 +181,6 @@
 #include "util/stats.h"
 #include "util/zvector.h"
 
-
 namespace operations_research {
 
 // Forward declaration.
@@ -616,5 +615,5 @@ class MinCostFlow : public GenericMinCostFlow<StarGraph> {
 
 #endif  // SWIG
 
-}       // namespace operations_research
+}  // namespace operations_research
 #endif  // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_

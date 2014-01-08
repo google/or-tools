@@ -48,25 +48,21 @@ class ACMRandom {
   double RandDouble() { return RndDouble(); }
 
   // Returns a double in [a, b). The distribution is uniform.
-  double UniformDouble(double a, double b) {
-    return a + (b - a) * RndDouble();
-  }
+  double UniformDouble(double a, double b) { return a + (b - a) * RndDouble(); }
 
   void Reset(int32 seed) { seed_ = seed; }
   static int32 HostnamePidTimeSeed();
   static int32 DeterministicSeed();
 
-  // RandomNumberGenerator concept. Example:
-  //   ACMRandom rand(my_seed);
-  //   std::random_shuffle(myvec.begin(), myvec.end(), rand);
+// RandomNumberGenerator concept. Example:
+//   ACMRandom rand(my_seed);
+//   std::random_shuffle(myvec.begin(), myvec.end(), rand);
 #if defined(_MSC_VER)
   typedef __int64 difference_type;  // NOLINT
 #else
   typedef long long difference_type;  // NOLINT
 #endif
-  int64 operator() (int64 val_max) {
-    return Next64() % val_max;
-  }
+  int64 operator()(int64 val_max) { return Next64() % val_max; }
 
  private:
   int32 seed_;
@@ -77,11 +73,10 @@ class ACMRandom {
 // using ACMRandom.
 class MTRandom : public ACMRandom {
  public:
-  explicit MTRandom(int32 seed) : ACMRandom(seed) { }
+  explicit MTRandom(int32 seed) : ACMRandom(seed) {}
   // MTRandom also supports a std::string seed.
   explicit MTRandom(const std::string& str_seed)
-      : ACMRandom(GenerateInt32SeedFromString(str_seed)) {
-  }
+      : ACMRandom(GenerateInt32SeedFromString(str_seed)) {}
 
   MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
 

@@ -81,8 +81,7 @@ class CBCInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
-                              double new_value,
-                              double old_value) {
+                              double new_value, double old_value) {
     sync_status_ = MUST_RELOAD;
   }
   // Clear a constraint from all its terms.
@@ -96,13 +95,9 @@ class CBCInterface : public MPSolverInterface {
     sync_status_ = MUST_RELOAD;
   }
   // Change the constant term in the linear objective.
-  virtual void SetObjectiveOffset(double value) {
-    sync_status_ = MUST_RELOAD;
-  }
+  virtual void SetObjectiveOffset(double value) { sync_status_ = MUST_RELOAD; }
   // Clear the objective from all its terms.
-  virtual void ClearObjective() {
-    sync_status_ = MUST_RELOAD;
-  }
+  virtual void ClearObjective() { sync_status_ = MUST_RELOAD; }
 
   // Number of simplex iterations
   virtual int64 iterations() const;
@@ -126,16 +121,12 @@ class CBCInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints() {}
   virtual void ExtractObjective() {}
 
-  virtual std::string SolverVersion() const {
-    return "Cbc " CBC_VERSION;
-  }
+  virtual std::string SolverVersion() const { return "Cbc " CBC_VERSION; }
 
   // TODO(user): Maybe we should expose the CbcModel build from osi_
   // instead, but a new CbcModel is built every time Solve is called,
   // so it is not possible right now.
-  virtual void* underlying_solver() {
-    return reinterpret_cast<void*>(&osi_);
-  }
+  virtual void* underlying_solver() { return reinterpret_cast<void*>(&osi_); }
 
  private:
   // Reset best objective bound to +/- infinity depending on the
@@ -166,7 +157,8 @@ class CBCInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 CBCInterface::CBCInterface(MPSolver* const solver)
     : MPSolverInterface(solver),
-      iterations_(0), nodes_(0),
+      iterations_(0),
+      nodes_(0),
       best_objective_bound_(-std::numeric_limits<double>::infinity()),
       relative_mip_gap_(MPSolverParameters::kDefaultRelativeMipGap) {
   osi_.setStrParam(OsiProbName, solver_->name_);
@@ -269,16 +261,16 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       Reset();
       CoinModel build;
       // Create dummy variable for objective offset.
-      build.addColumn(0, NULL, NULL, 1.0, 1.0,
-                      solver_->Objective().offset(), "dummy", false);
+      build.addColumn(0, NULL, NULL, 1.0, 1.0, solver_->Objective().offset(),
+                      "dummy", false);
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
         var->set_index(i + 1);  // offset by 1 because of dummy variable.
         const double obj_coeff = solver_->Objective().GetCoefficient(var);
         if (var->name().empty()) {
-          build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff,
-                          NULL, var->integer());
+          build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff, NULL,
+                          var->integer());
         } else {
           build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff,
                           var->name().c_str(), var->integer());
@@ -299,7 +291,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint* const  ct = solver_->constraints_[i];
+        MPConstraint* const ct = solver_->constraints_[i];
         const int size = ct->coefficients_.size();
         int j = 0;
         for (CoeffEntry entry : ct->coefficients_) {
@@ -319,12 +311,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       osi_.loadFromCoinModel(build);
       break;
     }
-    case MODEL_SYNCHRONIZED: {
-      break;
-    }
-    case SOLUTION_SYNCHRONIZED: {
-      break;
-    }
+    case MODEL_SYNCHRONIZED: { break; }
+    case SOLUTION_SYNCHRONIZED: { break; }
   }
 
   // Changing optimization direction through OSI so that the model file
@@ -407,9 +395,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       } else if (model.isProvenInfeasible()) {
         result_status_ = MPSolver::INFEASIBLE;
       } else {
-        LOG(FATAL)
-            << "Unknown solver status! Secondary status: "
-            << model.secondaryStatus();
+        LOG(FATAL) << "Unknown solver status! Secondary status: "
+                   << model.secondaryStatus();
       }
       break;
     case 1:
@@ -446,8 +433,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
         const int constraint_index = ct->index();
         const double row_activity = row_activities[constraint_index];
         ct->set_activity(row_activity);
-        VLOG(4) << "row " << ct->index()
-                << ": activity = " << row_activity;
+        VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
       }
     }
   }
@@ -520,9 +506,7 @@ void CBCInterface::SetPresolveMode(int value) {
       // CBC presolve is always on.
       break;
     }
-    default: {
-      SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
-    }
+    default: { SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE); }
   }
 }
 

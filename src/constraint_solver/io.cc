@@ -2311,8 +2311,7 @@ bool CPModelLoader::BuildFromProto(const CPIntegerExpressionProto& proto) {
   if (!built) {
     return false;
   }
-  expressions_.resize(
-      std::max(static_cast<int>(expressions_.size()), index + 1));
+  expressions_.resize(std::max(static_cast<int>(expressions_.size()), index + 1));
   expressions_[index] = built;
   return true;
 }

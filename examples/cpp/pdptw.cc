@@ -66,12 +66,10 @@ typedef std::vector<std::pair<int, int> > Coordinates;
 
 // Returns the scaled Euclidean distance between two nodes, coords holding the
 // coordinates of the nodes.
-int64 Travel(const Coordinates* const coords,
-             RoutingModel::NodeIndex from,
+int64 Travel(const Coordinates* const coords, RoutingModel::NodeIndex from,
              RoutingModel::NodeIndex to) {
   DCHECK(coords != NULL);
-  const int xd =
-      coords->at(from.value()).first - coords->at(to.value()).first;
+  const int xd = coords->at(from.value()).first - coords->at(to.value()).first;
   const int yd =
       coords->at(from.value()).second - coords->at(to.value()).second;
   return static_cast<int64>(kScalingFactor * sqrt(1.0L * xd * xd + yd * yd));
@@ -97,22 +95,20 @@ int64 TravelPlusServiceTime(const Coordinates* const coords,
 
 // Returns the demand (quantity picked up or delivered) of a node, demands
 // holds the demand of each node.
-int64 Demand(const std::vector<int64>* const demands,
-             RoutingModel::NodeIndex from,
+int64 Demand(const std::vector<int64>* const demands, RoutingModel::NodeIndex from,
              RoutingModel::NodeIndex to) {
   return demands->at(from.value());
 }
 
 // Outputs a solution to the current model in a std::string.
-std::string VerboseOutput(const RoutingModel& routing,
-                     const Assignment& assignment,
+std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignment,
                      const Coordinates& coords,
                      const std::vector<int64>& service_times) {
   std::string output;
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
   for (int i = 0; i < routing.vehicles(); ++i) {
-      StringAppendF(&output, "Vehicle %d: ", i);
+    StringAppendF(&output, "Vehicle %d: ", i);
     int64 index = routing.Start(i);
     if (routing.IsEnd(assignment.Value(routing.NextVar(index)))) {
       StringAppendF(&output, "empty");
@@ -123,30 +119,24 @@ std::string VerboseOutput(const RoutingModel& routing,
         const IntVar* vehicle = routing.VehicleVar(index);
         StringAppendF(&output, "Vehicle(%lld) ", assignment.Value(vehicle));
         const IntVar* arrival = time_dimension.CumulVar(index);
-        StringAppendF(&output, "Time(%lld..%lld) ",
-                      assignment.Min(arrival),
+        StringAppendF(&output, "Time(%lld..%lld) ", assignment.Min(arrival),
                       assignment.Max(arrival));
         const IntVar* load = load_dimension.CumulVar(index);
-        StringAppendF(&output, "Load(%lld..%lld) ",
-                      assignment.Min(load),
+        StringAppendF(&output, "Load(%lld..%lld) ", assignment.Min(load),
                       assignment.Max(load));
         index = assignment.Value(routing.NextVar(index));
         StringAppendF(&output, "Transit(%lld) ",
-                      TravelPlusServiceTime(&coords,
-                                            &service_times,
-                                            real_node,
+                      TravelPlusServiceTime(&coords, &service_times, real_node,
                                             routing.IndexToNode(index)));
       }
       StringAppendF(&output, "Route end ");
       const IntVar* vehicle = routing.VehicleVar(index);
       StringAppendF(&output, "Vehicle(%lld) ", assignment.Value(vehicle));
       const IntVar* arrival = time_dimension.CumulVar(index);
-      StringAppendF(&output, "Time(%lld..%lld) ",
-                    assignment.Min(arrival),
+      StringAppendF(&output, "Time(%lld..%lld) ", assignment.Min(arrival),
                     assignment.Max(arrival));
       const IntVar* load = load_dimension.CumulVar(index);
-      StringAppendF(&output, "Load(%lld..%lld) ",
-                    assignment.Min(load),
+      StringAppendF(&output, "Load(%lld..%lld) ", assignment.Min(load),
                     assignment.Max(load));
     }
     StringAppendF(&output, "\n");
@@ -164,7 +154,7 @@ bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int)
   parsed_int->assign(items.size(), 0);
   for (int i = 0; i < items.size(); ++i) {
     const char* item = items[i].c_str();
-    char *endptr = NULL;
+    char* endptr = NULL;
     (*parsed_int)[i] = strto64(item, &endptr, 10);  // NOLINT
     // The whole item should have been consumed.
     if (*endptr != '\0') return false;
@@ -185,9 +175,8 @@ bool LoadAndSolve(const std::string& pdp_file) {
     data_file->ReadToString(&contents, kMaxInputFileSize);
     data_file->Close();
     if (contents.size() == kMaxInputFileSize) {
-      LOG(WARNING)
-          << "Input file '" << pdp_file << "' is too large (>"
-          << kMaxInputFileSize << " bytes).";
+      LOG(WARNING) << "Input file '" << pdp_file << "' is too large (>"
+                   << kMaxInputFileSize << " bytes).";
       return false;
     }
     SplitStringUsing(contents, "\n", &lines);
@@ -199,16 +188,13 @@ bool LoadAndSolve(const std::string& pdp_file) {
   }
   // Parse file header.
   std::vector<int64> parsed_int;
-  if (!SafeParseInt64Array(lines[0], &parsed_int)
-      || parsed_int.size() != 3
-      || parsed_int[0] < 0
-      || parsed_int[1] < 0
-      || parsed_int[2] < 0) {
+  if (!SafeParseInt64Array(lines[0], &parsed_int) || parsed_int.size() != 3 ||
+      parsed_int[0] < 0 || parsed_int[1] < 0 || parsed_int[2] < 0) {
     LOG(WARNING) << "Malformed header: " << lines[0];
     return false;
   }
-  const int num_vehicles = FLAGS_pdp_force_vehicles > 0 ?
-      FLAGS_pdp_force_vehicles : parsed_int[0];
+  const int num_vehicles =
+      FLAGS_pdp_force_vehicles > 0 ? FLAGS_pdp_force_vehicles : parsed_int[0];
   const int64 capacity = parsed_int[1];
   // We do not care about the 'speed' field, in third position.
 
@@ -223,16 +209,12 @@ bool LoadAndSolve(const std::string& pdp_file) {
   std::vector<RoutingModel::NodeIndex> deliveries;
   int64 horizon = 0;
   for (int line_index = 1; line_index < lines.size(); ++line_index) {
-    if (!SafeParseInt64Array(lines[line_index], &parsed_int)
-        || parsed_int.size() != 9
-        || parsed_int[0] < 0
-        || parsed_int[4] < 0
-        || parsed_int[5] < 0
-        || parsed_int[6] < 0
-        || parsed_int[7] < 0
-        || parsed_int[8] < 0) {
-      LOG(WARNING)
-          << "Malformed line #" << line_index << ": " << lines[line_index];
+    if (!SafeParseInt64Array(lines[line_index], &parsed_int) ||
+        parsed_int.size() != 9 || parsed_int[0] < 0 || parsed_int[4] < 0 ||
+        parsed_int[5] < 0 || parsed_int[6] < 0 || parsed_int[7] < 0 ||
+        parsed_int[8] < 0) {
+      LOG(WARNING) << "Malformed line #" << line_index << ": "
+                   << lines[line_index];
       return false;
     }
     const int customer_id = parsed_int[0];
@@ -262,15 +244,13 @@ bool LoadAndSolve(const std::string& pdp_file) {
       NewPermanentCallback(Travel, const_cast<const Coordinates*>(&coords)));
   routing.AddDimension(
       NewPermanentCallback(&Demand, const_cast<const std::vector<int64>*>(&demands)),
-      0, capacity, /*fix_start_cumul_to_zero=*/ true, "demand");
+      0, capacity, /*fix_start_cumul_to_zero=*/true, "demand");
   routing.AddDimension(
       NewPermanentCallback(&TravelPlusServiceTime,
                            const_cast<const Coordinates*>(&coords),
                            const_cast<const std::vector<int64>*>(&service_times)),
-      kScalingFactor * horizon,
-      kScalingFactor * horizon,
-      /*fix_start_cumul_to_zero=*/ true,
-      "time");
+      kScalingFactor * horizon, kScalingFactor * horizon,
+      /*fix_start_cumul_to_zero=*/true, "time");
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   Solver* const solver = routing.solver();
   for (RoutingModel::NodeIndex i(0); i < num_nodes; ++i) {
@@ -281,11 +261,10 @@ bool LoadAndSolve(const std::string& pdp_file) {
       } else {
         const int64 delivery_index = routing.NodeToIndex(deliveries[i.value()]);
         solver->AddConstraint(solver->MakeEquality(
-            routing.VehicleVar(index),
-            routing.VehicleVar(delivery_index)));
-        solver->AddConstraint(solver->MakeLessOrEqual(
-            time_dimension.CumulVar(index),
-            time_dimension.CumulVar(delivery_index)));
+            routing.VehicleVar(index), routing.VehicleVar(delivery_index)));
+        solver->AddConstraint(
+            solver->MakeLessOrEqual(time_dimension.CumulVar(index),
+                                    time_dimension.CumulVar(delivery_index)));
         routing.AddPickupAndDelivery(i, deliveries[i.value()]);
       }
     }
@@ -295,8 +274,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
   }
   // Adding penalty costs to allow skipping orders.
   const int64 kPenalty = 10000000;
-  for (RoutingModel::NodeIndex order(1);
-       order < routing.nodes(); ++order) {
+  for (RoutingModel::NodeIndex order(1); order < routing.nodes(); ++order) {
     std::vector<RoutingModel::NodeIndex> orders(1, order);
     routing.AddDisjunction(orders, kPenalty);
   }
@@ -306,7 +284,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
   FLAGS_routing_no_lns = true;
 
   // Solve pickup and delivery problem.
-  const Assignment* assignment =  routing.Solve(NULL);
+  const Assignment* assignment = routing.Solve(NULL);
   if (NULL != assignment) {
     LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
     LOG(INFO) << VerboseOutput(routing, *assignment, coords, service_times);
@@ -317,7 +295,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
 
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
     LOG(INFO) << "Error solving " << FLAGS_pdp_file;

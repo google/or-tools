@@ -12,16 +12,16 @@
 // limitations under the License.
 
 #if defined(__GNUC__)
-# include <unistd.h>
-# if defined(__linux__)
-#  include <linux/limits.h>
-# endif
+#include <unistd.h>
+#if defined(__linux__)
+#include <linux/limits.h>
+#endif
 #endif
 #if defined(_MSC_VER)
-# include <windows.h>
-# define PATH_MAX 4096
+#include <windows.h>
+#define PATH_MAX 4096
 #else
-# include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #include <cstring>
@@ -36,7 +36,7 @@ int32 ACMRandom::Next() {
   if (seed_ == 0) {
     seed_ = 0x14fd4603;  // Arbitrary random constant
   }
-  const int32 M = 2147483647L;   // 2^31-1
+  const int32 M = 2147483647L;  // 2^31-1
   const int32 A = 16807;
   // In effect, we are computing seed_ = (seed_ * A) % M, where M = 2^31-1
   uint32 lo = A * static_cast<int32>(seed_ & 0xFFFF);
@@ -54,9 +54,7 @@ int32 ACMRandom::Next() {
   return (seed_ = static_cast<int32>(lo));
 }
 
-int32 ACMRandom::Uniform(int32 n) {
-  return n == 0 ? 0 :Next() % n;
-}
+int32 ACMRandom::Uniform(int32 n) { return n == 0 ? 0 : Next() % n; }
 
 int64 ACMRandom::Next64() {
   const int64 next = Next();
@@ -64,16 +62,15 @@ int64 ACMRandom::Next64() {
 }
 
 namespace {
-static inline uint32 Word32At(const char *ptr) {
-  return ((static_cast<uint32>(ptr[0])) +
-          (static_cast<uint32>(ptr[1]) << 8) +
+static inline uint32 Word32At(const char* ptr) {
+  return ((static_cast<uint32>(ptr[0])) + (static_cast<uint32>(ptr[1]) << 8) +
           (static_cast<uint32>(ptr[2]) << 16) +
           (static_cast<uint32>(ptr[3]) << 24));
 }
 }  // namespace
 
 int32 ACMRandom::HostnamePidTimeSeed() {
-  char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's
+  char name[PATH_MAX + 20];  // need 12 bytes for 3 'empty' uint32's
   assert(sizeof(name) - PATH_MAX > sizeof(uint32) * 3);  // NOLINT
 
   if (gethostname(name, PATH_MAX) != 0) {
@@ -81,7 +78,7 @@ int32 ACMRandom::HostnamePidTimeSeed() {
   }
   const int namelen = strlen(name);
   for (int i = 0; i < sizeof(uint32) * 3; ++i) {  // NOLINT
-    name[namelen + i] = '\0';   // so we mix 0's once we get to end-of-std::string
+    name[namelen + i] = '\0';  // so we mix 0's once we get to end-of-std::string
   }
 #if defined(__GNUC__)
   uint32 a = getpid();
@@ -97,13 +94,13 @@ int32 ACMRandom::HostnamePidTimeSeed() {
   uint32 c = 0;
   for (int i = 0; i < namelen; i += sizeof(uint32) * 3) {  // NOLINT
     a += Word32At(name + i);
-    b += Word32At(name + i + sizeof(uint32));  // NOLINT
+    b += Word32At(name + i + sizeof(uint32));                   // NOLINT
     c += Word32At(name + i + sizeof(uint32) + sizeof(uint32));  // NOLINT
     mix(a, b, c);
   }
-  c += namelen;                      // one final mix
+  c += namelen;  // one final mix
   mix(a, b, c);
-  return static_cast<int32>(c);      // I guess the seed can be negative
+  return static_cast<int32>(c);  // I guess the seed can be negative
 }
 
 int32 ACMRandom::DeterministicSeed() { return 0; }

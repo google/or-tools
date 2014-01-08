@@ -28,8 +28,7 @@ namespace sat {
 //   http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
 //   http://gauss.ececs.uc.edu/SAT/articles/FAIA185-0131.pdf
 void SatSolver::ComputeFirstUIPConflict(
-    ClauseRef failing_clause,
-    std::vector<Literal>* conflict,
+    ClauseRef failing_clause, std::vector<Literal>* conflict,
     std::vector<Literal>* discarded_last_level_literals) {
   SCOPED_TIME_STAT(&stats_);
 
@@ -39,7 +38,7 @@ void SatSolver::ComputeFirstUIPConflict(
 
   conflict->clear();
   discarded_last_level_literals->clear();
-  const int current_level = choice_points_.size();
+  const int current_level = CurrentDecisionLevel();
   int num_literal_at_current_level_that_needs_to_be_processed = 0;
   DCHECK_GT(current_level, 0);
 
@@ -83,8 +82,7 @@ void SatSolver::ComputeFirstUIPConflict(
     while (!is_marked_[trail_[trail_index].Variable()]) {
       --trail_index;
       DCHECK_GE(trail_index, 0);
-      DCHECK_EQ(DecisionLevel(trail_[trail_index].Variable()),
-                current_level);
+      DCHECK_EQ(DecisionLevel(trail_[trail_index].Variable()), current_level);
     }
 
     if (num_literal_at_current_level_that_needs_to_be_processed == 1) {
@@ -100,8 +98,8 @@ void SatSolver::ComputeFirstUIPConflict(
 
     // If we already encountered the same reason, we can just skip this literal
     // which is what setting clause_to_expand to the empty clause do.
-    if (reason_cache_.FirstVariableWithSameReason(literal.Variable())
-        != literal.Variable()) {
+    if (reason_cache_.FirstVariableWithSameReason(literal.Variable()) !=
+        literal.Variable()) {
       clause_to_expand = ClauseRef();
     } else {
       clause_to_expand = Reason(literal.Variable());
@@ -117,7 +115,8 @@ void SatSolver::MinimizeConflict(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
   const int old_size = conflict->size();
   switch (parameters_.minimization_algorithm()) {
-    case SatParameters::NONE: return;
+    case SatParameters::NONE:
+      return;
     case SatParameters::SIMPLE: {
       MinimizeConflictSimple(conflict);
       break;
@@ -151,7 +150,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
     is_marked_.Set(literal.Variable());
   }
   int index = 0;
-  const int current_level = choice_points_.size();
+  const int current_level = CurrentDecisionLevel();
   for (int i = 0; i < conflict->size(); ++i) {
     const VariableIndex var = (*conflict)[i].Variable();
     bool can_be_removed = false;
@@ -202,8 +201,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // std::numeric_limits<int>::max() at the end. This is used to prune the
   // search because any literal at a given level with an index smaller or equal
   // to min_trail_index_per_level_[level] can't be redundant.
-  if (choice_points_.size() >= min_trail_index_per_level_.size()) {
-    min_trail_index_per_level_.resize(choice_points_.size() + 1,
+  if (CurrentDecisionLevel() >= min_trail_index_per_level_.size()) {
+    min_trail_index_per_level_.resize(CurrentDecisionLevel() + 1,
                                       std::numeric_limits<int>::max());
   }
 
@@ -215,8 +214,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   for (Literal literal : *conflict) {
     const VariableIndex var = literal.Variable();
     const int level = DecisionLevel(var);
-    min_trail_index_per_level_[level] = std::min(
-        min_trail_index_per_level_[level], trail_.Info(var).trail_index);
+    min_trail_index_per_level_[level] =
+        std::min(min_trail_index_per_level_[level], trail_.Info(var).trail_index);
   }
 
   // Remove the redundant variable from the conflict. That is the ones that can
@@ -225,8 +224,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   for (int i = 0; i < conflict->size(); ++i) {
     const VariableIndex var = (*conflict)[i].Variable();
     if (trail_.Info(var).trail_index <=
-        min_trail_index_per_level_[DecisionLevel(var)]
-            || !CanBeInferedFromConflictVariables(var)) {
+            min_trail_index_per_level_[DecisionLevel(var)] ||
+        !CanBeInferedFromConflictVariables(var)) {
       // Mark the conflict variable as independent. Note that is_marked_[var]
       // will still be true.
       is_independent_.Set(var);
@@ -239,8 +238,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // all the literals from the same level.
   conflict->resize(index);
   for (Literal literal : *conflict) {
-    min_trail_index_per_level_[DecisionLevel(literal.Variable())]
-        = std::numeric_limits<int>::max();
+    min_trail_index_per_level_[DecisionLevel(literal.Variable())] =
+        std::numeric_limits<int>::max();
   }
 }
 
@@ -267,8 +266,9 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
     if (var == variable) continue;
     const int level = DecisionLevel(var);
     if (level == 0 || is_marked_[var]) continue;
-    if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level]
-        || is_independent_[var]) return false;
+    if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level] ||
+        is_independent_[var])
+      return false;
     variable_to_process_.push_back(var);
   }
 
@@ -318,8 +318,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
       if (var == current_var) continue;
       const int level = DecisionLevel(var);
       if (level == 0 || is_marked_[var]) continue;
-      if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level]
-          || is_independent_[var]) {
+      if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level] ||
+          is_independent_[var]) {
         abort_early = true;
         break;
       }
@@ -348,7 +348,7 @@ struct WeightedVariable {
 // to break ties
 struct VariableWithLargerWeightFirst {
   bool operator()(const WeightedVariable& wv1,
-                   const WeightedVariable& wv2) const {
+                  const WeightedVariable& wv2) const {
     return (wv1.weight > wv2.weight ||
             (wv1.weight == wv2.weight && wv1.var < wv2.var));
   }
@@ -372,7 +372,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   // First, sort the variables in the conflict by decreasing decision levels.
   // Also initialize is_marked_ to true for all conflict variables.
   is_marked_.ClearAndResize(num_variables_);
-  const int current_level = choice_points_.size();
+  const int current_level = CurrentDecisionLevel();
   std::vector<WeightedVariable> variables_sorted_by_level;
   for (Literal literal : *conflict) {
     const VariableIndex var = literal.Variable();
@@ -382,8 +382,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
       variables_sorted_by_level.push_back(WeightedVariable(var, level));
     }
   }
-  std::sort(variables_sorted_by_level.begin(),
-       variables_sorted_by_level.end(),
+  std::sort(variables_sorted_by_level.begin(), variables_sorted_by_level.end(),
        VariableWithLargerWeightFirst());
 
   // Then process the reason of the variable with highest level first.
@@ -461,8 +460,8 @@ void SatSolver::InitLearnedClauseLimit() {
   target_number_of_learned_clauses_ =
       num_learned_clauses + parameters_.clause_cleanup_increment();
   num_learned_clause_before_cleanup_ =
-      target_number_of_learned_clauses_ / parameters_.clause_cleanup_ratio()
-      - num_learned_clauses;
+      target_number_of_learned_clauses_ / parameters_.clause_cleanup_ratio() -
+      num_learned_clauses;
   VLOG(1) << "reduced learned database to " << num_learned_clauses
           << " clauses. Next cleanup in " << num_learned_clause_before_cleanup_
           << " conflicts.";
@@ -475,16 +474,15 @@ void SatSolver::CompressLearnedClausesIfNeeded() {
   // Move the clause that should be kept at the beginning and sort the other
   // using the ClauseOrdering order.
   std::vector<SatClause*>::iterator clause_to_keep_end = std::partition(
-      learned_clauses_.begin(),
-      learned_clauses_.end(),
+      learned_clauses_.begin(), learned_clauses_.end(),
       std::bind1st(std::mem_fun(&SatSolver::ClauseShouldBeKept), this));
   std::sort(clause_to_keep_end, learned_clauses_.end(), ClauseOrdering);
 
   // Compute the index of the first clause to delete.
   const int num_learned_clauses = learned_clauses_.size();
-  const int first_clause_to_delete = std::max(
-    static_cast<int>(clause_to_keep_end - learned_clauses_.begin()),
-    std::min(num_learned_clauses, target_number_of_learned_clauses_));
+  const int first_clause_to_delete =
+      std::max(static_cast<int>(clause_to_keep_end - learned_clauses_.begin()),
+          std::min(num_learned_clauses, target_number_of_learned_clauses_));
 
   // Delete all the learned clause after 'first_clause_to_delete'.
   for (int i = first_clause_to_delete; i < num_learned_clauses; ++i) {

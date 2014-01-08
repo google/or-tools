@@ -157,9 +157,9 @@ class MPVariable;
 // The new MP protocol buffer format. New clients that want to work with
 // protocol buffers should use this.
 namespace new_proto {
-  class MPModelProto;
-  class MPModelRequest;
-  class MPSolutionResponse;
+class MPModelProto;
+class MPModelRequest;
+class MPSolutionResponse;
 }  // namespace new_proto
 
 // This mathematical programming (MP) solver class is the main class
@@ -247,28 +247,16 @@ class MPSolver {
   // created, the function crashes in non-opt mode.
   // @param name the prefix of the variable names. Variables are named
   // name0, name1, ...
-  void MakeVarArray(int nb,
-                    double lb,
-                    double ub,
-                    bool integer,
-                    const std::string& name_prefix,
-                    std::vector<MPVariable*>* vars);
+  void MakeVarArray(int nb, double lb, double ub, bool integer,
+                    const std::string& name_prefix, std::vector<MPVariable*>* vars);
   // Creates an array of continuous variables.
-  void MakeNumVarArray(int nb,
-                       double lb,
-                       double ub,
-                       const std::string& name,
+  void MakeNumVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of integer variables.
-  void MakeIntVarArray(int nb,
-                       double lb,
-                       double ub,
-                       const std::string& name,
+  void MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of boolean variables.
-  void MakeBoolVarArray(int nb,
-                        const std::string& name,
-                        std::vector<MPVariable*>* vars);
+  void MakeBoolVarArray(int nb, const std::string& name, std::vector<MPVariable*>* vars);
 
   // ----- Constraints -----
   // Returns the number of constraints.
@@ -347,7 +335,7 @@ class MPSolver {
 
   // The status of loading the problem from a protocol buffer.
   enum LoadStatus {
-    NO_ERROR = 0,               // no error has been encountered.
+    NO_ERROR = 0,  // no error has been encountered.
     // Skip value '1' to stay consistent with the .proto.
     DUPLICATE_VARIABLE_ID = 2,  // error: two variables have the same id.
     UNKNOWN_VARIABLE_ID = 3,    // error: a variable has an unknown id.
@@ -367,9 +355,8 @@ class MPSolver {
   // end. If you want to keep the MPSolver alive (for debugging, or for
   // incremental solving), you should write another version of this function
   // that creates the MPSolver object on the heap and returns it.
-  static void SolveWithProto(
-      const new_proto::MPModelRequest& model_request,
-      new_proto::MPSolutionResponse* response);
+  static void SolveWithProto(const new_proto::MPModelRequest& model_request,
+                             new_proto::MPSolutionResponse* response);
 
   // Exports model to protocol buffer.
   // TODO(user): rename to ExportModelToProto when possible.
@@ -405,16 +392,15 @@ class MPSolver {
   // Note: the variable and objective values aren't checked. You can use
   // VerifySolution() for that.
   // TODO(user): rename to LoadSolutionFromProto when possible.
-  bool LoadSolutionFromNewProto(
-      const new_proto::MPSolutionResponse& response);
+  bool LoadSolutionFromNewProto(const new_proto::MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
 
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
   // exporting to a MPModelProto with ExportModelToNewProto() (see above).
   bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
-  bool ExportModelAsMpsFormat(
-      bool fixed_format, bool obfuscated, std::string* model_str);
+  bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
+                              std::string* model_str);
 
   // ----- Misc -----
 
@@ -438,9 +424,7 @@ class MPSolver {
   };
 
   // Infinity. You can use -MPSolver::infinity() for negative infinity.
-  static double infinity() {
-    return std::numeric_limits<double>::infinity();
-  }
+  static double infinity() { return std::numeric_limits<double>::infinity(); }
 
   // Suppresses all output from the underlying solver.
   void SuppressOutput();
@@ -457,9 +441,7 @@ class MPSolver {
   }
 
   // In milliseconds.
-  int64 time_limit() const {
-    return time_limit_;
-  }
+  int64 time_limit() const { return time_limit_; }
 
   // In seconds. Note that this returns a double.
   double time_limit_in_secs() const {
@@ -468,11 +450,8 @@ class MPSolver {
     return static_cast<double>(time_limit_) / 1000.0;
   }
 
-
   // Returns wall_time() in milliseconds since the creation of the solver.
-  int64 wall_time() const {
-    return timer_.GetInMs();
-  }
+  int64 wall_time() const { return timer_.GetInMs(); }
 
   // Returns the number of simplex iterations.
   int64 iterations() const;
@@ -608,10 +587,11 @@ class MPSolver {
 class CoeffMap : public hash_map<const MPVariable*, double> {
  public:
   explicit CoeffMap(int num_buckets)
-    #if !defined(_MSC_VER)   // Visual C++ doesn't support this constructor
-    : hash_map<const MPVariable*, double>(num_buckets)
-    #endif  // _MSC_VER
-    { }
+#if !defined(_MSC_VER)  // Visual C++ doesn't support this constructor
+      : hash_map<const MPVariable*, double>(num_buckets)
+#endif  // _MSC_VER
+  {
+  }
 };
 #endif  // SWIG
 
@@ -754,8 +734,14 @@ class MPVariable {
   // several models.
   MPVariable(double lb, double ub, bool integer, const std::string& name,
              MPSolverInterface* const interface)
-      : lb_(lb), ub_(ub), integer_(integer), name_(name), index_(-1),
-        solution_value_(0.0), reduced_cost_(0.0), interface_(interface) {}
+      : lb_(lb),
+        ub_(ub),
+        integer_(integer),
+        name_(name),
+        index_(-1),
+        solution_value_(0.0),
+        reduced_cost_(0.0),
+        interface_(interface) {}
 
   void set_index(int index) { index_ = index; }
   void set_solution_value(double value) { solution_value_ = value; }
@@ -844,12 +830,17 @@ class MPConstraint {
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
   // to several models.
-  MPConstraint(double lb,
-               double ub,
-               const std::string& name,
+  MPConstraint(double lb, double ub, const std::string& name,
                MPSolverInterface* const interface)
-      : coefficients_(1), lb_(lb), ub_(ub), name_(name), is_lazy_(false),
-        index_(-1), dual_value_(0.0), activity_(0.0), interface_(interface) {}
+      : coefficients_(1),
+        lb_(lb),
+        ub_(ub),
+        name_(name),
+        is_lazy_(false),
+        index_(-1),
+        dual_value_(0.0),
+        activity_(0.0),
+        interface_(interface) {}
 
   void set_index(int index) { index_ = index; }
   void set_activity(double activity) { activity_ = activity; }
@@ -882,8 +873,6 @@ class MPConstraint {
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
-
-
 
 // This class stores parameter settings for LP and MIP solvers.
 // Some parameters are marked as advanced: do not change their values
@@ -943,9 +932,9 @@ class MPSolverParameters {
   };
 
   enum LpAlgorithmValues {
-    DUAL = 10,      // Dual simplex.
-    PRIMAL = 11,    // Primal simplex.
-    BARRIER = 12    // Barrier algorithm.
+    DUAL = 10,    // Dual simplex.
+    PRIMAL = 11,  // Primal simplex.
+    BARRIER = 12  // Barrier algorithm.
   };
 
   enum IncrementalityValues {
@@ -1010,7 +999,7 @@ class MPSolverParameters {
   // Returns the value of a parameter.
   double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
-  // @}
+// @}
 
 
  private:
@@ -1035,7 +1024,6 @@ class MPSolverParameters {
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
-
 
 // This class wraps the actual mathematical programming solvers. Each
 // solver (CLP, CBC, GLPK, SCIP) has its own interface class that
@@ -1104,8 +1092,7 @@ class MPSolverInterface {
   // Changes a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               const MPVariable* const variable,
-                              double new_value,
-                              double old_value) = 0;
+                              double new_value, double old_value) = 0;
 
   // Clears a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint) = 0;
@@ -1170,18 +1157,12 @@ class MPSolverInterface {
   virtual bool IsMIP() const = 0;
 
   // Returns the index of the last variable extracted.
-  int last_variable_index() const {
-    return last_variable_index_;
-  }
+  int last_variable_index() const { return last_variable_index_; }
 
   // Returns the boolean indicating the verbosity of the solver output.
-  bool quiet() const {
-    return quiet_;
-  }
+  bool quiet() const { return quiet_; }
   // Sets the boolean indicating the verbosity of the solver output.
-  void set_quiet(bool quiet_value) {
-    quiet_ = quiet_value;
-  }
+  void set_quiet(bool quiet_value) { quiet_ = quiet_value; }
 
   // Returns the result status of the last solve.
   MPSolver::ResultStatus result_status() const {

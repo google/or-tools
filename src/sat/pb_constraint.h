@@ -32,11 +32,11 @@ struct LiteralWithCoeff {
   Literal literal;
   Coefficient coefficient;
   bool operator==(const LiteralWithCoeff& other) const {
-    return literal.Index() == other.literal.Index()
-        && coefficient == other.coefficient;
+    return literal.Index() == other.literal.Index() &&
+           coefficient == other.coefficient;
   }
 };
-inline std::ostream &operator<<(std::ostream &os, LiteralWithCoeff term) {
+inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
   os << term.coefficient << "[" << term.literal.DebugString() << "]";
   return os;
 }
@@ -57,8 +57,7 @@ inline std::ostream &operator<<(std::ostream &os, LiteralWithCoeff term) {
 //
 // Finaly, this will return false, if some integer overflow or underflow occured
 // during the reduction to the cannonical form.
-bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst,
-                      Coefficient* bound_shift,
+bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
                       Coefficient* max_value);
 
 // Returns true iff the linear constraint is in cannonical form.
@@ -104,8 +103,8 @@ class UpperBoundedLinearConstraint {
   //   trail index are not yet "processed".
   //
   // The slack is updated to its new value.
-  bool Propagate(int trail_index, Coefficient* slack,
-                 Trail* trail, std::vector<Literal>* conflict);
+  bool Propagate(int trail_index, Coefficient* slack, Trail* trail,
+                 std::vector<Literal>* conflict);
 
   // Updates the given slack and the internal state.
   // This is the opposite of Propagate(). Each time a literal in unassigned,
@@ -131,8 +130,7 @@ class UpperBoundedLinearConstraint {
   // information. For instance one could use the mask of literals that are
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
-  void FillReason(const Trail& trail,
-                  int source_trail_index,
+  void FillReason(const Trail& trail, int source_trail_index,
                   std::vector<Literal>* reason);
 
  private:
@@ -164,11 +162,12 @@ class UpperBoundedLinearConstraint {
 // propagation.
 class PbConstraints {
  public:
-  explicit PbConstraints(Trail* trail) : trail_(trail),
-                                         propagation_trail_index_(0),
-                                         stats_("PbConstraints"),
-                                         num_constraint_lookups_(0),
-                                         num_slack_updates_(0) {}
+  explicit PbConstraints(Trail* trail)
+      : trail_(trail),
+        propagation_trail_index_(0),
+        stats_("PbConstraints"),
+        num_constraint_lookups_(0),
+        num_slack_updates_(0) {}
   ~PbConstraints() {
     IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
     LOG(INFO) << "num_constraint_lookups_: " << num_constraint_lookups_;
@@ -204,8 +203,8 @@ class PbConstraints {
     SCOPED_TIME_STAT(&stats_);
     const AssignmentInfo& info = trail_->Info(var);
     DCHECK_EQ(info.type, AssignmentInfo::PB_PROPAGATION);
-    info.pb_constraint->FillReason(
-        *trail_, info.source_trail_index, &reason_scratchpad_);
+    info.pb_constraint->FillReason(*trail_, info.source_trail_index,
+                                   &reason_scratchpad_);
     return reason_scratchpad_;
   }
 
@@ -215,7 +214,7 @@ class PbConstraints {
   DEFINE_INT_TYPE(ConstraintIndex, int32);
   struct ConstraintIndexWithCoeff {
     ConstraintIndexWithCoeff(ConstraintIndex i, Coefficient c)
-      : need_untrail_inspection(false), index(i), coefficient(c) {}
+        : need_untrail_inspection(false), index(i), coefficient(c) {}
     bool need_untrail_inspection;
     ConstraintIndex index;
     Coefficient coefficient;

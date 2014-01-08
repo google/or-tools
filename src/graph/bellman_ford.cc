@@ -23,8 +23,7 @@ class BellmanFord {
  public:
   static const int64 kInfinity = kint64max / 2;
 
-  BellmanFord(int node_count,
-              int start_node,
+  BellmanFord(int node_count, int start_node,
               ResultCallback2<int64, int, int>* const graph,
               int64 disconnected_distance)
       : node_count_(node_count),
@@ -112,12 +111,9 @@ bool BellmanFord::ShortestPath(int end_node, std::vector<int>* nodes) {
   return true;
 }
 
-bool BellmanFordShortestPath(int node_count,
-                             int start_node,
-                             int end_node,
+bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                              ResultCallback2<int64, int, int>* const graph,
-                             int64 disconnected_distance,
-                             std::vector<int>* nodes) {
+                             int64 disconnected_distance, std::vector<int>* nodes) {
   BellmanFord bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }

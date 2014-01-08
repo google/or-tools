@@ -28,14 +28,14 @@
 #include "constraint_solver/constraint_solver.h"
 
 DEFINE_string(
-    data_file,
-    "",
+    data_file, "",
     "Required: input file description the muldi-dimensional knapsack problem\n "
     "to solve. It supports two file format as described in:\n"
     "  - http://elib.zib.de/pub/Packages/mp-testdata/ip/sac94-suite/readme\n"
     "  - http://hces.bus.olemiss.edu/tools.html\n");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
-DEFINE_int32(simplex_frequency, 0, "Number of nodes explored between each"
+DEFINE_int32(simplex_frequency, 0,
+             "Number of nodes explored between each"
              " call to the simplex optimizer.");
 DEFINE_bool(display_search_log, true, "Display search log.");
 
@@ -46,16 +46,20 @@ namespace operations_research {
 class MultiDimKnapsackData {
  public:
   MultiDimKnapsackData()
-      : name_(""), line_read_(0), mode_(0), num_dims_(-1), num_items_(-1),
-        current_bin_(0), current_item_(0), optimal_value_(0),
+      : name_(""),
+        line_read_(0),
+        mode_(0),
+        num_dims_(-1),
+        num_items_(-1),
+        current_bin_(0),
+        current_item_(0),
+        optimal_value_(0),
         problem_type_(-1) {}
-
 
   void Load(const std::string& filename) {
     FileLineReader reader(filename.c_str());
-    reader.set_line_callback(NewPermanentCallback(
-        this,
-        &MultiDimKnapsackData::ProcessNewLine));
+    reader.set_line_callback(
+        NewPermanentCallback(this, &MultiDimKnapsackData::ProcessNewLine));
     reader.Reload();
     if (!reader.loaded_successfully()) {
       LOG(ERROR) << "Could not open multi dimensional knapsack file";
@@ -168,9 +172,7 @@ class MultiDimKnapsackData {
           }
           break;
         }
-        case 6: {
-          break;
-        }
+        case 6: { break; }
       }
     } else {
       // 0 = init
@@ -292,15 +294,12 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
     monitors.push_back(search_log);
   }
   DecisionBuilder* const db =
-      solver.MakePhase(assign,
-                       NewPermanentCallback(&EvaluateItem, data),
+      solver.MakePhase(assign, NewPermanentCallback(&EvaluateItem, data),
                        Solver::CHOOSE_STATIC_GLOBAL_BEST);
   if (FLAGS_time_limit_in_ms != 0) {
     LOG(INFO) << "adding time limit of " << FLAGS_time_limit_in_ms << " ms";
-    SearchLimit* const limit = solver.MakeLimit(FLAGS_time_limit_in_ms,
-                                                kint64max,
-                                                kint64max,
-                                                kint64max);
+    SearchLimit* const limit = solver.MakeLimit(
+        FLAGS_time_limit_in_ms, kint64max, kint64max, kint64max);
     monitors.push_back(limit);
   }
 
@@ -320,7 +319,7 @@ static const char kUsage[] =
     "Usage: see flags.\n"
     "This program runs a multi-dimensional knapsack problem.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {

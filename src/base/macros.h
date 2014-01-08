@@ -23,7 +23,9 @@
 // The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through
 // between switch labels.
 #ifndef FALLTHROUGH_INTENDED
-#define FALLTHROUGH_INTENDED do { } while (0)
+#define FALLTHROUGH_INTENDED \
+  do {                       \
+  } while (0)
 #endif
 
 #endif  // OR_TOOLS_BASE_MACROS_H_

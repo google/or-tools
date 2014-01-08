@@ -268,18 +268,18 @@ std::string GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugStri
   // ReducedCost fails.
   const CostValue reduced_cost = scaled_arc_unit_cost_[arc] +
                                  node_potential_[tail] - node_potential_[head];
-  return StringPrintf("%s Arc %d, from %d to %d, "
-                      "Capacity = %lld, Residual capacity = %lld, "
-                      "Flow = residual capacity for reverse arc = %lld, "
-                      "Height(tail) = %lld, Height(head) = %lld, "
-                      "Excess(tail) = %lld, Excess(head) = %lld, "
-                      "Cost = %lld, Reduced cost = %lld, ",
-                      context.c_str(), arc, tail, head, Capacity(arc),
-                      static_cast<FlowQuantity>(residual_arc_capacity_[arc]),
-                      Flow(arc), node_potential_[tail], node_potential_[head],
-                      node_excess_[tail], node_excess_[head],
-                      static_cast<CostValue>(scaled_arc_unit_cost_[arc]),
-                      reduced_cost);
+  return StringPrintf(
+      "%s Arc %d, from %d to %d, "
+      "Capacity = %lld, Residual capacity = %lld, "
+      "Flow = residual capacity for reverse arc = %lld, "
+      "Height(tail) = %lld, Height(head) = %lld, "
+      "Excess(tail) = %lld, Excess(head) = %lld, "
+      "Cost = %lld, Reduced cost = %lld, ",
+      context.c_str(), arc, tail, head, Capacity(arc),
+      static_cast<FlowQuantity>(residual_arc_capacity_[arc]), Flow(arc),
+      node_potential_[tail], node_potential_[head], node_excess_[tail],
+      node_excess_[head], static_cast<CostValue>(scaled_arc_unit_cost_[arc]),
+      reduced_cost);
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
@@ -421,16 +421,16 @@ FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Supply(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::InitialSupply(
-    NodeIndex node) const {
+FlowQuantity GenericMinCostFlow<
+    Graph, ArcFlowType, ArcScaledCostType>::InitialSupply(NodeIndex node)
+    const {
   return initial_node_excess_[node];
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FeasibleSupply(
-    NodeIndex node) const {
+FlowQuantity GenericMinCostFlow<
+    Graph, ArcFlowType, ArcScaledCostType>::FeasibleSupply(NodeIndex node)
+    const {
   return feasible_node_excess_[node];
 }
 
@@ -972,8 +972,8 @@ template class GenericMinCostFlow<ReverseArcStaticGraph<uint16, int32> >;
 
 // A more memory-efficient version for large graphs.
 template class GenericMinCostFlow<ReverseArcStaticGraph<uint16, int32>,
-                                  /*ArcFlowType=*/ int16,
-                                  /*ArcScaledCostType=*/ int32>;
+                                  /*ArcFlowType=*/int16,
+                                  /*ArcScaledCostType=*/int32>;
 
 SimpleMinCostFlow::SimpleMinCostFlow() {}
 

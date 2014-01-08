@@ -19,7 +19,7 @@ namespace {
 
 // Returns false if the addition overflow/underflow. Otherwise returns true
 // and performs the addition *b += a;
-bool SafeAdd(Coefficient a, Coefficient *b) {
+bool SafeAdd(Coefficient a, Coefficient* b) {
   if (a > 0) {
     if (*b > std::numeric_limits<Coefficient>::max() - a) return false;
   } else {
@@ -42,8 +42,7 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 
 }  // namespace
 
-bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst,
-                      Coefficient* bound_shift,
+bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
                       Coefficient* max_value) {
   *bound_shift = 0;
   *max_value = 0;
@@ -56,15 +55,15 @@ bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst,
   for (int i = 0; i < cst->size(); ++i) {
     const LiteralWithCoeff current = (*cst)[i];
     if (current.coefficient == 0) continue;
-    if (representative != nullptr
-        && current.literal.Variable() == representative->literal.Variable()) {
+    if (representative != nullptr &&
+        current.literal.Variable() == representative->literal.Variable()) {
       if (current.literal == representative->literal) {
-        if (!SafeAdd(current.coefficient,
-                     &(representative->coefficient))) return false;
+        if (!SafeAdd(current.coefficient, &(representative->coefficient)))
+          return false;
       } else {
         // Here current_literal is equal to (1 - representative).
-        if (!SafeAdd(-current.coefficient,
-                     &(representative->coefficient))) return false;
+        if (!SafeAdd(-current.coefficient, &(representative->coefficient)))
+          return false;
         if (!SafeAdd(-current.coefficient, bound_shift)) return false;
       }
     } else {
@@ -143,8 +142,10 @@ bool UpperBoundedLinearConstraint::HasIdenticalTerms(
 }
 
 bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
-    int trail_index, Coefficient* slack, Trail* trail,
-    std::vector<Literal>* conflict) {
+                                                 int trail_index,
+                                                 Coefficient* slack,
+                                                 Trail* trail,
+                                                 std::vector<Literal>* conflict) {
   rhs_ = rhs;
 
   // Compute the current_rhs from the assigned variables with a trail index
@@ -159,7 +160,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
     }
     ++literal_index;
     if (literal_index == starts_[coeff_index + 1]) {
-     ++coeff_index;
+      ++coeff_index;
     }
   }
 
@@ -171,7 +172,8 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
 }
 
 bool UpperBoundedLinearConstraint::Propagate(int trail_index,
-    Coefficient* slack, Trail* trail, std::vector<Literal>* conflict) {
+                                             Coefficient* slack, Trail* trail,
+                                             std::vector<Literal>* conflict) {
   DCHECK_LT(*slack, 0);
   const Coefficient current_rhs = GetCurrentRhsFromSlack(*slack);
   while (index_ >= 0 && coeffs_[index_] > current_rhs) --index_;
@@ -199,6 +201,13 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
 void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
                                               int source_trail_index,
                                               std::vector<Literal>* reason) {
+  // Optimization for an "at most one" constraint.
+  if (rhs_ == 1) {
+    reason->clear();
+    reason->push_back(trail[source_trail_index].Negated());
+    return;
+  }
+
   // Compute the initial reason which is formed by all the literals of the
   // constraint that were assigned to true at the time of the propagation.
   // We remove literals with a level of 0 since they are not needed.
@@ -228,8 +237,8 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
   for (int i = literals_.size() - 1; i >= 0; --i) {
     if (coeffs_[coeff_index] <= current_rhs) break;
     const Literal literal = literals_[i];
-    if (!trail.Assignment().IsVariableAssigned(literal.Variable())
-        || trail.Info(literal.Variable()).trail_index > source_trail_index) {
+    if (!trail.Assignment().IsVariableAssigned(literal.Variable()) ||
+        trail.Info(literal.Variable()).trail_index > source_trail_index) {
       coeff = coeffs_[coeff_index];
     }
     if (i == starts_[coeff_index]) --coeff_index;
@@ -258,15 +267,15 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
 
 void UpperBoundedLinearConstraint::Untrail(Coefficient* slack) {
   const Coefficient current_rhs = GetCurrentRhsFromSlack(*slack);
-  while (index_ + 1 < coeffs_.size()
-      && coeffs_[index_ + 1] <= current_rhs) ++index_;
+  while (index_ + 1 < coeffs_.size() && coeffs_[index_ + 1] <= current_rhs)
+    ++index_;
   Update(current_rhs, slack);
 }
 
 // TODO(user): This is relatively slow. Take the "transpose" all at once, and
 // maybe put small constraints first on the to_update_ lists.
-bool PbConstraints::AddConstraint(
-    const std::vector<LiteralWithCoeff>& cst, Coefficient rhs) {
+bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
+                                  Coefficient rhs) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
@@ -276,7 +285,8 @@ bool PbConstraints::AddConstraint(
   if (!constraints_.empty() && constraints_.back().HasIdenticalTerms(cst)) {
     if (rhs < constraints_.back().Rhs()) {
       return constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
-          &slacks_.back(), trail_, &reason_scratchpad_);
+                                               &slacks_.back(), trail_,
+                                               &reason_scratchpad_);
     } else {
       // The constraint is redundant, so there is nothing to do.
       return true;
@@ -287,12 +297,13 @@ bool PbConstraints::AddConstraint(
   constraints_.emplace_back(UpperBoundedLinearConstraint(cst));
   slacks_.push_back(0);
   if (!constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
-      &slacks_.back(), trail_, &reason_scratchpad_)) {
+                                         &slacks_.back(), trail_,
+                                         &reason_scratchpad_)) {
     return false;
   }
   for (LiteralWithCoeff term : cst) {
-    to_update_[term.literal.Index()].push_back(
-        ConstraintIndexWithCoeff(cst_index, term.coefficient));
+    to_update_[term.literal.Index()]
+        .push_back(ConstraintIndexWithCoeff(cst_index, term.coefficient));
   }
   return true;
 }
@@ -318,7 +329,7 @@ bool PbConstraints::PropagateNext() {
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
       if (!constraints_[update.index.value()].Propagate(
-          order, &slacks_[update.index], trail_, &reason_scratchpad_)) {
+               order, &slacks_[update.index], trail_, &reason_scratchpad_)) {
         trail_->SetFailingClause(ClauseRef(reason_scratchpad_));
         conflict = true;
       }

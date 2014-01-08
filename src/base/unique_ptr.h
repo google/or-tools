@@ -36,12 +36,14 @@ class unique_ptr {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized unique_ptr.
   // The input parameter must be allocated with new.
-  explicit unique_ptr(C* p = NULL) : ptr_(p) { }
+  explicit unique_ptr(C* p = NULL) : ptr_(p) {}
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
   ~unique_ptr() {
-    enum { type_must_be_complete = sizeof(C) };
+    enum {
+      type_must_be_complete = sizeof(C)
+    };
     delete ptr_;
   }
 
@@ -50,7 +52,9 @@ class unique_ptr {
   // this->reset(this->get()) works.
   void reset(C* p = NULL) {
     if (p != ptr_) {
-      enum { type_must_be_complete = sizeof(C) };
+      enum {
+        type_must_be_complete = sizeof(C)
+      };
       delete ptr_;
       ptr_ = p;
     }
@@ -62,7 +66,7 @@ class unique_ptr {
     assert(ptr_ != NULL);
     return *ptr_;
   }
-  C* operator->() const  {
+  C* operator->() const {
     assert(ptr_ != NULL);
     return ptr_;
   }
@@ -98,8 +102,10 @@ class unique_ptr {
   // Forbid comparison of unique_ptr types.  If C2 != C, it totally doesn't
   // make sense, and if C2 == C, it still doesn't make sense because you should
   // never have the same object owned by two different unique_ptrs.
-  template <class C2> bool operator==(unique_ptr<C2> const& p2) const;
-  template <class C2> bool operator!=(unique_ptr<C2> const& p2) const;
+  template <class C2>
+  bool operator==(unique_ptr<C2> const& p2) const;
+  template <class C2>
+  bool operator!=(unique_ptr<C2> const& p2) const;
 
   DISALLOW_COPY_AND_ASSIGN(unique_ptr);
 };
@@ -136,13 +142,15 @@ class unique_ptr<C[]> {
   // Constructor.  Defaults to intializing with NULL.
   // There is no way to create an uninitialized unique_ptr.
   // The input parameter must be allocated with new.
-  explicit unique_ptr(C* p = NULL) : ptr_(p) { }
+  explicit unique_ptr(C* p = NULL) : ptr_(p) {}
 
   // Destructor.  If there is a C object, delete it.
   // We don't need to test ptr_ == NULL because C++ does that for us.
   ~unique_ptr() {
-    enum { type_must_be_complete = sizeof(C) };
-    delete [] ptr_;
+    enum {
+      type_must_be_complete = sizeof(C)
+    };
+    delete[] ptr_;
   }
 
   // Reset.  Deletes the current owned object, if any.
@@ -150,15 +158,17 @@ class unique_ptr<C[]> {
   // this->reset(this->get()) works.
   void reset(C* p = NULL) {
     if (p != ptr_) {
-      enum { type_must_be_complete = sizeof(C) };
-      delete [] ptr_;
+      enum {
+        type_must_be_complete = sizeof(C)
+      };
+      delete[] ptr_;
       ptr_ = p;
     }
   }
 
   // Accessors to get the owned object.
   // operator[] and operator-> will assert() if there is no current object.
-  C& operator[] (size_t i) const {
+  C& operator[](size_t i) const {
     assert(ptr_ != NULL);
     return ptr_[i];
   }

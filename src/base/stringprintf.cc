@@ -20,9 +20,7 @@
 
 namespace operations_research {
 
-void StringAppendV(std::string* const dst,
-                   const char* const format,
-                   va_list ap) {
+void StringAppendV(std::string* const dst, const char* const format, va_list ap) {
   // First try with a small fixed size buffer
   char space[1024];
 
@@ -52,13 +50,13 @@ void StringAppendV(std::string* const dst,
       length *= 2;
     } else {
       // We need exactly "result+1" characters
-      length = result+1;
+      length = result + 1;
     }
     char* const buf = new char[length];
 
-    // Restore the va_list before we use it again
+// Restore the va_list before we use it again
 #if defined(_MSC_VER)
-  backup_ap = ap;
+    backup_ap = ap;
 #else
     va_copy(backup_ap, ap);
 #endif

@@ -61,9 +61,7 @@ class HungarianOptimizer {
   void FindAssignments(std::vector<int>* agent, std::vector<int>* task);
 
   // Is the cell (row, col) starred?
-  bool IsStarred(int row, int col) const {
-    return marks_[row][col] == STAR;
-  }
+  bool IsStarred(int row, int col) const { return marks_[row][col] == STAR; }
 
   // Mark cell (row, col) with a star
   void Star(int row, int col) {
@@ -86,14 +84,10 @@ class HungarianOptimizer {
   int FindStarInCol(int col) const;
 
   // Is cell (row, col) marked with a prime?
-  bool IsPrimed(int row, int col) const {
-    return marks_[row][col] == PRIME;
-  }
+  bool IsPrimed(int row, int col) const { return marks_[row][col] == PRIME; }
 
   // Mark cell (row, col) with a prime.
-  void Prime(int row, int col) {
-    marks_[row][col] = PRIME;
-  }
+  void Prime(int row, int col) { marks_[row][col] = PRIME; }
 
   // Find a column in row containing a prime, or return
   // kHungarianOptimizerColNotFound if no such column exists.
@@ -103,39 +97,25 @@ class HungarianOptimizer {
   void ClearPrimes();
 
   // Does column col contain a star?
-  bool ColContainsStar(int col) const {
-    return stars_in_col_[col] > 0;
-  }
+  bool ColContainsStar(int col) const { return stars_in_col_[col] > 0; }
 
   // Is row 'row' covered?
-  bool RowCovered(int row) const {
-    return rows_covered_[row];
-  }
+  bool RowCovered(int row) const { return rows_covered_[row]; }
 
   // Cover row 'row'.
-  void CoverRow(int row) {
-    rows_covered_[row] = true;
-  }
+  void CoverRow(int row) { rows_covered_[row] = true; }
 
   // Uncover row 'row'.
-  void UncoverRow(int row) {
-    rows_covered_[row] = false;
-  }
+  void UncoverRow(int row) { rows_covered_[row] = false; }
 
   // Is column col covered?
-  bool ColCovered(int col) const {
-    return cols_covered_[col];
-  }
+  bool ColCovered(int col) const { return cols_covered_[col]; }
 
   // Cover column col.
-  void CoverCol(int col) {
-    cols_covered_[col] = true;
-  }
+  void CoverCol(int col) { cols_covered_[col] = true; }
 
   // Uncover column col.
-  void UncoverCol(int col) {
-    cols_covered_[col] = false;
-  }
+  void UncoverCol(int col) { cols_covered_[col] = false; }
 
   // Uncover ever row and column in the matrix.
   void ClearCovers();
@@ -215,8 +195,8 @@ class HungarianOptimizer {
   std::vector<int> stars_in_col_;
 
   // Representation of a path_ through the matrix - used in step 5.
-  std::vector<int> preimage_;   // i.e. the agents
-  std::vector<int> image_;      // i.e. the tasks
+  std::vector<int> preimage_;  // i.e. the agents
+  std::vector<int> image_;     // i.e. the tasks
 
   // The locations of a zero found in step 4.
   int zero_col_, zero_row_;
@@ -280,7 +260,7 @@ HungarianOptimizer::HungarianOptimizer(const std::vector<std::vector<double> >& 
   for (int row = 0; row < matrix_size_; ++row) {
     marks_[row].resize(matrix_size_);
     for (int col = 0; col < matrix_size_; ++col) {
-      marks_[row][col]=NONE;
+      marks_[row][col] = NONE;
     }
   }
 
@@ -306,7 +286,6 @@ void HungarianOptimizer::Maximize(std::vector<int>* preimage, std::vector<int>* 
   }
   Minimize(preimage, image);
 }
-
 
 // Find an assignment which minimizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
@@ -615,7 +594,7 @@ void HungarianOptimizer::MakeAugmentingPath() {
     if (row != kHungarianOptimizerRowNotFound) {
       count++;
       preimage_[count] = row;
-      image_[count] = image_[count-1];
+      image_[count] = image_[count - 1];
     } else {
       done = true;
     }
@@ -623,7 +602,7 @@ void HungarianOptimizer::MakeAugmentingPath() {
     if (!done) {
       int col = FindPrimeInRow(preimage_[count]);
       count++;
-      preimage_[count] = preimage_[count-1];
+      preimage_[count] = preimage_[count - 1];
       image_[count] = col;
     }
   }
@@ -666,7 +645,6 @@ void HungarianOptimizer::AugmentPath() {
 
   state_ = &HungarianOptimizer::PrimeZeroes;
 }
-
 
 void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,

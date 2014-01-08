@@ -91,12 +91,6 @@ Constraint* MakeBooleanSumInRange(Solver* const solver,
 Constraint* MakeBooleanSumOdd(Solver* const solver,
                               const std::vector<IntVar*>& variables);
 
-Constraint* MakeLexLess(Solver* const solver, const std::vector<IntVar*>& left,
-                        const std::vector<IntVar*>& right, bool strict);
-
-Constraint* MakeInverse(Solver* const solver, const std::vector<IntVar*>& left,
-                        const std::vector<IntVar*>& right);
-
 Constraint* MakeVariableCumulative(Solver* const solver,
                                    const std::vector<IntVar*>& starts,
                                    const std::vector<IntVar*>& durations,

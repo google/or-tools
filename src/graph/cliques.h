@@ -28,8 +28,10 @@
 #include "base/callback.h"
 #include "base/scoped_ptr.h"
 
-template <class R, class A1, class A2> class ResultCallback2;
-template <class R, class A1> class ResultCallback1;
+template <class R, class A1, class A2>
+class ResultCallback2;
+template <class R, class A1>
+class ResultCallback1;
 
 namespace operations_research {
 
@@ -38,8 +40,7 @@ namespace operations_research {
 // if there is an arc between i and j.
 // This function takes ownership of 'callback' and deletes it after it has run.
 // If 'callback' returns true, then the search for cliques stops.
-void FindCliques(ResultCallback2<bool, int, int>* const graph,
-                 int node_count,
+void FindCliques(ResultCallback2<bool, int, int>* const graph, int node_count,
                  ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 // Covers the maximum number of arcs of the graph with cliques. The graph
@@ -49,8 +50,7 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
 // It calls 'callback' upon each clique.
 // It ignores cliques of size 1.
 void CoverArcsByCliques(
-    ResultCallback2<bool, int, int>* const graph,
-    int node_count,
+    ResultCallback2<bool, int, int>* const graph, int node_count,
     ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 }  // namespace operations_research

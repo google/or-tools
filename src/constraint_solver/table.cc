@@ -1232,12 +1232,10 @@ class TransitionConstraint : public Constraint {
     int64 state_max = kint64min;
     const int nb_vars = vars_.size();
     for (int i = 0; i < transition_table_.NumTuples(); ++i) {
-      state_max =
-          std::max(state_max, transition_table_.Value(i, kStatePosition));
+      state_max = std::max(state_max, transition_table_.Value(i, kStatePosition));
       state_max =
           std::max(state_max, transition_table_.Value(i, kNextStatePosition));
-      state_min =
-          std::min(state_min, transition_table_.Value(i, kStatePosition));
+      state_min = std::min(state_min, transition_table_.Value(i, kStatePosition));
       state_min =
           std::min(state_min, transition_table_.Value(i, kNextStatePosition));
     }
@@ -1284,8 +1282,7 @@ class TransitionConstraint : public Constraint {
     return StringPrintf(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
-        JoinDebugStringPtr(vars_, ", ").c_str(),
-        transition_table_.NumTuples(),
+        JoinDebugStringPtr(vars_, ", ").c_str(), transition_table_.NumTuples(),
         initial_state_, IntVectorToString(final_states_, ", ").c_str());
   }
 

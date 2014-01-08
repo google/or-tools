@@ -89,7 +89,8 @@ namespace operations_research {
 
 // Abstract base class template defining the interface needed by
 // PermutationApplier to handle a single cycle of a permutation.
-template <typename IndexType> class PermutationCycleHandler {
+template <typename IndexType>
+class PermutationCycleHandler {
  public:
   // Sets the internal temporary storage from the given index in the
   // underlying container(s).
@@ -127,10 +128,10 @@ template <typename IndexType> class PermutationCycleHandler {
     return false;
   }
 
-  virtual ~PermutationCycleHandler() { }
+  virtual ~PermutationCycleHandler() {}
 
  protected:
-  PermutationCycleHandler() { }
+  PermutationCycleHandler() {}
 
  private:
   DISALLOW_COPY_AND_ASSIGN(PermutationCycleHandler);
@@ -141,14 +142,12 @@ template <typename IndexType> class PermutationCycleHandler {
 // permutation is represented by a mutable array of nonnegative
 // int-typed index values. To mark a permutation element as seen, we
 // replace it by its ones-complement value.
-template <typename DataType, typename IndexType> class ArrayIndexCycleHandler
-    : public PermutationCycleHandler<IndexType> {
+template <typename DataType, typename IndexType>
+class ArrayIndexCycleHandler : public PermutationCycleHandler<IndexType> {
  public:
-  explicit ArrayIndexCycleHandler(DataType* data) : data_(data) { }
+  explicit ArrayIndexCycleHandler(DataType* data) : data_(data) {}
 
-  virtual void SetTempFromIndex(IndexType source) {
-    temp_ = data_[source];
-  }
+  virtual void SetTempFromIndex(IndexType source) { temp_ = data_[source]; }
   virtual void SetIndexFromIndex(IndexType source,
                                  IndexType destination) const {
     data_[destination] = data_[source];
@@ -156,7 +155,7 @@ template <typename DataType, typename IndexType> class ArrayIndexCycleHandler
   virtual void SetIndexFromTemp(IndexType destination) const {
     data_[destination] = temp_;
   }
-  virtual void SetSeen(IndexType *permutation_element) const {
+  virtual void SetSeen(IndexType* permutation_element) const {
     *permutation_element = -*permutation_element - 1;
   }
   virtual bool Unseen(IndexType permutation_element) const {
@@ -176,17 +175,15 @@ template <typename DataType, typename IndexType> class ArrayIndexCycleHandler
 // Note that this template is not implemented in an especially
 // performance-sensitive way. In particular, it makes multiple virtual
 // method calls for each element of the permutation.
-template <typename IndexType> class PermutationApplier {
+template <typename IndexType>
+class PermutationApplier {
  public:
-  explicit PermutationApplier(
-      PermutationCycleHandler<IndexType>* cycle_handler)
-      : cycle_handler_(cycle_handler) { }
+  explicit PermutationApplier(PermutationCycleHandler<IndexType>* cycle_handler)
+      : cycle_handler_(cycle_handler) {}
 
-  void Apply(IndexType permutation[],
-             int permutation_start,
+  void Apply(IndexType permutation[], int permutation_start,
              int permutation_end) {
-    for (IndexType current = permutation_start;
-         current < permutation_end;
+    for (IndexType current = permutation_start; current < permutation_end;
          ++current) {
       IndexType next = permutation[current];
       // cycle_start is only for debugging.

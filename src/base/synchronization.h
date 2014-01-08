@@ -21,7 +21,7 @@ namespace operations_research {
 class Barrier {
  public:
   explicit Barrier(int num_threads)
-  : num_to_block_(num_threads), num_to_exit_(num_threads) {}
+      : num_to_block_(num_threads), num_to_exit_(num_threads) {}
 
   bool Block() {
     MutexLock l(&this->lock_);
@@ -47,7 +47,7 @@ class Barrier {
   DISALLOW_COPY_AND_ASSIGN(Barrier);
 };
 
-template<class T, class TT>
+template <class T, class TT>
 inline T ThreadSafeIncrement(T* value, Mutex* sm, TT inc) {
   MutexLock l(sm);
   return (*value) += inc;

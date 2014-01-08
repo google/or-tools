@@ -151,4 +151,12 @@ message SatParameters {
   // try to follow the hint. It will revert to the variable_branching default
   // otherwise.
   optional bool use_optimization_hints = 35 [default = true];
+
+  // Maximum time allowed in seconds to solve a problem.
+  // The counter will starts as soon as Solve() is called.
+  optional double max_time_in_seconds = 36 [default = inf];
+
+  // Maximum number of conflicts allowed to solve a problem.
+  optional int64 max_number_of_conflicts = 37
+      [default = 0x7FFFFFFFFFFFFFFF];  // kint64max
 }

@@ -25,8 +25,10 @@ DECLARE_int32(log_level);
 DECLARE_bool(log_prefix);
 
 // Always-on checking
-#define CHECK(x) \
-  if (!(x)) LogMessageFatal(__FILE__, __LINE__).stream() << "Check failed: " #x
+#define CHECK(x)                                           \
+  if (!(x))                                                \
+  LogMessageFatal(__FILE__, __LINE__).stream() << "Check " \
+                                                  "failed: " #x
 #define CHECK_LT(x, y) CHECK((x) < (y))
 #define CHECK_GT(x, y) CHECK((x) > (y))
 #define CHECK_LE(x, y) CHECK((x) <= (y))
@@ -37,15 +39,22 @@ DECLARE_bool(log_prefix);
 
 // Debug-only checking.
 #ifdef NDEBUG
-#define DCHECK(x)       while (false) CHECK(x)
-#define DCHECK_LT(x, y) while (false) CHECK((x) < (y))
-#define DCHECK_GT(x, y) while (false) CHECK((x) > (y))
-#define DCHECK_LE(x, y) while (false) CHECK((x) <= (y))
-#define DCHECK_GE(x, y) while (false) CHECK((x) >= (y))
-#define DCHECK_EQ(x, y) while (false) CHECK((x) == (y))
-#define DCHECK_NE(x, y) while (false) CHECK((x) != (y))
+#define DCHECK(x) \
+  while (false) CHECK(x)
+#define DCHECK_LT(x, y) \
+  while (false) CHECK((x) < (y))
+#define DCHECK_GT(x, y) \
+  while (false) CHECK((x) > (y))
+#define DCHECK_LE(x, y) \
+  while (false) CHECK((x) <= (y))
+#define DCHECK_GE(x, y) \
+  while (false) CHECK((x) >= (y))
+#define DCHECK_EQ(x, y) \
+  while (false) CHECK((x) == (y))
+#define DCHECK_NE(x, y) \
+  while (false) CHECK((x) != (y))
 #else
-#define DCHECK(x)       CHECK(x)
+#define DCHECK(x) CHECK(x)
 #define DCHECK_LT(x, y) CHECK((x) < (y))
 #define DCHECK_GT(x, y) CHECK((x) > (y))
 #define DCHECK_LE(x, y) CHECK((x) <= (y))
@@ -60,20 +69,20 @@ DECLARE_bool(log_prefix);
 #define LOG_FATAL LogMessageFatal(__FILE__, __LINE__)
 #define LOG_QFATAL LOG_FATAL
 
-#define VLOG(x) if ((x) <= FLAGS_log_level) LOG_INFO.stream()
+#define VLOG(x) \
+  if ((x) <= FLAGS_log_level) LOG_INFO.stream()
 
-#define LOG(severity) LOG_ ## severity.stream()
+#define LOG(severity) LOG_##severity.stream()
 #define LG LOG_INFO.stream()
 #define LOG_IF(severity, condition) \
-  !(condition) ? (void) 0 : LogMessageVoidify() & LOG(severity)
+  !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)
 
 #ifdef NDEBUG
 #define LOG_DFATAL LOG_ERROR
 #define DFATAL ERROR
-#define DLOG(severity) \
-  true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+#define DLOG(severity) true ? (void)0 : LogMessageVoidify() & LOG(severity)
 #define DLOG_IF(severity, condition) \
-  (true || !(condition)) ? (void) 0 : LogMessageVoidify() & LOG(severity)
+  (true || !(condition)) ? (void)0 : LogMessageVoidify() & LOG(severity)
 #else
 #define LOG_DFATAL LOG_FATAL
 #define DFATAL FATAL
@@ -86,6 +95,7 @@ class DateLogger {
  public:
   DateLogger();
   char* const HumanDate();
+
  private:
   char buffer_[9];
 };
@@ -93,24 +103,25 @@ class DateLogger {
 
 class LogMessage {
  public:
-  LogMessage(const char* file, int line) :
+  LogMessage(const char* file, int line)
+      :
 #ifdef __ANDROID__
-    log_stream_(std::cout)
+        log_stream_(std::cout)
 #else
-    log_stream_(std::cerr)
+        log_stream_(std::cerr)
 #endif
   {
     if (FLAGS_log_prefix) {
-       log_stream_ << "[" << pretty_date_.HumanDate() << "] "
-                           << file << ":" << line << ": ";
+      log_stream_ << "[" << pretty_date_.HumanDate() << "] " << file << ":"
+                  << line << ": ";
     }
   }
-  ~LogMessage() {
-    log_stream_ << "\n";
-  }
+  ~LogMessage() { log_stream_ << "\n"; }
   std::ostream& stream() { return log_stream_; }
+
  protected:
   std::ostream& log_stream_;
+
  private:
   operations_research::DateLogger pretty_date_;
   DISALLOW_COPY_AND_ASSIGN(LogMessage);
@@ -118,12 +129,12 @@ class LogMessage {
 
 class LogMessageFatal : public LogMessage {
  public:
-  LogMessageFatal(const char* file, int line)
-    : LogMessage(file, line) { }
+  LogMessageFatal(const char* file, int line) : LogMessage(file, line) {}
   ~LogMessageFatal() {
     log_stream_ << "\n";
     abort();
   }
+
  private:
   DISALLOW_COPY_AND_ASSIGN(LogMessageFatal);
 };
@@ -133,10 +144,10 @@ class LogMessageFatal : public LogMessage {
 // is not used" and "statement has no effect".
 class LogMessageVoidify {
  public:
-  LogMessageVoidify() { }
+  LogMessageVoidify() {}
   // This has to be an operator with a precedence lower than << but
   // higher than "?:". See its usage.
-  void operator&(std::ostream&) { }
+  void operator&(std::ostream&) {}
 };
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_

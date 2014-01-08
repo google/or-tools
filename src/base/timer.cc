@@ -30,14 +30,14 @@ namespace operations_research {
 
 #if !defined(_MSC_VER)
 namespace {
-static inline int64 TimevalToUsec(const timeval &tv) {
+static inline int64 TimevalToUsec(const timeval& tv) {
   return static_cast<int64>(1000000) * tv.tv_sec + tv.tv_usec;
 }
 }  // namespace
 #endif
 
 WallTimer::WallTimer()
-  : start_usec_(0LL), sum_usec_(0LL), has_started_(false) {}
+    : start_usec_(0LL), sum_usec_(0LL), has_started_(false) {}
 
 void WallTimer::Start() {  // Just save when we started
 #if defined(_MSC_VER)
@@ -50,8 +50,8 @@ void WallTimer::Start() {  // Just save when we started
   has_started_ = true;
 }
 
-void WallTimer::Stop() {   // Update total time, 1st time it's called
-  if (has_started_) {           // so two Stop()s is safe
+void WallTimer::Stop() {  // Update total time, 1st time it's called
+  if (has_started_) {     // so two Stop()s is safe
 #if defined(_MSC_VER)
     sum_usec_ += clock() - start_usec_;
 #elif defined(__GNUC__)
@@ -75,21 +75,19 @@ void WallTimer::Restart() {
   Start();
 }
 
-bool WallTimer::IsRunning() const {
-  return has_started_;
-}
+bool WallTimer::IsRunning() const { return has_started_; }
 
 int64 WallTimer::GetInMs() const {
 #if defined(_MSC_VER)
   int64 local_sum_usec = sum_usec_;
-  if (has_started_) {           // need to include current time too
+  if (has_started_) {  // need to include current time too
     local_sum_usec += clock() - start_usec_;
   }
   return local_sum_usec;
 #elif defined(__GNUC__)
   static const int64 kMilliSecInMicroSec = 1000LL;
   int64 local_sum_usec = sum_usec_;
-  if (has_started_) {           // need to include current time too
+  if (has_started_) {  // need to include current time too
     struct timeval tv;
     gettimeofday(&tv, NULL);
     local_sum_usec += TimevalToUsec(tv) - start_usec_;
@@ -123,13 +121,11 @@ int64 WallTimer::GetTimeInMicroSeconds() {
   struct timespec current;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current);
   return current.tv_sec * kSecondInMicroSeconds +
-      current.tv_nsec / kMicroSecondsInNanoSeconds;
+         current.tv_nsec / kMicroSecondsInNanoSeconds;
 #endif
 }
 
-double WallTimer::Get() const {
-  return GetInMs() / 1000.0;
-}
+double WallTimer::Get() const { return GetInMs() / 1000.0; }
 // ----- CycleTimer -----
 
 CycleTimer::CycleTimer() : time_in_us_(0), state_(INIT) {}
@@ -171,8 +167,7 @@ int64 CycleTimer::GetInMs() const {
 }
 
 ScopedWallTime::ScopedWallTime(double* aggregate_time)
-    : aggregate_time_(aggregate_time),
-      timer_() {
+    : aggregate_time_(aggregate_time), timer_() {
   DCHECK(aggregate_time != NULL);
   timer_.Start();
 }

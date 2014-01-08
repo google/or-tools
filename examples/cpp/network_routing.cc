@@ -47,7 +47,8 @@
 #include "base/random.h"
 
 // ----- Data Generator -----
-DEFINE_int32(clients, 0, "Number of network clients nodes. If equal to zero, "
+DEFINE_int32(clients, 0,
+             "Number of network clients nodes. If equal to zero, "
              "then all backbones nodes are also client nodes.");
 DEFINE_int32(backbones, 0, "Number of backbone nodes");
 DEFINE_int32(demands, 0, "Number of network demands.");
@@ -69,7 +70,8 @@ DEFINE_int32(seed, 0, "Random seed");
 
 // ----- Reporting -----
 DEFINE_bool(print_model, false, "Print model.");
-DEFINE_int32(report, 1, "Report which links and which demands are "
+DEFINE_int32(report, 1,
+             "Report which links and which demands are "
              "responsible for the congestion.");
 DEFINE_int32(log_period, 100000, "Period for the search log");
 
@@ -102,10 +104,7 @@ static const int64 kDisconnectedDistance = -1LL;
 class NetworkRoutingData {
  public:
   NetworkRoutingData()
-      : name_(""),
-        num_nodes_(-1),
-        max_capacity_(-1),
-        fixed_charge_cost_(-1) {}
+      : name_(""), num_nodes_(-1), max_capacity_(-1), fixed_charge_cost_(-1) {}
 
   // Name of the problem.
   const std::string& name() const { return name_; }
@@ -120,23 +119,19 @@ class NetworkRoutingData {
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
     return FindWithDefault(all_arcs_,
-                           std::make_pair(std::min(node1, node2),
-                                     std::max(node1, node2)),
-                           0);
+                           std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
   }
 
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return FindWithDefault(all_demands_,
-                           std::make_pair(source, destination), 0);
+    return FindWithDefault(all_demands_, std::make_pair(source, destination), 0);
   }
 
   // External building API.
   void set_num_nodes(int num_nodes) { num_nodes_ = num_nodes; }
   void AddArc(int node1, int node2, int capacity) {
-    all_arcs_[std::make_pair(std::min(node1, node2),
-                        std::max(node1, node2))] = capacity;
+    all_arcs_[std::make_pair(std::min(node1, node2), std::max(node1, node2))] = capacity;
   }
   void AddDemand(int source, int destination, int traffic) {
     all_demands_[std::make_pair(source, destination)] = traffic;
@@ -176,25 +171,18 @@ class NetworkRoutingDataBuilder {
  public:
   NetworkRoutingDataBuilder() : random_(0) {}
 
-  void BuildModelFromParameters(int num_clients,
-                                int num_backbones,
-                                int num_demands,
-                                int traffic_min,
-                                int traffic_max,
-                                int min_client_degree,
-                                int max_client_degree,
-                                int min_backbone_degree,
-                                int max_backbone_degree,
-                                int max_capacity,
-                                int fixed_charge_cost,
-                                int seed,
+  void BuildModelFromParameters(int num_clients, int num_backbones,
+                                int num_demands, int traffic_min,
+                                int traffic_max, int min_client_degree,
+                                int max_client_degree, int min_backbone_degree,
+                                int max_backbone_degree, int max_capacity,
+                                int fixed_charge_cost, int seed,
                                 NetworkRoutingData* const data) {
     CHECK_GE(num_backbones, 1);
     CHECK_GE(num_clients, 0);
     CHECK_GE(num_demands, 1);
-    CHECK_LE(num_demands, num_clients == 0
-             ? num_backbones * num_backbones :
-             num_clients * num_backbones);
+    CHECK_LE(num_demands, num_clients == 0 ? num_backbones * num_backbones
+                                           : num_clients * num_backbones);
     CHECK_GE(max_client_degree, min_client_degree);
     CHECK_GE(max_backbone_degree, min_backbone_degree);
     CHECK_GE(traffic_max, 1);
@@ -208,31 +196,13 @@ class NetworkRoutingDataBuilder {
 
     const int size = num_backbones + num_clients;
     InitData(size, seed);
-    BuildGraph(num_clients,
-               num_backbones,
-               min_client_degree,
-               max_client_degree,
-               min_backbone_degree,
-               max_backbone_degree);
-    CreateDemands(num_clients,
-                  num_backbones,
-                  num_demands,
-                  traffic_min,
-                  traffic_max,
-                  data);
-    FillData(num_clients,
-             num_backbones,
-             num_demands,
-             traffic_min,
-             traffic_max,
-             min_client_degree,
-             max_client_degree,
-             min_backbone_degree,
-             max_backbone_degree,
-             max_capacity,
-             fixed_charge_cost,
-             seed,
-             data);
+    BuildGraph(num_clients, num_backbones, min_client_degree, max_client_degree,
+               min_backbone_degree, max_backbone_degree);
+    CreateDemands(num_clients, num_backbones, num_demands, traffic_min,
+                  traffic_max, data);
+    FillData(num_clients, num_backbones, num_demands, traffic_min, traffic_max,
+             min_client_degree, max_client_degree, min_backbone_degree,
+             max_backbone_degree, max_capacity, fixed_charge_cost, seed, data);
   }
 
  private:
@@ -247,11 +217,8 @@ class NetworkRoutingDataBuilder {
     random_.Reset(seed);
   }
 
-  void BuildGraph(int num_clients,
-                  int num_backbones,
-                  int min_client_degree,
-                  int max_client_degree,
-                  int min_backbone_degree,
+  void BuildGraph(int num_clients, int num_backbones, int min_client_degree,
+                  int max_client_degree, int min_backbone_degree,
                   int max_backbone_degree) {
     const int size = num_backbones + num_clients;
 
@@ -306,11 +273,8 @@ class NetworkRoutingDataBuilder {
     }
   }
 
-  void CreateDemands(int num_clients,
-                     int num_backbones,
-                     int num_demands,
-                     int traffic_min,
-                     int traffic_max,
+  void CreateDemands(int num_clients, int num_backbones, int num_demands,
+                     int traffic_min, int traffic_max,
                      NetworkRoutingData* const data) {
     while (data->num_demands() < num_demands) {
       const int source = RandomClient(num_clients, num_backbones);
@@ -323,35 +287,19 @@ class NetworkRoutingDataBuilder {
     }
   }
 
-  void FillData(int num_clients,
-                int num_backbones,
-                int num_demands,
-                int traffic_min,
-                int traffic_max,
-                int min_client_degree,
-                int max_client_degree,
-                int min_backbone_degree,
-                int max_backbone_degree,
-                int max_capacity,
-                int fixed_charge_cost,
-                int seed,
+  void FillData(int num_clients, int num_backbones, int num_demands,
+                int traffic_min, int traffic_max, int min_client_degree,
+                int max_client_degree, int min_backbone_degree,
+                int max_backbone_degree, int max_capacity,
+                int fixed_charge_cost, int seed,
                 NetworkRoutingData* const data) {
     const int size = num_backbones + num_clients;
 
-    const std::string name =
-        StringPrintf("mp_c%i_b%i_d%i.t%i-%i.cd%i-%i.bd%i-%i.mc%i.fc%i.s%i",
-                     num_clients,
-                     num_backbones,
-                     num_demands,
-                     traffic_min,
-                     traffic_max,
-                     min_client_degree,
-                     max_client_degree,
-                     min_backbone_degree,
-                     max_backbone_degree,
-                     max_capacity,
-                     fixed_charge_cost,
-                     seed);
+    const std::string name = StringPrintf(
+        "mp_c%i_b%i_d%i.t%i-%i.cd%i-%i.bd%i-%i.mc%i.fc%i.s%i", num_clients,
+        num_backbones, num_demands, traffic_min, traffic_max, min_client_degree,
+        max_client_degree, min_backbone_degree, max_backbone_degree,
+        max_capacity, fixed_charge_cost, seed);
     data->set_name(name);
 
     data->set_num_nodes(size);
@@ -381,9 +329,8 @@ class NetworkRoutingDataBuilder {
   }
 
   int RandomClient(int num_clients, int num_backbones) {
-    return (num_clients == 0) ?
-        random_.Uniform(num_backbones) :
-        random_.Uniform(num_clients) + num_backbones;
+    return (num_clients == 0) ? random_.Uniform(num_backbones)
+                              : random_.Uniform(num_clients) + num_backbones;
   }
 
   std::vector<std::vector<bool> > network_;
@@ -431,13 +378,12 @@ class NetworkRoutingSolver {
 
     const Demand& demand = demands_array_[demand_index];
     solver.AddConstraint(solver.MakeEquality(node_vars[0], demand.source));
-    solver.AddConstraint(solver.MakeEquality(node_vars[max_length - 1],
-                                             demand.destination));
+    solver.AddConstraint(
+        solver.MakeEquality(node_vars[max_length - 1], demand.destination));
     solver.AddConstraint(solver.MakeAllDifferent(arc_vars));
     solver.AddConstraint(solver.MakeAllDifferent(node_vars));
-    DecisionBuilder* const db = solver.MakePhase(node_vars,
-                                                 Solver::CHOOSE_FIRST_UNBOUND,
-                                                 Solver::ASSIGN_MIN_VALUE);
+    DecisionBuilder* const db = solver.MakePhase(
+        node_vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       const int path_id = all_paths_[demand_index].size();
@@ -458,15 +404,12 @@ class NetworkRoutingSolver {
   // a hash_set of arc indices.
   int ComputeAllPaths(int extra_hops, int max_paths) {
     int num_paths = 0;
-    for (int demand_index = 0;
-         demand_index < demands_array_.size();
+    for (int demand_index = 0; demand_index < demands_array_.size();
          ++demand_index) {
       const int min_path_length = all_min_path_lengths_[demand_index];
       for (int max_length = min_path_length + 1;
-           max_length <= min_path_length + extra_hops + 1;
-           ++max_length) {
-        ComputeAllPathsForOneDemandAndOnePathLength(demand_index,
-                                                    max_length,
+           max_length <= min_path_length + extra_hops + 1; ++max_length) {
+        ComputeAllPathsForOneDemandAndOnePathLength(demand_index, max_length,
                                                     max_paths);
         if (all_paths_[demand_index].size() > max_paths) {
           break;
@@ -500,8 +443,8 @@ class NetworkRoutingSolver {
           capacity_[i][j] = capacity;
           capacity_[j][i] = capacity;
           if (FLAGS_print_model) {
-            LOG(INFO) << "Arc " << i << " <-> " << j
-                      << " with capacity " << capacity;
+            LOG(INFO) << "Arc " << i << " <-> " << j << " with capacity "
+                      << capacity;
           }
         }
       }
@@ -535,11 +478,8 @@ class NetworkRoutingSolver {
       const Demand& demand = demands_array_[demand_index];
       ResultCallback2<int64, int, int>* const graph_callback =
           NewPermanentCallback(this, &NetworkRoutingSolver::HasArc);
-      CHECK(DijkstraShortestPath(num_nodes_,
-                                 demand.source,
-                                 demand.destination,
-                                 graph_callback,
-                                 kDisconnectedDistance,
+      CHECK(DijkstraShortestPath(num_nodes_, demand.source, demand.destination,
+                                 graph_callback, kDisconnectedDistance,
                                  &paths));
       all_min_path_lengths_.push_back(paths.size() - 1);
     }
@@ -551,9 +491,7 @@ class NetworkRoutingSolver {
     return total_cumulated_traffic;
   }
 
-  int InitPaths(const NetworkRoutingData& data,
-                 int extra_hops,
-                 int max_paths) {
+  int InitPaths(const NetworkRoutingData& data, int extra_hops, int max_paths) {
     const int num_demands = data.num_demands();
     LOG(INFO) << "Computing all possible paths ";
     LOG(INFO) << "  - extra hops = " << extra_hops;
@@ -565,9 +503,8 @@ class NetworkRoutingSolver {
     if (FLAGS_print_model) {
       for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
         const Demand& demand = demands_array_[demand_index];
-        LOG(INFO) << "Demand from " << demand.source
-                  << " to " << demand.destination
-                  << " with traffic " << demand.traffic
+        LOG(INFO) << "Demand from " << demand.source << " to "
+                  << demand.destination << " with traffic " << demand.traffic
                   << ", and " << all_paths_[demand_index].size()
                   << " possible paths.";
       }
@@ -631,8 +568,7 @@ class NetworkRoutingSolver {
 
   // Build traffic variable summing all traffic from all demands
   // going through a single arc.
-  void BuildTrafficVariable(Solver* const solver,
-                            int arc_index,
+  void BuildTrafficVariable(Solver* const solver, int arc_index,
                             const std::vector<std::vector<IntVar*> >& path_vars,
                             IntVar** const traffic) {
     std::vector<IntVar*> terms;
@@ -647,10 +583,8 @@ class NetworkRoutingSolver {
 
   class PathBasedLns : public BaseLNS {
    public:
-    PathBasedLns(const std::vector<IntVar*>& vars,
-                 int fragment_size,
-                 const std::vector<std::vector<OnePath> >& all_paths,
-                 int num_arcs,
+    PathBasedLns(const std::vector<IntVar*>& vars, int fragment_size,
+                 const std::vector<std::vector<OnePath> >& all_paths, int num_arcs,
                  const std::vector<int64>& actual_usage_costs)
         : BaseLNS(vars),
           rand_(FLAGS_lns_seed),
@@ -706,8 +640,7 @@ class NetworkRoutingSolver {
       const int demands = all_paths_.size();
       for (int i = 0; i < demands; ++i) {
         const OnePath& path = all_paths_[i][Value(i)];
-        for (ConstIter<hash_set<int> > it(arcs_to_release);
-             !it.at_end();
+        for (ConstIter<hash_set<int> > it(arcs_to_release); !it.at_end();
              ++it) {
           if (ContainsKey(path, *it)) {
             fragment->push_back(i);
@@ -725,9 +658,9 @@ class NetworkRoutingSolver {
       int arc_id;
       int64 cost;
       bool operator<(const ArcWrapper& other_arc_wrapper) const {
-        return cost > other_arc_wrapper.cost
-            || (cost == other_arc_wrapper.cost
-                && arc_id < other_arc_wrapper.arc_id);
+        return cost > other_arc_wrapper.cost ||
+               (cost == other_arc_wrapper.cost &&
+                arc_id < other_arc_wrapper.arc_id);
       }
     };
 
@@ -743,8 +676,7 @@ class NetworkRoutingSolver {
 
   static const int kOneThousand = 1000;
 
-  int64 EvaluateMarginalCost(std::vector<IntVar*>* path_costs,
-                             int64 var,
+  int64 EvaluateMarginalCost(std::vector<IntVar*>* path_costs, int64 var,
                              int64 val) {
     int64 best_cost = 0;
     const int64 traffic = demands_array_[var].traffic;
@@ -780,14 +712,12 @@ class NetworkRoutingSolver {
       return NULL;
     }
 
-    virtual std::string DebugString() const {
-      return "ApplyMaxDiscrepancy";
-    }
+    virtual std::string DebugString() const { return "ApplyMaxDiscrepancy"; }
   };
 
   // ----- Auxilliary Decision Builder to Store the Cost of a Solution -----
 
-  class StoreUsageCosts : public DecisionBuilder  {
+  class StoreUsageCosts : public DecisionBuilder {
    public:
     StoreUsageCosts(const std::vector<IntVar*>& vars, std::vector<int64>* values)
         : vars_(vars), values_(values) {}
@@ -799,6 +729,7 @@ class NetworkRoutingSolver {
       }
       return NULL;
     }
+
    private:
     const std::vector<IntVar*>& vars_;
     std::vector<int64>* const values_;
@@ -830,18 +761,13 @@ class NetworkRoutingSolver {
       solver.MakeBoolVarArray(num_arcs,
                               StringPrintf("path_vars_%i_", demand_index),
                               &path_vars[demand_index]);
-      BuildNodePathConstraint(&solver,
-                              path_vars[demand_index],
-                              demand_index,
+      BuildNodePathConstraint(&solver, path_vars[demand_index], demand_index,
                               &decision_vars);
     }
     // Traffic variables.
     std::vector<IntVar*> vtraffic(num_arcs);
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
-      BuildTrafficVariable(&solver,
-                           arc_index,
-                           path_vars,
-                           &vtraffic[arc_index]);
+      BuildTrafficVariable(&solver, arc_index, path_vars, &vtraffic[arc_index]);
       vtraffic[arc_index]->set_name(StringPrintf("traffic_%i", arc_index));
     }
 
@@ -850,17 +776,14 @@ class NetworkRoutingSolver {
     std::vector<IntVar*> usage_costs;
     std::vector<IntVar*> comfort_costs;
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
-      const int capacity =
-          capacity_[arcs_data_.Value(2 * arc_index, 0)]
-                   [arcs_data_.Value(2 * arc_index, 1)];
+      const int capacity = capacity_[arcs_data_.Value(
+          2 * arc_index, 0)][arcs_data_.Value(2 * arc_index, 1)];
       IntVar* const usage_cost =
           solver.MakeDiv(solver.MakeProd(vtraffic[arc_index], kOneThousand),
                          capacity)->Var();
       usage_costs.push_back(usage_cost);
-      IntVar* const comfort_cost =
-          solver.MakeIsGreaterCstVar(
-              vtraffic[arc_index],
-              capacity * FLAGS_comfort_zone / kOneThousand);
+      IntVar* const comfort_cost = solver.MakeIsGreaterCstVar(
+          vtraffic[arc_index], capacity * FLAGS_comfort_zone / kOneThousand);
       comfort_costs.push_back(comfort_cost);
     }
     IntVar* const max_usage_cost = solver.MakeMax(usage_costs)->Var();
@@ -879,30 +802,22 @@ class NetworkRoutingSolver {
     }
 
     // DecisionBuilder.
-    DecisionBuilder* const db =
-        solver.MakePhase(decision_vars,
-                         Solver::CHOOSE_RANDOM,
-                         NewPermanentCallback(
-                             this,
-                             &NetworkRoutingSolver::EvaluateMarginalCost,
+    DecisionBuilder* const db = solver.MakePhase(
+        decision_vars, Solver::CHOOSE_RANDOM,
+        NewPermanentCallback(this, &NetworkRoutingSolver::EvaluateMarginalCost,
                              &usage_costs));
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {
       if (time_limit != 0) {
-        LOG(INFO) << "adding time limit of " << time_limit
-                  << " ms";
+        LOG(INFO) << "adding time limit of " << time_limit << " ms";
       }
       if (fail_limit != 0) {
         LOG(INFO) << "adding fail limit of " << fail_limit;
       }
-      monitors.push_back(
-          solver.MakeLimit(time_limit != 0 ?
-                           time_limit : kint64max,
-                           kint64max,
-                           fail_limit != 0 ?
-                           fail_limit : kint64max,
-                           kint64max));
+      monitors.push_back(solver.MakeLimit(
+          time_limit != 0 ? time_limit : kint64max, kint64max,
+          fail_limit != 0 ? fail_limit : kint64max, kint64max));
     }
 
     // Lns Decision Builder.
@@ -912,36 +827,25 @@ class NetworkRoutingSolver {
     DecisionBuilder* const store_info =
         solver.RevAlloc(new StoreUsageCosts(usage_costs, &actual_usage_costs));
 
-    LocalSearchOperator* const local_search_operator =
-        solver.RevAlloc(new PathBasedLns(decision_vars,
-                                         FLAGS_lns_size,
-                                         all_paths_,
-                                         num_arcs,
-                                         actual_usage_costs));
+    LocalSearchOperator* const local_search_operator = solver.RevAlloc(
+        new PathBasedLns(decision_vars, FLAGS_lns_size, all_paths_, num_arcs,
+                         actual_usage_costs));
     SearchLimit* const lns_limit =
         solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
-    DecisionBuilder* const inner_db =
-        solver.MakePhase(decision_vars,
-                         Solver::CHOOSE_RANDOM,
-                         NewPermanentCallback(
-                             this,
-                             &NetworkRoutingSolver::EvaluateMarginalCost,
+    DecisionBuilder* const inner_db = solver.MakePhase(
+        decision_vars, Solver::CHOOSE_RANDOM,
+        NewPermanentCallback(this, &NetworkRoutingSolver::EvaluateMarginalCost,
                              &usage_costs));
-
 
     DecisionBuilder* const apply = solver.RevAlloc(new ApplyMaxDiscrepancy);
     DecisionBuilder* const max_discrepency_db = solver.Compose(apply, inner_db);
-    DecisionBuilder* const ls_db = solver.MakeSolveOnce(max_discrepency_db,
-                                                        lns_limit);
+    DecisionBuilder* const ls_db =
+        solver.MakeSolveOnce(max_discrepency_db, lns_limit);
     LocalSearchPhaseParameters* const parameters =
-        solver.MakeLocalSearchPhaseParameters(local_search_operator,
-                                              solver.Compose(ls_db,
-                                                             store_info));
-    DecisionBuilder* const final_db =
-        solver.Compose(solver.MakeLocalSearchPhase(decision_vars,
-                                                   db,
-                                                   parameters),
-                       store_info);
+        solver.MakeLocalSearchPhaseParameters(
+            local_search_operator, solver.Compose(ls_db, store_info));
+    DecisionBuilder* const final_db = solver.Compose(
+        solver.MakeLocalSearchPhase(decision_vars, db, parameters), store_info);
 
     // And Now Solve.
     int64 best_cost = kint64max;
@@ -960,23 +864,17 @@ class NetworkRoutingSolver {
       }
       best_cost = objective_var->Value();
       if (FLAGS_report > 1) {
-        DisplaySolution(num_arcs,
-                        max_usage_cost->Value(),
-                        usage_costs,
-                        path_vars,
-                        FLAGS_report > 2,
-                        FLAGS_comfort_zone);
+        DisplaySolution(num_arcs, max_usage_cost->Value(), usage_costs,
+                        path_vars, FLAGS_report > 2, FLAGS_comfort_zone);
       }
     }
     solver.EndSearch();
 
     return best_cost;
   }
-  void DisplaySolution(int num_arcs,
-                       int64 max_usage_cost,
+  void DisplaySolution(int num_arcs, int64 max_usage_cost,
                        const std::vector<IntVar*>& usage_costs,
-                       const std::vector<std::vector<IntVar*> >& path_vars,
-                       bool precise,
+                       const std::vector<std::vector<IntVar*> >& path_vars, bool precise,
                        int64 comfort_zone) {
     // We will show paths above the comfort zone, or above the max
     // utilization minus 5%.
@@ -988,23 +886,18 @@ class NetworkRoutingSolver {
       if (arc_usage >= cutoff) {
         const int source_index = arcs_data_.Value(2 * i, 0);
         const int destination_index = arcs_data_.Value(2 * i, 1);
-        LOG(INFO) << " + Arc " << source_index
-                  << " <-> " << destination_index
-                  << " has a usage = " << arc_usage / 10.0
-                  << "%, capacity = "
+        LOG(INFO) << " + Arc " << source_index << " <-> " << destination_index
+                  << " has a usage = " << arc_usage / 10.0 << "%, capacity = "
                   << capacity_[source_index][destination_index];
         if (precise) {
           const int num_demands = demands_array_.size();
-          for (int demand_index = 0;
-               demand_index < num_demands;
+          for (int demand_index = 0; demand_index < num_demands;
                ++demand_index) {
             if (path_vars[demand_index][i]->Value() == 1) {
               const Demand& demand = demands_array_[demand_index];
               LOG(INFO) << "   - "
-                        << StringPrintf("%i -> %i (%i)",
-                                        demand.source,
-                                        demand.destination,
-                                        demand.traffic);
+                        << StringPrintf("%i -> %i (%i)", demand.source,
+                                        demand.destination, demand.traffic);
             }
           }
         }
@@ -1026,26 +919,18 @@ class NetworkRoutingSolver {
 
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::NetworkRoutingData data;
   operations_research::NetworkRoutingDataBuilder builder;
-  builder.BuildModelFromParameters(FLAGS_clients,
-                                   FLAGS_backbones,
-                                   FLAGS_demands,
-                                   FLAGS_traffic_min,
-                                   FLAGS_traffic_max,
-                                   FLAGS_min_client_degree,
-                                   FLAGS_max_client_degree,
-                                   FLAGS_min_backbone_degree,
-                                   FLAGS_max_backbone_degree,
-                                   FLAGS_max_capacity,
-                                   FLAGS_fixed_charge_cost,
-                                   FLAGS_seed,
-                                   &data);
+  builder.BuildModelFromParameters(
+      FLAGS_clients, FLAGS_backbones, FLAGS_demands, FLAGS_traffic_min,
+      FLAGS_traffic_max, FLAGS_min_client_degree, FLAGS_max_client_degree,
+      FLAGS_min_backbone_degree, FLAGS_max_backbone_degree, FLAGS_max_capacity,
+      FLAGS_fixed_charge_cost, FLAGS_seed, &data);
   operations_research::NetworkRoutingSolver solver;
   solver.Init(data, FLAGS_extra_hops, FLAGS_max_paths);
-  LOG(INFO) << "Final cost = "
-            << solver.LnsSolve(FLAGS_time_limit, FLAGS_fail_limit);
+  LOG(INFO) << "Final cost = " << solver.LnsSolve(FLAGS_time_limit,
+                                                  FLAGS_fail_limit);
   return 0;
 }

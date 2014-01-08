@@ -40,20 +40,14 @@
 
 namespace operations_research {
 
-template<class T> class ZVector {
+template <class T>
+class ZVector {
  public:
-  ZVector() : base_(NULL),
-              min_index_(0),
-              max_index_(-1),
-              size_(0),
-              storage_() {}
+  ZVector()
+      : base_(NULL), min_index_(0), max_index_(-1), size_(0), storage_() {}
 
   ZVector(int64 min_index, int64 max_index)
-      : base_(NULL),
-        min_index_(0),
-        max_index_(-1),
-        size_(0),
-        storage_() {
+      : base_(NULL), min_index_(0), max_index_(-1), size_(0), storage_() {
     if (!Reserve(min_index, max_index)) {
       LOG(DFATAL) << "Could not reserve memory for indices ranging from "
                   << min_index << " to " << max_index;
@@ -161,11 +155,11 @@ template<class T> class ZVector {
 };
 
 // Shorthands for all the types of ZVector's.
-typedef ZVector<int8>  Int8ZVector;
+typedef ZVector<int8> Int8ZVector;
 typedef ZVector<int16> Int16ZVector;
 typedef ZVector<int32> Int32ZVector;
 typedef ZVector<int64> Int64ZVector;
-typedef ZVector<uint8>  UInt8ZVector;
+typedef ZVector<uint8> UInt8ZVector;
 typedef ZVector<uint16> UInt16ZVector;
 typedef ZVector<uint32> UInt32ZVector;
 typedef ZVector<uint64> UInt64ZVector;

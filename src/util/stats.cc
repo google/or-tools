@@ -21,26 +21,26 @@
 namespace operations_research {
 
 std::string MemoryUsage() {
-static const int64 kDisplayThreshold = 2;
-  static const int64 kKiloByte = 1024;
-  static const int64 kMegaByte = kKiloByte * kKiloByte;
-  static const int64 kGigaByte = kMegaByte * kKiloByte;
-  const int64 memory_usage = GetProcessMemoryUsage();
-  if (memory_usage > kDisplayThreshold * kGigaByte) {
-    return StringPrintf("memory used = %.2lf GB",
-                        memory_usage * 1.0 / kGigaByte);
-  } else if (memory_usage > kDisplayThreshold * kMegaByte) {
-    return StringPrintf("memory used = %.2lf MB",
-                        memory_usage * 1.0 / kMegaByte);
-  } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-    return StringPrintf("memory used = %2lf KB",
-                        memory_usage * 1.0 / kKiloByte);
-  } else {
-    return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
-  }
+  static const int64 kDisplayThreshold = 2;
+    static const int64 kKiloByte = 1024;
+    static const int64 kMegaByte = kKiloByte * kKiloByte;
+    static const int64 kGigaByte = kMegaByte * kKiloByte;
+    const int64 memory_usage = GetProcessMemoryUsage();
+    if (memory_usage > kDisplayThreshold * kGigaByte) {
+      return StringPrintf("memory used = %.2lf GB",
+                          memory_usage * 1.0 / kGigaByte);
+    } else if (memory_usage > kDisplayThreshold * kMegaByte) {
+      return StringPrintf("memory used = %.2lf MB",
+                          memory_usage * 1.0 / kMegaByte);
+    } else if (memory_usage > kDisplayThreshold * kKiloByte) {
+      return StringPrintf("memory used = %2lf KB",
+                          memory_usage * 1.0 / kKiloByte);
+    } else {
+      return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
+    }
 }
 
-Stat::Stat(const std::string& name, StatsGroup *group) : name_(name) {
+Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
   group->Register(this);
 }
 
@@ -48,13 +48,9 @@ std::string Stat::StatString() const {
   return std::string(name_ + ": " + ValueAsString());
 }
 
-StatsGroup::~StatsGroup() {
-  STLDeleteValues(&time_distributions_);
-}
+StatsGroup::~StatsGroup() { STLDeleteValues(&time_distributions_); }
 
-void StatsGroup::Register(Stat* stat) {
-  stats_.push_back(stat);
-}
+void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
 
 void StatsGroup::Reset() {
   for (int i = 0; i < stats_.size(); ++i) {
@@ -63,7 +59,7 @@ void StatsGroup::Reset() {
 }
 
 namespace {
-bool CompareStatPointerByName(Stat* s1, Stat *s2) {
+bool CompareStatPointerByName(Stat* s1, Stat* s2) {
   return s1->Name() < s2->Name();
 }
 }  // namespace
@@ -89,15 +85,15 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
     result += sorted_stats[i]->Name();
-    result.append(longest_name_size - sorted_stats[i]->Name().size() , ' ');
+    result.append(longest_name_size - sorted_stats[i]->Name().size(), ' ');
     result += " : " + sorted_stats[i]->ValueAsString();
   }
   result += "}\n";
   return result;
 }
 
-TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
-  TimeDistribution* &ref = time_distributions_[name];
+TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
+  TimeDistribution*& ref = time_distributions_[name];
   if (ref == NULL) {
     ref = new TimeDistribution(name);
     Register(ref);
@@ -107,13 +103,21 @@ TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
 
 DistributionStat::DistributionStat(const std::string& name)
     : Stat(name),
-      sum_(0.0), average_(0.0), sum_squares_from_average_(0.0),
-      min_(0.0), max_(0.0), num_(0) {}
+      sum_(0.0),
+      average_(0.0),
+      sum_squares_from_average_(0.0),
+      min_(0.0),
+      max_(0.0),
+      num_(0) {}
 
 DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
     : Stat(name, group),
-      sum_(0.0), average_(0.0), sum_squares_from_average_(0.0),
-      min_(0.0), max_(0.0), num_(0) {}
+      sum_(0.0),
+      average_(0.0),
+      sum_squares_from_average_(0.0),
+      min_(0.0),
+      max_(0.0),
+      num_(0) {}
 
 void DistributionStat::Reset() {
   sum_ = 0.0;
@@ -142,9 +146,7 @@ void DistributionStat::AddToDistribution(double value) {
   sum_squares_from_average_ += delta * (value - average_);
 }
 
-double DistributionStat::Average() const {
-  return average_;
-}
+double DistributionStat::Average() const { return average_; }
 
 double DistributionStat::StdDeviation() const {
   if (num_ == 0) return 0.0;
@@ -181,11 +183,9 @@ void TimeDistribution::AddTimeInCycles(double cycles) {
 }
 
 std::string TimeDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%8s, %8s] %8s %8s %8s\n",
-      num_,
-      PrintCyclesAsTime(min_).c_str(),
-      PrintCyclesAsTime(max_).c_str(),
-      PrintCyclesAsTime(Average()).c_str(),
+  return StringPrintf(
+      "%8llu [%8s, %8s] %8s %8s %8s\n", num_, PrintCyclesAsTime(min_).c_str(),
+      PrintCyclesAsTime(max_).c_str(), PrintCyclesAsTime(Average()).c_str(),
       PrintCyclesAsTime(StdDeviation()).c_str(),
       PrintCyclesAsTime(sum_).c_str());
 }
@@ -196,25 +196,16 @@ void RatioDistribution::Add(double value) {
 }
 
 std::string RatioDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n",
-      num_,
-      100.0 * min_,
-      100.0 * max_,
-      100.0 * Average(),
-      100.0 * StdDeviation());
+  return StringPrintf("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n", num_,
+                      100.0 * min_, 100.0 * max_, 100.0 * Average(),
+                      100.0 * StdDeviation());
 }
 
-void DoubleDistribution::Add(double value) {
-  AddToDistribution(value);
-}
+void DoubleDistribution::Add(double value) { AddToDistribution(value); }
 
 std::string DoubleDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n",
-      num_,
-      min_,
-      max_ ,
-      Average(),
-      StdDeviation());
+  return StringPrintf("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n", num_, min_, max_,
+                      Average(), StdDeviation());
 }
 
 void IntegerDistribution::Add(int64 value) {
@@ -222,13 +213,8 @@ void IntegerDistribution::Add(int64 value) {
 }
 
 std::string IntegerDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n",
-      num_,
-      min_,
-      max_ ,
-      Average(),
-      StdDeviation(),
-      sum_);
+  return StringPrintf("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n", num_, min_,
+                      max_, Average(), StdDeviation(), sum_);
 }
 
 }  // namespace operations_research

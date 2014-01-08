@@ -47,8 +47,7 @@
 #include "cpp/jobshop.h"
 
 DEFINE_string(
-    data_file,
-    "",
+    data_file, "",
     "Required: input file description the scheduling problem to solve, "
     "in our jssp format:\n"
     "  - the first line is \"instance <instance name>\"\n"
@@ -63,7 +62,6 @@ DEFINE_int32(sub_sequence_length, 4,
 DEFINE_int32(lns_seed, 1, "Seed of the LNS random search");
 DEFINE_int32(lns_limit, 30,
              "Limit the size of the search tree in a LNS fragment");
-
 
 namespace operations_research {
 // ----- Model and Solve -----
@@ -88,17 +86,11 @@ void JobshopLs(const JobShopData& data) {
     for (int task_index = 0; task_index < tasks.size(); ++task_index) {
       const JobShopData::Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
-      const std::string name = StringPrintf("J%dM%dI%dD%d",
-                                       task.job_id,
-                                       task.machine_id,
-                                       task_index,
-                                       task.duration);
-      IntervalVar* const one_task =
-          solver.MakeFixedDurationIntervalVar(0,
-                                              horizon,
-                                              task.duration,
-                                              false,
-                                              name);
+      const std::string name =
+          StringPrintf("J%dM%dI%dD%d", task.job_id, task.machine_id, task_index,
+                       task.duration);
+      IntervalVar* const one_task = solver.MakeFixedDurationIntervalVar(
+          0, horizon, task.duration, false, name);
       jobs_to_tasks[task.job_id].push_back(one_task);
       machines_to_tasks[task.machine_id].push_back(one_task);
     }
@@ -154,10 +146,8 @@ void JobshopLs(const JobShopData& data) {
   // we can schedule each task at its earliest start time. This is
   // conveniently done by fixing the objective variable to its
   // minimum value.
-  DecisionBuilder* const obj_phase =
-      solver.MakePhase(objective_var,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const obj_phase = solver.MakePhase(
+      objective_var, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
 
   Assignment* const first_solution = solver.MakeAssignment();
   first_solution->Add(all_sequences);
@@ -178,16 +168,13 @@ void JobshopLs(const JobShopData& data) {
   operators.push_back(swap_operator);
   LOG(INFO) << "  - use shuffle operator with a max length of "
             << FLAGS_shuffle_length;
-  LocalSearchOperator* const shuffle_operator =
-      solver.RevAlloc(new ShuffleIntervals(all_sequences,
-                                           FLAGS_shuffle_length));
+  LocalSearchOperator* const shuffle_operator = solver.RevAlloc(
+      new ShuffleIntervals(all_sequences, FLAGS_shuffle_length));
   operators.push_back(shuffle_operator);
   LOG(INFO) << "  - use free sub sequences of length "
             << FLAGS_sub_sequence_length << " lns operator";
-  LocalSearchOperator* const lns_operator =
-      solver.RevAlloc(new SequenceLns(all_sequences,
-                                      FLAGS_lns_seed,
-                                      FLAGS_sub_sequence_length));
+  LocalSearchOperator* const lns_operator = solver.RevAlloc(new SequenceLns(
+      all_sequences, FLAGS_lns_seed, FLAGS_sub_sequence_length));
   operators.push_back(lns_operator);
 
   // Creates the local search decision builder.
@@ -198,9 +185,8 @@ void JobshopLs(const JobShopData& data) {
       solver.MakeLimit(kint64max, FLAGS_lns_limit, kint64max, kint64max);
   DecisionBuilder* const random_sequence_phase =
       solver.MakePhase(all_sequences, Solver::CHOOSE_RANDOM_RANK_FORWARD);
-  DecisionBuilder* const ls_db =
-      solver.MakeSolveOnce(solver.Compose(random_sequence_phase, obj_phase),
-                           ls_limit);
+  DecisionBuilder* const ls_db = solver.MakeSolveOnce(
+      solver.Compose(random_sequence_phase, obj_phase), ls_limit);
 
   LocalSearchPhaseParameters* const parameters =
       solver.MakeLocalSearchPhaseParameters(concat, ls_db);
@@ -214,9 +200,9 @@ void JobshopLs(const JobShopData& data) {
   SearchMonitor* const search_log =
       solver.MakeSearchLog(kLogFrequency, objective_monitor);
 
-  SearchLimit* const limit = FLAGS_time_limit_in_ms > 0 ?
-      solver.MakeTimeLimit(FLAGS_time_limit_in_ms) :
-      NULL;
+  SearchLimit* const limit = FLAGS_time_limit_in_ms > 0
+                                 ? solver.MakeTimeLimit(FLAGS_time_limit_in_ms)
+                                 : NULL;
 
   // Search.
   solver.Solve(final_db, search_log, objective_monitor, limit);
@@ -227,7 +213,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a simple job shop optimization "
     "output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {

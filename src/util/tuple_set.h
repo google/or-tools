@@ -103,9 +103,12 @@ class IntTupleSet {
     void AddSharedOwner();
     bool RemovedSharedOwner();
     Data* CopyIfShared();
-    template <class T> int Insert(const std::vector<T>& tuple);
-    template <class T> bool Contains(const std::vector<T>& candidate) const;
-    template <class T> int64 Fingerprint(const std::vector<T>& tuple) const;
+    template <class T>
+    int Insert(const std::vector<T>& tuple);
+    template <class T>
+    bool Contains(const std::vector<T>& candidate) const;
+    template <class T>
+    int64 Fingerprint(const std::vector<T>& tuple) const;
     int NumTuples() const;
     int64 Value(int index, int pos) const;
     int Arity() const;
@@ -152,9 +155,7 @@ inline IntTupleSet::Data::Data(const Data& data)
 
 inline IntTupleSet::Data::~Data() {}
 
-inline void IntTupleSet::Data::AddSharedOwner() {
-  num_owners_++;
-}
+inline void IntTupleSet::Data::AddSharedOwner() { num_owners_++; }
 
 inline bool IntTupleSet::Data::RemovedSharedOwner() {
   return (--num_owners_ == 0);
@@ -170,7 +171,8 @@ inline IntTupleSet::Data* IntTupleSet::Data::CopyIfShared() {
   return this;
 }
 
-template <class T> int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
+template <class T>
+int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
   DCHECK(arity_ == 0 || flat_tuples_.size() % arity_ == 0);
   CHECK_EQ(arity_, tuple.size());
   DCHECK_EQ(1, num_owners_);
@@ -190,8 +192,8 @@ template <class T> int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
   }
 }
 
-template <class T> bool IntTupleSet::Data::Contains(
-    const std::vector<T>& candidate) const {
+template <class T>
+bool IntTupleSet::Data::Contains(const std::vector<T>& candidate) const {
   if (candidate.size() != arity_) {
     return false;
   }
@@ -211,8 +213,8 @@ template <class T> bool IntTupleSet::Data::Contains(
   return false;
 }
 
-template <class T> int64 IntTupleSet::Data::Fingerprint(
-    const std::vector<T>& tuple) const {
+template <class T>
+int64 IntTupleSet::Data::Fingerprint(const std::vector<T>& tuple) const {
   switch (arity_) {
     case 0:
       return 0;
@@ -338,21 +340,15 @@ inline void IntTupleSet::InsertAll(const std::vector<std::vector<int64> >& tuple
   }
 }
 
-inline int IntTupleSet::NumTuples() const {
-  return data_->NumTuples();
-}
+inline int IntTupleSet::NumTuples() const { return data_->NumTuples(); }
 
 inline int64 IntTupleSet::Value(int index, int pos) const {
   return data_->Value(index, pos);
 }
 
-inline int IntTupleSet::Arity() const {
-  return data_->Arity();
-}
+inline int IntTupleSet::Arity() const { return data_->Arity(); }
 
-inline const int64* IntTupleSet::RawData() const {
-  return data_->RawData();
-}
+inline const int64* IntTupleSet::RawData() const { return data_->RawData(); }
 
 inline int IntTupleSet::NumDifferentValuesInColumn(int col) const {
   if (col < 0 || col >= data_->Arity()) {

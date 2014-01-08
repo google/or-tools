@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // IntType is a simple template class mechanism for defining "logical"
 // integer-like class types that support many of the same functionalities
 // as native integer types, but which prevent assignment, construction, and
@@ -148,18 +147,19 @@
 #include <stddef.h>
 #include "base/hash.h"
 #include <iosfwd>
-#include <ostream>                                                     // NOLINT
+#include <ostream>  // NOLINT
 
 #include "base/macros.h"
 
-template <typename IntTypeName, typename _ValueType> class IntType;
+template <typename IntTypeName, typename _ValueType>
+class IntType;
 
 // Defines the IntType using value_type and typedefs it to int_type_name.
 // The struct int_type_name ## _tag_ trickery is needed to ensure that a new
 // type is created per int_type_name.
-#define DEFINE_INT_TYPE(int_type_name, value_type)                          \
-  struct int_type_name ## _tag_ {};                                         \
-  typedef IntType<int_type_name ## _tag_, value_type> int_type_name;
+#define DEFINE_INT_TYPE(int_type_name, value_type) \
+  struct int_type_name##_tag_ {};                  \
+  typedef IntType<int_type_name##_tag_, value_type> int_type_name;
 
 // Holds a integral value (of type ValueType) and behaves as a
 // ValueType by exposing assignment, unary, comparison, and arithmetic
@@ -179,9 +179,9 @@ class IntType {
 
  public:
   // Default c'tor initializing value_ to 0.
-  IntType() : value_(0) { }
+  IntType() : value_(0) {}
   // C'tor explicitly initializing from a ValueType.
-  explicit IntType(ValueType value) : value_(value) { }
+  explicit IntType(ValueType value) : value_(value) {}
   // IntType uses the default copy constructor and destructor.
 
   // -- ACCESSORS --------------------------------------------------------------
@@ -191,7 +191,9 @@ class IntType {
   ValueType value() const { return value_; }
 
   template <typename ValType>
-  ValType value() const { return static_cast<ValType>(value_); }
+  ValType value() const {
+    return static_cast<ValType>(value_);
+  }
 
   // -- UNARY OPERATORS --------------------------------------------------------
   ThisType& operator++() {  // prefix ++
@@ -218,17 +220,17 @@ class IntType {
   const ThisType operator-() const { return ThisType(-value_); }
   const ThisType operator~() const { return ThisType(~value_); }
 
-  // -- ASSIGNMENT OPERATORS ---------------------------------------------------
-  // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
-  // and %= for both ThisType and ValueType.
-#define INT_TYPE_ASSIGNMENT_OP(op)                                             \
-  ThisType& operator op(const ThisType& arg_value) {                           \
-    value_ op arg_value.value();                                               \
-    return *this;                                                              \
-  }                                                                            \
-  ThisType& operator op(ValueType arg_value) {                                 \
-    value_ op arg_value;                                                       \
-    return *this;                                                              \
+// -- ASSIGNMENT OPERATORS ---------------------------------------------------
+// We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
+// and %= for both ThisType and ValueType.
+#define INT_TYPE_ASSIGNMENT_OP(op)                   \
+  ThisType& operator op(const ThisType& arg_value) { \
+    value_ op arg_value.value();                     \
+    return *this;                                    \
+  }                                                  \
+  ThisType& operator op(ValueType arg_value) {       \
+    value_ op arg_value;                             \
+    return *this;                                    \
   }
   INT_TYPE_ASSIGNMENT_OP(=);
   INT_TYPE_ASSIGNMENT_OP(+=);
@@ -249,8 +251,8 @@ class IntType {
 // We provide the << operator, primarily for logging purposes.  Currently, there
 // seems to be no need for an >> operator.
 template <typename IntTypeName, typename ValueType>
-std::ostream& operator <<(std::ostream& os, // NOLINT
-                          IntType<IntTypeName, ValueType> arg) {
+std::ostream& operator<<(std::ostream& os,  // NOLINT
+                         IntType<IntTypeName, ValueType> arg) {
   return os << arg.value();
 }
 
@@ -261,28 +263,28 @@ std::ostream& operator <<(std::ostream& os, // NOLINT
 //
 // NB: Although it is possible to do IntType * IntType and IntType / IntType,
 // it is probably non-sensical from a dimensionality analysis perspective.
-#define INT_TYPE_ARITHMETIC_OP(op)                                             \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline IntType<IntTypeName, ValueType>                                \
-  operator op(IntType<IntTypeName, ValueType> id_1,                            \
-              IntType<IntTypeName, ValueType> id_2) {                          \
-    id_1 op ## = id_2.value();                                                 \
-    return id_1;                                                               \
-  }                                                                            \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline IntType<IntTypeName, ValueType>                                \
-  operator op(IntType<IntTypeName, ValueType> id,                              \
-              typename IntType<IntTypeName, ValueType>::ValueType arg_val) {   \
-    id op ## = arg_val;                                                        \
-    return id;                                                                 \
-  }                                                                            \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline IntType<IntTypeName, ValueType>                                \
-  operator op(typename IntType<IntTypeName, ValueType>::ValueType arg_val,     \
-              IntType<IntTypeName, ValueType> id) {                            \
-    IntType<IntTypeName, ValueType> obj(arg_val);                              \
-    obj op ## = id.value();                                                    \
-    return obj;                                                                \
+#define INT_TYPE_ARITHMETIC_OP(op)                                   \
+  template <typename IntTypeName, typename ValueType>                \
+  static inline IntType<IntTypeName, ValueType> operator op(         \
+      IntType<IntTypeName, ValueType> id_1,                          \
+      IntType<IntTypeName, ValueType> id_2) {                        \
+    id_1 op## = id_2.value();                                        \
+    return id_1;                                                     \
+  }                                                                  \
+  template <typename IntTypeName, typename ValueType>                \
+  static inline IntType<IntTypeName, ValueType> operator op(         \
+      IntType<IntTypeName, ValueType> id,                            \
+      typename IntType<IntTypeName, ValueType>::ValueType arg_val) { \
+    id op## = arg_val;                                               \
+    return id;                                                       \
+  }                                                                  \
+  template <typename IntTypeName, typename ValueType>                \
+  static inline IntType<IntTypeName, ValueType> operator op(         \
+      typename IntType<IntTypeName, ValueType>::ValueType arg_val,   \
+      IntType<IntTypeName, ValueType> id) {                          \
+    IntType<IntTypeName, ValueType> obj(arg_val);                    \
+    obj op## = id.value();                                           \
+    return obj;                                                      \
   }
 INT_TYPE_ARITHMETIC_OP(+);
 INT_TYPE_ARITHMETIC_OP(-);
@@ -299,23 +301,23 @@ INT_TYPE_ARITHMETIC_OP(%);
 //   IntType<IntTypeName, ValueType> OP IntType<IntTypeName, ValueType>
 //   IntType<IntTypeName, ValueType> OP ValueType
 //   ValueType OP IntType<IntTypeName, ValueType>
-#define INT_TYPE_COMPARISON_OP(op)                                             \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline bool operator op(IntType<IntTypeName, ValueType> id_1,         \
-                                 IntType<IntTypeName, ValueType> id_2) {       \
-    return id_1.value() op id_2.value();                                       \
-  }                                                                            \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline bool operator op(                                              \
-      IntType<IntTypeName, ValueType> id,                                      \
-      typename IntType<IntTypeName, ValueType>::ValueType val) {               \
-    return id.value() op val;                                                  \
-  }                                                                            \
-  template <typename IntTypeName, typename ValueType>                          \
-  static inline bool operator op(                                              \
-      typename IntType<IntTypeName, ValueType>::ValueType val,                 \
-      IntType<IntTypeName, ValueType> id) {                                    \
-    return val op id.value();                                                  \
+#define INT_TYPE_COMPARISON_OP(op)                                       \
+  template <typename IntTypeName, typename ValueType>                    \
+  static inline bool operator op(IntType<IntTypeName, ValueType> id_1,   \
+                                 IntType<IntTypeName, ValueType> id_2) { \
+    return id_1.value() op id_2.value();                                 \
+  }                                                                      \
+  template <typename IntTypeName, typename ValueType>                    \
+  static inline bool operator op(                                        \
+      IntType<IntTypeName, ValueType> id,                                \
+      typename IntType<IntTypeName, ValueType>::ValueType val) {         \
+    return id.value() op val;                                            \
+  }                                                                      \
+  template <typename IntTypeName, typename ValueType>                    \
+  static inline bool operator op(                                        \
+      typename IntType<IntTypeName, ValueType>::ValueType val,           \
+      IntType<IntTypeName, ValueType> id) {                              \
+    return val op id.value();                                            \
   }
 INT_TYPE_COMPARISON_OP(==);  // NOLINT
 INT_TYPE_COMPARISON_OP(!=);  // NOLINT

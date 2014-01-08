@@ -65,7 +65,7 @@
 #include "base/int_type.h"
 
 // STL vector ------------------------------------------------------------------
-template<typename IntType, typename T, typename Alloc = std::allocator<T> >
+template <typename IntType, typename T, typename Alloc = std::allocator<T> >
 class ITIVector : protected std::vector<T, Alloc> {
  public:
   typedef std::vector<T, Alloc> ParentType;
@@ -79,32 +79,31 @@ class ITIVector : protected std::vector<T, Alloc> {
   typedef typename ParentType::iterator iterator;
   typedef typename ParentType::const_iterator const_iterator;
   typedef typename ParentType::reverse_iterator reverse_iterator;
-  typedef typename ParentType::const_reverse_iterator
-      const_reverse_iterator;
+  typedef typename ParentType::const_reverse_iterator const_reverse_iterator;
 
  public:
-  ITIVector()                                                                { }
-  explicit ITIVector(const allocator_type& a) : ParentType(a)                { }
+  ITIVector() {}
+  explicit ITIVector(const allocator_type& a) : ParentType(a) {}
   ITIVector(size_type n, const value_type& v = value_type(),
             const allocator_type& a = allocator_type())
-      : ParentType(n, v, a)                                                  { }
-  ITIVector(const ITIVector& x) : ParentType(x.get())                        { }
-  template<typename InputIteratorType>
+      : ParentType(n, v, a) {}
+  ITIVector(const ITIVector& x) : ParentType(x.get()) {}
+  template <typename InputIteratorType>
   ITIVector(InputIteratorType first, InputIteratorType last,
             const allocator_type& a = allocator_type())
-      : ParentType(first, last, a)                                           { }
-  ~ITIVector()                                                               { }
+      : ParentType(first, last, a) {}
+  ~ITIVector() {}
 
   // -- Accessors --------------------------------------------------------------
   // This const accessor is useful in defining the comparison operators below.
-  const ParentType& get() const       { return *this; }
+  const ParentType& get() const { return *this; }
   // The mutable accessor is useful when using auxiliar methods relying on
   // vector parameters such as JoinUsing(), SplitStringUsing(), etc.  Methods
   // relying solely on iterators (e.g. STLDeleteElements) should work just fine
   // without the need for mutable_get().  NB: It should be used only in this
   // case and thus should not be abused to index the underlying vector without
   // the appropriate IntType.
-  ParentType* mutable_get()           { return this; }
+  ParentType* mutable_get() { return this; }
 
   // -- Modified methods -------------------------------------------------------
   reference operator[](IntType i) {
@@ -113,59 +112,57 @@ class ITIVector : protected std::vector<T, Alloc> {
   const_reference operator[](IntType i) const {
     return ParentType::operator[](i.template value<size_t>());
   }
-  reference at(IntType i) {
-    return ParentType::at(i.template value<size_t>());
-  }
+  reference at(IntType i) { return ParentType::at(i.template value<size_t>()); }
   const_reference at(IntType i) const {
     return ParentType::at(i.template value<size_t>());
   }
 
   // -- Pass-through methods to STL vector -------------------------------------
   ITIVector& operator=(const ITIVector& x) {
-    ParentType::operator =(x.get());
+    ParentType::operator=(x.get());
     return *this;
   }
 
   void assign(size_type n, const value_type& val) {
     ParentType::assign(n, val);
   }
-  template<typename InputIt>
-  void assign(InputIt f, InputIt l)      { ParentType::assign(f, l); }
+  template <typename InputIt>
+  void assign(InputIt f, InputIt l) {
+    ParentType::assign(f, l);
+  }
 
-  iterator begin()                       { return ParentType::begin(); }
-  const_iterator begin() const           { return ParentType::begin(); }
-  iterator end()                         { return ParentType::end(); }
-  const_iterator end() const             { return ParentType::end(); }
-  reverse_iterator rbegin()              { return ParentType::rbegin(); }
-  const_reverse_iterator rbegin() const  { return ParentType::rbegin(); }
-  reverse_iterator rend()                { return ParentType::rend(); }
-  const_reverse_iterator rend() const    { return ParentType::rend(); }
+  iterator begin() { return ParentType::begin(); }
+  const_iterator begin() const { return ParentType::begin(); }
+  iterator end() { return ParentType::end(); }
+  const_iterator end() const { return ParentType::end(); }
+  reverse_iterator rbegin() { return ParentType::rbegin(); }
+  const_reverse_iterator rbegin() const { return ParentType::rbegin(); }
+  reverse_iterator rend() { return ParentType::rend(); }
+  const_reverse_iterator rend() const { return ParentType::rend(); }
 
-  size_type size() const                 { return ParentType::size(); }
-  size_type max_size() const             { return ParentType::max_size(); }
+  size_type size() const { return ParentType::size(); }
+  size_type max_size() const { return ParentType::max_size(); }
 
   void resize(size_type new_size, value_type x = value_type()) {
     ParentType::resize(new_size, x);
   }
 
-  size_type capacity() const             { return ParentType::capacity(); }
-  bool empty() const                     { return ParentType::empty(); }
-  void reserve(size_type n)              { ParentType::reserve(n); }
-  void push_back(const value_type& x)    { ParentType::push_back(x); }
-  void pop_back()                        { ParentType::pop_back(); }
-  void swap(ITIVector& x)                { ParentType::swap(*x.mutable_get()); }
-  void clear()                           { return ParentType::clear(); }
+  size_type capacity() const { return ParentType::capacity(); }
+  bool empty() const { return ParentType::empty(); }
+  void reserve(size_type n) { ParentType::reserve(n); }
+  void push_back(const value_type& x) { ParentType::push_back(x); }
+  void pop_back() { ParentType::pop_back(); }
+  void swap(ITIVector& x) { ParentType::swap(*x.mutable_get()); }
+  void clear() { return ParentType::clear(); }
 
-  reference front()                      { return ParentType::front(); }
-  const_reference front() const          { return ParentType::front(); }
-  reference back()                       { return ParentType::back(); }
-  const_reference back() const           { return ParentType::back(); }
-  pointer data()                         { return ParentType::data(); }
-  const_pointer data() const             { return ParentType::data(); }
+  reference front() { return ParentType::front(); }
+  const_reference front() const { return ParentType::front(); }
+  reference back() { return ParentType::back(); }
+  const_reference back() const { return ParentType::back(); }
+  pointer data() { return ParentType::data(); }
+  const_pointer data() const { return ParentType::data(); }
 
-  iterator erase(iterator pos) {
-    return ParentType::erase(pos);
-  }
+  iterator erase(iterator pos) { return ParentType::erase(pos); }
   iterator erase(iterator first, iterator last) {
     return ParentType::erase(first, last);
   }
@@ -175,24 +172,23 @@ class ITIVector : protected std::vector<T, Alloc> {
   void insert(iterator pos, size_type n, const value_type& x) {
     ParentType::insert(pos, n, x);
   }
-  template<typename IIt>
+  template <typename IIt>
   void insert(iterator pos, IIt first, IIt last) {
     ParentType::insert(pos, first, last);
   }
 };
 
-#define ITIVECTOR_COMPARISON_OP(op)                                            \
-  template<typename IntType, typename T, typename Alloc>                       \
-  inline bool operator op(                                                     \
-      const ITIVector<IntType, T, Alloc>& x,                                   \
-      const ITIVector<IntType, T, Alloc>& y) {                                 \
-    return x.get() op y.get();                                                 \
+#define ITIVECTOR_COMPARISON_OP(op)                                \
+  template <typename IntType, typename T, typename Alloc>          \
+  inline bool operator op(const ITIVector<IntType, T, Alloc>& x,   \
+                          const ITIVector<IntType, T, Alloc>& y) { \
+    return x.get() op y.get();                                     \
   }
-ITIVECTOR_COMPARISON_OP(==);                                           // NOLINT
-ITIVECTOR_COMPARISON_OP(<);                                            // NOLINT
-ITIVECTOR_COMPARISON_OP(<=);                                           // NOLINT
-ITIVECTOR_COMPARISON_OP(>);                                            // NOLINT
-ITIVECTOR_COMPARISON_OP(>=);                                           // NOLINT
+ITIVECTOR_COMPARISON_OP(== );  // NOLINT
+ITIVECTOR_COMPARISON_OP(< );   // NOLINT
+ITIVECTOR_COMPARISON_OP(<= );  // NOLINT
+ITIVECTOR_COMPARISON_OP(> );   // NOLINT
+ITIVECTOR_COMPARISON_OP(>= );  // NOLINT
 #undef ITIVECTOR_COMPARISON_OP
 
 template <typename IntType, typename T, typename Alloc>

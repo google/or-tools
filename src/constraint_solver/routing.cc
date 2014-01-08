@@ -1183,8 +1183,8 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
 int64 RoutingModel::GetDepot() const { return vehicles() > 0 ? Start(0) : -1; }
 
 void RoutingModel::SetDepot(NodeIndex depot) {
-  std::vector<std::pair<NodeIndex, NodeIndex> > start_end(
-      vehicles_, std::make_pair(depot, depot));
+  std::vector<std::pair<NodeIndex, NodeIndex> > start_end(vehicles_,
+                                                std::make_pair(depot, depot));
   SetStartEnd(start_end);
 }
 
@@ -1416,8 +1416,8 @@ void RoutingModel::CloseModel() {
 }
 
 struct Link {
-  Link(std::pair<int, int> link, double value, int vehicle_class,
-       int64 start_depot, int64 end_depot)
+  Link(std::pair<int, int> link, double value, int vehicle_class, int64 start_depot,
+       int64 end_depot)
       : link(link),
         value(value),
         vehicle_class(vehicle_class),
@@ -1574,8 +1574,8 @@ class RouteConstructor {
     }
     std::sort(final_routes_.begin(), final_routes_.end(), RouteComparator);
 
-    const int extra_vehicles = std::max(
-        0, static_cast<int>(final_chains_.size()) - model_->vehicles());
+    const int extra_vehicles =
+        std::max(0, static_cast<int>(final_chains_.size()) - model_->vehicles());
     // Bind the Start and End of each chain
     int chain_index = 0;
     for (chain_index = extra_vehicles; chain_index < final_chains_.size();
@@ -2044,8 +2044,8 @@ class SavingsBuilder : public DecisionBuilder {
             const double saving =
                 costs_[node][start_depot] + costs_[end_depot][neighbor] -
                 route_shape_parameter_ * costs_[node][neighbor];
-            Link link(std::make_pair(node, neighbor), saving,
-                      vehicle_class_index, start_depot, end_depot);
+            Link link(std::make_pair(node, neighbor), saving, vehicle_class_index,
+                      start_depot, end_depot);
             savings_list_.push_back(link);
           }
         }
@@ -2180,8 +2180,7 @@ class SweepBuilder : public DecisionBuilder {
         const int64 first_index = model_->NodeToIndex(first);
         const int64 second_index = model_->NodeToIndex(second);
         if (first_index != depot_ && second_index != depot_) {
-          Link link(std::make_pair(first_index, second_index), 0, 0, depot_,
-                    depot_);
+          Link link(std::make_pair(first_index, second_index), 0, 0, depot_, depot_);
           links_.push_back(link);
         }
       }
