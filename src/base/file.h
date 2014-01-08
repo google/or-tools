@@ -39,7 +39,7 @@ class File {
   inline static File* Open(const std::string& name, const char* const mode) {
     return Open(name.c_str(), mode);
   }
-#endif
+#endif  // SWIG
 
   // Opens file "name" with flags specified by "flag"
   // If open failed, program will exit.
@@ -49,7 +49,7 @@ class File {
   inline static File* OpenOrDie(const std::string& name, const char* const flag) {
     return OpenOrDie(name.c_str(), flag);
   }
-#endif
+#endif  // SWIG
 
   // Reads "size" bytes to buff from file, buff should be pre-allocated.
   size_t Read(void* const buff, size_t size);

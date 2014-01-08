@@ -22,4 +22,3 @@ int64 GetProcessMemoryUsage();
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_SYSINFO_H_
-

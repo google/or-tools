@@ -1202,17 +1202,9 @@ double MPSolverInterface::ComputeExactConditionNumber() const {
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
-// By default, we let GLOP keep its own default tolerance, much more accurate
-// than for the rest of the solvers.
-#if defined(USE_GLOP)
-  if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
-#endif
     SetPrimalTolerance(
         param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE));
     SetDualTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
-#if defined(USE_GLOP)
-  }
-#endif
   SetPresolveMode(param.GetIntegerParam(MPSolverParameters::PRESOLVE));
   // TODO(user): In the future, we could distinguish between the
   // algorithm to solve the root LP and the algorithm to solve node
@@ -1434,4 +1426,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-
