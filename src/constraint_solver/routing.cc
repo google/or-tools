@@ -3478,8 +3478,8 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
               path_cumul_filter,
               &RoutingLocalSearchFilter::InjectObjectiveValue);
         }
-        path_cumul_filter = MakePathCumulFilter(
-            *this, *dimension, objective_callback);
+        path_cumul_filter =
+            MakePathCumulFilter(*this, *dimension, objective_callback);
         path_cumul_filters.push_back(path_cumul_filter);
       }
       // Due to the way cost injection is setup, path filters have to be
