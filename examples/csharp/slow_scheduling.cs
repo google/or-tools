@@ -1,5 +1,5 @@
 //
-// Copyright 2012 Google
+// Copyright 2013 Google
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ using System.Diagnostics;
 using System.Linq;
 using System;
 
-public class Program
+public class SpeakerScheduling
 {
   private static void Solve(int first_time_slot)
   {
@@ -151,11 +151,11 @@ public class Program
     last_slot.SetMin(first_time_slot + sum_of_durations - 1);
 
     // Redundant scheduling constraint.
-    // IntervalVar[] intervals =
-    //     solver.MakeFixedDurationIntervalVarArray(starts, durations, "intervals");
-    // DisjunctiveConstraint disjunctive =
-    //     solver.MakeDisjunctiveConstraint(intervals, "disjunctive");
-    // solver.Add(disjunctive);
+    IntervalVar[] intervals =
+        solver.MakeFixedDurationIntervalVarArray(starts, durations, "intervals");
+    DisjunctiveConstraint disjunctive =
+        solver.MakeDisjunctiveConstraint(intervals, "disjunctive");
+    solver.Add(disjunctive);
 
     //
     // Search
@@ -190,9 +190,7 @@ public class Program
     DecisionBuilder short_phase = solver.MakeSolveOnce(inner_short_phase);
     DecisionBuilder main_phase =
         solver.Compose(long_phase, short_phase, obj_phase);
-    SearchMonitor log = solver.MakeSearchLog(1000000, objective_monitor);
-
-    solver.NewSearch(main_phase, objective_monitor, log);
+    solver.NewSearch(main_phase, objective_monitor);
     while (solver.NextSolution())
     {
       Console.WriteLine("\nLast Slot: " + (last_slot.Value()));
@@ -205,7 +203,7 @@ public class Program
       }
     }
 
-    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
+    Console.WriteLine("Solutions: {0}", solver.Solutions());
     Console.WriteLine("WallTime: {0}ms", solver.WallTime());
     Console.WriteLine("Failures: {0}", solver.Failures());
     Console.WriteLine("Branches: {0} ", solver.Branches());
