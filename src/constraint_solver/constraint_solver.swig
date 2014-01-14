@@ -1846,6 +1846,30 @@ namespace operations_research {
     }
     return array;
   }
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts,
+                                                         int[] durations,
+                                                         string name) {
+    int count = starts.Length;
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(starts[i],
+                                              durations[i],
+                                              name + i);
+    }
+    return array;
+  }
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts,
+                                                         long[] durations,
+                                                         string name) {
+    int count = starts.Length;
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(starts[i],
+                                              durations[i],
+                                              name + i);
+    }
+    return array;
+  }
   public void NewSearch(DecisionBuilder db) {
     pinned_decision_builder_ = db;
     pinned_search_monitors_.Clear();

@@ -168,6 +168,12 @@ $(BIN_DIR)/jobshop_bug.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_
 jobshop_bug: $(BIN_DIR)/jobshop_bug.exe
 	$(MONO) $(BIN_DIR)$Sjobshop_bug.exe
 
+$(BIN_DIR)/slow_scheduling.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/slow_scheduling.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sslow_scheduling.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sslow_scheduling.cs
+
+slow_scheduling: $(BIN_DIR)/slow_scheduling.exe
+	$(MONO) $(BIN_DIR)$Sslow_scheduling.exe
+
 # csharpalgorithms
 
 csharpalgorithms: $(BIN_DIR)/Google.OrTools.Algorithms.dll
