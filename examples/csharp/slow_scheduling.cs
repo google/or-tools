@@ -21,6 +21,29 @@ using System;
 
 public class SpeakerScheduling
 {
+
+  public class AssignFirstUnboundToMin : NetDecisionBuilder
+  {
+    public AssignFirstUnboundToMin(IntVar[] vars)
+    {
+      vars_ = vars;
+    }
+
+    public override Decision Next(Solver solver)
+    {
+      foreach (IntVar var in vars_)
+      {
+        if (!var.Bound())
+        {
+          return solver.MakeAssignVariableValue(var, var.Min());
+        }
+      }
+      return null;
+    }
+
+    private IntVar[] vars_;
+  }
+
   private static void Solve(int first_time_slot)
   {
     Console.WriteLine("---------- Solving with start time slot = {0} ----------",
@@ -193,7 +216,7 @@ public class SpeakerScheduling
     solver.NewSearch(main_phase, objective_monitor);
     while (solver.NextSolution())
     {
-      Console.WriteLine("\nLast Slot: " + (last_slot.Value()));
+      Console.WriteLine("\nObjective Value: " + (last_slot.Value()));
       Console.WriteLine("Speakers (start..end):");
       for (int s = 0; s < number_of_speakers; s++)
       {
@@ -203,7 +226,7 @@ public class SpeakerScheduling
       }
     }
 
-    Console.WriteLine("Solutions: {0}", solver.Solutions());
+    Console.WriteLine("\nSolutions: {0}", solver.Solutions());
     Console.WriteLine("WallTime: {0}ms", solver.WallTime());
     Console.WriteLine("Failures: {0}", solver.Failures());
     Console.WriteLine("Branches: {0} ", solver.Branches());
