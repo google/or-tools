@@ -1,5 +1,5 @@
 //
-// Copyright 2013 Google
+// Copyright 2012 Google
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
-
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System;
 
 public class Program
 {
