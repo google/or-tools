@@ -168,12 +168,6 @@ $(BIN_DIR)/jobshop_bug.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_
 jobshop_bug: $(BIN_DIR)/jobshop_bug.exe
 	$(MONO) $(BIN_DIR)$Sjobshop_bug.exe
 
-$(BIN_DIR)/slow_scheduling.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/slow_scheduling.cs
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sslow_scheduling.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sslow_scheduling.cs
-
-slow_scheduling: $(BIN_DIR)/slow_scheduling.exe
-	$(MONO) $(BIN_DIR)$Sslow_scheduling.exe
-
 # csharpalgorithms
 
 csharpalgorithms: $(BIN_DIR)/Google.OrTools.Algorithms.dll
@@ -221,6 +215,33 @@ endif
 
 $(BIN_DIR)/csflow.exe: $(BIN_DIR)/Google.OrTools.Graph.dll $(EX_DIR)/csharp/csflow.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Graph.dll $(EX_DIR)$Scsharp$Scsflow.cs
+
+# Unique library.
+
+csharportools: $(BIN_DIR)/Google.OrTools.OrTools.dll
+
+$(GEN_DIR)/ortools/ortools_csharp_wrap.cc: $(SRC_DIR)/graph/graph.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/graph/max_flow.h $(SRC_DIR)/graph/min_cost_flow.h
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Sortools_csharp_wrap.cc -module operations_research -namespace Google.OrTools.OrTools -dllimport "Google.OrTools.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sortools $(SRC_DIR)$Sortools$Sortools.swig
+
+$(OBJ_DIR)/ortools_csharp_wrap.$O: $(GEN_DIR)/ortools/ortools_csharp_wrap.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sortools$Sortools_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sortools_csharp_wrap.$O
+
+$(BIN_DIR)/Google.OrTools.OrTools.dll: $(OBJ_DIR)/ortools_csharp_wrap.$O $(STATIC_ROUTING_DEPS)
+ifeq ($(SYSTEM),win)
+	$(CSC) /target:module /unsafe /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.OrTools.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\ortools\\*.cs $(SRC_DIR)\\com\\google\\ortools\constraintsolver\\*.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)\\Google.OrTools.OrTools.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.OrTools.netmodule $(OBJ_DIR)\\ortools_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+else
+	$(CSC) /target:library /unsafe /out:$(BIN_DIR)/Google.OrTools.OrTools.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/ortools/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/ortools_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+endif
+
+# Examples using multiple libraries.
+
+$(BIN_DIR)/slow_scheduling.exe: $(BIN_DIR)/Google.OrTools.OrTools.dll $(EX_DIR)/csharp/slow_scheduling.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sslow_scheduling.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.OrTools.dll $(EX_DIR)$Scsharp$Sslow_scheduling.cs
+
+slow_scheduling: $(BIN_DIR)/slow_scheduling.exe
+	$(MONO) $(BIN_DIR)$Sslow_scheduling.exe
 
 # Build and compile custome CP examples
 

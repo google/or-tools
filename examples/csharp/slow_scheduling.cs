@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Graph;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,21 +23,54 @@ using System;
 public class SpeakerScheduling
 {
 
-  public class AssignFirstUnboundToMin : NetDecisionBuilder
+  public class FlowAssign : NetDecisionBuilder
   {
-    public AssignFirstUnboundToMin(IntVar[] vars)
+    public FlowAssign(IntVar[] vars)
     {
       vars_ = vars;
     }
 
     public override Decision Next(Solver solver)
     {
-      foreach (IntVar var in vars_)
+      bool ok = true;
+      int number_of_variables = vars_.Length;
+      long[] values = new long[number_of_variables];
       {
-        if (!var.Bound())
+        LinearSumAssignment matching;
+        for (int speaker = 0; speaker < number_of_variables; ++speaker)
         {
-          return solver.MakeAssignVariableValue(var, var.Min());
+          IntVar var = vars_[speaker];
+          for (long value = var.Min(); value <= var.Max(); ++value)
+          {
+            if (var.Contains(value))
+            {
+              matching.AddArcWithCost(
+                  speaker, (int)value + number_of_variables, 1);
+            }
+          }
         }
+        if (matching.Solve() == LinearSumAssignment.OPTIMAL)
+        {
+          for (int speaker = 0; speaker < number_of_variables; ++speaker)
+          {
+            values[speaker] = matching.RightMate(speaker) - number_of_variables;
+          }
+        }
+        else
+        {
+          ok = false;
+        }
+      }
+      if (ok)
+      {
+        for (int speaker = 0; speaker < number_of_variables; ++speaker)
+        {
+          vars_[speaker].SetValue(values[speaker]);
+        }
+      }
+      else
+      {
+        solver.Fail();
       }
       return null;
     }
@@ -206,11 +240,12 @@ public class SpeakerScheduling
         solver.MakePhase(long_talks.ToArray(),
                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                          Solver.ASSIGN_MIN_VALUE);
-    DecisionBuilder inner_short_phase =
-        solver.MakePhase(short_talks.ToArray(),
-                         Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                         Solver.ASSIGN_MIN_VALUE);
-    DecisionBuilder short_phase = solver.MakeSolveOnce(inner_short_phase);
+    // DecisionBuilder inner_short_phase =
+    //     solver.MakePhase(short_talks.ToArray(),
+    //                      Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    //                      Solver.ASSIGN_MIN_VALUE);
+    // DecisionBuilder short_phase = solver.MakeSolveOnce(inner_short_phase);
+    DecisionBuilder short_phase = new FlowAssign(short_talks.ToArray());
     DecisionBuilder main_phase =
         solver.Compose(long_phase, short_phase, obj_phase);
     solver.NewSearch(main_phase, objective_monitor);
