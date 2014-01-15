@@ -12,6 +12,7 @@
 // limitations under the License.
 
 %include exception.i
+%include util/callback.swig
 %include util/data.swig
 %include util/util.swig
 
