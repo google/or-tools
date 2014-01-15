@@ -25,64 +25,70 @@ public class SpeakerScheduling
 
   public class FlowAssign : NetDecisionBuilder
   {
-    public FlowAssign(IntVar[] vars)
+    public FlowAssign(IntVar[] vars, int first_slot, IntVar last_slot_var)
     {
       vars_ = vars;
+      first_slot_ = first_slot;
+      last_slot_var_ = last_slot_var;
     }
 
     public override Decision Next(Solver solver)
     {
-      bool ok = true;
+      int large = 100000;
       int number_of_variables = vars_.Length;
-      long[] values = new long[number_of_variables];
+      long last_slot = last_slot_var_.Max();
+      // Lets build a bipartite graph with equal number of nodes left and right.
+      // Variables will be on the left, slots on the right.
+      // We will add dummy variables when needed.
+      // Arcs will have a cost x is slot x is possible for a variable, a large
+      // number otherwise. For dummy variables, the cost will be 0 always.
+      LinearSumAssignment matching = new LinearSumAssignment();
+      for (int speaker = 0; speaker < number_of_variables; ++speaker)
       {
-        LinearSumAssignment matching;
-        for (int speaker = 0; speaker < number_of_variables; ++speaker)
+        IntVar var = vars_[speaker];
+        for (int value = first_slot_; value <= last_slot; ++value)
         {
-          IntVar var = vars_[speaker];
-          for (long value = var.Min(); value <= var.Max(); ++value)
+          if (var.Contains(value))
           {
-            if (var.Contains(value))
-            {
-              matching.AddArcWithCost(
-                  speaker, (int)value + number_of_variables, 1);
-            }
+            matching.AddArcWithCost(speaker, value - first_slot_, value);
+          }
+          else
+          {
+            matching.AddArcWithCost(speaker, value - first_slot_, large);
           }
         }
-        if (matching.Solve() == LinearSumAssignment.OPTIMAL)
+      }
+      // The Matching algorithms expect the same number of left and right nodes.
+      // So we fill the rest with dense zero-cost arcs.
+      for (int dummy = number_of_variables;
+           dummy <= last_slot - first_slot_; ++dummy) {
+        for (int value = first_slot_; value <= last_slot; ++value)
         {
-          for (int speaker = 0; speaker < number_of_variables; ++speaker)
-          {
-            values[speaker] = matching.RightMate(speaker) - number_of_variables;
-          }
-        }
-        else
-        {
-          ok = false;
+          matching.AddArcWithCost(dummy, value - first_slot_, 0);
         }
       }
-      if (ok)
+      if (matching.Solve() == LinearSumAssignment.OPTIMAL &&
+          matching.OptimalCost() < large)  // No violated arcs.
       {
         for (int speaker = 0; speaker < number_of_variables; ++speaker)
         {
-          vars_[speaker].SetValue(values[speaker]);
+          vars_[speaker].SetValue(matching.RightMate(speaker) + first_slot_);
         }
-      }
-      else
-      {
+      } else {
         solver.Fail();
       }
       return null;
     }
 
     private IntVar[] vars_;
+    private int first_slot_;
+    private IntVar last_slot_var_;
   }
 
-  private static void Solve(int first_time_slot)
+  private static void Solve(int first_slot)
   {
-    Console.WriteLine("---------- Solving with start time slot = {0} ----------",
-                      first_time_slot);
-    Solver solver = new Solver("SchedulingSpeakersOptimize");
+    Console.WriteLine("----------------------------------------------------");
+    Solver solver = new Solver("SpeakerScheduling");
 
     // the slots each speaker is available
     int[][] speaker_availability = {
@@ -113,13 +119,11 @@ public class SpeakerScheduling
     int number_of_speakers = durations.Length;
     // calculate the total number of slots (maximum in the availability array)
     // (and add the max durations)
-    int number_of_slots = (from s in Enumerable.Range(0, number_of_speakers)
+    int last_slot = (from s in Enumerable.Range(0, number_of_speakers)
                     select speaker_availability[s].Max()).Max();
-    Console.WriteLine("number_of_speakers: {0} number_of_slots: {1}",
-                      number_of_speakers, number_of_slots);
-
-    int total_duration = durations.Sum();
-    Console.WriteLine("total_duration: {0}", total_duration);
+    Console.WriteLine(
+        "Scheduling {0} speakers, for a total of {1} slots, during [{2}..{3}]",
+        number_of_speakers, sum_of_durations, first_slot, last_slot);
 
     // Start variable for all talks.
     IntVar[] starts = new IntVar[number_of_speakers];
@@ -132,20 +136,19 @@ public class SpeakerScheduling
       int duration = durations[speaker];
       // Let's filter the possible starts.
       List<int> filtered_starts = new List<int>();
-      for (int index = 0;
-           index < speaker_availability[speaker].Length - duration + 1;
-           ++index)
+      int availability = speaker_availability[speaker].Length;
+      for (int index = 0; index < availability; ++index)
       {
         bool ok = true;
-        int candidate = speaker_availability[speaker][index];
-        if (candidate < first_time_slot)
+        int slot = speaker_availability[speaker][index];
+        if (slot < first_slot)
         {
           continue;
         }
         for (int offset = 1; offset < durations[speaker]; ++offset)
         {
-          if (speaker_availability[speaker][index + offset] !=
-              candidate + offset)
+          if (index + offset >= availability ||
+              speaker_availability[speaker][index + offset] != slot + offset)
           {
             // discontinuity.
             ok = false;
@@ -154,7 +157,7 @@ public class SpeakerScheduling
         }
         if (ok)
         {
-          filtered_starts.Add(candidate);
+          filtered_starts.Add(slot);
         }
         possible_starts[speaker] = filtered_starts.ToArray();
       }
@@ -162,8 +165,9 @@ public class SpeakerScheduling
           solver.MakeIntVar(possible_starts[speaker], "start[" + speaker + "]");
     }
 
-    List<IntVar>[] contributions_per_slot = new List<IntVar>[number_of_slots];
-    for (int slot = 0; slot < number_of_slots; ++slot)
+    List<IntVar>[] contributions_per_slot =
+        new List<IntVar>[last_slot + 1];
+    for (int slot = first_slot; slot <= last_slot; ++slot)
     {
       contributions_per_slot[slot] = new List<IntVar>();
     }
@@ -173,17 +177,14 @@ public class SpeakerScheduling
       IntVar start_var = starts[speaker];
       foreach (int start in possible_starts[speaker])
       {
-        if (start + duration <= number_of_slots)
+        for (int offset = 0; offset < duration; ++offset)
         {
-          for (int offset = 0; offset < duration; ++offset)
-          {
-            contributions_per_slot[start + offset].Add(start_var.IsEqual(start));
-          }
+          contributions_per_slot[start + offset].Add(start_var.IsEqual(start));
         }
       }
     }
     // Force the schedule to be consistent.
-    for (int slot = 0; slot < number_of_slots; ++slot)
+    for (int slot = first_slot; slot <= last_slot; ++slot)
     {
       solver.Add(
           solver.MakeSumLessOrEqual(contributions_per_slot[slot].ToArray(), 1));
@@ -192,7 +193,7 @@ public class SpeakerScheduling
     // Add minimum start info.
     for (int speaker = 0; speaker < number_of_speakers; ++speaker)
     {
-      solver.Add(starts[speaker] >= first_time_slot);
+      solver.Add(starts[speaker] >= first_slot);
     }
 
     // Creates makespan.
@@ -200,12 +201,11 @@ public class SpeakerScheduling
     for (int speaker = 0; speaker < number_of_speakers; speaker++)
     {
       end_times[speaker] = (starts[speaker] + (durations[speaker] - 1)).Var();
-      Console.WriteLine(end_times[speaker].ToString());
     }
-    IntVar last_slot = end_times.Max().VarWithName("last_slot");
+    IntVar last_slot_var = end_times.Max().VarWithName("last_slot");
 
     // Add trivial bound to objective.
-    last_slot.SetMin(first_time_slot + sum_of_durations - 1);
+    last_slot_var.SetMin(first_slot + sum_of_durations - 1);
 
     // Redundant scheduling constraint.
     IntervalVar[] intervals =
@@ -230,28 +230,24 @@ public class SpeakerScheduling
         long_talks.Add(starts[speaker]);
       }
     }
-    IntVar objective_var = solver.MakeMax(end_times.ToArray()).Var();
-    OptimizeVar objective_monitor = solver.MakeMinimize(objective_var, 1);
-    DecisionBuilder obj_phase =
-        solver.MakePhase(objective_var,
-                         Solver.CHOOSE_FIRST_UNBOUND,
-                         Solver.ASSIGN_MIN_VALUE);
+    OptimizeVar objective_monitor = solver.MakeMinimize(last_slot_var, 1);
     DecisionBuilder long_phase =
         solver.MakePhase(long_talks.ToArray(),
                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                          Solver.ASSIGN_MIN_VALUE);
-    // DecisionBuilder inner_short_phase =
-    //     solver.MakePhase(short_talks.ToArray(),
-    //                      Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-    //                      Solver.ASSIGN_MIN_VALUE);
-    // DecisionBuilder short_phase = solver.MakeSolveOnce(inner_short_phase);
-    DecisionBuilder short_phase = new FlowAssign(short_talks.ToArray());
+    DecisionBuilder short_phase =
+        new FlowAssign(short_talks.ToArray(), first_slot, last_slot_var);
+    DecisionBuilder obj_phase =
+        solver.MakePhase(last_slot_var,
+                         Solver.CHOOSE_FIRST_UNBOUND,
+                         Solver.ASSIGN_MIN_VALUE);
     DecisionBuilder main_phase =
         solver.Compose(long_phase, short_phase, obj_phase);
+
     solver.NewSearch(main_phase, objective_monitor);
     while (solver.NextSolution())
     {
-      Console.WriteLine("\nObjective Value: " + (last_slot.Value()));
+      Console.WriteLine("\nLast used slot: " + (last_slot_var.Value()));
       Console.WriteLine("Speakers (start..end):");
       for (int s = 0; s < number_of_speakers; s++)
       {
