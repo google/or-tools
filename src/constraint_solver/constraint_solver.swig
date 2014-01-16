@@ -1018,7 +1018,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 }  // namespace operations_research
 
 #if defined(SWIGJAVA)
-%module(directors="1") operations_research;
+%module(directors="1") operations_research_constraint_solver;
 %feature("director") DecisionBuilder;
 %feature("director") Decision;
 %feature("director") SearchMonitor;
@@ -1205,7 +1205,7 @@ class LocalSearchPhaseParameters {
 #endif  // SWIGJAVA
 
 #if defined(SWIGCSHARP)
-%module(directors="1", allprotected="1") operations_research;
+%module(directors="1", allprotected="1") operations_research_constraint_solver;
 %feature("director") Action;
 %feature("director") BaseLNS;
 %feature("director") Decision;

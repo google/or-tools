@@ -471,7 +471,7 @@ class LinearConstraint(object):
 
 #ifdef SWIGJAVA
 
-%module(directors="1") operations_research;
+%module(directors="1") operations_research_linear_solver;
 
 %typemap(javaimports) SWIGTYPE %{
 import java.lang.reflect.*;
@@ -645,7 +645,7 @@ Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
 
 #if defined(SWIGCSHARP)
 
-%module(directors="1") operations_research;
+%module(directors="1") operations_research_linear_solver;
 
 %typemap(csimports) SWIGTYPE %{
   using System;
