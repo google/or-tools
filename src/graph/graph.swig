@@ -20,6 +20,7 @@
 #include "graph/assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
+using std::string;
 %}
 
 #if defined(SWIGPYTHON)

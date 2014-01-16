@@ -129,13 +129,13 @@ $(BIN_DIR)/Google.OrTools.dll: \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/ValCstPair.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
 	$(SRC_DIR)/com/google/ortools/util/NestedArrayHelper.cs \
-	$(STATIC_ROUTING_DEPS)
+	$(STATIC_ALL_DEPS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule $(OBJ_DIR)$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sgraph_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule $(OBJ_DIR)$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sgraph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(GEN_DIR)/com/google/ortools/knapsacksolver/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(SRC_DIR)/com/google/ortools/util/*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/graph_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/graph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 endif
 
 # csharp linear solver examples
