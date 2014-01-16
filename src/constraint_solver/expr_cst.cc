@@ -141,7 +141,7 @@ GreaterEqExprCst::GreaterEqExprCst(Solver* const s, IntExpr* const e, int64 v)
     : Constraint(s), expr_(e), value_(v) {}
 
 void GreaterEqExprCst::Post() {
-  if (!expr_->IsVar()) {
+  if (!expr_->IsVar() && expr_->Min() < value_) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(d);
   }
@@ -206,7 +206,7 @@ LessEqExprCst::LessEqExprCst(Solver* const s, IntExpr* const e, int64 v)
     : Constraint(s), expr_(e), value_(v) {}
 
 void LessEqExprCst::Post() {
-  if (!expr_->IsVar()) {
+  if (!expr_->IsVar() && expr_->Max() > value_) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(d);
   }
