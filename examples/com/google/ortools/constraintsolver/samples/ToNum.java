@@ -24,7 +24,7 @@ import com.google.ortools.constraintsolver.Solver;
 public class ToNum {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

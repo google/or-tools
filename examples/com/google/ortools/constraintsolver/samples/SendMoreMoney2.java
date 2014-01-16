@@ -24,7 +24,7 @@ public class SendMoreMoney2 {
   static Solver sol;
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   //

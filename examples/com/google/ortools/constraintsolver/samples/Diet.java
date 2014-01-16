@@ -25,7 +25,7 @@ import com.google.ortools.constraintsolver.*;
 public class Diet {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

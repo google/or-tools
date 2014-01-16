@@ -43,7 +43,7 @@ import com.google.ortools.constraintsolver.Solver;
  */
 public class GolombRuler {
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

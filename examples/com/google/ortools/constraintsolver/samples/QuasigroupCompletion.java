@@ -25,7 +25,7 @@ import com.google.ortools.constraintsolver.*;
 public class QuasigroupCompletion {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   static int X = 0;

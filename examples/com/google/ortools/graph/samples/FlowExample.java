@@ -25,7 +25,7 @@ import com.google.ortools.graph.StarGraph;
 public class FlowExample {
 
   static {
-    System.loadLibrary("jnigraph");
+    System.loadLibrary("jniortools");
   }
 
 

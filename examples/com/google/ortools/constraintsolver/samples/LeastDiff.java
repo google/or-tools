@@ -22,7 +22,7 @@ import com.google.ortools.constraintsolver.*;
 public class LeastDiff {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

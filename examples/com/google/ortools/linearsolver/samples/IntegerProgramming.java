@@ -25,7 +25,7 @@ import com.google.ortools.linearsolver.MPVariable;
 public class IntegerProgramming {
 
   static {
-    System.loadLibrary("jnilinearsolver");
+    System.loadLibrary("jniortools");
   }
 
 

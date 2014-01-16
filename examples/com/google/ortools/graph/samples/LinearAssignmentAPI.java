@@ -26,7 +26,7 @@ import com.google.ortools.graph.ForwardStarGraph;
 public class LinearAssignmentAPI {
 
  static {
-    System.loadLibrary("jnigraph");
+    System.loadLibrary("jniortools");
   }
 
 

@@ -51,7 +51,7 @@ class Pair<K, V> {
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   private static Logger logger =

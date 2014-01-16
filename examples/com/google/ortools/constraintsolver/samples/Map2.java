@@ -25,7 +25,7 @@ import com.google.ortools.constraintsolver.*;
 public class Map2 {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

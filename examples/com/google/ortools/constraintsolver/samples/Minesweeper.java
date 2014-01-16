@@ -25,7 +25,7 @@ import com.google.ortools.constraintsolver.*;
 public class Minesweeper {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   static int X = -1;

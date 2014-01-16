@@ -24,7 +24,7 @@ import com.google.ortools.constraintsolver.Solver;
 public class YoungTableaux {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

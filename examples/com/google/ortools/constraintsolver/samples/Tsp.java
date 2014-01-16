@@ -27,7 +27,7 @@ import com.google.ortools.constraintsolver.RoutingModel;
 class Tsp {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   static class RandomManhattan extends NodeEvaluator2 {

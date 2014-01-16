@@ -29,7 +29,7 @@ public class RabbitsPheasants {
       Logger.getLogger(RabbitsPheasants.class.getName());
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

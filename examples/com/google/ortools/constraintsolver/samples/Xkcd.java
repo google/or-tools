@@ -25,7 +25,7 @@ import com.google.ortools.constraintsolver.*;
 public class Xkcd {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

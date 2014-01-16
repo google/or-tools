@@ -41,7 +41,7 @@ import com.google.ortools.constraintsolver.*;
 public class Partition {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

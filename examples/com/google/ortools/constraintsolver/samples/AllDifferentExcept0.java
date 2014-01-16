@@ -24,7 +24,7 @@ import com.google.ortools.constraintsolver.Solver;
 public class AllDifferentExcept0 {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   //

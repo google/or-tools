@@ -24,7 +24,7 @@ import com.google.ortools.constraintsolver.Solver;
 public class NQueens2 {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
 

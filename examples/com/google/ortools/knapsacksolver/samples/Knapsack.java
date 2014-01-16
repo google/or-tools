@@ -23,7 +23,7 @@ import com.google.ortools.knapsacksolver.KnapsackSolver;
 public class Knapsack {
 
   static {
-    System.loadLibrary("jniknapsacksolver");
+    System.loadLibrary("jniortools");
   }
 
 

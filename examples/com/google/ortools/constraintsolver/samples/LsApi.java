@@ -130,7 +130,7 @@ public class LsApi {
       Logger.getLogger(LsApi.class.getName());
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   private static void BasicLns()

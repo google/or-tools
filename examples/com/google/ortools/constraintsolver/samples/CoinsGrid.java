@@ -26,7 +26,7 @@ import com.google.ortools.constraintsolver.OptimizeVar;
 public class CoinsGrid {
 
   static {
-    System.loadLibrary("jniconstraintsolver");
+    System.loadLibrary("jniortools");
   }
 
   /**
