@@ -21,17 +21,17 @@ Running the examples will involve compiling them, then running them.
 Let's compile examples/csflow.cs and run it.
 
 on windows 32 bit:
-   csc /target:exe /out:csflow.exe /platform:x86 /lib:bin /r:Google.OrTools.Graph.dll examples\csflow.cs
+   csc /target:exe /out:csflow.exe /platform:x86 /lib:bin /r:Google.OrTools.dll examples\csflow.cs
    csflow.exe
 
 on windows 64 bit:
-   csc /target:exe /out:csflow.exe /platform:x64 /lib:bin /r:Google.OrTools.Graph.dll examples\csflow.cs
+   csc /target:exe /out:csflow.exe /platform:x64 /lib:bin /r:Google.OrTools.dll examples\csflow.cs
    csflow.exe
 
 On linux (mono comes from the distribution, on ubuntu at least)
-   mono-csc /target:exe /out:csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.Graph.dll examples/csflow.cs
+   mono-csc /target:exe /out:csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csflow.cs
    MONO_PATH=bin mono csflow.exe
 
 On Mac OS X (mono is compiled under dependencies/install)
-   dependencies\install\bin\mcs /target:exe /out:csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.Graph.dll examples/csflow.cs
+   dependencies\install\bin\mcs /target:exe /out:csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csflow.cs
    MONO_PATH=bin dependencies\install\bin\mono csflow.exe
