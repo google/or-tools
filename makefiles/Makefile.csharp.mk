@@ -282,7 +282,7 @@ else
 	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
 	cp tools/README.dotnet temp/or-tools.$(PORT)/README
 	cp bin/Google.OrTools.dll temp/or-tools.$(PORT)/bin
-	cp lib/libGoogle.OrTools.*.so temp/or-tools.$(PORT)/bin
+	cp lib/libGoogle.OrTools.so temp/or-tools.$(PORT)/bin
 	cp examples/csharp/*.cs temp/or-tools.$(PORT)/examples
 	cp data/discrete_tomography/* temp/or-tools.$(PORT)/data/discrete_tomography
 	cp data/fill_a_pix/* temp/or-tools.$(PORT)/data/fill_a_pix
