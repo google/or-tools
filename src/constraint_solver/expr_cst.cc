@@ -135,19 +135,28 @@ class GreaterEqExprCst : public Constraint {
  private:
   IntExpr* const expr_;
   int64 value_;
+  Demon* demon_;
 };
 
 GreaterEqExprCst::GreaterEqExprCst(Solver* const s, IntExpr* const e, int64 v)
-    : Constraint(s), expr_(e), value_(v) {}
+    : Constraint(s), expr_(e), value_(v), demon_(nullptr) {}
 
 void GreaterEqExprCst::Post() {
   if (!expr_->IsVar() && expr_->Min() < value_) {
-    Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-    expr_->WhenRange(d);
+    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(demon_);
+  } else {
+    // Let's clean the demon in case the constraints is posted during search.
+    demon_ = nullptr;
   }
 }
 
-void GreaterEqExprCst::InitialPropagate() { expr_->SetMin(value_); }
+void GreaterEqExprCst::InitialPropagate() {
+  expr_->SetMin(value_);
+  if (demon_ != nullptr && expr_->Min() >= value_) {
+    demon_->inhibit(solver());
+  }
+}
 
 std::string GreaterEqExprCst::DebugString() const {
   return StringPrintf("(%s >= %" GG_LL_FORMAT "d)",
@@ -200,19 +209,28 @@ class LessEqExprCst : public Constraint {
  private:
   IntExpr* const expr_;
   int64 value_;
+  Demon* demon_;
 };
 
 LessEqExprCst::LessEqExprCst(Solver* const s, IntExpr* const e, int64 v)
-    : Constraint(s), expr_(e), value_(v) {}
+    : Constraint(s), expr_(e), value_(v), demon_(nullptr) {}
 
 void LessEqExprCst::Post() {
   if (!expr_->IsVar() && expr_->Max() > value_) {
-    Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-    expr_->WhenRange(d);
+    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(demon_);
+  } else {
+    // Let's clean the demon in case the constraints is posted during search.
+    demon_ = nullptr;
   }
 }
 
-void LessEqExprCst::InitialPropagate() { expr_->SetMax(value_); }
+void LessEqExprCst::InitialPropagate() {
+  expr_->SetMax(value_);
+  if (demon_ != nullptr && expr_->Max() <= value_) {
+    demon_->inhibit(solver());
+  }
+}
 
 std::string LessEqExprCst::DebugString() const {
   return StringPrintf("(%s <= %" GG_LL_FORMAT "d)",
