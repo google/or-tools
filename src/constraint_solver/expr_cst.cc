@@ -146,7 +146,7 @@ void GreaterEqExprCst::Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
   } else {
-    // Let's clean the demon in case the constraints is posted during search.
+    // Let's clean the demon in case the constraint is posted during search.
     demon_ = nullptr;
   }
 }
@@ -220,7 +220,7 @@ void LessEqExprCst::Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
   } else {
-    // Let's clean the demon in case the constraints is posted during search.
+    // Let's clean the demon in case the constraint is posted during search.
     demon_ = nullptr;
   }
 }

@@ -382,7 +382,8 @@ class RoutingModel {
   typedef _RoutingModel_DisjunctionIndex DisjunctionIndex;
   typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
-  typedef std::vector<std::pair<int, int> > NodePairs;
+  typedef std::pair<int, int> NodePair;
+  typedef std::vector<NodePair> NodePairs;
 
   struct CostClass {
     // arc_cost_evaluator->Run(from, to) is the transit cost of arc
@@ -1485,11 +1486,19 @@ class CheapestInsertionFilteredDecisionBuilder
   virtual ~CheapestInsertionFilteredDecisionBuilder() {}
 
  protected:
+  typedef std::pair<int64, int64> ValuedPosition;
   // Inserts 'node' just after 'predecessor', and just before 'successor',
   // resulting in the following subsequence: predecessor -> node -> successor.
   // If 'node' is part of a disjunction, other nodes of the disjunction are made
   // unperformed.
   void InsertBetween(int64 node, int64 predecessor, int64 successor);
+  // Helper method to the ComputeEvaluatorSortedPositions* methods. Finds all
+  // possible insertion positions of node 'node_to_insert' in the partial route
+  // starting at node 'start' and adds them to 'valued_position', a list of
+  // unsorted pairs of (cost, position to insert the node).
+  void AppendEvaluatedPositionsAfter(
+      int64 node_to_insert, int64 start, int64 next_after_start,
+      std::vector<ValuedPosition>* valued_positions);
 
   std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
@@ -1509,13 +1518,18 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
   virtual bool BuildSolution();
 
  private:
-  // Computes the possible insertions for all non-inserted nodes and sorts them
-  // according to the current cost evaluator.
-  // Each std::pair<int64, int64> of the output represents an already performed node,
+  typedef std::pair<int64, int64> InsertionPosition;
+  // Computes the possible insertion positions for all non-inserted nodes and
+  // sorts them according to the current cost evaluator.
+  // Each InsertionPosition of the output represents an already performed node,
   // followed by a non-inserted node that should be set as the "Next" of the
   // former.
-  void ComputeEvaluatorSortedInsertions(
-      std::vector<std::pair<int64, int64> >* sorted_insertions);
+  void ComputeEvaluatorSortedPositions(
+      std::vector<InsertionPosition>* sorted_positions);
+  // Same as above but limited to pickup and delivery pairs. Each pair of
+  // InsertionPosition applies respectively to a pickup and its delivery.
+  void ComputeEvaluatorSortedPositionPairs(
+      std::vector<std::pair<InsertionPosition, InsertionPosition> >* sorted_positions);
 };
 
 // Filtered-base decision builder which builds a solution by inserting
@@ -1547,11 +1561,6 @@ class LocalCheapestInsertionFilteredDecisionBuilder
   void ComputeEvaluatorSortedPositionsOnRouteAfter(
       int64 node, int64 start, int64 next_after_start,
       std::vector<int64>* sorted_positions);
-  // Helper method to the ComputeEvaluatorSortedPositions* methods; the output
-  // is a list of unsorted pairs of (cost, position to insert the node).
-  void AppendEvaluatedPositionsAfter(
-      int64 node_to_insert, int64 start, int64 next_after_start,
-      std::vector<std::pair<int64, int64> >* valued_positions);
 };
 
 // Filtered-base decision builder based on the addition heuristic, extending

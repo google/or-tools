@@ -2575,6 +2575,8 @@ void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var, int64 value,
 void DecisionVisitor::VisitUnknownDecision() {}
 void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
                                               int64 est) {}
+void DecisionVisitor::VisitScheduleOrExpedite(IntervalVar* const var,
+                                              int64 est) {}
 void DecisionVisitor::VisitRankFirstInterval(SequenceVar* const sequence,
                                              int index) {}
 

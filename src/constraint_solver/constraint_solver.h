@@ -520,11 +520,19 @@ class Solver {
     CHOOSE_RANDOM_RANK_FORWARD,
   };
 
-  // Used for scheduling. Not yet implemented.
+  // This enum describes the straregy used to select the next interval variable
+  // and its value to be fixed.
   enum IntervalStrategy {
+    // The default is INTERVAL_SET_TIMES_FORWARD.
     INTERVAL_DEFAULT,
+    // The simple is INTERVAL_SET_TIMES_FORWARD.
     INTERVAL_SIMPLE,
-    INTERVAL_SET_TIMES_FORWARD
+    // Selects the variable with the lowest starting time of all variables,
+    // and fixes its starting time to this lowest value.
+    INTERVAL_SET_TIMES_FORWARD,
+    // Selects the variable with the highest ending time of all variables,
+    // and fixes the ending time to this highest values.
+    INTERVAL_SET_TIMES_BACKWARD
   };
 
   // This enum is used in Solver::MakeOperator to specify the neighborhood to
@@ -2409,6 +2417,14 @@ class Solver {
   Decision* MakeScheduleOrPostpone(IntervalVar* const var, int64 est,
                                    int64* const marker);
 
+  // Returns a decision that tries to schedule a task at a given time.
+  // On the Apply branch, it will set that interval var as performed and set
+  // its end to 'est'. On the Refute branch, it will just update the
+  // 'marker' to 'est' - 1. This decision is used in the
+  // INTERVAL_SET_TIMES_BACKWARD strategy.
+  Decision* MakeScheduleOrExpedite(IntervalVar* const var, int64 est,
+                                   int64* const marker);
+
   // Returns a decision that tries to rank first the ith interval var
   // in the sequence variable.
   Decision* MakeRankFirstInterval(SequenceVar* const sequence, int index);
@@ -3138,6 +3154,7 @@ class DecisionVisitor : public BaseObject {
   virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                         bool start_with_lower_half);
   virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
+  virtual void VisitScheduleOrExpedite(IntervalVar* const var, int64 est);
   virtual void VisitRankFirstInterval(SequenceVar* const sequence, int index);
   virtual void VisitRankLastInterval(SequenceVar* const sequence, int index);
   virtual void VisitUnknownDecision();
@@ -4601,16 +4618,30 @@ class AssignmentContainer {
     return Find(var, &index);
   }
   E* MutableElement(const V* const var) {
+    E* const element = MutableElementOrNull(var);
+    DCHECK(element != nullptr) << "Unknown variable " << var->DebugString()
+                               << " in solution";
+    return element;
+  }
+  E* MutableElementOrNull(const V* const var) {
     int index = -1;
-    const bool found = Find(var, &index);
-    CHECK(found) << "Unknown variable " << var->DebugString() << " in solution";
-    return MutableElement(index);
+    if (Find(var, &index)) {
+      return MutableElement(index);
+    }
+    return nullptr;
   }
   const E& Element(const V* const var) const {
+    const E* const element = ElementPtrOrNull(var);
+    DCHECK(element != nullptr) << "Unknown variable " << var->DebugString()
+                               << " in solution";
+    return *element;
+  }
+  const E* ElementPtrOrNull(const V* const var) const {
     int index = -1;
-    const bool found = Find(var, &index);
-    CHECK(found) << "Unknown variable " << var->DebugString() << " in solution";
-    return Element(index);
+    if (Find(var, &index)) {
+      return &Element(index);
+    }
+    return nullptr;
   }
   const std::vector<E>& elements() const { return elements_; }
   E* MutableElement(int index) { return &elements_[index]; }
@@ -4665,9 +4696,23 @@ class AssignmentContainer {
     }
   }
   bool Find(const V* const var, int* index) const {
-    EnsureMapIsUpToDate();
-    DCHECK_EQ(elements_map_.size(), elements_.size());
-    return FindCopy(elements_map_, var, index);
+    // This threshold was determined from microbenchmarks on Nehalem platform.
+    const size_t kMaxSizeForLinearAccess = 11;
+    if (Size() <= kMaxSizeForLinearAccess) {
+      // Look for 'var' in the container by performing a linear search, avoiding
+      // the access to (and creation of) the elements hash table.
+      for (int i = 0; i < elements_.size(); ++i) {
+        if (var == elements_[i].Var()) {
+          *index = i;
+          return true;
+        }
+      }
+      return false;
+    } else {
+      EnsureMapIsUpToDate();
+      DCHECK_EQ(elements_map_.size(), elements_.size());
+      return FindCopy(elements_map_, var, index);
+    }
   }
 
   std::vector<E> elements_;

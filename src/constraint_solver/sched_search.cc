@@ -380,6 +380,9 @@ void SequenceVar::FillSequence(std::vector<int>* const rank_first,
 // TODO(user) : treat optional intervals
 // TODO(user) : Call DecisionVisitor and pass name of variable
 namespace {
+//
+// Forward scheduling.
+//
 class ScheduleOrPostpone : public Decision {
  public:
   ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
@@ -454,6 +457,96 @@ class SetTimesForward : public DecisionBuilder {
   }
 
   virtual std::string DebugString() const { return "SetTimesForward()"; }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                        vars_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
+ private:
+  const std::vector<IntervalVar*> vars_;
+  std::vector<int64> markers_;
+};
+
+//
+// Backward scheduling.
+//
+class ScheduleOrExpedite : public Decision {
+ public:
+  ScheduleOrExpedite(IntervalVar* const var, int64 est, int64* const marker)
+      : var_(var), est_(est), marker_(marker) {}
+  virtual ~ScheduleOrExpedite() {}
+
+  virtual void Apply(Solver* const s) {
+    var_->SetPerformed(true);
+    if (est_.Value() > var_->EndMax()) {
+      est_.SetValue(s, var_->EndMax());
+    }
+    var_->SetEndRange(est_.Value(), est_.Value());
+  }
+
+  virtual void Refute(Solver* const s) {
+    s->SaveAndSetValue(marker_, est_.Value() - 1);
+  }
+
+  virtual void Accept(DecisionVisitor* const visitor) const {
+    CHECK(visitor != nullptr);
+    visitor->VisitScheduleOrExpedite(var_, est_.Value());
+  }
+
+  virtual std::string DebugString() const {
+    return StringPrintf("ScheduleOrExpedite(%s at %" GG_LL_FORMAT "d)",
+                        var_->DebugString().c_str(), est_.Value());
+  }
+
+ private:
+  IntervalVar* const var_;
+  NumericalRev<int64> est_;
+  int64* const marker_;
+};
+
+class SetTimesBackward : public DecisionBuilder {
+ public:
+  explicit SetTimesBackward(const std::vector<IntervalVar*>& vars)
+      : vars_(vars), markers_(vars.size(), kint64max) {}
+
+  virtual ~SetTimesBackward() {}
+
+  virtual Decision* Next(Solver* const s) {
+    int64 best_end = kint64min;
+    int64 best_start = kint64min;
+    int support = -1;
+    int refuted = 0;
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntervalVar* const v = vars_[i];
+      if (v->MayBePerformed() && v->EndMax() > v->EndMin()) {
+        if (v->EndMax() <= markers_[i] &&
+            (v->EndMax() > best_end ||
+             (v->EndMax() == best_end && v->StartMin() > best_start))) {
+          best_end = v->EndMax();
+          best_start = v->StartMin();
+          support = i;
+        } else {
+          refuted++;
+        }
+      }
+    }
+    // TODO(user) : remove this crude quadratic loop with
+    // reversibles range reduction.
+    if (support == -1) {
+      if (refuted == 0) {
+        return nullptr;
+      } else {
+        s->Fail();
+      }
+    }
+    return s->RevAlloc(new ScheduleOrExpedite(
+        vars_[support], vars_[support]->EndMax(), &markers_[support]));
+  }
+
+  virtual std::string DebugString() const { return "SetTimesBackward()"; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
@@ -724,9 +817,25 @@ Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var, int64 est,
   return RevAlloc(new ScheduleOrPostpone(var, est, marker));
 }
 
+Decision* Solver::MakeScheduleOrExpedite(IntervalVar* const var, int64 est,
+                                         int64* const marker) {
+  CHECK(var != nullptr);
+  CHECK(marker != nullptr);
+  return RevAlloc(new ScheduleOrExpedite(var, est, marker));
+}
+
 DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
                                    IntervalStrategy str) {
-  return RevAlloc(new SetTimesForward(intervals));
+  switch (str) {
+    case Solver::INTERVAL_DEFAULT:
+    case Solver::INTERVAL_SIMPLE:
+    case Solver::INTERVAL_SET_TIMES_FORWARD:
+      return RevAlloc(new SetTimesForward(intervals));
+    case Solver::INTERVAL_SET_TIMES_BACKWARD:
+      return RevAlloc(new SetTimesBackward(intervals));
+    default:
+      LOG(FATAL) << "Unknown strategy " << str;
+  }
 }
 
 Decision* Solver::MakeRankFirstInterval(SequenceVar* const sequence,

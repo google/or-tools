@@ -277,10 +277,10 @@ int64 BasePathFilter::GetNext(const Assignment::IntContainer& container,
                               int64 node) const {
   const IntVar* const next_var = Var(node);
   int64 next = IsVarSynced(node) ? Value(node) : kUnassigned;
-  if (container.Contains(next_var)) {
-    const IntVarElement& element = container.Element(next_var);
-    if (element.Bound()) {
-      next = element.Value();
+  const IntVarElement* const element = container.ElementPtrOrNull(next_var);
+  if (element != nullptr) {
+    if (element->Bound()) {
+      next = element->Value();
     } else {
       return kUnassigned;
     }
@@ -945,6 +945,24 @@ void CheapestInsertionFilteredDecisionBuilder::InsertBetween(int64 node,
   MakeDisjunctionNodesUnperformed(node);
 }
 
+void
+CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
+    int64 node_to_insert, int64 start, int64 next_after_start,
+    std::vector<ValuedPosition>* valued_positions) {
+  CHECK(valued_positions != nullptr);
+  int64 insert_after = start;
+  while (!model()->IsEnd(insert_after)) {
+    const int64 insert_before =
+        (insert_after == start) ? next_after_start : Value(insert_after);
+    valued_positions->push_back(
+        std::make_pair(evaluator_->Run(insert_after, node_to_insert) +
+                  evaluator_->Run(node_to_insert, insert_before) -
+                  evaluator_->Run(insert_after, insert_before),
+                  insert_after));
+    insert_after = insert_before;
+  }
+}
+
 namespace {
 template <class T>
 void SortAndExtractPairSeconds(std::vector<std::pair<int64, T>>* pairs,
@@ -971,12 +989,38 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
   if (!InitializeRoutes()) {
     return false;
   }
-  // Node insertions currently being considered.
-  std::vector<std::pair<int64, int64>> insertions;
+  // Node pair insertions currently being considered.
+  std::vector<std::pair<std::pair<int64, int64>, std::pair<int64, int64>>> insertion_pairs;
   bool found = true;
   while (found) {
     found = false;
-    ComputeEvaluatorSortedInsertions(&insertions);
+    ComputeEvaluatorSortedPositionPairs(&insertion_pairs);
+    for (const std::pair<std::pair<int64, int64>, std::pair<int64, int64>>& insertion_pair :
+           insertion_pairs) {
+      const int64 pickup = insertion_pair.first.second;
+      const int64 pickup_insertion = insertion_pair.first.first;
+      const int64 pickup_insertion_next = Value(pickup_insertion);
+      InsertBetween(pickup, pickup_insertion, pickup_insertion_next);
+      const int64 delivery = insertion_pair.second.second;
+      const int64 delivery_insertion = insertion_pair.second.first;
+      DCHECK_NE(delivery_insertion, pickup_insertion);
+      const int64 delivery_insertion_next =
+          (delivery_insertion == pickup) ? pickup_insertion_next
+          : Value(delivery_insertion);
+      InsertBetween(delivery, delivery_insertion, delivery_insertion_next);
+      if (Commit()) {
+        found = true;
+        break;
+      }
+    }
+  }
+  // Node insertions currently being considered.
+  std::vector<std::pair<int64, int64>> insertions;
+  // Iterating on remaining nodes.
+  found = true;
+  while (found) {
+    found = false;
+    ComputeEvaluatorSortedPositions(&insertions);
     for (const std::pair<int64, int64> insertion : insertions) {
       InsertBetween(insertion.second, insertion.first, Value(insertion.first));
       if (Commit()) {
@@ -990,29 +1034,70 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
 }
 
 void GlobalCheapestInsertionFilteredDecisionBuilder::
-    ComputeEvaluatorSortedInsertions(
-        std::vector<std::pair<int64, int64>>* sorted_insertions) {
-  CHECK(sorted_insertions != nullptr);
-  sorted_insertions->clear();
-  std::vector<std::pair<int64, std::pair<int64, int64>>> valued_insertions;
+    ComputeEvaluatorSortedPositions(
+        std::vector<InsertionPosition>* sorted_positions) {
+  CHECK(sorted_positions != nullptr);
+  sorted_positions->clear();
+  std::vector<std::pair<int64, InsertionPosition>> valued_insertions;
   for (int node = 0; node < model()->Size(); ++node) {
     if (Contains(node)) {
       continue;
     }
+    std::vector<ValuedPosition> valued_positions;
     for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-      int64 insert_after = model()->Start(vehicle);
-      while (!model()->IsEnd(insert_after)) {
-        const int64 insert_before = Value(insert_after);
-        valued_insertions.push_back(
-            std::make_pair(evaluator_->Run(insert_after, node) +
-                          evaluator_->Run(node, insert_before),
-                      std::make_pair(insert_after, node)));
-        insert_after = insert_before;
+      const int64 start = model()->Start(vehicle);
+      AppendEvaluatedPositionsAfter(node, start, Value(start),
+                                    &valued_positions);
+    }
+    for (const std::pair<int64, int64>& valued_position : valued_positions) {
+      valued_insertions.push_back(std::make_pair(valued_position.first,
+                                            std::make_pair(valued_position.second,
+                                                      node)));
+    }
+  }
+  SortAndExtractPairSeconds(&valued_insertions, sorted_positions);
+}
+
+void GlobalCheapestInsertionFilteredDecisionBuilder::
+    ComputeEvaluatorSortedPositionPairs(
+        std::vector<std::pair<InsertionPosition, InsertionPosition>>* sorted_positions) {
+  CHECK(sorted_positions != nullptr);
+  sorted_positions->clear();
+  std::vector<std::pair<int64, std::pair<InsertionPosition, InsertionPosition>>>
+      valued_positions;
+  for (const RoutingModel::NodePair node_pair :
+           model()->GetPickupAndDeliveryPairs()) {
+    const int64 pickup = node_pair.first;
+    const int64 delivery = node_pair.second;
+    if (Contains(pickup) || Contains(delivery)) {
+      continue;
+    }
+    for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+      std::vector<ValuedPosition> valued_pickup_positions;
+      const int64 start = model()->Start(vehicle);
+      AppendEvaluatedPositionsAfter(pickup, start, Value(start),
+                                    &valued_pickup_positions);
+      for (const ValuedPosition& valued_pickup_position :
+               valued_pickup_positions) {
+        const int64 pickup_position = valued_pickup_position.second;
+        CHECK(!model()->IsEnd(pickup_position));
+        std::vector<ValuedPosition> valued_delivery_positions;
+        AppendEvaluatedPositionsAfter(delivery, pickup,
+                                      Value(pickup_position),
+                                      &valued_delivery_positions);
+        for (const ValuedPosition& valued_delivery_position :
+                 valued_delivery_positions) {
+          valued_positions.push_back(std::make_pair(
+              valued_pickup_position.first + valued_delivery_position.first,
+              std::make_pair(std::make_pair(pickup_position, pickup),
+                        std::make_pair(valued_delivery_position.second, delivery))));
+        }
       }
     }
   }
-  SortAndExtractPairSeconds(&valued_insertions, sorted_insertions);
+  SortAndExtractPairSeconds(&valued_positions, sorted_positions);
 }
+
 
 // LocalCheapestInsertionFilteredDecisionBuilder
 
@@ -1119,23 +1204,6 @@ void LocalCheapestInsertionFilteredDecisionBuilder::
     AppendEvaluatedPositionsAfter(node, start, next_after_start,
                                   &valued_positions);
     SortAndExtractPairSeconds(&valued_positions, sorted_positions);
-  }
-}
-
-void
-LocalCheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
-    int64 node_to_insert, int64 start, int64 next_after_start,
-    std::vector<std::pair<int64, int64>>* valued_positions) {
-  CHECK(valued_positions != nullptr);
-  int64 insert_after = start;
-  while (!model()->IsEnd(insert_after)) {
-    const int64 insert_before =
-        (insert_after == start) ? next_after_start : Value(insert_after);
-    valued_positions->push_back(
-        std::make_pair(evaluator_->Run(insert_after, node_to_insert) +
-                      evaluator_->Run(node_to_insert, insert_before),
-                  insert_after));
-    insert_after = insert_before;
   }
 }
 
