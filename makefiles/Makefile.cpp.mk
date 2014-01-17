@@ -1149,8 +1149,8 @@ $(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat_runner.$O
 # Target for archives
 
 ifeq "$(SYSTEM)" "win"
-$(LIB_DIR)/ortools.lib: $(STATIC_ROUTING_DEPS)
-	lib /out:$(LIB_DIR)/ortools.lib  $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+$(LIB_DIR)/ortools.lib: $(STATIC_ALL_DEPS)
+	lib /out:$(LIB_DIR)/ortools.lib  $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 
 
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
