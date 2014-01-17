@@ -24,7 +24,6 @@
 %}
 
 #ifdef SWIGPYTHON
-
 // Define the renaming of methods.
 %ignore MakeBoolVarArray;
 %ignore MakeIntVarArray;
@@ -47,7 +46,6 @@
 %rename (LookupVariable) LookupVariableOrNull;
 %rename (Nodes) nodes;
 %rename (NumVar) MakeNumVar;
-%rename (ObjectiveValue) objective_value;
 %rename (Offset) offset;
 %rename (ReducedCost) reduced_cost;
 %rename (SetLb) SetLB;
@@ -437,30 +435,30 @@ class LinearConstraint(object):
       return self.Constraint(*args)
 
     def Minimize(self, expr):
-      self.ClearObjective()
-      self.SetMinimization()
+      self.Objective().Clear()
+      self.Objective().SetMinimization()
       coeffs = {}
       offset = expr.Visit(coeffs)
-      self.AddObjectiveOffset(offset)
+      self.Objective().SetOffset(offset)
       if sys.version_info[0] >= 3: # Python 3
         for v, c, in coeffs.items():
-          self.SetObjectiveCoefficient(v, float(c))
+          self.Objective().SetCoefficient(v, float(c))
       else:
         for v, c, in coeffs.iteritems():
-          self.SetObjectiveCoefficient(v, float(c))
+          self.Objective().SetCoefficient(v, float(c))
 
     def Maximize(self, expr):
-      self.ClearObjective()
-      self.SetMaximization()
+      self.Objective().Clear()
+      self.Objective().SetMaximization()
       coeffs = {}
       offset = expr.Visit(coeffs)
-      self.AddObjectiveOffset(offset)
+      self.Objective().SetOffset(offset)
       if sys.version_info[0] >= 3: # Python 3
         for v, c, in coeffs.items():
-          self.SetObjectiveCoefficient(v, float(c))
+          self.Objective().SetCoefficient(v, float(c))
       else:
         for v, c, in coeffs.iteritems():
-          self.SetObjectiveCoefficient(v, float(c))
+          self.Objective().SetCoefficient(v, float(c))
   }
 }
 
@@ -520,12 +518,11 @@ namespace operations_research {
 %rename (setIntegerParam) MPSolverParameters::SetIntegerParam;
 
 // Rename rules on MPSolver.
-%rename (addObjectiveOffset) MPSolver::AddObjectiveOffset;
-%rename (bestObjectiveBound) MPSolver::best_objective_bound;
 %rename (checkAllNamesValidity) MPSolver::CheckAllNamesValidity;
 %rename (checkNameValidity) MPSolver::CheckNameValidity;
+%rename (clear) MPConstraint::Clear;
+%rename (clear) MPObjective::Clear;
 %rename (clear) MPSolver::Clear;
-%rename (clearObjective) MPSolver::ClearObjective;
 %rename (computeExactConditionNumber) MPSolver::ComputeExactConditionNumber;
 %rename (loadModel) MPSolver::LoadModel;
 %rename (lookupVariableOrNull) MPSolver::LookupVariableOrNull;
@@ -539,13 +536,12 @@ namespace operations_research {
 %rename (numConstraints) MPSolver::NumConstraints;
 %rename (numVariables) MPSolver::NumVariables;
 %rename (objective) MPSolver::MutableObjective;
-%rename (objectiveValue) MPSolver::objective_value;
 %rename (reset) MPSolver::Reset;
-%rename (setMaximization) MPSolver::SetMaximization;
-%rename (setMinimization) MPSolver::SetMinimization;
-%rename (setObjectiveCoefficient) MPSolver::SetObjectiveCoefficient;
-%rename (setObjectiveOffset) MPSolver::SetObjectiveOffset;
-%rename (setOptimizationDirection) MPSolver::SetOptimizationDirection;
+%rename (setMaximization) MPObjective::SetMaximization();
+%rename (setMinimization) MPObjective::SetMinimization();
+%rename (setCoefficient) MPObjective::SetCoefficient;
+%rename (setOffset) MPObjective::SetOffset;
+%rename (setOptimizationDirection) MPObjective::SetOptimizationDirection;
 %rename (setTimeLimit) MPSolver::set_time_limit;
 %rename (setWriteModelFilename) MPSolver::set_write_model_filename;
 %rename (solve) MPSolver::Solve;
@@ -679,6 +675,9 @@ namespace operations_research {
 %ignore MPSolver::ExportModelToNewProto;
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
+// Ignore Objective(), use MutableObjective() instead.
+%ignore MPSolver::Objective;
+%rename (Objective) MPSolver::MutableObjective;
 
 %typemap(cscode) MPVariable %{
   public static LinearExpr operator+(Variable a, double v)
@@ -1040,44 +1039,44 @@ namespace operations_research {
 
   public void Minimize(LinearExpr expr)
   {
-    ClearObjective();
-    SetMinimization();
+    Objective().Clear();
+    Objective().SetMinimization();
     Dictionary<Variable, double> coefficients =
         new Dictionary<Variable, double>();
     double constant = expr.Visit(coefficients);
     foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
-      SetObjectiveCoefficient(pair.Key, pair.Value);
+      Objective().SetCoefficient(pair.Key, pair.Value);
     }
-    SetObjectiveOffset(constant);
+    Objective().SetOffset(constant);
   }
 
   public void Maximize(LinearExpr expr)
   {
-    ClearObjective();
-    SetMaximization();
+    Objective().Clear();
+    Objective().SetMaximization();
     Dictionary<Variable, double> coefficients =
         new Dictionary<Variable, double>();
     double constant = expr.Visit(coefficients);
     foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
-      SetObjectiveCoefficient(pair.Key, pair.Value);
+      Objective().SetCoefficient(pair.Key, pair.Value);
     }
-    SetObjectiveOffset(constant);
+    Objective().SetOffset(constant);
   }
 
   public void Minimize(Variable var)
   {
-    ClearObjective();
-    SetMinimization();
-    SetObjectiveCoefficient(var, 1.0);
+    Objective().Clear();
+    Objective().SetMinimization();
+    Objective().SetCoefficient(var, 1.0);
   }
 
   public void Maximize(Variable var)
   {
-    ClearObjective();
-    SetMaximization();
-    SetObjectiveCoefficient(var, 1.0);
+    Objective().Clear();
+    Objective().SetMaximization();
+    Objective().SetCoefficient(var, 1.0);
   }
 %}
 

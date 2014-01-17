@@ -517,22 +517,6 @@ class MPSolver {
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
 
-  // *** DEPRECATED ***
-  // Setters and getters for the objective. Please call
-  // Objective().Getter() and MutableObjective()->Setter() instead.
-  // TODO(user): remove when they are no longer used.
-  double objective_value() const;
-  double best_objective_bound() const;
-  void ClearObjective();
-  void SetObjectiveCoefficient(const MPVariable* const var, double coeff);
-  void SetObjectiveOffset(double value);
-  void AddObjectiveOffset(double value);
-  void SetOptimizationDirection(bool maximize);
-  void SetMinimization() { SetOptimizationDirection(false); }
-  void SetMaximization() { SetOptimizationDirection(true); }
-  bool Maximization() const;
-  bool Minimization() const;
-
  private:
   // Computes the size of the constraint with the largest number of
   // coefficients with index in [min_constraint_index,

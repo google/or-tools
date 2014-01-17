@@ -116,6 +116,11 @@ class MPModelProtoExporter {
 
   // Appends a general "Comment" section with useful metadata about the model
   // to "output".
+  // Note(user): there may be less variables in output than in the original
+  // model, as unused variables are not shown by default. Similarly, there
+  // may be more constraints in a .lp file as in the original model as
+  // a constraint lhs <= term <= rhs will be output as the two constraints
+  // term >= lhs and term <= rhs.
   void AppendComments(const std::string& separator, std::string* output) const;
 
   // Appends a term to "output", in "Lp" format.

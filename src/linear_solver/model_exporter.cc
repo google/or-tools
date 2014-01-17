@@ -15,6 +15,7 @@
 #include <cmath>
 #include <limits>
 
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
@@ -23,6 +24,10 @@
 #include "base/map_util.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "util/fp_utils.h"
+
+DEFINE_bool(lp_shows_unused_variables, false,
+            "Decides wether variable unused in the objective and constraints"
+            " are shown when exported to a file using the lp format.");
 
 namespace operations_research {
 
@@ -111,6 +116,9 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
                 num_integer_variables_);
   StringAppendF(output, "%s     %-14s : %d\n", sep, "Continuous",
                 num_continuous_variables_);
+  if (FLAGS_lp_shows_unused_variables) {
+    StringAppendF(output, "%s Unused variables are shown\n", sep);
+  }
 }
 
 bool MPModelProtoExporter::AppendLpTerm(int var_index, double coefficient,
@@ -189,22 +197,28 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   if (proto_.objective_offset() != 0.0) {
     StringAppendF(output, "%-+.16G Constant ", proto_.objective_offset());
   }
-  for (int i = 0; i < proto_.variable_size(); ++i) {
-    if (!AppendLpTerm(i, proto_.variable(i).objective_coefficient(), output)) {
+  std::vector<bool> show_variable(proto_.variable_size(),
+                             FLAGS_lp_shows_unused_variables);
+  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    const double coeff = proto_.variable(var_index).objective_coefficient();
+    if (!AppendLpTerm(var_index, coeff, output)) {
       return false;
     }
+    show_variable[var_index] = coeff != 0.0 || FLAGS_lp_shows_unused_variables;
   }
-
   // Constraints
   StringAppendF(output, "\nSubject to\n");
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     std::string term;
     for (int i = 0; i < ct_proto.var_index_size(); ++i) {
-      if (!AppendLpTerm(ct_proto.var_index(i), ct_proto.coefficient(i),
-                        &term)) {
+      const int var_index = ct_proto.var_index(i);
+      const double coeff = ct_proto.coefficient(i);
+      if (!AppendLpTerm(var_index, coeff, &term)) {
         return false;
       }
+      show_variable[var_index] =
+          coeff != 0.0 || FLAGS_lp_shows_unused_variables;
     }
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
@@ -238,6 +252,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     StringAppendF(output, " 1 <= Constant <= 1\n");
   }
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    if (!show_variable[var_index]) continue;
     const MPVariableProto& var_proto = proto_.variable(var_index);
     const double lb = var_proto.lower_bound();
     const double ub = var_proto.upper_bound();
@@ -260,6 +275,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   if (num_binary_variables_ > 0) {
     StringAppendF(output, "Binaries\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+      if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (IsBoolean(var_proto)) {
         StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());
@@ -271,6 +287,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   if (num_integer_variables_ > 0) {
     StringAppendF(output, "Generals\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+      if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (var_proto.is_integer() && !IsBoolean(var_proto)) {
         StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());

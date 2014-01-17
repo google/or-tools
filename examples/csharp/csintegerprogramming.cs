@@ -29,8 +29,8 @@ public class CsIntegerProgramming
     Variable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     // Minimize x1 + 2 * x2.
-    solver.SetObjectiveCoefficient(x1, 1);
-    solver.SetObjectiveCoefficient(x2, 2);
+    solver.Objective().SetCoefficient(x1, 1);
+    solver.Objective().SetCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
     Constraint ct = solver.MakeConstraint(17, double.PositiveInfinity);
@@ -50,7 +50,8 @@ public class CsIntegerProgramming
                       " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " +
+                      solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -89,7 +90,8 @@ public class CsIntegerProgramming
                       " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " +
+                      solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());

@@ -365,7 +365,7 @@ def main(sol = 'GLPK'):
 
   print
 
-  print 'Cost = %0.2f' % solver.ObjectiveValue()
+  print 'Cost = %0.2f' % solver.Objective().Value()
   # print 'Cost:', cost.SolutionValue()
   print 'Total cost: %0.2f' % total_cost.SolutionValue()
   print

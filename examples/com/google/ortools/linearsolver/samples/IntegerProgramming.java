@@ -54,8 +54,8 @@ public class IntegerProgramming {
     MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");
 
     // Minimize x1 + 2 * x2.
-    solver.setObjectiveCoefficient(x1, 1);
-    solver.setObjectiveCoefficient(x2, 2);
+    solver.objective().setCoefficient(x1, 1);
+    solver.objective().setCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
     MPConstraint ct = solver.makeConstraint(17, infinity);
@@ -75,7 +75,7 @@ public class IntegerProgramming {
 
     // The objective value of the solution.
     System.out.println("Optimal objective value = " +
-                       solver.objectiveValue());
+                       solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());

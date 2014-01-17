@@ -57,7 +57,7 @@ public class Volsay
       return;
     }
 
-    Console.WriteLine("Objective: {0}", solver.ObjectiveValue());
+    Console.WriteLine("Objective: {0}", solver.Objective().Value());
 
     Console.WriteLine("Gas      : {0} ReducedCost: {1}",
                       Gas.SolutionValue(),

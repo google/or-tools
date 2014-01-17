@@ -86,7 +86,7 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'z: ', int(solver.ObjectiveValue())
+  print 'z: ', int(solver.Objective().Value())
 
   print 'take:',
   for i in items:

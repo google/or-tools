@@ -50,10 +50,11 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
   x3 = solver.NumVar(0.0, infinity, 'x3')
 
   # Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  solver.SetObjectiveCoefficient(x1, 10)
-  solver.SetObjectiveCoefficient(x2, 6)
-  solver.SetObjectiveCoefficient(x3, 4)
-  solver.SetMaximization()
+  objective = solver.Objective()
+  objective.SetCoefficient(x1, 10)
+  objective.SetCoefficient(x2, 6)
+  objective.SetCoefficient(x3, 4)
+  objective.SetMaximization()
 
   # x1 + x2 + x3 <= 100.
   c0 = solver.Constraint(-infinity, 100.0, 'c0')
@@ -89,7 +90,7 @@ def SolveAndPrint(solver, variable_list, constraint_list):
   print('Problem solved in %f milliseconds' % solver.WallTime())
 
   # The objective value of the solution.
-  print('Optimal objective value = %f' % solver.ObjectiveValue())
+  print('Optimal objective value = %f' % solver.Objective().Value())
 
   # The value of each variable in the solution.
   for variable in variable_list:

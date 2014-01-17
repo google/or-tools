@@ -664,9 +664,8 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     }
   }
 
-  if (solution_count > 0) {
-    DCHECK(result_status_ == MPSolver::FEASIBLE ||
-           result_status_ == MPSolver::OPTIMAL);
+  if (solution_count > 0 && (result_status_ == MPSolver::FEASIBLE ||
+                             result_status_ == MPSolver::OPTIMAL)) {
     // Get the results.
     const int total_num_rows = solver_->constraints_.size();
     const int total_num_cols = solver_->variables_.size();

@@ -30,10 +30,10 @@ public class CsLinearProgramming
     Variable x3 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x3");
 
     // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-    solver.SetObjectiveCoefficient(x1, 10);
-    solver.SetObjectiveCoefficient(x2, 6);
-    solver.SetObjectiveCoefficient(x3, 4);
-    solver.SetMaximization();
+    solver.Objective().SetCoefficient(x1, 10);
+    solver.Objective().SetCoefficient(x2, 6);
+    solver.Objective().SetCoefficient(x3, 4);
+    solver.Objective().SetMaximization();
 
     // x1 + x2 + x3 <= 100.
     Constraint c0 = solver.MakeConstraint(double.NegativeInfinity, 100.0);
@@ -68,7 +68,8 @@ public class CsLinearProgramming
                       " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " +
+                      solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -122,7 +123,8 @@ public class CsLinearProgramming
                       " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " +
+                      solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());

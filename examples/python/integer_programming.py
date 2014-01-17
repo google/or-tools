@@ -45,8 +45,9 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
   x2 = solver.IntVar(0.0, infinity, 'x2')
 
   # Minimize x1 + 2 * x2.
-  solver.SetObjectiveCoefficient(x1, 1)
-  solver.SetObjectiveCoefficient(x2, 2)
+  objective = solver.Objective()
+  objective.SetCoefficient(x1, 1)
+  objective.SetCoefficient(x2, 2)
 
   # 2 * x2 + 3 * x1 >= 17.
   ct = solver.Constraint(17, infinity)
@@ -69,7 +70,7 @@ def SolveAndPrint(solver, variable_list):
   print('Problem solved in %f milliseconds' % solver.WallTime())
 
   # The objective value of the solution.
-  print('Optimal objective value = %f' % solver.ObjectiveValue())
+  print('Optimal objective value = %f' % solver.Objective().Value())
 
   # The value of each variable in the solution.
   for variable in variable_list:

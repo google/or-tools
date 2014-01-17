@@ -263,37 +263,6 @@ void MPVariable::SetInteger(bool integer) {
   }
 }
 
-// ----- Objective (DEPRECATED methods) -----
-
-double MPSolver::objective_value() const { return Objective().Value(); }
-
-double MPSolver::best_objective_bound() const {
-  return Objective().BestBound();
-}
-
-void MPSolver::ClearObjective() { MutableObjective()->Clear(); }
-
-void MPSolver::SetObjectiveCoefficient(const MPVariable* const var,
-                                       double coeff) {
-  MutableObjective()->SetCoefficient(var, coeff);
-}
-
-void MPSolver::SetObjectiveOffset(double value) {
-  MutableObjective()->SetOffset(value);
-}
-
-void MPSolver::AddObjectiveOffset(double value) {
-  MutableObjective()->AddOffset(value);
-}
-
-void MPSolver::SetOptimizationDirection(bool maximize) {
-  MutableObjective()->SetOptimizationDirection(maximize);
-}
-
-bool MPSolver::Maximization() const { return Objective().maximization(); }
-
-bool MPSolver::Minimization() const { return Objective().minimization(); }
-
 // ----- Version -----
 
 std::string MPSolver::SolverVersion() const { return interface_->SolverVersion(); }
@@ -506,9 +475,9 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
                          ct_proto.coefficient(j));
     }
   }
-  SetOptimizationDirection(input_model.maximize());
+  objective->SetOptimizationDirection(input_model.maximize());
   if (input_model.has_objective_offset()) {
-    MutableObjective()->SetOffset(input_model.objective_offset());
+    objective->SetOffset(input_model.objective_offset());
   }
   return MPSolver::NO_ERROR;
 }
@@ -1426,3 +1395,4 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
+

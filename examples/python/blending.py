@@ -106,7 +106,7 @@ def main(sol = 'GLPK'):
 
   print
 
-  print 'z = ', solver.ObjectiveValue()
+  print 'z = ', solver.Objective().Value()
   print 'Metals'
   for i in Metals:
     print p[i].SolutionValue(),

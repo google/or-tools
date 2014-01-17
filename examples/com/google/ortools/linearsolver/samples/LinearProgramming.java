@@ -55,10 +55,10 @@ public class LinearProgramming {
     MPVariable x3 = solver.makeNumVar(0.0, infinity, "x3");
 
     // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-    solver.setObjectiveCoefficient(x1, 10);
-    solver.setObjectiveCoefficient(x2, 6);
-    solver.setObjectiveCoefficient(x3, 4);
-    solver.setMaximization();
+    solver.objective().setCoefficient(x1, 10);
+    solver.objective().setCoefficient(x2, 6);
+    solver.objective().setCoefficient(x3, 4);
+    solver.objective().setMaximization();
 
     // x1 + x2 + x3 <= 100.
     MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
@@ -93,7 +93,8 @@ public class LinearProgramming {
                        " milliseconds");
 
     // The objective value of the solution.
-    System.out.println("Optimal objective value = " + solver.objectiveValue());
+    System.out.println("Optimal objective value = " +
+                       solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());

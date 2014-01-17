@@ -62,7 +62,7 @@ def main(unused_argv):
   solver.Solve()
 
   print
-  print 'objective = ', solver.ObjectiveValue()
+  print 'objective = ', solver.Objective().Value()
   print 'Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost()
   print 'Chloride:', Chloride.SolutionValue(), 'ReducedCost =', Chloride.ReducedCost()
 

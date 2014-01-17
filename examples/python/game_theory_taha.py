@@ -74,7 +74,7 @@ def main(sol = 'GLPK'):
 
   print
   print 'row player:';
-  print 'v = ', solver.ObjectiveValue()
+  print 'v = ', solver.Objective().Value()
   print 'Strategies: '
   for i in range(rows):
     print x1[i].SolutionValue(),
@@ -101,7 +101,7 @@ def main(sol = 'GLPK'):
 
   print
   print 'column player:';
-  print 'v2 = ', solver.ObjectiveValue()
+  print 'v2 = ', solver.Objective().Value()
   print 'Strategies: '
   for i in range(rows):
     print x2[i].SolutionValue(),

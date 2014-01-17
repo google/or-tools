@@ -67,7 +67,7 @@ def main(unused_argv):
   solver.Solve()
 
   print
-  print 'objective = ', solver.ObjectiveValue()
+  print 'objective = ', solver.Objective().Value()
   for i in range(num_products):
       print products[i], '=', production[i].SolutionValue(),
       print 'ReducedCost = ', production[i].ReducedCost()

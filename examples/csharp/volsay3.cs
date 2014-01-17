@@ -87,7 +87,7 @@ public class Volsay3
       return;
     }
 
-    Console.WriteLine("Objective: {0}", solver.ObjectiveValue());
+    Console.WriteLine("Objective: {0}", solver.Objective().Value());
     foreach(int p in PRODUCTS) {
       Console.WriteLine("{0,-10}: {1} ReducedCost: {2}",
                         products[p],

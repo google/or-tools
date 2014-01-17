@@ -81,7 +81,7 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'z = ', solver.ObjectiveValue()
+  print 'z = ', solver.Objective().Value()
   for i in range(p + 1):
     print a[i].SolutionValue(),
   print

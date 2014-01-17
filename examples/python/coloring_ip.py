@@ -143,7 +143,7 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print "number of colors:", int(solver.ObjectiveValue())
+  print "number of colors:", int(solver.Objective().Value())
   print "colors used:", [int(u[i].SolutionValue()) for i in range(nc)]
   print
 
