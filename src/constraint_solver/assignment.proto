@@ -17,29 +17,29 @@ package operations_research;
 
 // Storage for IntVars.
 message IntVarAssignmentProto {
-  required string var_id = 1;
-  required int64 min = 2;
+  optional string var_id = 1;
+  optional int64 min = 2;
   optional int64 max = 3;  // if undefined -> == min.
   optional bool active = 4 [default = true];
 }
 
 // Storage for IntervalVars.
 message IntervalVarAssignmentProto {
-  required string var_id = 1;
-  required int64 start_min = 2;
+  optional string var_id = 1;
+  optional int64 start_min = 2;
   optional int64 start_max = 3;  // if undefined -> == start_min.
-  required int64 duration_min = 4;
+  optional int64 duration_min = 4;
   optional int64 duration_max = 5;  // if undefined -> == duration_min.
-  required int64 end_min = 6;
+  optional int64 end_min = 6;
   optional int64 end_max = 7;  // if undefined -> == end_min.
-  required int64 performed_min = 8;
+  optional int64 performed_min = 8;
   optional int64 performed_max = 9;  // if undefined -> performed_min.
   optional bool active = 10 [default = true];
 }
 
 // Storage for SequenceVars.
 message SequenceVarAssignmentProto {
-  required string var_id = 1;
+  optional string var_id = 1;
   repeated int32 forward_sequence = 2;
   repeated int32 backward_sequence = 3;
   repeated int32 unperformed = 4;
