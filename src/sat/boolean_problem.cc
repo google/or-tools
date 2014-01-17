@@ -19,10 +19,12 @@ namespace sat {
 
 bool LoadBooleanProblem(const LinearBooleanProblem& problem,
                         SatSolver* solver) {
-  LOG(INFO) << "Loading problem '" << problem.name() << "', "
-            << problem.num_variables() << " variables, "
-            << problem.constraints_size() << " constraints.";
-  solver->Reset(problem.num_variables());
+  if (solver->parameters().log_search_progress()) {
+    LOG(INFO) << "Loading problem '" << problem.name() << "', "
+              << problem.num_variables() << " variables, "
+              << problem.constraints_size() << " constraints.";
+  }
+  solver->SetNumVariables(problem.num_variables());
   std::vector<LiteralWithCoeff> cst;
   int64 num_terms = 0;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
@@ -42,8 +44,14 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
       return false;
     }
   }
-  LOG(INFO) << "The problem contains " << num_terms << " terms.";
+  if (solver->parameters().log_search_progress()) {
+    LOG(INFO) << "The problem contains " << num_terms << " terms.";
+  }
+  return true;
+}
 
+void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
+                                            SatSolver* solver) {
   // Initialize the heuristic to look for a good solution.
   if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
       problem.type() == LinearBooleanProblem::MAXIMIZATION) {
@@ -66,7 +74,6 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
       }
     }
   }
-  return true;
 }
 
 bool AddObjectiveConstraint(const LinearBooleanProblem& problem,

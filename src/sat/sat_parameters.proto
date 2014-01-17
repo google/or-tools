@@ -17,16 +17,21 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 message SatParameters {
-  // Specifies how the variable activities should be initialized.
-  // Variable with high activity are selected first for branching.
-  enum InitialActivity {
-    ALL_ZERO_ACTIVITY = 0;
-    RANDOM_ACTIVITY = 1;
-    SCALED_USAGE_ACTIVITY = 2;
+  // Tie breaking for the variable activity. If two variables have the same
+  // activity, then the one with higher weight will be selected first for
+  // branching.
+  enum VariableWeight {
+    // Zero by default but can be changed with SetAssignmentPreference().
+    // This stays the same between Solve() calls.
+    DEFAULT_WEIGHT = 0;
+    // Both value below are recomputed at the beginning of each Solve() call.
+    RANDOM_WEIGHT = 1;
+    STATIC_SCALED_USAGE_WEIGHT = 2;
   }
-  optional InitialActivity initial_activity = 1 [default = ALL_ZERO_ACTIVITY];
+  optional VariableWeight variable_weight = 1 [default = DEFAULT_WEIGHT];
 
   // Specifies how branching on variable should be done.
+  // Note that this is overridden by calls to SetAssignmentPreference().
   enum VariableBranching {
     // Always branch on the variable being true.
     FIXED_POSITIVE = 0;
@@ -53,7 +58,7 @@ message SatParameters {
 
   // Specifies how literals should be initially sorted in a clause.
   enum LiteralOrdering {
-    // Do nothing and keep literals in order.
+    // Do nothing and keep literals in their current order.
     LITERAL_IN_ORDER = 0;
     // Sort the literals by increasing order of their variable appearance in the
     // problem.
@@ -159,4 +164,13 @@ message SatParameters {
   // Maximum number of conflicts allowed to solve a problem.
   optional int64 max_number_of_conflicts = 37
       [default = 0x7FFFFFFFFFFFFFFF];  // kint64max
+
+  // Maximum memory allowed for the whole thread containing the solver. The
+  // solver will abort as soon as it detects that this limit is crossed. As a
+  // result, this limit is approximative, but usually the solver will not go too
+  // much over.
+  optional int64 max_memory_in_mb = 40 [default = 4096];
+
+  // Whether the solver should log the search progress to LOG(INFO).
+  optional bool log_search_progress = 41 [default = false];
 }

@@ -195,7 +195,7 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
     }
   }
   Update(current_rhs, slack);
-  return true;
+  return *slack >= 0;
 }
 
 void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
@@ -223,12 +223,18 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
         reason->push_back(literal.Negated());
       }
       current_rhs -= coeffs_[coeff_index];
+
+      // If current_rhs reaches zero, then we already have a minimal reason for
+      // the constraint to be unsat. We can stop there.
+      if (current_rhs == 0) break;
     }
     if (i == starts_[coeff_index]) {
       --coeff_index;
     }
   }
-  if (reason->size() == 0) return;
+
+  // In both cases, we can't minimize the reason further.
+  if (reason->size() <= 1 || coeffs_.size() == 1) return;
 
   // Find the smallest coefficient greater than current_rhs.
   // We want a coefficient of a literal that wasn't assigned at the time.
@@ -240,6 +246,7 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
     if (!trail.Assignment().IsVariableAssigned(literal.Variable()) ||
         trail.Info(literal.Variable()).trail_index > source_trail_index) {
       coeff = coeffs_[coeff_index];
+      if (coeff == current_rhs + 1) break;
     }
     if (i == starts_[coeff_index]) --coeff_index;
   }

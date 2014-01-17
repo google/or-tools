@@ -81,25 +81,27 @@ struct VariableInfo {
   double weighted_num_appearances;
 };
 
-// Priority queue element to support var ordering by lowest weight first.
-class WeightedVarQueueElement {
- public:
-  WeightedVarQueueElement() : heap_index_(-1), weight_(0.0), var_(-1) {}
-  bool operator<(const WeightedVarQueueElement& other) const {
-    return weight_ < other.weight_ ||
-           (weight_ == other.weight_ && var_ < other.var_);
-  }
-  void SetHeapIndex(int h) { heap_index_ = h; }
-  int GetHeapIndex() const { return heap_index_; }
-  void set_weight(double weight) { weight_ = weight; }
-  double weight() const { return weight_; }
-  void set_variable(VariableIndex var) { var_ = var; }
-  VariableIndex variable() const { return var_; }
+// Priority queue element to support variable ordering by larger weight first.
+struct WeightedVarQueueElement {
+  WeightedVarQueueElement()
+      : heap_index(-1), weight(0.0), tie_breaker(0.0), variable(-1) {}
 
- private:
-  int heap_index_;
-  double weight_;
-  VariableIndex var_;
+  // Interface for the AdjustablePriorityQueue.
+  void SetHeapIndex(int h) { heap_index = h; }
+  int GetHeapIndex() const { return heap_index; }
+
+  // Priority order.
+  bool operator<(const WeightedVarQueueElement& other) const {
+    return weight < other.weight ||
+           (weight == other.weight &&
+            (tie_breaker < other.tie_breaker ||
+             (tie_breaker == other.tie_breaker && variable < other.variable)));
+  }
+
+  int heap_index;
+  double weight;
+  double tie_breaker;
+  VariableIndex variable;
 };
 
 // This is how the SatSolver store a clause. A clause is just a disjunction of
@@ -217,9 +219,6 @@ class LiteralWatchers {
  public:
   LiteralWatchers();
   ~LiteralWatchers();
-
-  // Reinit data structures at the beginning of the search.
-  void Init();
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -389,6 +388,9 @@ class BinaryImplicationGraph {
   int64 num_literals_removed_;
 
   // Bitset used by MinimizeClause().
+  // TODO(user): use the same one as the one used in the classic minimization
+  // because they are already initialized. Moreover they contains more
+  // information.
   SparseBitset<LiteralIndex> is_marked_;
   SparseBitset<LiteralIndex> is_removed_;
 
@@ -411,15 +413,13 @@ class SatSolver {
   void SetParameters(const SatParameters& parameters);
   const SatParameters& parameters() const;
 
-  // Initializes the solver to solve a new problem with the given number of
-  // variables.
-  //
-  // TODO(user): This currently only works only on a newly created class...
-  // Fix this.
-  void Reset(int num_variables);
+  // Increases the number of variables of the current problem.
+  void SetNumVariables(int num_variables);
 
   // Adds a clause to the problem. Returns false if the clause is always false
   // and thus make the problem unsatisfiable.
+  //
+  // TODO(user): Remove this from the API and only use AddLinearConstraint()?
   bool AddProblemClause(const std::vector<Literal>& literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
@@ -438,24 +438,34 @@ class SatSolver {
                            std::vector<LiteralWithCoeff>* cst);
 
   // Gives a hint so the solver tries to find a solution with the given literal
-  // sets to true. The weight is a number in [0,1] reflecting the relative
+  // sets to true. The weight is a positive number reflecting the relative
   // importance between multiple calls to SetAssignmentPreference().
   //
-  // Note that this hint is just followed at the beginning, and as such it
-  // shouldn't impact the solver performance other than make it start looking
-  // for a solution in a branch that seems better for the problem at hand.
+  // If the weight is non-zero, branching on a variable will always be done
+  // according to the preference. If the weight is zero, then the branch will
+  // be chosen with the current variable_branching() parameter.
+  //
+  // The weight is also used as a tie-breaker between variable with the same
+  // activities provided that the variable_weight parameter is set to
+  // DEFAULT_WEIGHT.
   void SetAssignmentPreference(Literal literal, double weight) {
     if (!parameters_.use_optimization_hints()) return;
     DCHECK_GE(weight, 0.0);
     DCHECK_LE(weight, 1.0);
-    leave_initial_activities_unchanged_ = true;
-    activities_[literal.Variable()] = weight;
+    queue_elements_[literal.Variable()].tie_breaker = weight;
     objective_weights_[literal.Index()] = 0.0;
-    objective_weights_[literal.NegatedIndex()] = weight;
+    objective_weights_[literal.NegatedIndex()] = 1.0;
   }
 
   // Solves the problem and returns its status.
+  //
+  // If any EnqueueDecision*() call has been made before Solve() is called then
+  // this will treat them as assumptions. If, given these assumptions, the model
+  // is UNSAT, the ASSUMPTIONS_UNSAT status will be returned. MODEL_UNSAT is
+  // reserved for the case where the model is proven to be unsat without any
+  // assumptions.
   enum Status {
+    ASSUMPTIONS_UNSAT,
     MODEL_UNSAT,
     MODEL_SAT,
     LIMIT_REACHED,
@@ -528,6 +538,9 @@ class SatSolver {
   int64 num_propagations() const;
 
  private:
+  // Returns false if the thread memory is over the limit.
+  bool IsMemoryLimitReached() const;
+
   // Sets is_model_unsat_ to true and return false.
   bool ModelUnsat();
 
@@ -702,8 +715,6 @@ class SatSolver {
 
   // Init restart period.
   void InitRestart();
-
-  void SetNumVariables(int num_variables);
 
   std::string DebugString(const SatClause& clause) const;
   std::string StatusString() const;

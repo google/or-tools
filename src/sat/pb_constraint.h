@@ -15,6 +15,7 @@
 
 #include <deque>
 #include "base/hash.h"
+#include "base/hash.h"
 #include "sat/sat_base.h"
 #include "util/stats.h"
 
@@ -169,9 +170,11 @@ class PbConstraints {
         num_constraint_lookups_(0),
         num_slack_updates_(0) {}
   ~PbConstraints() {
-    IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
-    LOG(INFO) << "num_constraint_lookups_: " << num_constraint_lookups_;
-    LOG(INFO) << "num_slack_updates_: " << num_slack_updates_;
+    IF_STATS_ENABLED({
+      LOG(INFO) << stats_.StatString();
+      LOG(INFO) << "num_constraint_lookups_: " << num_constraint_lookups_;
+      LOG(INFO) << "num_slack_updates_: " << num_slack_updates_;
+    });
   }
 
   // Changes the number of variables.
@@ -281,7 +284,7 @@ class PbReasonCache {
     return std::make_pair(info.pb_constraint, info.source_trail_index);
   }
 
-  std::map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
+  hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
   DISALLOW_COPY_AND_ASSIGN(PbReasonCache);
 };
 

@@ -19,6 +19,7 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/sysinfo.h"
 #include "base/join.h"
 #include "util/time_limit.h"
 #include "base/stl_util.h"
@@ -57,28 +58,26 @@ bool CompareLiteral(Literal l1, Literal l2) { return l1.Index() < l2.Index(); }
 // ----- LiteralWatchers -----
 
 LiteralWatchers::LiteralWatchers()
-    : is_clean_(true), num_inspected_clauses_(0), stats_("LiteralWatchers") {}
+    : is_clean_(true),
+      num_inspected_clauses_(0),
+      num_watched_clauses_(0),
+      stats_("LiteralWatchers") {}
 
 LiteralWatchers::~LiteralWatchers() {
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
 }
 
-void LiteralWatchers::Init() {
-  is_clean_ = true;
-  num_inspected_clauses_ = 0;
-  num_watched_clauses_ = 0;
-}
-
 void LiteralWatchers::Resize(int num_variables) {
   DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
-  needs_cleaning_.assign(num_variables << 1, false);
+  needs_cleaning_.resize(num_variables << 1, false);
   statistics_.resize(num_variables);
 }
 
 // Note that this is the only place where we add Watcher so the DCHECK
 // guarantees that there are no duplicates.
 void LiteralWatchers::AttachOnFalse(Literal a, Literal b, SatClause* clause) {
+  SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   DCHECK(!WatcherListContains(watchers_on_false_[a.Index()], *clause));
   watchers_on_false_[a.Index()].push_back(Watcher(clause, b));
@@ -128,6 +127,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
 }
 
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
+  SCOPED_TIME_STAT(&stats_);
   ++num_watched_clauses_;
   UpdateStatistics(*clause, /*added=*/true);
   clause->SortLiterals(statistics_, parameters_);
@@ -135,6 +135,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
 }
 
 void LiteralWatchers::LazyDetach(SatClause* clause) {
+  SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
   UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
@@ -176,7 +177,6 @@ void LiteralWatchers::UpdateStatistics(const SatClause& clause, bool added) {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
-  num_propagations_ = 0;
 }
 
 void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
@@ -520,11 +520,15 @@ std::string SatClause::DebugString() const {
 SatSolver::SatSolver()
     : num_variables_(0),
       pb_constraints_(&trail_),
+      current_decision_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
+      counters_(),
       is_model_unsat_(false),
       variable_activity_increment_(1.0),
       clause_activity_increment_(1.0),
+      num_learned_clause_before_cleanup_(0),
+      target_number_of_learned_clauses_(0),
       conflicts_until_next_restart_(0),
       restart_count_(0),
       reason_cache_(trail_),
@@ -538,14 +542,13 @@ SatSolver::~SatSolver() {
 
 void SatSolver::SetNumVariables(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
+  CHECK_GE(num_variables, num_variables_);
   num_variables_ = num_variables;
-  watched_clauses_.Resize(num_variables);
   binary_implication_graph_.Resize(num_variables);
+  watched_clauses_.Resize(num_variables);
   trail_.Resize(num_variables);
   pb_constraints_.Resize(num_variables);
   queue_elements_.resize(num_variables);
-  variable_activity_increment_ = 1.0;
-  clause_activity_increment_ = 1.0;
   activities_.resize(num_variables, 0.0);
   objective_weights_.resize(num_variables << 1, 0.0);
   decisions_.resize(num_variables);
@@ -578,6 +581,12 @@ std::string SatSolver::Indent() const {
     result.append("|   ");
   }
   return result;
+}
+
+bool SatSolver::IsMemoryLimitReached() const {
+  const int64 memory_usage = GetProcessMemoryUsage();
+  const int64 kMegaByte = 1024 * 1024;
+  return memory_usage > kMegaByte * parameters_.max_memory_in_mb();
 }
 
 bool SatSolver::ModelUnsat() {
@@ -701,32 +710,20 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 }
 
-// TODO(user): Clear the solver state and all the constraints.
-void SatSolver::Reset(int num_variables) {
-  SCOPED_TIME_STAT(&stats_);
-  current_decision_level_ = 0;
-  SetNumVariables(num_variables);
-  is_model_unsat_ = false;
-  leave_initial_activities_unchanged_ = false;
-  counters_ = Counters();
-  watched_clauses_.Init();
-  restart_count_ = 0;
-  InitRestart();
-  InitLearnedClauseLimit();
-  random_.Reset(parameters_.random_seed());
-}
-
 bool SatSolver::InitialPropagation() {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   if (!Propagate()) {
     return ModelUnsat();
   }
+  ProcessNewlyFixedVariables();
   return true;
 }
 
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(propagation_trail_index_, trail_.Index());
+
   // We are back at level 0. This can happen because of a restart, or because
   // we proved that some variables must take a given value in any satisfiable
   // assignment. Trigger a simplification of the clauses if there is new fixed
@@ -820,6 +817,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
 
 int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(propagation_trail_index_, trail_.Index());
   int max_level = current_decision_level_;
   int first_propagation_index =
       EnqueueDecisionAndBackjumpOnConflict(true_literal);
@@ -861,71 +859,119 @@ void SatSolver::Backtrack(int target_level) {
   trail_.SetDecisionLevel(target_level);
 }
 
+namespace {
+// Return the next value that is a multiple of interval.
+int NextMultipleOf(int64 value, int64 interval) {
+  return interval * (1 + value / interval);
+}
+}  // namespace
+
 SatSolver::Status SatSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
-  TimeLimit time_limit(parameters_.max_time_in_seconds());
   if (is_model_unsat_) return MODEL_UNSAT;
-  if (CurrentDecisionLevel() > 0) {
-    LOG(ERROR) << "Wrong state when calling SatSolver::Solve()";
-    return INTERNAL_ERROR;
-  }
+  TimeLimit time_limit(parameters_.max_time_in_seconds());
   timer_.Restart();
 
   // Display initial statistics.
-  LOG(INFO) << "Initial memory usage: " << MemoryUsage();
-  LOG(INFO) << "Number of clauses (size > 2): " << problem_clauses_.size();
-  LOG(INFO) << "Number of binary clauses: "
-            << binary_implication_graph_.NumberOfImplications();
-  LOG(INFO) << "Number of linear constraints: "
-            << pb_constraints_.NumberOfConstraints();
-  LOG(INFO) << "Number of initial fixed variables: " << trail_.Index();
-
-  // Fill in the LiteralWatchers structure and perform the initial propagation
-  // if there was any clauses of length 1.
-  if (!InitialPropagation()) {
-    LOG(INFO) << "UNSAT (initial propagation) \n" << StatusString();
-    return MODEL_UNSAT;
+  if (parameters_.log_search_progress()) {
+    LOG(INFO) << "Initial memory usage: " << MemoryUsage();
+    LOG(INFO) << "Number of clauses (size > 2): " << problem_clauses_.size();
+    LOG(INFO) << "Number of binary clauses: "
+              << binary_implication_graph_.NumberOfImplications();
+    LOG(INFO) << "Number of linear constraints: "
+              << pb_constraints_.NumberOfConstraints();
+    LOG(INFO) << "Number of initial fixed variables: " << trail_.Index();
   }
 
-  ProcessNewlyFixedVariables();
+  // Performs the initial propagation if some variables are fixed.
+  if (CurrentDecisionLevel() == 0 && !InitialPropagation()) {
+    if (parameters_.log_search_progress()) {
+      LOG(INFO) << "UNSAT (initial propagation) \n" << StatusString();
+    }
+    return MODEL_UNSAT;
+  }
+  if (parameters_.log_search_progress()) {
+    LOG(INFO) << "Number of assigned variables after initial propagation: "
+              << trail_.Index();
+    LOG(INFO) << "Number of initial watched clauses: "
+              << watched_clauses_.num_watched_clauses();
+    LOG(INFO) << "Parameters: " << parameters_.ShortDebugString();
+  }
+
+  // Any decisions taken before this point is treated as an user provided
+  // assumption, and the solver will return ASSUMPTIONS_UNSAT if it proves that
+  // the model is UNSAT with the given assumption.
+  const int assumption_level = CurrentDecisionLevel();
+
+  // Initialize Solve() dependent variables.
+  InitRestart();
+  random_.Reset(parameters_.random_seed());
   ComputeInitialVariableOrdering();
-  LOG(INFO) << "Number of assigned variables after initial propagation: "
-            << trail_.Index();
-  LOG(INFO) << "Number of initial watched clauses: "
-            << watched_clauses_.num_watched_clauses();
 
   // Variables used to show the search progress.
   const int kDisplayFrequency = 10000;
-  int next_progression_display = kDisplayFrequency;
+  int next_display = parameters_.log_search_progress()
+                         ? NextMultipleOf(num_failures(), kDisplayFrequency)
+                         : std::numeric_limits<int>::max();
+
+  // Variables used to check the memory limit every kMemoryCheckFrequency.
+  const int kMemoryCheckFrequency = 10000;
+  int next_memory_check = NextMultipleOf(num_failures(), kMemoryCheckFrequency);
+
+  // The max_number_of_conflicts is per solve but the counter is for the whole
+  // solver.
+  const int64 kFailureLimit =
+      parameters_.max_number_of_conflicts() == std::numeric_limits<int64>::max()
+          ? std::numeric_limits<int64>::max()
+          : counters_.num_failures + parameters_.max_number_of_conflicts();
 
   // Starts search.
-  LOG(INFO) << "Start Search: " << parameters_.ShortDebugString();
   for (;;) {
     // Test if a limit is reached.
     if (time_limit.LimitReached()) {
-      LOG(INFO) << "The time limit has been reached. Aborting.";
-      LOG(INFO) << RunningStatisticsString();
+      if (parameters_.log_search_progress()) {
+        LOG(INFO) << "The time limit has been reached. Aborting.";
+        LOG(INFO) << RunningStatisticsString();
+      }
       return LIMIT_REACHED;
     }
-    if (counters_.num_failures >= parameters_.max_number_of_conflicts()) {
-      LOG(INFO) << "The conflict limit has been reached. Aborting.";
-      LOG(INFO) << RunningStatisticsString();
+    if (num_failures() >= kFailureLimit) {
+      if (parameters_.log_search_progress()) {
+        LOG(INFO) << "The conflict limit has been reached. Aborting.";
+        LOG(INFO) << RunningStatisticsString();
+      }
       return LIMIT_REACHED;
     }
 
-    // This is done this way because counters_.num_failures may augment by
-    // more than one at each iterations.
-    if (counters_.num_failures >= next_progression_display) {
+    // The current memory checking takes time, so we only execute it every
+    // kMemoryCheckFrequency conflict. We use >= because counters_.num_failures
+    // may augment by more than one at each iteration.
+    //
+    // TODO(user): Find a better way.
+    if (counters_.num_failures >= next_memory_check) {
+      next_memory_check = NextMultipleOf(num_failures(), kMemoryCheckFrequency);
+      if (IsMemoryLimitReached()) {
+        if (parameters_.log_search_progress()) {
+          LOG(INFO) << "The memory limit has been reached. Aborting.";
+        }
+        return LIMIT_REACHED;
+      }
+    }
+
+    // Display search progression. We use >= because counters_.num_failures may
+    // augment by more than one at each iteration.
+    if (counters_.num_failures >= next_display) {
       LOG(INFO) << RunningStatisticsString();
-      next_progression_display =
-          kDisplayFrequency * (1 + counters_.num_failures / kDisplayFrequency);
+      next_display = NextMultipleOf(num_failures(), kDisplayFrequency);
     }
 
     if (trail_.Index() == num_variables_.value()) {  // At a leaf.
-      LOG(INFO) << RunningStatisticsString();
-      LOG(INFO) << "SAT \n" << StatusString();
+      if (parameters_.log_search_progress()) {
+        LOG(INFO) << RunningStatisticsString();
+        LOG(INFO) << "SAT \n" << StatusString();
+      }
       if (!IsAssignmentValid(trail_.Assignment())) {
-        LOG(INFO) << "Something is wrong, the computed model is not true";
+        LOG(ERROR) << "Something is wrong, the computed model is not true";
         return INTERNAL_ERROR;
       }
       return MODEL_SAT;
@@ -933,8 +979,8 @@ SatSolver::Status SatSolver::Solve() {
 
     // Note that ShouldRestart() comes first because it had side effects and
     // should be executed even if CurrentDecisionLevel() is zero.
-    if (ShouldRestart() && CurrentDecisionLevel() > 0) {
-      Backtrack(0);
+    if (ShouldRestart() && CurrentDecisionLevel() > assumption_level) {
+      Backtrack(assumption_level);
     }
 
     // Choose the next decision variable and propagate it.
@@ -946,8 +992,21 @@ SatSolver::Status SatSolver::Solve() {
       next_branch = next_branch.Negated();
     }
     if (EnqueueDecisionAndBackjumpOnConflict(next_branch) == -1) {
-      LOG(INFO) << "UNSAT \n" << StatusString();
+      if (parameters_.log_search_progress()) {
+        LOG(INFO) << "UNSAT \n" << StatusString();
+      }
       return MODEL_UNSAT;
+    }
+
+    // If we backtracked past the assumptions level, then the model is UNSAT
+    // given the assumption.
+    if (CurrentDecisionLevel() < assumption_level) {
+      if (parameters_.log_search_progress()) {
+        LOG(INFO) << "ASSUMPTIONS_UNSAT\n" << StatusString();
+      }
+      // TODO(user): Reapply the assumptions that are still valid so it is
+      // easier for a client to see what was incompatible?
+      return ASSUMPTIONS_UNSAT;
     }
   }
 }
@@ -1008,7 +1067,7 @@ void SatSolver::RescaleVariableActivities(double scaling_factor) {
   var_ordering_.Clear();
   for (VariableIndex var(0); var < num_variables_; ++var) {
     if (!trail_.Assignment().IsVariableAssigned(var)) {
-      queue_elements_[var].set_weight(activities_[var]);
+      queue_elements_[var].weight = activities_[var];
       var_ordering_.Add(&queue_elements_[var]);
     }
   }
@@ -1143,13 +1202,12 @@ std::string SatSolver::RunningStatisticsString() const {
 }
 
 double SatSolver::ComputeInitialVariableWeight(VariableIndex var) const {
-  if (leave_initial_activities_unchanged_) return activities_[var];
-  switch (parameters_.initial_activity()) {
-    case SatParameters::ALL_ZERO_ACTIVITY:
-      return 0;
-    case SatParameters::RANDOM_ACTIVITY:
+  switch (parameters_.variable_weight()) {
+    case SatParameters::DEFAULT_WEIGHT:
+      return queue_elements_[var].tie_breaker;
+    case SatParameters::RANDOM_WEIGHT:
       return random_.RandDouble();
-    case SatParameters::SCALED_USAGE_ACTIVITY: {
+    case SatParameters::STATIC_SCALED_USAGE_WEIGHT: {
       return watched_clauses_.VariableStatistic(var).weighted_num_appearances /
              static_cast<double>(watched_clauses_.num_watched_clauses());
     }
@@ -1296,16 +1354,16 @@ Literal SatSolver::NextBranch() {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
       var = (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())]
-                ->variable();
+                ->variable;
       var_ordering_.Remove(&queue_elements_[var]);
     } while (trail_.Assignment().IsVariableAssigned(var));
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
-    var = var_ordering_.Top()->variable();
+    var = var_ordering_.Top()->variable;
     while (trail_.Assignment().IsVariableAssigned(var)) {
       var_ordering_.Pop();
       DCHECK(!var_ordering_.IsEmpty());
-      var = var_ordering_.Top()->variable();
+      var = var_ordering_.Top()->variable;
     }
   }
 
@@ -1332,14 +1390,15 @@ Literal SatSolver::NextBranch() {
   }
 }
 
+// Note that the activity is left unchanged from one Solve() to the next.
 void SatSolver::ComputeInitialVariableOrdering() {
   SCOPED_TIME_STAT(&stats_);
   var_ordering_.Clear();
   for (VariableIndex var(0); var < num_variables_; ++var) {
-    activities_[var] = ComputeInitialVariableWeight(var);
-    queue_elements_[var].set_variable(var);
+    queue_elements_[var].variable = var;
+    queue_elements_[var].tie_breaker = ComputeInitialVariableWeight(var);
     if (!trail_.Assignment().IsVariableAssigned(var)) {
-      queue_elements_[var].set_weight(activities_[var]);
+      queue_elements_[var].weight = activities_[var];
       var_ordering_.Add(&queue_elements_[var]);
     }
   }
@@ -1356,12 +1415,12 @@ void SatSolver::Untrail(int target_trail_index) {
     WeightedVarQueueElement* element = &(queue_elements_[var]);
     const double new_weight = activities_[var];
     if (var_ordering_.Contains(element)) {
-      if (new_weight != element->weight()) {
-        element->set_weight(new_weight);
+      if (new_weight != element->weight) {
+        element->weight = new_weight;
         var_ordering_.NoteChangedPriority(element);
       }
     } else {
-      element->set_weight(new_weight);
+      element->weight = new_weight;
       var_ordering_.Add(element);
     }
   }

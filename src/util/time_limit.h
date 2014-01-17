@@ -69,6 +69,9 @@ class TimeLimit {
   // Returns 0.0 if the limit was reached.
   double GetTimeLeft() const;
 
+  // Returns the time elapsed in seconds since the construction of this object.
+  double GetElapsedTime() const { return timer_.Get(); }
+
  private:
   // Size of the running window of measurements taken into account.
   static const int kValues = 100;

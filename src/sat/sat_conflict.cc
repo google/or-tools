@@ -471,6 +471,12 @@ void SatSolver::CompressLearnedClausesIfNeeded() {
   if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
 
+  // First time?
+  if (learned_clauses_.size() == 0) {
+    InitLearnedClauseLimit();
+    return;
+  }
+
   // Move the clause that should be kept at the beginning and sort the other
   // using the ClauseOrdering order.
   std::vector<SatClause*>::iterator clause_to_keep_end = std::partition(
@@ -509,9 +515,9 @@ bool SatSolver::ShouldRestart() {
 
 void SatSolver::InitRestart() {
   SCOPED_TIME_STAT(&stats_);
+  restart_count_ = 0;
   if (parameters_.restart_period() > 0) {
-    CHECK_EQ(restart_count_, 0);
-    CHECK_EQ(SUniv(1), 1);
+    DCHECK_EQ(SUniv(1), 1);
     conflicts_until_next_restart_ = parameters_.restart_period();
   } else {
     conflicts_until_next_restart_ = -1;

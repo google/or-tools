@@ -22,6 +22,11 @@ namespace sat {
 // Loads a BooleanProblem into a given SatSolver instance.
 bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);
 
+// Uses the objective coefficient to drive the SAT search towards an
+// heuristically better solution.
+void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
+                                            SatSolver* solver);
+
 // Adds the constraint that the objective is smaller or equals to the given
 // upper bound.
 bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
