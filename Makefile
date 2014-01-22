@@ -1,12 +1,11 @@
 # Top level declarations
 help:
 	@echo Please define target:
-	@echo "  - constraint programming: cplibs cpexe pycp javacp csharpcp csharpexe"
-	@echo "  - mathematical programming: lplibs lpexe pylp javalp csharplp"
-	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms csharpalgorithms"
-	@echo "  - graph: graphlibs pygraph javagraph csharpgraph"
-	@echo "  - tests: test test_cc test_python test_java test_csharp"
-	@echo "  - cleaning: clean clean_csharp"
+	@echo "  - C++: cc test_cc clean_cc"
+	@echo "  - Python: python test_python clean_python"
+	@echo "  - Java: java test_java clean_java"
+	@echo "  - .NET: csharp test_csharp clean_csharp "
+	@echo "  - all: all test clean"
 
 OR_TOOLS_VERSION = 1.0.0
 
