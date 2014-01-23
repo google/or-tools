@@ -38,17 +38,17 @@ static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
 #endif  // Py3.3+
 
 template <class T>
-bool PyObjAs(PyObject* pystr, T* cstr) {
+inline bool PyObjAs(PyObject* pystr, T* cstr) {
   T::undefined;  // You need to define specialization PyObjAs<T>
 }
 template <class T>
-PyObject* PyObjFrom(const T& c) {
+inline PyObject* PyObjFrom(const T& c) {
   T::undefined;  // You need to define specialization PyObjFrom<T>
 }
 
 #ifdef HAS_GLOBAL_STRING
 template <>
-bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
+inline bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
   char* buf;
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
@@ -64,7 +64,7 @@ bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
 }
 #endif
 template <class T>
-bool PyObjAs(PyObject* pystr, std::string* cstr) {
+inline bool PyObjAs(PyObject* pystr, std::string* cstr) {
   char* buf;
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
@@ -80,12 +80,12 @@ bool PyObjAs(PyObject* pystr, std::string* cstr) {
 }
 #ifdef HAS_GLOBAL_STRING
 template <>
-PyObject* PyObjFrom(const ::std::string& c) {
+inline PyObject* PyObjFrom(const ::std::string& c) {
   return PyString_FromStringAndSize(c.data(), c.size());
 }
 #endif
 template <>
-PyObject* PyObjFrom(const std::string& c) {
+inline PyObject* PyObjFrom(const std::string& c) {
   return PyString_FromStringAndSize(c.data(), c.size());
 }
 
@@ -94,7 +94,7 @@ PyObject* PyObjFrom(const std::string& c) {
 #include <limits>
 
 template <>
-bool PyObjAs(PyObject* py, int* c) {
+inline bool PyObjAs(PyObject* py, int* c) {
   long i = PyInt_AsLong(py);        // NOLINT
   if (i == -1 && PyErr_Occurred())  // TypeError or OverflowError.
     return false;                   // Not a Python int.
@@ -106,7 +106,7 @@ bool PyObjAs(PyObject* py, int* c) {
 }
 
 template <>
-bool PyObjAs(PyObject* py, unsigned int* c) {
+inline bool PyObjAs(PyObject* py, unsigned int* c) {
   long i = PyInt_AsLong(py);                      // NOLINT
   if (i == -1 && PyErr_Occurred()) return false;  // Not a Python int.
   if (i < 0 || i > std::numeric_limits<unsigned int>::max()) return false;
@@ -115,7 +115,7 @@ bool PyObjAs(PyObject* py, unsigned int* c) {
 }
 
 template <>
-bool PyObjAs(PyObject* py, long* c) {             // NOLINT
+inline bool PyObjAs(PyObject* py, long* c) {             // NOLINT
   long i = PyInt_AsLong(py);                      // NOLINT
   if (i == -1 && PyErr_Occurred()) return false;  // Not a Python int.
   if (c) *c = i;
@@ -123,7 +123,7 @@ bool PyObjAs(PyObject* py, long* c) {             // NOLINT
 }
 
 template <>
-bool PyObjAs(PyObject* py, long long* c) {  // NOLINT
+inline bool PyObjAs(PyObject* py, long long* c) {  // NOLINT
   long long i;                              // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
@@ -141,7 +141,7 @@ bool PyObjAs(PyObject* py, long long* c) {  // NOLINT
 }
 
 template <>
-bool PyObjAs(PyObject* py, unsigned long long* c) {  // NOLINT
+inline bool PyObjAs(PyObject* py, unsigned long long* c) {  // NOLINT
   unsigned long long i;                              // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py))
@@ -159,7 +159,7 @@ bool PyObjAs(PyObject* py, unsigned long long* c) {  // NOLINT
 }
 
 template <>
-bool PyObjAs(PyObject* py, double* c) {
+inline bool PyObjAs(PyObject* py, double* c) {
   double d;
   if (PyFloat_Check(py)) {
     d = PyFloat_AsDouble(py);
@@ -180,11 +180,11 @@ bool PyObjAs(PyObject* py, double* c) {
 }
 
 template <>
-PyObject* PyObjFrom(const double& c) {
+inline PyObject* PyObjFrom(const double& c) {
   return PyFloat_FromDouble(c);
 }
 template <>
-bool PyObjAs(PyObject* py, float* c) {
+inline bool PyObjAs(PyObject* py, float* c) {
   double d;
   if (!PyObjAs(py, &d)) return false;
   if (c) *c = static_cast<float>(d);
@@ -192,17 +192,17 @@ bool PyObjAs(PyObject* py, float* c) {
 }
 
 template <>
-PyObject* PyObjFrom(const float& c) {
+inline PyObject* PyObjFrom(const float& c) {
   return PyFloat_FromDouble(c);
 }
 template <>
-bool PyObjAs(PyObject* py, bool* c) {
+inline bool PyObjAs(PyObject* py, bool* c) {
   if (!PyBool_Check(py)) return false;  // Not a Python bool.
   if (c) *c = PyObject_Not(py) ? false : true;
   return true;
 }
 
-int SwigPyIntOrLong_Check(PyObject* o) {
+inline int SwigPyIntOrLong_Check(PyObject* o) {
   return (PyLong_Check(o)
 #if PY_MAJOR_VERSION <= 2
           || PyInt_Check(o)
@@ -210,11 +210,11 @@ int SwigPyIntOrLong_Check(PyObject* o) {
           );  // NOLINT
 }
 
-PyObject* SwigString_FromString(const std::string& s) {
+inline PyObject* SwigString_FromString(const std::string& s) {
   return PyString_FromStringAndSize(s.data(), s.size());
 }
 
-std::string SwigString_AsString(PyObject* o) { return std::string(PyString_AsString(o)); }
+inline std::string SwigString_AsString(PyObject* o) { return std::string(PyString_AsString(o)); }
 
 // STL std::vector<T> for common types
 
