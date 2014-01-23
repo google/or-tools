@@ -64,15 +64,15 @@ $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 		$(SRC_DIR)/graph/min_cost_flow.h \
 		$(SRC_DIR)/graph/max_flow.h \
 		$(SRC_DIR)/graph/ebert_graph.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Spywrapgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/graph$Sgraph.swig
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/graph$Sgraph.swig
 
-$(GEN_DIR)/ortools/graph/pywrapgraph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
+$(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
 
-$(OBJ_DIR)/pywrapgraph_python_wrap.$O: $(GEN_DIR)/ortools/graph/pywrapgraph_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/ortools/graph/pywrapgraph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Spywrapgraph_python_wrap.$O
+$(OBJ_DIR)/graph_python_wrap.$O: $(GEN_DIR)/ortools/graph/graph_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/ortools/graph/graph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_python_wrap.$O
 
-$(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/pywrapgraph_python_wrap.$O $(STATIC_GRAPH_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Spywrapgraph_python_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/graph_python_wrap.$O $(STATIC_GRAPH_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sgraph_python_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywrapgraph.dll $(GEN_DIR)\\ortools\\graph\\_pywrapgraph.pyd
 else
