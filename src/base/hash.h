@@ -143,6 +143,43 @@ class PairIntHasher : public stdext::hash_compare<std::pair<int, int> > {
   }
 };
 
+// The following class defines a hash function for std::pair<T*, int>.
+#if defined(_WIN64)
+template <class T>
+class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
+ public:
+  size_t operator()(const std::pair<T*, int>& a) const {
+    uint64 x = reinterpret_cast<uint64>(a.first);
+    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+    uint64 z = static_cast<uint64>(a.second);
+    operations_research::mix(x, y, z);
+    return z;
+  }
+  bool operator()(const std::pair<T*, int>& a1,
+                  const std::pair<T*, int>& a2) const {
+    return a1.first < a2.first ||
+           (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+#else
+template <class T>
+class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
+ public:
+  size_t operator()(const std::pair<T*, int>& a) const {
+    uint32 x = reinterpret_cast<uint32>(a.first);
+    uint32 y = 0x9e3779b9UL;
+    uint32 z = static_cast<uint32>(a.second);
+    operations_research::mix(x, y, z);
+    return z;
+  }
+  bool operator()(const std::pair<T*, int>& a1,
+                  const std::pair<T*, int>& a2) const {
+    return a1.first < a2.first ||
+           (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+#endif
+
 using std::hash;
 using stdext::hash_map;
 using stdext::hash_set;
