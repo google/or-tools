@@ -283,7 +283,7 @@ pypi_upload: pypi_archive
 	@echo Uploading Pypi module.
 ifeq ($(SYSTEM),win)
 	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg upload"
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
 else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
 endif
