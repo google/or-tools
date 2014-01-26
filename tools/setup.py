@@ -34,6 +34,7 @@ setup(
                  [pjoin('ortools', 'graph', '_pywrapgraph.dll'), ]),
                 (pjoin('ortools', 'algorithms'),
                  [pjoin('ortools', 'algorithms', '_pywrapknapsack_solver.dll'), ]),
+DELETEWIN       ('lib', [pjoin('lib', 'libortools.DLL')]),
                ],
     license='Apache 2.0',
     author = 'Google Inc',

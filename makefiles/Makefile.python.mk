@@ -46,8 +46,8 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/ortools
 $(OBJ_DIR)/knapsack_solver_python_wrap.$O: $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sknapsack_solver_python_wrap.$O
 
-$(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/knapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sknapsack_solver_python_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/knapsack_solver_python_wrap.$O $(DYNAMIC_ORTOOLS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sknapsack_solver_python_wrap.$O $(DYNAMIC_ORTOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywrapknapsack_solver.dll $(GEN_DIR)\\ortools\\algorithms\\_pywrapknapsack_solver.pyd
 else
@@ -71,8 +71,8 @@ $(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgr
 $(OBJ_DIR)/graph_python_wrap.$O: $(GEN_DIR)/ortools/graph/graph_python_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/ortools/graph/graph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_python_wrap.$O
 
-$(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/graph_python_wrap.$O $(STATIC_GRAPH_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sgraph_python_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/graph_python_wrap.$O $(DYNAMIC_ORTOOLS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sgraph_python_wrap.$O $(DYNAMIC_ORTOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywrapgraph.dll $(GEN_DIR)\\ortools\\graph\\_pywrapgraph.pyd
 else
@@ -113,8 +113,10 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc: $(GEN_DIR
 $(OBJ_DIR)/constraint_solver_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver_python_wrap.$O
 
-$(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/constraint_solver_python_wrap.$O $(STATIC_ROUTING_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX): \
+		$(OBJ_DIR)/constraint_solver_python_wrap.$O \
+			$(DYNAMIC_ORTOOLS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sconstraint_solver_python_wrap.$O $(DYNAMIC_ORTOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywrapcp.dll $(GEN_DIR)\\ortools\\constraint_solver\\_pywrapcp.pyd
 else
@@ -138,8 +140,10 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc: $(GEN_DIR)/ortool
 $(OBJ_DIR)/linear_solver_python_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver_python_wrap.$O
 
-$(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX): $(OBJ_DIR)/linear_solver_python_wrap.$O $(STATIC_LP_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Slinear_solver_python_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(PYTHON_LNK)
+$(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX): \
+		$(OBJ_DIR)/linear_solver_python_wrap.$O \
+			$(DYNAMIC_ORTOOLS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)$Slinear_solver_python_wrap.$O $(DYNAMIC_ORTOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy $(LIB_DIR)\\_pywraplp.dll $(GEN_DIR)\\ortools\\linear_solver\\_pywraplp.pyd
 else
@@ -257,14 +261,22 @@ ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sortools$Sortools$Sgraph
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sortools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/ortools/setup.py
+	$(SED) -i -e '/DELETEWIN/d' temp/ortools/setup.py
 	-del temp\ortools\setup.py-e
 else
-	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sconstraint_solver
-	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Slinear_solver
-	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Sgraph
-	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sortools$Sortools$Salgorithms
+	$(MKDIR) temp$Sortools$Slib
+	cp lib/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/constraint_solver
+	cp lib/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/linear_solver
+	cp lib/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/graph
+	cp lib/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/algorithms
+	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/ortools/lib
 	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
+	$(SED) -i -e 's/DELETEWIN/         /g' temp/ortools/setup.py
+	$(SED) -i -e 's/DLL/$(DYNAMIC_LIB_SUFFIX)/g' temp/ortools/setup.py
 	-rm temp/ortools/setup.py-e
+ifeq ($(PLATFORM),MACOSX)
+	tools/fix_python_libraries_on_mac.sh
+endif
 endif
 
 pypi_upload: pypi_archive
