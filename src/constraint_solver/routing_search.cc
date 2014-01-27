@@ -194,7 +194,7 @@ BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
                                int next_domain_size,
                                Callback1<int64>* objective_callback)
     : RoutingLocalSearchFilter(nexts, objective_callback),
-      node_path_starts_(next_domain_size),
+      node_path_starts_(next_domain_size, kUnassigned),
       paths_(nexts.size(), -1) {}
 
 bool BasePathFilter::Accept(const Assignment* delta,
@@ -385,7 +385,7 @@ class PathCumulFilter : public BasePathFilter {
   const std::vector<IntVar*> cumuls_;
   const std::vector<IntVar*> slacks_;
   std::vector<int64> start_to_vehicle_;
-  Solver::IndexEvaluator2* const evaluator_;
+  std::vector<Solver::IndexEvaluator2*> evaluators_;
   int64 total_current_cumul_cost_value_;
   // Map between paths and path soft cumul bound costs. The paths are indexed
   // by the index of the start node of the path.
@@ -419,7 +419,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                      objective_callback),
       cumuls_(dimension.cumuls()),
       slacks_(dimension.slacks()),
-      evaluator_(dimension.transit_evaluator()),
+      evaluators_(routing_model.vehicles(), nullptr),
       total_current_cumul_cost_value_(0),
       current_cumul_cost_values_(),
       cumul_cost_delta_(0),
@@ -473,6 +473,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   start_to_vehicle_.resize(Size(), -1);
   for (int i = 0; i < routing_model.vehicles(); ++i) {
     start_to_vehicle_[routing_model.Start(i)] = i;
+    evaluators_[i] = dimension.transit_evaluator(i);
   }
 }
 
@@ -500,6 +501,8 @@ void PathCumulFilter::OnSynchronize() {
     // For each path, compute the minimum end cumul and store the max of these.
     for (int r = 0; r < NumPaths(); ++r) {
       int64 node = Start(r);
+      const int vehicle = start_to_vehicle_[Start(r)];
+      Solver::IndexEvaluator2* const evaluator = evaluators_[vehicle];
       // First pass: evaluating route length to reserve memory to store route
       // information.
       int number_of_route_arcs = 0;
@@ -515,7 +518,7 @@ void PathCumulFilter::OnSynchronize() {
       int64 total_transit = 0;
       while (node < Size()) {
         const int64 next = Value(node);
-        const int64 transit = evaluator_->Run(node, next);
+        const int64 transit = evaluator->Run(node, next);
         total_transit += transit;
         const int64 transit_slack = transit + slacks_[node]->Min();
         current_path_transits_.PushTransit(r, node, next, transit_slack);
@@ -527,7 +530,6 @@ void PathCumulFilter::OnSynchronize() {
       if (FilterSlackCost()) {
         const int64 start =
             ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
-        const int vehicle = start_to_vehicle_[Start(r)];
         current_cumul_cost_value += vehicle_span_cost_coefficients_[vehicle] *
                                     (cumul - start - total_transit);
       }
@@ -574,6 +576,7 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
   const int64 capacity = capacity_evaluator_ == nullptr
                              ? kint64max
                              : capacity_evaluator_->Run(vehicle);
+  Solver::IndexEvaluator2* const evaluator = evaluators_[vehicle];
   // Check that the path is feasible with regards to cumul bounds, scanning
   // the paths from start to end (caching path node sequences and transits
   // for further span cost filtering).
@@ -584,7 +587,7 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
       lns_detected_ = true;
       return true;
     }
-    const int64 transit = evaluator_->Run(node, next);
+    const int64 transit = evaluator->Run(node, next);
     total_transit += transit;
     const int64 transit_slack = transit + slacks_[node]->Min();
     delta_path_transits_.PushTransit(path, node, next, transit_slack);
@@ -796,6 +799,10 @@ IntVarFilteredDecisionBuilder::IntVarFilteredDecisionBuilder(
 }
 
 Decision* IntVarFilteredDecisionBuilder::Next(Solver* solver) {
+  // Wiping assignment when starting a new search.
+  assignment_->MutableIntVarContainer()->Clear();
+  assignment_->MutableIntVarContainer()->Resize(vars_.size());
+  SynchronizeFilters();
   SetValuesFromDomains();
   if (BuildSolution()) {
     assignment_->Restore();
@@ -945,8 +952,7 @@ void CheapestInsertionFilteredDecisionBuilder::InsertBetween(int64 node,
   MakeDisjunctionNodesUnperformed(node);
 }
 
-void
-CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
+void CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
     int64 node_to_insert, int64 start, int64 next_after_start,
     std::vector<ValuedPosition>* valued_positions) {
   CHECK(valued_positions != nullptr);
@@ -956,8 +962,8 @@ CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
         (insert_after == start) ? next_after_start : Value(insert_after);
     valued_positions->push_back(
         std::make_pair(evaluator_->Run(insert_after, node_to_insert) +
-                  evaluator_->Run(node_to_insert, insert_before) -
-                  evaluator_->Run(insert_after, insert_before),
+                      evaluator_->Run(node_to_insert, insert_before) -
+                      evaluator_->Run(insert_after, insert_before),
                   insert_after));
     insert_after = insert_before;
   }
@@ -996,7 +1002,7 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
     found = false;
     ComputeEvaluatorSortedPositionPairs(&insertion_pairs);
     for (const std::pair<std::pair<int64, int64>, std::pair<int64, int64>>& insertion_pair :
-           insertion_pairs) {
+         insertion_pairs) {
       const int64 pickup = insertion_pair.first.second;
       const int64 pickup_insertion = insertion_pair.first.first;
       const int64 pickup_insertion_next = Value(pickup_insertion);
@@ -1004,9 +1010,9 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
       const int64 delivery = insertion_pair.second.second;
       const int64 delivery_insertion = insertion_pair.second.first;
       DCHECK_NE(delivery_insertion, pickup_insertion);
-      const int64 delivery_insertion_next =
-          (delivery_insertion == pickup) ? pickup_insertion_next
-          : Value(delivery_insertion);
+      const int64 delivery_insertion_next = (delivery_insertion == pickup)
+                                                ? pickup_insertion_next
+                                                : Value(delivery_insertion);
       InsertBetween(delivery, delivery_insertion, delivery_insertion_next);
       if (Commit()) {
         found = true;
@@ -1033,9 +1039,9 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
   return Commit();
 }
 
-void GlobalCheapestInsertionFilteredDecisionBuilder::
-    ComputeEvaluatorSortedPositions(
-        std::vector<InsertionPosition>* sorted_positions) {
+void
+GlobalCheapestInsertionFilteredDecisionBuilder::ComputeEvaluatorSortedPositions(
+    std::vector<InsertionPosition>* sorted_positions) {
   CHECK(sorted_positions != nullptr);
   sorted_positions->clear();
   std::vector<std::pair<int64, InsertionPosition>> valued_insertions;
@@ -1050,9 +1056,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::
                                     &valued_positions);
     }
     for (const std::pair<int64, int64>& valued_position : valued_positions) {
-      valued_insertions.push_back(std::make_pair(valued_position.first,
-                                            std::make_pair(valued_position.second,
-                                                      node)));
+      valued_insertions.push_back(std::make_pair(
+          valued_position.first, std::make_pair(valued_position.second, node)));
     }
   }
   SortAndExtractPairSeconds(&valued_insertions, sorted_positions);
@@ -1066,7 +1071,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::
   std::vector<std::pair<int64, std::pair<InsertionPosition, InsertionPosition>>>
       valued_positions;
   for (const RoutingModel::NodePair node_pair :
-           model()->GetPickupAndDeliveryPairs()) {
+       model()->GetPickupAndDeliveryPairs()) {
     const int64 pickup = node_pair.first;
     const int64 delivery = node_pair.second;
     if (Contains(pickup) || Contains(delivery)) {
@@ -1078,15 +1083,14 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::
       AppendEvaluatedPositionsAfter(pickup, start, Value(start),
                                     &valued_pickup_positions);
       for (const ValuedPosition& valued_pickup_position :
-               valued_pickup_positions) {
+           valued_pickup_positions) {
         const int64 pickup_position = valued_pickup_position.second;
         CHECK(!model()->IsEnd(pickup_position));
         std::vector<ValuedPosition> valued_delivery_positions;
-        AppendEvaluatedPositionsAfter(delivery, pickup,
-                                      Value(pickup_position),
+        AppendEvaluatedPositionsAfter(delivery, pickup, Value(pickup_position),
                                       &valued_delivery_positions);
         for (const ValuedPosition& valued_delivery_position :
-                 valued_delivery_positions) {
+             valued_delivery_positions) {
           valued_positions.push_back(std::make_pair(
               valued_pickup_position.first + valued_delivery_position.first,
               std::make_pair(std::make_pair(pickup_position, pickup),
@@ -1097,7 +1101,6 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::
   }
   SortAndExtractPairSeconds(&valued_positions, sorted_positions);
 }
-
 
 // LocalCheapestInsertionFilteredDecisionBuilder
 

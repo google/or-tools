@@ -231,5 +231,17 @@ void StoreAssignment(const VariablesAssignment& assignment,
   }
 }
 
+void ExtractSubproblem(const LinearBooleanProblem& problem,
+                       const std::vector<int>& constraint_indices,
+                       LinearBooleanProblem* subproblem) {
+  subproblem->CopyFrom(problem);
+  subproblem->set_name("Subproblem of " + problem.name());
+  subproblem->clear_constraints();
+  for (int index : constraint_indices) {
+    CHECK_LT(index, problem.constraints_size());
+    subproblem->add_constraints()->MergeFrom(problem.constraints(index));
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

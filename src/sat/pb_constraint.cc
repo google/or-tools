@@ -12,22 +12,12 @@
 // limitations under the License.
 #include "sat/pb_constraint.h"
 
+#include "util/saturated_arithmetic.h"
+
 namespace operations_research {
 namespace sat {
 
 namespace {
-
-// Returns false if the addition overflow/underflow. Otherwise returns true
-// and performs the addition *b += a;
-bool SafeAdd(Coefficient a, Coefficient* b) {
-  if (a > 0) {
-    if (*b > std::numeric_limits<Coefficient>::max() - a) return false;
-  } else {
-    if (*b < std::numeric_limits<Coefficient>::min() - a) return false;
-  }
-  *b += a;
-  return true;
-}
 
 bool LiteralComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
   return a.literal.Index() < b.literal.Index();
@@ -58,13 +48,13 @@ bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shi
     if (representative != nullptr &&
         current.literal.Variable() == representative->literal.Variable()) {
       if (current.literal == representative->literal) {
-        if (!SafeAdd(current.coefficient, &(representative->coefficient)))
+        if (!SafeAddInto(current.coefficient, &(representative->coefficient)))
           return false;
       } else {
         // Here current_literal is equal to (1 - representative).
-        if (!SafeAdd(-current.coefficient, &(representative->coefficient)))
+        if (!SafeAddInto(-current.coefficient, &(representative->coefficient)))
           return false;
-        if (!SafeAdd(-current.coefficient, bound_shift)) return false;
+        if (!SafeAddInto(-current.coefficient, bound_shift)) return false;
       }
     } else {
       if (representative != nullptr && representative->coefficient == 0) {
@@ -85,11 +75,11 @@ bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shi
   for (int i = 0; i < cst->size(); ++i) {
     const LiteralWithCoeff current = (*cst)[i];
     if (current.coefficient < 0) {
-      if (!SafeAdd(-current.coefficient, bound_shift)) return false;
+      if (!SafeAddInto(-current.coefficient, bound_shift)) return false;
       (*cst)[i].coefficient = -current.coefficient;
       (*cst)[i].literal = current.literal.Negated();
     }
-    if (!SafeAdd((*cst)[i].coefficient, max_value)) return false;
+    if (!SafeAddInto((*cst)[i].coefficient, max_value)) return false;
   }
 
   // Finally sort by increasing coefficients.
@@ -108,7 +98,8 @@ bool LinearConstraintIsCannonical(const std::vector<LiteralWithCoeff>& cst) {
 }
 
 UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
-    const std::vector<LiteralWithCoeff>& cst) {
+    const std::vector<LiteralWithCoeff>& cst, ResolutionNode* node)
+    : node_(node) {
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
   literals_.reserve(cst.size());
@@ -208,6 +199,9 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
     return;
   }
 
+  // This is needed for unsat proof.
+  const bool include_level_zero = trail.NeedFixedLiteralsInReason();
+
   // Compute the initial reason which is formed by all the literals of the
   // constraint that were assigned to true at the time of the propagation.
   // We remove literals with a level of 0 since they are not needed.
@@ -219,7 +213,7 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
     const Literal literal = literals_[i];
     if (trail.Assignment().IsLiteralTrue(literal) &&
         trail.Info(literal.Variable()).trail_index <= source_trail_index) {
-      if (trail.Info(literal.Variable()).level != 0) {
+      if (include_level_zero || trail.Info(literal.Variable()).level != 0) {
         reason->push_back(literal.Negated());
       }
       current_rhs -= coeffs_[coeff_index];
@@ -282,7 +276,7 @@ void UpperBoundedLinearConstraint::Untrail(Coefficient* slack) {
 // TODO(user): This is relatively slow. Take the "transpose" all at once, and
 // maybe put small constraints first on the to_update_ lists.
 bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                  Coefficient rhs) {
+                                  Coefficient rhs, ResolutionNode* node) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
@@ -291,6 +285,9 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   // added constraint.
   if (!constraints_.empty() && constraints_.back().HasIdenticalTerms(cst)) {
     if (rhs < constraints_.back().Rhs()) {
+      // The new constraint is tighther, so we also replace the ResolutionNode.
+      // TODO(user): The old one could be unlocked at this point.
+      constraints_.back().ChangeResolutionNode(node);
       return constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
                                                &slacks_.back(), trail_,
                                                &reason_scratchpad_);
@@ -301,7 +298,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   }
 
   const ConstraintIndex cst_index(constraints_.size());
-  constraints_.emplace_back(UpperBoundedLinearConstraint(cst));
+  constraints_.emplace_back(UpperBoundedLinearConstraint(cst, node));
   slacks_.push_back(0);
   if (!constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
                                          &slacks_.back(), trail_,
@@ -335,9 +332,13 @@ bool PbConstraints::PropagateNext() {
     if (slack < 0 && !conflict) {
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
+      // Important: we must use the conflict_scratchpad_ here not the
+      // reason_scratchpad_.
       if (!constraints_[update.index.value()].Propagate(
-               order, &slacks_[update.index], trail_, &reason_scratchpad_)) {
-        trail_->SetFailingClause(ClauseRef(reason_scratchpad_));
+               order, &slacks_[update.index], trail_, &conflict_scratchpad_)) {
+        trail_->SetFailingClause(ClauseRef(conflict_scratchpad_));
+        trail_->SetFailingResolutionNode(
+            constraints_[update.index.value()].ResolutionNodePointer());
         conflict = true;
       }
     }

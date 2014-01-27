@@ -32,371 +32,16 @@
 #include "base/int_type.h"
 #include "base/random.h"
 #include "sat/pb_constraint.h"
+#include "sat/clause.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
+#include "sat/unsat_proof.h"
 #include "util/bitset.h"
 #include "util/stats.h"
 #include "base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace sat {
-
-// Forward declarations.
-// TODO(user): This cyclic dependency can be relatively easily removed.
-class LiteralWatchers;
-
-// Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
-// Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
-// This is used to decide the number of conflicts allowed before the next
-// restart. This method, used by most SAT solvers, is usually referenced as
-// Luby.
-// Returns 2^{k-1} when i == 2^k - 1
-//    and  SUniv(i - 2^{k-1} + 1) when 2^{k-1} <= i < 2^k - 1.
-// The sequence is defined for i > 0 and starts with:
-//   {1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, ...}
-inline int SUniv(int i) {
-  DCHECK_GT(i, 0);
-  while (i > 2) {
-    const int most_significant_bit_position =
-        MostSignificantBitPosition64(i + 1);
-    if ((1 << most_significant_bit_position) == i + 1) {
-      return 1 << (most_significant_bit_position - 1);
-    }
-    i -= (1 << most_significant_bit_position) - 1;
-  }
-  return 1;
-}
-
-// Variable information. This is updated each time we attach/detach a clause.
-struct VariableInfo {
-  VariableInfo()
-      : num_positive_clauses(0),
-        num_negative_clauses(0),
-        num_appearances(0),
-        weighted_num_appearances(0.0) {}
-
-  int num_positive_clauses;
-  int num_negative_clauses;
-  int num_appearances;
-  double weighted_num_appearances;
-};
-
-// Priority queue element to support variable ordering by larger weight first.
-struct WeightedVarQueueElement {
-  WeightedVarQueueElement()
-      : heap_index(-1), weight(0.0), tie_breaker(0.0), variable(-1) {}
-
-  // Interface for the AdjustablePriorityQueue.
-  void SetHeapIndex(int h) { heap_index = h; }
-  int GetHeapIndex() const { return heap_index; }
-
-  // Priority order.
-  bool operator<(const WeightedVarQueueElement& other) const {
-    return weight < other.weight ||
-           (weight == other.weight &&
-            (tie_breaker < other.tie_breaker ||
-             (tie_breaker == other.tie_breaker && variable < other.variable)));
-  }
-
-  int heap_index;
-  double weight;
-  double tie_breaker;
-  VariableIndex variable;
-};
-
-// This is how the SatSolver store a clause. A clause is just a disjunction of
-// literals. In many places, we just use std::vector<literal> to encode one. However,
-// the solver needs to keep a few extra fields attached to each clause.
-class SatClause {
- public:
-  // Creates a sat clause. There must be at least 2 literals.
-  // Smaller clause are treated separatly and never constructed.
-  enum ClauseType {
-    PROBLEM_CLAUSE,
-    LEARNED_CLAUSE,
-  };
-  static SatClause* Create(const std::vector<Literal>& literals, ClauseType type);
-
-  // Number of literals in the clause.
-  int Size() const { return size_; }
-
-  // Allows for range based iteration: for (Literal literal : clause) {}.
-  const Literal* const begin() const { return &(literals_[0]); }
-  const Literal* const end() const { return &(literals_[size_]); }
-
-  // Returns a ClauseRef that point to this clause.
-  ClauseRef ToClauseRef() const { return ClauseRef(begin(), end()); }
-
-  // Returns the first and second literals. These are always the watched
-  // literals if the clause is attached in the LiteralWatchers.
-  Literal FirstLiteral() const { return literals_[0]; }
-  Literal SecondLiteral() const { return literals_[1]; }
-
-  // Tries to simplify the clause.
-  enum SimplifyStatus {
-    CLAUSE_ALWAYS_TRUE,
-    CLAUSE_ALWAYS_FALSE,
-    CLAUSE_SUBSUMED,
-    CLAUSE_ACTIVE,
-  };
-  SimplifyStatus Simplify();
-
-  // Removes literals that are fixed. This should only be called at level 0
-  // where a literal is fixed iff it is assigned. Aborts and returns true if
-  // they are not all false.
-  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
-
-  // Propagates watched_literal which just became false in the clause. Returns
-  // false if an inconsistency was detected.
-  //
-  // IMPORTANT: If a new literal needs watching instead, then FirstLiteral()
-  // will be the new watched literal, otherwise it will be equal to the given
-  // watched_literal.
-  bool PropagateOnFalse(Literal watched_literal, Trail* trail);
-
-  // True if the clause is learned.
-  bool IsLearned() const { return is_learned_; }
-
-  // Returns true if the clause is satisfied for the given assignment.
-  bool IsSatisfied(const VariablesAssignment& assignment) const;
-
-  // Sorts the literals of the clause depending on the given parameters and
-  // statistics. Do not call this on an attached clause.
-  void SortLiterals(const ITIVector<VariableIndex, VariableInfo>& statistics,
-                    const SatParameters& parameters);
-
-  // Sets up the 2-watchers data structure. It selects two non-false literals
-  // and attaches the clause to the event: one of the watched literals become
-  // false. It returns false if the clause only contains literals assigned to
-  // false. If only one literals is not false, it propagates it to true if it
-  // is not already assigned.
-  bool AttachAndEnqueuePotentialUnitPropagation(Trail* trail,
-                                                LiteralWatchers* demons);
-
-  // Modify and get the clause activity.
-  void IncreaseActivity(double increase) { activity_ += increase; }
-  void MultiplyActivity(double factor) { activity_ *= factor; }
-  double Activity() const { return activity_; }
-
-  // Set and get the clause LBD (Literal Blocks Distance). The LBD is not
-  // computed here. See ComputeClauseLbd() in SatSolver.
-  void SetLbd(int value) { lbd_ = value; }
-  int Lbd() const { return lbd_; }
-
-  // Returns true if the clause is attached to a LiteralWatchers.
-  bool IsAttached() const { return is_attached_; }
-
-  // Marks the clause so that the next call to CleanUpWatchers() can identify it
-  // and actually detach it.
-  void LazyDetach() { is_attached_ = false; }
-
-  std::string DebugString() const;
-
- private:
-  // The data is packed so that only 16 bytes are used for these fields.
-  // Note that the max lbd is the maximum depth of the search tree (decision
-  // levels), so it should fit easily in 29 bits. Note that we can also upper
-  // bound it without hurting too much the clause cleaning heuristic.
-  bool is_learned_ : 1;
-  bool is_attached_ : 1;
-  int lbd_ : 30;
-  int size_ : 32;
-  double activity_;
-
-  // This class store the literals inline, and literals_ mark the starts of the
-  // variable length portion.
-  Literal literals_[0];
-
-  DISALLOW_COPY_AND_ASSIGN(SatClause);
-};
-
-// ----- LiteralWatchers -----
-
-// Stores the 2-watched literals data structure.  See
-// http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
-// detail.
-class LiteralWatchers {
- public:
-  LiteralWatchers();
-  ~LiteralWatchers();
-
-  // Resizes the data structure.
-  void Resize(int num_variables);
-
-  // Attaches the given clause. This eventually propagates a literal which is
-  // enqueued on the trail. Returns false if a contradiction was encountered.
-  bool AttachAndPropagate(SatClause* clause, Trail* trail);
-
-  // Attaches the given clause to the event: the given literal becomes false.
-  // The blocking_literal can be any literal from the clause, it is used to
-  // speed up PropagateOnFalse() by skipping the clause if it is true.
-  void AttachOnFalse(Literal literal, Literal blocking_literal,
-                     SatClause* clause);
-
-  // Lazily detach the given clause. The deletion will actually occur when
-  // CleanUpWatchers() is called. The later needs to be called before any other
-  // function in this class can be called. This is DCHECKed.
-  void LazyDetach(SatClause* clause);
-  void CleanUpWatchers();
-
-  // Launches all propagation when the given literal becomes false.
-  // Returns false if a contradiction was encountered.
-  bool PropagateOnFalse(Literal false_literal, Trail* trail);
-
-  // Total number of clauses inspected during calls to PropagateOnFalse().
-  int64 num_inspected_clauses() const { return num_inspected_clauses_; }
-
-  // Number of clauses currently watched.
-  int64 num_watched_clauses() const { return num_watched_clauses_; }
-
-  // Returns some statistics on the number of appearance of this variable in
-  // all the attached clauses.
-  const VariableInfo& VariableStatistic(VariableIndex var) const {
-    return statistics_[var];
-  }
-
-  // Parameters management.
-  void SetParameters(const SatParameters& parameters) {
-    parameters_ = parameters;
-  }
-
- private:
-  // Updates statistics_ for the literals in the given clause. added indicates
-  // if we are adding the clause or deleting it.
-  void UpdateStatistics(const SatClause& clause, bool added);
-
-  // Contains, for each literal, the list of clauses that need to be inspected
-  // when the corresponding literal becomes false.
-  struct Watcher {
-    Watcher() {}
-    Watcher(SatClause* c, Literal b) : clause(c), blocking_literal(b) {}
-    SatClause* clause;
-    Literal blocking_literal;
-  };
-  ITIVector<LiteralIndex, std::vector<Watcher> > watchers_on_false_;
-
-  // Indicates if the corresponding watchers_on_false_ list need to be
-  // cleaned. The boolean is_clean_ is just used in DCHECKs.
-  ITIVector<LiteralIndex, bool> needs_cleaning_;
-  bool is_clean_;
-
-  ITIVector<VariableIndex, VariableInfo> statistics_;
-  SatParameters parameters_;
-  int64 num_inspected_clauses_;
-  int64 num_watched_clauses_;
-  mutable StatsGroup stats_;
-  DISALLOW_COPY_AND_ASSIGN(LiteralWatchers);
-};
-
-// Special class to store and propagate clauses of size 2 (i.e. implication).
-// Such clauses are never deleted.
-//
-// TODO(user): All the variables in a strongly connected component are
-// equivalent and can be thus merged as one. This is relatively cheap to compute
-// from time to time (linear complexity). We will also get contradiction (a <=>
-// not a) this way.
-//
-// TODO(user): An implication (a => not a) implies that a is false. I am not
-// sure it is worth detecting that because if the solver assign a to true, it
-// will learn that right away. I don't think we can do it faster.
-//
-// TODO(user): The implication graph can be pruned. This is called the
-// transitive reduction of a graph. For instance If a => {b,c} and b => {c},
-// then there is no need to store a => {c}. The transitive reduction is unique
-// on an acyclic graph. Computing it will allow for a faster propagation and
-// memory reduction. It is however not cheap. Maybe simple lazy heuristics to
-// remove redundant arcs are better. Note that all the learned clauses we add
-// will never be redundant (but they could introduce cycles).
-//
-// TODO(user): Add a preprocessor to remove duplicates in the implication lists.
-// Note that all the learned clauses we had will never create duplicates.
-//
-// References for most of the above TODO and more:
-// - Brafman RI, "A simplifier for propositional formulas with many binary
-//   clauses", IEEE Trans Syst Man Cybern B Cybern. 2004 Feb;34(1):52-9.
-//   http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.28.4911
-// - Marijn J. H. Heule, Matti Järvisalo, Armin Biere, "Efficient CNF
-//   Simplification Based on Binary Implication Graphs", Theory and Applications
-//   of Satisfiability Testing - SAT 2011, Lecture Notes in Computer Science
-//   Volume 6695, 2011, pp 201-215
-//   http://www.cs.helsinki.fi/u/mjarvisa/papers/heule-jarvisalo-biere.sat11.pdf
-class BinaryImplicationGraph {
- public:
-  BinaryImplicationGraph()
-      : num_propagations_(0),
-        num_minimization_(0),
-        num_literals_removed_(0),
-        stats_("BinaryImplicationGraph") {}
-  ~BinaryImplicationGraph() {
-    IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
-  }
-
-  // Resizes the data structure.
-  void Resize(int num_variables);
-
-  // Adds the binary clause (a OR b), which is the same as (not a => b).
-  // Note that it is also equivalent to (not b => a).
-  void AddBinaryClause(Literal a, Literal b);
-
-  // Same as AddBinaryClause() but enqueues a possible unit propagation.
-  void AddBinaryConflict(Literal a, Literal b, Trail* trail);
-
-  // Propagates all the direct implications of the given literal becoming true.
-  // Returns false if a conflict was encountered, in which case
-  // trail->SetFailingClause() will be called with the correct size 2 clause.
-  // This calls trail->Enqueue() on the newly assigned literals.
-  bool PropagateOnTrue(Literal true_literal, Trail* trail);
-
-  // Uses the binary implication graph to minimize the given clause by removing
-  // literals that implies others.
-  //
-  // TODO(user): The current algorithm is minimalist, and just look at direct
-  // implication. Investigate recursive version.
-  void MinimizeClause(const Trail& trail, std::vector<Literal>* clause);
-
-  // This must only be called at decision level 0 after all the possible
-  // propagations. It:
-  // - Removes the variable at true from the implications lists.
-  // - Frees the propagation list of the assigned literals.
-  void RemoveFixedVariables(const VariablesAssignment& assigment);
-
-  // Number of literal propagated by this class (including conflicts).
-  int64 num_propagations() const { return num_propagations_; }
-
-  // MinimizeClause() stats.
-  int64 num_minimization() const { return num_minimization_; }
-  int64 num_literals_removed() const { return num_literals_removed_; }
-
-  // Returns the number of current implications.
-  int64 NumberOfImplications() const {
-    int num = 0;
-    for (const std::vector<Literal>& v : implications_) num += v.size();
-    return num / 2;
-  }
-
- private:
-  // This is indexed by the Index() of a literal. Each list stores the
-  // literals that are implied if the index literal becomes true.
-  ITIVector<LiteralIndex, std::vector<Literal> > implications_;
-
-  // Holds the last conflicting binary clause.
-  Literal temporary_clause_[2];
-
-  // Some stats.
-  int64 num_propagations_;
-  int64 num_minimization_;
-  int64 num_literals_removed_;
-
-  // Bitset used by MinimizeClause().
-  // TODO(user): use the same one as the one used in the classic minimization
-  // because they are already initialized. Moreover they contains more
-  // information.
-  SparseBitset<LiteralIndex> is_marked_;
-  SparseBitset<LiteralIndex> is_removed_;
-
-  mutable StatsGroup stats_;
-  DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);
-};
 
 // A constant used by the EnqueueDecision*() API.
 const int kUnsatTrailIndex = -1;
@@ -416,10 +61,13 @@ class SatSolver {
   // Increases the number of variables of the current problem.
   void SetNumVariables(int num_variables);
 
+  // Fixes a variable so that the given literal is true. This can be used to
+  // solve a subproblem where some variables are fixed. Note that it is more
+  // efficient to add such unit clause before all the others.
+  bool AddUnitClause(Literal true_literal);
+
   // Adds a clause to the problem. Returns false if the clause is always false
   // and thus make the problem unsatisfiable.
-  //
-  // TODO(user): Remove this from the API and only use AddLinearConstraint()?
   bool AddProblemClause(const std::vector<Literal>& literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
@@ -432,10 +80,27 @@ class SatSolver {
   // of the problem more and more. Just re-adding such constraint is relatively
   // efficient.
   //
-  // TODO(user): Add error handling for overflow/underflow.
+  // OVERFLOW: The sum of the absolute value of all the coefficients
+  // in the constraint must not overflow. This is currently CHECKed().
+  // TODO(user): Instead of failing, implement an error handling code.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
                            std::vector<LiteralWithCoeff>* cst);
+
+  // Advanced usage. This is only relevant when trying to compute an unsat core.
+  // All the constraints added by one of the Add*() function above when this was
+  // set to true will be considered for the core. All the others will just be
+  // ignored (and thus save memory during the solve). This starts with a value
+  // of true.
+  void SetNextConstraintsRelevanceForUnsatCore(bool value) {
+    is_relevant_for_core_computation_ = value;
+  }
+
+  // Returns the number of time AddProblemClause() or AddLinearConstraint() was
+  // called. This will also be the unique index associated to the next
+  // constraint that will be added. This unique index is used by UnsatCore() to
+  // indicates what constraints are part of the core.
+  int NumConstraints() { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // sets to true. The weight is a positive number reflecting the relative
@@ -472,6 +137,16 @@ class SatSolver {
     INTERNAL_ERROR,
   };
   Status Solve();
+
+  // Returns an UNSAT core. That is a subset of the problem clauses that are
+  // still UNSAT. A problem constraint of index #i is the one that was added
+  // with the i-th call to AddProblemClause() or AddLinearConstraint(), see
+  // NumConstraints().
+  //
+  // Preconditions:
+  // - Solve() must be called with the parameters unsat_proof() set to true.
+  // - It must have returned MODEL_UNSAT.
+  void ComputeUnsatCore(std::vector<int>* core);
 
   // Returns true if a given assignment is a solution of the current problem.
   // TODO(user): This currently only check normal clauses. Fix it to include
@@ -588,9 +263,10 @@ class SatSolver {
            IsClauseUsedAsReason(clause);
   }
 
-  // Returns false if the literal is already assigned to false.
-  // Otherwise, returns true and Enqueue it if it is unassigned.
-  bool TestValidityAndEnqueueIfNeeded(Literal literal);
+  // Add a problem clause. Not that the clause is assumed to be "cleaned", that
+  // is no duplicate variables (not strictly required) and not empty.
+  bool AddProblemClauseInternal(const std::vector<Literal>& literals,
+                                ResolutionNode* node);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
@@ -603,7 +279,7 @@ class SatSolver {
   // literals of the learned close except one will be false. Thus the last one
   // will be implied True. This function also Enqueue() the implied literal.
   void AddLearnedClauseAndEnqueueUnitPropagation(
-      const std::vector<Literal>& literals);
+      const std::vector<Literal>& literals, ResolutionNode* node);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -620,6 +296,11 @@ class SatSolver {
   // and add them to the priority queue with the correct weight.
   void Untrail(int trail_index);
 
+  // Update the resolution node associated to all the newly fixed variables so
+  // each node expresses the reason why this variable was assigned. This is
+  // needed because level zero variables are treated differently by the solver.
+  void ProcessNewlyFixedVariableResolutionNodes();
+
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
@@ -635,15 +316,29 @@ class SatSolver {
   // learning in a boolean satisfiability solver" Proceedings of the 2001
   // IEEE/ACM international conference on Computer-aided design, Pages 279-285.
   // http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
-  void ComputeFirstUIPConflict(ClauseRef failing_clause,
-                               std::vector<Literal>* conflict,
-                               std::vector<Literal>* discarded_last_level_literals);
+  void ComputeFirstUIPConflict(
+      ClauseRef failing_clause, std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
+
+  // Creates the root resolution node associated with the current constraint.
+  // This will returns nullptr if the solver is not configured to compute unsat
+  // core or if the current constraint is not relevant for the core computation.
+  ResolutionNode* CreateRootResolutionNode();
+
+  // Creates a ResolutionNode associated to a learned conflict. Basically, the
+  // node will hold the information that the learned clause can be derived from
+  // the conflict clause and all the reason that where used during the
+  // computation of the first uip conflict.
+  ResolutionNode* CreateResolutionNode(
+      ResolutionNode* failing_clause_resolution_node,
+      ClauseRef reason_used_to_infer_the_conflict);
 
   // Applies some heuristics to a conflict in order to minimize its size and/or
   // replace literals by other literals from lower decision levels. The first
   // function choose which one of the other functions to call depending on the
   // parameters.
-  void MinimizeConflict(std::vector<Literal>* conflict);
+  void MinimizeConflict(std::vector<Literal>* conflict,
+                        std::vector<Literal>* reason_used_to_infer_the_conflict);
   void MinimizeConflictExperimental(std::vector<Literal>* conflict);
   void MinimizeConflictSimple(std::vector<Literal>* conflict);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict);
@@ -722,6 +417,9 @@ class SatSolver {
 
   VariableIndex num_variables_;
 
+  // The number of constraints of the initial problem that where added.
+  int num_constraints_;
+
   // Original clauses of the problem and clauses learned during search.
   // These vector have the ownership of the pointers. We currently do not use
   // std::unique_ptr<SatClause> because it can't be used with STL algorithm
@@ -793,6 +491,28 @@ class SatSolver {
   // Variable ordering (priority will be adjusted dynamically). The variable in
   // the queue are said to be active. queue_elements_ holds the elements used by
   // var_ordering_ (it uses pointers).
+  struct WeightedVarQueueElement {
+    WeightedVarQueueElement()
+        : heap_index(-1), weight(0.0), tie_breaker(0.0), variable(-1) {}
+
+    // Interface for the AdjustablePriorityQueue.
+    void SetHeapIndex(int h) { heap_index = h; }
+    int GetHeapIndex() const { return heap_index; }
+
+    // Priority order. The AdjustablePriorityQueue returns the largest element
+    // first.
+    bool operator<(const WeightedVarQueueElement& other) const {
+      return weight < other.weight ||
+            (weight == other.weight &&
+              (tie_breaker < other.tie_breaker ||
+              (tie_breaker == other.tie_breaker && variable < other.variable)));
+    }
+
+    int heap_index;
+    double weight;
+    double tie_breaker;
+    VariableIndex variable;
+  };
   AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
   ITIVector<VariableIndex, WeightedVarQueueElement> queue_elements_;
 
@@ -840,16 +560,60 @@ class SatSolver {
   DEFINE_INT_TYPE(SatDecisionLevel, int);
   SparseBitset<SatDecisionLevel> is_level_marked_;
 
+  // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
+  std::vector<Literal> learned_conflict_;
+  std::vector<Literal> reason_used_to_infer_the_conflict_;
+
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
   PbReasonCache reason_cache_;
 
+  // Stores the resolution DAG.
+  // This is only used is parameters_.unsat_proof() is true.
+  UnsatProof unsat_proof_;
+
   // A random number generator.
   mutable MTRandom random_;
+
+  // Temporary vector used by AddProblemClause().
+  std::vector<LiteralWithCoeff> tmp_pb_constraint_;
+
+  // List of nodes that will need to be unlocked when this class is destructed.
+  // TODO(user): This is currently used for the pseudo-Boolean constraint
+  // resolution nodes, and is not really clean.
+  std::vector<ResolutionNode*> to_unlock_;
+
+  // Temporary vector used by CreateResolutionNode().
+  std::vector<ResolutionNode*> tmp_parents_;
+
+  // Boolean used to include/exclude constraints from the core computation.
+  bool is_relevant_for_core_computation_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
+
+// Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
+// Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
+// This is used to decide the number of conflicts allowed before the next
+// restart. This method, used by most SAT solvers, is usually referenced as
+// Luby.
+// Returns 2^{k-1} when i == 2^k - 1
+//    and  SUniv(i - 2^{k-1} + 1) when 2^{k-1} <= i < 2^k - 1.
+// The sequence is defined for i > 0 and starts with:
+//   {1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, ...}
+inline int SUniv(int i) {
+  DCHECK_GT(i, 0);
+  while (i > 2) {
+    const int most_significant_bit_position =
+        MostSignificantBitPosition64(i + 1);
+    if ((1 << most_significant_bit_position) == i + 1) {
+      return 1 << (most_significant_bit_position - 1);
+    }
+    i -= (1 << most_significant_bit_position) - 1;
+  }
+  return 1;
+}
 
 }  // namespace sat
 }  // namespace operations_research

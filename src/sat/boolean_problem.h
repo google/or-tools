@@ -53,6 +53,11 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
 void StoreAssignment(const VariablesAssignment& assignment,
                      BooleanAssignment* output);
 
+// Constructs a sub-problem formed by the constraints with given indices.
+void ExtractSubproblem(const LinearBooleanProblem& problem,
+                       const std::vector<int>& constraint_indices,
+                       LinearBooleanProblem* subproblem);
+
 }  // namespace sat
 }  // namespace operations_research
 

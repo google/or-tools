@@ -172,15 +172,9 @@ struct SolverParameters {
     NO_COMPRESSION, COMPRESS_WITH_ZLIB
   };
 
-  enum ProfileLevel {
-    NO_PROFILING,
-    NORMAL_PROFILING
-  };
+  enum ProfileLevel { NO_PROFILING, NORMAL_PROFILING };
 
-  enum TraceLevel {
-    NO_TRACE,
-    NORMAL_TRACE
-  };
+  enum TraceLevel { NO_TRACE, NORMAL_TRACE };
 
   static const TrailCompression kDefaultTrailCompression;
   static const int kDefaultTrailBlockSize;
@@ -232,16 +226,9 @@ struct DefaultPhaseParameters {
     CHOOSE_MAX_VALUE_IMPACT = 2,
   };
 
-  enum ValueSelection {
-    SELECT_MIN_IMPACT = 0,
-    SELECT_MAX_IMPACT = 1,
-  };
+  enum ValueSelection { SELECT_MIN_IMPACT = 0, SELECT_MAX_IMPACT = 1, };
 
-  enum DisplayLevel {
-    NONE = 0,
-    NORMAL = 1,
-    VERBOSE = 2
-  };
+  enum DisplayLevel { NONE = 0, NORMAL = 1, VERBOSE = 2 };
 
   static const int kDefaultNumberOfSplits;
   static const int kDefaultHeuristicPeriod;
@@ -843,12 +830,7 @@ class Solver {
 
   // This enum is used internally in private methods Solver::PushState and
   // Solver::PopState to tag states in the search tree.
-  enum MarkerType {
-    SENTINEL,
-    SIMPLE_MARKER,
-    CHOICE_POINT,
-    REVERSIBLE_ACTION
-  };
+  enum MarkerType { SENTINEL, SIMPLE_MARKER, CHOICE_POINT, REVERSIBLE_ACTION };
 
   // This enum represents the state of the solver w.r.t. the search.
   enum SolverState {
@@ -3008,10 +2990,7 @@ class Solver {
   DemonProfiler* const demon_profiler_;
 
   // interval of constants cached, inclusive:
-  enum {
-    MIN_CACHED_INT_CONST = -8,
-    MAX_CACHED_INT_CONST = 8
-  };
+  enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };
   IntVar* cached_constants_[MAX_CACHED_INT_CONST + 1 - MIN_CACHED_INT_CONST];
 
   // Cached constraints.
@@ -4648,15 +4627,14 @@ class AssignmentContainer {
   const E& Element(int index) const { return elements_[index]; }
   int Size() const { return elements_.size(); }
   void Store() {
-    for (int i = 0; i < elements_.size(); ++i) {
-      elements_[i].Store();
+    for (E& element : elements_) {
+      element.Store();
     }
   }
   void Restore() {
-    for (int i = 0; i < elements_.size(); ++i) {
-      E* element = &elements_[i];
-      if (element->Activated()) {
-        element->Restore();
+    for (E& element : elements_) {
+      if (element.Activated()) {
+        element.Restore();
       }
     }
   }
@@ -4674,10 +4652,9 @@ class AssignmentContainer {
     // Do not use the hash_map::== operator! It does not just compare content,
     // but also how the map is hashed (e.g., number of buckets). This is not
     // what we want.
-    typedef ConstIter<std::vector<E> > Iterator;
-    for (Iterator it(container.elements_); !it.at_end(); ++it) {
-      const int position = FindWithDefault(elements_map_, it->Var(), -1);
-      if (position < 0 || elements_[position] != *it) {
+    for (const E& element : container.elements_) {
+      const int position = FindWithDefault(elements_map_, element.Var(), -1);
+      if (position < 0 || elements_[position] != element) {
         return false;
       }
     }

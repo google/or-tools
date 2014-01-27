@@ -405,6 +405,13 @@ class Bitset64 {
     Set(size_ - 1, value);
   }
 
+  // Resize the Bitset64 to the given number of bits. New bits are sets to 0.
+  void Resize(IndexType size) {
+    DCHECK_GE(size.value(), 0);
+    size_ = size > 0 ? size : IndexType(0);
+    data_.resize(BitLength64(size_.value()), 0);
+  }
+
   // Changes the number of bits the Bitset64 can hold and set all of them to 0.
   void ClearAndResize(IndexType size) {
     DCHECK_GE(size.value(), 0);

@@ -94,8 +94,8 @@ class VariablesAssignment {
  public:
   VariablesAssignment() {}
   void Resize(int num_variables) {
-    assignment_.ClearAndResize(LiteralIndex(num_variables << 1));
-    last_assignment_.ClearAndResize(LiteralIndex(num_variables << 1));
+    assignment_.Resize(LiteralIndex(num_variables << 1));
+    last_assignment_.Resize(LiteralIndex(num_variables << 1));
   }
 
   // Makes the given literal true by assigning its underlying variable to either
@@ -195,6 +195,7 @@ class ClauseRef {
 
 // Forward declaration of the classes needed to compute the reason of an
 // assignment.
+class ResolutionNode;
 class SatClause;
 class UpperBoundedLinearConstraint;
 
@@ -210,9 +211,8 @@ struct AssignmentInfo {
   // function. This AssignmentInfo can then hold a pointer to an HasReason
   // class. Currently, this is not done this way for efficiency.
   enum Type {
-    PREPROCESSING,
-    SEARCH_DECISION,
     UNIT_REASON,
+    SEARCH_DECISION,
     CLAUSE_PROPAGATION,
     BINARY_PROPAGATION,
     PB_PROPAGATION,
@@ -239,6 +239,7 @@ struct AssignmentInfo {
   };
   union {
     SatClause* sat_clause;
+    ResolutionNode* resolution_node;
     UpperBoundedLinearConstraint* pb_constraint;
   };
 };
@@ -248,7 +249,9 @@ struct AssignmentInfo {
 // and the information of each assignment.
 class Trail {
  public:
-  Trail() : num_enqueues_(0), trail_index_(0) { current_info_.level = 0; }
+  Trail() : num_enqueues_(0), trail_index_(0), need_level_zero_(false) {
+    current_info_.level = 0;
+  }
 
   void Resize(int num_variables) {
     assignment_.Resize(num_variables);
@@ -271,6 +274,10 @@ class Trail {
   }
 
   // Specific Enqueue() version for our different constraint types.
+  void EnqueueWithUnitReason(Literal true_literal, ResolutionNode* node) {
+    current_info_.resolution_node = node;
+    Enqueue(true_literal, AssignmentInfo::UNIT_REASON);
+  }
   void EnqueueWithBinaryReason(Literal true_literal, Literal reason) {
     current_info_.literal = reason;
     Enqueue(true_literal, AssignmentInfo::BINARY_PROPAGATION);
@@ -313,8 +320,16 @@ class Trail {
     failing_clause_ = ref;
     failing_sat_clause_ = nullptr;
   }
+  void SetFailingResolutionNode(ResolutionNode* node) { failing_node_ = node; }
   ClauseRef FailingClause() const { return failing_clause_; }
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
+  ResolutionNode* FailingResolutionNode() const { return failing_node_; }
+
+  // This is required for producing correct unsat proof. Recall that a fixed
+  // literals is one assigned at level zero. The option is here so every code
+  // that needs it can easily access it.
+  bool NeedFixedLiteralsInReason() const { return need_level_zero_; }
+  void SetNeedFixedLiteralsInReason(bool value) { need_level_zero_ = value; }
 
   // Getters.
   int64 NumberOfEnqueues() const { return num_enqueues_; }
@@ -322,6 +337,13 @@ class Trail {
   const Literal operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
   const AssignmentInfo& Info(VariableIndex var) const { return info_[var]; }
+
+  // Sets the new resolution node for a variable that is fixed.
+  void SetFixedVariableInfo(VariableIndex var, ResolutionNode* node) {
+    CHECK_EQ(info_[var].level, 0);
+    info_[var].type = AssignmentInfo::UNIT_REASON;
+    info_[var].resolution_node = node;
+  }
 
  private:
   int64 num_enqueues_;
@@ -332,6 +354,8 @@ class Trail {
   ITIVector<VariableIndex, AssignmentInfo> info_;
   ClauseRef failing_clause_;
   SatClause* failing_sat_clause_;
+  ResolutionNode* failing_node_;
+  bool need_level_zero_;
   DISALLOW_COPY_AND_ASSIGN(Trail);
 };
 

@@ -13,10 +13,24 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
+#include <limits>
+
 #include "base/integral_types.h"
 
 namespace operations_research {
 // ---------- Overflow utility functions ----------
+
+// Performs *b += a and returns false iff the addition overflow or underflow.
+template <typename IntegerType>
+bool SafeAddInto(IntegerType a, IntegerType* b) {
+  if (a > 0) {
+    if (*b > std::numeric_limits<IntegerType>::max() - a) return false;
+  } else {
+    if (*b < std::numeric_limits<IntegerType>::min() - a) return false;
+  }
+  *b += a;
+  return true;
+}
 
 // A note on overflow treatment.
 // kint64min and kint64max are treated as infinity.

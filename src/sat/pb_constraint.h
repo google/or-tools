@@ -79,7 +79,8 @@ bool LinearConstraintIsCannonical(const std::vector<LiteralWithCoeff>& cst);
 class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
-  explicit UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst);
+  UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst,
+                               ResolutionNode* node);
 
   // Returns true if the given terms are the same as the one in this constraint.
   bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
@@ -134,6 +135,13 @@ class UpperBoundedLinearConstraint {
   void FillReason(const Trail& trail, int source_trail_index,
                   std::vector<Literal>* reason);
 
+  // Returns the resolution node associated to this constraint. Note that it can
+  // be nullptr if the solver is not configured to compute the reason for an
+  // unsatisfiable problem or if this constraint is not relevant for the current
+  // core computation.
+  ResolutionNode* ResolutionNodePointer() const { return node_; }
+  void ChangeResolutionNode(ResolutionNode* node) { node_ = node; }
+
  private:
   Coefficient GetCurrentRhsFromSlack(Coefficient slack) {
     return (index_ < 0) ? slack : coeffs_[index_] + slack;
@@ -157,6 +165,8 @@ class UpperBoundedLinearConstraint {
   std::vector<Coefficient> coeffs_;
   std::vector<int> starts_;
   std::vector<Literal> literals_;
+
+  ResolutionNode* node_;
 };
 
 // Class responsible for managing a set of pseudo-Boolean constraints and their
@@ -185,7 +195,8 @@ class PbConstraints {
   //
   // Note(user): There is an optimization if the last constraint added is the
   // same as the one we are trying to add.
-  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs);
+  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+                     ResolutionNode* node);
   int NumberOfConstraints() const { return constraints_.size(); }
 
   // If some literals enqueued on the trail haven't been processed by this class
@@ -232,7 +243,11 @@ class PbConstraints {
   int propagation_trail_index_;
 
   // Temporary vector to hold the reason of a pseudo-Boolean propagation.
+  // Important: the conflict must use another vector since these scratchpads
+  // must remain valid as long as they are needed by the sat solver and we do
+  // need to compute reasons and not overwrite the conflict.
   mutable std::vector<Literal> reason_scratchpad_;
+  mutable std::vector<Literal> conflict_scratchpad_;
 
   // We use a dequeue to store the pseudo-Boolean constraint because we want
   // pointers to its elements to be still valid after more push_back().
@@ -283,13 +298,8 @@ class PbReasonCache {
     const AssignmentInfo& info = trail_.Info(var);
     return std::make_pair(info.pb_constraint, info.source_trail_index);
   }
-#if defined(_MSC_VER)
-  hash_map<std::pair<UpperBoundedLinearConstraint*, int>,
-    VariableIndex,
-    PairPointerIntHasher<UpperBoundedLinearConstraint> > map_;
-#else
+
   hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
-#endif
   DISALLOW_COPY_AND_ASSIGN(PbReasonCache);
 };
 

@@ -173,4 +173,10 @@ message SatParameters {
 
   // Whether the solver should log the search progress to LOG(INFO).
   optional bool log_search_progress = 41 [default = false];
+
+  // Indicates if the solver maintain in memory the information needed to
+  // generate an UNSAT core if the problem is unsat or to generate a full
+  // resolution proof. This can potentially use a lot of memory and may slow
+  // down the solver a bit.
+  optional bool unsat_proof = 42 [default = false];
 }

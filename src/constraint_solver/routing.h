@@ -480,12 +480,19 @@ class RoutingModel {
   // Takes ownership of the callback 'evaluator'.
   bool AddDimension(NodeEvaluator2* evaluator, int64 slack_max, int64 capacity,
                     bool fix_start_cumul_to_zero, const std::string& name);
+  bool AddDimensionWithVehicleTransits(
+      const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
+      int64 capacity, bool fix_start_cumul_to_zero, const std::string& name);
   // Takes ownership of both 'evaluator' and 'vehicle_capacity' callbacks.
   bool AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
                                        int64 slack_max,
                                        VehicleEvaluator* vehicle_capacity,
                                        bool fix_start_cumul_to_zero,
                                        const std::string& name);
+  bool AddDimensionWithVehicleTransitAndCapacity(
+      const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
+      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   // 'name' is the name used to reference the dimension; this name is used to
@@ -963,7 +970,8 @@ class RoutingModel {
   int64 GetDimensionTransitCost(const std::string& d) const;
   void SetDimensionSpanCost(const std::string& d, int64 c);
   int64 GetDimensionSpanCost(const std::string& d) const;
-  int64 GetTransitValue(const std::string& d, int64 from, int64 to) const;
+  int64 GetTransitValue(const std::string& d, int64 from, int64 to,
+                        int64 vehicle) const;
 #ifndef SWIG
   const std::vector<IntVar*>& CumulVars(const std::string& dimension_name) const;
 #endif
@@ -1035,11 +1043,10 @@ class RoutingModel {
   void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
-  bool AddDimensionWithCapacityInternal(NodeEvaluator2* evaluator,
-                                        int64 slack_max, int64 capacity,
-                                        VehicleEvaluator* vehicle_capacity,
-                                        bool fix_start_cumul_to_zero,
-                                        const std::string& dimension_name);
+  bool AddDimensionWithCapacityInternal(
+      const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
+      int64 capacity, VehicleEvaluator* vehicle_capacity,
+      bool fix_start_cumul_to_zero, const std::string& dimension_name);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
   void ComputeCostClasses();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
@@ -1206,7 +1213,7 @@ class RoutingDimension {
   // Returns the transition value for a given pair of nodes (as var index);
   // this value is the one taken by the corresponding transit variable when
   // the 'next' variable for 'from_index' is bound to 'to_index'.
-  int64 GetTransitValue(int64 from_index, int64 to_index) const;
+  int64 GetTransitValue(int64 from_index, int64 to_index, int64 vehicle) const;
   // Get the cumul, transit and slack variables for the given node (given as
   // int64 var index).
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
@@ -1222,9 +1229,10 @@ class RoutingDimension {
   RoutingModel::VehicleEvaluator* capacity_evaluator() const {
     return capacity_evaluator_.get();
   }
-  // Returns the callback evaluating the transit value between to node indices.
-  Solver::IndexEvaluator2* transit_evaluator() const {
-    return transit_evaluator_.get();
+  // Returns the callback evaluating the transit value between two node indices
+  // for a given vehicle.
+  Solver::IndexEvaluator2* transit_evaluator(int vehicle) const {
+    return transit_evaluators_[vehicle];
   }
 #endif
   // Sets a cost proportional to the dimension span on a given vehicle,
@@ -1328,14 +1336,15 @@ class RoutingDimension {
   };
 
   RoutingDimension(RoutingModel* model, const std::string& name);
-  void Initialize(RoutingModel::VehicleEvaluator* vehicle_capacity,
-                  int64 capacity,
-                  RoutingModel::NodeEvaluator2* transit_evaluator,
-                  int64 slack_max);
+  void Initialize(
+      RoutingModel::VehicleEvaluator* vehicle_capacity, int64 capacity,
+      const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
+      int64 slack_max);
   void InitializeCumuls(RoutingModel::VehicleEvaluator* vehicle_capacity,
                         int64 capacity);
-  void InitializeTransits(RoutingModel::NodeEvaluator2* transit_evaluator,
-                          int64 slack_max);
+  void InitializeTransits(
+      const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
+      int64 slack_max);
   // Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to the global span and per-vehicle span
@@ -1346,7 +1355,10 @@ class RoutingDimension {
   std::vector<IntVar*> cumuls_;
   std::unique_ptr<RoutingModel::VehicleEvaluator> capacity_evaluator_;
   std::vector<IntVar*> transits_;
-  std::unique_ptr<Solver::IndexEvaluator2> transit_evaluator_;
+  // "transit_evaluators_" does the indexing by vehicle, while
+  // "class_evaluators_" does the de-duplicated ownership.
+  std::vector<Solver::IndexEvaluator2*> transit_evaluators_;
+  std::vector<std::unique_ptr<Solver::IndexEvaluator2> > class_evaluators_;
   std::vector<IntVar*> slacks_;
   int64 global_span_cost_coefficient_;
   std::vector<int64> vehicle_span_cost_coefficients_;
@@ -1496,9 +1508,9 @@ class CheapestInsertionFilteredDecisionBuilder
   // possible insertion positions of node 'node_to_insert' in the partial route
   // starting at node 'start' and adds them to 'valued_position', a list of
   // unsorted pairs of (cost, position to insert the node).
-  void AppendEvaluatedPositionsAfter(
-      int64 node_to_insert, int64 start, int64 next_after_start,
-      std::vector<ValuedPosition>* valued_positions);
+  void AppendEvaluatedPositionsAfter(int64 node_to_insert, int64 start,
+                                     int64 next_after_start,
+                                     std::vector<ValuedPosition>* valued_positions);
 
   std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
