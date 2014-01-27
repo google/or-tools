@@ -280,6 +280,7 @@ dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\$(GLP
 
 dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GLPK_TAG).tar.gz
 	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar.exe xvmf -
+	$(SED) -i -e 's/nologo/nologo \/MD/g' dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)/Makefile_VC
 
 # Install scip if needed.
 install_scip: $(SCIP_TARGET)/
