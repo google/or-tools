@@ -54,6 +54,11 @@ else
     MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
+# Detect if patchelf is needed
+ifeq ($(PLATFORM), LINUX)
+    PATCHELF=dependencies/install/bin/patchelf
+endif
+
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
 third_party: install_third_party makefile_third_party
@@ -193,6 +198,15 @@ endif
 
 dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.bz2
 	cd dependencies/sources && tar xvjmf ../archives/mono-$(MONO_TAG).tar.bz2
+
+dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
+	cd dependencies/sources/patchelf-0.8 && make && make install
+
+dependencies/sources/patchelf-0.8/Makefile: dependencies/sources/patchelf-0.8/configure
+	cd dependencies/sources/patchelf-0.8 && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+
+dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.tar.gz
+	cd dependencies/sources && tar xzmf ../archives/patchelf-0.8.tar.gz
 
 
 # Clean everything.

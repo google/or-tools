@@ -231,7 +231,7 @@ else
 	cd temp && tar cvzf ../Google.OrTools.python.examples.$(SVNVERSION).tar.gz ortools_examples
 endif
 
-pypi_archive: python
+pypi_archive: python $(PATCHELF)
 	-$(DELREC) temp
 	$(MKDIR) temp
 	$(MKDIR) temp$Sortools
@@ -276,6 +276,9 @@ else
 	-rm temp/ortools/setup.py-e
 ifeq ($(PLATFORM),MACOSX)
 	tools/fix_python_libraries_on_mac.sh
+endif
+ifeq ($(PLATFORM),LINUX)
+	tools/fix_python_libraries_on_linux.sh
 endif
 endif
 
