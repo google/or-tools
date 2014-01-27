@@ -13,6 +13,7 @@
 #include "sat/clause.h"
 
 #include <algorithm>
+#include <functional>
 #include "base/unique_ptr.h"
 #include <string>
 #include <vector>
