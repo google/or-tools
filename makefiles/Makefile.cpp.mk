@@ -277,7 +277,7 @@ clean_cc:
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sflatzinc$S*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DEL) $(SRC_DIR)$Sflatzinc$Slexer*
