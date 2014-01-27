@@ -98,16 +98,18 @@ ifeq ("$(SYSTEM)","win")
     PLATFORM = x64
   endif
   ifeq ("$(PLATFORM)", "x64")
-    PORT = VisualStudio$(VISUAL_STUDIO)-64b
     CBC_PLATFORM = x64-$(VS_RELEASE)-Release
-    PTRLENGTH = 64
+    GLPK_PLATFORM = w64
     NETPLATFORM = x64
+    PORT = VisualStudio$(VISUAL_STUDIO)-64b
+    PTRLENGTH = 64
   else
-    PTRLENGTH = 32
+    CBC_PLATFORM = Win32-$(VS_RELEASE)-Release
+    GLPK_PLATFORM = w32
+    NETPLATFORM = x86
     PLATFORM = Win32
     PORT = VisualStudio$(VISUAL_STUDIO)-32b
-    CBC_PLATFORM = Win32-$(VS_RELEASE)-Release
-    NETPLATFORM = x86
+    PTRLENGTH = 32
   endif
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)

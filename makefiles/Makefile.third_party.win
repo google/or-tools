@@ -10,7 +10,7 @@ SWIG_TAG = 2.0.11
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.52.tar.gz
-GLPK_TAG = 4.52
+GLPK_TAG = 4.52.1
 # The archive should be scipoptsuite-3.0.1.tgz
 SCIP_TAG = 3.0.1
 SOPLEX_TAG = 1.7.1
@@ -269,15 +269,14 @@ dependencies\archives\swigwin-$(SWIG_TAG).zip:
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
 
-dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\glpsol.exe
-	copy dependencies\sources\glpk-$(GLPK_TAG)\glpk.lib dependencies\install\lib
+dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe
+	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpk.lib dependencies\install\lib
 	copy dependencies\sources\glpk-$(GLPK_TAG)\src\glpk.h dependencies\install\include
-	copy dependencies\sources\glpk-$(GLPK_TAG)\glpsol.exe dependencies\install\bin
+	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe dependencies\install\bin
 
- dependencies\sources\glpk-$(GLPK_TAG)\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\configure
-	copy dependencies\sources\glpk-$(GLPK_TAG)\w$(PTRLENGTH)\config_VC  dependencies\sources\glpk-$(GLPK_TAG)\w32\config.h
-	copy dependencies\solutions\glpk.mk dependencies\sources\glpk-$(GLPK_TAG)
-	cd dependencies\sources\glpk-$(GLPK_TAG) && nmake -f glpk.mk
+ dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\configure
+	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config_VC  dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config.h
+	cd dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM) && nmake -f makefile_VC
 
 dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GLPK_TAG).tar.gz
 	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar.exe xvmf -
