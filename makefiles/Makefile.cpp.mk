@@ -1106,45 +1106,45 @@ $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programm
 sat: bin/sat_runner$E
 
 SAT_LIB_OBJS = \
-        $(OBJ_DIR)/boolean_problem.pb.$O\
 	$(OBJ_DIR)/boolean_problem.$O\
-	$(OBJ_DIR)/pb_constraint.$O\
+	$(OBJ_DIR)/boolean_problem.pb.$O \
 	$(OBJ_DIR)/clause.$O\
+	$(OBJ_DIR)/pb_constraint.$O\
 	$(OBJ_DIR)/sat_parameters.pb.$O\
 	$(OBJ_DIR)/sat_solver.$O\
-	$(OBJ_DIR)/unsat_proof.$O\
+	$(OBJ_DIR)/unsat_proof.$O
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 
-$(OBJ_DIR)/sat_solver.$O:$(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_solver.$O
 
-$(OBJ_DIR)/boolean_problem.$O:$(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/boolean_problem.$O: $(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.$O
 
-$(GEN_DIR)/sat/boolean_problem.pb.cc:$(SRC_DIR)/sat/boolean_problem.proto
+$(GEN_DIR)/sat/boolean_problem.pb.cc: $(SRC_DIR)/sat/boolean_problem.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/boolean_problem.proto
 
-$(GEN_DIR)/sat/boolean_problem.pb.h:$(GEN_DIR)/sat/boolean_problem.pb.cc
+$(GEN_DIR)/sat/boolean_problem.pb.h: $(GEN_DIR)/sat/boolean_problem.pb.cc
 
-$(OBJ_DIR)/boolean_problem.pb.$O:$(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
+$(OBJ_DIR)/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.pb.$O
 
-$(OBJ_DIR)/pb_constraint.$O:$(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
+$(OBJ_DIR)/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Spb_constraint.$O
 
-$(OBJ_DIR)/clause.$O:$(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
+$(OBJ_DIR)/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Sclause.$O
 
-$(OBJ_DIR)/unsat_proof.$O:$(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
+$(OBJ_DIR)/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Sunsat_proof.$O
 
-$(GEN_DIR)/sat/sat_parameters.pb.cc:$(SRC_DIR)/sat/sat_parameters.proto
+$(GEN_DIR)/sat/sat_parameters.pb.cc: $(SRC_DIR)/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/sat_parameters.proto
 
-$(GEN_DIR)/sat/sat_parameters.pb.h:$(GEN_DIR)/sat/sat_parameters.pb.cc
+$(GEN_DIR)/sat/sat_parameters.pb.h: $(GEN_DIR)/sat/sat_parameters.pb.cc
 
-$(OBJ_DIR)/sat_parameters.pb.$O:$(GEN_DIR)/sat/sat_parameters.pb.cc $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat_parameters.pb.$O: $(GEN_DIR)/sat/sat_parameters.pb.cc $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/sat_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_parameters.pb.$O
 
 $(LIB_DIR)/$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX): $(SAT_LIB_OBJS)
@@ -1161,6 +1161,8 @@ $(OBJ_DIR)/sat_runner.$O:$(EX_DIR)/cpp/sat_runner.cc $(SRC_DIR)/sat/sat_solver.h
 $(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat_runner.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat_runner.$O $(DYNAMIC_SAT_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
+# OR Tools unique library.
+
 $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX) \
@@ -1174,9 +1176,6 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OB
 	  $(UTIL_LIB_OBJS) \
 	  $(STATIC_LD_LP_DEPS) \
 	  $(STATIC_LD_FLAGS)
-
-# $(LIB_DIR)/ortools.lib: $(STATIC_ALL_DEPS)
-#	lib /out:$(LIB_DIR)/ortools.lib  $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 
 # Target for archives
 
