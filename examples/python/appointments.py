@@ -103,12 +103,12 @@ def Select(combinations, loads, max_number_of_workers):
 
 
 def GetOptimalSchedule(demand):
-  """Computes the optimal schedule for the fiber installation input."""
+  """Computes the optimal schedule for the appointment selection problem."""
   combinations = FindCombinations([a[2] for a in demand],
                                   FLAGS.load_min,
                                   FLAGS.load_max,
                                   FLAGS.commute_time)
-  print 'found %d possible combinations of appointement' % len(combinations)
+  print 'found %d possible combinations of appointements' % len(combinations)
 
   cost, selection = Select(combinations,
                            [a[0] for a in demand],
