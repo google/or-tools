@@ -18,12 +18,16 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -59,7 +63,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);WITH_SCIPDEF;NO_SIGACTION;strtok_r=strtok_s;rand_r=rand_s;NO_NEXTAFTER;NPARASCIP;ROUNDING_MS;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src;..\..\..\install\include;..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src;..\..\..\install\include;..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -77,7 +81,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);WITH_SCIPDEF;NO_SIGACTION;strtok_r=strtok_s;rand_r=rand_s;NO_NEXTAFTER;NPARASCIP;ROUNDING_MS;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src;..\..\..\install\include;..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src;..\..\..\install\include;..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -87,210 +91,210 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\lpi_spx.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\bitencode.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\blockmemshell\memory.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\message.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\nlpi.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\nlpioracle.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\expr.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\nlpi_ipopt_dummy.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\intervalarithext.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\nlpi\exprinterpret_cppad.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_allfullstrong.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_fullstrong.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_inference.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_leastinf.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_mostinf.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_pscost.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_random.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch_relpscost.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_abspower.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_and.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_bivariate.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_bounddisjunction.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_conjunction.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_countsols.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_cumulative.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_disjunction.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_indicator.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_integral.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_knapsack.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_linear.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_linking.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_logicor.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_nonlinear.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_or.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_orbitope.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_pseudoboolean.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_quadratic.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_setppc.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_soc.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_sos1.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_sos2.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_superindicator.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_varbound.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons_xor.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\dialog_default.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\disp_default.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_actconsdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_clique.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_coefdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_crossover.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_dins.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_feaspump.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_fixandinfer.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_fracdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_guideddiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_zeroobj.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_intdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_intshifting.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_linesearchdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_localbranching.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_mutation.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_nlpdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_objpscostdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_octane.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_oneopt.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_pscostdiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_rens.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_rins.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_rootsoldiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_rounding.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_shiftandpropagate.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_shifting.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_simplerounding.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_subnlp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_trivial.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_trysol.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_twoopt.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_undercover.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_vbounds.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_veclendiving.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur_zirounding.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\message_default.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel_bfs.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel_dfs.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel_estimate.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel_hybridestim.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel_restartdfs.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_boundshift.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_components.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\lpi_spx.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\bitencode.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\blockmemshell\memory.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\message.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\nlpi.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\nlpioracle.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\expr.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\nlpi_ipopt_dummy.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\intervalarithext.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\nlpi\exprinterpret_cppad.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_allfullstrong.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_fullstrong.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_inference.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_leastinf.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_mostinf.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_pscost.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_random.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch_relpscost.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_abspower.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_and.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_bivariate.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_bounddisjunction.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_conjunction.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_countsols.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_cumulative.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_disjunction.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_indicator.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_integral.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_knapsack.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_linear.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_linking.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_logicor.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_nonlinear.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_or.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_orbitope.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_pseudoboolean.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_quadratic.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_setppc.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_soc.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_sos1.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_sos2.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_superindicator.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_varbound.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons_xor.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\dialog_default.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\disp_default.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_actconsdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_clique.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_coefdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_crossover.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_dins.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_feaspump.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_fixandinfer.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_fracdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_guideddiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_zeroobj.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_intdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_intshifting.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_linesearchdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_localbranching.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_mutation.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_nlpdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_objpscostdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_octane.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_oneopt.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_pscostdiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_rens.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_rins.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_rootsoldiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_rounding.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_shiftandpropagate.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_shifting.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_simplerounding.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_subnlp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_trivial.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_trysol.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_twoopt.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_undercover.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_vbounds.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_veclendiving.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur_zirounding.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\message_default.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel_bfs.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel_dfs.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel_estimate.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel_hybridestim.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel_restartdfs.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_boundshift.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_components.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_convertinttobin.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_domcol.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_dualfix.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_gateextraction.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_implics.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_inttobinary.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol_trivial.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_genvbounds.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_obbt.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_probing.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_pseudoobj.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_redcost.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_rootredcost.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop_vbounds.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_bnd.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_ccg.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_cip.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_cnf.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_fix.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_fzn.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_gms.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_lp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_mps.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_opb.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_osil.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_pip.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_ppm.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_rlp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_sol.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_wbo.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader_zpl.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_cgmip.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_clique.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_closecuts.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_cmir.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_flowcover.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_gomory.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_impliedbounds.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_intobj.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_mcf.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_oddcycle.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_rapidlearning.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_strongcg.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa_zerohalf.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\branch.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\buffer.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\clock.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_convertinttobin.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_domcol.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_dualfix.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_gateextraction.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_implics.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_inttobinary.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol_trivial.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_genvbounds.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_obbt.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_probing.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_pseudoobj.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_redcost.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_rootredcost.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop_vbounds.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_bnd.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_ccg.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_cip.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_cnf.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_fix.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_fzn.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_gms.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_lp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_mps.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_opb.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_osil.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_pip.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_ppm.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_rlp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_sol.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_wbo.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader_zpl.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_cgmip.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_clique.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_closecuts.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_cmir.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_flowcover.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_gomory.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_impliedbounds.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_intobj.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_mcf.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_oddcycle.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_rapidlearning.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_strongcg.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa_zerohalf.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\branch.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\buffer.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\clock.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\conflict.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cons.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\cutpool.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\debug.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\dialog.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\disp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\event.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\fileio.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\heur.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\history.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\implics.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\interrupt.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\intervalarith.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\lp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\mem.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\misc.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nlp.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\nodesel.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\paramset.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\presol.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\pricestore.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\pricer.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\primal.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prob.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\prop.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\reader.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\relax.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\retcode.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\scip.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\scipdefplugins.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\scipgithash.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\scipshell.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepa.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sepastore.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\set.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\sol.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\solve.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\stat.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\tree.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\var.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\scip\vbc.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\tclique\tclique_branch.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\tclique\tclique_coloring.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\tclique\tclique_graph.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\dijkstra\dijkstra.c" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\xml\xmlparse.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\conflict.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cons.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\cutpool.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\debug.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\dialog.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\disp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\event.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\fileio.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\heur.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\history.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\implics.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\interrupt.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\intervalarith.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\lp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\mem.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\misc.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nlp.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\nodesel.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\paramset.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\presol.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\pricestore.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\pricer.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\primal.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prob.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\prop.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\reader.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\relax.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\retcode.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\scip.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\scipdefplugins.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\scipgithash.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\scipshell.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepa.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sepastore.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\set.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\sol.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\solve.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\stat.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\tree.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\var.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\scip\vbc.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\tclique\tclique_branch.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\tclique\tclique_coloring.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\tclique\tclique_graph.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\dijkstra\dijkstra.c" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\xml\xmlparse.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objbranchrule.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objconshdlr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objdialog.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objdisp.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objeventhdlr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objheur.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objmessagehdlr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objnodesel.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objpresol.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objpricer.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objprobdata.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objprop.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objreader.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objrelax.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objsepa.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\scip-3.0.1\src\objscip\objvardata.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objbranchrule.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objconshdlr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objdialog.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objdisp.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objeventhdlr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objheur.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objmessagehdlr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objnodesel.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objpresol.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objpricer.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objprobdata.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objprop.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objreader.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objrelax.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objsepa.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\scip-3.0.2\src\objscip\objvardata.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

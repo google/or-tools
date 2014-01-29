@@ -16,7 +16,7 @@ PCRE_TAG = 1336
 MONO_TAG = 3.2.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the
-# archive is present.  The archive should be glpk-4.52.tar.gz
+# archive is present.  The archive should be glpk-4.52.1.tar.gz
 GLPK_TAG = 4.52.1
 # The archive should be scipoptsuite-3.0.2.tgz
 SCIP_TAG = 3.0.2

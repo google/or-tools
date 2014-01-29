@@ -18,12 +18,16 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -59,7 +63,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);WITH_ZLIB</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src;..\..\..\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src;..\..\..\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -77,7 +81,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);WITH_ZLIB</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src;..\..\..\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src;..\..\..\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -87,145 +91,145 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\array.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\clufactor.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\cring.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dataarray.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\datahashtable.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\datakey.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dataset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\didxset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dsvector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dvector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dvector_exact.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\exceptions.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\gzstream.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\idlist.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\idxset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\islist.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lpcol.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lpcolset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lprow.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lprowset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\mpqreal.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\mpsinput.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\nameset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\random.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\slinsolver.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\slufactor.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\soplex.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\sorter.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxalloc.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxbasis.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxboundflippingrt.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdantzigpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdefaultrt.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdefines.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdevexpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxequilisc.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxfastrt.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxfileio.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxgeometsc.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxgithash.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxharrisrt.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxhybridpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxid.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxlp.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxmainsm.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxout.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxparmultpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxpricer.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxratiotester.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxscaler.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsimplifier.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsolver.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxstarter.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsteepexpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsteeppr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsumst.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxvectorst.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxweightpr.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxweightst.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\ssvector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\svector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\svset.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\timer.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\tracemethod.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\unitvector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\updatevector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\vector.h" />
-    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\vector_exact.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\array.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\clufactor.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\cring.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dataarray.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\datahashtable.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\datakey.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dataset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\didxset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dsvector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dvector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dvector_exact.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\exceptions.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\gzstream.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\idlist.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\idxset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\islist.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lpcol.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lpcolset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lprow.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lprowset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\mpqreal.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\mpsinput.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\nameset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\random.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\slinsolver.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\slufactor.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\soplex.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\sorter.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxalloc.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxbasis.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxboundflippingrt.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdantzigpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdefaultrt.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdefines.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdevexpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxequilisc.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxfastrt.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxfileio.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxgeometsc.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxgithash.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxharrisrt.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxhybridpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxid.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxlp.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxmainsm.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxout.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxparmultpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxpricer.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxratiotester.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxscaler.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsimplifier.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsolver.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxstarter.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsteepexpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsteeppr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsumst.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxvectorst.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxweightpr.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxweightst.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\ssvector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\svector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\svset.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\timer.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\tracemethod.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\unitvector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\updatevector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\vector.h" />
+    <ClInclude Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\vector_exact.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\changesoplex.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\clufactor.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\didxset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dsvector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dvector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\dvector_exact.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\enter.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\git_hash.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\gzstream.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\idxset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\leave.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lpcolset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lprow.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\lprowset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\mpqreal.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\mpsinput.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\nameset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\simpleexample.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\slufactor.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\soplex.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxbasis.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxboundflippingrt.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxbounds.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxchangebasis.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdantzigpr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdefaultrt.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdefines.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdesc.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxdevexpr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxequilisc.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxfastrt.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxfileio.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxgeometsc.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxgithash.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxharrisrt.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxhybridpr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxid.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxio.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxlp.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxlpfread.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxlpfwrite.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxmainsm.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxmpsread.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxmpswrite.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxout.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxparmultpr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxproof.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxquality.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxscaler.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxshift.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsolve.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsolver.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxstarter.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsteeppr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxsumst.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxvecs.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxvectorst.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxweightpr.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxweightst.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\spxwritestate.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\ssvector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\svector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\svset.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\timer.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\tracemethod.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\unitvector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\updatevector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\vector.cpp" />
-    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.1\soplex-1.7.1\src\vector_exact.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\changesoplex.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\clufactor.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\didxset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dsvector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dvector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\dvector_exact.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\enter.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\git_hash.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\gzstream.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\idxset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\leave.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lpcolset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lprow.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\lprowset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\mpqreal.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\mpsinput.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\nameset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\simpleexample.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\slufactor.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\soplex.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxbasis.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxboundflippingrt.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxbounds.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxchangebasis.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdantzigpr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdefaultrt.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdefines.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdesc.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxdevexpr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxequilisc.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxfastrt.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxfileio.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxgeometsc.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxgithash.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxharrisrt.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxhybridpr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxid.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxio.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxlp.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxlpfread.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxlpfwrite.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxmainsm.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxmpsread.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxmpswrite.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxout.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxparmultpr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxproof.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxquality.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxscaler.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxshift.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsolve.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsolver.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxstarter.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsteeppr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxsumst.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxvecs.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxvectorst.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxweightpr.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxweightst.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\spxwritestate.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\ssvector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\svector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\svset.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\timer.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\tracemethod.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\unitvector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\updatevector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\vector.cpp" />
+    <ClCompile Include="..\..\..\install\scipoptsuite-3.0.2\soplex-1.7.2\src\vector_exact.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
