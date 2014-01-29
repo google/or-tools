@@ -19,6 +19,11 @@ using std::string;
 %}
 
 #if defined(SWIGPYTHON)
+%{
+inline int PyIntOrLong_Check(PyObject* obj) {
+  return PyInt_Check(obj) || PyLong_Check(obj);
+}
+%}
 namespace operations_research {
 // --------- std::vector<data> wrapping ----------
 
@@ -83,7 +88,7 @@ namespace operations_research {
 %enddef
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
-PY_LIST_OUTPUT_TYPEMAP(long long, PyLong_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(long long, PyIntOrLong_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<vector>.
