@@ -24,6 +24,9 @@ DYNAMIC_ROUTING_LIBS = \
 DYNAMIC_FLATZINC_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
 
+DYNAMIC_FLATZINC2_LIBS = \
+	$(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX)
+
 DYNAMIC_DIMACS_LIBS = \
 	$(LIB_DIR)/$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 
@@ -49,7 +52,9 @@ DYNAMIC_GRAPH_DEPS = $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_BASE_LIBS)
 
 DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_BASE_LIBS)
 
-DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_BASE_LIBS)
+DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) $(DYNAMIC_CP_DEPS)
+
+DYNAMIC_FLATZINC2_DEPS = $(DYNAMIC_FLATZINC2_LIBS) $(DYNAMIC_CP_DEPS)
 
 DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_ALGORITHMS_LIBS) $(DYNAMIC_BASE_LIBS)
 
@@ -97,6 +102,10 @@ DYNAMIC_GRAPH_LNK = \
 
 DYNAMIC_FLATZINC_LNK = \
 	$(DYNAMIC_PRE_LIB)fz$(DYNAMIC_POST_LIB)\
+	$(DYNAMIC_CP_LNK)
+
+DYNAMIC_FLATZINC2_LNK = \
+	$(DYNAMIC_PRE_LIB)fz2$(DYNAMIC_POST_LIB)\
 	$(DYNAMIC_CP_LNK)
 
 DYNAMIC_DIMACS_LNK = \
@@ -270,14 +279,24 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DEL) $(CPBINARIES)
+	-$(DEL) $(OBJ_DIR)$algorithms$S*.$O
+	-$(DEL) $(OBJ_DIR)$base$S*.$O
+	-$(DEL) $(OBJ_DIR)$flatzinc$S*.$O
+	-$(DEL) $(OBJ_DIR)$flatzinc2$S*.$O
+	-$(DEL) $(OBJ_DIR)$graph$S*.$O
+	-$(DEL) $(OBJ_DIR)$sat$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
 	-$(DEL) $(BIN_DIR)$Smtsearch_test$E
+	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc*
+	-$(DEL) $(GEN_DIR)$Sflatzinc2$Sparser*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DEL) $(SRC_DIR)$Sflatzinc$Slexer*
@@ -311,198 +330,198 @@ faplibs: $(DYNAMIC_FAP_LIBS)
 # Constraint Solver Lib.
 
 CONSTRAINT_SOLVER_LIB_OBJS = \
-	$(OBJ_DIR)/alldiff_cst.$O\
-	$(OBJ_DIR)/assignment.$O\
-	$(OBJ_DIR)/assignment.pb.$O\
-	$(OBJ_DIR)/ac4r_table.$O\
-	$(OBJ_DIR)/collect_variables.$O\
-	$(OBJ_DIR)/constraint_solver.$O\
-	$(OBJ_DIR)/constraints.$O\
-	$(OBJ_DIR)/count_cst.$O\
-	$(OBJ_DIR)/default_search.$O\
-	$(OBJ_DIR)/demon_profiler.$O\
-	$(OBJ_DIR)/demon_profiler.pb.$O\
-	$(OBJ_DIR)/dependency_graph.$O\
-	$(OBJ_DIR)/deviation.$O\
-	$(OBJ_DIR)/diffn.$O\
-	$(OBJ_DIR)/element.$O\
-	$(OBJ_DIR)/expr_array.$O\
-	$(OBJ_DIR)/expr_cst.$O\
-	$(OBJ_DIR)/expressions.$O\
-	$(OBJ_DIR)/gcc.$O\
-	$(OBJ_DIR)/hybrid.$O\
-    $(OBJ_DIR)/graph_constraints.$O\
-	$(OBJ_DIR)/interval.$O\
-	$(OBJ_DIR)/io.$O\
-	$(OBJ_DIR)/local_search.$O\
-	$(OBJ_DIR)/model.pb.$O\
-	$(OBJ_DIR)/model_cache.$O\
-	$(OBJ_DIR)/mtsearch.$O\
-	$(OBJ_DIR)/nogoods.$O\
-	$(OBJ_DIR)/pack.$O\
-	$(OBJ_DIR)/range_cst.$O\
-	$(OBJ_DIR)/resource.$O\
-	$(OBJ_DIR)/sched_constraints.$O\
-	$(OBJ_DIR)/sched_expr.$O\
-	$(OBJ_DIR)/sched_search.$O\
-	$(OBJ_DIR)/search.$O\
-	$(OBJ_DIR)/search_limit.pb.$O\
-	$(OBJ_DIR)/softgcc.$O\
-	$(OBJ_DIR)/table.$O\
-	$(OBJ_DIR)/timetabling.$O\
-	$(OBJ_DIR)/trace.$O\
-	$(OBJ_DIR)/tree_monitor.$O\
-	$(OBJ_DIR)/utilities.$O \
-	$(OBJ_DIR)/visitor.$O
+	$(OBJ_DIR)/constraint_solver/alldiff_cst.$O\
+	$(OBJ_DIR)/constraint_solver/assignment.$O\
+	$(OBJ_DIR)/constraint_solver/assignment.pb.$O\
+	$(OBJ_DIR)/constraint_solver/ac4r_table.$O\
+	$(OBJ_DIR)/constraint_solver/collect_variables.$O\
+	$(OBJ_DIR)/constraint_solver/constraint_solver.$O\
+	$(OBJ_DIR)/constraint_solver/constraints.$O\
+	$(OBJ_DIR)/constraint_solver/count_cst.$O\
+	$(OBJ_DIR)/constraint_solver/default_search.$O\
+	$(OBJ_DIR)/constraint_solver/demon_profiler.$O\
+	$(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O\
+	$(OBJ_DIR)/constraint_solver/dependency_graph.$O\
+	$(OBJ_DIR)/constraint_solver/deviation.$O\
+	$(OBJ_DIR)/constraint_solver/diffn.$O\
+	$(OBJ_DIR)/constraint_solver/element.$O\
+	$(OBJ_DIR)/constraint_solver/expr_array.$O\
+	$(OBJ_DIR)/constraint_solver/expr_cst.$O\
+	$(OBJ_DIR)/constraint_solver/expressions.$O\
+	$(OBJ_DIR)/constraint_solver/gcc.$O\
+	$(OBJ_DIR)/constraint_solver/hybrid.$O\
+    $(OBJ_DIR)/constraint_solver/graph_constraints.$O\
+	$(OBJ_DIR)/constraint_solver/interval.$O\
+	$(OBJ_DIR)/constraint_solver/io.$O\
+	$(OBJ_DIR)/constraint_solver/local_search.$O\
+	$(OBJ_DIR)/constraint_solver/model.pb.$O\
+	$(OBJ_DIR)/constraint_solver/model_cache.$O\
+	$(OBJ_DIR)/constraint_solver/mtsearch.$O\
+	$(OBJ_DIR)/constraint_solver/nogoods.$O\
+	$(OBJ_DIR)/constraint_solver/pack.$O\
+	$(OBJ_DIR)/constraint_solver/range_cst.$O\
+	$(OBJ_DIR)/constraint_solver/resource.$O\
+	$(OBJ_DIR)/constraint_solver/sched_constraints.$O\
+	$(OBJ_DIR)/constraint_solver/sched_expr.$O\
+	$(OBJ_DIR)/constraint_solver/sched_search.$O\
+	$(OBJ_DIR)/constraint_solver/search.$O\
+	$(OBJ_DIR)/constraint_solver/search_limit.pb.$O\
+	$(OBJ_DIR)/constraint_solver/softgcc.$O\
+	$(OBJ_DIR)/constraint_solver/table.$O\
+	$(OBJ_DIR)/constraint_solver/timetabling.$O\
+	$(OBJ_DIR)/constraint_solver/trace.$O\
+	$(OBJ_DIR)/constraint_solver/tree_monitor.$O\
+	$(OBJ_DIR)/constraint_solver/utilities.$O \
+	$(OBJ_DIR)/constraint_solver/visitor.$O
 
-$(OBJ_DIR)/alldiff_cst.$O:$(SRC_DIR)/constraint_solver/alldiff_cst.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Salldiff_cst.$O
+$(OBJ_DIR)/constraint_solver/alldiff_cst.$O:$(SRC_DIR)/constraint_solver/alldiff_cst.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Salldiff_cst.$O
 
-$(OBJ_DIR)/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/constraint_solver/assignment.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sassignment.$O
+$(OBJ_DIR)/constraint_solver/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/constraint_solver/assignment.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.$O
 
-$(OBJ_DIR)/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/assignment.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sassignment.pb.$O
+$(OBJ_DIR)/constraint_solver/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/assignment.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.pb.$O
 
-$(OBJ_DIR)/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sac4r_table.$O
+$(OBJ_DIR)/constraint_solver/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sac4r_table.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/assignment.proto
 
 $(GEN_DIR)/constraint_solver/assignment.pb.h:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 
-$(OBJ_DIR)/collect_variables.$O:$(SRC_DIR)/constraint_solver/collect_variables.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Scollect_variables.$O
+$(OBJ_DIR)/constraint_solver/collect_variables.$O:$(SRC_DIR)/constraint_solver/collect_variables.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
 
-$(OBJ_DIR)/constraint_solver.$O:$(SRC_DIR)/constraint_solver/constraint_solver.cc $(GEN_DIR)/constraint_solver/model.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver.$O
+$(OBJ_DIR)/constraint_solver/constraint_solver.$O:$(SRC_DIR)/constraint_solver/constraint_solver.cc $(GEN_DIR)/constraint_solver/model.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
 
-$(OBJ_DIR)/constraints.$O:$(SRC_DIR)/constraint_solver/constraints.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraints.$O
+$(OBJ_DIR)/constraint_solver/constraints.$O:$(SRC_DIR)/constraint_solver/constraints.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
 
-$(OBJ_DIR)/count_cst.$O:$(SRC_DIR)/constraint_solver/count_cst.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/count_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Scount_cst.$O
+$(OBJ_DIR)/constraint_solver/count_cst.$O:$(SRC_DIR)/constraint_solver/count_cst.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/count_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scount_cst.$O
 
-$(OBJ_DIR)/default_search.$O:$(SRC_DIR)/constraint_solver/default_search.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/default_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sdefault_search.$O
+$(OBJ_DIR)/constraint_solver/default_search.$O:$(SRC_DIR)/constraint_solver/default_search.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/default_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdefault_search.$O
 
-$(OBJ_DIR)/demon_profiler.$O:$(SRC_DIR)/constraint_solver/demon_profiler.cc $(GEN_DIR)/constraint_solver/demon_profiler.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/demon_profiler.cc $(OBJ_OUT)$(OBJ_DIR)$Sdemon_profiler.$O
+$(OBJ_DIR)/constraint_solver/demon_profiler.$O:$(SRC_DIR)/constraint_solver/demon_profiler.cc $(GEN_DIR)/constraint_solver/demon_profiler.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/demon_profiler.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.$O
 
-$(OBJ_DIR)/demon_profiler.pb.$O:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sdemon_profiler.pb.$O
+$(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.pb.$O
 
 $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc:$(SRC_DIR)/constraint_solver/demon_profiler.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/demon_profiler.proto
 
 $(GEN_DIR)/constraint_solver/demon_profiler.pb.h:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
 
-$(OBJ_DIR)/dependency_graph.$O:$(SRC_DIR)/constraint_solver/dependency_graph.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/dependency_graph.cc $(OBJ_OUT)$(OBJ_DIR)$Sdependency_graph.$O
+$(OBJ_DIR)/constraint_solver/dependency_graph.$O:$(SRC_DIR)/constraint_solver/dependency_graph.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/dependency_graph.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdependency_graph.$O
 
-$(OBJ_DIR)/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/deviation.cc $(OBJ_OUT)$(OBJ_DIR)$Sdeviation.$O
+$(OBJ_DIR)/constraint_solver/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/deviation.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdeviation.$O
 
-$(OBJ_DIR)/diffn.$O:$(SRC_DIR)/constraint_solver/diffn.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/diffn.cc $(OBJ_OUT)$(OBJ_DIR)$Sdiffn.$O
+$(OBJ_DIR)/constraint_solver/diffn.$O:$(SRC_DIR)/constraint_solver/diffn.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/diffn.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdiffn.$O
 
-$(OBJ_DIR)/element.$O:$(SRC_DIR)/constraint_solver/element.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/element.cc $(OBJ_OUT)$(OBJ_DIR)$Selement.$O
+$(OBJ_DIR)/constraint_solver/element.$O:$(SRC_DIR)/constraint_solver/element.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/element.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Selement.$O
 
-$(OBJ_DIR)/expr_array.$O:$(SRC_DIR)/constraint_solver/expr_array.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_array.cc $(OBJ_OUT)$(OBJ_DIR)$Sexpr_array.$O
+$(OBJ_DIR)/constraint_solver/expr_array.$O:$(SRC_DIR)/constraint_solver/expr_array.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_array.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpr_array.$O
 
-$(OBJ_DIR)/expr_cst.$O:$(SRC_DIR)/constraint_solver/expr_cst.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sexpr_cst.$O
+$(OBJ_DIR)/constraint_solver/expr_cst.$O:$(SRC_DIR)/constraint_solver/expr_cst.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpr_cst.$O
 
-$(OBJ_DIR)/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expressions.cc $(OBJ_OUT)$(OBJ_DIR)$Sexpressions.$O
+$(OBJ_DIR)/constraint_solver/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expressions.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpressions.$O
 
-$(OBJ_DIR)/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/gcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sgcc.$O
+$(OBJ_DIR)/constraint_solver/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/gcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgcc.$O
 
-$(OBJ_DIR)/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_constraints.$O
+$(OBJ_DIR)/constraint_solver/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgraph_constraints.$O
 
-$(OBJ_DIR)/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Shybrid.$O
+$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Shybrid.$O
 
-$(OBJ_DIR)/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/interval.cc $(OBJ_OUT)$(OBJ_DIR)$Sinterval.$O
+$(OBJ_DIR)/constraint_solver/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/interval.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sinterval.$O
 
-$(OBJ_DIR)/io.$O:$(SRC_DIR)/constraint_solver/io.cc $(GEN_DIR)/constraint_solver/model.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/io.cc $(OBJ_OUT)$(OBJ_DIR)$Sio.$O
+$(OBJ_DIR)/constraint_solver/io.$O:$(SRC_DIR)/constraint_solver/io.cc $(GEN_DIR)/constraint_solver/model.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/io.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sio.$O
 
-$(OBJ_DIR)/local_search.$O:$(SRC_DIR)/constraint_solver/local_search.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/local_search.cc $(OBJ_OUT)$(OBJ_DIR)$Slocal_search.$O
+$(OBJ_DIR)/constraint_solver/local_search.$O:$(SRC_DIR)/constraint_solver/local_search.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/local_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Slocal_search.$O
 
-$(OBJ_DIR)/model.pb.$O:$(GEN_DIR)/constraint_solver/model.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/model.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel.pb.$O
+$(OBJ_DIR)/constraint_solver/model.pb.$O:$(GEN_DIR)/constraint_solver/model.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/model.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smodel.pb.$O
 
-$(OBJ_DIR)/model_cache.$O:$(SRC_DIR)/constraint_solver/model_cache.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/model_cache.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel_cache.$O
+$(OBJ_DIR)/constraint_solver/model_cache.$O:$(SRC_DIR)/constraint_solver/model_cache.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/model_cache.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smodel_cache.$O
 
 $(GEN_DIR)/constraint_solver/model.pb.cc:$(SRC_DIR)/constraint_solver/model.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/model.proto
 
 $(GEN_DIR)/constraint_solver/model.pb.h:$(GEN_DIR)/constraint_solver/model.pb.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h
 
-$(OBJ_DIR)/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/nogoods.cc $(OBJ_OUT)$(OBJ_DIR)$Snogoods.$O
+$(OBJ_DIR)/constraint_solver/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/nogoods.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Snogoods.$O
 
-$(OBJ_DIR)/mtsearch.$O:$(SRC_DIR)/constraint_solver/mtsearch.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/mtsearch.cc $(OBJ_OUT)$(OBJ_DIR)$Smtsearch.$O
+$(OBJ_DIR)/constraint_solver/mtsearch.$O:$(SRC_DIR)/constraint_solver/mtsearch.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/mtsearch.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smtsearch.$O
 
-$(OBJ_DIR)/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/pack.cc $(OBJ_OUT)$(OBJ_DIR)$Spack.$O
+$(OBJ_DIR)/constraint_solver/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/pack.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Spack.$O
 
-$(OBJ_DIR)/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/range_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Srange_cst.$O
+$(OBJ_DIR)/constraint_solver/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/range_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srange_cst.$O
 
-$(OBJ_DIR)/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sresource.$O
+$(OBJ_DIR)/constraint_solver/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sresource.$O
 
-$(OBJ_DIR)/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssched_constraints.$O
+$(OBJ_DIR)/constraint_solver/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_constraints.$O
 
-$(OBJ_DIR)/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Ssched_expr.$O
+$(OBJ_DIR)/constraint_solver/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_expr.$O
 
-$(OBJ_DIR)/sched_search.$O:$(SRC_DIR)/constraint_solver/sched_search.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssched_search.$O
+$(OBJ_DIR)/constraint_solver/sched_search.$O:$(SRC_DIR)/constraint_solver/sched_search.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_search.$O
 
-$(OBJ_DIR)/search.$O:$(SRC_DIR)/constraint_solver/search.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssearch.$O
+$(OBJ_DIR)/constraint_solver/search.$O:$(SRC_DIR)/constraint_solver/search.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssearch.$O
 
-$(OBJ_DIR)/search_limit.pb.$O:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/search_limit.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssearch_limit.pb.$O
+$(OBJ_DIR)/constraint_solver/search_limit.pb.$O:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/search_limit.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssearch_limit.pb.$O
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.cc:$(SRC_DIR)/constraint_solver/search_limit.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/search_limit.proto
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.h:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
 
-$(OBJ_DIR)/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/softgcc.cc $(OBJ_OUT)$(OBJ_DIR)$Ssoftgcc.$O
+$(OBJ_DIR)/constraint_solver/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/softgcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssoftgcc.$O
 
-$(OBJ_DIR)/table.$O:$(SRC_DIR)/constraint_solver/table.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/table.cc $(OBJ_OUT)$(OBJ_DIR)$Stable.$O
+$(OBJ_DIR)/constraint_solver/table.$O:$(SRC_DIR)/constraint_solver/table.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stable.$O
 
-$(OBJ_DIR)/timetabling.$O:$(SRC_DIR)/constraint_solver/timetabling.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Stimetabling.$O
+$(OBJ_DIR)/constraint_solver/timetabling.$O:$(SRC_DIR)/constraint_solver/timetabling.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stimetabling.$O
 
-$(OBJ_DIR)/trace.$O:$(SRC_DIR)/constraint_solver/trace.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/trace.cc $(OBJ_OUT)$(OBJ_DIR)$Strace.$O
+$(OBJ_DIR)/constraint_solver/trace.$O:$(SRC_DIR)/constraint_solver/trace.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/trace.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Strace.$O
 
-$(OBJ_DIR)/tree_monitor.$O:$(SRC_DIR)/constraint_solver/tree_monitor.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/tree_monitor.cc $(OBJ_OUT)$(OBJ_DIR)$Stree_monitor.$O
+$(OBJ_DIR)/constraint_solver/tree_monitor.$O:$(SRC_DIR)/constraint_solver/tree_monitor.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/tree_monitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stree_monitor.$O
 
-$(OBJ_DIR)/utilities.$O:$(SRC_DIR)/constraint_solver/utilities.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sutilities.$O
+$(OBJ_DIR)/constraint_solver/utilities.$O:$(SRC_DIR)/constraint_solver/utilities.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sutilities.$O
 
-$(OBJ_DIR)/visitor.$O:$(SRC_DIR)/constraint_solver/visitor.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/visitor.cc $(OBJ_OUT)$(OBJ_DIR)$Svisitor.$O
+$(OBJ_DIR)/constraint_solver/visitor.$O:$(SRC_DIR)/constraint_solver/visitor.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/visitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Svisitor.$O
 
 $(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(DYNAMIC_LIB_SUFFIX) $(CONSTRAINT_SOLVER_LIB_OBJS)
@@ -515,52 +534,52 @@ endif
 # Linear Solver Library
 
 LINEAR_SOLVER_LIB_OBJS = \
-	$(OBJ_DIR)/cbc_interface.$O \
-	$(OBJ_DIR)/clp_interface.$O \
-	$(OBJ_DIR)/glpk_interface.$O \
-	$(OBJ_DIR)/gurobi_interface.$O \
-	$(OBJ_DIR)/linear_solver.$O \
-	$(OBJ_DIR)/linear_solver2.pb.$O \
-	$(OBJ_DIR)/model_exporter.$O \
-        $(OBJ_DIR)/proto_tools.$O \
-	$(OBJ_DIR)/scip_interface.$O \
-	$(OBJ_DIR)/sulum_interface.$O
+	$(OBJ_DIR)/linear_solver/cbc_interface.$O \
+	$(OBJ_DIR)/linear_solver/clp_interface.$O \
+	$(OBJ_DIR)/linear_solver/glpk_interface.$O \
+	$(OBJ_DIR)/linear_solver/gurobi_interface.$O \
+	$(OBJ_DIR)/linear_solver/linear_solver.$O \
+	$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O \
+	$(OBJ_DIR)/linear_solver/model_exporter.$O \
+        $(OBJ_DIR)/linear_solver/proto_tools.$O \
+	$(OBJ_DIR)/linear_solver/scip_interface.$O \
+	$(OBJ_DIR)/linear_solver/sulum_interface.$O
 
 
-$(OBJ_DIR)/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/cbc_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Scbc_interface.$O
+$(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/cbc_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Scbc_interface.$O
 
-$(OBJ_DIR)/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sclp_interface.$O
+$(OBJ_DIR)/linear_solver/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
 
-$(OBJ_DIR)/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sglpk_interface.$O
+$(OBJ_DIR)/linear_solver/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglpk_interface.$O
 
-$(OBJ_DIR)/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sgurobi_interface.$O
+$(OBJ_DIR)/linear_solver/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
-$(OBJ_DIR)/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver.$O
+$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
 
-$(OBJ_DIR)/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/linear_solver/linear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver2.pb.$O
+$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/linear_solver/linear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver2.pb.$O
 
 $(GEN_DIR)/linear_solver/linear_solver2.pb.cc:$(SRC_DIR)/linear_solver/linear_solver2.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/linear_solver/linear_solver2.proto
 
 $(GEN_DIR)/linear_solver/linear_solver2.pb.h:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
 
-$(OBJ_DIR)/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/model_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel_exporter.$O
+$(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/model_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
 
-$(OBJ_DIR)/proto_tools.$O:$(SRC_DIR)/linear_solver/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/proto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sproto_tools.$O
+$(OBJ_DIR)/linear_solver/proto_tools.$O:$(SRC_DIR)/linear_solver/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/proto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sproto_tools.$O
 
-$(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Sscip_interface.$O
+$(OBJ_DIR)/linear_solver/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
 
-$(OBJ_DIR)/sulum_interface.$O:$(SRC_DIR)/linear_solver/sulum_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/sulum_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Ssulum_interface.$O
+$(OBJ_DIR)/linear_solver/sulum_interface.$O:$(SRC_DIR)/linear_solver/sulum_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/sulum_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssulum_interface.$O
 
 $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX): $(LINEAR_SOLVER_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX) $(LINEAR_SOLVER_LIB_OBJS) $(STATIC_SCIP_LNK)
@@ -573,38 +592,38 @@ endif
 # Util library.
 
 UTIL_LIB_OBJS=\
-	$(OBJ_DIR)/bitset.$O \
-	$(OBJ_DIR)/cached_log.$O \
-	$(OBJ_DIR)/graph_export.$O \
-	$(OBJ_DIR)/piecewise_linear_function.$O \
-	$(OBJ_DIR)/saturated_arithmetic.$O \
-	$(OBJ_DIR)/stats.$O \
-	$(OBJ_DIR)/time_limit.$O \
-	$(OBJ_DIR)/xml_helper.$O
+	$(OBJ_DIR)/util/bitset.$O \
+	$(OBJ_DIR)/util/cached_log.$O \
+	$(OBJ_DIR)/util/graph_export.$O \
+	$(OBJ_DIR)/util/piecewise_linear_function.$O \
+	$(OBJ_DIR)/util/saturated_arithmetic.$O \
+	$(OBJ_DIR)/util/stats.$O \
+	$(OBJ_DIR)/util/time_limit.$O \
+	$(OBJ_DIR)/util/xml_helper.$O
 
-$(OBJ_DIR)/bitset.$O:$(SRC_DIR)/util/bitset.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/bitset.cc $(OBJ_OUT)$(OBJ_DIR)$Sbitset.$O
+$(OBJ_DIR)/util/bitset.$O:$(SRC_DIR)/util/bitset.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/bitset.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sbitset.$O
 
-$(OBJ_DIR)/cached_log.$O:$(SRC_DIR)/util/cached_log.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/cached_log.cc $(OBJ_OUT)$(OBJ_DIR)$Scached_log.$O
+$(OBJ_DIR)/util/cached_log.$O:$(SRC_DIR)/util/cached_log.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/cached_log.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Scached_log.$O
 
-$(OBJ_DIR)/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/graph_export.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph_export.$O
+$(OBJ_DIR)/util/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/graph_export.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sgraph_export.$O
 
-$(OBJ_DIR)/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Spiecewise_linear_function.$O
+$(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Spiecewise_linear_function.$O
 
-$(OBJ_DIR)/saturated_arithmetic.$O:$(SRC_DIR)/util/saturated_arithmetic.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/saturated_arithmetic.cc $(OBJ_OUT)$(OBJ_DIR)$Ssaturated_arithmetic.$O
+$(OBJ_DIR)/util/saturated_arithmetic.$O:$(SRC_DIR)/util/saturated_arithmetic.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/saturated_arithmetic.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Ssaturated_arithmetic.$O
 
-$(OBJ_DIR)/stats.$O:$(SRC_DIR)/util/stats.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sstats.$O
+$(OBJ_DIR)/util/stats.$O:$(SRC_DIR)/util/stats.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
 
-$(OBJ_DIR)/time_limit.$O:$(SRC_DIR)/util/time_limit.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/time_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Stime_limit.$O
+$(OBJ_DIR)/util/time_limit.$O:$(SRC_DIR)/util/time_limit.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/time_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Stime_limit.$O
 
-$(OBJ_DIR)/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sxml_helper.$O
+$(OBJ_DIR)/util/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
 
 $(LIB_DIR)/$(LIBPREFIX)util.$(DYNAMIC_LIB_SUFFIX): $(UTIL_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)util.$(DYNAMIC_LIB_SUFFIX) $(UTIL_LIB_OBJS)
@@ -617,30 +636,30 @@ endif
 # Graph library.
 
 GRAPH_LIB_OBJS=\
-	$(OBJ_DIR)/simple_assignment.$O \
-	$(OBJ_DIR)/linear_assignment.$O \
-	$(OBJ_DIR)/cliques.$O \
-	$(OBJ_DIR)/connectivity.$O \
-	$(OBJ_DIR)/max_flow.$O \
-	$(OBJ_DIR)/min_cost_flow.$O
+	$(OBJ_DIR)/graph/simple_assignment.$O \
+	$(OBJ_DIR)/graph/linear_assignment.$O \
+	$(OBJ_DIR)/graph/cliques.$O \
+	$(OBJ_DIR)/graph/connectivity.$O \
+	$(OBJ_DIR)/graph/max_flow.$O \
+	$(OBJ_DIR)/graph/min_cost_flow.$O
 
-$(OBJ_DIR)/linear_assignment.$O:$(SRC_DIR)/graph/linear_assignment.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/linear_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_assignment.$O
+$(OBJ_DIR)/graph/linear_assignment.$O:$(SRC_DIR)/graph/linear_assignment.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/linear_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Slinear_assignment.$O
 
-$(OBJ_DIR)/simple_assignment.$O:$(SRC_DIR)/graph/assignment.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Ssimple_assignment.$O
+$(OBJ_DIR)/graph/simple_assignment.$O:$(SRC_DIR)/graph/assignment.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Ssimple_assignment.$O
 
-$(OBJ_DIR)/cliques.$O:$(SRC_DIR)/graph/cliques.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/cliques.cc $(OBJ_OUT)$(OBJ_DIR)$Scliques.$O
+$(OBJ_DIR)/graph/cliques.$O:$(SRC_DIR)/graph/cliques.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/cliques.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Scliques.$O
 
-$(OBJ_DIR)/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)$(OBJ_DIR)$Sconnectivity.$O
+$(OBJ_DIR)/graph/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sconnectivity.$O
 
-$(OBJ_DIR)/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/max_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Smax_flow.$O
+$(OBJ_DIR)/graph/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/max_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smax_flow.$O
 
-$(OBJ_DIR)/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/min_cost_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Smin_cost_flow.$O
+$(OBJ_DIR)/graph/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/min_cost_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smin_cost_flow.$O
 
 $(LIB_DIR)/$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX): $(GRAPH_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX) $(GRAPH_LIB_OBJS)
@@ -653,18 +672,18 @@ endif
 # Shortestpaths library.
 
 SHORTESTPATHS_LIB_OBJS=\
-	$(OBJ_DIR)/bellman_ford.$O \
-	$(OBJ_DIR)/dijkstra.$O \
-	$(OBJ_DIR)/shortestpaths.$O
+	$(OBJ_DIR)/graph/bellman_ford.$O \
+	$(OBJ_DIR)/graph/dijkstra.$O \
+	$(OBJ_DIR)/graph/shortestpaths.$O
 
-$(OBJ_DIR)/bellman_ford.$O:$(SRC_DIR)/graph/bellman_ford.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/bellman_ford.cc $(OBJ_OUT)$(OBJ_DIR)$Sbellman_ford.$O
+$(OBJ_DIR)/graph/bellman_ford.$O:$(SRC_DIR)/graph/bellman_ford.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/bellman_ford.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sbellman_ford.$O
 
-$(OBJ_DIR)/dijkstra.$O:$(SRC_DIR)/graph/dijkstra.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/dijkstra.cc $(OBJ_OUT)$(OBJ_DIR)$Sdijkstra.$O
+$(OBJ_DIR)/graph/dijkstra.$O:$(SRC_DIR)/graph/dijkstra.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/dijkstra.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sdijkstra.$O
 
-$(OBJ_DIR)/shortestpaths.$O:$(SRC_DIR)/graph/shortestpaths.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)$(OBJ_DIR)$Sshortestpaths.$O
+$(OBJ_DIR)/graph/shortestpaths.$O:$(SRC_DIR)/graph/shortestpaths.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sshortestpaths.$O
 
 $(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX): $(SHORTESTPATHS_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX) $(SHORTESTPATHS_LIB_OBJS)
@@ -677,14 +696,14 @@ endif
 # Routing library.
 
 ROUTING_LIB_OBJS=\
-	$(OBJ_DIR)/routing.$O \
-	$(OBJ_DIR)/routing_search.$O
+	$(OBJ_DIR)/constraint_solver/routing.$O \
+	$(OBJ_DIR)/constraint_solver/routing_search.$O
 
-$(OBJ_DIR)/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting.$O
+$(OBJ_DIR)/constraint_solver/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting.$O
 
-$(OBJ_DIR)/routing_search.$O:$(SRC_DIR)/constraint_solver/routing_search.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_search.cc $(OBJ_OUT)$(OBJ_DIR)$Srouting_search.$O
+$(OBJ_DIR)/constraint_solver/routing_search.$O:$(SRC_DIR)/constraint_solver/routing_search.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_search.$O
 
 $(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX): $(ROUTING_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX) $(ROUTING_LIB_OBJS)
@@ -697,14 +716,14 @@ endif
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	$(OBJ_DIR)/hungarian.$O \
-	$(OBJ_DIR)/knapsack_solver.$O
+	$(OBJ_DIR)/algorithms/hungarian.$O \
+	$(OBJ_DIR)/algorithms/knapsack_solver.$O
 
-$(OBJ_DIR)/hungarian.$O:$(SRC_DIR)/algorithms/hungarian.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/hungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Shungarian.$O
+$(OBJ_DIR)/algorithms/hungarian.$O:$(SRC_DIR)/algorithms/hungarian.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/hungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian.$O
 
-$(OBJ_DIR)/knapsack_solver.$O:$(SRC_DIR)/algorithms/knapsack_solver.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/knapsack_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sknapsack_solver.$O
+$(OBJ_DIR)/algorithms/knapsack_solver.$O:$(SRC_DIR)/algorithms/knapsack_solver.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/knapsack_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sknapsack_solver.$O
 
 $(LIB_DIR)/$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX): $(ALGORITHMS_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX) $(ALGORITHMS_LIB_OBJS)
@@ -717,52 +736,52 @@ endif
 # Base library.
 
 BASE_LIB_OBJS=\
-	$(OBJ_DIR)/bitmap.$O\
-	$(OBJ_DIR)/callback.$O\
-	$(OBJ_DIR)/file.$O\
-	$(OBJ_DIR)/filelinereader.$O\
-	$(OBJ_DIR)/join.$O\
-	$(OBJ_DIR)/logging.$O\
-	$(OBJ_DIR)/mutex.$O\
-	$(OBJ_DIR)/random.$O\
-	$(OBJ_DIR)/recordio.$O\
-	$(OBJ_DIR)/threadpool.$O\
-	$(OBJ_DIR)/split.$O\
-	$(OBJ_DIR)/stringpiece.$O\
-	$(OBJ_DIR)/stringprintf.$O\
-	$(OBJ_DIR)/sysinfo.$O\
-	$(OBJ_DIR)/timer.$O
+	$(OBJ_DIR)/base/bitmap.$O\
+	$(OBJ_DIR)/base/callback.$O\
+	$(OBJ_DIR)/base/file.$O\
+	$(OBJ_DIR)/base/filelinereader.$O\
+	$(OBJ_DIR)/base/join.$O\
+	$(OBJ_DIR)/base/logging.$O\
+	$(OBJ_DIR)/base/mutex.$O\
+	$(OBJ_DIR)/base/random.$O\
+	$(OBJ_DIR)/base/recordio.$O\
+	$(OBJ_DIR)/base/threadpool.$O\
+	$(OBJ_DIR)/base/split.$O\
+	$(OBJ_DIR)/base/stringpiece.$O\
+	$(OBJ_DIR)/base/stringprintf.$O\
+	$(OBJ_DIR)/base/sysinfo.$O\
+	$(OBJ_DIR)/base/timer.$O
 
-$(OBJ_DIR)/bitmap.$O:$(SRC_DIR)/base/bitmap.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/bitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbitmap.$O
-$(OBJ_DIR)/callback.$O:$(SRC_DIR)/base/callback.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/callback.cc $(OBJ_OUT)$(OBJ_DIR)$Scallback.$O
-$(OBJ_DIR)/file.$O:$(SRC_DIR)/base/file.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/file.cc $(OBJ_OUT)$(OBJ_DIR)$Sfile.$O
-$(OBJ_DIR)/filelinereader.$O:$(SRC_DIR)/base/filelinereader.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/filelinereader.cc $(OBJ_OUT)$(OBJ_DIR)$Sfilelinereader.$O
-$(OBJ_DIR)/logging.$O:$(SRC_DIR)/base/logging.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/logging.cc $(OBJ_OUT)$(OBJ_DIR)$Slogging.$O
-$(OBJ_DIR)/mutex.$O:$(SRC_DIR)/base/mutex.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/mutex.cc $(OBJ_OUT)$(OBJ_DIR)$Smutex.$O
-$(OBJ_DIR)/join.$O:$(SRC_DIR)/base/join.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/join.cc $(OBJ_OUT)$(OBJ_DIR)$Sjoin.$O
-$(OBJ_DIR)/random.$O:$(SRC_DIR)/base/random.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/random.cc $(OBJ_OUT)$(OBJ_DIR)$Srandom.$O
-$(OBJ_DIR)/recordio.$O:$(SRC_DIR)/base/recordio.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/recordio.cc $(OBJ_OUT)$(OBJ_DIR)$Srecordio.$O
-$(OBJ_DIR)/threadpool.$O:$(SRC_DIR)/base/threadpool.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/threadpool.cc $(OBJ_OUT)$(OBJ_DIR)$Sthreadpool.$O
-$(OBJ_DIR)/split.$O:$(SRC_DIR)/base/split.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/split.cc $(OBJ_OUT)$(OBJ_DIR)$Ssplit.$O
-$(OBJ_DIR)/stringpiece.$O:$(SRC_DIR)/base/stringpiece.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/stringpiece.cc $(OBJ_OUT)$(OBJ_DIR)$Sstringpiece.$O
-$(OBJ_DIR)/stringprintf.$O:$(SRC_DIR)/base/stringprintf.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/stringprintf.cc $(OBJ_OUT)$(OBJ_DIR)$Sstringprintf.$O
-$(OBJ_DIR)/sysinfo.$O:$(SRC_DIR)/base/sysinfo.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/sysinfo.cc $(OBJ_OUT)$(OBJ_DIR)$Ssysinfo.$O
-$(OBJ_DIR)/timer.$O:$(SRC_DIR)/base/timer.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)$(OBJ_DIR)$Stimer.$O
+$(OBJ_DIR)/base/bitmap.$O:$(SRC_DIR)/base/bitmap.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/bitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sbitmap.$O
+$(OBJ_DIR)/base/callback.$O:$(SRC_DIR)/base/callback.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/callback.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Scallback.$O
+$(OBJ_DIR)/base/file.$O:$(SRC_DIR)/base/file.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/file.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sfile.$O
+$(OBJ_DIR)/base/filelinereader.$O:$(SRC_DIR)/base/filelinereader.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/filelinereader.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sfilelinereader.$O
+$(OBJ_DIR)/base/logging.$O:$(SRC_DIR)/base/logging.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/logging.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Slogging.$O
+$(OBJ_DIR)/base/mutex.$O:$(SRC_DIR)/base/mutex.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/mutex.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Smutex.$O
+$(OBJ_DIR)/base/join.$O:$(SRC_DIR)/base/join.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/join.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sjoin.$O
+$(OBJ_DIR)/base/random.$O:$(SRC_DIR)/base/random.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/random.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Srandom.$O
+$(OBJ_DIR)/base/recordio.$O:$(SRC_DIR)/base/recordio.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/recordio.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Srecordio.$O
+$(OBJ_DIR)/base/threadpool.$O:$(SRC_DIR)/base/threadpool.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/threadpool.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sthreadpool.$O
+$(OBJ_DIR)/base/split.$O:$(SRC_DIR)/base/split.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/split.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Ssplit.$O
+$(OBJ_DIR)/base/stringpiece.$O:$(SRC_DIR)/base/stringpiece.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/stringpiece.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sstringpiece.$O
+$(OBJ_DIR)/base/stringprintf.$O:$(SRC_DIR)/base/stringprintf.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/stringprintf.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sstringprintf.$O
+$(OBJ_DIR)/base/sysinfo.$O:$(SRC_DIR)/base/sysinfo.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/sysinfo.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Ssysinfo.$O
+$(OBJ_DIR)/base/timer.$O:$(SRC_DIR)/base/timer.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stimer.$O
 
 $(LIB_DIR)/$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX): $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX) $(BASE_LIB_OBJS)
@@ -803,14 +822,14 @@ $(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX): $(FAP_LIB_OBJS)
 # Flatzinc Support
 
 FLATZINC_LIB_OBJS=\
-	$(OBJ_DIR)/booleans.$O\
-	$(OBJ_DIR)/flatzinc.$O\
-	$(OBJ_DIR)/flatzinc_constraints.$O\
-	$(OBJ_DIR)/fz_search.$O\
-	$(OBJ_DIR)/flatzinc.yy.$O\
-	$(OBJ_DIR)/flatzinc.tab.$O\
-	$(OBJ_DIR)/parser.$O\
-	$(OBJ_DIR)/registry.$O
+	$(OBJ_DIR)/flatzinc/booleans.$O\
+	$(OBJ_DIR)/flatzinc/flatzinc.$O\
+	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O\
+	$(OBJ_DIR)/flatzinc/fz_search.$O\
+	$(OBJ_DIR)/flatzinc/flatzinc.yy.$O\
+	$(OBJ_DIR)/flatzinc/flatzinc.tab.$O\
+	$(OBJ_DIR)/flatzinc/parser.$O\
+	$(OBJ_DIR)/flatzinc/registry.$O
 
 ifeq ($(SYSTEM),win)
 $(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/win/flatzinc.yy.cc
@@ -842,22 +861,22 @@ $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy
 $(SRC_DIR)/flatzinc/win/flatzinc.tab.hh: $(SRC_DIR)/flatzinc/win/flatzinc.tab.cc
 endif
 
-$(OBJ_DIR)/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sbooleans.$O
-$(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc.$O
-$(OBJ_DIR)/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc/flatzinc_constraints.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc_constraints.$O
-$(OBJ_DIR)/fz_search.$O:$(SRC_DIR)/flatzinc/fz_search.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sfz_search.$O
-$(OBJ_DIR)/flatzinc.yy.$O:$(GEN_DIR)/flatzinc/flatzinc.yy.cc $(GEN_DIR)/flatzinc/flatzinc.tab.hh $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc.yy.$O
-$(OBJ_DIR)/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sparser.$O
-$(OBJ_DIR)/flatzinc.tab.$O:$(GEN_DIR)/flatzinc/flatzinc.tab.cc $(SRC_DIR)/flatzinc/flatzinc.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc.tab.$O
-$(OBJ_DIR)/registry.$O:$(SRC_DIR)/flatzinc/registry.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sregistry.cc $(OBJ_OUT)$(OBJ_DIR)$Sregistry.$O
+$(OBJ_DIR)/flatzinc/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sbooleans.$O
+$(OBJ_DIR)/flatzinc/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc.$O
+$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc/flatzinc_constraints.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc_constraints.$O
+$(OBJ_DIR)/flatzinc/fz_search.$O:$(SRC_DIR)/flatzinc/fz_search.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz_search.$O
+$(OBJ_DIR)/flatzinc/flatzinc.yy.$O:$(GEN_DIR)/flatzinc/flatzinc.yy.cc $(GEN_DIR)/flatzinc/flatzinc.tab.hh $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc.yy.$O
+$(OBJ_DIR)/flatzinc/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
+$(OBJ_DIR)/flatzinc/flatzinc.tab.$O:$(GEN_DIR)/flatzinc/flatzinc.tab.cc $(SRC_DIR)/flatzinc/flatzinc.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc.tab.$O
+$(OBJ_DIR)/flatzinc/registry.$O:$(SRC_DIR)/flatzinc/registry.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sregistry.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sregistry.$O
 
 $(LIB_DIR)/$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
@@ -867,19 +886,39 @@ $(LIB_DIR)/$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
 	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
 endif
 
-$(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sfz.$O
+$(OBJ_DIR)/flatzinc/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
 
 fz: $(BIN_DIR)/fz$E
 
-$(BIN_DIR)/fz$E: $(OBJ_DIR)/fz.$O $(STATIC_FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
+$(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(STATIC_FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flatzinc/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
+
+# Static archive for minizinc challenge
 
 ifeq ($(PLATFORM),LINUX)
 $(BIN_DIR)/fzn_or-tools: $(OBJ_DIR)/fz.$O $(STATIC_FLATZINC_DEPS)
 	$(CCC) -static -static-libgcc $(CFLAGS) $(OBJ_DIR)/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfzn_or-tools
 endif
 
+# Flatzinc2 experimental code
+
+FLATZINC2_LIB_OBJS=\
+	$(OBJ_DIR)/flatzinc2/booleans.$O\
+
+$(OBJ_DIR)/flatzinc2/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc2/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sbooleans.$O
+
+$(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
+
+$(OBJ_DIR)/fz2.$O:$(SRC_DIR)/flatzinc2/fz2.cc $(SRC_DIR)/flatzinc2/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sfz2.$O
+
+fz2 : $(BIN_DIR)/fz2$E
+
+$(BIN_DIR)/fz2$E: $(OBJ_DIR)/fz2.$O $(DYNAMIC_FLATZINC2_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz2.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
 
 # Flow and linear assignment cpp
 
@@ -1106,46 +1145,46 @@ $(BIN_DIR)/integer_programming$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/integer_programm
 sat: bin/sat_runner$E
 
 SAT_LIB_OBJS = \
-	$(OBJ_DIR)/boolean_problem.$O\
-	$(OBJ_DIR)/boolean_problem.pb.$O \
-	$(OBJ_DIR)/clause.$O\
-	$(OBJ_DIR)/pb_constraint.$O\
-	$(OBJ_DIR)/sat_parameters.pb.$O\
-	$(OBJ_DIR)/sat_solver.$O\
-	$(OBJ_DIR)/unsat_proof.$O
+	$(OBJ_DIR)/sat/boolean_problem.$O\
+	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
+	$(OBJ_DIR)/sat/clause.$O\
+	$(OBJ_DIR)/sat/pb_constraint.$O\
+	$(OBJ_DIR)/sat/sat_parameters.pb.$O\
+	$(OBJ_DIR)/sat/sat_solver.$O\
+	$(OBJ_DIR)/sat/unsat_proof.$O
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 
-$(OBJ_DIR)/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_solver.$O
+$(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
-$(OBJ_DIR)/boolean_problem.$O: $(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.$O
+$(OBJ_DIR)/sat/boolean_problem.$O: $(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.$O
 
 $(GEN_DIR)/sat/boolean_problem.pb.cc: $(SRC_DIR)/sat/boolean_problem.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/boolean_problem.proto
 
 $(GEN_DIR)/sat/boolean_problem.pb.h: $(GEN_DIR)/sat/boolean_problem.pb.cc
 
-$(OBJ_DIR)/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_problem.pb.$O
+$(OBJ_DIR)/sat/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.pb.$O
 
-$(OBJ_DIR)/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Spb_constraint.$O
+$(OBJ_DIR)/sat/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
 
-$(OBJ_DIR)/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Sclause.$O
+$(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
 
-$(OBJ_DIR)/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Sunsat_proof.$O
+$(OBJ_DIR)/sat/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sunsat_proof.$O
 
 $(GEN_DIR)/sat/sat_parameters.pb.cc: $(SRC_DIR)/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/sat_parameters.proto
 
 $(GEN_DIR)/sat/sat_parameters.pb.h: $(GEN_DIR)/sat/sat_parameters.pb.cc
 
-$(OBJ_DIR)/sat_parameters.pb.$O: $(GEN_DIR)/sat/sat_parameters.pb.cc $(GEN_DIR)/sat/sat_parameters.pb.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/sat_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_parameters.pb.$O
+$(OBJ_DIR)/sat/sat_parameters.pb.$O: $(GEN_DIR)/sat/sat_parameters.pb.cc $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/sat_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_parameters.pb.$O
 
 $(LIB_DIR)/$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX): $(SAT_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX) $(SAT_LIB_OBJS)
@@ -1155,11 +1194,11 @@ $(LIB_DIR)/$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX): $(SAT_LIB_OBJS)
 	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX) $(SAT_LIB_OBJS)
 endif
 
-$(OBJ_DIR)/sat_runner.$O:$(EX_DIR)/cpp/sat_runner.cc $(SRC_DIR)/sat/sat_solver.h $(EX_DIR)/cpp/opb_reader.h $(EX_DIR)/cpp/sat_cnf_reader.h $(GEN_DIR)/sat/sat_parameters.pb.h  $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/boolean_problem.h  $(SRC_DIR)/sat/sat_base.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
+$(OBJ_DIR)/sat/sat_runner.$O:$(EX_DIR)/cpp/sat_runner.cc $(SRC_DIR)/sat/sat_solver.h $(EX_DIR)/cpp/opb_reader.h $(EX_DIR)/cpp/sat_cnf_reader.h $(GEN_DIR)/sat/sat_parameters.pb.h  $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/boolean_problem.h  $(SRC_DIR)/sat/sat_base.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_runner.$O
 
-$(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat_runner.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat_runner.$O $(DYNAMIC_SAT_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
+$(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat/sat_runner.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(DYNAMIC_SAT_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
 # OR Tools unique library.
 
