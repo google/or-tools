@@ -871,7 +871,7 @@ $(OBJ_DIR)/flatzinc/fz_search.$O:$(SRC_DIR)/flatzinc/fz_search.cc $(SRC_DIR)/fla
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz_search.$O
 $(OBJ_DIR)/flatzinc/flatzinc.yy.$O:$(GEN_DIR)/flatzinc/flatzinc.yy.cc $(GEN_DIR)/flatzinc/flatzinc.tab.hh $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc.yy.$O
-$(OBJ_DIR)/flatzinc/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
+$(OBJ_DIR)/flatzinc/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h $(GEN_DIR)/flatzinc/flatzinc.tab.hh
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
 $(OBJ_DIR)/flatzinc/flatzinc.tab.$O:$(GEN_DIR)/flatzinc/flatzinc.tab.cc $(SRC_DIR)/flatzinc/flatzinc.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc.tab.$O
@@ -1291,4 +1291,3 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
-
