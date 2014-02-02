@@ -211,7 +211,7 @@ else
 	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 endif
 
-python_examples_archive: python
+python_examples_archive:
 	-$(DELREC) temp
 	$(MKDIR) temp
 	$(MKDIR) temp$Sortools_examples
