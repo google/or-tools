@@ -224,10 +224,10 @@ python_examples_archive: python
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools_examples$Ssetup.py
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
-	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
+	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm 
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(SVNVERSION).zip ortools_examples
 else
-	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
+	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm 
 	cd temp && tar cvzf ../Google.OrTools.python.examples.$(SVNVERSION).tar.gz ortools_examples
 endif
 
