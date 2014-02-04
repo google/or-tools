@@ -297,6 +297,7 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc*
 	-$(DEL) $(GEN_DIR)$Sflatzinc2$Sparser*
+	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DEL) $(SRC_DIR)$Sflatzinc$Slexer*
