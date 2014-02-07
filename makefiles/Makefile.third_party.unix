@@ -14,6 +14,15 @@ SWIG_TAG = 17741
 # version 8.33
 PCRE_TAG = 1336
 MONO_TAG = 3.2.5
+# BISON, FLEX
+BISON_TAG = 2.4.2
+FLEX_TAG = 2.5.37
+# help2man needed by bison
+HELP2MAN_TAG = 1.43.3
+# Autoconf support
+AUTOCONF_TAG = 2.69
+AUTOMAKE_TAG = 1.14.1
+LIBTOOL_TAG = 2.4.2
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the
 # archive is present.  The archive should be glpk-4.52.1.tar.gz
@@ -59,6 +68,14 @@ ifeq ($(PLATFORM), LINUX)
     PATCHELF=dependencies/install/bin/patchelf
 endif
 
+# Detect if AC_LOCAL needs to be installed.
+ifeq ($(PLATFORM), MACOSX)
+    ACLOCAL_TARGET = \
+    		dependencies/install/bin/autoconf \
+    		dependencies/install/bin/automake \
+    		dependencies/install/bin/libtool
+endif
+
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
 third_party: install_third_party makefile_third_party
@@ -72,7 +89,9 @@ install_third_party: \
 	install_cbc \
 	install_glpk \
 	install_scip \
-	install_mono
+	install_mono \
+	install_bison \
+	install_flex
 
 # Install gflags.
 install_gflags: dependencies/install/bin/gflags_completions.sh
@@ -207,6 +226,89 @@ dependencies/sources/patchelf-0.8/Makefile: dependencies/sources/patchelf-0.8/co
 
 dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.tar.gz
 	cd dependencies/sources && tar xzmf ../archives/patchelf-0.8.tar.gz
+
+# Install bison
+install_bison: dependencies/install/bin/bison
+
+dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/help2man
+	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+
+dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(BISON_TAG)/configure $(ACLOCAL_TARGET)
+	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin aclocal
+	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/bison-$(BISON_TAG)/configure: dependencies/archives/bison-$(BISON_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/bison-$(BISON_TAG).tar.gz
+
+dependencies/archives/bison-$(BISON_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/bison/bison-$(BISON_TAG).tar.gz
+
+# Install flex
+install_flex: dependencies/install/bin/flex
+
+dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(ACLOCAL_TARGET)
+	cd dependencies/sources/flex-$(FLEX_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+
+dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
+	cd dependencies/sources/flex-$(FLEX_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/flex-$(FLEX_TAG).tar.gz
+
+dependencies/archives/flex-$(FLEX_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/flex/flex-$(FLEX_TAG).tar.gz
+
+# Install help2man
+dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile
+	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && make install
+
+dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile: dependencies/sources/help2man-$(HELP2MAN_TAG)/configure
+	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/help2man-$(HELP2MAN_TAG)/configure: dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/help2man-$(HELP2MAN_TAG).tar.gz
+
+dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/help2man/help2man-$(HELP2MAN_TAG).tar.gz
+
+# Install libtool
+dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile
+	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && make install
+
+dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
+	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/libtool-$(LIBTOOL_TAG)/configure: dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/libtool-$(LIBTOOL_TAG).tar.gz
+
+dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/libtool/libtool-$(LIBTOOL_TAG).tar.gz
+
+# Install automake
+dependencies/install/bin/automake: dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && make install
+
+dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile: dependencies/sources/automake-$(AUTOMAKE_TAG)/configure dependencies/install/bin/autoconf
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/automake-$(AUTOMAKE_TAG)/configure: dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/automake-$(AUTOMAKE_TAG).tar.gz
+
+dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/automake/automake-$(AUTOMAKE_TAG).tar.gz
+
+# Install autoconf
+dependencies/install/bin/autoconf: dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile
+	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+
+dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile: dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure
+	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+
+dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/autoconf-$(AUTOCONF_TAG).tar.gz
+
+dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
 
 
 # Clean everything.

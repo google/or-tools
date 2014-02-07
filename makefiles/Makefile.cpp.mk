@@ -893,7 +893,7 @@ $(OBJ_DIR)/flatzinc/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc
 fz: $(BIN_DIR)/fz$E
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(STATIC_FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/flatzinc/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flatzinc/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
 
 # Static archive for minizinc challenge
 
@@ -905,21 +905,65 @@ endif
 # Flatzinc2 experimental code
 
 FLATZINC2_LIB_OBJS=\
-	$(OBJ_DIR)/flatzinc2/booleans.$O\
+	$(OBJ_DIR)/flatzinc2/constraints.$O\
+	$(OBJ_DIR)/flatzinc2/model.$O\
+	$(OBJ_DIR)/flatzinc2/parallel_support.$O\
+	$(OBJ_DIR)/flatzinc2/parser.$O\
+	$(OBJ_DIR)/flatzinc2/parser.tab.$O\
+	$(OBJ_DIR)/flatzinc2/parser.yy.$O\
+	$(OBJ_DIR)/flatzinc2/presolve.$O\
+	$(OBJ_DIR)/flatzinc2/search.$O\
+	$(OBJ_DIR)/flatzinc2/sequential_support.$O\
+	$(OBJ_DIR)/flatzinc2/solver.$O
 
-$(OBJ_DIR)/flatzinc2/booleans.$O:$(SRC_DIR)/flatzinc/booleans.cc $(SRC_DIR)/flatzinc2/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sbooleans.$O
+$(GEN_DIR)/flatzinc2/parser.yy.cc: $(SRC_DIR)/flatzinc2/parser.lex $(FLEX)
+	$(FLEX) -o$(GEN_DIR)/flatzinc2/parser.yy.cc $(SRC_DIR)/flatzinc2/parser.lex
 
-$(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
-	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
+$(GEN_DIR)/flatzinc2/parser.tab.cc: $(SRC_DIR)/flatzinc2/parser.yy $(BISON)
+	$(BISON) -t -o $(GEN_DIR)/flatzinc2/parser.tab.cc -d $<
 
-$(OBJ_DIR)/fz2.$O:$(SRC_DIR)/flatzinc2/fz2.cc $(SRC_DIR)/flatzinc2/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sfz2.$O
+$(GEN_DIR)/flatzinc2/parser.tab.hh: $(GEN_DIR)/flatzinc2/parser.tab.cc
+
+$(OBJ_DIR)/flatzinc2/constraints.$O:$(SRC_DIR)/flatzinc2/constraints.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sconstraints.$O
+
+$(OBJ_DIR)/flatzinc2/model.$O:$(SRC_DIR)/flatzinc2/model.cc $(SRC_DIR)/flatzinc2/model.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Smodel.$O
+
+$(OBJ_DIR)/flatzinc2/parallel_support.$O:$(SRC_DIR)/flatzinc2/parallel_support.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sparallel_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sparallel_support.$O
+
+$(OBJ_DIR)/flatzinc2/parser.$O:$(SRC_DIR)/flatzinc2/parser.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/parser.h $(GEN_DIR)/flatzinc2/parser.tab.hh
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sparser.$O
+
+$(OBJ_DIR)/flatzinc2/parser.tab.$O:$(GEN_DIR)/flatzinc2/parser.tab.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/parser.h $(GEN_DIR)/flatzinc2/parser.tab.hh
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc2$Sparser.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sparser.tab.$O
+
+$(OBJ_DIR)/flatzinc2/parser.yy.$O:$(GEN_DIR)/flatzinc2/parser.yy.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/parser.h $(GEN_DIR)/flatzinc2/parser.tab.hh
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc2$Sparser.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sparser.yy.$O
+
+$(OBJ_DIR)/flatzinc2/presolve.$O:$(SRC_DIR)/flatzinc2/presolve.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/presolve.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Spresolve.$O
+
+$(OBJ_DIR)/flatzinc2/search.$O:$(SRC_DIR)/flatzinc2/search.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Ssearch.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Ssearch.$O
+
+$(OBJ_DIR)/flatzinc2/sequential_support.$O:$(SRC_DIR)/flatzinc2/sequential_support.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Ssequential_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Ssequential_support.$O
+
+$(OBJ_DIR)/flatzinc2/solver.$O:$(SRC_DIR)/flatzinc2/solver.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Ssolver.$O
+
+$(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC2_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX) $(FLATZINC2_LIB_OBJS)
+
+$(OBJ_DIR)/flatzinc2/fz.$O:$(SRC_DIR)/flatzinc2/fz.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sfz.$O
 
 fz2 : $(BIN_DIR)/fz2$E
 
-$(BIN_DIR)/fz2$E: $(OBJ_DIR)/fz2.$O $(DYNAMIC_FLATZINC2_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz2.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
+$(BIN_DIR)/fz2$E: $(OBJ_DIR)/flatzinc2/fz.$O $(DYNAMIC_FLATZINC2_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc2$Sfz2.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
 
 # Flow and linear assignment cpp
 

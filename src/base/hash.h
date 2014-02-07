@@ -235,7 +235,7 @@ struct hash<int64> {
 };
 
 template <>
-struct hash<std::string> {
+struct hash<const std::string> {
   size_t operator()(const std::string& x) const {
     size_t hash = 0;
     int c;

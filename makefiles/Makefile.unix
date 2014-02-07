@@ -190,6 +190,8 @@ ifeq ($(PLATFORM),LINUX)
   DYNAMIC_POST_LIB =
   STATIC_PRE_LIB = $(OR_ROOT_FULL)/lib/lib
   STATIC_POST_LIB = .a
+  BISON = dependencies/install/bin/bison
+  FLEX = dependencies/install/bin/flex
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
   CCC = clang++ -fPIC -std=c++11
@@ -253,6 +255,8 @@ ifeq ($(PLATFORM),MACOSX)
     DYNAMIC_GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
     STATIC_GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
   endif
+  BISON = dependencies/install/bin/bison
+  FLEX = dependencies/install/bin/flex
 endif  # MAC OS X
 
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC) \
