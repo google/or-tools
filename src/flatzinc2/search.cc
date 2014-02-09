@@ -15,7 +15,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"

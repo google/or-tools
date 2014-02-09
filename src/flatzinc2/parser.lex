@@ -12,6 +12,7 @@
 #include "base/integral_types.h"
 #include "base/strtoint.h"
 #include "flatzinc2/parser.tab.hh"
+using operations_research::atoi64;
 %}
 
 /* Rules that parse the bottom-line std::string tokens of a .fz file and

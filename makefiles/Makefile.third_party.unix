@@ -15,7 +15,7 @@ SWIG_TAG = 17741
 PCRE_TAG = 1336
 MONO_TAG = 3.2.5
 # BISON, FLEX
-BISON_TAG = 2.4.2
+BISON_TAG = 3.0.2
 FLEX_TAG = 2.5.37
 # help2man needed by bison
 HELP2MAN_TAG = 1.43.3
@@ -234,7 +234,7 @@ dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile
 	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
 
 dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(BISON_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin aclocal
+	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin autoreconf
 	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/bison-$(BISON_TAG)/configure: dependencies/archives/bison-$(BISON_TAG).tar.gz

@@ -1,9 +1,11 @@
 // Specify a reentrant parser.
 //%pure-parser
-%define api.pure
 
 // Renames all yy to orfz_ in public functions.
 %name-prefix "orfz_"
+
+// List the parameter of the lexer.
+%lex-param {void* scanner}
 
 // Explicit list of the parameters of the orfz_parse() method (this also adds
 // them to orfz_error(), in which we only need the scanner). Note that the
@@ -12,6 +14,8 @@
 %parse-param {operations_research::FzModel* model}
 %parse-param {bool* ok}
 %parse-param {void* scanner}
+
+%define api.pure full
 
 // Code to be exported in parser.tab.hh
 %code requires {

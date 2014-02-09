@@ -10,7 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "base/map-util.h"
+#include "base/map_util.h"
 #include "base/stl_util.h"
 #include "flatzinc2/presolve.h"
 
@@ -139,7 +139,6 @@ FzPresolve::PresolveStatus FzPresolve::PresolveOneConstraint(
           break;
         }
         case REMOVE_ME: { return REMOVE_ME; }
-        case REWRITE_ME: { return REWRITE_ME; }
         case NO_CHANGE: { break; }
       }
     }

@@ -811,11 +811,11 @@ FAP_LIB_OBJS=\
 	$(OBJ_DIR)/fap_utilities.$O
 
 $(OBJ_DIR)/fap_model_printer.$O:$(EX_DIR)/cpp/fap_model_printer.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_model_printer.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_model_printer.$O
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_model_printer.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_model_printer.$O
 $(OBJ_DIR)/fap_parser.$O:$(EX_DIR)/cpp/fap_parser.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_parser.$O
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_parser.$O
 $(OBJ_DIR)/fap_utilities.$O:$(EX_DIR)/cpp/fap_utilities.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/fap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
 
 $(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX): $(FAP_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX) $(FAP_LIB_OBJS)
@@ -958,12 +958,12 @@ $(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC2_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX) $(FLATZINC2_LIB_OBJS)
 
 $(OBJ_DIR)/flatzinc2/fz.$O:$(SRC_DIR)/flatzinc2/fz.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sfz.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sfz.$O
 
 fz2 : $(BIN_DIR)/fz2$E
 
 $(BIN_DIR)/fz2$E: $(OBJ_DIR)/flatzinc2/fz.$O $(DYNAMIC_FLATZINC2_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc2$Sfz2.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc2$Sfz.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
 
 # Flow and linear assignment cpp
 
