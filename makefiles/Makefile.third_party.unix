@@ -70,13 +70,12 @@ ifeq ($(PLATFORM), LINUX)
     PATCHELF=dependencies/install/bin/patchelf
 endif
 
-# Detect if AC_LOCAL needs to be installed.
-ifeq ($(PLATFORM), MACOSX)
-    ACLOCAL_TARGET = \
-    		dependencies/install/bin/autoconf \
-    		dependencies/install/bin/automake \
-    		dependencies/install/bin/libtool
-endif
+ACLOCAL_TARGET = \
+	dependencies/install/bin/autoconf \
+	dependencies/install/bin/automake \
+	dependencies/install/bin/libtool
+
+SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
@@ -99,13 +98,13 @@ install_third_party: \
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
 dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) make install
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/configure: dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./autogen.sh
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh:
 	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags-$(GFLAGS_TAG)
@@ -114,13 +113,13 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh:
 install_protobuf: dependencies/install/bin/protoc
 
 dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) make install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./autogen.sh
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -135,13 +134,13 @@ dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README:
 install_sparsehash: dependencies/install/include/google/dense_hash_map
 
 dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) make install
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./autogen.sh
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
@@ -150,23 +149,23 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) make install
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
 
 # Install pcre (dependency of SWIG).
 dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make && make install
+	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) make && make install
 
 dependencies/sources/pcre-$(PCRE_TAG)/Makefile: dependencies/sources/pcre-$(PCRE_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./autogen.sh
+	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh:
 	svn co svn://vcs.exim.org/pcre/code/trunk -r $(PCRE_TAG) dependencies/sources/pcre-$(PCRE_TAG)
@@ -175,13 +174,13 @@ dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh:
 install_swig: dependencies/install/bin/swig
 
 dependencies/install/bin/swig: dependencies/sources/swig-$(SWIG_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make && make install
+	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) make && make install
 
 dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG_TAG)/configure dependencies/install/bin/pcretest $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
+	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
 
 dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./autogen.sh
+	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
 	svn co https://github.com/swig/swig/trunk -r $(SWIG_TAG) dependencies/sources/swig-$(SWIG_TAG)
@@ -193,7 +192,7 @@ dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
 
 dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/glpk-$(GLPK_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/glpk-$(GLPK_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
@@ -208,11 +207,11 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 install_mono: $(MONO_TARGET)
 
 dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/mono-$(MONO_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make && make install
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make && make install
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure $(ACLOCAL_TARGET)
 ifeq ($(PLATFORM),MACOSX)
-	cd dependencies/sources/mono-$(MONO_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 else
 	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 endif
@@ -235,11 +234,11 @@ dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.
 install_bison: dependencies/install/bin/bison
 
 dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/help2man
-	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) make install
 
 dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(BISON_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin autoreconf
-	cd dependencies/sources/bison-$(BISON_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) autoreconf
+	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/bison-$(BISON_TAG)/configure: dependencies/archives/bison-$(BISON_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/bison-$(BISON_TAG).tar.gz
@@ -251,10 +250,10 @@ dependencies/archives/bison-$(BISON_TAG).tar.gz:
 install_flex: dependencies/install/bin/flex
 
 dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/flex-$(FLEX_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) make install
 
 dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/flex-$(FLEX_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/flex-$(FLEX_TAG).tar.gz
@@ -267,7 +266,7 @@ dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)
 	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && make install
 
 dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile: dependencies/sources/help2man-$(HELP2MAN_TAG)/configure
-	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/help2man-$(HELP2MAN_TAG)/configure: dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/help2man-$(HELP2MAN_TAG).tar.gz
@@ -280,7 +279,7 @@ dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Ma
 	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && make install
 
 dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
-	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/libtool-$(LIBTOOL_TAG)/configure: dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/libtool-$(LIBTOOL_TAG).tar.gz
@@ -290,10 +289,13 @@ dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz:
 
 # Install automake
 dependencies/install/bin/automake: dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./bootstrap.sh
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make install
+
 
 dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile: dependencies/sources/automake-$(AUTOMAKE_TAG)/configure dependencies/install/bin/autoconf
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/automake-$(AUTOMAKE_TAG)/configure: dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/automake-$(AUTOMAKE_TAG).tar.gz
@@ -303,10 +305,10 @@ dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz:
 
 # Install autoconf
 dependencies/install/bin/autoconf: dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile
-	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin make install
+	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && $(SET_PATH) make && make install
 
 dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile: dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure
-	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && PATH=$(PATH):$(OR_ROOT_FULL)/dependencies/install/bin ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/autoconf-$(AUTOCONF_TAG).tar.gz
@@ -326,6 +328,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/google*
 	-$(DELREC) dependencies/sources/mono*
 	-$(DELREC) dependencies/sources/pcre*
+	-$(DELREC) dependencies/sources/swig*
 	-$(DELREC) dependencies/sources/protobuf*
 	-$(DELREC) dependencies/sources/sparsehash*
 	-$(DELREC) dependencies/sources/libtool*
@@ -334,6 +337,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/bison*
 	-$(DELREC) dependencies/sources/flex*
 	-$(DELREC) dependencies/sources/help2man*
+	-$(DELREC) dependencies/sources/patchelf*
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
