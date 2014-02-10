@@ -246,6 +246,19 @@ struct hash<const std::string> {
     return hash;
   }
 };
+
+template <>
+struct hash<std::string> {
+  size_t operator()(const std::string& x) const {
+    size_t hash = 0;
+    int c;
+    const char* s = x.c_str();
+    while ((c = *s++)) {  // Extra () to remove a warning on Windows.
+      hash = ((hash << 5) + hash) ^ c;
+    }
+    return hash;
+  }
+};
 #endif  // STLPORT
 }  // namespace HASH_NAMESPACE
 
