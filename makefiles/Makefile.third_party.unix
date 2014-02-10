@@ -19,6 +19,8 @@ BISON_TAG = 3.0.2
 FLEX_TAG = 2.5.37
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
+# texinfo is needed too.
+TEXINFO_TAG = 5.2
 # Autoconf support
 AUTOCONF_TAG = 2.69
 AUTOMAKE_TAG = 1.14.1
@@ -233,7 +235,7 @@ dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.
 # Install bison
 install_bison: dependencies/install/bin/bison
 
-dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/help2man
+dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/help2man dependencies/install/bin/makeinfo
 	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) make install
 
 dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(BISON_TAG)/configure $(ACLOCAL_TARGET)
@@ -249,7 +251,7 @@ dependencies/archives/bison-$(BISON_TAG).tar.gz:
 # Install flex
 install_flex: dependencies/install/bin/flex
 
-dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(ACLOCAL_TARGET)
+dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/makeinfo
 	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) make install
 
 dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
@@ -273,6 +275,20 @@ dependencies/sources/help2man-$(HELP2MAN_TAG)/configure: dependencies/archives/h
 
 dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/help2man/help2man-$(HELP2MAN_TAG).tar.gz
+
+# Install texinfo
+dependencies/install/bin/makeinfo: dependencies/sources/texinfo-$(TEXINFO_TAG)/Makefile
+	cd dependencies/sources/texinfo-$(TEXINFO_TAG) && $(SET_PATH) make install
+
+dependencies/sources/texinfo-$(TEXINFO_TAG)/Makefile: dependencies/sources/texinfo-$(TEXINFO_TAG)/configure
+	cd dependencies/sources/texinfo-$(TEXINFO_TAG) && $(SET_PATH) autoreconf
+	cd dependencies/sources/texinfo-$(TEXINFO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+
+dependencies/sources/texinfo-$(TEXINFO_TAG)/configure: dependencies/archives/texinfo-$(TEXINFO_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/texinfo-$(TEXINFO_TAG).tar.gz
+
+dependencies/archives/texinfo-$(TEXINFO_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/texinfo/texinfo-$(TEXINFO_TAG).tar.gz
 
 # Install libtool
 dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile
