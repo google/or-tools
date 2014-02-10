@@ -222,7 +222,6 @@ dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MO
 	cd dependencies/sources && tar xvjmf ../archives/mono-$(MONO_TAG).tar.bz2
 
 # Install patchelf on linux platforms.
-
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
 	cd dependencies/sources/patchelf-0.8 && make && make install
 
