@@ -24,7 +24,7 @@ extern void orfz_set_in(FILE* in_str, void* yyscanner);
 // Declare external functions and structures in the flatzinc.yy.cc
 // generated file.
 struct yy_buffer_state;
-extern yy_buffer_state* orfz__scan_bytes(const char* input, int size,
+extern yy_buffer_state* orfz__scan_bytes(const char* input, size_t size,
                                          void* scanner);
 extern void orfz__delete_buffer(yy_buffer_state* b, void* scanner);
 
