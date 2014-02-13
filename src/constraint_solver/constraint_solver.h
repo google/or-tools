@@ -5012,6 +5012,11 @@ class DisjunctiveConstraint : public Constraint {
     }
   }
 
+  virtual const std::vector<IntVar*>& nexts() const = 0;
+  virtual const std::vector<IntVar*>& actives() const = 0;
+  virtual const std::vector<IntVar*>& time_cumuls() const = 0;
+  virtual const std::vector<IntVar*>& time_slacks() const = 0;
+
  protected:
   const std::vector<IntervalVar*> intervals_;
   std::unique_ptr<Solver::IndexEvaluator2> transition_time_;

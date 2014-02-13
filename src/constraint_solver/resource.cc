@@ -911,6 +911,18 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
                         JoinDebugStringPtr(intervals_, ",").c_str());
   }
 
+  virtual const std::vector<IntVar*>& nexts() const { return nexts_; }
+
+  virtual const std::vector<IntVar*>& actives() const { return actives_; }
+
+  virtual const std::vector<IntVar*>& time_cumuls() const {
+    return time_cumuls_;
+  }
+
+  virtual const std::vector<IntVar*>& time_slacks() const {
+    return time_slacks_;
+  }
+
  private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
     return (transition_time_.get() == nullptr || activity_plus_one == 0 ||
