@@ -31,7 +31,8 @@ setup(
         'ortools.linear_solver' : ['_pywraplp.dll'],
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
-        DELETEWIN 'ortools' : ['libortools.DLL'] },
+        DELETEWIN 'ortools' : ['libortools.DLL'] 
+    },
     license='Apache 2.0',
     author = 'Google Inc',
     author_email = 'lperron@google.com',
