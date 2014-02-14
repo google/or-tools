@@ -303,13 +303,13 @@ dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/libtool/libtool-$(LIBTOOL_TAG).tar.gz
 
 # Install automake
-dependencies/install/bin/automake: dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile
+dependencies/install/bin/automake: dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile dependencies/install/bin/makeinfo
 	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./bootstrap.sh
 	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make
 	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make install
 
 
-dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile: dependencies/sources/automake-$(AUTOMAKE_TAG)/configure dependencies/install/bin/autoconf
+dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile: dependencies/sources/automake-$(AUTOMAKE_TAG)/configure dependencies/install/bin/autoconf dependencies/install/bin/makeinfo
 	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/automake-$(AUTOMAKE_TAG)/configure: dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz
