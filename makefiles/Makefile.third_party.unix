@@ -27,7 +27,7 @@ LIBTOOL_TAG = 2.4.2
 # Build extra dependencies (GLPK, SCIP) from archive only if the
 # archive is present.
 #
-# The GLPK archive should be glpk-4.52.1.tar.gz
+# The GLPK archive should be glpk-4.53.tar.gz
 GLPK_TAG = 4.53
 # The SCIP archive should be scipoptsuite-3.0.2.tgz
 SCIP_TAG = 3.0.2
