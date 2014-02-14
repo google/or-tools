@@ -264,14 +264,13 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e '/DELETEWIN/d' temp/ortools/setup.py
 	-del temp\ortools\setup.py-e
 else
-	$(MKDIR) temp$Sortools$Slib
 	cp lib/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/constraint_solver
 	cp lib/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/linear_solver
 	cp lib/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/graph
 	cp lib/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/algorithms
-	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/ortools/lib
+	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/ortools/ortools
 	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
-	$(SED) -i -e 's/DELETEWIN/         /g' temp/ortools/setup.py
+	$(SED) -i -e 's/DELETEWIN //g' temp/ortools/setup.py
 	$(SED) -i -e 's/DLL/$(DYNAMIC_LIB_SUFFIX)/g' temp/ortools/setup.py
 	-rm temp/ortools/setup.py-e
 ifeq ($(PLATFORM),MACOSX)
