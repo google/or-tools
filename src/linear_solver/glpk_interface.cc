@@ -668,6 +668,10 @@ int64 GLPKInterface::iterations() const {
 #if GLP_MINOR_VERSION < 49
   if (!mip_ && CheckSolutionIsSynchronized())
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
+#elif GLP_MINOR_VERSION >= 53
+  if (!mip_ && CheckSolutionIsSynchronized()) {
+    return glp_get_it_cnt(lp_);
+  }
 #endif
   LOG(WARNING) << "Total number of iterations is not available";
   return kUnknownNumberOfIterations;
