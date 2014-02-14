@@ -262,6 +262,7 @@ ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sortools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/ortools/setup.py
 	$(SED) -i -e '/DELETEWIN/d' temp/ortools/setup.py
+	$(SED) -i -e 's/DELETEUNIX/          /g' temp/ortools/setup.py
 	-del temp\ortools\setup.py-e
 else
 	cp lib/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/constraint_solver
@@ -271,6 +272,7 @@ else
 	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/ortools/ortools
 	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
 	$(SED) -i -e 's/DELETEWIN //g' temp/ortools/setup.py
+	$(SED) -i -e '/DELETEUNIX/d' temp/ortools/setup.py
 	$(SED) -i -e 's/DLL/$(DYNAMIC_LIB_SUFFIX)/g' temp/ortools/setup.py
 	-rm temp/ortools/setup.py-e
 ifeq ($(PLATFORM),MACOSX)

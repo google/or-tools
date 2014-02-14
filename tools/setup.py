@@ -10,7 +10,9 @@ def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
 dummy_module = Extension('dummy_ortools_dependency',
-                         sources = ['dummy/dummy_ortools_dependency.cc'])
+                         sources = ['dummy/dummy_ortools_dependency.cc'],
+DELETEUNIX               extra_link_args=['/MANIFEST'],
+                        )
 
 setup(
     name='ortools',
