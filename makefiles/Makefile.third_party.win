@@ -10,7 +10,7 @@ SWIG_TAG = 2.0.11
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.52.1.tar.gz
-GLPK_TAG = 4.52.1
+GLPK_TAG = 4.53
 # The archive should be scipoptsuite-3.0.2.tgz
 SCIP_TAG = 3.0.2
 SOPLEX_TAG = 1.7.2
