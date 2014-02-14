@@ -45,7 +45,7 @@ $runsed 's/\/\*([^\*])/\/\*\*\1/;                  # /* -> /**  \
        s/\/\/\/ *(Date: (.*))/\/\/\/ @file/; # clutter \
        s/\/\/\/ *Author:(.*)/\/\/\/ @file/; # /// Author -> /// @file \
        s/\/\/\/ *Author(.*)/\/\/\/ @file/; # /// Author -> /// @file  \
-       s/namespace operations_research \{/namespace operations_research \{\n\/** \\ingroup '"$2"' *\//;' \
+       s/namespace operations_research \{/namespace operations_research \{\n\/** \\page '"$2"' *\//;' \
   $1
 
 # There are no quotes around $1 to let the script work with standard input if

@@ -16,7 +16,7 @@ mkdir src
 mkdir gen
 mkdir tags
 for subdir in algorithms base constraint_solver graph linear_solver util
-dob
+do
   mkdir src/$subdir
   cp ../../../src/$subdir/README src/$subdir
   for file in ../../../src/$subdir/*.{h,cc}
