@@ -470,6 +470,12 @@ class LinearConstraint(object):
 PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
                  operations_research::new_proto::MPModelProto,
                  MPModelProto);
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
+                 operations_research::new_proto::MPSolutionResponse,
+                 MPSolutionResponse);
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
+                 operations_research::new_proto::MPModelRequest,
+                 MPModelRequest);
 #endif  // SWIGPYTHON
 
 #ifdef SWIGJAVA
