@@ -211,9 +211,11 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     PyObject* const result = PyObject_CallMethod(
         $input, const_cast<char*>("ParseFromString"),
         const_cast<char*>("(O)"), python_encoded_protobuf);
-    PyObject_Print($input, stdout, 0);
+    // PyObject_Print($input, stdout, 0);
     Py_DECREF(python_encoded_protobuf);
     if (result != nullptr) { Py_DECREF(result); }
+    Py_XDECREF($result);
+    $result = $input;
   }
 }
 
