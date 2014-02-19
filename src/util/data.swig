@@ -187,13 +187,16 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
   PyObject* const pyresult = PyObject_CallMethod(
       $input, const_cast<char*>("SerializeToString"), nullptr);
   if (pyresult != nullptr) {
-    const char* const encoded_protobuf = PyString_AsString(pyresult);
-    if (encoded_protobuf != nullptr) {
-      $1->ParseFromString(encoded_protobuf);
+    char* buffer = nullptr;
+    long length = 0;
+    int result = PyString_AsStringAndSize(pyresult, &buffer, &length);
+    if (buffer != nullptr) {
+      $1->ParseFromArray(buffer, length);
     }
     Py_DECREF(pyresult);
   }
 }
+
 %typemap(freearg) const CppType&, CppType* const, CppType* {
   delete $1;
 }
