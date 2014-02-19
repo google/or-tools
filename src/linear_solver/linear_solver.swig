@@ -70,6 +70,8 @@ namespace operations_research {
 import types
 import sys
 
+import ortools.linear_solver.linear_solver2_pb2
+
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See RunLinearExampleNaturalLanguageAPI() in
@@ -464,7 +466,10 @@ class LinearConstraint(object):
 
 } // namespace operations_research
 
-
+// Support protobuf.
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
+                 operations_research::new_proto::MPModelProto,
+                 MPModelProto);
 #endif  // SWIGPYTHON
 
 #ifdef SWIGJAVA

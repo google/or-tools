@@ -127,12 +127,16 @@ endif
 
 pylp: $(LIB_DIR)/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/linear_solver/pywraplp.py
 
+$(GEN_DIR)/ortools/linear_solver/linear_solver2_pb2.py: $(SRC_DIR)/linear_solver/linear_solver2.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/linear_solver/linear_solver2.proto
+
 $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
 		$(SRC_DIR)/base/base.swig \
 		$(SRC_DIR)/util/data.swig \
 		$(SRC_DIR)/linear_solver/linear_solver.swig \
 		$(SRC_DIR)/linear_solver/linear_solver.h \
-		$(GEN_DIR)/linear_solver/linear_solver2.pb.h
+		$(GEN_DIR)/linear_solver/linear_solver2.pb.h \
+		$(GEN_DIR)/ortools/linear_solver/linear_solver2_pb2.py
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc -module pywraplp $(SRC_DIR)/linear_solver$Slinear_solver.swig
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc: $(GEN_DIR)/ortools/linear_solver/pywraplp.py
