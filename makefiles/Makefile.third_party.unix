@@ -13,7 +13,8 @@ CBC_TAG = 2.8.9
 SWIG_TAG = 17741
 # version 8.33
 PCRE_TAG = 1336
-MONO_TAG = 3.2.5
+# Mono version.
+MONO_TAG = 3.2.8
 # BISON, FLEX
 BISON_TAG = 3.0.2
 FLEX_TAG = 2.5.37

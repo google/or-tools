@@ -118,7 +118,7 @@ ifeq ($(PLATFORM),LINUX)
     CSC = mono-csc
     MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
   else
-    CSC = $(UNIX_MONO_DIR)/bin/gmcs
+    CSC = $(UNIX_MONO_DIR)/bin/mcs
     MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
   endif
 
