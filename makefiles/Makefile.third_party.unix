@@ -30,8 +30,8 @@ LIBTOOL_TAG = 2.4.2
 #
 # The GLPK archive should be glpk-4.53.tar.gz
 GLPK_TAG = 4.53
-# The SCIP archive should be scipoptsuite-3.0.2.tgz
-SCIP_TAG = 3.0.2
+# The SCIP archive should be scipoptsuite-3.1.0.tgz
+SCIP_TAG = 3.1.0
 
 # Detect if SCIP archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
@@ -41,10 +41,10 @@ else
     SCIP_TARGET = dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
     SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
     ifeq ($(PLATFORM), LINUX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
+	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC GMP=false
     endif
     ifeq ($(PLATFORM), MACOSX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false ARCH=x86_64
+	BUILD_SCIP = make ZIMPL=false READLINE=false ARCH=x86_64 GMP=false
     endif
 endif
 
