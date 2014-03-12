@@ -22,7 +22,6 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
@@ -6649,7 +6648,7 @@ void IntVar::SetValues(const std::vector<int64>& values) {
       // STLSortAndRemoveDuplicates from base/stl_util.h to the
       // existing open_source/base/stl_util.h and using it here.
       // TODO(user): We could filter out values not in the var.
-      std::vector<int64>& tmp = solver()->tmp_vector_;  // NOLINT
+      std::vector<int64>& tmp = solver()->tmp_vector_;
       tmp.clear();
       tmp.insert(tmp.end(), values.begin(), values.end());
       std::sort(tmp.begin(), tmp.end());
@@ -6726,7 +6725,7 @@ bool Solver::IsADifference(IntExpr* expr, IntExpr** const left,
   }
   // This is a dynamic cast to check the type of expr.
   // It returns nullptr is expr is not a subclass of SubIntExpr.
-  SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);  // NOLINT
+  SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);
   if (sub_expr != nullptr) {
     *left = sub_expr->left();
     *right = sub_expr->right();

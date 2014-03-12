@@ -25,7 +25,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/join.h"
@@ -4342,7 +4341,7 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 // This is called Symmetry Breaking During Search (Ian Gent, Barbara
 // Smith, ECAI 2000).
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3788&rep=rep1&type=pdf
-// // NOLINT
+//
 class SymmetryManager : public SearchMonitor {
  public:
   SymmetryManager(Solver* const s, const std::vector<SymmetryBreaker*>& visitors)

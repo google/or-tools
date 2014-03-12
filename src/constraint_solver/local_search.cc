@@ -26,7 +26,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"

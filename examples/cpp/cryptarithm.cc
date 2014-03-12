@@ -22,7 +22,6 @@
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {

@@ -20,7 +20,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"

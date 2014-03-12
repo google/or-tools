@@ -140,7 +140,6 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/timer.h"
 
 

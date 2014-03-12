@@ -165,7 +165,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
 #include "base/hash.h"

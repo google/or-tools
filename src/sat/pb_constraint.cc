@@ -32,8 +32,9 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 
 }  // namespace
 
-bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
-                      Coefficient* max_value) {
+bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
+                                                 Coefficient* bound_shift,
+                                                 Coefficient* max_value) {
   *bound_shift = 0;
   *max_value = 0;
 
@@ -88,12 +89,65 @@ bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shi
 }
 
 // TODO(user): Also check for no duplicates literals + unit tests.
-bool LinearConstraintIsCannonical(const std::vector<LiteralWithCoeff>& cst) {
+bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst) {
   Coefficient previous = 1;
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
     previous = term.coefficient;
   }
+  return true;
+}
+
+// TODO(user): Use more complex simplification like dividing by the gcd of
+// everyone and using less different coefficients if possible.
+void SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff>* cst,
+                                              Coefficient* rhs) {
+  // Replace all coefficient >= rhs by rhs + 1 (these literal must actually be
+  // false). Note that the linear sum of literals remains canonical.
+  //
+  // TODO(user): It is probably better to remove these literals and have other
+  // constraint setting them to false from the symmetry finder perspective.
+  for (LiteralWithCoeff& x : *cst) {
+    if (x.coefficient > *rhs) x.coefficient = *rhs + 1;
+  }
+}
+
+bool CanonicalBooleanLinearProblem::AddLinearConstraint(
+    bool use_lower_bound, Coefficient lower_bound, bool use_upper_bound,
+    Coefficient upper_bound, std::vector<LiteralWithCoeff>* cst) {
+  // Cannonicalize the linear expresion of the constraint.
+  Coefficient bound_shift;
+  Coefficient max_value;
+  if (!ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,
+                                                   &max_value)) {
+    return false;
+  }
+  if (use_upper_bound) {
+    Coefficient ub = upper_bound;
+    if (!SafeAddInto(bound_shift, &ub)) return false;
+    if (!AddConstraint(*cst, max_value, ub)) return false;
+  }
+  if (use_lower_bound) {
+    // We transform the constraint into an upper-bounded one.
+    for (int i = 0; i < cst->size(); ++i) {
+      (*cst)[i].literal = (*cst)[i].literal.Negated();
+    }
+    Coefficient ub = max_value;
+    if (!SafeAddInto(-lower_bound, &ub)) return false;
+    if (!SafeAddInto(-bound_shift, &ub)) return false;
+    if (!AddConstraint(*cst, max_value, ub)) return false;
+  }
+  return true;
+}
+
+bool CanonicalBooleanLinearProblem::AddConstraint(
+    const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
+    Coefficient rhs) {
+  if (rhs < 0) return false;          // Trivially unsatisfiable.
+  if (rhs >= max_value) return true;  // Trivially satisfiable.
+  constraints_.emplace_back(cst.begin(), cst.end());
+  rhs_.push_back(rhs);
+  SimplifyCanonicalBooleanLinearConstraint(&constraints_.back(), &rhs_.back());
   return true;
 }
 
@@ -290,7 +344,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
       constraints_.back().ChangeResolutionNode(node);
       return constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
                                                &slacks_.back(), trail_,
-                                               &reason_scratchpad_);
+                                               &conflict_scratchpad_);
     } else {
       // The constraint is redundant, so there is nothing to do.
       return true;
@@ -302,7 +356,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   slacks_.push_back(0);
   if (!constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
                                          &slacks_.back(), trail_,
-                                         &reason_scratchpad_)) {
+                                         &conflict_scratchpad_)) {
     return false;
   }
   for (LiteralWithCoeff term : cst) {
@@ -332,8 +386,6 @@ bool PbConstraints::PropagateNext() {
     if (slack < 0 && !conflict) {
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
-      // Important: we must use the conflict_scratchpad_ here not the
-      // reason_scratchpad_.
       if (!constraints_[update.index.value()].Propagate(
                order, &slacks_[update.index], trail_, &conflict_scratchpad_)) {
         trail_->SetFailingClause(ClauseRef(conflict_scratchpad_));

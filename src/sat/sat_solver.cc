@@ -32,6 +32,7 @@ SatSolver::SatSolver()
     : num_variables_(0),
       num_constraints_(0),
       pb_constraints_(&trail_),
+      symmetry_propagator_(&trail_),
       current_decision_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
@@ -84,6 +85,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   watched_clauses_.Resize(num_variables);
   trail_.Resize(num_variables);
   pb_constraints_.Resize(num_variables);
+  symmetry_propagator_.Resize(num_variables);
   queue_elements_.resize(num_variables);
   activities_.resize(num_variables, 0.0);
   objective_weights_.resize(num_variables << 1, 0.0);
@@ -138,6 +140,7 @@ bool SatSolver::AddUnitClause(Literal true_literal) {
   if (trail_.Assignment().IsLiteralTrue(true_literal)) return true;
   trail_.EnqueueWithUnitReason(true_literal, CreateRootResolutionNode());
   ++num_constraints_;
+  if (!Propagate()) return ModelUnsat();
   return true;
 }
 
@@ -177,7 +180,6 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals,
     trail_.EnqueueWithUnitReason(literals[0], node);  // Not assigned.
     return true;
   }
-
   // Create a new clause.
   std::unique_ptr<SatClause> clause(
       SatClause::Create(literals, SatClause::PROBLEM_CLAUSE, node));
@@ -198,7 +200,7 @@ bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>&
                                             Coefficient rhs,
                                             Coefficient max_value) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(LinearConstraintIsCannonical(cst));
+  DCHECK(BooleanLinearExpressionIsCanonical(cst));
   if (rhs < 0) return ModelUnsat();   // Unsatisfiable constraint.
   if (rhs >= max_value) return true;  // Always satisfied constraint.
 
@@ -257,10 +259,11 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     cst->resize(index);
   }
 
-  // Cannonicalize the constraint.
+  // Canonicalize the constraint.
   Coefficient bound_shift;
   Coefficient max_value;
-  CHECK(PbCannonicalForm(cst, &bound_shift, &max_value));
+  CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,
+                                                    &max_value));
   CHECK(SafeAddInto(fixed_variable_shift, &bound_shift));
 
   if (use_upper_bound) {
@@ -279,6 +282,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     if (!AddLinearConstraintInternal(*cst, ub, max_value)) return ModelUnsat();
   }
   ++num_constraints_;
+  if (!Propagate()) return ModelUnsat();
   return true;
 }
 
@@ -310,17 +314,6 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 }
 
-bool SatSolver::InitialPropagation() {
-  SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (!Propagate()) {
-    return ModelUnsat();
-  }
-  ProcessNewlyFixedVariableResolutionNodes();
-  ProcessNewlyFixedVariables();
-  return true;
-}
-
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(propagation_trail_index_, trail_.Index());
@@ -342,26 +335,26 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   int first_propagation_index = trail_.Index();
   NewDecision(true_literal);
   while (!Propagate()) {
-    // If Propagate() fail at level 0, then the problem is UNSAT.
-    if (CurrentDecisionLevel() == 0) {
-      is_model_unsat_ = true;
-      return kUnsatTrailIndex;
-    }
     reason_cache_.Clear();
 
     // A conflict occured, compute a nice reason for this failure.
     ComputeFirstUIPConflict(trail_.FailingClause(), &learned_conflict_,
                             &reason_used_to_infer_the_conflict_);
+
+    // An empty conflict means that the problem is UNSAT.
+    if (learned_conflict_.empty()) {
+      is_model_unsat_ = true;
+      return kUnsatTrailIndex;
+    }
     DCHECK(IsConflictValid(learned_conflict_));
 
     // Update the activity of all the variables in the first UIP clause.
     // Also update the activity of the last level variables expanded (and
     // thus discarded) during the first UIP computation. Note that both
     // sets are disjoint.
-    const int initial_lbd = ComputeLbd(learned_conflict_);
     const int lbd_limit =
         parameters_.use_lbd() && parameters_.use_glucose_bump_again_strategy()
-            ? initial_lbd
+            ? ComputeLbd(learned_conflict_)
             : 0;
     BumpVariableActivities(learned_conflict_, lbd_limit);
     BumpVariableActivities(reason_used_to_infer_the_conflict_, lbd_limit);
@@ -374,16 +367,47 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     }
     BumpReasonActivities(reason_used_to_infer_the_conflict_);
 
+    // Minimizing the conflict with binary clauses first has two advantages.
+    // First, there is no need to compute a reason for the variables eliminated
+    // this way. Second, more variables may be marked (in is_marked_) and
+    // MinimizeConflict() can take advantage of that.
+    if (binary_implication_graph_.NumberOfImplications() != 0 &&
+        parameters_.binary_minimization_algorithm() ==
+            SatParameters::BINARY_MINIMIZATION_FIRST) {
+      binary_implication_graph_.MinimizeConflictFirst(
+          trail_, &learned_conflict_, &is_marked_);
+      DCHECK(IsConflictValid(learned_conflict_));
+    }
+
     // Minimize the learned conflict.
+#ifndef NDEBUG
+    const int initial_lbd = ComputeLbd(learned_conflict_);
+#endif
     MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
+#ifndef NDEBUG
     DCHECK(IsConflictValid(learned_conflict_));
     DCHECK_EQ(initial_lbd, ComputeLbd(learned_conflict_));
-    if (parameters_.treat_binary_clauses_separately() &&
-        parameters_.use_binary_clauses_minimization()) {
+#endif
+
+    // Minimize it further with binary clauses?
+    if (binary_implication_graph_.NumberOfImplications() != 0) {
       // Note that on the contrary to the MinimizeConflict() above that
       // just uses the reason graph, this minimization can change the
       // clause LBD and even the backtracking level.
-      binary_implication_graph_.MinimizeClause(trail_, &learned_conflict_);
+      switch (parameters_.binary_minimization_algorithm()) {
+        case SatParameters::NO_BINARY_MINIMIZATION:
+          FALLTHROUGH_INTENDED;
+        case SatParameters::BINARY_MINIMIZATION_FIRST:
+          break;
+        case SatParameters::BINARY_MINIMIZATION_WITH_REACHABILITY:
+          binary_implication_graph_.MinimizeConflictWithReachability(
+              &learned_conflict_);
+          break;
+        case SatParameters::EXPERIMENTAL_BINARY_MINIMIZATION:
+          binary_implication_graph_.MinimizeConflictExperimental(
+              trail_, &learned_conflict_);
+          break;
+      }
       DCHECK(IsConflictValid(learned_conflict_));
     }
 
@@ -455,8 +479,14 @@ int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
 
 void SatSolver::Backtrack(int target_level) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK_GT(CurrentDecisionLevel(), 0);
+  // Do nothing if the CurrentDecisionLevel() is already correct.
+  // This is needed, otherwise target_trail_index below will remain at zero and
+  // that will cause some problems. Note that we could forbid an user to call
+  // Backtrack() with the current level, but that is annoying when you just
+  // want to reset the solver with Backtrack(0).
+  if (CurrentDecisionLevel() == target_level) return;
   DCHECK_GE(target_level, 0);
+  DCHECK_LE(target_level, CurrentDecisionLevel());
   ++counters_.num_failures;
   int target_trail_index = 0;
   while (current_decision_level_ > target_level) {
@@ -474,6 +504,16 @@ int NextMultipleOf(int64 value, int64 interval) {
 }
 }  // namespace
 
+void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
+  SCOPED_TIME_STAT(&stats_);
+  if (!parameters_.use_optimization_hints()) return;
+  DCHECK_GE(weight, 0.0);
+  DCHECK_LE(weight, 1.0);
+  queue_elements_[literal.Variable()].tie_breaker = weight;
+  objective_weights_[literal.Index()] = 0.0;
+  objective_weights_[literal.NegatedIndex()] = 1.0;
+}
+
 SatSolver::Status SatSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
@@ -488,20 +528,8 @@ SatSolver::Status SatSolver::Solve() {
               << binary_implication_graph_.NumberOfImplications();
     LOG(INFO) << "Number of linear constraints: "
               << pb_constraints_.NumberOfConstraints();
-    LOG(INFO) << "Number of initial fixed variables: " << trail_.Index();
-  }
-
-  // Performs the initial propagation if some variables are fixed.
-  if (CurrentDecisionLevel() == 0 && !InitialPropagation()) {
-    if (parameters_.log_search_progress()) {
-      LOG(INFO) << "UNSAT (initial propagation) \n" << StatusString();
-    }
-    return MODEL_UNSAT;
-  }
-  if (parameters_.log_search_progress()) {
-    LOG(INFO) << "Number of assigned variables after initial propagation: "
-              << trail_.Index();
-    LOG(INFO) << "Number of initial watched clauses: "
+    LOG(INFO) << "Number of fixed variables: " << trail_.Index();
+    LOG(INFO) << "Number of watched clauses: "
               << watched_clauses_.num_watched_clauses();
     LOG(INFO) << "Parameters: " << parameters_.ShortDebugString();
   }
@@ -578,10 +606,6 @@ SatSolver::Status SatSolver::Solve() {
         LOG(INFO) << RunningStatisticsString();
         LOG(INFO) << "SAT \n" << StatusString();
       }
-      if (!IsAssignmentValid(trail_.Assignment())) {
-        LOG(ERROR) << "Something is wrong, the computed model is not true";
-        return INTERNAL_ERROR;
-      }
       return MODEL_SAT;
     }
 
@@ -591,7 +615,7 @@ SatSolver::Status SatSolver::Solve() {
       Backtrack(assumption_level);
     }
 
-    // Choose the next decision variable and propagate it.
+    // Choose the next decision variable.
     Literal next_branch = NextBranch();
 
     // Note that if use_optimization_hints() is false, then objective_weights_
@@ -705,17 +729,11 @@ void SatSolver::UpdateClauseActivityIncrement() {
 bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
   if (literals.empty()) return false;
-  const int current_level = CurrentDecisionLevel();
-  int num_literal_at_current_level = 0;
-  for (const Literal literal : literals) {
-    const int level = DecisionLevel(literal.Variable());
-    if (level <= 0 || level > current_level) return false;
-    if (level == current_level) {
-      ++num_literal_at_current_level;
-      if (num_literal_at_current_level > 1) return false;
-    }
+  const int highest_level = DecisionLevel(literals[0].Variable());
+  for (int i = 1; i < literals.size(); ++i) {
+    const int level = DecisionLevel(literals[i].Variable());
+    if (level <= 0 || level >= highest_level) return false;
   }
-  if (num_literal_at_current_level != 1) return false;
   return true;
 }
 
@@ -723,27 +741,23 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_GT(CurrentDecisionLevel(), 0);
 
-  // Note(user): if the learned clause is of size 1, we backtack all the way to
+  // We want the highest decision level among literals other than the first one.
+  // Note that this level will always be smaller than that of the first literal.
+  //
+  // Note(user): if the learned clause is of size 1, we backtrack all the way to
   // the beginning. It may be possible to follow another behavior, but then the
   // code require some special cases in
   // AddLearnedClauseAndEnqueueUnitPropagation() to fix the literal and not
   // backtrack over it. Also, subsequent propagated variables may not have a
   // correct level in this case.
-  if (literals.size() == 1) {
-    return 0;
-  }
-
-  // We want the highest level which is not the current one.
   int backtrack_level = 0;
-  const int current_level = CurrentDecisionLevel();
-  for (const Literal literal : literals) {
-    const int level = DecisionLevel(literal.Variable());
-    if (level != current_level) {
-      backtrack_level = std::max(backtrack_level, level);
-    }
+  for (int i = 1; i < literals.size(); ++i) {
+    const int level = DecisionLevel(literals[i].Variable());
+    backtrack_level = std::max(backtrack_level, level);
   }
   VLOG(2) << Indent() << "backtrack_level: " << backtrack_level;
-  DCHECK_LT(backtrack_level, current_level);
+  DCHECK_LT(backtrack_level, DecisionLevel(literals[0].Variable()));
+  DCHECK_LE(DecisionLevel(literals[0].Variable()), CurrentDecisionLevel());
   return backtrack_level;
 }
 
@@ -794,10 +808,9 @@ std::string SatSolver::StatusString() const {
          StringPrintf("  num inspected clauses: %" GG_LL_FORMAT "d\n",
                       watched_clauses_.num_inspected_clauses()) +
          StringPrintf(
-             "  num learned literals: %lld  (%.2f%% forgotten)\n",
+             "  num learned literals: %lld  (avg: %.1f /clause)\n",
              counters_.num_literals_learned,
-             100.0 * static_cast<double>(counters_.num_literals_forgotten) /
-                 static_cast<double>(counters_.num_literals_learned)) +
+             1.0 * counters_.num_literals_learned / counters_.num_failures) +
          StringPrintf("  num restarts: %d\n", restart_count_);
 }
 
@@ -861,12 +874,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
   int num_detached_clauses = 0;
   int num_binary = 0;
 
-  // Note that this may break IsAssignmentValid(), or at least the guarantee
-  // behind it since we modify the clauses. However, we do check the assigment
-  // validity again at the proto level. Moreover the proto is const and never
-  // change.
-  //
-  // TODO(user): Remove or investigate and correct IsAssignmentValid().
+  // We remove the clauses that are always true and the fixed literals from the
+  // others.
   for (int i = 0; i < 2; ++i) {
     for (SatClause* clause : (i == 0) ? problem_clauses_ : learned_clauses_) {
       if (clause->IsAttached()) {
@@ -927,60 +936,94 @@ void SatSolver::ProcessNewlyFixedVariables() {
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
   // Inspect all the assignements that still need to be propagated.
-  DCHECK_GE(binary_propagation_trail_index_, propagation_trail_index_);
-  do {
-    // We want to prioritize the propagations due to binary clauses. To do so,
-    // before each assignement is propagated with the non-binary clauses, we
-    // propagate ALL the assignment on the trail using the binary clauses.
+  // To have reasons as short as possible and easy to compute, we prioritize
+  // the propagation order between the different constraint types.
+  while (true) {
+    // First we inspect ALL the binary clauses.
     //
     // All the literals with trail index smaller than
     // binary_propagation_trail_index_ are the assignments that were already
     // propagated using binary clauses and thus do not need to be inspected
     // again.
-    while (binary_propagation_trail_index_ < trail_.Index()) {
-      const Literal literal = trail_[binary_propagation_trail_index_];
-      ++binary_propagation_trail_index_;
-      if (!binary_implication_graph_.PropagateOnTrue(literal, &trail_)) {
-        return false;
+    if (binary_implication_graph_.NumberOfImplications() != 0) {
+      while (binary_propagation_trail_index_ < trail_.Index()) {
+        const Literal literal = trail_[binary_propagation_trail_index_];
+        ++binary_propagation_trail_index_;
+        if (!binary_implication_graph_.PropagateOnTrue(literal, &trail_)) {
+          return false;
+        }
       }
     }
 
-    // Propagate one literal using non-binary clauses.
-    bool more_work = false;
-    if (propagation_trail_index_ < trail_.Index()) {
+    // For the other types, the idea is to abort the inspection as soon as at
+    // least one propagation occur so we can loop over and test again the
+    // highest priority constraint types using the new information.
+    const int old_index = trail_.Index();
+
+    // Non-binary clauses.
+    while (trail_.Index() == old_index &&
+           propagation_trail_index_ < old_index) {
       const Literal literal = trail_[propagation_trail_index_];
       ++propagation_trail_index_;
       DCHECK_EQ(DecisionLevel(literal.Variable()), CurrentDecisionLevel());
       if (!watched_clauses_.PropagateOnFalse(literal.Negated(), &trail_)) {
         return false;
       }
-      more_work = true;
     }
+    if (trail_.Index() > old_index) continue;
 
-    // Propagate one literal using linear constraints.
-    if (pb_constraints_.PropagationNeeded()) {
-      if (!pb_constraints_.PropagateNext()) return false;
-      more_work = true;
+    // Symmetry.
+    while (trail_.Index() == old_index &&
+           symmetry_propagator_.PropagationNeeded()) {
+      if (!symmetry_propagator_.PropagateNext()) {
+        // This is a bit more involved since we need to fetch a reason in order
+        // to compute the conflict.
+        trail_.SetFailingClause(ClauseRef(symmetry_propagator_.LastConflict(
+            Reason(symmetry_propagator_.VariableAtTheSourceOfLastConflict()))));
+        return false;
+      }
     }
-    if (!more_work) break;
-  } while (true);
+    if (trail_.Index() > old_index) continue;
+
+    // General linear constraints.
+    while (trail_.Index() == old_index && pb_constraints_.PropagationNeeded()) {
+      if (!pb_constraints_.PropagateNext()) return false;
+    }
+    if (trail_.Index() > old_index) continue;
+    break;
+  }
   return true;
 }
 
 ClauseRef SatSolver::Reason(VariableIndex var) const {
   DCHECK(trail_.Assignment().IsVariableAssigned(var));
-  switch (trail_.Info(var).type) {
+  const AssignmentInfo& info = trail_.Info(var);
+  switch (info.type) {
     case AssignmentInfo::SEARCH_DECISION:
     case AssignmentInfo::UNIT_REASON:
       return ClauseRef();
     case AssignmentInfo::CLAUSE_PROPAGATION:
-      return trail_.Info(var).sat_clause->ToClauseRef();
+      return info.sat_clause->PropagationReason();
     case AssignmentInfo::BINARY_PROPAGATION: {
-      const Literal* literal = &trail_.Info(var).literal;
+      const Literal* literal = &info.literal;
       return ClauseRef(literal, literal + 1);
     }
     case AssignmentInfo::PB_PROPAGATION:
-      return ClauseRef(pb_constraints_.ReasonFor(var));
+      pb_constraints_.ReasonFor(var, &tmp_reason_);
+      return ClauseRef(tmp_reason_);
+    case AssignmentInfo::SYMMETRY_PROPAGATION:
+      // Note that we need to use an intermediate vector because
+      // Reason(source.Variable()) may be a reference to tmp_reason_ (if this
+      // variable was also propagated by symmetry).
+      //
+      // TODO(user): beware of deep recursion. Make this iterative.
+      // TODO(user): Cache some reasons to avoid recomputing them?
+      Literal source = trail_[info.source_trail_index];
+      symmetry_propagator_.Permute(info.symmetry_index,
+                                   Reason(source.Variable()),
+                                   &tmp_intermediate_reason_);
+      swap(tmp_intermediate_reason_, tmp_reason_);
+      return ClauseRef(tmp_reason_);
   }
 }
 
@@ -1057,6 +1100,7 @@ void SatSolver::ComputeInitialVariableOrdering() {
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);
   pb_constraints_.Untrail(target_trail_index);
+  symmetry_propagator_.Untrail(target_trail_index);
   while (trail_.Index() > target_trail_index) {
     const Literal assigned_literal = trail_.Dequeue();
 
@@ -1093,33 +1137,6 @@ void SatSolver::ComputeUnsatCore(std::vector<int>* core) {
   // Compute the core and free up the final_node.
   unsat_proof_.ComputeUnsatCore(final_node, core);
   unsat_proof_.UnlockNode(final_node);
-}
-
-bool SatSolver::IsAssignmentValid(const VariablesAssignment& assignment) const {
-  SCOPED_TIME_STAT(&stats_);
-  VLOG(2) << "Checking solution";
-  // Check that all variables are assigned.
-  for (VariableIndex var(0); var < num_variables_; ++var) {
-    if (!assignment.IsVariableAssigned(var)) {
-      LOG(ERROR) << "  - var " << var.value() << " undefined";
-      return false;
-    }
-  }
-  // Check that all clauses are satisfied.
-  for (SatClause* clause : problem_clauses_) {
-    if (!clause->IsSatisfied(assignment)) {
-      LOG(ERROR) << "  - clause error: " << DebugString(*clause);
-      return false;
-    }
-  }
-  std::string result;
-  for (VariableIndex var(0); var < num_variables_; ++var) {
-    result.append(trail_.Assignment()
-                      .GetTrueLiteralForAssignedVariable(var)
-                      .DebugString());
-    result.append(" ");
-  }
-  return true;
 }
 
 std::string SatSolver::DebugString(const SatClause& clause) const {
@@ -1174,6 +1191,7 @@ ResolutionNode* SatSolver::CreateResolutionNode(
         break;
       case AssignmentInfo::SEARCH_DECISION:
       case AssignmentInfo::BINARY_PROPAGATION:
+      case AssignmentInfo::SYMMETRY_PROPAGATION:
         LOG(FATAL) << "This shouldn't happen";
         break;
     }
@@ -1198,9 +1216,17 @@ void SatSolver::ComputeFirstUIPConflict(
 
   conflict->clear();
   reason_used_to_infer_the_conflict->clear();
-  const int current_level = CurrentDecisionLevel();
-  int num_literal_at_current_level_that_needs_to_be_processed = 0;
-  DCHECK_GT(current_level, 0);
+
+  // Computes the highest trail index appearing in the failing_clause and its
+  // level (Which is almost always equals to the CurrentDecisionLevel(), except
+  // for symmetry propagation).
+  int trail_index = -1;
+  for (const Literal literal : failing_clause) {
+    trail_index = std::max(trail_index, trail_.Info(literal.Variable()).trail_index);
+  }
+  if (trail_index == -1) return;
+  const int highest_level = DecisionLevel(trail_[trail_index].Variable());
+  if (highest_level == 0) return;
 
   // To find the 1-UIP conflict clause, we start by the failing_clause, and
   // expand each of its literal using the reason for this literal assignement to
@@ -1213,21 +1239,21 @@ void SatSolver::ComputeFirstUIPConflict(
   // Now, the trick is that we use the trail to expand the literal of the
   // current level in a very specific order. Namely the reverse order of the one
   // in which they where infered. We stop as soon as
-  // num_literal_at_current_level_that_needs_to_be_processed is exactly one.
+  // num_literal_at_highest_level_that_needs_to_be_processed is exactly one.
   //
   // This last literal will be the first UIP because by definition all the
   // propagation done at the current level will pass though it at some point.
   ClauseRef clause_to_expand = failing_clause;
   DCHECK(!clause_to_expand.IsEmpty());
-  int trail_index = trail_.Index() - 1;
+  int num_literal_at_highest_level_that_needs_to_be_processed = 0;
   while (true) {
     for (const Literal literal : clause_to_expand) {
       const VariableIndex var = literal.Variable();
       if (!is_marked_[var]) {
         is_marked_.Set(var);
         const int level = DecisionLevel(var);
-        if (level == current_level) {
-          ++num_literal_at_current_level_that_needs_to_be_processed;
+        if (level == highest_level) {
+          ++num_literal_at_highest_level_that_needs_to_be_processed;
         } else if (level > 0) {
           // Note that all these literals are currently false since the clause
           // to expand was used to infer the value of a literal at this level.
@@ -1240,18 +1266,21 @@ void SatSolver::ComputeFirstUIPConflict(
     }
 
     // Find next marked literal to expand from the trail.
-    DCHECK_GT(num_literal_at_current_level_that_needs_to_be_processed, 0);
+    DCHECK_GT(num_literal_at_highest_level_that_needs_to_be_processed, 0);
     while (!is_marked_[trail_[trail_index].Variable()]) {
       --trail_index;
       DCHECK_GE(trail_index, 0);
-      DCHECK_EQ(DecisionLevel(trail_[trail_index].Variable()), current_level);
+      DCHECK_EQ(DecisionLevel(trail_[trail_index].Variable()), highest_level);
     }
 
-    if (num_literal_at_current_level_that_needs_to_be_processed == 1) {
+    if (num_literal_at_highest_level_that_needs_to_be_processed == 1) {
       // We have the first UIP. Add its negation to the conflict clause.
       // This way, after backtracking to the proper level, the conflict clause
       // will be unit, and infer the negation of the UIP that caused the fail.
       conflict->push_back(trail_[trail_index].Negated());
+
+      // To respect the function API move the first UIP in the first position.
+      std::swap(conflict->back(), conflict->front());
       break;
     }
 
@@ -1268,7 +1297,7 @@ void SatSolver::ComputeFirstUIPConflict(
       DCHECK(!clause_to_expand.IsEmpty());
     }
 
-    --num_literal_at_current_level_that_needs_to_be_processed;
+    --num_literal_at_highest_level_that_needs_to_be_processed;
     --trail_index;
   }
 }
@@ -1328,13 +1357,12 @@ void SatSolver::MinimizeConflict(
 // literal assignement, there will be no cycles.
 void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
-  is_marked_.ClearAndResize(num_variables_);
-  for (Literal literal : *conflict) {
-    is_marked_.Set(literal.Variable());
-  }
-  int index = 0;
   const int current_level = CurrentDecisionLevel();
-  for (int i = 0; i < conflict->size(); ++i) {
+
+  // Note that is_marked_ is already initialized and that we can start at 1
+  // since the first literal of the conflict is the 1-UIP literal.
+  int index = 1;
+  for (int i = 1; i < conflict->size(); ++i) {
     const VariableIndex var = (*conflict)[i].Variable();
     bool can_be_removed = false;
     if (DecisionLevel(var) != current_level) {
@@ -1360,7 +1388,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
 }
 
 // This is similar to MinimizeConflictSimple() except that for each literal of
-// the conflict, the literals of its reason are recursively expended using their
+// the conflict, the literals of its reason are recursively expanded using their
 // reason and so on. The recusion stop until we show that the initial literal
 // can be infered from the conflict variables alone, or if we show that this is
 // not the case. The result of any variable expension will be cached in order
@@ -1394,8 +1422,11 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // least one variable of each decision levels. Because such variable can't be
   // eliminated using lower decision levels variable otherwise it will have been
   // propagated.
-  for (Literal literal : *conflict) {
-    const VariableIndex var = literal.Variable();
+  //
+  // Note(user): Because is_marked_ may actually contains literals that are
+  // implied if the 1-UIP literal is false, we can't just iterate on the
+  // variables of the conflict here.
+  for (VariableIndex var : is_marked_.PositionsSetAtLeastOnce()) {
     const int level = DecisionLevel(var);
     min_trail_index_per_level_[level] =
         std::min(min_trail_index_per_level_[level], trail_.Info(var).trail_index);
@@ -1403,8 +1434,9 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
 
   // Remove the redundant variable from the conflict. That is the ones that can
   // be infered by some other variables in the conflict.
-  int index = 0;
-  for (int i = 0; i < conflict->size(); ++i) {
+  // Note that we can skip the first position since this is the 1-UIP.
+  int index = 1;
+  for (int i = 1; i < conflict->size(); ++i) {
     const VariableIndex var = (*conflict)[i].Variable();
     if (trail_.Info(var).trail_index <=
             min_trail_index_per_level_[DecisionLevel(var)] ||
@@ -1416,13 +1448,18 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
       ++index;
     }
   }
-
-  // Reset min_trail_index_per_level_. This works since we can never eliminate
-  // all the literals from the same level.
   conflict->resize(index);
-  for (Literal literal : *conflict) {
-    min_trail_index_per_level_[DecisionLevel(literal.Variable())] =
-        std::numeric_limits<int>::max();
+
+  // Reset min_trail_index_per_level_. We use the sparse version only if it
+  // involves less than half the size of min_trail_index_per_level_.
+  const int threshold = min_trail_index_per_level_.size() / 2;
+  if (is_marked_.PositionsSetAtLeastOnce().size() < threshold) {
+    for (VariableIndex var : is_marked_.PositionsSetAtLeastOnce()) {
+      min_trail_index_per_level_[DecisionLevel(var)] =
+          std::numeric_limits<int>::max();
+    }
+  } else {
+    min_trail_index_per_level_.clear();
   }
 }
 
@@ -1446,9 +1483,9 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   DCHECK(!Reason(variable).IsEmpty());
   for (Literal literal : Reason(variable)) {
     const VariableIndex var = literal.Variable();
-    if (var == variable) continue;
-    const int level = DecisionLevel(var);
+    DCHECK_NE(var, variable);
     if (is_marked_[var]) continue;
+    const int level = DecisionLevel(var);
     if (level == 0) {
       // Note that this is not needed if the solver is not configured to produce
       // an unsat proof. However, the (level == 0) test shoud always be false in
@@ -1507,7 +1544,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
     DCHECK(!Reason(current_var).IsEmpty());
     for (Literal literal : Reason(current_var)) {
       const VariableIndex var = literal.Variable();
-      if (var == current_var) continue;
+      DCHECK_NE(var, current_var);
       const int level = DecisionLevel(var);
       if (level == 0 || is_marked_[var]) continue;
       if (trail_.Info(var).trail_index <= min_trail_index_per_level_[level] ||
@@ -1717,6 +1754,23 @@ void SatSolver::InitRestart() {
   } else {
     conflicts_until_next_restart_ = -1;
   }
+}
+
+std::string SatStatusString(SatSolver::Status status) {
+  switch (status) {
+    case SatSolver::ASSUMPTIONS_UNSAT:
+      return "ASSUMPTIONS_UNSAT";
+    case SatSolver::MODEL_UNSAT:
+      return "MODEL_UNSAT";
+    case SatSolver::MODEL_SAT:
+      return "MODEL_SAT";
+    case SatSolver::LIMIT_REACHED:
+      return "LIMIT_REACHED";
+  }
+  // Fallback. We don't use "default:" so the compiler will return an error
+  // if we forgot one enum case above.
+  LOG(DFATAL) << "Invalid SatSolver::Status " << status;
+  return "UNKNOWN";
 }
 
 }  // namespace sat

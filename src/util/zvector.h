@@ -28,7 +28,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 
 // An array class for storing arrays of integers.
 // The range of indices is specified at the construction of the object.

@@ -30,7 +30,6 @@
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
-#include "base/scoped_ptr.h"
 #include "base/join.h"
 #include "constraint_solver/routing.h"
 #include "base/random.h"

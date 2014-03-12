@@ -33,7 +33,6 @@
 #ifndef OR_TOOLS_UTIL_TUPLE_SET_H_
 #define OR_TOOLS_UTIL_TUPLE_SET_H_
 
-#include <algorithm>
 #include "base/hash.h"
 #include "base/hash.h"
 #include <vector>

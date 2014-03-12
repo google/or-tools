@@ -64,8 +64,9 @@ ifeq ("$(SYSTEM)","unix")
     CANDIDATE_JDK_HEADERS = \
       /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
       /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
-      /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers\
-      /Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/include
+      /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
+      /Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/include \
+      /Library/Java/JavaVirtualMachines/jdk1.7.0_51.jdk/Contents/Home/include
 
     SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
   endif
@@ -84,11 +85,11 @@ ifeq ("$(SYSTEM)","win")
     ifeq ("$(VisualStudioVersion)", "11.0")
       VISUAL_STUDIO=2012
       VS_RELEASE=v110
-      VS_COMTOOLS=110	
+      VS_COMTOOLS=110
     else
       VISUAL_STUDIO=2010
       VS_RELEASE=v100
-      VS_COMTOOLS=100	
+      VS_COMTOOLS=100
     endif
   endif
   ifeq ("$(Platform)", "X64")

@@ -20,7 +20,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/mutex.h"
-#include "base/scoped_ptr.h"
 #include "base/synchronization.h"
 #include "base/threadpool.h"
 #include "constraint_solver/assignment.pb.h"

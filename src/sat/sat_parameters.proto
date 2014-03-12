@@ -149,7 +149,14 @@ message SatParameters {
 
   // Whether to expoit the binary clause to minimize learned clauses further.
   // This will have an effect only if treat_binary_clauses_separately is true.
-  optional bool use_binary_clauses_minimization = 34 [default = true];
+  enum BinaryMinizationAlgorithm {
+    NO_BINARY_MINIMIZATION = 0;
+    BINARY_MINIMIZATION_FIRST = 1;
+    BINARY_MINIMIZATION_WITH_REACHABILITY = 2;
+    EXPERIMENTAL_BINARY_MINIMIZATION = 3;
+  }
+  optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
+      [default = BINARY_MINIMIZATION_FIRST];
 
   // For an optimization problem, whether we follow some hints in order to find
   // a better first solution. For a variable with hint, the solver will always

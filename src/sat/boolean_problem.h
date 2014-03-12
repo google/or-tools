@@ -15,6 +15,7 @@
 
 #include "sat/boolean_problem.pb.h"
 #include "sat/sat_solver.h"
+#include "algorithms/sparse_permutation.h"
 
 namespace operations_research {
 namespace sat {
@@ -57,6 +58,14 @@ void StoreAssignment(const VariablesAssignment& assignment,
 void ExtractSubproblem(const LinearBooleanProblem& problem,
                        const std::vector<int>& constraint_indices,
                        LinearBooleanProblem* subproblem);
+
+// Returns a list of generators of the symmetry group of the given problem. Each
+// generator is a permutation of the integer range [0, 2n) where n is the number
+// of variables of the problem. They are permutations of the (index
+// representation of the) problem literals.
+void FindLinearBooleanProblemSymmetries(
+    const LinearBooleanProblem& problem,
+    std::vector<std::unique_ptr<SparsePermutation>>* generators);
 
 }  // namespace sat
 }  // namespace operations_research

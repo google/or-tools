@@ -19,7 +19,6 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/mathutil.h"
 #include "constraint_solver/constraint_solver.h"
@@ -95,7 +94,8 @@ class Deviation : public Constraint {
     RepairGreedySum(BuildGreedySum(true));
     int64 minimal_deviation = 0;
     for (int i = 0; i < size_; ++i) {
-      minimal_deviation += abs(scaled_vars_assigned_value_[i] - total_sum_);
+      minimal_deviation +=
+          std::abs(scaled_vars_assigned_value_[i] - total_sum_);
     }
     return minimal_deviation;
   }

@@ -121,7 +121,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "graph/ebert_graph.h"
 #include "graph/graph.h"
 #include "util/stats.h"

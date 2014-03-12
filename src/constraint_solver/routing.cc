@@ -25,7 +25,6 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
@@ -942,7 +941,7 @@ bool RoutingModel::AddDimensionWithCapacityInternal(
     }
     dimension->Initialize(vehicle_capacity, capacity, cached_evaluators,
                           slack_max);
-    solver_->AddConstraint(solver_->MakePathCumul(
+    solver_->AddConstraint(solver_->MakeDelayedPathCumul(
         nexts_, active_, dimension->cumuls(), dimension->transits()));
     if (fix_start_cumul_to_zero) {
       for (int i = 0; i < vehicles_; ++i) {
@@ -1379,7 +1378,8 @@ void RoutingModel::CloseModel() {
   }
   std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
   solver_->AddConstraint(
-      solver_->MakePathCumul(nexts_, active_, vehicle_vars_, zero_transit));
+      solver_->MakeDelayedPathCumul(
+          nexts_, active_, vehicle_vars_, zero_transit));
 
   // Add constraints to bind vehicle_vars_[i] to -1 in case that node i is not
   // active.
@@ -1404,7 +1404,8 @@ void RoutingModel::CloseModel() {
 
   // is_bound_to_end_ variables constraints.
   solver_->AddConstraint(
-      solver_->MakePathCumul(nexts_, active_, is_bound_to_end_, zero_transit));
+      solver_->MakeDelayedPathCumul(
+          nexts_, active_, is_bound_to_end_, zero_transit));
   for (const int64 end : ends_) {
     is_bound_to_end_[end]->SetValue(1);
   }
@@ -3543,13 +3544,13 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
         LocalSearchFilter* filter = solver_->MakeLocalSearchObjectiveFilter(
             nexts_,
             NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
-            objective_callback, cost_, Solver::EQ, Solver::SUM);
+            objective_callback, cost_, Solver::LE, Solver::SUM);
         filters_.push_back(filter);
       } else {
         LocalSearchFilter* filter = solver_->MakeLocalSearchObjectiveFilter(
             nexts_, vehicle_vars_,
             NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
-            objective_callback, cost_, Solver::EQ, Solver::SUM);
+            objective_callback, cost_, Solver::LE, Solver::SUM);
         filters_.push_back(filter);
       }
     }

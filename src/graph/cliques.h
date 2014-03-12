@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/scoped_ptr.h"
 
 template <class R, class A1, class A2>
 class ResultCallback2;

@@ -17,7 +17,6 @@
 
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 
 namespace operations_research {

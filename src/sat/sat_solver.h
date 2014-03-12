@@ -25,7 +25,6 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/int_type_indexed_vector.h"
@@ -35,6 +34,7 @@
 #include "sat/clause.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
+#include "sat/symmetry.h"
 #include "sat/unsat_proof.h"
 #include "util/bitset.h"
 #include "util/stats.h"
@@ -64,15 +64,16 @@ class SatSolver {
   // Fixes a variable so that the given literal is true. This can be used to
   // solve a subproblem where some variables are fixed. Note that it is more
   // efficient to add such unit clause before all the others.
+  // Returns false if the problem is detected to be UNSAT.
   bool AddUnitClause(Literal true_literal);
 
-  // Adds a clause to the problem. Returns false if the clause is always false
-  // and thus make the problem unsatisfiable.
+  // Adds a clause to the problem. Returns false if the problem is detected to
+  // be UNSAT.
   bool AddProblemClause(const std::vector<Literal>& literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
-  // constraint is always false and thus make the problem unsatisfiable. If the
-  // constraint is always true, this detects it and does nothing.
+  // problem is detected to be UNSAT. If the constraint is always true, this
+  // detects it and does nothing.
   //
   // Note(user): There is an optimization if the same constraint is added
   // consecutively (even if the bounds are different). This is particularly
@@ -87,6 +88,16 @@ class SatSolver {
                            bool use_upper_bound, Coefficient upper_bound,
                            std::vector<LiteralWithCoeff>* cst);
 
+  // Add a set of Literals permutation that are assumed to be symmetries of the
+  // problem. The solver will take ownership of the pointers.
+  //
+  // TODO(user): This currently can't be used with unsat_proof() on. Fix it.
+  void AddSymmetries(std::vector<std::unique_ptr<SparsePermutation>>* generators) {
+    for (int i = 0; i < generators->size(); ++i) {
+      symmetry_propagator_.AddSymmetry(std::move((*generators)[i]));
+    }
+  }
+
   // Advanced usage. This is only relevant when trying to compute an unsat core.
   // All the constraints added by one of the Add*() function above when this was
   // set to true will be considered for the core. All the others will just be
@@ -96,11 +107,11 @@ class SatSolver {
     is_relevant_for_core_computation_ = value;
   }
 
-  // Returns the number of time AddProblemClause() or AddLinearConstraint() was
-  // called. This will also be the unique index associated to the next
-  // constraint that will be added. This unique index is used by UnsatCore() to
-  // indicates what constraints are part of the core.
-  int NumConstraints() { return num_constraints_; }
+  // Returns the number of time one of the Add*() functions was called. This
+  // will also be the unique index associated to the next constraint that will
+  // be added. This unique index is used by UnsatCore() to indicates what
+  // constraints are part of the core.
+  int NumAddedConstraints() { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // sets to true. The weight is a positive number reflecting the relative
@@ -113,14 +124,7 @@ class SatSolver {
   // The weight is also used as a tie-breaker between variable with the same
   // activities provided that the variable_weight parameter is set to
   // DEFAULT_WEIGHT.
-  void SetAssignmentPreference(Literal literal, double weight) {
-    if (!parameters_.use_optimization_hints()) return;
-    DCHECK_GE(weight, 0.0);
-    DCHECK_LE(weight, 1.0);
-    queue_elements_[literal.Variable()].tie_breaker = weight;
-    objective_weights_[literal.Index()] = 0.0;
-    objective_weights_[literal.NegatedIndex()] = 1.0;
-  }
+  void SetAssignmentPreference(Literal literal, double weight);
 
   // Solves the problem and returns its status.
   //
@@ -134,31 +138,21 @@ class SatSolver {
     MODEL_UNSAT,
     MODEL_SAT,
     LIMIT_REACHED,
-    INTERNAL_ERROR,
   };
   Status Solve();
 
   // Returns an UNSAT core. That is a subset of the problem clauses that are
   // still UNSAT. A problem constraint of index #i is the one that was added
-  // with the i-th call to AddProblemClause() or AddLinearConstraint(), see
-  // NumConstraints().
+  // with the i-th call to one of the Add*() functions, see
+  // NumAddedConstraints().
   //
   // Preconditions:
   // - Solve() must be called with the parameters unsat_proof() set to true.
   // - It must have returned MODEL_UNSAT.
   void ComputeUnsatCore(std::vector<int>* core);
 
-  // Returns true if a given assignment is a solution of the current problem.
-  // TODO(user): This currently only check normal clauses. Fix it to include
-  // binary clauses and linear constraints.
-  bool IsAssignmentValid(const VariablesAssignment& assignment) const;
-
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
-
-  // Starts the initial propagation and returns false if the model is already
-  // detected to be UNSAT.
-  bool InitialPropagation();
 
   // Takes a new decision (the given true_literal must be unassigned) and
   // propagates it. Returns the trail index of the first newly propagated
@@ -194,7 +188,7 @@ class SatSolver {
   // sate after InitialPropagation() was called.
   void Backtrack(int target_level);
 
-  // Returns the current decisions, trail and variable assignment.
+  // Various getters of the current solver state.
   struct Decision {
     Decision() : trail_index(-1) {}
     Decision(int i, Literal l) : trail_index(i), literal(l) {}
@@ -206,8 +200,7 @@ class SatSolver {
   const Trail& LiteralTrail() const { return trail_; }
   const VariablesAssignment& Assignment() const { return trail_.Assignment(); }
 
-  // Useful information about the last Solve(). They are cleared at
-  // the beginning of each Solve().
+  // Some statistics since the creation of the solver.
   int64 num_branches() const;
   int64 num_failures() const;
   int64 num_propagations() const;
@@ -227,8 +220,12 @@ class SatSolver {
   int DecisionLevel(VariableIndex var) const { return trail_.Info(var).level; }
 
   // Returns the reason for a given variable assignment. The variable must be
-  // assigned (this is DCHECKed). Note that the reason clause may or may not
-  // contain a literal refering to the given variable.
+  // assigned (this is DCHECKed). The interpretation is that because all the
+  // literal of a reason were assigned to false, we could deduce the assignement
+  // of the given variable.
+  //
+  // WARNING: The returned ClauseRef will be invalidated by the next call to
+  // Reason().
   //
   // Complexity remark: This is called a lot less often than Enqueue(). So it is
   // better to do as little work as possible during Enqueue() and more work
@@ -242,12 +239,8 @@ class SatSolver {
   // like a good idea to keep clauses that were used as a reason even if the
   // variable is currently not assigned. This way, even if the clause cleaning
   // happen just after a restart, the logic will not change.
-  //
-  // This works because the literal propagated by a clause will always be in
-  // the second position. See SatClause::PropagateOnFalse() and
-  // SatClause::AttachAndEnqueuePotentialUnitPropagation().
   bool IsClauseUsedAsReason(SatClause* clause) const {
-    const VariableIndex var = clause->SecondLiteral().Variable();
+    const VariableIndex var = clause->PropagatedLiteral().Variable();
     return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
            trail_.Info(var).sat_clause == clause;
   }
@@ -312,6 +305,9 @@ class SatSolver {
   // comparison of the different possible conflict clause computation, see the
   // reference below.
   //
+  // The conflict will have only one literal at the highest decision level, and
+  // this literal will always be the first in the conflict vector.
+  //
   // L Zhang, CF Madigan, MH Moskewicz, S Malik, "Efficient conflict driven
   // learning in a boolean satisfiability solver" Proceedings of the 2001
   // IEEE/ACM international conference on Computer-aided design, Pages 279-285.
@@ -337,6 +333,10 @@ class SatSolver {
   // replace literals by other literals from lower decision levels. The first
   // function choose which one of the other functions to call depending on the
   // parameters.
+  //
+  // Precondidtion: is_marked_ should be set to true for all the variables of
+  // the conflict. It can also contains false non-conflict variables that
+  // are implied by the negation of the 1-UIP conflict literal.
   void MinimizeConflict(std::vector<Literal>* conflict,
                         std::vector<Literal>* reason_used_to_infer_the_conflict);
   void MinimizeConflictExperimental(std::vector<Literal>* conflict);
@@ -347,9 +347,10 @@ class SatSolver {
   bool CanBeInferedFromConflictVariables(VariableIndex variable);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
-  // - There is an unique literal of the current decision level.
+  // - There is an unique literal with the highest decision level.
+  // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
-  // - The is no literals with a decision level of zero.
+  // - Ther is no literal with a decision level of zero.
   bool IsConflictValid(const std::vector<Literal>& literals);
 
   // Given the learned clause after a conflict, this computes the correct
@@ -431,6 +432,7 @@ class SatSolver {
   LiteralWatchers watched_clauses_;
   BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
+  SymmetryPropagator symmetry_propagator_;
 
   // The solver trail.
   Trail trail_;
@@ -549,6 +551,10 @@ class SatSolver {
   SparseBitset<VariableIndex> is_independent_;
   std::vector<int> min_trail_index_per_level_;
 
+  // Temporary member used by Reason().
+  mutable std::vector<Literal> tmp_reason_;
+  mutable std::vector<Literal> tmp_intermediate_reason_;
+
   // Temporary members used by CanBeInferedFromConflictVariables().
   std::vector<VariableIndex> dfs_stack_;
   std::vector<VariableIndex> variable_to_process_;
@@ -592,6 +598,9 @@ class SatSolver {
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
+
+// Returns a std::string representation of a SatSolver::Status.
+std::string SatStatusString(SatSolver::Status status);
 
 // Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
 // Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.

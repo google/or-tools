@@ -16,7 +16,7 @@ namespace operations_research {
 namespace sat {
 
 // A node of the resolution DAG.
-class ResolutionNode {
+struct ResolutionNode {
  public:
   // Constructor for the root nodes.
   ResolutionNode()

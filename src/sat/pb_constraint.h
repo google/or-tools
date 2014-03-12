@@ -42,7 +42,7 @@ inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
   return os;
 }
 
-// Puts the given pseudo-Boolean formula in cannonical form:
+// Puts the given Boolean linear expression in canonical form:
 // - Merge all the literal corresponding to the same variable.
 // - Remove zero coefficients.
 // - Make all the coefficients positive.
@@ -54,15 +54,63 @@ inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
 //    initial pseudo-Boolean constraint was
 //      lhs < initial_pb_formula < rhs
 //    then the new one is:
-//      lhs + bound_shift < cannonical_form < rhs + bound_shift
+//      lhs + bound_shift < canonical_form < rhs + bound_shift
 //
-// Finaly, this will return false, if some integer overflow or underflow occured
-// during the reduction to the cannonical form.
-bool PbCannonicalForm(std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
-                      Coefficient* max_value);
+// Finally, this will return false, if some integer overflow or underflow
+// occured during the reduction to the canonical form.
+bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
+                                                 Coefficient* bound_shift,
+                                                 Coefficient* max_value);
 
-// Returns true iff the linear constraint is in cannonical form.
-bool LinearConstraintIsCannonical(const std::vector<LiteralWithCoeff>& cst);
+// Returns true iff the Boolean linear expression is in canonical form.
+bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst);
+
+// Given a Boolean linear constraint in canonical form, simplify its
+// coefficients using simple heuristics.
+void SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff>* cst,
+                                              Coefficient* rhs);
+
+// Holds a set of boolean linear constraints in canonical form:
+// - The constraint is a linear sum of LiteralWithCoeff <= rhs.
+// - The linear sum satisfies the properties described in
+//   ComputeBooleanLinearExpressionCanonicalForm().
+//
+// TODO(user): Simplify further the constraints.
+//
+// TODO(user): Remove the duplication between this and what the sat solver
+// is doing in AddLinearConstraint() which is basically the same.
+//
+// TODO(user): Remove duplicate constraints? some problems have them, and
+// this is not ideal for the symmetry computation since it leads to a lot of
+// symmetries of the associated graph that are not useful.
+class CanonicalBooleanLinearProblem {
+ public:
+  CanonicalBooleanLinearProblem() {}
+
+  // Adds a new constraint to the problem. The bounds are inclusive.
+  // Returns false in case of a possible overflow or if the constraint is
+  // never satisfiable.
+  //
+  // TODO(user): Use a return status to distinguish errors if needed.
+  bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
+                           bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<LiteralWithCoeff>* cst);
+
+  // Getters. All the constraints are guaranteed to be in canonical form.
+  int NumConstraints() const { return constraints_.size(); }
+  const Coefficient Rhs(int i) const { return rhs_[i]; }
+  const std::vector<LiteralWithCoeff>& Constraint(int i) const {
+    return constraints_[i];
+  }
+
+ private:
+  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
+                     Coefficient rhs);
+
+  std::vector<int64> rhs_;
+  std::vector<std::vector<LiteralWithCoeff>> constraints_;
+  DISALLOW_COPY_AND_ASSIGN(CanonicalBooleanLinearProblem);
+};
 
 // This class contains "half" the propagation logic for a constraint of the form
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
@@ -211,15 +259,13 @@ class PbConstraints {
   // equals to the given on are not processed for propagation.
   void Untrail(int trail_index);
 
-  // Returns the reason for the given variable assignement.
+  // Computes the reason for the given variable assignement.
   // Note that this should only be called if the reason type is PB_PROPAGATION.
-  const std::vector<Literal>& ReasonFor(VariableIndex var) const {
+  void ReasonFor(VariableIndex var, std::vector<Literal>* reason) const {
     SCOPED_TIME_STAT(&stats_);
     const AssignmentInfo& info = trail_->Info(var);
     DCHECK_EQ(info.type, AssignmentInfo::PB_PROPAGATION);
-    info.pb_constraint->FillReason(*trail_, info.source_trail_index,
-                                   &reason_scratchpad_);
-    return reason_scratchpad_;
+    info.pb_constraint->FillReason(*trail_, info.source_trail_index, reason);
   }
 
  private:
@@ -242,11 +288,7 @@ class PbConstraints {
   // processed by this class.
   int propagation_trail_index_;
 
-  // Temporary vector to hold the reason of a pseudo-Boolean propagation.
-  // Important: the conflict must use another vector since these scratchpads
-  // must remain valid as long as they are needed by the sat solver and we do
-  // need to compute reasons and not overwrite the conflict.
-  mutable std::vector<Literal> reason_scratchpad_;
+  // Temporary vector to hold the last conflict of a pseudo-Boolean propagation.
   mutable std::vector<Literal> conflict_scratchpad_;
 
   // We use a dequeue to store the pseudo-Boolean constraint because we want
@@ -298,13 +340,8 @@ class PbReasonCache {
     const AssignmentInfo& info = trail_.Info(var);
     return std::make_pair(info.pb_constraint, info.source_trail_index);
   }
-#if defined(_MSC_VER)
-  hash_map<std::pair<UpperBoundedLinearConstraint*, int>,
-           VariableIndex,
-           PairPointerIntHasher<UpperBoundedLinearConstraint> > map_;
-#else
+
   hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
-#endif
   DISALLOW_COPY_AND_ASSIGN(PbReasonCache);
 };
 

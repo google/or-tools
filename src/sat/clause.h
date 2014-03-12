@@ -23,7 +23,6 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/int_type_indexed_vector.h"
@@ -74,28 +73,30 @@ class SatClause {
   // Allows for range based iteration: for (Literal literal : clause) {}.
   const Literal* const begin() const { return &(literals_[0]); }
   const Literal* const end() const { return &(literals_[size_]); }
-
-  // Returns a ClauseRef that point to this clause.
-  ClauseRef ToClauseRef() const { return ClauseRef(begin(), end()); }
+  Literal* literals() { return &(literals_[0]); }
 
   // Returns the first and second literals. These are always the watched
   // literals if the clause is attached in the LiteralWatchers.
   Literal FirstLiteral() const { return literals_[0]; }
   Literal SecondLiteral() const { return literals_[1]; }
 
+  // Returns the literal that was propagated to true. This only works for a
+  // clause that just propagated this literal. Otherwise, this will just returns
+  // a literal of the clause.
+  Literal PropagatedLiteral() const { return literals_[0]; }
+
+  // Returns the reason for the last unit propagation of this clause. The
+  // preconditions are the same as for PropagatedLiteral().
+  ClauseRef PropagationReason() const {
+    // Note that we don't need to include the propagated literal.
+    return ClauseRef(&(literals_[1]), end());
+  }
+
   // Removes literals that are fixed. This should only be called at level 0
   // where a literal is fixed iff it is assigned. Aborts and returns true if
   // they are not all false.
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment,
                                         std::vector<Literal>* removed_literals);
-
-  // Propagates watched_literal which just became false in the clause. Returns
-  // false if an inconsistency was detected.
-  //
-  // IMPORTANT: If a new literal needs watching instead, then FirstLiteral()
-  // will be the new watched literal, otherwise it will be equal to the given
-  // watched_literal.
-  bool PropagateOnFalse(Literal watched_literal, Trail* trail);
 
   // True if the clause is learned.
   bool IsLearned() const { return is_learned_; }
@@ -145,7 +146,7 @@ class SatClause {
  private:
   // The data is packed so that only 16 bytes are used for these fields.
   // Note that the max lbd is the maximum depth of the search tree (decision
-  // levels), so it should fit easily in 29 bits. Note that we can also upper
+  // levels), so it should fit easily in 30 bits. Note that we can also upper
   // bound it without hurting too much the clause cleaning heuristic.
   bool is_learned_ : 1;
   bool is_attached_ : 1;
@@ -155,7 +156,8 @@ class SatClause {
 
   // This is only needed when the parameter unsat_proof() is true.
   // TODO(user): It is possible to use less memory when this is not the case
-  // by some tweaks in Create() and in the way we access it.
+  // by some tweaks in Create() and in the way we access it. Note that not
+  // storing this seems to gain about 2% in speed overall.
   ResolutionNode* resolution_node_;
 
   // This class store the literals inline, and literals_ mark the starts of the
@@ -276,12 +278,17 @@ class LiteralWatchers {
 class BinaryImplicationGraph {
  public:
   BinaryImplicationGraph()
-      : num_propagations_(0),
+      : num_implications_(0),
+        num_propagations_(0),
         num_minimization_(0),
         num_literals_removed_(0),
+        num_redundant_implications_(0),
         stats_("BinaryImplicationGraph") {}
   ~BinaryImplicationGraph() {
-    IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
+    IF_STATS_ENABLED({
+      LOG(INFO) << stats_.StatString();
+      LOG(INFO) << "num_redundant_implications " << num_redundant_implications_;
+    });
   }
 
   // Resizes the data structure.
@@ -300,12 +307,19 @@ class BinaryImplicationGraph {
   // This calls trail->Enqueue() on the newly assigned literals.
   bool PropagateOnTrue(Literal true_literal, Trail* trail);
 
-  // Uses the binary implication graph to minimize the given clause by removing
-  // literals that implies others.
+  // Uses the binary implication graph to minimize the given conflict by
+  // removing literals that implies others. The idea is that if a and b are two
+  // literals from the given conflict and a => b (which is the same as not(b) =>
+  // not(a)) then a is redundant and can be removed.
   //
-  // TODO(user): The current algorithm is minimalist, and just look at direct
-  // implication. Investigate recursive version.
-  void MinimizeClause(const Trail& trail, std::vector<Literal>* clause);
+  // Note that removing as many literals as possible is too time consuming, so
+  // we use different heuristics/algorithms to do this minimization.
+  // See the binary_minimization_algorithm SAT parameter and the .cc for more
+  // details about the different algorithms.
+  void MinimizeConflictWithReachability(std::vector<Literal>* c);
+  void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
+  void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
+                             SparseBitset<VariableIndex>* marked);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:
@@ -321,16 +335,16 @@ class BinaryImplicationGraph {
   int64 num_literals_removed() const { return num_literals_removed_; }
 
   // Returns the number of current implications.
-  int64 NumberOfImplications() const {
-    int num = 0;
-    for (const std::vector<Literal>& v : implications_) num += v.size();
-    return num / 2;
-  }
+  int64 NumberOfImplications() const { return num_implications_; }
 
  private:
+  // Remove any literal whose negation is marked (except the first one).
+  void RemoveRedundantLiterals(std::vector<Literal>* conflict);
+
   // This is indexed by the Index() of a literal. Each list stores the
   // literals that are implied if the index literal becomes true.
   ITIVector<LiteralIndex, std::vector<Literal> > implications_;
+  int64 num_implications_;
 
   // Holds the last conflicting binary clause.
   Literal temporary_clause_[2];
@@ -339,6 +353,7 @@ class BinaryImplicationGraph {
   int64 num_propagations_;
   int64 num_minimization_;
   int64 num_literals_removed_;
+  int64 num_redundant_implications_;
 
   // Bitset used by MinimizeClause().
   // TODO(user): use the same one as the one used in the classic minimization
@@ -346,6 +361,9 @@ class BinaryImplicationGraph {
   // information.
   SparseBitset<LiteralIndex> is_marked_;
   SparseBitset<LiteralIndex> is_removed_;
+
+  // Temporary stack used by MinimizeClauseWithReachability().
+  std::vector<Literal> dfs_stack_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);

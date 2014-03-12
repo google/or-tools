@@ -1651,6 +1651,13 @@ class Solver {
                             const std::vector<IntVar*>& active,
                             const std::vector<IntVar*>& cumuls,
                             const std::vector<IntVar*>& transits);
+  // Delayed version of the same constraint: propagation on the nexts variables
+  // is delayed until all constraints have propagated.
+  // TODO(user): Merge with other path-cumuls constraints.
+  Constraint* MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                   const std::vector<IntVar*>& active,
+                                   const std::vector<IntVar*>& cumuls,
+                                   const std::vector<IntVar*>& transits);
   // Creates a constraint which accumulates values along a path such that:
   // cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i]).
   // Active variables indicate if the corresponding next variable is active;

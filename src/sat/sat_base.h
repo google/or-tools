@@ -79,6 +79,10 @@ class Literal {
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
 
+  bool operator<(const Literal& literal) const {
+    return Index() < literal.Index();
+  }
+
  private:
   int index_;
 };
@@ -216,19 +220,30 @@ struct AssignmentInfo {
     CLAUSE_PROPAGATION,
     BINARY_PROPAGATION,
     PB_PROPAGATION,
+    SYMMETRY_PROPAGATION,
   };
-  Type type;
+  Type type : 3;
 
   // The decision level at which this assignment was made. This starts at 0 and
   // increases each time the solver takes a SEARCH_DECISION.
-  int level;
+  int level : 29;
 
   // The index of this assignment in the trail.
   int trail_index;
 
-// Some data about this assignment used to compute the reason clause when it
-// becomes needed. Note that depending on the type, these fields will not be
-// used and be left uninitialized.
+  // The rest of this struct contains data about this assignment used to compute
+  // the reason clause when it becomes needed. Note that depending on the type,
+  // some fields will not be used and left uninitialized. We use unions to gain
+  // a bit of memory.
+
+  union {
+    SatClause* sat_clause;
+    ResolutionNode* resolution_node;
+    UpperBoundedLinearConstraint* pb_constraint;
+    int symmetry_index;
+  };
+
+// Visual C++ has a problem with a Literal inside an union.
 #if defined(_MSC_VER)
   struct {
 #else
@@ -236,11 +251,6 @@ struct AssignmentInfo {
 #endif
     Literal literal;
     int source_trail_index;
-  };
-  union {
-    SatClause* sat_clause;
-    ResolutionNode* resolution_node;
-    UpperBoundedLinearConstraint* pb_constraint;
   };
 };
 
@@ -291,6 +301,12 @@ class Trail {
     current_info_.source_trail_index = source_trail_index;
     current_info_.pb_constraint = cst;
     Enqueue(true_literal, AssignmentInfo::PB_PROPAGATION);
+  }
+  void EnqueueWithSymmetricReason(Literal true_literal, int source_trail_index,
+                                  int symmetry_index) {
+    current_info_.source_trail_index = source_trail_index;
+    current_info_.symmetry_index = symmetry_index;
+    Enqueue(true_literal, AssignmentInfo::SYMMETRY_PROPAGATION);
   }
 
   // Dequeues the last assigned literal and returns it.

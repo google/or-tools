@@ -13,7 +13,6 @@
 #include "sat/clause.h"
 
 #include <algorithm>
-#include <functional>
 #include "base/unique_ptr.h"
 #include <string>
 #include <vector>
@@ -87,48 +86,85 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   DCHECK(is_clean_);
   std::vector<Watcher>& watchers = watchers_on_false_[false_literal.Index()];
   const VariablesAssignment& assignment = trail->Assignment();
-  int new_index = 0;
 
   // Note(user): It sounds better to inspect the list in order, this is because
   // small clauses like binary or ternary clauses will often propagate and thus
   // stay at the beginning of the list.
-  const int initial_size = watchers.size();
-  for (int i = 0; i < initial_size; ++i) {
-    ++num_inspected_clauses_;
-
+  std::vector<Watcher>::iterator new_it = watchers.begin();
+  for (std::vector<Watcher>::iterator it = watchers.begin(); it != watchers.end();
+       ++it) {
     // Don't even look at the clause memory if the blocking literal is true.
-    if (assignment.IsLiteralTrue(watchers[i].blocking_literal)) {
-      watchers[new_index] = watchers[i];
-      ++new_index;
+    if (assignment.IsLiteralTrue(it->blocking_literal)) {
+      *new_it++ = *it;
       continue;
     }
 
-    SatClause* clause = watchers[i].clause;
-    if (!clause->PropagateOnFalse(false_literal, trail)) {
-      // Conflict: All literals of this clause are false.
-      memmove(&watchers[new_index], &watchers[i],
-              (initial_size - i) * sizeof(Watcher));
-      watchers.resize(new_index + initial_size - i);
-      return false;
+    // If the other watched literal is true, just change the blocking literal.
+    Literal* literals = it->clause->literals();
+    const Literal other_watched_literal =
+        (literals[1] == false_literal) ? literals[0] : literals[1];
+    if (other_watched_literal != it->blocking_literal &&
+        assignment.IsLiteralTrue(other_watched_literal)) {
+      *new_it++ = Watcher(it->clause, other_watched_literal);
+      continue;
     }
 
-    // Update the watched literal if clause->FirstLiteral() changed.
-    // See the contract of PropagateOnFalse().
-    if (clause->FirstLiteral() != false_literal) {
-      AttachOnFalse(clause->FirstLiteral(), clause->SecondLiteral(), clause);
+    // Look for another literal to watch.
+    {
+      int i = 2;
+      const int size = it->clause->Size();
+      while (i < size && assignment.IsLiteralFalse(literals[i])) ++i;
+      if (i < size) {
+        // literal[i] is undefined or true, it's now the new literal to watch.
+        // Note that by convention, we always keep the two watched literals at
+        // the beginning of the clause.
+        literals[0] = other_watched_literal;
+        literals[1] = literals[i];
+        literals[i] = false_literal;
+        AttachOnFalse(literals[1], other_watched_literal, it->clause);
+        continue;
+      }
+    }
+
+    // At this point other_watched_literal is either false or undefined, all
+    // other literals are false.
+    if (assignment.IsLiteralFalse(other_watched_literal)) {
+      // Conflict: All literals of it->clause are false.
+      trail->SetFailingSatClause(
+          ClauseRef(it->clause->begin(), it->clause->end()), it->clause);
+      trail->SetFailingResolutionNode(it->clause->ResolutionNodePointer());
+      num_inspected_clauses_ += it - watchers.begin() + 1;
+      watchers.erase(new_it, it);
+      return false;
     } else {
-      watchers[new_index] = Watcher(clause, clause->SecondLiteral());
-      ++new_index;
+      // Propagation: other_watched_literal is undefined, set it to true and
+      // put it at position 0. Note that the position 0 is important because
+      // we will need later to recover the literal that was propagated from the
+      // clause using this convention.
+      literals[0] = other_watched_literal;
+      literals[1] = false_literal;
+      trail->EnqueueWithSatClauseReason(other_watched_literal, it->clause);
+      *new_it++ = *it;
     }
   }
-  watchers.resize(new_index);
+  num_inspected_clauses_ += watchers.size();
+  watchers.erase(new_it, watchers.end());
   return true;
 }
 
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   ++num_watched_clauses_;
-  UpdateStatistics(*clause, /*added=*/true);
+  // Updating the statistics for each learned clause take quite a lot of time
+  // (like 6% of the total running time). So for now, we just compute the
+  // statistics depending on the problem clauses. Note that this do not take
+  // into account the other type of constraint though.
+  //
+  // TODO(user): This is actually not used a lot with the default parameters.
+  // Find a better way for the "initial" polarity choice and tie breaking
+  // between literal choices. Note that it seems none of the modern SAT solver
+  // relies on this.
+  if (!clause->IsLearned()) UpdateStatistics(*clause, /*added=*/true);
   clause->SortLiterals(statistics_, parameters_);
   return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
 }
@@ -136,7 +172,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
-  UpdateStatistics(*clause, /*added=*/false);
+  if (!clause->IsLearned()) UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
   is_clean_ = false;
   needs_cleaning_[clause->FirstLiteral().Index()] = true;
@@ -182,6 +218,7 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
   implications_[a.Negated().Index()].push_back(b);
   implications_[b.Negated().Index()].push_back(a);
+  ++num_implications_;
 }
 
 void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
@@ -225,8 +262,131 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
   return true;
 }
 
-void BinaryImplicationGraph::MinimizeClause(const Trail& trail,
-                                            std::vector<Literal>* conflict) {
+// Here, we remove all the literal whose negation are implied by the negation of
+// the 1-UIP literal (which always appear first in the given conflict). Note
+// that this algorithm is "optimal" in the sense that it leads to a minimized
+// conflict with a backjump level as low as possible. However, not all possible
+// literals are removed.
+void BinaryImplicationGraph::MinimizeConflictWithReachability(
+    std::vector<Literal>* conflict) {
+  SCOPED_TIME_STAT(&stats_);
+  dfs_stack_.clear();
+
+  // Compute the reachability from the literal "not(conflict->front())" using
+  // an iterative dfs.
+  const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
+  is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+  is_marked_.Set(root_literal_index);
+
+  // TODO(user): This sounds like a good idea, but somehow it seems better not
+  // to do that even though it is almost for free. Investigate more.
+  //
+  // The idea here is that since we already compute the reachability from the
+  // root literal, we can use this computation to remove any implication
+  // root_literal => b if there is already root_literal => a and b is reachable
+  // from a.
+  const bool also_prune_direct_implication_list = false;
+
+  // We treat the direct implications differently so we can also remove the
+  // redundant implications from this list at the same time.
+  std::vector<Literal>& direct_implications = implications_[root_literal_index];
+  for (const Literal l : direct_implications) {
+    if (is_marked_[l.Index()]) continue;
+    dfs_stack_.push_back(l);
+    while (!dfs_stack_.empty()) {
+      const LiteralIndex index = dfs_stack_.back().Index();
+      dfs_stack_.pop_back();
+      if (!is_marked_[index]) {
+        is_marked_.Set(index);
+        for (Literal implied : implications_[index]) {
+          if (!is_marked_[implied.Index()]) dfs_stack_.push_back(implied);
+        }
+      }
+    }
+
+    // The "trick" is to unmark 'l'. This way, if we explore it twice, it means
+    // that this l is reachable from some other 'l' from the direct implication
+    // list. Remarks:
+    //  - We don't loose too much complexity when this happen since a literal
+    //    can be unmarked only once, so in the worst case we loop twice over its
+    //    children. Moreover, this literal will be pruned for later calls.
+    //  - This is correct, i.e. we can't prune too many literals because of a
+    //    strongly connected component. Proof by contradiction: If we take the
+    //    first (in direct_implications) literal from a removed SCC, it must
+    //    have marked all the others. But because they are marked, they will not
+    //    be explored again and so can't mark the first literal.
+    if (also_prune_direct_implication_list) {
+      is_marked_.Clear(l.Index());
+    }
+  }
+
+  // Now we can prune the direct implications list and make sure are the
+  // literals there are marked.
+  if (also_prune_direct_implication_list) {
+    int new_size = 0;
+    for (const Literal l : direct_implications) {
+      if (!is_marked_[l.Index()]) {
+        is_marked_.Set(l.Index());
+        direct_implications[new_size] = l;
+        ++new_size;
+      }
+    }
+    if (new_size < direct_implications.size()) {
+      num_redundant_implications_ += direct_implications.size() - new_size;
+      direct_implications.resize(new_size);
+    }
+  }
+
+  RemoveRedundantLiterals(conflict);
+}
+
+// Same as MinimizeConflictWithReachability() but also mark (in the given
+// SparseBitset) the reachable literal already assigned to false. These literals
+// will be implied if the 1-UIP literal is assigned to false, and the classic
+// minimization algorithm can take advantage of that.
+void BinaryImplicationGraph::MinimizeConflictFirst(
+    const Trail& trail, std::vector<Literal>* conflict,
+    SparseBitset<VariableIndex>* marked) {
+  SCOPED_TIME_STAT(&stats_);
+  is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+  dfs_stack_.clear();
+  dfs_stack_.push_back(conflict->front().Negated());
+  while (!dfs_stack_.empty()) {
+    const Literal literal = dfs_stack_.back();
+    dfs_stack_.pop_back();
+    if (!is_marked_[literal.Index()]) {
+      is_marked_.Set(literal.Index());
+      // If the literal is assigned to false, we mark it.
+      if (trail.Assignment().IsLiteralFalse(literal)) {
+        marked->Set(literal.Variable());
+      }
+      for (Literal implied : implications_[literal.Index()]) {
+        if (!is_marked_[implied.Index()]) dfs_stack_.push_back(implied);
+      }
+    }
+  }
+  RemoveRedundantLiterals(conflict);
+}
+
+void BinaryImplicationGraph::RemoveRedundantLiterals(
+    std::vector<Literal>* conflict) {
+  SCOPED_TIME_STAT(&stats_);
+  int new_index = 1;
+  for (int i = 1; i < conflict->size(); ++i) {
+    if (!is_marked_[(*conflict)[i].NegatedIndex()]) {
+      (*conflict)[new_index] = (*conflict)[i];
+      ++new_index;
+    }
+  }
+  if (new_index < conflict->size()) {
+    ++num_minimization_;
+    num_literals_removed_ += conflict->size() - new_index;
+    conflict->resize(new_index);
+  }
+}
+
+void BinaryImplicationGraph::MinimizeConflictExperimental(
+    const Trail& trail, std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   is_removed_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -243,10 +403,11 @@ void BinaryImplicationGraph::MinimizeClause(const Trail& trail,
   //    cycle. Note that this is not optimal in the sense that we may not remove
   //    a literal that can be removed.
   //
-  // TODO(user): no need to explore the unique literal of the current decision
-  // level since it can't be removed.
-  int index = 0;
-  for (int i = 0; i < conflict->size(); ++i) {
+  // Note that there is no need to explore the unique literal of the highest
+  // decision level since it can't be removed. Because this is a conflict, such
+  // literal is always at position 0, so we start directly at 1.
+  int index = 1;
+  for (int i = 1; i < conflict->size(); ++i) {
     const Literal lit = (*conflict)[i];
     const int lit_level = trail.Info(lit.Variable()).level;
     bool keep_literal = true;
@@ -374,7 +535,7 @@ bool LiteralWithLargerWeightFirst(const WeightedLiteral& wv1,
 void SatClause::SortLiterals(
     const ITIVector<VariableIndex, VariableInfo>& statistics,
     const SatParameters& parameters) {
-  CHECK(!IsAttached());
+  DCHECK(!IsAttached());
   const SatParameters::LiteralOrdering literal_order =
       parameters.literal_ordering();
   if (literal_order != SatParameters::LITERAL_IN_ORDER) {
@@ -425,7 +586,7 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
 
   if (num_literal_not_false == 1) {
     // To maintain the validity of the 2-watcher algorithm, we need to watch
-    // the false literal with the highest decision levels.
+    // the false literal with the highest decision level.
     int max_level = trail->Info(literals_[1].Variable()).level;
     for (int i = 2; i < size_; ++i) {
       const int level = trail->Info(literals_[i].Variable()).level;
@@ -435,11 +596,9 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
       }
     }
 
-    // If there is a propagation, make literals_[1] the propagated literal and
-    // enqueue it.
+    // Propagates literals_[0] if it is undefined.
     if (!trail->Assignment().IsLiteralTrue(literals_[0])) {
-      std::swap(literals_[0], literals_[1]);
-      trail->EnqueueWithSatClauseReason(literals_[1], this);
+      trail->EnqueueWithSatClauseReason(literals_[0], this);
     }
   }
 
@@ -447,49 +606,6 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
   is_attached_ = true;
   demons->AttachOnFalse(literals_[0], literals_[1], this);
   demons->AttachOnFalse(literals_[1], literals_[0], this);
-  return true;
-}
-
-// Propagates one watched literal becoming false. This method maintains the
-// invariant that watched literals are always in position 0 and 1.
-bool SatClause::PropagateOnFalse(Literal watched_literal, Trail* trail) {
-  const VariablesAssignment& assignment = trail->Assignment();
-  DCHECK(IsAttached());
-  DCHECK_GE(size_, 2);
-  DCHECK(assignment.IsLiteralFalse(watched_literal));
-
-  // The instantiated literal should be in position 0.
-  if (literals_[1] == watched_literal) {
-    literals_[1] = literals_[0];
-    literals_[0] = watched_literal;
-  }
-  DCHECK_EQ(literals_[0], watched_literal);
-
-  // If the other watched literal is true, do nothing.
-  if (assignment.IsLiteralTrue(literals_[1])) return true;
-
-  for (int i = 2; i < size_; ++i) {
-    if (assignment.IsLiteralFalse(literals_[i])) continue;
-
-    // Note(user): If the value of literals_[i] is true, it is possible to leave
-    // the watched literal unchanged. However this seems less efficient. Even if
-    // we swap it with the literal at position 2 to speed up future checks.
-
-    // literal[i] is undefined or true, it's now the new literal to watch.
-    literals_[0] = literals_[i];
-    literals_[i] = watched_literal;
-    return true;
-  }
-
-  // Literals_[1] is either false or undefined, all other literals are false.
-  if (assignment.IsLiteralFalse(literals_[1])) {
-    trail->SetFailingSatClause(ToClauseRef(), this);
-    trail->SetFailingResolutionNode(resolution_node_);
-    return false;
-  }
-
-  // Literals_[1] is undefined, set it to true.
-  trail->EnqueueWithSatClauseReason(literals_[1], this);
   return true;
 }
 

@@ -16,7 +16,6 @@
 
 #include "base/callback.h"
 #include "base/integral_types.h"
-#include "base/scoped_ptr.h"
 
 namespace operations_research {
 class BellmanFord {

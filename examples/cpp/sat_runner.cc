@@ -29,6 +29,7 @@
 #include "sat/boolean_problem.h"
 #include "sat/sat_solver.h"
 #include "util/time_limit.h"
+#include "algorithms/sparse_permutation.h"
 
 DEFINE_string(
     input, "",
@@ -63,6 +64,10 @@ DEFINE_string(
 DEFINE_bool(search_optimal, false,
             "If true, search for the optimal solution. "
             "The algorithm is currently really basic.");
+
+DEFINE_bool(use_symmetry, false,
+            "If true, find and exploit the eventual symmetries "
+            "of the problem.");
 
 
 DEFINE_bool(refine_core, false,
@@ -124,6 +129,14 @@ int Run() {
            problem, !FLAGS_lower_bound.empty(), atoi64(FLAGS_lower_bound),
            !FLAGS_upper_bound.empty(), atoi64(FLAGS_upper_bound), &solver)) {
     LOG(FATAL) << "Issue when setting the objective bounds.";
+  }
+
+  // Symmetries!
+  if (FLAGS_use_symmetry) {
+    LOG(INFO) << "Finding symmetries of the problem.";
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    FindLinearBooleanProblemSymmetries(problem, &generators);
+    solver.AddSymmetries(&generators);
   }
 
   // Heuristics to drive the SAT search.

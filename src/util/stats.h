@@ -70,7 +70,6 @@
 #include <map>
 #include <string>
 
-#include "base/scoped_ptr.h"
 #include "base/timer.h"
 
 namespace operations_research {

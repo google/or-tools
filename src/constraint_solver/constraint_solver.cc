@@ -26,7 +26,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/file.h"
 #include "base/recordio.h"
@@ -2520,13 +2519,13 @@ bool Solver::HasName(const PropagationBaseObject* const object) const {
 
 // ------------------ Useful Operators ------------------
 
-std::ostream& operator<<(std::ostream& out, const Solver* const s) {  // NOLINT
+std::ostream& operator<<(std::ostream& out, const Solver* const s) {
   out << s->DebugString();
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out,
-                         const BaseObject* const o) {  // NOLINT
+                         const BaseObject* const o) {
   out << o->DebugString();
   return out;
 }

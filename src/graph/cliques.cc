@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/scoped_ptr.h"
 #include "base/hash.h"
 
 namespace operations_research {

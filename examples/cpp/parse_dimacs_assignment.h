@@ -27,7 +27,6 @@
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "graph/ebert_graph.h"
 #include "graph/linear_assignment.h"
 

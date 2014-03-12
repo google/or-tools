@@ -21,7 +21,6 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/strutil.h"

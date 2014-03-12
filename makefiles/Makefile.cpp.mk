@@ -52,11 +52,20 @@ DYNAMIC_GRAPH_DEPS = $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_BASE_LIBS)
 
 DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) $(DYNAMIC_CP_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_BASE_LIBS)
 
-DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) $(DYNAMIC_CP_DEPS)
+DYNAMIC_FLATZINC_DEPS = \
+	$(DYNAMIC_FLATZINC_LIBS) \
+	$(DYNAMIC_CP_DEPS)
 
-DYNAMIC_FLATZINC2_DEPS = $(DYNAMIC_FLATZINC2_LIBS) $(DYNAMIC_CP_DEPS)
+DYNAMIC_FLATZINC2_DEPS = \
+	$(DYNAMIC_FLATZINC2_LIBS) \
+	$(DYNAMIC_CP_DEPS)
 
-DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) $(DYNAMIC_LP_LIBS) $(DYNAMIC_GRAPH_LIBS) $(DYNAMIC_ALGORITHMS_LIBS) $(DYNAMIC_BASE_LIBS)
+DYNAMIC_DIMACS_DEPS = \
+	$(DYNAMIC_DIMACS_LIBS) \
+	$(DYNAMIC_LP_LIBS) \
+	$(DYNAMIC_GRAPH_LIBS) \
+	$(DYNAMIC_ALGORITHMS_LIBS) \
+	$(DYNAMIC_BASE_LIBS)
 
 DYNAMIC_FAP_DEPS = \
 	$(DYNAMIC_FAP_LIBS) \
@@ -66,7 +75,7 @@ DYNAMIC_FAP_DEPS = \
 
 DYNAMIC_SAT_DEPS = \
 	$(DYNAMIC_SAT_LIBS) \
-	$(DYNAMIC_BASE_LIBS)
+	$(DYNAMIC_ALGORITHMS_DEPS)
 
 DYNAMIC_ORTOOLS_DEPS = \
 	$(DYNAMIC_ORTOOLS_LIBS)
@@ -120,7 +129,7 @@ DYNAMIC_FAP_LNK = \
 
 DYNAMIC_SAT_LNK = \
 	$(DYNAMIC_PRE_LIB)sat$(DYNAMIC_POST_LIB) \
-	$(DYNAMIC_BASE_LNK)
+	$(DYNAMIC_ALGORITHMS_LNK)
 
 DYNAMIC_ALL_LNK = \
   $(DYNAMIC_PRE_LIB)algorithms$(DYNAMIC_POST_LIB) \
@@ -718,13 +727,25 @@ endif
 
 ALGORITHMS_LIB_OBJS=\
 	$(OBJ_DIR)/algorithms/hungarian.$O \
-	$(OBJ_DIR)/algorithms/knapsack_solver.$O
+	$(OBJ_DIR)/algorithms/knapsack_solver.$O \
+	$(OBJ_DIR)/algorithms/dynamic_partition.$O \
+	$(OBJ_DIR)/algorithms/sparse_permutation.$O \
+	$(OBJ_DIR)/algorithms/find_graph_symmetries.$O
 
 $(OBJ_DIR)/algorithms/hungarian.$O:$(SRC_DIR)/algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/hungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian.$O
 
 $(OBJ_DIR)/algorithms/knapsack_solver.$O:$(SRC_DIR)/algorithms/knapsack_solver.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/knapsack_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sknapsack_solver.$O
+
+$(OBJ_DIR)/algorithms/dynamic_partition.$O:$(SRC_DIR)/algorithms/dynamic_partition.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/dynamic_partition.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sdynamic_partition.$O
+
+$(OBJ_DIR)/algorithms/sparse_permutation.$O:$(SRC_DIR)/algorithms/sparse_permutation.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/sparse_permutation.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Ssparse_permutation.$O
+
+$(OBJ_DIR)/algorithms/find_graph_symmetries.$O:$(SRC_DIR)/algorithms/find_graph_symmetries.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/find_graph_symmetries.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sfind_graph_symmetries.$O
 
 $(LIB_DIR)/$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX): $(ALGORITHMS_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX) $(ALGORITHMS_LIB_OBJS)
@@ -1196,6 +1217,7 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/pb_constraint.$O\
 	$(OBJ_DIR)/sat/sat_parameters.pb.$O\
 	$(OBJ_DIR)/sat/sat_solver.$O\
+	$(OBJ_DIR)/sat/symmetry.$O\
 	$(OBJ_DIR)/sat/unsat_proof.$O
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
@@ -1222,6 +1244,9 @@ $(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(S
 
 $(OBJ_DIR)/sat/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sunsat_proof.$O
+
+$(OBJ_DIR)/sat/symmetry.$O: $(SRC_DIR)/sat/symmetry.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/symmetry.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/symmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
 
 $(GEN_DIR)/sat/sat_parameters.pb.cc: $(SRC_DIR)/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/sat_parameters.proto

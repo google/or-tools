@@ -21,7 +21,6 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/concise_iterator.h"
@@ -403,7 +402,7 @@ void SCIPInterface::ExtractNewConstraints() {
       SCIP_CONS* scip_constraint = NULL;
       const bool is_lazy = ct->is_lazy();
       // See
-      // http://scip.zib.de/doc/html/cons__linear_8h.shtml#aa7aed137a4130b35b168812414413481
+      // http://scip.zib.de/doc/html/cons__linear_8h.php#aa7aed137a4130b35b168812414413481
       // for an explanation of the parameters.
       ORTOOLS_SCIP_CALL(SCIPcreateConsLinear(
           scip_, &scip_constraint, ct->name().empty() ? "" : ct->name().c_str(),

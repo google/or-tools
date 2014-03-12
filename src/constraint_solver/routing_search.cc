@@ -116,10 +116,11 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
       return true;
     } else {
       IntVar* const cost_var = routing_model_.CostVar();
-      return new_objective_value <= cost_var->Max() &&
-             new_objective_value >= cost_var->Min();
+      // Only compare to max as a cost lower bound is computed.
+      return new_objective_value <= cost_var->Max();
     }
   }
+  virtual std::string DebugString() const { return "NodeDisjunctionFilter"; }
 
  private:
   virtual void OnSynchronize() {
@@ -172,20 +173,25 @@ class BasePathFilter : public RoutingLocalSearchFilter {
  protected:
   static const int64 kUnassigned;
 
-  int64 GetNext(const Assignment::IntContainer& container, int64 node) const;
+  int64 GetNext(int64 node) const {
+    return (new_nexts_[node] == kUnassigned)
+               ? (IsVarSynced(node) ? Value(node) : kUnassigned)
+               : new_nexts_[node];
+  }
   int NumPaths() const { return starts_.size(); }
   int64 Start(int i) const { return starts_[i]; }
   int GetPath(int64 node) const { return paths_[node]; }
 
  private:
   virtual void InitializeAcceptPath() {}
-  virtual bool AcceptPath(const Assignment::IntContainer& container,
-                          int64 path_start) = 0;
+  virtual bool AcceptPath(int64 path_start) = 0;
   virtual bool FinalizeAcceptPath() { return true; }
 
   std::vector<int64> node_path_starts_;
   std::vector<int64> starts_;
   std::vector<int> paths_;
+  std::vector<int64> new_nexts_;
+  std::vector<int> delta_touched_;
 };
 
 const int64 BasePathFilter::kUnassigned = -1;
@@ -195,12 +201,18 @@ BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
                                Callback1<int64>* objective_callback)
     : RoutingLocalSearchFilter(nexts, objective_callback),
       node_path_starts_(next_domain_size, kUnassigned),
-      paths_(nexts.size(), -1) {}
+      paths_(nexts.size(), -1),
+      new_nexts_(nexts.size(), kUnassigned) {}
 
 bool BasePathFilter::Accept(const Assignment* delta,
                             const Assignment* deltadelta) {
+  for (const int touched : delta_touched_) {
+    new_nexts_[touched] = kUnassigned;
+  }
+  delta_touched_.clear();
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int delta_size = container.Size();
+  delta_touched_.reserve(delta_size);
   // Determining touched paths. Number of touched paths should be very small
   // given the set of available operators (1 or 2 paths), so performing
   // a linear search to find an element is faster than using a set.
@@ -210,6 +222,13 @@ bool BasePathFilter::Accept(const Assignment* delta,
     IntVar* const var = new_element.Var();
     int64 index = kUnassigned;
     if (FindIndex(var, &index)) {
+      if (new_element.Bound()) {
+        new_nexts_[index] = new_element.Value();
+        delta_touched_.push_back(index);
+      } else {
+        // LNS detected
+        return true;
+      }
       const int64 start = node_path_starts_[index];
       if (start != kUnassigned &&
           find(touched_paths.begin(), touched_paths.end(), start) ==
@@ -222,7 +241,7 @@ bool BasePathFilter::Accept(const Assignment* delta,
   InitializeAcceptPath();
   bool accept = true;
   for (const int touched_path : touched_paths) {
-    if (!AcceptPath(container, touched_path)) {
+    if (!AcceptPath(touched_path)) {
       accept = false;
       break;
     }
@@ -273,21 +292,6 @@ void BasePathFilter::OnSynchronize() {
   }
 }
 
-int64 BasePathFilter::GetNext(const Assignment::IntContainer& container,
-                              int64 node) const {
-  const IntVar* const next_var = Var(node);
-  int64 next = IsVarSynced(node) ? Value(node) : kUnassigned;
-  const IntVarElement* const element = container.ElementPtrOrNull(next_var);
-  if (element != nullptr) {
-    if (element->Bound()) {
-      next = element->Value();
-    } else {
-      return kUnassigned;
-    }
-  }
-  return next;
-}
-
 // PathCumul filter.
 
 class PathCumulFilter : public BasePathFilter {
@@ -297,6 +301,9 @@ class PathCumulFilter : public BasePathFilter {
                   Callback1<int64>* objective_callback);
   virtual ~PathCumulFilter() {}
   virtual void OnSynchronize();
+  virtual std::string DebugString() const {
+    return "PathCumulFilter(" + name_ + ")";
+  }
 
  private:
   // This structure stores the "best" path cumul value for a solution, the path
@@ -360,8 +367,7 @@ class PathCumulFilter : public BasePathFilter {
   virtual void InitializeAcceptPath() {
     cumul_cost_delta_ = total_current_cumul_cost_value_;
   }
-  virtual bool AcceptPath(const Assignment::IntContainer& container,
-                          int64 path_start);
+  virtual bool AcceptPath(int64 path_start);
   virtual bool FinalizeAcceptPath();
 
   bool FilterSpanCost() const { return global_span_cost_coefficient_ != 0; }
@@ -408,6 +414,7 @@ class PathCumulFilter : public BasePathFilter {
   int64 delta_max_end_cumul_;
   // Note: small_ordered_set only support non-hash sets.
   small_ordered_set<std::set<int>> delta_paths_;
+  const std::string name_;
 
   bool lns_detected_;
 };
@@ -430,6 +437,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       cost_var_(routing_model.CostVar()),
       capacity_evaluator_(dimension.capacity_evaluator()),
       delta_max_end_cumul_(kint64min),
+      name_(dimension.name()),
       lns_detected_(false) {
   for (const int64 coefficient : vehicle_span_cost_coefficients_) {
     if (coefficient != 0) {
@@ -565,8 +573,7 @@ void PathCumulFilter::OnSynchronize() {
   }
 }
 
-bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
-                                 int64 path_start) {
+bool PathCumulFilter::AcceptPath(int64 path_start) {
   int64 node = path_start;
   int64 cumul = cumuls_[node]->Min();
   cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
@@ -577,16 +584,27 @@ bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
                              ? kint64max
                              : capacity_evaluator_->Run(vehicle);
   Solver::IndexEvaluator2* const evaluator = evaluators_[vehicle];
-  // Check that the path is feasible with regards to cumul bounds, scanning
-  // the paths from start to end (caching path node sequences and transits
-  // for further span cost filtering).
+  // Evaluating route length to reserve memory to store transit information.
+  int number_of_route_arcs = 0;
   while (node < Size()) {
-    const int64 next = GetNext(container, node);
+    const int64 next = GetNext(node);
+    // TODO(user): This shouldn't be needed anymore as the such deltas should
+    // have been filtered already.
     if (next == kUnassigned) {
-      // LNS detected, return true since path was ok up to now.
+      // LNS detected, return true since other paths were ok up to now.
       lns_detected_ = true;
       return true;
     }
+    ++number_of_route_arcs;
+    node = next;
+  }
+  delta_path_transits_.ReserveTransits(path, number_of_route_arcs);
+  // Check that the path is feasible with regards to cumul bounds, scanning
+  // the paths from start to end (caching path node sequences and transits
+  // for further span cost filtering).
+  node = path_start;
+  while (node < Size()) {
+    const int64 next = GetNext(node);
     const int64 transit = evaluator->Run(node, next);
     total_transit += transit;
     const int64 transit_slack = transit + slacks_[node]->Min();
@@ -685,8 +703,8 @@ bool PathCumulFilter::FinalizeAcceptPath() {
       injected_objective_value_ + cumul_cost_delta_ +
       global_span_cost_coefficient_ * (new_max_end - new_min_start);
   PropagateObjectiveValue(new_objective_value);
-  return new_objective_value <= cost_var_->Max() &&
-         new_objective_value >= cost_var_->Min();
+  // Only compare to max as a cost lower bound is computed.
+  return new_objective_value <= cost_var_->Max();
 }
 
 void PathCumulFilter::InitializeSupportedPathCumul(
@@ -723,7 +741,7 @@ class NodePrecedenceFilter : public BasePathFilter {
   NodePrecedenceFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                        const RoutingModel::NodePairs& pairs);
   virtual ~NodePrecedenceFilter() {}
-  bool AcceptPath(const Assignment::IntContainer& container, int64 path_start);
+  bool AcceptPath(int64 path_start);
 
  private:
   std::vector<int> pair_firsts_;
@@ -742,8 +760,7 @@ NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
   }
 }
 
-bool NodePrecedenceFilter::AcceptPath(const Assignment::IntContainer& container,
-                                      int64 path_start) {
+bool NodePrecedenceFilter::AcceptPath(int64 path_start) {
   std::vector<bool> visited(Size(), false);
   int64 node = path_start;
   int64 path_length = 1;
@@ -758,7 +775,7 @@ bool NodePrecedenceFilter::AcceptPath(const Assignment::IntContainer& container,
       return false;
     }
     visited[node] = true;
-    const int64 next = GetNext(container, node);
+    const int64 next = GetNext(node);
     if (next == kUnassigned) {
       // LNS detected, return true since path was ok up to now.
       return true;

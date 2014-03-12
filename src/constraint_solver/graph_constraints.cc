@@ -850,6 +850,287 @@ bool PathCumul::AcceptLink(int i, int j) const {
          CapSub(cumul_j->Min(), cumul_i->Max()) <= transit_i->Max();
 }
 
+namespace {
+template <class T> class StampedVector {
+ public:
+  StampedVector() : stamp_(0) {}
+  const std::vector<T>& Values(Solver* solver) {
+    CheckStamp(solver);
+    return values_;
+  }
+  void PushBack(Solver* solver, const T& value) {
+    CheckStamp(solver);
+    values_.push_back(value);
+  }
+  void Clear(Solver* solver) {
+    values_.clear();
+    stamp_ = solver->fail_stamp();
+  }
+
+ private:
+  void CheckStamp(Solver* solver) {
+    if (solver->fail_stamp() > stamp_) {
+      Clear(solver);
+    }
+  }
+
+  std::vector<T> values_;
+  uint64 stamp_;
+};
+}  // namespace
+
+class DelayedPathCumul : public Constraint {
+ public:
+  DelayedPathCumul(Solver* const solver,
+                   const std::vector<IntVar*>& nexts,
+                   const std::vector<IntVar*>& active,
+                   const std::vector<IntVar*>& cumuls,
+                   const std::vector<IntVar*>& transits)
+      : Constraint(solver),
+        nexts_(nexts),
+        active_(active),
+        cumuls_(cumuls),
+        transits_(transits),
+        cumul_transit_demons_(cumuls.size(), nullptr),
+        path_demon_(nullptr),
+        touched_(),
+        chain_starts_(cumuls.size(), -1),
+        chain_ends_(cumuls.size(), -1),
+        is_chain_start_(cumuls.size(), false),
+        prevs_(cumuls.size(), -1),
+        supports_(nexts.size()),
+        was_bound_(nexts.size(), false),
+        has_cumul_demon_(cumuls.size(), false) {
+    for (int64 i = 0; i < cumuls_.size(); ++i) {
+      cumul_transit_demons_[i] = MakeDelayedConstraintDemon1(
+          solver, this, &DelayedPathCumul::CumulRange, "CumulRange", i);
+      chain_starts_[i] = i;
+      chain_ends_[i] = i;
+    }
+    path_demon_ = solver->RegisterDemon(MakeDelayedConstraintDemon0(
+        solver, this, &DelayedPathCumul::PropagatePaths, "PropagatePaths"));
+    for (int i = 0; i < nexts_.size(); ++i) {
+      supports_[i] = -1;
+    }
+  }
+  virtual ~DelayedPathCumul() {}
+  virtual void Post() {
+    for (int i = 0; i < nexts_.size(); ++i) {
+      if (!nexts_[i]->Bound()) {
+        Demon* const demon =
+            MakeConstraintDemon1(solver(), this, &DelayedPathCumul::NextBound,
+                                 "NextBound", i);
+        nexts_[i]->WhenBound(demon);
+      }
+    }
+    for (int i = 0; i < active_.size(); ++i) {
+      if (!active_[i]->Bound()) {
+        Demon* const demon =
+            MakeConstraintDemon1(solver(), this, &DelayedPathCumul::ActiveBound,
+                                 "ActiveBound", i);
+        active_[i]->WhenBound(demon);
+      }
+    }
+  }
+  virtual void InitialPropagate() {
+    touched_.Clear(solver());
+    for (int i = 0; i < nexts_.size(); ++i) {
+      if (nexts_[i]->Bound()) {
+        NextBound(i);
+      }
+    }
+    for (int i = 0; i < active_.size(); ++i) {
+      if (active_[i]->Bound()) {
+        ActiveBound(i);
+      }
+    }
+  }
+  // TODO(user): Merge NextBound and ActiveBound to re-use the same demon
+  // for next and active variables.
+  void NextBound(int index) {
+    if (active_[index]->Min() > 0) {
+      const int next = nexts_[index]->Min();
+      PropagateLink(index, next);
+      touched_.PushBack(solver(), index);
+      EnqueueDelayedDemon(path_demon_);
+    }
+  }
+  void ActiveBound(int index) {
+    if (nexts_[index]->Bound()) {
+      NextBound(index);
+    }
+  }
+  void PropagatePaths() {
+    // Detecting new chains.
+    const std::vector<int>& touched_values = touched_.Values(solver());
+    for (const int touched : touched_values) {
+      chain_starts_[touched] = touched;
+      chain_ends_[touched] = touched;
+      is_chain_start_[touched] = false;
+      const int next = nexts_[touched]->Min();
+      chain_starts_[next] = next;
+      chain_ends_[next] = next;
+      is_chain_start_[next] = false;
+    }
+    for (const int touched : touched_values) {
+      if (touched >= nexts_.size()) continue;
+      IntVar* const next_var = nexts_[touched];
+      if (!was_bound_[touched] && next_var->Bound() &&
+          active_[touched]->Min() > 0) {
+        const int64 next = next_var->Min();
+        was_bound_.SetValue(solver(), touched, true);
+        chain_starts_[chain_ends_[next]] = chain_starts_[touched];
+        chain_ends_[chain_starts_[touched]] = chain_ends_[next];
+        is_chain_start_[next] = false;
+        is_chain_start_[chain_starts_[touched]] = true;
+      }
+    }
+    // Propagating new chains.
+    for (const int touched : touched_values) {
+      // Is touched the start of a chain ?
+      if (is_chain_start_[touched]) {
+        // Propagate min cumuls from chain_starts[touch] to chain_ends_[touch].
+        int64 current = touched;
+        int64 next = nexts_[current]->Min();
+        while (current != chain_ends_[touched]) {
+          prevs_.SetValue(solver(), next, current);
+          PropagateLink(current, next);
+          current = next;
+          if (current != chain_ends_[touched]) {
+            next = nexts_[current]->Min();
+          }
+        }
+        // Propagate max cumuls from chain_ends_[i] to chain_starts_[i].
+        int64 prev = prevs_[current];
+        while (current != touched) {
+          PropagateLink(prev, current);
+          current = prev;
+          if (current != touched) {
+            prev = prevs_[current];
+          }
+        }
+        // Now that the chain has been propagated in both directions, adding
+        // demons for the corresponding cumul and transit variables for
+        // future changes in their range.
+        current = touched;
+        while (current != chain_ends_[touched]) {
+          if (!has_cumul_demon_[current]) {
+            Demon* const demon = cumul_transit_demons_[current];
+            cumuls_[current]->WhenRange(demon);
+            transits_[current]->WhenRange(demon);
+            has_cumul_demon_.SetValue(solver(), current, true);
+          }
+          current = nexts_[current]->Min();
+        }
+        if (!has_cumul_demon_[current]) {
+          Demon* const demon = cumul_transit_demons_[current];
+          cumuls_[current]->WhenRange(demon);
+          if (current < transits_.size()) {
+            transits_[current]->WhenRange(demon);
+            UpdateSupport(current);
+          }
+          has_cumul_demon_.SetValue(solver(), current, true);
+        }
+      }
+    }
+    touched_.Clear(solver());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
+                                               nexts_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,
+                                               active_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCumulsArgument,
+                                               cumuls_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTransitsArgument,
+                                               transits_);
+    visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);
+  }
+
+  std::string DebugString() const {
+    std::string out = "DelayedPathCumul(";
+    for (int i = 0; i < nexts_.size(); ++i) {
+      out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
+    }
+    out += ")";
+    return out;
+  }
+
+ private:
+  void CumulRange(int64 index) {
+    if (index < nexts_.size()) {
+      if (nexts_[index]->Bound()) {
+        if (active_[index]->Min() > 0) {
+          PropagateLink(index, nexts_[index]->Min());
+        }
+      } else {
+        UpdateSupport(index);
+      }
+    }
+    if (prevs_[index] >= 0) {
+      PropagateLink(prevs_[index], index);
+    } else {
+      for (int i = 0; i < nexts_.size(); ++i) {
+        if (index == supports_[i]) {
+          UpdateSupport(i);
+        }
+      }
+    }
+  }
+  void UpdateSupport(int index) {
+    int support = supports_[index];
+    if (support < 0 || !AcceptLink(index, support)) {
+      IntVar* const next = nexts_[index];
+      for (int i = next->Min(); i <= next->Max(); ++i) {
+        if (i != support && AcceptLink(index, i)) {
+          supports_[index] = i;
+          return;
+        }
+      }
+      active_[index]->SetMax(0);
+    }
+  }
+  void PropagateLink(int64 index, int64 next) {
+    IntVar* const cumul_var = cumuls_[index];
+    IntVar* const next_cumul_var = cumuls_[next];
+    IntVar* const transit = transits_[index];
+    const int64 transit_min = transit->Min();
+    const int64 transit_max = transit->Max();
+    next_cumul_var->SetMin(CapAdd(cumul_var->Min(), transit_min));
+    next_cumul_var->SetMax(CapAdd(cumul_var->Max(), transit_max));
+    const int64 next_cumul_min = next_cumul_var->Min();
+    const int64 next_cumul_max = next_cumul_var->Max();
+    cumul_var->SetMin(CapSub(next_cumul_min, transit_max));
+    cumul_var->SetMax(CapSub(next_cumul_max, transit_min));
+    transit->SetMin(CapSub(next_cumul_min, cumul_var->Max()));
+    transit->SetMax(CapSub(next_cumul_max, cumul_var->Min()));
+  }
+  bool AcceptLink(int index, int next) const {
+    IntVar* const cumul_var = cumuls_[index];
+    IntVar* const next_cumul_var = cumuls_[next];
+    IntVar* const transit = transits_[index];
+    return transit->Min() <= CapSub(next_cumul_var->Max(), cumul_var->Min()) &&
+        CapSub(next_cumul_var->Min(), cumul_var->Max()) <= transit->Max();
+  }
+
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> active_;
+  const std::vector<IntVar*> cumuls_;
+  const std::vector<IntVar*> transits_;
+  std::vector<Demon*> cumul_transit_demons_;
+  Demon* path_demon_;
+  StampedVector<int> touched_;
+  std::vector<int64> chain_starts_;
+  std::vector<int64> chain_ends_;
+  std::vector<bool> is_chain_start_;
+  RevArray<int> prevs_;
+  std::vector<int> supports_;
+  RevArray<bool> was_bound_;
+  RevArray<bool> has_cumul_demon_;
+};
+
 // cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i])
 
 class ResultCallback2PathCumul : public BasePathCumul {
@@ -1043,5 +1324,14 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
   CHECK_EQ(nexts.size(), active.size());
   return RevAlloc(new ResultCallback2SlackPathCumul(this, nexts, active, cumuls,
                                                     slacks, transit_evaluator));
+}
+
+Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                         const std::vector<IntVar*>& active,
+                                         const std::vector<IntVar*>& cumuls,
+                                         const std::vector<IntVar*>& transits) {
+  CHECK_EQ(nexts.size(), active.size());
+  CHECK_EQ(transits.size(), nexts.size());
+  return RevAlloc(new DelayedPathCumul(this, nexts, active, cumuls, transits));
 }
 }  // namespace operations_research
