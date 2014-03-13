@@ -189,7 +189,23 @@ DEFINE_INT_TYPE(_RoutingModel_CostClassIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
 
-// This class
+// This class stores solver parameters.
+struct RoutingParameters {
+  RoutingParameters() {
+    use_light_propagation = false;
+    cache_callbacks = false;
+    max_cache_size = 1000;
+  }
+
+  // Use constraints with light propagation in routing model.
+  bool use_light_propagation;
+  // Cache callback calls.
+  bool cache_callbacks;
+  // Maximum cache size when callback caching is on.
+  int64 max_cache_size;
+};
+
+// This class stores search parameters.
 struct RoutingSearchParameters {
   RoutingSearchParameters() {
     no_lns = false;
@@ -454,6 +470,9 @@ class RoutingModel {
   RoutingModel(int nodes, int vehicles, const std::vector<NodeIndex>& starts,
                const std::vector<NodeIndex>& ends);
   ~RoutingModel();
+
+  // global parameters.
+  static void SetGlobalParameters(const RoutingParameters& parameters);
 
   // Model creation
 

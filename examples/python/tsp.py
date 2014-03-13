@@ -41,6 +41,7 @@ gflags.DEFINE_boolean('tsp_use_random_matrix', True,
 gflags.DEFINE_integer('tsp_random_forbidden_connections', 0,
                      'Number of random forbidden connections.')
 gflags.DEFINE_integer('tsp_random_seed', 0, 'Random seed.')
+gflags.DEFINE_boolean('light_propagation', False, 'Use light propagation')
 
 
 # Cost/distance functions.
@@ -77,6 +78,11 @@ class RandomMatrix(object):
 def main(_):
   # Create routing model
   if FLAGS.tsp_size > 0:
+    # Set a global parameter.
+    param = pywrapcp.RoutingParameters()
+    param.use_light_propagation = FLAGS.light_propagation
+    pywrapcp.RoutingModel.SetGlobalParameters(param)
+
     # TSP of size FLAGS.tsp_size
     # Second argument = 1 to build a single tour (it's a TSP).
     # Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
