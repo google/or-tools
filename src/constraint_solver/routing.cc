@@ -720,7 +720,6 @@ void RoutingModel::SetGlobalParameters(const RoutingParameters& p) {
   FLAGS_routing_max_cache_size = p.max_cache_size;
 }
 
-
 RoutingModel::RoutingModel(int nodes, int vehicles)
     : nodes_(nodes),
       vehicles_(vehicles),
