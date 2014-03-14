@@ -718,6 +718,7 @@ void RoutingModel::SetGlobalParameters(const RoutingParameters& p) {
   FLAGS_routing_use_light_propagation = p.use_light_propagation;
   FLAGS_routing_cache_callbacks = p.cache_callbacks;
   FLAGS_routing_max_cache_size = p.max_cache_size;
+}
 
 
 RoutingModel::RoutingModel(int nodes, int vehicles)
