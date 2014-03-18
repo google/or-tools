@@ -312,6 +312,7 @@ dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile: dependencies/sources/aut
 
 dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/autoconf-$(AUTOCONF_TAG).tar.gz
+	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && patch -p 1 -i ../../archives/autoconf.patch
 
 dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
