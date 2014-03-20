@@ -400,6 +400,7 @@ class RoutingModel {
   typedef std::pair<int, int> NodePair;
   typedef std::vector<NodePair> NodePairs;
 
+#if !defined(SWIG)
   struct CostClass {
     // arc_cost_evaluator->Run(from, to) is the transit cost of arc
     // from->to. This may never be nullptr.
@@ -442,6 +443,7 @@ class RoutingModel {
              b.dimension_transit_evaluator_and_cost_coefficient;
     }
   };
+#endif
 
   // Constants with an index of the first node (to be used in for loops for
   // iteration), and a special index to signalize an invalid/unused value.

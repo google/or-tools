@@ -1227,6 +1227,7 @@ class EbertGraph
 
   ~EbertGraph() {}
 
+#if !SWIG
   // Iterator class for traversing the arcs incident to a given node in the
   // graph.
   class IncidentArcIterator {
@@ -1350,6 +1351,7 @@ class EbertGraph
     // The index of the current arc considered.
     ArcIndexType arc_;
   };
+#endif
 
   // Utility function to check that an arc index is within the bounds.
   // It is exported so that users of the EbertGraph class can use it.

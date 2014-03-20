@@ -343,7 +343,6 @@ class Solver {
   typedef ResultCallback2<SequenceVar*, CPModelLoader*,
                           const CPSequenceVariableProto&>
       SequenceVariableBuilder;
-#endif  // SWIG
 
   // Holds semantic information stating that the 'expression' has been
   // cast into 'variable' using the Var() method, and that
@@ -358,6 +357,7 @@ class Solver {
     IntExpr* expression;
     Constraint* maintainer;
   };
+#endif  // SWIG
 
   // Number of priorities for demons.
   static const int kNumPriorities = 3;
