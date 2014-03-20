@@ -334,9 +334,9 @@ run_IntegerProgramming: compile_IntegerProgramming
 $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class: javaortools $(EX_DIR)/com/google/ortools/constraintsolver/samples/$(EX).java
 	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$S$(EX).java
 
-cjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class com.google.ortools.jar
+cjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class
 
-rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT) $(LIB_DIR)/com.google.ortools.jar
+rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class javaortools
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar com.google.ortools.constraintsolver.samples.$(EX)
 
 # Build stand-alone archive file for redistribution.
