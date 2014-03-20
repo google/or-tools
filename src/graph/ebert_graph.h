@@ -315,6 +315,7 @@ class StarGraphBase {
     }
   }
 
+#if !defined(SWIG)
   // Iterator class for traversing all the nodes in the graph.
   class NodeIterator {
    public:
@@ -420,6 +421,7 @@ class StarGraphBase {
     // The index of the current arc considered.
     ArcIndexType arc_;
   };
+#endif  // SWIG
 
  protected:
   StarGraphBase()

@@ -11,6 +11,7 @@ SPARSEHASH_TAG = 116
 CBC_TAG = 2.8.9
 # 2.0.11
 SWIG_TAG = 17741
+# 18708 is swig 3.0
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
