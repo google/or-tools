@@ -202,24 +202,26 @@ void NoCycle::NextBound(int index) {
   const int64 chain_start = starts_[index];
   const int64 chain_end = !sink_handler_->Run(next) ? ends_[next] : next;
   Solver* const s = solver();
-  s->SaveAndSetValue(&ends_[chain_start], chain_end);
-  if (!sink_handler_->Run(chain_end)) {
-    s->SaveAndSetValue(&starts_[chain_end], chain_start);
-    nexts_[chain_end]->RemoveValue(chain_start);
-    if (!assume_paths_) {
-      for (int i = 0; i < size(); ++i) {
-        int64 current = i;
-        bool found = (current == chain_end);
-        // Counter to detect implicit cycles.
-        int count = 0;
-        while (!found && count < size() && !sink_handler_->Run(current) &&
-               nexts_[current]->Bound()) {
-          current = nexts_[current]->Value();
-          found = (current == chain_end);
-          ++count;
-        }
-        if (found) {
-          nexts_[chain_end]->RemoveValue(i);
+  if (!sink_handler_->Run(chain_start)) {
+    s->SaveAndSetValue(&ends_[chain_start], chain_end);
+    if (!sink_handler_->Run(chain_end)) {
+      s->SaveAndSetValue(&starts_[chain_end], chain_start);
+      nexts_[chain_end]->RemoveValue(chain_start);
+      if (!assume_paths_) {
+        for (int i = 0; i < size(); ++i) {
+          int64 current = i;
+          bool found = (current == chain_end);
+          // Counter to detect implicit cycles.
+          int count = 0;
+          while (!found && count < size() && !sink_handler_->Run(current) &&
+                 nexts_[current]->Bound()) {
+            current = nexts_[current]->Value();
+            found = (current == chain_end);
+            ++count;
+          }
+          if (found) {
+            nexts_[chain_end]->RemoveValue(i);
+          }
         }
       }
     }
