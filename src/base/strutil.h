@@ -83,5 +83,10 @@ inline void StrAppend(std::string* str1, const std::string& str2, const std::str
                       const std::string& str4) {
   *str1 += str2 + str3 + str4;
 }
+
+inline void StrAppend(std::string* str1, const std::string& str2, const std::string& str3,
+                      const std::string& str4, const std::string& str5) {
+  *str1 += str2 + str3 + str4 + str5;
+}
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_STRUTIL_H_
