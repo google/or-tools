@@ -19,6 +19,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/strutil.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
@@ -28,6 +29,10 @@
 DEFINE_bool(lp_shows_unused_variables, false,
             "Decides wether variable unused in the objective and constraints"
             " are shown when exported to a file using the lp format.");
+
+DEFINE_int32(lp_max_line_length, 10000,
+             "Maximum line length in exported .lp files. The default was chosen"
+             " so that SCIP can read the files.");
 
 namespace operations_research {
 
@@ -121,15 +126,58 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
   }
 }
 
-bool MPModelProtoExporter::AppendLpTerm(int var_index, double coefficient,
-                                        std::string* output) const {
+namespace {
+class LineBreaker {
+ public:
+  explicit LineBreaker(int max_line_size) :
+      max_line_size_(max_line_size), line_size_(0), output_() {}
+  // Lines are broken in such a way that:
+  // - Strings that are given to Append() are never split.
+  // - Lines are split so that their length doesn't exceed the max length;
+  //   unless a single std::string given to Append() exceeds that length (in which
+  //   case it will be put alone on a single unsplit line).
+  void Append(const std::string& s);
+
+  // Returns true if std::string s will fit on the current line without adding
+  // a carriage return.
+  bool WillFit(const std::string& s) {
+    return line_size_ + s.size() < max_line_size_;
+  }
+
+  // "Consumes" size characters on the line. Used when starting the constraint
+  // lines.
+  void Consume(int size) { line_size_ += size; }
+
+  std::string GetOutput() const { return output_; }
+
+ private:
+  int max_line_size_;
+  int line_size_;
+  std::string output_;
+};
+
+void LineBreaker::Append(const std::string& s) {
+  line_size_ += s.size();
+  if (line_size_ > max_line_size_) {
+    line_size_ = s.size();
+    StrAppend(&output_, "\n ");
+  }
+  StrAppend(&output_, s);
+}
+
+}  // namespace
+
+bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
+                                      std::string* output) const {
+  output->clear();
   if (var_index < 0 || var_index >= proto_.variable_size()) {
     LOG(DFATAL) << "Reference to out-of-bounds variable index # " << var_index;
     return false;
   }
-  if (coefficient == 0.0) return true;
-  StringAppendF(output, "%+.16G %-s ", coefficient,
-                GetVariableName(var_index).c_str());
+  if (coefficient != 0.0) {
+    *output = StringPrintf("%+.16G %-s ", coefficient,
+                           GetVariableName(var_index).c_str());
+  }
   return true;
 }
 
@@ -192,56 +240,72 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   AppendComments("\\", output);
 
   // Objective
-  StringAppendF(output, proto_.maximize() ? "Maximize" : "Minimize");
-  StringAppendF(output, "\n Obj: ");
+  StrAppend(output, proto_.maximize() ? "Maximize\n" : "Minimize\n");
+  LineBreaker obj_line_breaker(FLAGS_lp_max_line_length);
+  obj_line_breaker.Append(" Obj: ");
   if (proto_.objective_offset() != 0.0) {
-    StringAppendF(output, "%-+.16G Constant ", proto_.objective_offset());
+    obj_line_breaker.Append(StringPrintf("%-+.16G Constant ",
+                                         proto_.objective_offset()));
   }
   std::vector<bool> show_variable(proto_.variable_size(),
                              FLAGS_lp_shows_unused_variables);
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     const double coeff = proto_.variable(var_index).objective_coefficient();
-    if (!AppendLpTerm(var_index, coeff, output)) {
+    std::string term;
+    if (!WriteLpTerm(var_index, coeff, &term)) {
       return false;
     }
+    obj_line_breaker.Append(term);
     show_variable[var_index] = coeff != 0.0 || FLAGS_lp_shows_unused_variables;
   }
   // Constraints
-  StringAppendF(output, "\nSubject to\n");
+  StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
-    std::string term;
+    std::string name = GetConstraintName(cst_index);
+    LineBreaker line_breaker(FLAGS_lp_max_line_length);
+    const int kNumFormattingChars = 10;  // Overevaluated.
+    // Account for the size of the constraint name + possibly "_rhs" +
+    // the formatting characters here.
+    line_breaker.Consume(kNumFormattingChars + name.size());
     for (int i = 0; i < ct_proto.var_index_size(); ++i) {
       const int var_index = ct_proto.var_index(i);
       const double coeff = ct_proto.coefficient(i);
-      if (!AppendLpTerm(var_index, coeff, &term)) {
+      std::string term;
+      if (!WriteLpTerm(var_index, coeff, &term)) {
         return false;
       }
+      line_breaker.Append(term);
       show_variable[var_index] =
           coeff != 0.0 || FLAGS_lp_shows_unused_variables;
     }
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
-    std::string name = GetConstraintName(cst_index);
     if (lb == ub) {
-      StringAppendF(output, " %s: %s = %-.16G\n", name.c_str(), term.c_str(),
-                    ub);
+      line_breaker.Append(StringPrintf(" = %-.16G\n", ub));
+      StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
     } else {
       if (ub != +std::numeric_limits<double>::infinity()) {
         std::string rhs_name = name;
         if (lb != -std::numeric_limits<double>::infinity()) {
           rhs_name += "_rhs";
         }
-        StringAppendF(output, " %s: %s <= %-.16G\n", rhs_name.c_str(),
-                      term.c_str(), ub);
+        StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
+        const std::string relation = StringPrintf(" <= %-.16G\n", ub);
+        // Here we have to make sure we do not add the relation to the contents
+        // of line_breaker, which may be used in the subsequent clause.
+        if (!line_breaker.WillFit(relation)) StrAppend(output, "\n ");
+        StrAppend(output, relation);
       }
       if (lb != -std::numeric_limits<double>::infinity()) {
         std::string lhs_name = name;
         if (ub != +std::numeric_limits<double>::infinity()) {
           lhs_name += "_lhs";
         }
-        StringAppendF(output, " %s: %s >= %-.16G\n", lhs_name.c_str(),
-                      term.c_str(), lb);
+        StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
+        const std::string relation = StringPrintf(" >= %-.16G\n", lb);
+        if (!line_breaker.WillFit(relation)) StrAppend(output, "\n ");
+        StrAppend(output, relation);
       }
     }
   }

@@ -123,8 +123,9 @@ class MPModelProtoExporter {
   // term >= lhs and term <= rhs.
   void AppendComments(const std::string& separator, std::string* output) const;
 
-  // Appends a term to "output", in "Lp" format.
-  bool AppendLpTerm(int var_index, double coefficient, std::string* output) const;
+  // Clears "output" and writes a term to it, in "Lp" format. Returns false on
+  // error (for example, var_index is out of range).
+  bool WriteLpTerm(int var_index, double coefficient, std::string* output) const;
 
   // Appends a pair name, value to "output", formatted to comply with the MPS
   // standard.
