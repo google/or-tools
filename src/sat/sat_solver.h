@@ -413,7 +413,7 @@ class SatSolver {
   void InitRestart();
 
   std::string DebugString(const SatClause& clause) const;
-  std::string StatusString() const;
+  std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
   VariableIndex num_variables_;

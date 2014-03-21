@@ -370,7 +370,8 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     // Minimizing the conflict with binary clauses first has two advantages.
     // First, there is no need to compute a reason for the variables eliminated
     // this way. Second, more variables may be marked (in is_marked_) and
-    // MinimizeConflict() can take advantage of that.
+    // MinimizeConflict() can take advantage of that. Because of this, the
+    // LBD of the learned conflict can change.
     if (binary_implication_graph_.NumberOfImplications() != 0 &&
         parameters_.binary_minimization_algorithm() ==
             SatParameters::BINARY_MINIMIZATION_FIRST) {
@@ -380,14 +381,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     }
 
     // Minimize the learned conflict.
-#ifndef NDEBUG
-    const int initial_lbd = ComputeLbd(learned_conflict_);
-#endif
     MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
-#ifndef NDEBUG
-    DCHECK(IsConflictValid(learned_conflict_));
-    DCHECK_EQ(initial_lbd, ComputeLbd(learned_conflict_));
-#endif
 
     // Minimize it further with binary clauses?
     if (binary_implication_graph_.NumberOfImplications() != 0) {
@@ -568,6 +562,7 @@ SatSolver::Status SatSolver::Solve() {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << "The time limit has been reached. Aborting.";
         LOG(INFO) << RunningStatisticsString();
+        LOG(INFO) << StatusString(LIMIT_REACHED);
       }
       return LIMIT_REACHED;
     }
@@ -575,6 +570,7 @@ SatSolver::Status SatSolver::Solve() {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << "The conflict limit has been reached. Aborting.";
         LOG(INFO) << RunningStatisticsString();
+        LOG(INFO) << StatusString(LIMIT_REACHED);
       }
       return LIMIT_REACHED;
     }
@@ -589,6 +585,7 @@ SatSolver::Status SatSolver::Solve() {
       if (IsMemoryLimitReached()) {
         if (parameters_.log_search_progress()) {
           LOG(INFO) << "The memory limit has been reached. Aborting.";
+          LOG(INFO) << StatusString(LIMIT_REACHED);
         }
         return LIMIT_REACHED;
       }
@@ -604,7 +601,7 @@ SatSolver::Status SatSolver::Solve() {
     if (trail_.Index() == num_variables_.value()) {  // At a leaf.
       if (parameters_.log_search_progress()) {
         LOG(INFO) << RunningStatisticsString();
-        LOG(INFO) << "SAT \n" << StatusString();
+        LOG(INFO) << StatusString(MODEL_SAT);
       }
       return MODEL_SAT;
     }
@@ -625,7 +622,7 @@ SatSolver::Status SatSolver::Solve() {
     }
     if (EnqueueDecisionAndBackjumpOnConflict(next_branch) == -1) {
       if (parameters_.log_search_progress()) {
-        LOG(INFO) << "UNSAT \n" << StatusString();
+        LOG(INFO) << StatusString(MODEL_UNSAT);
       }
       return MODEL_UNSAT;
     }
@@ -634,7 +631,7 @@ SatSolver::Status SatSolver::Solve() {
     // given the assumption.
     if (CurrentDecisionLevel() < assumption_level) {
       if (parameters_.log_search_progress()) {
-        LOG(INFO) << "ASSUMPTIONS_UNSAT\n" << StatusString();
+        LOG(INFO) << StatusString(ASSUMPTIONS_UNSAT);
       }
       // TODO(user): Reapply the assumptions that are still valid so it is
       // easier for a client to see what was incompatible?
@@ -762,10 +759,13 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
 }
 
 template <typename LiteralList>
-int SatSolver::ComputeLbd(const LiteralList& literals) {
+int SatSolver::ComputeLbd(const LiteralList& conflict) {
   SCOPED_TIME_STAT(&stats_);
-  is_level_marked_.ClearAndResize(SatDecisionLevel(CurrentDecisionLevel() + 1));
-  for (const Literal literal : literals) {
+  // We know that the first literal of the conflict is always of the highest
+  // level.
+  is_level_marked_.ClearAndResize(SatDecisionLevel(
+      DecisionLevel(conflict.begin()->Variable()) + 1));
+  for (const Literal literal : conflict) {
     const SatDecisionLevel level(DecisionLevel(literal.Variable()));
     DCHECK_GE(level, 0);
     if (level > 0 && !is_level_marked_[level]) {
@@ -775,9 +775,10 @@ int SatSolver::ComputeLbd(const LiteralList& literals) {
   return is_level_marked_.NumberOfSetCallsWithDifferentArguments();
 }
 
-std::string SatSolver::StatusString() const {
+std::string SatSolver::StatusString(Status status) const {
   const double time_in_s = timer_.Get();
-  return StringPrintf("  time: %fs\n", time_in_s) +
+  return StringPrintf("\n  status: %s\n", SatStatusString(status).c_str()) +
+         StringPrintf("  time: %fs\n", time_in_s) +
          StringPrintf("  memory: %s\n", MemoryUsage().c_str()) +
          StringPrintf("  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
                       counters_.num_failures,

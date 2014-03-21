@@ -82,7 +82,7 @@ message SatParameters {
   // Each time the learned clause database is cleaned, we want the target size
   // of the next cleaning to be equals to the current database after it has just
   // been cleaned plus this parameter.
-  optional double clause_cleanup_increment = 11 [default = 2000];
+  optional double clause_cleanup_increment = 11 [default = 1500];
 
   // Deletes this ratio of clauses during each cleanup.
   optional double clause_cleanup_ratio = 13 [default = 0.5];
@@ -122,7 +122,7 @@ message SatParameters {
   // To try to reward good variables, Glucose bumps again the variable from the
   // last decision level and with a learned reason of smaller LBD than the 1 UIP
   // conflict. This needs use_lbd() to be true.
-  optional bool use_glucose_bump_again_strategy = 21 [ default = true];
+  optional bool use_glucose_bump_again_strategy = 21 [ default = false];
 
   // Frequecy of periodic restart if > 0. A negative value indicates
   // no restart.
