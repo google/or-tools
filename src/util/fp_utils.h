@@ -137,6 +137,34 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
       << obtained << " == expected value " << expected                     \
       << " within epsilon = " << epsilon;
 
+// Given an array of doubles, this computes a positive scaling factor such that
+// the scaled doubles can then be rounded to integers with little or no loss of
+// precision, and so that the L1 norm of these integers is <= max_sum. More
+// precisely, the following formulas will hold:
+// - For all i, |round(factor * x[i]) / factor  - x[i]| <= error * |x[i]|
+// - The sum over i of |round(factor * x[i])| <= max_sum.
+//
+// The algorithm tries to minimize "error" (which is the relative error). Note
+// however than in really broken cases, the error might be infinity and the
+// factor zero.
+//
+// Note on the algorithm:
+// - It only uses factors of the form 2^n (i.e. ldexp(1.0, n)) for simplicity.
+// - The error will be zero in many practical instances. For example, if x
+//   contains only integers with low magnitude; or if x contains doubles whose
+//   exponents cover a small range.
+// - It chooses the factor as high as possible under the given constraints, as
+//   a result the numbers produced may be large. To balance this, we recommend
+//   to divide the scaled integers by their gcd() which will result in no loss
+//   of precision and will help in many practical cases.
+//
+// TODO(user): incorporate the gcd computation here? The issue is that I am
+// not sure if I just do factor /= gcd that round(x * factor) will be the same.
+void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
+                                    int64 max_absolute_sum,
+                                    double* scaling_factor,
+                                    double* relative_error);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_FP_UTILS_H_
