@@ -263,7 +263,11 @@ class IdGenerator {
   }
 
  private:
+#if defined(_MSC_VER)
+  hash_map<std::pair<int, int64>, int, PairIntInt64Hasher> id_map_;
+#else
   hash_map<std::pair<int, int64>, int> id_map_;
+#endif
 };
 }  // namespace.
 

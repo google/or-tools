@@ -143,6 +143,23 @@ class PairIntHasher : public stdext::hash_compare<std::pair<int, int> > {
   }
 };
 
+// The following class defines a hash function for std::pair<int64, int64>.
+class PairIntInt64Hasher : public stdext::hash_compare<std::pair<int, int64> > {
+ public:
+  size_t operator()(const std::pair<int, int64>& a) const {
+    uint64 x = a.first;
+    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+    uint64 z = a.second;
+    operations_research::mix(x, y, z);
+    return z;
+  }
+  bool operator()(const std::pair<int, int64>& a1,
+                  const std::pair<int, int64>& a2) const {
+    return a1.first < a2.first ||
+           (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+
 // The following class defines a hash function for std::pair<T*, int>.
 #if defined(_WIN64)
 template <class T>
