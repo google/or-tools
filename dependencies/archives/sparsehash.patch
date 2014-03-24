@@ -1,0 +1,2182 @@
+Only in /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/: config.h
+diff -u ./config.h.in /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/config.h.in
+--- ./config.h.in	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/config.h.in	2014-02-14 11:20:17.164459845 +0100
+@@ -102,6 +102,9 @@
+ /* Define to the one symbol short name of this package. */
+ #undef PACKAGE_TARNAME
+ 
++/* Define to the home page for this package. */
++#undef PACKAGE_URL
++
+ /* Define to the version of this package. */
+ #undef PACKAGE_VERSION
+ 
+Only in /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/: config.h.in~
+Common subdirectories: ./google and /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/google
+diff -u ./hashtable_test.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/hashtable_test.cc
+--- ./hashtable_test.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/hashtable_test.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -46,23 +46,21 @@
+ 
+ #include <sparsehash/internal/sparseconfig.h>
+ #include <config.h>
+-#include <assert.h>
+ #include <math.h>
+-#include <stddef.h>
++#include <stddef.h>   // for size_t
++#include <stdlib.h>
++#include <string.h>
+ #ifdef HAVE_STDINT_H
+ # include <stdint.h>
+ #endif   // for uintptr_t
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+ #include <iostream>
+-#include <iterator>
+ #include <set>
+-#include <string>
++#include <sstream>
+ #include <typeinfo>   // for class typeinfo (returned by typeid)
+-#include <utility>
+ #include <vector>
+-
++#include <sparsehash/type_traits.h>
++#include <sparsehash/sparsetable>
++#include "hash_test_interface.h"
+ #include "testutil.h"
+ namespace testing = GOOGLE_NAMESPACE::testing;
+ 
+@@ -82,6 +80,7 @@
+ using GOOGLE_NAMESPACE::HashtableInterface_DenseHashMap;
+ using GOOGLE_NAMESPACE::HashtableInterface_DenseHashSet;
+ using GOOGLE_NAMESPACE::HashtableInterface_DenseHashtable;
++namespace sparsehash_internal = GOOGLE_NAMESPACE::sparsehash_internal;
+ 
+ typedef unsigned char uint8;
+ 
+@@ -96,7 +95,7 @@
+ namespace {
+ 
+ #ifndef _MSC_VER   // windows defines its own version
+-# ifdef __MINGW32__  // mingw has trouble writing to /tmp
++# ifdef __MINGW32__ // mingw has trouble writing to /tmp
+ static string TmpFile(const char* basename) {
+   return string("./#") + basename;
+ }
+@@ -112,8 +111,8 @@
+ // arbitrary user-defined type with non-trivial memory management.
+ struct ValueType {
+  public:
+-  ValueType() : s_(kDefault) {}
+-  explicit ValueType(const char* init_s) : s_(kDefault) { set_s(init_s); }
++  ValueType() : s_(kDefault) { }
++  ValueType(const char* init_s) : s_(kDefault) { set_s(init_s); }
+   ~ValueType() { set_s(NULL); }
+   ValueType(const ValueType& that) : s_(kDefault) { operator=(that); }
+   void operator=(const ValueType& that) { set_s(that.s_); }
+@@ -154,7 +153,7 @@
+ // this same method to do the key-comparison, so we can keep track
+ // of comparison-counts too.
+ struct Hasher {
+-  explicit Hasher(int i = 0) : id_(i), num_hashes_(0), num_compares_(0) {}
++  explicit Hasher(int i=0) : id_(i), num_hashes_(0), num_compares_(0) { }
+   int id() const { return id_; }
+   int num_hashes() const { return num_hashes_; }
+   int num_compares() const { return num_compares_; }
+@@ -215,7 +214,7 @@
+   typedef T& reference;
+   typedef const T& const_reference;
+ 
+-  explicit Alloc(int i = 0, int* count = NULL) : id_(i), count_(count) {}
++  explicit Alloc(int i=0, int* count=NULL) : id_(i), count_(count) {}
+   ~Alloc() {}
+   pointer address(reference r) const  { return &r; }
+   const_pointer address(const_reference r) const  { return &r; }
+@@ -250,10 +249,10 @@
+     typedef Alloc<U, SizeT, MAX_SIZE> other;
+   };
+ 
+-  bool operator==(const Alloc<T, SizeT, MAX_SIZE>& that) {
++  bool operator==(const Alloc<T,SizeT,MAX_SIZE>& that) {
+     return this->id_ == that.id_ && this->count_ == that.count_;
+   }
+-  bool operator!=(const Alloc<T, SizeT, MAX_SIZE>& that) {
++  bool operator!=(const Alloc<T,SizeT,MAX_SIZE>& that) {
+     return !this->operator==(that);
+   }
+ 
+@@ -261,8 +260,7 @@
+ 
+   // I have to make these public so the constructor used for rebinding
+   // can see them.  Normally, I'd just make them private and say:
+-  //   template<typename U, typename U_SizeT, U_SizeT U_MAX_SIZE>
+-  //   friend struct Alloc;
++  //   template<typename U, typename U_SizeT, U_SizeT U_MAX_SIZE> friend struct Alloc;
+   // but MSVC 7.1 barfs on that.  So public it is.  But no peeking!
+  public:
+   int id_;
+@@ -279,11 +277,15 @@
+ template<class Value>
+ struct Negation {
+   typedef Value result_type;
++  Value operator()(Value& v) { return -v; }
+   const Value operator()(const Value& v) const { return -v; }
+ };
+ 
+ struct Capital {
+   typedef string result_type;
++  string operator()(string& s) {
++    return string(1, s[0] ^ 32) + s.substr(1);
++  }
+   const string operator()(const string& s) const {
+     return string(1, s[0] ^ 32) + s.substr(1);
+   }
+@@ -297,10 +299,9 @@
+ };
+ 
+ // This is just to avoid memory leaks -- it's a global pointer to
+-// all the memory allocated by UniqueObjectHelper. We'll use it
++// all the memory allocated by UniqueObjectHelper.  We'll use it
+ // to semi-test sparsetable as well. :-)
+-::util::gtl::LazyStaticPtr<sparsetable<char*>, sparsetable<char*>::size_type>
+-    g_unique_charstar_objects = {16};
++sparsetable<char*> g_unique_charstar_objects(16);
+ 
+ // This is an object-generator: pass in an index, and it will return a
+ // unique object of type ItemType.  We provide specializations for the
+@@ -316,20 +317,20 @@
+ }
+ template<> char* UniqueObjectHelper(int index) {
+   // First grow the table if need be.
+-  sparsetable<char*>::size_type table_size = g_unique_charstar_objects->size();
++  sparsetable<char*>::size_type table_size = g_unique_charstar_objects.size();
+   while (index >= static_cast<int>(table_size)) {
+     assert(table_size * 2 > table_size);  // avoid overflow problems
+     table_size *= 2;
+   }
+-  if (table_size > g_unique_charstar_objects->size())
+-    g_unique_charstar_objects->resize(table_size);
++  if (table_size > g_unique_charstar_objects.size())
++    g_unique_charstar_objects.resize(table_size);
+ 
+-  if (!g_unique_charstar_objects->test(index)) {
++  if (!g_unique_charstar_objects.test(index)) {
+     char buffer[64];
+     snprintf(buffer, sizeof(buffer), "%d", index);
+-    (*g_unique_charstar_objects)[index] = strdup(buffer);
++    g_unique_charstar_objects[index] = strdup(buffer);
+   }
+-  return g_unique_charstar_objects->get(index);
++  return g_unique_charstar_objects.get(index);
+ }
+ template<> const char* UniqueObjectHelper(int index) {
+   return UniqueObjectHelper<char*>(index);
+@@ -337,23 +338,81 @@
+ template<> ValueType UniqueObjectHelper(int index) {
+   return ValueType(UniqueObjectHelper<string>(index).c_str());
+ }
+-template<> std::pair<const int, int> UniqueObjectHelper(int index) {
+-  return std::pair<const int, int>(index, index + 1);
++template<> pair<const int, int> UniqueObjectHelper(int index) {
++  return pair<const int,int>(index, index + 1);
+ }
+-template<> std::pair<const string, string> UniqueObjectHelper(int index) {
+-  return std::pair<const string, string>(
++template<> pair<const string, string> UniqueObjectHelper(int index) {
++  return pair<const string,string>(
+       UniqueObjectHelper<string>(index), UniqueObjectHelper<string>(index + 1));
+ }
+-template<> std::pair<const char* const, ValueType>
+-UniqueObjectHelper(int index) {
+-  return std::pair<const char* const, ValueType>(
++template<> pair<const char* const,ValueType> UniqueObjectHelper(int index) {
++  return pair<const char* const,ValueType>(
+       UniqueObjectHelper<char*>(index), UniqueObjectHelper<ValueType>(index+1));
+ }
+ 
++class ValueSerializer {
++ public:
++  bool operator()(FILE* fp, const int& value) {
++    return fwrite(&value, sizeof(value), 1, fp) == 1;
++  }
++  bool operator()(FILE* fp, int* value) {
++    return fread(value, sizeof(*value), 1, fp) == 1;
++  }
++  bool operator()(FILE* fp, const string& value) {
++    const int size = value.size();
++    return (*this)(fp, size) && fwrite(value.c_str(), size, 1, fp) == 1;
++  }
++  bool operator()(FILE* fp, string* value) {
++    int size;
++    if (!(*this)(fp, &size)) return false;
++    char* buf = new char[size];
++    if (fread(buf, size, 1, fp) != 1) {
++      delete[] buf;
++      return false;
++    }
++    new(value) string(buf, size);
++    delete[] buf;
++    return true;
++  }
++  template <typename OUTPUT>
++  bool operator()(OUTPUT* fp, const ValueType& v) {
++    return (*this)(fp, string(v.s()));
++  }
++  template <typename INPUT>
++  bool operator()(INPUT* fp, ValueType* v) {
++    string data;
++    if (!(*this)(fp, &data)) return false;
++    new(v) ValueType(data.c_str());
++    return true;
++  }
++  template <typename OUTPUT>
++  bool operator()(OUTPUT* fp, const char* const& value) {
++    // Just store the index.
++    return (*this)(fp, atoi(value));
++  }
++  template <typename INPUT>
++  bool operator()(INPUT* fp, const char** value) {
++    // Look up via index.
++    int index;
++    if (!(*this)(fp, &index)) return false;
++    *value = UniqueObjectHelper<char*>(index);
++    return true;
++  }
++  template <typename OUTPUT, typename First, typename Second>
++  bool operator()(OUTPUT* fp, std::pair<const First, Second>* value) {
++    return (*this)(fp, const_cast<First*>(&value->first))
++        && (*this)(fp, &value->second);
++  }
++  template <typename INPUT, typename First, typename Second>
++  bool operator()(INPUT* fp, const std::pair<const First, Second>& value) {
++    return (*this)(fp, value.first) && (*this)(fp, value.second);
++  }
++};
++
+ template <typename HashtableType>
+ class HashtableTest : public ::testing::Test {
+  public:
+-  HashtableTest() : ht_() {}
++  HashtableTest() : ht_() { }
+   // Give syntactically-prettier access to UniqueObjectHelper.
+   typename HashtableType::value_type UniqueObject(int index) {
+     return UniqueObjectHelper<typename HashtableType::value_type>(index);
+@@ -365,7 +424,7 @@
+   HashtableType ht_;
+ };
+ 
+-}  // anonymous namespace
++}
+ 
+ // These are used to specify the empty key and deleted key in some
+ // contexts.  They can't be in the unnamed namespace, or static,
+@@ -379,76 +438,76 @@
+ 
+ namespace {
+ 
+-#define INT_HASHTABLES                                                       \
+-  HashtableInterface_SparseHashMap<int, int, Hasher, Hasher,                 \
+-                                   Alloc<std::pair<const int, int> > >,      \
+-  HashtableInterface_SparseHashSet<int, Hasher, Hasher, Alloc<int> >,        \
+-  /* This is a table where the key associated with a value is -value */      \
+-  HashtableInterface_SparseHashtable<int, int, Hasher, Negation<int>,        \
+-                                     SetKey<int, Negation<int> >,            \
+-                                     Hasher, Alloc<int> >,                   \
+-  HashtableInterface_DenseHashMap<int, int, kEmptyInt, Hasher, Hasher,       \
+-                                  Alloc<std::pair<const int, int> > >,       \
+-  HashtableInterface_DenseHashSet<int, kEmptyInt, Hasher, Hasher,            \
+-                                  Alloc<int> >,                              \
+-  HashtableInterface_DenseHashtable<                                         \
+-      int, int, kEmptyInt, Hasher, Negation<int>,                            \
+-      SetKey<int, Negation<int> >, Hasher, Alloc<int> >
+-
+-#define STRING_HASHTABLES                                                      \
+-  HashtableInterface_SparseHashMap<string, string, Hasher, Hasher,             \
+-                                   Alloc<std::pair<const string, string> > >,  \
+-  HashtableInterface_SparseHashSet<string, Hasher, Hasher,                     \
+-                                   Alloc<string> >,                            \
+-  /* This is a table where the key associated with a value is Cap(value) */    \
+-  HashtableInterface_SparseHashtable<string, string, Hasher, Capital,          \
+-                                     SetKey<string, Capital>, Hasher,          \
+-                                     Alloc<string> >,                          \
+-  HashtableInterface_DenseHashMap<string, string, kEmptyString, Hasher,        \
+-                                  Hasher,                                      \
+-                                  Alloc<std::pair<const string,                \
+-                                                  string> > >,                 \
+-  HashtableInterface_DenseHashSet<string, kEmptyString, Hasher, Hasher,        \
+-                                  Alloc<string> >,                             \
+-  HashtableInterface_DenseHashtable<string, string, kEmptyString, Hasher,      \
+-                                    Capital, SetKey<string, Capital>,          \
++#define INT_HASHTABLES                                                  \
++  HashtableInterface_SparseHashMap<int, int, Hasher, Hasher,            \
++                                   Alloc<int> >,                        \
++  HashtableInterface_SparseHashSet<int, Hasher, Hasher,                 \
++                                   Alloc<int> >,                        \
++  /* This is a table where the key associated with a value is -value */ \
++  HashtableInterface_SparseHashtable<int, int, Hasher, Negation<int>,   \
++                                     SetKey<int, Negation<int> >,       \
++                                     Hasher, Alloc<int> >,              \
++  HashtableInterface_DenseHashMap<int, int, kEmptyInt, Hasher, Hasher,  \
++                                  Alloc<int> >,                         \
++  HashtableInterface_DenseHashSet<int, kEmptyInt, Hasher, Hasher,       \
++                                  Alloc<int> >,                         \
++  HashtableInterface_DenseHashtable<int, int, kEmptyInt,                \
++                                    Hasher, Negation<int>,              \
++                                    SetKey<int, Negation<int> >,        \
++                                    Hasher, Alloc<int> >
++
++#define STRING_HASHTABLES                                               \
++  HashtableInterface_SparseHashMap<string, string, Hasher, Hasher,      \
++                                   Alloc<string> >,                     \
++  HashtableInterface_SparseHashSet<string, Hasher, Hasher,              \
++                                   Alloc<string> >,                     \
++  /* This is a table where the key associated with a value is Cap(value) */ \
++  HashtableInterface_SparseHashtable<string, string, Hasher, Capital,   \
++                                     SetKey<string, Capital>,           \
++                                     Hasher, Alloc<string> >,           \
++  HashtableInterface_DenseHashMap<string, string, kEmptyString,         \
++                                  Hasher, Hasher, Alloc<string> >,      \
++  HashtableInterface_DenseHashSet<string, kEmptyString, Hasher, Hasher, \
++                                  Alloc<string> >,                      \
++  HashtableInterface_DenseHashtable<string, string, kEmptyString,       \
++                                    Hasher, Capital,                    \
++                                    SetKey<string, Capital>,            \
+                                     Hasher, Alloc<string> >
+ 
+ // I'd like to use ValueType keys for SparseHashtable<> and
+ // DenseHashtable<> but I can't due to memory-management woes (nobody
+ // really owns the char* involved).  So instead I do something simpler.
+-#define CHARSTAR_HASHTABLES                                                \
+-  HashtableInterface_SparseHashMap<                                        \
+-      const char*, ValueType, Hasher, Hasher,                              \
+-      Alloc<std::pair<const char* const, ValueType> > >,                   \
+-  HashtableInterface_SparseHashSet<const char*, Hasher, Hasher,            \
+-                                   Alloc<const char*> >,                   \
+-  /* This is a table where each value is its own key. */                   \
+-  HashtableInterface_SparseHashtable<                                      \
+-      const char*, const char*, Hasher, Identity,                          \
+-      SetKey<const char*, Identity>, Hasher, Alloc<const char*> >,         \
+-  HashtableInterface_DenseHashMap<                                         \
+-      const char*, ValueType, kEmptyCharStar, Hasher, Hasher,              \
+-      Alloc<std::pair<const char* const, ValueType> > >,                   \
+-  HashtableInterface_DenseHashSet<const char*, kEmptyCharStar, Hasher,     \
+-                                  Hasher, Alloc<const char*> >,            \
+-  HashtableInterface_DenseHashtable<                                       \
+-      const char*, const char*, kEmptyCharStar, Hasher, Identity,          \
+-      SetKey<const char*, Identity>, Hasher, Alloc<const char*> >
++#define CHARSTAR_HASHTABLES                                             \
++  HashtableInterface_SparseHashMap<const char*, ValueType,              \
++                                   Hasher, Hasher, Alloc<const char*> >, \
++  HashtableInterface_SparseHashSet<const char*, Hasher, Hasher,         \
++                                   Alloc<const char*> >,                \
++  /* This is a table where each value is its own key. */                \
++  HashtableInterface_SparseHashtable<const char*, const char*,          \
++                                     Hasher, Identity,                  \
++                                     SetKey<const char*, Identity>,     \
++                                     Hasher, Alloc<const char*> >,      \
++  HashtableInterface_DenseHashMap<const char*, ValueType, kEmptyCharStar, \
++                                  Hasher, Hasher, Alloc<const char*> >, \
++  HashtableInterface_DenseHashSet<const char*, kEmptyCharStar,          \
++                                  Hasher, Hasher, Alloc<const char*> >, \
++  HashtableInterface_DenseHashtable<const char*, const char*, kEmptyCharStar, \
++                                    Hasher, Identity,                   \
++                                    SetKey<const char*, Identity>,      \
++                                    Hasher, Alloc<ValueType> >
+ 
+ // This is the list of types we run each test against.
+ // We need to define the same class 4 times due to limitations in the
+ // testing framework.  Basically, we associate each class below with
+ // the set of types we want to run tests on it with.
+-// NOLINT directives: b/6771918
+ template <typename HashtableType> class HashtableIntTest
+-    : public HashtableTest<HashtableType> {};  // NOLINT(readability/braces)
++    : public HashtableTest<HashtableType> { };
+ template <typename HashtableType> class HashtableStringTest
+-    : public HashtableTest<HashtableType> {};  // NOLINT(readability/braces)
++    : public HashtableTest<HashtableType> { };
+ template <typename HashtableType> class HashtableCharStarTest
+-    : public HashtableTest<HashtableType> {};  // NOLINT(readability/braces)
++    : public HashtableTest<HashtableType> { };
+ template <typename HashtableType> class HashtableAllTest
+-    : public HashtableTest<HashtableType> {};  // NOLINT(readability/braces)
++    : public HashtableTest<HashtableType> { };
+ 
+ typedef testing::TypeList6<INT_HASHTABLES> IntHashtables;
+ typedef testing::TypeList6<STRING_HASHTABLES> StringHashtables;
+@@ -469,7 +528,7 @@
+ 
+   // We don't munge the hash value on non-pointer template types.
+   {
+-    const sh_hashtable_settings<int, Hasher, size_t, 1>
++    const sparsehash_internal::sh_hashtable_settings<int, Hasher, size_t, 1>
+         settings(hasher, 0.0, 0.0);
+     const int v = 1000;
+     EXPECT_EQ(hasher(v), settings.hash(v));
+@@ -477,14 +536,15 @@
+ 
+   {
+     // We do munge the hash value on pointer template types.
+-    const sh_hashtable_settings<int*, Hasher, size_t, 1>
++    const sparsehash_internal::sh_hashtable_settings<int*, Hasher, size_t, 1>
+         settings(hasher, 0.0, 0.0);
+     int* v = NULL;
+     v += 0x10000;    // get a non-trivial pointer value
+     EXPECT_NE(hasher(v), settings.hash(v));
+   }
+   {
+-    const sh_hashtable_settings<const int*, Hasher, size_t, 1>
++    const sparsehash_internal::sh_hashtable_settings<const int*, Hasher,
++                                                     size_t, 1>
+         settings(hasher, 0.0, 0.0);
+     const int* v = NULL;
+     v += 0x10000;    // get a non-trivial pointer value
+@@ -855,16 +915,15 @@
+ 
+   // A user reported a crash with this code using swap to clear.
+   // We've since fixed the bug; this prevents a regression.
+-  const int kSwap = 10000;
+   TypeParam swap_to_clear_ht;
+   swap_to_clear_ht.set_deleted_key(this->UniqueKey(1));
+-  for (int i = 2; i < kSwap; ++i) {
++  for (int i = 2; i < 10000; ++i) {
+     swap_to_clear_ht.insert(this->UniqueObject(i));
+   }
+   TypeParam empty_ht;
+   empty_ht.swap(swap_to_clear_ht);
+   swap_to_clear_ht.set_deleted_key(this->UniqueKey(1));
+-  for (int i = 2; i < kSwap; ++i) {
++  for (int i = 2; i < 10000; ++i) {
+     swap_to_clear_ht.insert(this->UniqueObject(i));
+   }
+ }
+@@ -904,19 +963,6 @@
+   EXPECT_EQ(ht_104.max_size(), ht_104.max_bucket_count());
+ }
+ 
+-TEST(HashtableTest, UninitializedDeletedKey) {
+-  sparse_hash_set<int> ht;
+-  sparse_hash_set<int>* ht_heap = new sparse_hash_set<int>;
+-
+-  if (BuildData::BuildDebugMode()) {
+-    EXPECT_DEATH(ht.deleted_key(), "");
+-  } else {
+-    EXPECT_EQ(0, ht.deleted_key());
+-    EXPECT_EQ(0, ht_heap->deleted_key());
+-  }
+-  delete ht_heap;
+-}
+-
+ TYPED_TEST(HashtableAllTest, Empty) {
+   EXPECT_TRUE(this->ht_.empty());
+ 
+@@ -1035,9 +1081,9 @@
+ }
+ 
+ TYPED_TEST(HashtableAllTest, FindAndCountAndEqualRange) {
+-  std::pair<typename TypeParam::iterator, typename TypeParam::iterator> eq_pair;
+-  std::pair<typename TypeParam::const_iterator,
+-            typename TypeParam::const_iterator> const_eq_pair;
++  pair<typename TypeParam::iterator, typename TypeParam::iterator> eq_pair;
++  pair<typename TypeParam::const_iterator,
++       typename TypeParam::const_iterator> const_eq_pair;
+ 
+   EXPECT_TRUE(this->ht_.empty());
+   EXPECT_TRUE(this->ht_.find(this->UniqueKey(1)) == this->ht_.end());
+@@ -1174,7 +1220,7 @@
+   EXPECT_EQ(1u, this->ht_.count(this->UniqueKey(1111)));
+ 
+   // Check the return type.
+-  std::pair<typename TypeParam::iterator, bool> insert_it;
++  pair<typename TypeParam::iterator, bool> insert_it;
+   insert_it = this->ht_.insert(this->UniqueObject(1));
+   EXPECT_EQ(false, insert_it.second);   // false: already present
+   EXPECT_TRUE(*insert_it.first == this->UniqueObject(1));
+@@ -1243,16 +1289,16 @@
+   // For the maps in particular, ensure that inserting doesn't change
+   // the value.
+   sparse_hash_map<int, int> shm;
+-  std::pair<sparse_hash_map<int, int>::iterator, bool> shm_it;
++  pair<sparse_hash_map<int,int>::iterator, bool> shm_it;
+   shm[1] = 2;   // test a different method of inserting
+-  shm_it = shm.insert(std::pair<int, int>(1, 3));
++  shm_it = shm.insert(pair<int, int>(1, 3));
+   EXPECT_EQ(false, shm_it.second);
+   EXPECT_EQ(1, shm_it.first->first);
+   EXPECT_EQ(2, shm_it.first->second);
+   shm_it.first->second = 20;
+   EXPECT_EQ(20, shm[1]);
+ 
+-  shm_it = shm.insert(std::pair<int, int>(2, 4));
++  shm_it = shm.insert(pair<int, int>(2, 4));
+   EXPECT_EQ(true, shm_it.second);
+   EXPECT_EQ(2, shm_it.first->first);
+   EXPECT_EQ(4, shm_it.first->second);
+@@ -1261,16 +1307,16 @@
+   // Do it all again, with dense_hash_map.
+   dense_hash_map<int, int> dhm;
+   dhm.set_empty_key(0);
+-  std::pair<dense_hash_map<int, int>::iterator, bool> dhm_it;
++  pair<dense_hash_map<int,int>::iterator, bool> dhm_it;
+   dhm[1] = 2;   // test a different method of inserting
+-  dhm_it = dhm.insert(std::pair<const int, int>(1, 3));
++  dhm_it = dhm.insert(pair<const int, int>(1, 3));
+   EXPECT_EQ(false, dhm_it.second);
+   EXPECT_EQ(1, dhm_it.first->first);
+   EXPECT_EQ(2, dhm_it.first->second);
+   dhm_it.first->second = 20;
+   EXPECT_EQ(20, dhm[1]);
+ 
+-  dhm_it = dhm.insert(std::pair<const int, int>(2, 4));
++  dhm_it = dhm.insert(pair<const int, int>(2, 4));
+   EXPECT_EQ(true, dhm_it.second);
+   EXPECT_EQ(2, dhm_it.first->first);
+   EXPECT_EQ(4, dhm_it.first->second);
+@@ -1381,10 +1427,9 @@
+ }
+ 
+ TEST(HashtableTest, IntIO) {
+-  // Since dense_hash_* doesn't support IO yet, and the set case is
+-  // just a special (easier) case than the map case, I just test on
+-  // sparse_hash_map.  This handles the easy case where we can use the
+-  // standard reader and writer.
++  // Since the set case is just a special (easier) case than the map case, I
++  // just test on sparse_hash_map.  This handles the easy case where we can
++  // use the standard reader and writer.
+   sparse_hash_map<int, int> ht_out;
+   ht_out.set_deleted_key(0);
+   for (int i = 1; i < 1000; i++) {
+@@ -1416,10 +1461,9 @@
+ }
+ 
+ TEST(HashtableTest, StringIO) {
+-  // Since dense_hash_* doesn't support IO yet, and the set case is
+-  // just a special (easier) case than the map case, I just test on
+-  // sparse_hash_map.  This handles the difficult case where we have
+-  // to write our own custom reader/writer for the data.
++  // Since the set case is just a special (easier) case than the map case,
++  // I just test on sparse_hash_map.  This handles the difficult case where
++  // we have to write our own custom reader/writer for the data.
+   sparse_hash_map<string, string, Hasher, Hasher> ht_out;
+   ht_out.set_deleted_key(string(""));
+   for (int i = 32; i < 128; i++) {
+@@ -1436,7 +1480,7 @@
+   for (sparse_hash_map<string, string, Hasher, Hasher>::const_iterator
+            it = ht_out.begin(); it != ht_out.end(); ++it) {
+     const string::size_type first_size = it->first.length();
+-    fwrite(&first_size, sizeof(first_size), 1, fp);  // ignore endianness issues
++    fwrite(&first_size, sizeof(first_size), 1, fp); // ignore endianness issues
+     fwrite(it->first.c_str(), first_size, 1, fp);
+ 
+     const string::size_type second_size = it->second.length();
+@@ -1476,13 +1520,157 @@
+   EXPECT_EQ(string(""), ht_in["y"]);
+ }
+ 
++TYPED_TEST(HashtableAllTest, Serialization) {
++  if (!this->ht_.supports_serialization()) return;
++  TypeParam ht_out;
++  ht_out.set_deleted_key(this->UniqueKey(2000));
++  for (int i = 1; i < 100; i++) {
++    ht_out.insert(this->UniqueObject(i));
++  }
++  // just to test having some erased keys when we write.
++  ht_out.erase(this->UniqueKey(56));
++  ht_out.erase(this->UniqueKey(22));
++
++  string file(TmpFile("serialization"));
++  FILE* fp = fopen(file.c_str(), "wb");
++  EXPECT_TRUE(fp != NULL);
++  EXPECT_TRUE(ht_out.serialize(ValueSerializer(), fp));
++  fclose(fp);
++
++  TypeParam ht_in;
++  fp = fopen(file.c_str(), "rb");
++  EXPECT_TRUE(fp != NULL);
++  EXPECT_TRUE(ht_in.unserialize(ValueSerializer(), fp));
++  fclose(fp);
++
++  EXPECT_EQ(this->UniqueObject(1), *ht_in.find(this->UniqueKey(1)));
++  EXPECT_EQ(this->UniqueObject(99), *ht_in.find(this->UniqueKey(99)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(100)));
++  EXPECT_EQ(this->UniqueObject(21), *ht_in.find(this->UniqueKey(21)));
++  // should not have been saved
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(22)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(56)));
++}
++
++TYPED_TEST(HashtableIntTest, NopointerSerialization) {
++  if (!this->ht_.supports_serialization()) return;
++  TypeParam ht_out;
++  ht_out.set_deleted_key(this->UniqueKey(2000));
++  for (int i = 1; i < 100; i++) {
++    ht_out.insert(this->UniqueObject(i));
++  }
++  // just to test having some erased keys when we write.
++  ht_out.erase(this->UniqueKey(56));
++  ht_out.erase(this->UniqueKey(22));
++
++  string file(TmpFile("nopointer_serialization"));
++  FILE* fp = fopen(file.c_str(), "wb");
++  EXPECT_TRUE(fp != NULL);
++  EXPECT_TRUE(ht_out.serialize(typename TypeParam::NopointerSerializer(), fp));
++  fclose(fp);
++
++  TypeParam ht_in;
++  fp = fopen(file.c_str(), "rb");
++  EXPECT_TRUE(fp != NULL);
++  EXPECT_TRUE(ht_in.unserialize(typename TypeParam::NopointerSerializer(), fp));
++  fclose(fp);
++
++  EXPECT_EQ(this->UniqueObject(1), *ht_in.find(this->UniqueKey(1)));
++  EXPECT_EQ(this->UniqueObject(99), *ht_in.find(this->UniqueKey(99)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(100)));
++  EXPECT_EQ(this->UniqueObject(21), *ht_in.find(this->UniqueKey(21)));
++  // should not have been saved
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(22)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(56)));
++}
++
++// We don't support serializing to a string by default, but you can do
++// it by writing your own custom input/output class.
++class StringIO {
++ public:
++  explicit StringIO(string* s) : s_(s) {}
++  size_t Write(const void* buf, size_t len) {
++    s_->append(reinterpret_cast<const char*>(buf), len);
++    return len;
++  }
++  size_t Read(void* buf, size_t len) {
++    if (s_->length() < len)
++      len = s_->length();
++    memcpy(reinterpret_cast<char*>(buf), s_->data(), len);
++    s_->erase(0, len);
++    return len;
++  }
++ private:
++  string* const s_;
++};
++
++TYPED_TEST(HashtableIntTest, SerializingToString) {
++  if (!this->ht_.supports_serialization()) return;
++  TypeParam ht_out;
++  ht_out.set_deleted_key(this->UniqueKey(2000));
++  for (int i = 1; i < 100; i++) {
++    ht_out.insert(this->UniqueObject(i));
++  }
++  // just to test having some erased keys when we write.
++  ht_out.erase(this->UniqueKey(56));
++  ht_out.erase(this->UniqueKey(22));
++
++  string stringbuf;
++  StringIO stringio(&stringbuf);
++  EXPECT_TRUE(ht_out.serialize(typename TypeParam::NopointerSerializer(),
++                               &stringio));
++
++  TypeParam ht_in;
++  EXPECT_TRUE(ht_in.unserialize(typename TypeParam::NopointerSerializer(),
++                                &stringio));
++
++  EXPECT_EQ(this->UniqueObject(1), *ht_in.find(this->UniqueKey(1)));
++  EXPECT_EQ(this->UniqueObject(99), *ht_in.find(this->UniqueKey(99)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(100)));
++  EXPECT_EQ(this->UniqueObject(21), *ht_in.find(this->UniqueKey(21)));
++  // should not have been saved
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(22)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(56)));
++}
++
++// An easier way to do the above would be to use the existing stream methods.
++TYPED_TEST(HashtableIntTest, SerializingToStringStream) {
++  if (!this->ht_.supports_serialization()) return;
++  TypeParam ht_out;
++  ht_out.set_deleted_key(this->UniqueKey(2000));
++  for (int i = 1; i < 100; i++) {
++    ht_out.insert(this->UniqueObject(i));
++  }
++  // just to test having some erased keys when we write.
++  ht_out.erase(this->UniqueKey(56));
++  ht_out.erase(this->UniqueKey(22));
++
++  std::stringstream string_buffer;
++  EXPECT_TRUE(ht_out.serialize(typename TypeParam::NopointerSerializer(),
++                               &string_buffer));
++
++  TypeParam ht_in;
++  EXPECT_TRUE(ht_in.unserialize(typename TypeParam::NopointerSerializer(),
++                                &string_buffer));
++
++  EXPECT_EQ(this->UniqueObject(1), *ht_in.find(this->UniqueKey(1)));
++  EXPECT_EQ(this->UniqueObject(99), *ht_in.find(this->UniqueKey(99)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(100)));
++  EXPECT_EQ(this->UniqueObject(21), *ht_in.find(this->UniqueKey(21)));
++  // should not have been saved
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(22)));
++  EXPECT_FALSE(ht_in.count(this->UniqueKey(56)));
++}
++
+ // Verify that the metadata serialization is endianness and word size
+ // agnostic.
+ TYPED_TEST(HashtableAllTest, MetadataSerializationAndEndianness) {
+   TypeParam ht_out;
++  string kExpectedDense("\x13W\x86""B\0\0\0\0\0\0\0 \0\0\0\0\0\0\0\0\0\0\0\0",
++                        24);
+   string kExpectedSparse("$hu1\0\0\0 \0\0\0\0\0\0\0\0\0\0\0\0", 20);
+ 
+-  if (ht_out.supports_readwrite()) {  // only sparse hashtables, for now
++  if (ht_out.supports_readwrite()) {
+     string file(TmpFile("metadata_serialization"));
+     FILE* fp = fopen(file.c_str(), "wb");
+     EXPECT_TRUE(fp != NULL);
+@@ -1498,10 +1686,29 @@
+     EXPECT_EQ(num_bytes, fread(contents, 1, num_bytes, fp));
+     EXPECT_EQ(EOF, fgetc(fp));       // check we're *exactly* the right size
+     fclose(fp);
+-    EXPECT_EQ(kExpectedSparse, string(contents, num_bytes));
++    // TODO(csilvers): check type of ht_out instead of looking at the 1st byte.
++    if (contents[0] == kExpectedDense[0]) {
++      EXPECT_EQ(kExpectedDense, string(contents, num_bytes));
++    } else {
++      EXPECT_EQ(kExpectedSparse, string(contents, num_bytes));
++    }
++  }
++
++  // Do it again with new-style serialization.  Here we can use StringIO.
++  if (ht_out.supports_serialization()) {
++    string stringbuf;
++    StringIO stringio(&stringbuf);
++    EXPECT_TRUE(ht_out.serialize(typename TypeParam::NopointerSerializer(),
++                                 &stringio));
++    if (stringbuf[0] == kExpectedDense[0]) {
++      EXPECT_EQ(kExpectedDense, stringbuf);
++    } else {
++      EXPECT_EQ(kExpectedSparse, stringbuf);
++    }
+   }
+ }
+ 
++
+ // ------------------------------------------------------------------------
+ // The above tests test the general API for correctness.  These tests
+ // test a few corner cases that have tripped us up in the past, and
+@@ -1548,12 +1755,12 @@
+ };
+ int NoMemmove::num_copies = 0;
+ 
+-}  // anonymous namespace
++} // unnamed namespace
+ 
+ // This is what tells the hashtable code it can use memmove for this class:
+ _START_GOOGLE_NAMESPACE_
+-template<> struct has_trivial_copy<Memmove> : true_type {};
+-template<> struct has_trivial_destructor<Memmove> : true_type {};
++template<> struct has_trivial_copy<Memmove> : true_type { };
++template<> struct has_trivial_destructor<Memmove> : true_type { };
+ _END_GOOGLE_NAMESPACE_
+ 
+ namespace {
+@@ -1562,24 +1769,23 @@
+   // Only sparsehashtable optimizes moves in this way.
+   sparse_hash_map<int, Memmove, Hasher, Hasher> memmove;
+   sparse_hash_map<int, NoMemmove, Hasher, Hasher> nomemmove;
+-  sparse_hash_map<int, Memmove, Hasher, Hasher,
+-                  Alloc<std::pair<const int, Memmove> > >
++  sparse_hash_map<int, Memmove, Hasher, Hasher, Alloc<int> >
+       memmove_nonstandard_alloc;
+ 
+   Memmove::num_copies = 0;
+-  for (int i = 1000; i > 0; i--) {
++  for (int i = 10000; i > 0; i--) {
+     memmove[i] = Memmove(i);
+   }
+   const int memmove_copies = Memmove::num_copies;
+ 
+   NoMemmove::num_copies = 0;
+-  for (int i = 1000; i > 0; i--) {
++  for (int i = 10000; i > 0; i--) {
+     nomemmove[i] = NoMemmove(i);
+   }
+   const int nomemmove_copies = NoMemmove::num_copies;
+ 
+   Memmove::num_copies = 0;
+-  for (int i = 1000; i > 0; i--) {
++  for (int i = 10000; i > 0; i--) {
+     memmove_nonstandard_alloc[i] = Memmove(i);
+   }
+   const int memmove_nonstandard_alloc_copies = Memmove::num_copies;
+@@ -1782,7 +1988,6 @@
+                "overflows size_type");
+ }
+ 
+-
+ // ------------------------------------------------------------------------
+ // This informational "test" comes last so it's easy to see.
+ // Also, benchmarks.
+diff -u ./hash_test_interface.h /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/hash_test_interface.h
+--- ./hash_test_interface.h	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/hash_test_interface.h	2014-02-10 13:15:25.676130583 +0100
+@@ -46,18 +46,13 @@
+ #define UTIL_GTL_HASH_TEST_INTERFACE_H_
+ 
+ #include <sparsehash/internal/sparseconfig.h>
+-#include <stddef.h>
+ #include <functional>          // for equal_to<>
+-#include HASH_MAP_H
+-#include <utility>
+-
+-#include <sparsehash/dense_hash_map>
+-#include <sparsehash/dense_hash_set>
+-#include <sparsehash/internal/densehashtable.h>
+-#include <sparsehash/internal/libc_allocator_with_realloc.h>
++#include <sparsehash/internal/sparsehashtable.h>
+ #include <sparsehash/sparse_hash_map>
+ #include <sparsehash/sparse_hash_set>
+-#include <sparsehash/internal/sparsehashtable.h>
++#include <sparsehash/internal/densehashtable.h>
++#include <sparsehash/dense_hash_map>
++#include <sparsehash/dense_hash_set>
+ #include HASH_FUN_H    // for hash<>
+ 
+ _START_GOOGLE_NAMESPACE_
+@@ -333,6 +328,15 @@
+     return ht_ != other.ht_;
+   }
+ 
++  template <typename ValueSerializer, typename OUTPUT>
++  bool serialize(ValueSerializer serializer, OUTPUT *fp) {
++    return ht_.serialize(serializer, fp);
++  }
++  template <typename ValueSerializer, typename INPUT>
++  bool unserialize(ValueSerializer serializer, INPUT *fp) {
++    return ht_.unserialize(serializer, fp);
++  }
++
+   template <typename OUTPUT>
+   bool write_metadata(OUTPUT *fp) {
+     return ht_.write_metadata(fp);
+@@ -358,8 +362,8 @@
+   // All subclasses should define get_data(value_type) as well.  I don't
+   // provide an abstract-virtual definition here, because the return type
+   // differs between subclasses (not all subclasses define data_type).
+-  // virtual data_type get_data(const value_type& value) const = 0;
+-  // virtual data_type default_data() const = 0;
++  //virtual data_type get_data(const value_type& value) const = 0;
++  //virtual data_type default_data() const = 0;
+ 
+   // These allow introspection into the interface.  "Supports" means
+   // that the implementation of this functionality isn't a noop.
+@@ -369,6 +373,7 @@
+   virtual bool supports_brackets() const = 0;     // has a 'real' operator[]
+   virtual bool supports_readwrite() const = 0;
+   virtual bool supports_num_table_copies() const = 0;
++  virtual bool supports_serialization() const = 0;
+ 
+  protected:
+   HT ht_;
+@@ -426,16 +431,20 @@
+   bool supports_brackets() const { return true; }
+   bool supports_readwrite() const { return true; }
+   bool supports_num_table_copies() const { return false; }
++  bool supports_serialization() const { return true; }
+ 
+   void set_empty_key(const typename p::key_type& k) { }
+   void clear_empty_key() { }
+   typename p::key_type empty_key() const { return typename p::key_type(); }
++
+   int num_table_copies() const { return 0; }
+ 
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++
+  protected:
+   template <class K2, class T2, class H2, class E2, class A2>
+-  friend void swap(HashtableInterface_SparseHashMap<K2, T2, H2, E2, A2>& a,
+-                   HashtableInterface_SparseHashMap<K2, T2, H2, E2, A2>& b);
++  friend void swap(HashtableInterface_SparseHashMap<K2,T2,H2,E2,A2>& a,
++                   HashtableInterface_SparseHashMap<K2,T2,H2,E2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return it->first;
+@@ -453,8 +462,8 @@
+ };
+ 
+ template <class K, class T, class H, class E, class A>
+-void swap(HashtableInterface_SparseHashMap<K, T, H, E, A>& a,
+-          HashtableInterface_SparseHashMap<K, T, H, E, A>& b) {
++void swap(HashtableInterface_SparseHashMap<K,T,H,E,A>& a,
++          HashtableInterface_SparseHashMap<K,T,H,E,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+@@ -529,16 +538,20 @@
+   bool supports_brackets() const { return false; }
+   bool supports_readwrite() const { return true; }
+   bool supports_num_table_copies() const { return false; }
++  bool supports_serialization() const { return true; }
+ 
+   void set_empty_key(const typename p::key_type& k) { }
+   void clear_empty_key() { }
+   typename p::key_type empty_key() const { return typename p::key_type(); }
++
+   int num_table_copies() const { return 0; }
+ 
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++
+  protected:
+   template <class K2, class H2, class E2, class A2>
+-  friend void swap(HashtableInterface_SparseHashSet<K2, H2, E2, A2>& a,
+-                   HashtableInterface_SparseHashSet<K2, H2, E2, A2>& b);
++  friend void swap(HashtableInterface_SparseHashSet<K2,H2,E2,A2>& a,
++                   HashtableInterface_SparseHashSet<K2,H2,E2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return *it;
+@@ -556,8 +569,8 @@
+ };
+ 
+ template <class K, class H, class E, class A>
+-void swap(HashtableInterface_SparseHashSet<K, H, E, A>& a,
+-          HashtableInterface_SparseHashSet<K, H, E, A>& b) {
++void swap(HashtableInterface_SparseHashSet<K,H,E,A>& a,
++          HashtableInterface_SparseHashSet<K,H,E,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+@@ -641,6 +654,7 @@
+   bool supports_brackets() const { return false; }
+   bool supports_readwrite() const { return true; }
+   bool supports_num_table_copies() const { return true; }
++  bool supports_serialization() const { return true; }
+ 
+   void set_empty_key(const typename p::key_type& k) { }
+   void clear_empty_key() { }
+@@ -652,12 +666,14 @@
+ 
+   // TODO(csilvers): also support/test destructive_begin()/destructive_end()?
+ 
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++
+  protected:
+   template <class V2, class K2, class HF2, class EK2, class SK2, class Eq2,
+             class A2>
+   friend void swap(
+-      HashtableInterface_SparseHashtable<V2, K2, HF2, EK2, SK2, Eq2, A2>& a,
+-      HashtableInterface_SparseHashtable<V2, K2, HF2, EK2, SK2, Eq2, A2>& b);
++      HashtableInterface_SparseHashtable<V2,K2,HF2,EK2,SK2,Eq2,A2>& a,
++      HashtableInterface_SparseHashtable<V2,K2,HF2,EK2,SK2,Eq2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return extract_key(*it);
+@@ -678,8 +694,8 @@
+ };
+ 
+ template <class V, class K, class HF, class EK, class SK, class Eq, class A>
+-void swap(HashtableInterface_SparseHashtable<V, K, HF, EK, SK, Eq, A>& a,
+-          HashtableInterface_SparseHashtable<V, K, HF, EK, SK, Eq, A>& b) {
++void swap(HashtableInterface_SparseHashtable<V,K,HF,EK,SK,Eq,A>& a,
++          HashtableInterface_SparseHashtable<V,K,HF,EK,SK,Eq,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+@@ -738,27 +754,23 @@
+   bool supports_brackets() const { return true; }
+   bool supports_readwrite() const { return false; }
+   bool supports_num_table_copies() const { return false; }
++  bool supports_serialization() const { return true; }
+ 
+-  template <typename OUTPUT> bool write_metadata(OUTPUT* /*output*/) {
+-    return false;
+-  }
+-  template <typename INPUT> bool read_metadata(INPUT* /*input*/) {
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++  template <typename OUTPUT> bool write_metadata(OUTPUT *) { return false; }
++  template <typename INPUT> bool read_metadata(INPUT *) { return false; }
++  template <typename OUTPUT> bool write_nopointer_data(OUTPUT *) {
+     return false;
+   }
+-  template <typename OUTPUT> bool write_nopointer_data(OUTPUT* /*output*/) {
+-    return false;
+-  }
+-  template <typename INPUT> bool read_nopointer_data(INPUT* /*input*/) {
++  template <typename INPUT> bool read_nopointer_data(INPUT *) {
+     return false;
+   }
+   int num_table_copies() const { return 0; }
+ 
+  protected:
+   template <class K2, class T2, const K2& Empty2, class H2, class E2, class A2>
+-  friend void swap(HashtableInterface_DenseHashMap<
+-                       K2, T2, Empty2, H2, E2, A2>& a,
+-                   HashtableInterface_DenseHashMap<
+-                       K2, T2, Empty2, H2, E2, A2>& b);
++  friend void swap(HashtableInterface_DenseHashMap<K2,T2,Empty2,H2,E2,A2>& a,
++                   HashtableInterface_DenseHashMap<K2,T2,Empty2,H2,E2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return it->first;
+@@ -776,8 +788,8 @@
+ };
+ 
+ template <class K, class T, const K& Empty, class H, class E, class A>
+-void swap(HashtableInterface_DenseHashMap<K, T, Empty, H, E, A>& a,
+-          HashtableInterface_DenseHashMap<K, T, Empty, H, E, A>& b) {
++void swap(HashtableInterface_DenseHashMap<K,T,Empty,H,E,A>& a,
++          HashtableInterface_DenseHashMap<K,T,Empty,H,E,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+@@ -846,25 +858,23 @@
+   bool supports_brackets() const { return false; }
+   bool supports_readwrite() const { return false; }
+   bool supports_num_table_copies() const { return false; }
++  bool supports_serialization() const { return true; }
+ 
+-  template <typename OUTPUT> bool write_metadata(OUTPUT* /*output*/) {
+-    return false;
+-  }
+-  template <typename INPUT> bool read_metadata(INPUT* /*input*/) {
+-    return false;
+-  }
+-  template <typename OUTPUT> bool write_nopointer_data(OUTPUT* /*output*/) {
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++  template <typename OUTPUT> bool write_metadata(OUTPUT *) { return false; }
++  template <typename INPUT> bool read_metadata(INPUT *) { return false; }
++  template <typename OUTPUT> bool write_nopointer_data(OUTPUT *) {
+     return false;
+   }
+-  template <typename INPUT> bool read_nopointer_data(INPUT* /*input*/) {
++  template <typename INPUT> bool read_nopointer_data(INPUT *) {
+     return false;
+   }
+   int num_table_copies() const { return 0; }
+ 
+  protected:
+   template <class K2, const K2& Empty2, class H2, class E2, class A2>
+-  friend void swap(HashtableInterface_DenseHashSet<K2, Empty2, H2, E2, A2>& a,
+-                   HashtableInterface_DenseHashSet<K2, Empty2, H2, E2, A2>& b);
++  friend void swap(HashtableInterface_DenseHashSet<K2,Empty2,H2,E2,A2>& a,
++                   HashtableInterface_DenseHashSet<K2,Empty2,H2,E2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return *it;
+@@ -882,8 +892,8 @@
+ };
+ 
+ template <class K, const K& Empty, class H, class E, class A>
+-void swap(HashtableInterface_DenseHashSet<K, Empty, H, E, A>& a,
+-          HashtableInterface_DenseHashSet<K, Empty, H, E, A>& b) {
++void swap(HashtableInterface_DenseHashSet<K,Empty,H,E,A>& a,
++          HashtableInterface_DenseHashSet<K,Empty,H,E,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+@@ -975,17 +985,15 @@
+   bool supports_brackets() const { return false; }
+   bool supports_readwrite() const { return false; }
+   bool supports_num_table_copies() const { return true; }
++  bool supports_serialization() const { return true; }
+ 
+-  template <typename OUTPUT> bool write_metadata(OUTPUT* /*output*/) {
+-    return false;
+-  }
+-  template <typename INPUT> bool read_metadata(INPUT* /*input*/) {
+-    return false;
+-  }
+-  template <typename OUTPUT> bool write_nopointer_data(OUTPUT* /*output*/) {
++  typedef typename ht::NopointerSerializer NopointerSerializer;
++  template <typename OUTPUT> bool write_metadata(OUTPUT *) { return false; }
++  template <typename INPUT> bool read_metadata(INPUT *) { return false; }
++  template <typename OUTPUT> bool write_nopointer_data(OUTPUT *) {
+     return false;
+   }
+-  template <typename INPUT> bool read_nopointer_data(INPUT* /*input*/) {
++  template <typename INPUT> bool read_nopointer_data(INPUT *) {
+     return false;
+   }
+ 
+@@ -997,10 +1005,8 @@
+   template <class V2, class K2, const K2& Empty2,
+             class HF2, class EK2, class SK2, class Eq2, class A2>
+   friend void swap(
+-      HashtableInterface_DenseHashtable<
+-          V2, K2, Empty2, HF2, EK2, SK2, Eq2, A2>& a,
+-      HashtableInterface_DenseHashtable<
+-          V2, K2, Empty2, HF2, EK2, SK2, Eq2, A2>& b);
++      HashtableInterface_DenseHashtable<V2,K2,Empty2,HF2,EK2,SK2,Eq2,A2>& a,
++      HashtableInterface_DenseHashtable<V2,K2,Empty2,HF2,EK2,SK2,Eq2,A2>& b);
+ 
+   typename p::key_type it_to_key(const typename p::iterator& it) const {
+     return extract_key(*it);
+@@ -1022,9 +1028,8 @@
+ 
+ template <class V, class K, const K& Empty,
+           class HF, class EK, class SK, class Eq, class A>
+-void swap(
+-    HashtableInterface_DenseHashtable<V, K, Empty, HF, EK, SK, Eq, A>& a,
+-    HashtableInterface_DenseHashtable<V, K, Empty, HF, EK, SK, Eq, A>& b) {
++void swap(HashtableInterface_DenseHashtable<V,K,Empty,HF,EK,SK,Eq,A>& a,
++          HashtableInterface_DenseHashtable<V,K,Empty,HF,EK,SK,Eq,A>& b) {
+   swap(a.ht_, b.ht_);
+ }
+ 
+diff -u ./libc_allocator_with_realloc_test.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/libc_allocator_with_realloc_test.cc
+--- ./libc_allocator_with_realloc_test.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/libc_allocator_with_realloc_test.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -32,10 +32,9 @@
+ #include <sparsehash/internal/sparseconfig.h>
+ #include <config.h>
+ #include <sparsehash/internal/libc_allocator_with_realloc.h>
+-
++#include <stdlib.h>
+ #include <string>
+ #include <vector>
+-
+ #include <iostream>
+ #include "testutil.h"
+ 
+@@ -55,7 +54,7 @@
+ typedef int_alloc::rebind<int*>::other intp_alloc;
+ 
+ // cstring allocates from libc_allocator_with_realloc.
+-typedef basic_string<char, std::char_traits<char>,
++typedef basic_string<char, char_traits<char>,
+                      libc_allocator_with_realloc<char> > cstring;
+ typedef vector<cstring, libc_allocator_with_realloc<cstring> > cstring_vector;
+ 
+diff -u ./simple_compat_test.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/simple_compat_test.cc
+--- ./simple_compat_test.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/simple_compat_test.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -1,6 +1,6 @@
+ // Copyright (c) 2007, Google Inc.
+ // All rights reserved.
+-//
++// 
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are
+ // met:
+@@ -14,7 +14,7 @@
+ //     * Neither the name of Google Inc. nor the names of its
+ // contributors may be used to endorse or promote products derived from
+ // this software without specific prior written permission.
+-//
++// 
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+@@ -36,8 +36,6 @@
+ // not #include <config.h>; it's meant to emulate what a 'regular
+ // install' of sparsehash would be able to see.
+ 
+-#include <sparsehash/internal/sparseconfig.h>
+-#include <config.h>
+ #include <stdio.h>
+ #include <google/sparse_hash_set>
+ #include <google/sparse_hash_map>
+@@ -82,13 +80,13 @@
+     for (google::sparse_hash_set<int>::const_iterator it = sset.begin();
+          it != sset.end(); ++it)
+       printf("sset: %d\n", *it);
+-    for (google::sparse_hash_map<int, int>::const_iterator it = smap.begin();
++    for (google::sparse_hash_map<int,int>::const_iterator it = smap.begin();
+          it != smap.end(); ++it)
+       printf("smap: %d -> %d\n", it->first, it->second);
+     for (google::dense_hash_set<int>::const_iterator it = dset.begin();
+          it != dset.end(); ++it)
+       printf("dset: %d\n", *it);
+-    for (google::dense_hash_map<int, int>::const_iterator it = dmap.begin();
++    for (google::dense_hash_map<int,int>::const_iterator it = dmap.begin();
+          it != dmap.end(); ++it)
+       printf("dmap: %d -> %d\n", it->first, it->second);
+   }
+diff -u ./simple_test.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/simple_test.cc
+--- ./simple_test.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/simple_test.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -1,6 +1,6 @@
+ // Copyright (c) 2007, Google Inc.
+ // All rights reserved.
+-//
++// 
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are
+ // met:
+@@ -14,7 +14,7 @@
+ //     * Neither the name of Google Inc. nor the names of its
+ // contributors may be used to endorse or promote products derived from
+ // this software without specific prior written permission.
+-//
++// 
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+@@ -80,13 +80,13 @@
+     for (google::sparse_hash_set<int>::const_iterator it = sset.begin();
+          it != sset.end(); ++it)
+       printf("sset: %d\n", *it);
+-    for (google::sparse_hash_map<int, int>::const_iterator it = smap.begin();
++    for (google::sparse_hash_map<int,int>::const_iterator it = smap.begin();
+          it != smap.end(); ++it)
+       printf("smap: %d -> %d\n", it->first, it->second);
+     for (google::dense_hash_set<int>::const_iterator it = dset.begin();
+          it != dset.end(); ++it)
+       printf("dset: %d\n", *it);
+-    for (google::dense_hash_map<int, int>::const_iterator it = dmap.begin();
++    for (google::dense_hash_map<int,int>::const_iterator it = dmap.begin();
+          it != dmap.end(); ++it)
+       printf("dmap: %d -> %d\n", it->first, it->second);
+   }
+Common subdirectories: ./sparsehash and /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/sparsehash
+diff -u ./sparsetable_unittest.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/sparsetable_unittest.cc
+--- ./sparsetable_unittest.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/sparsetable_unittest.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -35,18 +35,16 @@
+ 
+ #include <sparsehash/internal/sparseconfig.h>
+ #include <config.h>
+-#include <sparsehash/sparsetable>
+-
+-#include <stddef.h>
+ #include <stdio.h>
+-#include <stdlib.h>         // defines unlink() on some windows platforms(?)
+ #include <string.h>
++#include <sys/types.h>      // for size_t
++#include <stdlib.h>         // defines unlink() on some windows platforms(?)
+ #ifdef HAVE_UNISTD_H
+ # include <unistd.h>
+ #endif         // for unlink()
+ #include <memory>           // for allocator
+ #include <string>
+-
++#include <sparsehash/sparsetable>
+ using std::string;
+ using std::allocator;
+ using GOOGLE_NAMESPACE::sparsetable;
+@@ -57,7 +55,7 @@
+ 
+ // Many sparsetable operations return a size_t.  Rather than have to
+ // use PRIuS everywhere, we'll just cast to a "big enough" value.
+-#define UL(x)    (static_cast<unsigned long>(x))
++#define UL(x)    ( static_cast<unsigned long>(x) )
+ 
+ 
+ static char outbuf[10240];       // big enough for these tests
+@@ -91,36 +89,31 @@
+   // Test the plain iterators
+ 
+   for ( sparsetable<int>::iterator it = x.begin(); it != x.end(); ++it ) {
+-    out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(it - x.begin()),
+-                    static_cast<int>(*it));
++    out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(it - x.begin()), int(*it));
+   }
+   for ( sparsetable<int>::const_iterator it = x.begin(); it != x.end(); ++it ) {
+     out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(it - x.begin()), *it);
+   }
+-  for ( sparsetable<int>::reverse_iterator it = x.rbegin(); it != x.rend();
+-        ++it ) {
+-    out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(x.rend()-1 - it),
+-                    static_cast<int>(*it));
++  for ( sparsetable<int>::reverse_iterator it = x.rbegin(); it != x.rend(); ++it ) {
++    out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(x.rend()-1 - it), int(*it));
+   }
+-  for ( sparsetable<int>::const_reverse_iterator it = constx.rbegin();
+-        it != constx.rend(); ++it ) {
++  for ( sparsetable<int>::const_reverse_iterator it = constx.rbegin(); it != constx.rend(); ++it ) {
+     out += snprintf(out, LEFT, "x[%lu]: %d\n", UL(constx.rend()-1 - it), *it);
+   }
+   for ( sparsetable<int>::iterator it = z.begin(); it != z.end(); ++it ) {
+-    out += snprintf(out, LEFT, "z[%lu]: %d\n", UL(it - z.begin()),
+-                    static_cast<int>(*it));
++    out += snprintf(out, LEFT, "z[%lu]: %d\n", UL(it - z.begin()), int(*it));
+   }
+ 
+   {                                          // array version
+-    out += snprintf(out, LEFT, "x[3]: %d\n", static_cast<int>(x[3]));
+-    out += snprintf(out, LEFT, "x[4]: %d\n", static_cast<int>(x[4]));
+-    out += snprintf(out, LEFT, "x[5]: %d\n", static_cast<int>(x[5]));
++    out += snprintf(out, LEFT, "x[3]: %d\n", int(x[3]));
++    out += snprintf(out, LEFT, "x[4]: %d\n", int(x[4]));
++    out += snprintf(out, LEFT, "x[5]: %d\n", int(x[5]));
+   }
+   {
+     sparsetable<int>::iterator it;           // non-const version
+-    out += snprintf(out, LEFT, "x[4]: %d\n", static_cast<int>(x.begin()[4]));
++    out += snprintf(out, LEFT, "x[4]: %d\n", int(x.begin()[4]));
+     it = x.begin() + 4;          // should point to the non-zero value
+-    out += snprintf(out, LEFT, "x[4]: %d\n", static_cast<int>(*it));
++    out += snprintf(out, LEFT, "x[4]: %d\n", int(*it));
+     it--;
+     --it;
+     it += 5;
+@@ -129,14 +122,14 @@
+     ++it;
+     it = it - 3;
+     it = 1 + it;                 // now at 5
+-    out += snprintf(out, LEFT, "x[3]: %d\n", static_cast<int>(it[-2]));
+-    out += snprintf(out, LEFT, "x[4]: %d\n", static_cast<int>(it[-1]));
++    out += snprintf(out, LEFT, "x[3]: %d\n", int(it[-2]));
++    out += snprintf(out, LEFT, "x[4]: %d\n", int(it[-1]));
+     *it = 55;
+-    out += snprintf(out, LEFT, "x[5]: %d\n", static_cast<int>(it[0]));
+-    out += snprintf(out, LEFT, "x[5]: %d\n", static_cast<int>(*it));
++    out += snprintf(out, LEFT, "x[5]: %d\n", int(it[0]));
++    out += snprintf(out, LEFT, "x[5]: %d\n", int(*it));
+     int *x6 = &(it[1]);
+     *x6 = 66;
+-    out += snprintf(out, LEFT, "x[6]: %d\n", static_cast<int>(*(it + 1)));
++    out += snprintf(out, LEFT, "x[6]: %d\n", int(*(it + 1)));
+     // Let's test comparitors as well
+     TEST(it == it);
+     TEST(!(it != it));
+@@ -175,7 +168,7 @@
+   }
+   {
+     sparsetable<int>::const_iterator it;    // const version
+-    out += snprintf(out, LEFT, "x[4]: %d\n", static_cast<int>(x.begin()[4]));
++    out += snprintf(out, LEFT, "x[4]: %d\n", int(x.begin()[4]));
+     it = x.begin() + 4;          // should point to the non-zero value
+     out += snprintf(out, LEFT, "x[4]: %d\n", *it);
+     it--;
+@@ -237,25 +230,19 @@
+   // ----------------------------------------------------------------------
+   // Test the non-empty iterators
+ 
+-  for ( sparsetable<int>::nonempty_iterator it = x.nonempty_begin();
+-        it != x.nonempty_end(); ++it ) {
++  for ( sparsetable<int>::nonempty_iterator it = x.nonempty_begin(); it != x.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "x[??]: %d\n", *it);
+   }
+-  for ( sparsetable<int>::const_nonempty_iterator it = y.nonempty_begin();
+-        it != y.nonempty_end(); ++it ) {
++  for ( sparsetable<int>::const_nonempty_iterator it = y.nonempty_begin(); it != y.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "y[??]: %d\n", *it);
+   }
+-  for ( sparsetable<int>::reverse_nonempty_iterator it = y.nonempty_rbegin();
+-        it != y.nonempty_rend(); ++it ) {
++  for ( sparsetable<int>::reverse_nonempty_iterator it = y.nonempty_rbegin(); it != y.nonempty_rend(); ++it ) {
+     out += snprintf(out, LEFT, "y[??]: %d\n", *it);
+   }
+-  for ( sparsetable<int>::const_reverse_nonempty_iterator it =
+-          consty.nonempty_rbegin();
+-        it != consty.nonempty_rend(); ++it ) {
++  for ( sparsetable<int>::const_reverse_nonempty_iterator it = consty.nonempty_rbegin(); it != consty.nonempty_rend(); ++it ) {
+     out += snprintf(out, LEFT, "y[??]: %d\n", *it);
+   }
+-  for ( sparsetable<int>::nonempty_iterator it = z.nonempty_begin();
+-        it != z.nonempty_end(); ++it ) {
++  for ( sparsetable<int>::nonempty_iterator it = z.nonempty_begin(); it != z.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "z[??]: %d\n", *it);
+   }
+ 
+@@ -290,7 +277,7 @@
+ 
+   sparsetable<unsigned int> gp(100);
+   for (int i = 0; i < 100; i += 9) {
+-    gp.set(i, i);
++    gp.set(i,i);
+   }
+ 
+   for (sparsetable<unsigned int>::const_nonempty_iterator
+@@ -319,13 +306,11 @@
+   y.resize(70);              // 48 and 49 should still be gone
+   out += snprintf(out, LEFT, "y shrank and grew: it's now %lu/%lu\n",
+                   UL(y.num_nonempty()), UL(y.size()));
+-  out += snprintf(out, LEFT, "y[12] = %d, y.get(12) = %d\n",
+-                  static_cast<int>(y[12]), y.get(12));
++  out += snprintf(out, LEFT, "y[12] = %d, y.get(12) = %d\n", int(y[12]), y.get(12));
+   y.erase(12);
+   out += snprintf(out, LEFT, "y[12] cleared.  y now %lu/%lu.  "
+                   "y[12] = %d, y.get(12) = %d\n",
+-                  UL(y.num_nonempty()), UL(y.size()), static_cast<int>(y[12]),
+-                  y.get(12));
++                  UL(y.num_nonempty()), UL(y.size()), int(y[12]), y.get(12));
+ 
+   swap(x, y);
+ 
+@@ -358,7 +343,7 @@
+     out += snprintf(out, LEFT, "y[??] = %d\n", *--it);
+ 
+   // ----------------------------------------------------------------------
+-  // Test I/O
++  // Test I/O using deprecated read/write_metadata
+   string filestr = FLAGS_test_tmpdir + "/.sparsetable.test";
+   const char *file = filestr.c_str();
+   FILE *fp = fopen(file, "wb");
+@@ -383,13 +368,36 @@
+     y2.read_nopointer_data(fp);
+     fclose(fp);
+ 
+-    for ( sparsetable<int>::const_iterator it = y2.begin(); it != y2.end();
+-          ++it ) {
++    for ( sparsetable<int>::const_iterator it = y2.begin(); it != y2.end(); ++it ) {
++      if ( y2.test(it) )
++        out += snprintf(out, LEFT, "y2[%lu] is %d\n", UL(it - y2.begin()), *it);
++    }
++    out += snprintf(out, LEFT, "That's %lu set buckets\n", UL(y2.num_nonempty()));
++  }
++  unlink(file);
++
++  // ----------------------------------------------------------------------
++  // Also test I/O using serialize()/unserialize()
++  fp = fopen(file, "wb");
++  if ( fp == NULL ) {
++    out += snprintf(out, LEFT, "Can't open %s, skipping disk write...\n", file);
++  } else {
++    y.serialize(sparsetable<int>::NopointerSerializer(), fp);
++    fclose(fp);
++  }
++  fp = fopen(file, "rb");
++  if ( fp == NULL ) {
++    out += snprintf(out, LEFT, "Can't open %s, skipping disk read...\n", file);
++  } else {
++    sparsetable<int> y2;
++    y2.unserialize(sparsetable<int>::NopointerSerializer(), fp);
++    fclose(fp);
++
++    for ( sparsetable<int>::const_iterator it = y2.begin(); it != y2.end(); ++it ) {
+       if ( y2.test(it) )
+         out += snprintf(out, LEFT, "y2[%lu] is %d\n", UL(it - y2.begin()), *it);
+     }
+-    out +=
+-        snprintf(out, LEFT, "That's %lu set buckets\n", UL(y2.num_nonempty()));
++    out += snprintf(out, LEFT, "That's %lu set buckets\n", UL(y2.num_nonempty()));
+   }
+   unlink(file);
+ }
+@@ -424,16 +432,13 @@
+ 
+   // ----------------------------------------------------------------------
+   // Test the non-empty iterators
+-    for ( sparsetable<string>::nonempty_iterator it = x.nonempty_begin();
+-          it != x.nonempty_end(); ++it ) {
++    for ( sparsetable<string>::nonempty_iterator it = x.nonempty_begin(); it != x.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "x[??]: %s\n", it->c_str());
+   }
+-  for ( sparsetable<string>::const_nonempty_iterator it = y.nonempty_begin();
+-        it != y.nonempty_end(); ++it ) {
++  for ( sparsetable<string>::const_nonempty_iterator it = y.nonempty_begin(); it != y.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "y[??]: %s\n", it->c_str());
+   }
+-  for ( sparsetable<string>::nonempty_iterator it = z.nonempty_begin();
+-        it != z.nonempty_end(); ++it ) {
++  for ( sparsetable<string>::nonempty_iterator it = z.nonempty_begin(); it != z.nonempty_end(); ++it ) {
+     out += snprintf(out, LEFT, "z[??]: %s\n", it->c_str());
+   }
+ 
+@@ -470,8 +475,7 @@
+   y.resize(38);
+   y.resize(10000);
+   y.set(9898, AsString(-9898));
+-  for ( sparsetable<string>::const_iterator it = y.begin(); it != y.end();
+-        ++it ) {
++  for ( sparsetable<string>::const_iterator it = y.begin(); it != y.end(); ++it ) {
+     if ( y.test(it) )
+       out += snprintf(out, LEFT, "y[%lu] is set\n", UL(it - y.begin()));
+   }
+@@ -572,17 +576,16 @@
+   // POD (int32) with instrumented_allocator.
+   typedef sparsetable<int, DEFAULT_SPARSEGROUP_SIZE,
+                       instrumented_allocator<int> > IntSparseTable;
+-  const int element_size = sizeof(IntSparseTable::value_type);
+ 
+   IntSparseTable* s1 = new IntSparseTable(10000);
+   TEST(sum_allocate_bytes > 0);
+   for (int i = 0; i < 10000; ++i) {
+     s1->set(i, 0);
+   }
+-  TEST(sum_allocate_bytes >= 10000 * element_size);
++  TEST(sum_allocate_bytes >= 10000 * sizeof(int));
+   ResetAllocatorCounters();
+   delete s1;
+-  TEST(sum_deallocate_bytes >= 10000 * element_size);
++  TEST(sum_deallocate_bytes >= 10000 * sizeof(int));
+ 
+   IntSparseTable* s2 = new IntSparseTable(1000);
+   IntSparseTable* s3 = new IntSparseTable(1000);
+@@ -591,20 +594,20 @@
+     s2->set(i, 0);
+     s3->set(i, 0);
+   }
+-  TEST(sum_allocate_bytes >= 2000 * element_size);
++  TEST(sum_allocate_bytes >= 2000 * sizeof(int));
+ 
+   ResetAllocatorCounters();
+   s3->clear();
+-  TEST(sum_deallocate_bytes >= 1000 * element_size);
++  TEST(sum_deallocate_bytes >= 1000 * sizeof(int));
+ 
+   ResetAllocatorCounters();
+   s2->swap(*s3);  // s2 is empty after the swap
+   s2->clear();
+-  TEST(sum_deallocate_bytes < 1000 * element_size);
++  TEST(sum_deallocate_bytes < 1000 * sizeof(int));
+   for (int i = 0; i < s3->size(); ++i) {
+     s3->erase(i);
+   }
+-  TEST(sum_deallocate_bytes >= 1000 * element_size);
++  TEST(sum_deallocate_bytes >= 1000 * sizeof(int));
+   delete s2;
+   delete s3;
+ 
+@@ -622,12 +625,12 @@
+     y.swap(x);
+   }
+   TEST(x.num_nonempty() == 0);
+-  out += snprintf(out, LEFT, "y[0]: %d\n", static_cast<int>(y[0]));
+-  out += snprintf(out, LEFT, "y[39999]: %d\n", static_cast<int>(y[39999]));
++  out += snprintf(out, LEFT, "y[0]: %d\n", int(y[0]));
++  out += snprintf(out, LEFT, "y[39999]: %d\n", int(y[39999]));
+   y.clear();
+ 
+   // POD (int) with std allocator.
+-  sparsetable<int, DEFAULT_SPARSEGROUP_SIZE, std::allocator<int> > u, v;
++  sparsetable<int, DEFAULT_SPARSEGROUP_SIZE, allocator<int> > u, v;
+   for (int s = 1000; s <= 40000; s += 1000) {
+     u.resize(s);
+     for (int i = 0; i < s; ++i) {
+@@ -640,8 +643,8 @@
+     v.swap(u);
+   }
+   TEST(u.num_nonempty() == 0);
+-  out += snprintf(out, LEFT, "v[0]: %d\n", static_cast<int>(v[0]));
+-  out += snprintf(out, LEFT, "v[39999]: %d\n", static_cast<int>(v[39999]));
++  out += snprintf(out, LEFT, "v[0]: %d\n", int(v[0]));
++  out += snprintf(out, LEFT, "v[39999]: %d\n", int(v[39999]));
+   v.clear();
+ 
+   // Non-POD (string) with default allocator.
+@@ -870,6 +873,19 @@
+     "y2[37] is -37\n"
+     "y2[9898] is -9898\n"
+     "That's 12 set buckets\n"
++    "y2[10] is -10\n"
++    "y2[11] is -11\n"
++    "y2[13] is -13\n"
++    "y2[14] is -14\n"
++    "y2[30] is -30\n"
++    "y2[31] is -31\n"
++    "y2[32] is -32\n"
++    "y2[33] is -33\n"
++    "y2[35] is -35\n"
++    "y2[36] is -36\n"
++    "y2[37] is -37\n"
++    "y2[9898] is -9898\n"
++    "That's 12 set buckets\n"
+     "string test\n"
+     "x[0]: \n"
+     "x[1]: \n"
+@@ -922,12 +938,12 @@
+     "y[??] = -10\n"
+     "allocator test\n"
+     "sum_allocate_bytes > 0? yes\n"
+-    "sum_allocate_bytes >= 10000 * element_size? yes\n"
+-    "sum_deallocate_bytes >= 10000 * element_size? yes\n"
+-    "sum_allocate_bytes >= 2000 * element_size? yes\n"
+-    "sum_deallocate_bytes >= 1000 * element_size? yes\n"
+-    "sum_deallocate_bytes < 1000 * element_size? yes\n"
+-    "sum_deallocate_bytes >= 1000 * element_size? yes\n"
++    "sum_allocate_bytes >= 10000 * sizeof(int)? yes\n"
++    "sum_deallocate_bytes >= 10000 * sizeof(int)? yes\n"
++    "sum_allocate_bytes >= 2000 * sizeof(int)? yes\n"
++    "sum_deallocate_bytes >= 1000 * sizeof(int)? yes\n"
++    "sum_deallocate_bytes < 1000 * sizeof(int)? yes\n"
++    "sum_deallocate_bytes >= 1000 * sizeof(int)? yes\n"
+     "x.num_nonempty() == 0? yes\n"
+     "y[0]: 1\n"
+     "y[39999]: 40000\n"
+@@ -936,7 +952,8 @@
+     "v[39999]: 40000\n"
+     "a.num_nonempty() == 0? yes\n"
+     "b[0]: aa\n"
+-    "b[39999]: aa\n");
++    "b[39999]: aa\n"
++    );
+ 
+ // defined at bottom of file for ease of maintainence
+ int main(int argc, char **argv) {          // though we ignore the args
+Only in /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/: stamp-h1
+Only in /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/: .svn
+diff -u ./testutil.h /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/testutil.h
+--- ./testutil.h	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/testutil.h	2014-02-10 13:15:25.676130583 +0100
+@@ -1,10 +1,10 @@
+ // Copyright (c) 2010, Google Inc.
+ // All rights reserved.
+-//
++// 
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are
+ // met:
+-//
++// 
+ //     * Redistributions of source code must retain the above copyright
+ // notice, this list of conditions and the following disclaimer.
+ //     * Redistributions in binary form must reproduce the above
+@@ -14,7 +14,7 @@
+ //     * Neither the name of Google Inc. nor the names of its
+ // contributors may be used to endorse or promote products derived from
+ // this software without specific prior written permission.
+-//
++// 
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+@@ -259,7 +259,7 @@
+ // to opensourcing easier.
+ class Test { };
+ 
+-}  // namespace testing
++} // namespace testing
+ 
+ _END_GOOGLE_NAMESPACE_
+ 
+diff -u ./time_hash_map.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/time_hash_map.cc
+--- ./time_hash_map.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/time_hash_map.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -28,6 +28,7 @@
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ // ---
++// Authors: Sanjay Ghemawat and Craig Silverstein
+ 
+ // Time various hash map implementations
+ //
+@@ -58,33 +59,30 @@
+ #ifdef HAVE_INTTYPES_H
+ # include <inttypes.h>
+ #endif         // for uintptr_t
+-#include <stddef.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-
+ extern "C" {
+-#ifdef HAVE_SYS_RESOURCE_H
+-# include <sys/resource.h>
+-#endif
++#include <time.h>
+ #ifdef HAVE_SYS_TIME_H
+ # include <sys/time.h>
+ #endif
++#ifdef HAVE_SYS_RESOURCE_H
++# include <sys/resource.h>
++#endif
+ #ifdef HAVE_SYS_UTSNAME_H
+ # include <sys/utsname.h>
+ #endif      // for uname()
+-#include <time.h>
+ }
+ 
+ // The functions that we call on each map, that differ for different types.
+ // By default each is a noop, but we redefine them for types that need them.
+ 
+-#include <algorithm>
+-#include HASH_MAP_H
+ #include <map>
++#include HASH_MAP_H
++#include <algorithm>
+ #include <vector>
+-
+-#include <sparsehash/template_util.h>
++#include <sparsehash/type_traits.h>
+ #include <sparsehash/dense_hash_map>
+ #include <sparsehash/sparse_hash_map>
+ 
+@@ -121,7 +119,7 @@
+ // worrying about whether the map-type supports it or not.
+ 
+ template<typename K, typename V, typename H>
+-class EasyUseSparseHashMap : public sparse_hash_map<K, V, H> {
++class EasyUseSparseHashMap : public sparse_hash_map<K,V,H> {
+  public:
+   EasyUseSparseHashMap() {
+     this->set_deleted_key(-1);
+@@ -129,7 +127,7 @@
+ };
+ 
+ template<typename K, typename V, typename H>
+-class EasyUseDenseHashMap : public dense_hash_map<K, V, H> {
++class EasyUseDenseHashMap : public dense_hash_map<K,V,H> {
+  public:
+   EasyUseDenseHashMap() {
+     this->set_empty_key(-1);
+@@ -139,42 +137,42 @@
+ 
+ // For pointers, we only set the empty key.
+ template<typename K, typename V, typename H>
+-class EasyUseSparseHashMap<K*, V, H> : public sparse_hash_map<K*, V, H> {
++class EasyUseSparseHashMap<K*, V, H> : public sparse_hash_map<K*,V,H> {
+  public:
+   EasyUseSparseHashMap() { }
+ };
+ 
+ template<typename K, typename V, typename H>
+-class EasyUseDenseHashMap<K*, V, H> : public dense_hash_map<K*, V, H> {
++class EasyUseDenseHashMap<K*, V, H> : public dense_hash_map<K*,V,H> {
+  public:
+   EasyUseDenseHashMap() {
+-    this->set_empty_key(reinterpret_cast<K*>(~0));
++    this->set_empty_key((K*)(~0));
+   }
+ };
+ 
+ #if defined(HAVE_UNORDERED_MAP)
+ template<typename K, typename V, typename H>
+-class EasyUseHashMap : public unordered_map<K, V, H> {
++class EasyUseHashMap : public unordered_map<K,V,H> {
+  public:
+   // resize() is called rehash() in tr1
+   void resize(size_t r) { this->rehash(r); }
+ };
+ #elif defined(_MSC_VER)
+ template<typename K, typename V, typename H>
+-class EasyUseHashMap : public hash_map<K, V, H> {
++class EasyUseHashMap : public hash_map<K,V,H> {
+  public:
+   void resize(size_t r) { }
+ };
+ #elif defined(HAVE_HASH_MAP)
+ template<typename K, typename V, typename H>
+-class EasyUseHashMap : public hash_map<K, V, H> {
++class EasyUseHashMap : public hash_map<K,V,H> {
+  public:
+   // Don't need to do anything: hash_map is already easy to use!
+ };
+ #endif
+ 
+ template<typename K, typename V>
+-class EasyUseMap : public map<K, V> {
++class EasyUseMap : public map<K,V> {
+  public:
+   void resize(size_t) { }   // map<> doesn't support resize
+ };
+@@ -209,9 +207,6 @@
+  public:
+   typedef HashObject<Size, Hashsize> class_type;
+   HashObject() {}
+-  // This non-explicit constructor enables pure template magic needed in several
+-  // places (to convert an int into a HashObject<8, 8>).  TODO(user): Fix the
+-  // remaining bits of code that depend on this.
+   HashObject(int i) : i_(i) {
+     memset(buffer_, i & 255, sizeof(buffer_));   // a "random" char
+   }
+@@ -247,7 +242,6 @@
+  public:
+   typedef HashObject<sizeof(int), sizeof(int)> class_type;
+   HashObject() {}
+-  // TODO(user): Make this explicit, too? (See comments in non-specialization.)
+   HashObject(int i) : i_(i) {}
+   HashObject(const HashObject& that) {
+     operator=(that);
+@@ -286,24 +280,24 @@
+ class HashFn {
+  public:
+   template<int Size, int Hashsize>
+-  size_t operator()(const HashObject<Size, Hashsize>& obj) const {
++  size_t operator()(const HashObject<Size,Hashsize>& obj) const {
+     return obj.Hash();
+   }
+   // Do the identity hash for pointers.
+   template<int Size, int Hashsize>
+-  size_t operator()(const HashObject<Size, Hashsize>* obj) const {
++  size_t operator()(const HashObject<Size,Hashsize>* obj) const {
+     return reinterpret_cast<uintptr_t>(obj);
+   }
+ 
+   // Less operator for MSVC's hash containers.
+   template<int Size, int Hashsize>
+-  bool operator()(const HashObject<Size, Hashsize>& a,
+-                  const HashObject<Size, Hashsize>& b) const {
++  bool operator()(const HashObject<Size,Hashsize>& a,
++                  const HashObject<Size,Hashsize>& b) const {
+     return a < b;
+   }
+   template<int Size, int Hashsize>
+-  bool operator()(const HashObject<Size, Hashsize>* a,
+-                  const HashObject<Size, Hashsize>* b) const {
++  bool operator()(const HashObject<Size,Hashsize>* a,
++                  const HashObject<Size,Hashsize>* b) const {
+     return a < b;
+   }
+   // These two public members are required by msvc.  4 and 8 are defaults.
+@@ -356,10 +350,9 @@
+   result.tv_sec  = u.ru_utime.tv_sec  - start.ru_utime.tv_sec;
+   result.tv_usec = u.ru_utime.tv_usec - start.ru_utime.tv_usec;
+ 
+-  return static_cast<double>(result.tv_sec) +
+-      static_cast<double>(result.tv_usec) / 1000000.0;
++  return double(result.tv_sec) + double(result.tv_usec) / 1000000.0;
+ #elif defined HAVE_WINDOWS_H
+-  return static_cast<double>(GetTickCount() - start) / 1000.0;
++  return double(GetTickCount() - start) / 1000.0;
+ #else
+   time_t now;
+   time(&now);
+@@ -385,10 +378,8 @@
+   print_uname();
+   printf("Average over %d iterations\n", iters);
+   fflush(stdout);
+-  struct tm gmtime_buf;
+-  char asc_timebuf[26];  // 26: see man asctime_r
+-  printf("Current time (GMT): %s",
+-         asctime_r(gmtime_r(&now, &gmtime_buf), asc_timebuf));
++  // don't need asctime_r/gmtime_r: we're not threaded
++  printf("Current time (GMT): %s", asctime(gmtime(&now)));
+ }
+ 
+ // This depends on the malloc implementation for exactly what it does
+@@ -397,7 +388,7 @@
+ // STL tries to do on its own.
+ 
+ #ifdef HAVE_GOOGLE_MALLOC_EXTENSION_H
+-#include <sparsehash/malloc_extension.h>
++#include <google/malloc_extension.h>
+ 
+ static size_t CurrentMemoryUsage() {
+   size_t result;
+@@ -440,7 +431,7 @@
+   const size_t start = CurrentMemoryUsage();
+   t.Reset();
+   for (int i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+   double ut = t.UserTime();
+   const size_t finish = CurrentMemoryUsage();
+@@ -456,7 +447,7 @@
+   set.resize(iters);
+   t.Reset();
+   for (int i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+   double ut = t.UserTime();
+   const size_t finish = CurrentMemoryUsage();
+@@ -470,12 +461,12 @@
+   int i;
+ 
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+ 
+   t.Reset();
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+   double ut = t.UserTime();
+ 
+@@ -491,7 +482,7 @@
+   int i;
+ 
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+ 
+   r = 1;
+@@ -516,9 +507,9 @@
+ 
+ // Apply a pseudorandom permutation to the given vector.
+ static void shuffle(vector<int>* v) {
+-  unsigned int rand_seed = 9;  // originally was: srand(9);
++  srand(9);
+   for (int n = v->size(); n >= 2; n--) {
+-    swap((*v)[n - 1], (*v)[static_cast<unsigned>(rand_r(&rand_seed)) % n]);
++    swap((*v)[n - 1], (*v)[static_cast<unsigned>(rand()) % n]);
+   }
+ }
+ 
+@@ -557,12 +548,12 @@
+   int i;
+ 
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+ 
+   t.Reset();
+   for (i = 0; i < iters; i++) {
+-    set.erase(typename MapType::key_type(i));
++    set.erase(i);
+   }
+   double ut = t.UserTime();
+ 
+@@ -578,8 +569,8 @@
+   const size_t start = CurrentMemoryUsage();
+   t.Reset();
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
+-    set.erase(typename MapType::key_type(i));
++    set[i] = i+1;
++    set.erase(i);
+   }
+ 
+   double ut = t.UserTime();
+@@ -596,7 +587,7 @@
+   int i;
+ 
+   for (i = 0; i < iters; i++) {
+-    set[typename MapType::key_type(i)] = i+1;
++    set[i] = i+1;
+   }
+ 
+   r = 1;
+@@ -727,18 +718,10 @@
+   // a HashObject as it would be to use just a straight int/char
+   // buffer.  To keep memory use similar, we normalize the number of
+   // iterations based on size.
+-  if (FLAGS_test_4_bytes) {
+-    test_all_maps<HashObject<4, 4> >(4, iters/1);
+-  }
+-  if (FLAGS_test_8_bytes) {
+-    test_all_maps<HashObject<8, 8> >(8, iters/2);
+-  }
+-  if (FLAGS_test_16_bytes) {
+-    test_all_maps<HashObject<16, 16> >(16, iters/4);
+-  }
+-  if (FLAGS_test_256_bytes) {
+-    test_all_maps<HashObject<256, 256> >(256, iters/32);
+-  }
++  if (FLAGS_test_4_bytes)  test_all_maps< HashObject<4,4> >(4, iters/1);
++  if (FLAGS_test_8_bytes)  test_all_maps< HashObject<8,8> >(8, iters/2);
++  if (FLAGS_test_16_bytes)  test_all_maps< HashObject<16,16> >(16, iters/4);
++  if (FLAGS_test_256_bytes)  test_all_maps< HashObject<256,256> >(256, iters/32);
+ 
+   return 0;
+ }
+diff -u ./type_traits_unittest.cc /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/type_traits_unittest.cc
+--- ./type_traits_unittest.cc	1980-01-01 00:00:00.000000000 +0100
++++ /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/type_traits_unittest.cc	2014-02-10 13:15:25.676130583 +0100
+@@ -53,6 +53,7 @@
+ using GOOGLE_NAMESPACE::has_trivial_destructor;
+ #if !defined(_MSC_VER) && !(defined(__GNUC__) && __GNUC__ <= 3)
+ using GOOGLE_NAMESPACE::is_convertible;
++using GOOGLE_NAMESPACE::is_enum;
+ #endif
+ using GOOGLE_NAMESPACE::is_floating_point;
+ using GOOGLE_NAMESPACE::is_integral;
+@@ -187,7 +188,7 @@
+   EXPECT_FALSE(is_integral<string>::value);
+   EXPECT_FALSE(is_integral<int*>::value);
+   EXPECT_FALSE(is_integral<A>::value);
+-  EXPECT_FALSE((is_integral<std::pair<int, int> >::value));
++  EXPECT_FALSE((is_integral<pair<int, int> >::value));
+ 
+   // Verify that cv-qualified integral types are still integral, and
+   // cv-qualified non-integral types are still non-integral.
+@@ -211,7 +212,7 @@
+   EXPECT_FALSE(is_floating_point<string>::value);
+   EXPECT_FALSE(is_floating_point<float*>::value);
+   EXPECT_FALSE(is_floating_point<A>::value);
+-  EXPECT_FALSE((is_floating_point<std::pair<int, int> >::value));
++  EXPECT_FALSE((is_floating_point<pair<int, int> >::value));
+ 
+   // Verify that cv-qualified floating point types are still floating, and
+   // cv-qualified non-floating types are still non-floating.
+@@ -257,30 +258,30 @@
+ TEST(TypeTraitsTest, TestIsEnum) {
+ // is_enum isn't supported on MSVC or gcc 3.x
+ #if !defined(_MSC_VER) && !(defined(__GNUC__) && __GNUC__ <= 3)
+-  // Verify that base::internal::is_enum is true for enum types.
+-  EXPECT_TRUE(base::internal::is_enum<G>::value);
+-  EXPECT_TRUE(base::internal::is_enum<const G>::value);
+-  EXPECT_TRUE(base::internal::is_enum<volatile G>::value);
+-  EXPECT_TRUE(base::internal::is_enum<const volatile G>::value);
+-
+-  // Verify that base::internal::is_enum is false for a few non-enum types.
+-  EXPECT_FALSE(base::internal::is_enum<void>::value);
+-  EXPECT_FALSE(base::internal::is_enum<G&>::value);
+-  EXPECT_FALSE(base::internal::is_enum<G[1]>::value);
+-  EXPECT_FALSE(base::internal::is_enum<const G[1]>::value);
+-  EXPECT_FALSE(base::internal::is_enum<G[]>::value);
+-  EXPECT_FALSE(base::internal::is_enum<int>::value);
+-  EXPECT_FALSE(base::internal::is_enum<float>::value);
+-  EXPECT_FALSE(base::internal::is_enum<A>::value);
+-  EXPECT_FALSE(base::internal::is_enum<A*>::value);
+-  EXPECT_FALSE(base::internal::is_enum<const A>::value);
+-  EXPECT_FALSE(base::internal::is_enum<H>::value);
+-  EXPECT_FALSE(base::internal::is_enum<I>::value);
+-  EXPECT_FALSE(base::internal::is_enum<J>::value);
+-  EXPECT_FALSE(base::internal::is_enum<void()>::value);
+-  EXPECT_FALSE(base::internal::is_enum<void(*)()>::value);
+-  EXPECT_FALSE(base::internal::is_enum<int A::*>::value);
+-  EXPECT_FALSE(base::internal::is_enum<void (A::*)()>::value);
++  // Verify that is_enum is true for enum types.
++  EXPECT_TRUE(is_enum<G>::value);
++  EXPECT_TRUE(is_enum<const G>::value);
++  EXPECT_TRUE(is_enum<volatile G>::value);
++  EXPECT_TRUE(is_enum<const volatile G>::value);
++
++  // Verify that is_enum is false for a few non-enum types.
++  EXPECT_FALSE(is_enum<void>::value);
++  EXPECT_FALSE(is_enum<G&>::value);
++  EXPECT_FALSE(is_enum<G[1]>::value);
++  EXPECT_FALSE(is_enum<const G[1]>::value);
++  EXPECT_FALSE(is_enum<G[]>::value);
++  EXPECT_FALSE(is_enum<int>::value);
++  EXPECT_FALSE(is_enum<float>::value);
++  EXPECT_FALSE(is_enum<A>::value);
++  EXPECT_FALSE(is_enum<A*>::value);
++  EXPECT_FALSE(is_enum<const A>::value);
++  EXPECT_FALSE(is_enum<H>::value);
++  EXPECT_FALSE(is_enum<I>::value);
++  EXPECT_FALSE(is_enum<J>::value);
++  EXPECT_FALSE(is_enum<void()>::value);
++  EXPECT_FALSE(is_enum<void(*)()>::value);
++  EXPECT_FALSE(is_enum<int A::*>::value);
++  EXPECT_FALSE(is_enum<void (A::*)()>::value);
+ #endif
+ }
+ 
+@@ -292,9 +293,9 @@
+   EXPECT_TRUE(is_reference<const int*&>::value);
+   EXPECT_TRUE(is_reference<int (&)(bool)>::value);
+   EXPECT_TRUE(is_reference<RefFloat>::value);
+-  EXPECT_TRUE(is_reference<const float&>::value);
+-  EXPECT_TRUE(is_reference<volatile float&>::value);
+-  EXPECT_TRUE(is_reference<const volatile float&>::value);
++  EXPECT_TRUE(is_reference<const RefFloat>::value);
++  EXPECT_TRUE(is_reference<volatile RefFloat>::value);
++  EXPECT_TRUE(is_reference<const volatile RefFloat>::value);
+ 
+ 
+   // Verifies that is_reference is false for all non-reference types.
+@@ -355,7 +356,7 @@
+   // Verify that some non-POD types are not marked as PODs.
+   EXPECT_FALSE(is_pod<void>::value);
+   EXPECT_FALSE(is_pod<string>::value);
+-  EXPECT_FALSE((is_pod<std::pair<int, int> >::value));
++  EXPECT_FALSE((is_pod<pair<int, int> >::value));
+   EXPECT_FALSE(is_pod<A>::value);
+   EXPECT_FALSE(is_pod<B>::value);
+   EXPECT_FALSE(is_pod<C>::value);
+@@ -388,13 +389,13 @@
+   // Verify that pairs and arrays of such types have trivial
+   // constructors.
+   typedef int int10[10];
+-  EXPECT_TRUE((has_trivial_constructor<std::pair<int, char*> >::value));
++  EXPECT_TRUE((has_trivial_constructor<pair<int, char*> >::value));
+   EXPECT_TRUE(has_trivial_constructor<int10>::value);
+ 
+   // Verify that pairs of types without trivial constructors
+   // are not marked as trivial.
+-  EXPECT_FALSE((has_trivial_constructor<std::pair<int, string> >::value));
+-  EXPECT_FALSE((has_trivial_constructor<std::pair<string, int> >::value));
++  EXPECT_FALSE((has_trivial_constructor<pair<int, string> >::value));
++  EXPECT_FALSE((has_trivial_constructor<pair<string, int> >::value));
+ 
+   // Verify that types without trivial constructors are
+   // correctly marked as such.
+@@ -431,13 +432,13 @@
+   // Verify that pairs and arrays of such types have trivial
+   // copy constructors.
+   typedef int int10[10];
+-  EXPECT_TRUE((has_trivial_copy<std::pair<int, char*> >::value));
++  EXPECT_TRUE((has_trivial_copy<pair<int, char*> >::value));
+   EXPECT_TRUE(has_trivial_copy<int10>::value);
+ 
+   // Verify that pairs of types without trivial copy constructors
+   // are not marked as trivial.
+-  EXPECT_FALSE((has_trivial_copy<std::pair<int, string> >::value));
+-  EXPECT_FALSE((has_trivial_copy<std::pair<string, int> >::value));
++  EXPECT_FALSE((has_trivial_copy<pair<int, string> >::value));
++  EXPECT_FALSE((has_trivial_copy<pair<string, int> >::value));
+ 
+   // Verify that types without trivial copy constructors are
+   // correctly marked as such.
+@@ -474,13 +475,13 @@
+   // Verify that pairs and arrays of such types have trivial
+   // assignment operators.
+   typedef int int10[10];
+-  EXPECT_TRUE((has_trivial_assign<std::pair<int, char*> >::value));
++  EXPECT_TRUE((has_trivial_assign<pair<int, char*> >::value));
+   EXPECT_TRUE(has_trivial_assign<int10>::value);
+ 
+   // Verify that pairs of types without trivial assignment operators
+   // are not marked as trivial.
+-  EXPECT_FALSE((has_trivial_assign<std::pair<int, string> >::value));
+-  EXPECT_FALSE((has_trivial_assign<std::pair<string, int> >::value));
++  EXPECT_FALSE((has_trivial_assign<pair<int, string> >::value));
++  EXPECT_FALSE((has_trivial_assign<pair<string, int> >::value));
+ 
+   // Verify that types without trivial assignment operators are
+   // correctly marked as such.
+@@ -516,13 +517,13 @@
+   // Verify that pairs and arrays of such types have trivial
+   // destructors.
+   typedef int int10[10];
+-  EXPECT_TRUE((has_trivial_destructor<std::pair<int, char*> >::value));
++  EXPECT_TRUE((has_trivial_destructor<pair<int, char*> >::value));
+   EXPECT_TRUE(has_trivial_destructor<int10>::value);
+ 
+   // Verify that pairs of types without trivial destructors
+   // are not marked as trivial.
+-  EXPECT_FALSE((has_trivial_destructor<std::pair<int, string> >::value));
+-  EXPECT_FALSE((has_trivial_destructor<std::pair<string, int> >::value));
++  EXPECT_FALSE((has_trivial_destructor<pair<int, string> >::value));
++  EXPECT_FALSE((has_trivial_destructor<pair<string, int> >::value));
+ 
+   // Verify that types without trivial destructors are
+   // correctly marked as such.
+@@ -622,60 +623,6 @@
+ #endif
+ }
+ 
+-
+-// TypeTypedefExists<T>::Exists() returns true iff T::type is a defined type.
+-// Used as a helper for testing enable_if<cond, type>
+-template <typename T>
+-class TypeTypedefExists {
+- public:
+-  static bool Test() {
+-    return Exists<T>(NULL);
+-  }
+-
+- private:
+-  // When ::type is not defined SFINAE means that our first overload will not
+-  // exist.  Conversely, when ::type _is_ defined and test is overloaded we will
+-  // always match NULL more specifically than a variadic.
+-  template <typename X> static bool Exists(typename X::type *) { return true; }
+-  template <typename X> static bool Exists(...) { return false; }
+-};
+-
+-struct HasType { typedef int type; };
+-struct DoesntHaveType {};
+-struct StillDoesntHaveType { int type; };
+-
+-TEST(TypeTraitsTest, TestEnableIf) {
+-  // In the true case, enable_if<..., type>::type must exist and match.
+-  // Compilation is sufficient to guarantee the first, we validate the second
+-  EXPECT_TRUE((
+-      GOOGLE_NAMESPACE::type_equals_<
+-          GOOGLE_NAMESPACE::enable_if<true, GOOGLE_NAMESPACE::true_type>::type,
+-          GOOGLE_NAMESPACE::true_type>::value));
+-
+-  // When type is not specified, it should default to void
+-  EXPECT_TRUE((
+-      GOOGLE_NAMESPACE::type_equals_<GOOGLE_NAMESPACE::enable_if<true>::type,
+-                                     void>::value));
+-
+-  // Make sure TypeTypedefExists<...> behaves as we expect
+-  EXPECT_TRUE((TypeTypedefExists<HasType>::Test()));
+-  EXPECT_FALSE((TypeTypedefExists<DoesntHaveType>::Test()));
+-  EXPECT_FALSE((TypeTypedefExists<StillDoesntHaveType>::Test()));
+-
+-  // In the false case ::type must not exist, regardless of type being specified
+-  EXPECT_FALSE(
+-      (TypeTypedefExists< GOOGLE_NAMESPACE::enable_if<false, int> >::Test()));
+-
+-  EXPECT_FALSE(
+-      (TypeTypedefExists< GOOGLE_NAMESPACE::enable_if<false> >::Test()));
+-
+-  // Final sanity check against the enable_if<true, [ ... ] > cases
+-  EXPECT_TRUE(
+-      (TypeTypedefExists< GOOGLE_NAMESPACE::enable_if<true, int> >::Test()));
+-  EXPECT_TRUE(
+-      (TypeTypedefExists< GOOGLE_NAMESPACE::enable_if<true> >::Test()));
+-}
+-
+ }  // namespace
+ 
+ #include <iostream>
+Common subdirectories: ./windows and /usr/local/google/home/lperron/work/or-tools/dependencies/sources/sparsehash-116/src/windows
