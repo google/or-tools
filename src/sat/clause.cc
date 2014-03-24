@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include "base/unique_ptr.h"
+#include <functional>
 #include <string>
 #include <vector>
 
