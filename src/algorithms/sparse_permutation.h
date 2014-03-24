@@ -94,6 +94,9 @@ inline void SparsePermutation::CloseCurrentCycle() {
 }
 
 struct SparsePermutation::Iterator {
+  Iterator() {}
+  Iterator(const std::vector<int>::const_iterator& b, 
+           const std::vector<int>::const_iterator& e) : begin_(b), end_(e) {}
   // These typedefs allow this iterator to be used within testing::ElementsAre.
   typedef int value_type;
   typedef std::vector<int>::const_iterator const_iterator;
@@ -109,8 +112,8 @@ struct SparsePermutation::Iterator {
 inline SparsePermutation::Iterator SparsePermutation::Cycle(int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, NumCycles());
-  return {cycles_.begin() + (i == 0 ? 0 : cycle_ends_[i - 1]),
-          cycles_.begin() + cycle_ends_[i]};
+  return Iterator(cycles_.begin() + (i == 0 ? 0 : cycle_ends_[i - 1]),
+                  cycles_.begin() + cycle_ends_[i]);
 }
 
 inline int SparsePermutation::LastElementInCycle(int i) const {

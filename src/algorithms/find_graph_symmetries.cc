@@ -145,7 +145,7 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
 
 void GraphSymmetryFinder::DistinguishNodeInPartition(
     int node, DynamicPartition* partition) {
-  partition->Refine({node});
+  partition->Refine(std::vector<int>(1, node));
   RecursivelyRefinePartitionByAdjacency(partition->PartOf(node), partition);
 }
 
@@ -229,6 +229,8 @@ void GraphSymmetryFinder::FindSymmetries(
   // Then we'll perform 2) in the reverse order, backtracking the stack from 1)
   // as using another dedicated stack for the search (see below).
   struct InvariantDiveState {
+    InvariantDiveState(int node, int num_parts)
+      : invariant_node(node), num_parts_before_refinement(num_parts) {}
     int invariant_node;
     int num_parts_before_refinement;
   };
@@ -236,7 +238,7 @@ void GraphSymmetryFinder::FindSymmetries(
   for (int invariant_node = 0; invariant_node < NumNodes(); ++invariant_node) {
     if (base_partition.SizeOfPart(base_partition.PartOf(invariant_node)) != 1) {
       invariant_dive_stack.push_back(
-          {invariant_node, base_partition.NumParts()});
+          InvariantDiveState(invariant_node, base_partition.NumParts()));
       DistinguishNodeInPartition(invariant_node, &base_partition);
       VLOG(4) << "Invariant dive: invariant node = " << invariant_node
               << "; partition after: "
@@ -355,11 +357,11 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   DistinguishNodeInPartition(root_node, base_partition);
 
   DCHECK(search_states_.empty());
-  search_states_.push_back(
-      {/*base_node=*/root_node,
-       /*potential_image_nodes=*/{root_image_node},
-       /*num_parts_before_trying_to_map_base_node=*/base_num_parts,
-       /*potential_image_nodes_were_pruned=*/true});
+  search_states_.push_back(SearchState(
+      /*base_node=*/root_node,
+      /*potential_image_nodes=*/std::vector<int>(1, root_image_node),
+      /*num_parts_before_trying_to_map_base_node=*/base_num_parts,
+      /*potential_image_nodes_were_pruned=*/true));
   while (!search_states_.empty()) {
     SearchState* const ss = &search_states_.back();
     // At this stage, we're supposed to have:
@@ -507,10 +509,11 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     // TODO(user, fdid): try some heuristics to optimize the choice of the
     // base node. For example, select a base node that maps to itself.
     const int next_base_node = *base_part.begin();
-    search_states_.push_back(
-        {/*base_node*/ next_base_node,
-         /*potential_image_nodes*/ {image_part.begin(), image_part.end()},
-         /*num_parts_before_trying_to_map_base_node*/ unrefined_num_parts});
+    search_states_.push_back(SearchState(
+        /*base_node*/ next_base_node,
+        /*potential_image_nodes*/ std::vector<int>(image_part.begin(), image_part.end()),
+        /*num_parts_before_trying_to_map_base_node*/ unrefined_num_parts,
+        false));
     DistinguishNodeInPartition(next_base_node, base_partition);
     VLOG(4) << "    Distinguishing new base node " << next_base_node;
   }

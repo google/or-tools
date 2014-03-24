@@ -125,6 +125,8 @@ class DynamicPartition {
   std::vector<int> part_of_;
 
   struct Part {
+    Part() : start_index(0), end_index(0), parent_part(0) {}
+    Part(int s, int e, int p) : start_index(s), end_index(e), parent_part(p) {}
     // This part holds elements[start_index .. end_index-1].
     // INVARIANT: end_index > start_index.
     int start_index;  // Inclusive
@@ -145,8 +147,9 @@ class DynamicPartition {
 };
 
 struct DynamicPartition::IterablePart {
-  IterablePart(std::vector<int>::const_iterator b,
-               std::vector<int>::const_iterator e)
+  IterablePart() {}
+  IterablePart(const std::vector<int>::const_iterator& b,
+               const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}
   std::vector<int>::const_iterator begin() const { return begin_; }
   std::vector<int>::const_iterator end() const { return end_; }

@@ -263,7 +263,7 @@ class IdGenerator {
   }
 
  private:
-  hash_map<std::pair<int, int>, int> id_map_;
+  hash_map<std::pair<int, int64>, int> id_map_;
 };
 }  // namespace.
 

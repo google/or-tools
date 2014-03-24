@@ -27,7 +27,7 @@ DynamicPartition::DynamicPartition(int n) {
     index_of_[i] = i;
   }
   part_of_.assign(n, 0);
-  part_.push_back({/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0});
+  part_.push_back(Part(/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0));
 }
 
 DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_element) {
@@ -122,8 +122,8 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
     // Perform the split.
     part_[part].end_index = split_index;
     const int new_part = NumParts();
-    part_.push_back({/*start_index*/ split_index, /*end_index*/ end_index,
-                     /*parent_part*/ part});
+    part_.push_back(Part(/*start_index*/ split_index, /*end_index*/ end_index,
+                         /*parent_part*/ part));
     for (const int element : ElementsInPart(new_part)) {
       part_of_[element] = new_part;
     }
