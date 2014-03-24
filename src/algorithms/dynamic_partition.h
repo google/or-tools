@@ -145,6 +145,9 @@ class DynamicPartition {
 };
 
 struct DynamicPartition::IterablePart {
+  IterablePart(std::vector<int>::const_iterator b,
+               std::vector<int>::const_iterator e)
+      : begin_(b), end_(e) {}
   std::vector<int>::const_iterator begin() const { return begin_; }
   std::vector<int>::const_iterator end() const { return end_; }
   std::vector<int>::const_iterator begin_;
@@ -216,8 +219,8 @@ inline DynamicPartition::IterablePart DynamicPartition::ElementsInPart(int i)
     const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, NumParts());
-  return {element_.begin() + part_[i].start_index,
-          element_.begin() + part_[i].end_index};
+  return IterablePart(element_.begin() + part_[i].start_index,
+                      element_.begin() + part_[i].end_index);
 }
 
 inline int DynamicPartition::PartOf(int element) const {
