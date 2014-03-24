@@ -343,7 +343,7 @@ class PbReasonCache {
 
 #if defined(_MSC_VER)
   hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex,
-           PairPointerIntHasher> map_;
+           PairPointerIntHasher<UpperBoundedLinearConstraint> > map_;
 #else
   hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
 #endif
