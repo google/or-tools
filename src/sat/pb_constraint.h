@@ -341,7 +341,12 @@ class PbReasonCache {
     return std::make_pair(info.pb_constraint, info.source_trail_index);
   }
 
+#if defined(_MSC_VER)
+  hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex,
+           PairPointerIntHasher> map_;
+#else
   hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
+#endif
   DISALLOW_COPY_AND_ASSIGN(PbReasonCache);
 };
 
