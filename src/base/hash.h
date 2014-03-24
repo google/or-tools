@@ -178,6 +178,24 @@ class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
            (a1.first == a2.first && a1.second < a2.second);
   }
 };
+
+template <class T, class U>
+class PairPointerIntTypeHasher
+    : public stdext::hash_compare<std::pair<T*, U> > {
+ public:
+  size_t operator()(const std::pair<T*, U>& a) const {
+    uint64 x = reinterpret_cast<uint64>(a.first);
+    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+    uint64 z = static_cast<uint64>(a.second.Value());
+    operations_research::mix(x, y, z);
+    return z;
+  }
+  bool operator()(const std::pair<T*, U>& a1,
+                  const std::pair<T*, U>& a2) const {
+    return a1.first < a2.first ||
+           (a1.first == a2.first && a1.second < a2.second);
+  }
+};
 #else
 template <class T>
 class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
@@ -191,6 +209,24 @@ class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
   }
   bool operator()(const std::pair<T*, int>& a1,
                   const std::pair<T*, int>& a2) const {
+    return a1.first < a2.first ||
+           (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+
+template <class T, class U>
+class PairPointerIntTypeHasher
+    : public stdext::hash_compare<std::pair<T*, U> > {
+ public:
+  size_t operator()(const std::pair<T*, U>& a) const {
+    uint32 x = reinterpret_cast<uint32>(a.first);
+    uint32 y = 0x9e3779b9UL;
+    uint32 z = static_cast<uint32>(a.second.Value());
+    operations_research::mix(x, y, z);
+    return z;
+  }
+  bool operator()(const std::pair<T*, U>& a1,
+                  const std::pair<T*, U>& a2) const {
     return a1.first < a2.first ||
            (a1.first == a2.first && a1.second < a2.second);
   }
