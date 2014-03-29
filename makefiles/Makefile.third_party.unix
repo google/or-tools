@@ -146,6 +146,7 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/source
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && patch -p0 -i ../../archives/sparsehash.patch
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
