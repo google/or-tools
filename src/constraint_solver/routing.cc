@@ -2429,7 +2429,9 @@ const Assignment* RoutingModel::SolveWithParameters(
   FLAGS_routing_use_extended_swap_active = p.use_extended_swap_active;
   FLAGS_routing_solution_limit = p.solution_limit;
   FLAGS_routing_time_limit = p.time_limit;
+  time_limit_ms_ = p.time_limit;
   FLAGS_routing_lns_time_limit = p.lns_time_limit;
+  lns_time_limit_ms_ = p.lns_time_limit;
   FLAGS_routing_guided_local_search = p.guided_local_search;
   FLAGS_routing_guided_local_search_lamda_coefficient =
       p.guided_local_search_lamda_coefficient;
