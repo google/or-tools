@@ -226,7 +226,7 @@ struct RoutingSearchParameters {
     time_limit = kint64max;
     lns_time_limit = 100;
     guided_local_search = false;
-    guided_local_search_lamda_coefficient = 0.1;
+    guided_local_search_lambda_coefficient = 0.1;
     simulated_annealing = false;
     tabu_search = false;
     dfs = false;
@@ -281,7 +281,7 @@ struct RoutingSearchParameters {
   // Routing: use GLS.
   bool guided_local_search;
   // Lambda coefficient in GLS.
-  double guided_local_search_lamda_coefficient;
+  double guided_local_search_lambda_coefficient;
   // Routing: use simulated annealing.
   bool simulated_annealing;
   // Routing: use tabu search.

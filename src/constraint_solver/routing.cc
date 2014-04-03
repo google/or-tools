@@ -77,8 +77,8 @@ DEFINE_int64(routing_lns_time_limit, 100,
 
 // Meta-heuritics
 DEFINE_bool(routing_guided_local_search, false, "Routing: use GLS.");
-DEFINE_double(routing_guided_local_search_lamda_coefficient, 0.1,
-              "Lamda coefficient in GLS.");
+DEFINE_double(routing_guided_local_search_lambda_coefficient, 0.1,
+              "Lambda coefficient in GLS.");
 DEFINE_bool(routing_simulated_annealing, false,
             "Routing: use simulated annealing.");
 DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
@@ -2433,8 +2433,8 @@ const Assignment* RoutingModel::SolveWithParameters(
   FLAGS_routing_lns_time_limit = p.lns_time_limit;
   lns_time_limit_ms_ = p.lns_time_limit;
   FLAGS_routing_guided_local_search = p.guided_local_search;
-  FLAGS_routing_guided_local_search_lamda_coefficient =
-      p.guided_local_search_lamda_coefficient;
+  FLAGS_routing_guided_local_search_lambda_coefficient =
+      p.guided_local_search_lambda_coefficient;
   FLAGS_routing_simulated_annealing = p.simulated_annealing;
   FLAGS_routing_tabu_search = p.tabu_search;
   FLAGS_routing_dfs = p.dfs;
@@ -3814,13 +3814,13 @@ void RoutingModel::SetupMetaheuristics() {
             false, cost_,
             NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
             FLAGS_routing_optimization_step, nexts_,
-            FLAGS_routing_guided_local_search_lamda_coefficient);
+            FLAGS_routing_guided_local_search_lambda_coefficient);
       } else {
         optimize = solver_->MakeGuidedLocalSearch(
             false, cost_,
             NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
             FLAGS_routing_optimization_step, nexts_, vehicle_vars_,
-            FLAGS_routing_guided_local_search_lamda_coefficient);
+            FLAGS_routing_guided_local_search_lambda_coefficient);
       }
       break;
     case ROUTING_SIMULATED_ANNEALING:
