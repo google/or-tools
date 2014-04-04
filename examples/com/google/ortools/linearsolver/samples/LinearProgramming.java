@@ -115,10 +115,54 @@ public class LinearProgramming {
     System.out.println("    activity = " + c2.activity());
   }
 
+  private static void exportLinearProgrammingExample(String solverType) {
+    MPSolver solver = createSolver(solverType);
+    if (solver == null) {
+      System.out.println("Could not create solver " + solverType);
+      return;
+    }
+    double infinity = solver.infinity();
+    // x1, x2 and x3 are continuous non-negative variables.
+    MPVariable x1 = solver.makeNumVar(0.0, infinity, "x1");
+    MPVariable x2 = solver.makeNumVar(0.0, infinity, "x2");
+    MPVariable x3 = solver.makeNumVar(0.0, infinity, "x3");
+
+    // Maximize 10 * x1 + 6 * x2 + 4 * x3.
+    solver.objective().setCoefficient(x1, 10);
+    solver.objective().setCoefficient(x2, 6);
+    solver.objective().setCoefficient(x3, 4);
+    solver.objective().setMaximization();
+
+    // x1 + x2 + x3 <= 100.
+    MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
+    c0.setCoefficient(x1, 1);
+    c0.setCoefficient(x2, 1);
+    c0.setCoefficient(x3, 1);
+
+    // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
+    MPConstraint c1 = solver.makeConstraint(-infinity, 600.0);
+    c1.setCoefficient(x1, 10);
+    c1.setCoefficient(x2, 4);
+    c1.setCoefficient(x3, 5);
+
+    // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
+    MPConstraint c2 = solver.makeConstraint(-infinity, 300.0);
+    c2.setCoefficient(x1, 2);
+    c2.setCoefficient(x2, 2);
+    c2.setCoefficient(x3, 6);
+
+    String out = solver.exportModelAsLpFormat(false);
+    System.out.println(out);
+    out = solver.exportModelAsMpsFormat(true, false);
+    System.out.println(out);
+  }
+
   public static void main(String[] args) throws Exception {
     System.out.println("---- Linear programming example with GLPK ----");
     runLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
+    System.out.println("---- Export Linear programming example ----");
+    exportLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
   }
 }
