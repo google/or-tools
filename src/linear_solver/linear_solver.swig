@@ -485,7 +485,7 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
 
 #ifdef SWIGJAVA
 
-%module(directors="1") operations_research_linear_solver;
+%module(directors="1") operations_research_solver;
 
 %typemap(javaimports) SWIGTYPE %{
 import java.lang.reflect.*;
@@ -888,6 +888,22 @@ namespace operations_research {
   }
 %}
 
+%extend MPSolver {
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+}
+
 // Add csharp code on Solver.
 %typemap(cscode) MPSolver %{
   public Variable[] MakeVarArray(int count,
@@ -1114,20 +1130,6 @@ namespace operations_research {
     Objective().Clear();
     Objective().SetMaximization();
     Objective().SetCoefficient(var, 1.0);
-  }
-
-  std::string ExportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
-  }
-
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
   }
 %}
 
