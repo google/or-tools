@@ -63,6 +63,11 @@
 %rename (Objective) MutableObjective;
 // Access to the underlying solver is available only in C++.
 %ignore underlying_solver;
+// The ExportModelAs*Format methods return the string directly in the python
+// API, using an empty string to indicate failures (which can also indicate an
+// empty model).
+%ignore ExportModelAsLpFormat(bool, string*);
+%ignore ExportModelAsMpsFormat(bool, bool, string*);
 
 namespace operations_research {
 %pythoncode {
@@ -535,7 +540,7 @@ namespace operations_research {
 %rename (clear) MPObjective::Clear;
 %rename (clear) MPSolver::Clear;
 %rename (computeExactConditionNumber) MPSolver::ComputeExactConditionNumber;
-%rename (loadModel) MPSolver::LoadModel;
+%rename (loadModelFromProto) MPSolver::LoadModelFromProto;
 %rename (lookupVariableOrNull) MPSolver::LookupVariableOrNull;
 %rename (lookupConstraintOrNull) MPSolver::LookupConstraintOrNull;
 %rename (makeBoolVar) MPSolver::MakeBoolVar;
@@ -577,6 +582,9 @@ namespace operations_research {
 %ignore MPSolver::ExportModel;
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
+// Ignore export to string methods.
+%ignore operations_research::MPSolver::ExportModelAsLpFormat;
+%ignore operations_research::MPSolver::ExportModelAsMpsFormat;
 // Access to the underlying solver is available only in C++.
 %ignore MPSolver::underlying_solver;
 
@@ -646,6 +654,21 @@ Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
   }
 %}
 
+%extend MPSolver {
+  std::string exportModelAsLpFormat(bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+}
 }  // namespace operations_research
 
 #endif  // SWIGJAVA
@@ -689,6 +712,9 @@ namespace operations_research {
 // Ignore Objective(), use MutableObjective() instead.
 %ignore MPSolver::Objective;
 %rename (Objective) MPSolver::MutableObjective;
+// Ignore export to string methods.
+%ignore operations_research::MPSolver::ExportModelAsLpFormat;
+%ignore operations_research::MPSolver::ExportModelAsMpsFormat;
 
 %typemap(cscode) MPVariable %{
   public static LinearExpr operator+(Variable a, double v)
@@ -1088,6 +1114,20 @@ namespace operations_research {
     Objective().Clear();
     Objective().SetMaximization();
     Objective().SetCoefficient(var, 1.0);
+  }
+
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
+    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
   }
 %}
 

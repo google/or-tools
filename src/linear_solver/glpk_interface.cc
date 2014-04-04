@@ -664,10 +664,10 @@ MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
 // ------ Query statistics on the solution and the solve ------
 
 int64 GLPKInterface::iterations() const {
-#if GLP_MINOR_VERSION < 49
+#if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 49
   if (!mip_ && CheckSolutionIsSynchronized())
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
-#elif GLP_MINOR_VERSION >= 53
+#elif GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION >= 53
   if (!mip_ && CheckSolutionIsSynchronized()) {
     return glp_get_it_cnt(lp_);
   }

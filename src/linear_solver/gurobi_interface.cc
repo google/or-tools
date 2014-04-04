@@ -729,7 +729,7 @@ std::string GurobiInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
 }
 
-MPSolverInterface* BuildGurobiInterface(MPSolver* const solver, bool mip) {
+MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
   return new GurobiInterface(solver, mip);
 }
 

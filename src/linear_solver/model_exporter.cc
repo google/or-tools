@@ -436,6 +436,28 @@ bool MPModelProtoExporter::CanUseFixedMpsFormat() const {
   return true;
 }
 
+void MPModelProtoExporter::AppendMpsColumns(bool integrality,
+    const std::vector<std::vector<std::pair<int, double>>>& transpose, std::string* output) {
+  current_mps_column_ = 0;
+  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
+    const MPVariableProto& var_proto = proto_.variable(var_index);
+    if (var_proto.is_integer() != integrality) continue;
+    const std::string var_name = GetVariableName(var_index);
+    current_mps_column_ = 0;
+    if (var_proto.objective_coefficient() != 0.0) {
+      AppendMpsTermWithContext(var_name, "COST",
+                               var_proto.objective_coefficient(),
+                               output);
+    }
+    for (const std::pair<int, double> cst_index_and_coeff : transpose[var_index]) {
+      const std::string cst_name = GetConstraintName(cst_index_and_coeff.first);
+      AppendMpsTermWithContext(var_name, cst_name, cst_index_and_coeff.second,
+                               output);
+    }
+    AppendNewLineIfTwoColumns(output);
+  }
+}
+
 bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
                                                   bool obfuscated,
                                                   std::string* output) {
@@ -486,9 +508,9 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
 
   // As the information regarding a column needs to be contiguous, we create
-  // a map associating a variable to a the vector containing the indices of the
+  // a map associating a variable to a vector containing the indices of the
   // constraints where this variable appears.
-  std::vector<std::vector<std::pair<int, double> > > transpose(proto_.variable_size());
+  std::vector<std::vector<std::pair<int, double>>> transpose(proto_.variable_size());
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     for (int k = 0; k < ct_proto.var_index_size(); ++k) {
@@ -506,35 +528,16 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
 
   // COLUMNS section.
-  current_mps_column_ = 0;
   std::string columns_section;
-  const char* const kIntMarkerFormat = "  %-10s%-36s%-10s\n";
-  for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
-    const MPVariableProto& var_proto = proto_.variable(var_index);
-    const std::string var_name = GetVariableName(var_index);
-    current_mps_column_ = 0;
-    if (var_proto.is_integer()) {
-      StringAppendF(&columns_section, kIntMarkerFormat, "INTSTART", "'MARKER'",
-                    "'INTORG'");
-    }
-    if (var_proto.objective_coefficient() != 0.0) {
-      AppendMpsTermWithContext(var_name, "COST",
-                               var_proto.objective_coefficient(),
-                               &columns_section);
-    }
-    for (const std::pair<int, double> cst_index_and_coeff : transpose[var_index]) {
-      const std::string cst_name = GetConstraintName(cst_index_and_coeff.first);
-      AppendMpsTermWithContext(var_name, cst_name, cst_index_and_coeff.second,
-                               &columns_section);
-    }
-    if (var_proto.is_integer()) {
-      columns_section += "\n";
-      current_mps_column_ = 0;
-      StringAppendF(&columns_section, kIntMarkerFormat, "INTEND", "'MARKER'",
-                    "'INTEND'");
-    }
-    AppendNewLineIfTwoColumns(&columns_section);
+  AppendMpsColumns(/*integrality=*/true, transpose, &columns_section);
+  if (!columns_section.empty()) {
+    const char* const kIntMarkerFormat = "  %-10s%-36s%-10s\n";
+    columns_section = StringPrintf(kIntMarkerFormat, "INTSTART",
+                                   "'MARKER'", "'INTORG'") + columns_section;
+    StringAppendF(&columns_section, kIntMarkerFormat,
+                  "INTEND", "'MARKER'", "'INTEND'");
   }
+  AppendMpsColumns(/*integrality=*/false, transpose, &columns_section);
   if (!columns_section.empty()) {
     *output += "COLUMNS\n" + columns_section;
   }

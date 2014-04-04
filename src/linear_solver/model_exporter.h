@@ -151,6 +151,13 @@ class MPModelProtoExporter {
   // Used by and in complement to AppendMpsTermWithContext.
   void AppendNewLineIfTwoColumns(std::string* output);
 
+  // When 'integrality' is true, appends columns corresponding to integer
+  // variables. Appends the columns for non-integer variables otherwise.
+  // The sparse matrix must be passed as a vector of columns ('transpose').
+  void AppendMpsColumns(bool integrality,
+                        const std::vector<std::vector<std::pair<int, double>>>& transpose,
+                        std::string* output);
+
   // Appends a line describing the bound of a variablenew-line if two columns
   // are already present on the MPS line.
   // Used by and in complement to AppendMpsTermWithContext.

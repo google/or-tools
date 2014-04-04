@@ -335,8 +335,8 @@ extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 extern MPSolverInterface* BuildSLMInterface(MPSolver* const solver, bool mip);
 #endif
 #if defined(USE_GUROBI)
-extern MPSolverInterface* BuildGurobiInterface(MPSolver* const solver,
-                                               bool mip);
+extern MPSolverInterface* BuildGurobiInterface(bool mip,
+                                               MPSolver* const solver);
 #endif
 
 
@@ -370,9 +370,9 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 #endif
 #if defined(USE_GUROBI)
     case MPSolver::GUROBI_LINEAR_PROGRAMMING:
-      return BuildGurobiInterface(solver, false);
+      return BuildGurobiInterface(false, solver);
     case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
-      return BuildGurobiInterface(solver, true);
+      return BuildGurobiInterface(true, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
