@@ -143,15 +143,16 @@ class GraphSymmetryFinder {
 
   // Data structure used by FindOneSuitablePermutation(). See the .cc
   struct SearchState {
+    int base_node;
+    std::vector<int> potential_image_nodes;
+    int num_parts_before_trying_to_map_base_node;
+    bool potential_image_nodes_were_pruned;
+
     SearchState(int bn, const std::vector<int>& vec, int num_parts, bool pruned)
       : base_node(bn),
         potential_image_nodes(vec),
         num_parts_before_trying_to_map_base_node(num_parts),
         potential_image_nodes_were_pruned(pruned) {}
-    int base_node;
-    std::vector<int> potential_image_nodes;
-    int num_parts_before_trying_to_map_base_node;
-    bool potential_image_nodes_were_pruned;
   };
   std::vector<SearchState> search_states_;
 };

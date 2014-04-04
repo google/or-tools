@@ -229,10 +229,11 @@ void GraphSymmetryFinder::FindSymmetries(
   // Then we'll perform 2) in the reverse order, backtracking the stack from 1)
   // as using another dedicated stack for the search (see below).
   struct InvariantDiveState {
-    InvariantDiveState(int node, int num_parts)
-      : invariant_node(node), num_parts_before_refinement(num_parts) {}
     int invariant_node;
     int num_parts_before_refinement;
+
+    InvariantDiveState(int node, int num_parts)
+      : invariant_node(node), num_parts_before_refinement(num_parts) {}
   };
   std::vector<InvariantDiveState> invariant_dive_stack;
   for (int invariant_node = 0; invariant_node < NumNodes(); ++invariant_node) {
@@ -511,7 +512,8 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     const int next_base_node = *base_part.begin();
     search_states_.push_back(SearchState(
         /*base_node*/ next_base_node,
-        /*potential_image_nodes*/ std::vector<int>(image_part.begin(), image_part.end()),
+        /*potential_image_nodes*/ std::vector<int>(image_part.begin(),
+                                              image_part.end()),
         /*num_parts_before_trying_to_map_base_node*/ unrefined_num_parts,
         false));
     DistinguishNodeInPartition(next_base_node, base_partition);
