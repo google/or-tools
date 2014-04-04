@@ -238,13 +238,13 @@ struct AssignmentInfo {
   // some fields will not be used and left uninitialized. We use unions to gain
   // a bit of memory.
 
-  //  struct Reason {
+  struct {
     SatClause* sat_clause;
     ResolutionNode* resolution_node;
     UpperBoundedLinearConstraint* pb_constraint;
     int symmetry_index;
-    VariableIndex reference_var;
-  //  };
+  };
+  VariableIndex reference_var;
 
 // Visual C++ has a problem with a Literal inside an union.
 #if defined(_MSC_VER)
