@@ -238,7 +238,7 @@ struct AssignmentInfo {
   // some fields will not be used and left uninitialized. We use unions to gain
   // a bit of memory.
 
-  struct {
+  union {
     SatClause* sat_clause;
     ResolutionNode* resolution_node;
     UpperBoundedLinearConstraint* pb_constraint;
