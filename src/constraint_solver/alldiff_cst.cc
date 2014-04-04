@@ -295,14 +295,14 @@ class RangeBipartiteMatching {
 
   // This method is used by the STL sort.
   struct CompareIntervalMin {
-    bool operator()(const Interval* i1, const Interval* i2) {
+    bool operator()(const Interval* i1, const Interval* i2) const {
       return (i1->min < i2->min);
     }
   };
 
   // This method is used by the STL sort.
   struct CompareIntervalMax {
-    bool operator()(const Interval* i1, const Interval* i2) {
+    bool operator()(const Interval* i1, const Interval* i2) const {
       return (i1->max < i2->max);
     }
   };

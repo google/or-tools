@@ -2702,15 +2702,15 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
     return solver->MakeIntConst(constant);
   }
   // Can we simplify using some gcd computation.
-  int64 gcd = abs(coefs[0]);
+  int64 gcd = std::abs(coefs[0]);
   for (int i = 1; i < coefs.size(); ++i) {
-    gcd = MathUtil::GCD64(gcd, abs(coefs[i]));
+    gcd = MathUtil::GCD64(gcd, std::abs(coefs[i]));
     if (gcd == 1) {
       break;
     }
   }
   if (constant != 0 && gcd != 1) {
-    gcd = MathUtil::GCD64(gcd, abs(constant));
+    gcd = MathUtil::GCD64(gcd, std::abs(constant));
   }
   if (gcd > 1) {
     for (int i = 0; i < coefs.size(); ++i) {

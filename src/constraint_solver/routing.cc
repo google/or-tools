@@ -25,10 +25,10 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
+#include "base/fingerprint2011.h"
 #include "base/hash.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
@@ -101,6 +101,8 @@ DEFINE_bool(routing_use_path_cumul_filter, true,
             "Use PathCumul constraint filter to speed up local search.");
 DEFINE_bool(routing_use_pickup_and_delivery_filter, true,
             "Use filter which filters precedence and same route constraints.");
+DEFINE_bool(routing_use_vehicle_var_filter, true,
+            "Use filter which filters vehicle variable domains.");
 DEFINE_bool(routing_use_disjunction_filter, true,
             "Use filter which filters node disjunction constraints.");
 
@@ -138,6 +140,9 @@ DEFINE_bool(routing_use_homogeneous_costs, true,
 DEFINE_bool(routing_check_compact_assignment, true,
             "Routing::CompactAssignment calls Solver::CheckAssignment on the "
             "compact assignment.");
+DEFINE_bool(routing_fingerprint_arc_cost_evaluators, true,
+            "Compare arc-cost evaluators using the fingerprint of their "
+            "corresponding matrix instead of evaluator addresses.");
 
 #if defined(_MSC_VER)
 namespace stdext {
@@ -293,10 +298,12 @@ Constraint* MakeLightElement2(
 
 class MakeRelocateNeighborsOperator : public PathOperator {
  public:
-  MakeRelocateNeighborsOperator(const std::vector<IntVar*>& vars,
-                                const std::vector<IntVar*>& secondary_vars,
-                                Solver::IndexEvaluator2* arc_evaluator)
-      : PathOperator(vars, secondary_vars, 2), arc_evaluator_(arc_evaluator) {
+  MakeRelocateNeighborsOperator(
+      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+      ResultCallback1<int, int64>* start_empty_path_class,
+      Solver::IndexEvaluator2* arc_evaluator)
+      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
+        arc_evaluator_(arc_evaluator) {
     int64 max_next = -1;
     for (const IntVar* const var : vars) {
       max_next = std::max(max_next, var->Max());
@@ -389,9 +396,10 @@ class MakeRelocateNeighborsOperator : public PathOperator {
 LocalSearchOperator* MakeRelocateNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
+    ResultCallback1<int, int64>* start_empty_path_class,
     Solver::IndexEvaluator2* arc_evaluator) {
-  return solver->RevAlloc(
-      new MakeRelocateNeighborsOperator(vars, secondary_vars, arc_evaluator));
+  return solver->RevAlloc(new MakeRelocateNeighborsOperator(
+      vars, secondary_vars, start_empty_path_class, arc_evaluator));
 }
 
 // Pair-based neighborhood operators, designed to move nodes by pairs (pairs
@@ -421,8 +429,9 @@ class MakePairActiveOperator : public PathOperator {
  public:
   MakePairActiveOperator(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
+                         ResultCallback1<int, int64>* start_empty_path_class,
                          const RoutingModel::NodePairs& pairs)
-      : PathOperator(vars, secondary_vars, 2),
+      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
         inactive_pair_(0),
         pairs_(pairs) {}
   virtual ~MakePairActiveOperator() {}
@@ -487,12 +496,13 @@ bool MakePairActiveOperator::MakeNeighbor() {
          MakeActive(pairs_[inactive_pair_].first, BaseNode(0));
 }
 
-LocalSearchOperator* MakePairActive(Solver* const solver,
-                                    const std::vector<IntVar*>& vars,
-                                    const std::vector<IntVar*>& secondary_vars,
-                                    const RoutingModel::NodePairs& pairs) {
-  return solver->RevAlloc(
-      new MakePairActiveOperator(vars, secondary_vars, pairs));
+LocalSearchOperator* MakePairActive(
+    Solver* const solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    ResultCallback1<int, int64>* start_empty_path_class,
+    const RoutingModel::NodePairs& pairs) {
+  return solver->RevAlloc(new MakePairActiveOperator(
+      vars, secondary_vars, start_empty_path_class, pairs));
 }
 
 // Operator which moves a pair of nodes to another position.
@@ -508,8 +518,9 @@ class PairRelocateOperator : public PathOperator {
  public:
   PairRelocateOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
+                       ResultCallback1<int, int64>* start_empty_path_class,
                        const RoutingModel::NodePairs& node_pairs)
-      : PathOperator(vars, secondary_vars, 3) {
+      : PathOperator(vars, secondary_vars, 3, start_empty_path_class) {
     int64 index_max = 0;
     for (const IntVar* const var : vars) {
       index_max = std::max(index_max, var->Max());
@@ -585,12 +596,13 @@ void PairRelocateOperator::OnNodeInitialization() {
   }
 }
 
-LocalSearchOperator* MakePairRelocate(Solver* const solver,
-                                      const std::vector<IntVar*>& vars,
-                                      const std::vector<IntVar*>& secondary_vars,
-                                      const RoutingModel::NodePairs& pairs) {
-  return solver->RevAlloc(
-      new PairRelocateOperator(vars, secondary_vars, pairs));
+LocalSearchOperator* MakePairRelocate(
+    Solver* const solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    ResultCallback1<int, int64>* start_empty_path_class,
+    const RoutingModel::NodePairs& pairs) {
+  return solver->RevAlloc(new PairRelocateOperator(
+      vars, secondary_vars, start_empty_path_class, pairs));
 }
 
 }  // namespace
@@ -731,6 +743,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
       cost_classes_(),
       costs_are_homogeneous_across_vehicles_(
           FLAGS_routing_use_homogeneous_costs),
+      vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
       start_end_count_(vehicles > 0 ? 1 : 0),
@@ -767,6 +780,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       cost_classes_(),
       costs_are_homogeneous_across_vehicles_(
           FLAGS_routing_use_homogeneous_costs),
+      vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
       is_depot_set_(false),
@@ -811,6 +825,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       cost_classes_(),
       costs_are_homogeneous_across_vehicles_(
           FLAGS_routing_use_homogeneous_costs),
+      vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
       is_depot_set_(false),
@@ -1084,28 +1099,75 @@ struct CostClassComparator {
     return RoutingModel::CostClass::LessThan(a, b);
   }
 };
+
+struct VehicleClassComparator {
+  bool operator()(const RoutingModel::VehicleClass& a,
+                  const RoutingModel::VehicleClass& b) const {
+    return RoutingModel::VehicleClass::LessThan(a, b);
+  }
+};
 }  // namespace
 
 // static
 const RoutingModel::CostClassIndex RoutingModel::kCostClassIndexOfZeroCost =
     CostClassIndex(0);
 
+uint64 RoutingModel::GetFingerprintOfEvaluator(
+    RoutingModel::NodeEvaluator2* evaluator) const {
+  if (!FLAGS_routing_fingerprint_arc_cost_evaluators) {
+    // If we don't fingerprint the data returned by the evaluator, we can
+    // just return the address as fingerprint (ensures that evaluators with the
+    // same address are considered as equivalent).
+    return reinterpret_cast<uint64>(evaluator);
+  }
+  // Fingerprinting by matrix row seems to be the good combination to
+  // make Fingerprint2011 run fast and avoid using too much memory.
+  uint64 evaluator_fprint = 0;
+  const int max_row_size = Size() + vehicles_;
+  std::unique_ptr<int64[]> row(new int64[max_row_size]);
+  for (int64 from = 0; from < Size(); ++from) {
+    if (IsEnd(from)) continue;
+    const bool from_start = IsStart(from);
+    int row_size = 0;
+    for (int64 to = 0; to < max_row_size; ++to) {
+      // (from, from), (end, start) and (start, end) arcs are never
+      // evaluated; some clients check this.
+      if (from != to && !IsStart(to) && (!from_start || !IsEnd(to))) {
+        row[row_size] = evaluator->Run(IndexToNode(from), IndexToNode(to));
+        ++row_size;
+      }
+    }
+    const int row_num_bytes = row_size * sizeof(int64);
+    const uint64 fprint = Fingerprint2011(
+        reinterpret_cast<const char*>(row.get()), row_num_bytes);
+    // FingerprintCat2011 never returns 0.
+    evaluator_fprint = evaluator_fprint != 0
+        ? FingerprintCat2011(evaluator_fprint, fprint)
+        : fprint;
+  }
+  return evaluator_fprint;
+}
+
 void RoutingModel::ComputeCostClasses() {
-  // First, we create a cached version of all transit cost evaluators,
-  // already detecting duplicates.
-  hash_map<const NodeEvaluator2*, NodeEvaluator2*>
-      evaluator_to_cached_evaluator;
-  NodeEvaluator2* const zero_evaluator =
-      NewPermanentCallback(&ReturnZero<NodeIndex, NodeIndex>);
-  owned_node_callbacks_.insert(zero_evaluator);
-  evaluator_to_cached_evaluator[nullptr] = zero_evaluator;
-  for (NodeEvaluator2* const uncached_evaluator : transit_cost_of_vehicle_) {
-    if (uncached_evaluator == nullptr) continue;  // Already mapped.
-    NodeEvaluator2** cached_evaluator =
-        &LookupOrInsert(&evaluator_to_cached_evaluator, uncached_evaluator,
-                        nullptr);
-    if (*cached_evaluator == nullptr) {
-      *cached_evaluator = NewCachedCallback(uncached_evaluator);
+  // First, detect if all non-null transit cost evaluators are equal.
+  bool all_evaluators_equal = true;
+  // Find first non-null evaluator.
+  int evaluator_index = 0;
+  while (evaluator_index < transit_cost_of_vehicle_.size()
+         && transit_cost_of_vehicle_[evaluator_index] == nullptr) {
+    ++evaluator_index;
+  }
+  // Compare non-null evaluators.
+  if (evaluator_index < transit_cost_of_vehicle_.size()) {
+    const NodeEvaluator2* reference_evaluator =
+        transit_cost_of_vehicle_[evaluator_index];
+    while (++evaluator_index < transit_cost_of_vehicle_.size()) {
+      NodeEvaluator2* const evaluator =
+          transit_cost_of_vehicle_[evaluator_index];
+      if (evaluator != nullptr && evaluator != reference_evaluator) {
+        all_evaluators_equal = false;
+        break;
+      }
     }
   }
 
@@ -1116,6 +1178,15 @@ void RoutingModel::ComputeCostClasses() {
   std::map<CostClass, CostClassIndex, CostClassComparator> cost_class_map;
 
   // Pre-insert the built-in cost class 'zero cost' with index 0.
+  const uint64 kNullEvaluatorFprint = 0;
+  NodeEvaluator2* const null_evaluator = nullptr;
+  hash_map<NodeEvaluator2*, uint64> evaluator_to_fprint;
+  hash_map<uint64, NodeEvaluator2*> fprint_to_cached_evaluator;
+  NodeEvaluator2* const zero_evaluator =
+      NewPermanentCallback(&ReturnZero<NodeIndex, NodeIndex>);
+  owned_node_callbacks_.insert(zero_evaluator);
+  evaluator_to_fprint[null_evaluator] = kNullEvaluatorFprint;
+  fprint_to_cached_evaluator[kNullEvaluatorFprint] = zero_evaluator;
   const CostClass zero_cost_class(zero_evaluator);
   cost_classes_.push_back(zero_cost_class);
   DCHECK_EQ(zero_evaluator,
@@ -1123,12 +1194,31 @@ void RoutingModel::ComputeCostClasses() {
   cost_class_map[zero_cost_class] = kCostClassIndexOfZeroCost;
 
   // Determine the canonicalized cost class for each vehicle, and insert it as
-  // a new cost class if it doesn't exist already.
+  // a new cost class if it doesn't exist already. Building cached evaluators on
+  // the way.
+  const uint64 kAllEquivalentEvaluatorFprint = 1;
   bool has_vehicle_with_zero_cost_class = false;
   for (int vehicle = 0; vehicle < transit_cost_of_vehicle_.size(); ++vehicle) {
-    NodeEvaluator2* const cached_evaluator = FindOrDie(
-        evaluator_to_cached_evaluator, transit_cost_of_vehicle_[vehicle]);
-    CostClass cost_class(cached_evaluator);
+    NodeEvaluator2* const uncached_evaluator =
+        transit_cost_of_vehicle_[vehicle];
+    uint64 evaluator_fprint = kNullEvaluatorFprint;
+    // We try really hard not to evaluate the fingerprint of an evaluator, if
+    // we can avoid to: we detect duplicate evaluators, for example, and if
+    // there's only one evaluator callback used, we don't bother computing its
+    // fingerprint.
+    if (!FindCopy(evaluator_to_fprint, uncached_evaluator, &evaluator_fprint)) {
+      evaluator_fprint =
+          all_evaluators_equal
+          ? kAllEquivalentEvaluatorFprint
+          : GetFingerprintOfEvaluator(uncached_evaluator);
+      evaluator_to_fprint[uncached_evaluator] = evaluator_fprint;
+    }
+    NodeEvaluator2** cached_evaluator =
+        &LookupOrInsert(&fprint_to_cached_evaluator, evaluator_fprint, nullptr);
+    if (*cached_evaluator == nullptr) {
+      *cached_evaluator = NewCachedCallback(uncached_evaluator);
+    }
+    CostClass cost_class(*cached_evaluator);
     // Insert the dimension data in a canonical way.
     for (const RoutingDimension* const dimension : dimensions_) {
       const int64 coeff = dimension->vehicle_span_cost_coefficients()[vehicle];
@@ -1165,6 +1255,93 @@ void RoutingModel::ComputeCostClasses() {
   costs_are_homogeneous_across_vehicles_ &= has_vehicle_with_zero_cost_class
                                                 ? GetCostClassesCount() == 1
                                                 : GetCostClassesCount() <= 2;
+}
+
+bool RoutingModel::VehicleClass::LessThan(const VehicleClass& a,
+                                          const VehicleClass& b) {
+  if (a.cost_class_index != b.cost_class_index) {
+    return a.cost_class_index < b.cost_class_index;
+  }
+  if (a.fixed_cost != b.fixed_cost) {
+    return a.fixed_cost < b.fixed_cost;
+  }
+  if (a.start != b.start) {
+    return a.start < b.start;
+  }
+  if (a.end != b.end) {
+    return a.end < b.end;
+  }
+  if (a.unvisitable_nodes_fprint != b.unvisitable_nodes_fprint) {
+    return a.unvisitable_nodes_fprint < b.unvisitable_nodes_fprint;
+  }
+  if (a.dimension_start_cumuls_min != b.dimension_start_cumuls_min) {
+    return a.dimension_start_cumuls_min < b.dimension_start_cumuls_min;
+  }
+  if (a.dimension_start_cumuls_max != b.dimension_start_cumuls_max) {
+    return a.dimension_start_cumuls_max < b.dimension_start_cumuls_max;
+  }
+  if (a.dimension_end_cumuls_min != b.dimension_end_cumuls_min) {
+    return a.dimension_end_cumuls_min < b.dimension_end_cumuls_min;
+  }
+  if (a.dimension_end_cumuls_max != b.dimension_end_cumuls_max) {
+    return a.dimension_end_cumuls_max < b.dimension_end_cumuls_max;
+  }
+  if (a.dimension_capacities != b.dimension_capacities) {
+    return a.dimension_capacities < b.dimension_capacities;
+  }
+  return a.dimension_evaluators < b.dimension_evaluators;
+}
+
+void RoutingModel::ComputeVehicleClasses() {
+  vehicle_classes_.reserve(vehicles_);
+  vehicle_classes_.clear();
+  vehicle_class_index_of_vehicle_.assign(vehicles_, VehicleClassIndex(-1));
+  std::map<VehicleClass, VehicleClassIndex, VehicleClassComparator>
+      vehicle_class_map;
+  const int nodes_unvisitability_num_bytes = (vehicle_vars_.size() + 7) / 8;
+  std::unique_ptr<char[]> nodes_unvisitability_bitmask(
+      new char[nodes_unvisitability_num_bytes]);
+  for (int vehicle = 0; vehicle < transit_cost_of_vehicle_.size(); ++vehicle) {
+    VehicleClass vehicle_class;
+    vehicle_class.cost_class_index = cost_class_index_of_vehicle_[vehicle];
+    vehicle_class.fixed_cost = fixed_cost_of_vehicle_[vehicle];
+    vehicle_class.start = IndexToNode(Start(vehicle));
+    vehicle_class.end = IndexToNode(End(vehicle));
+    for (const RoutingDimension* const dimension : dimensions_) {
+      IntVar* const start_cumul_var = dimension->cumuls()[Start(vehicle)];
+      vehicle_class.dimension_start_cumuls_min.push_back(
+          start_cumul_var->Min());
+      vehicle_class.dimension_start_cumuls_max.push_back(
+          start_cumul_var->Max());
+      IntVar* const end_cumul_var = dimension->cumuls()[End(vehicle)];
+      vehicle_class.dimension_end_cumuls_min.push_back(end_cumul_var->Min());
+      vehicle_class.dimension_end_cumuls_max.push_back(end_cumul_var->Max());
+      vehicle_class.dimension_capacities.push_back(
+          dimension->capacity_evaluator() != nullptr
+              ? dimension->capacity_evaluator()->Run(vehicle)
+              : -1);
+      vehicle_class.dimension_evaluators.push_back(
+          dimension->transit_evaluator(vehicle));
+    }
+    memset(nodes_unvisitability_bitmask.get(), 0,
+           nodes_unvisitability_num_bytes);
+    for (int index = 0; index < vehicle_vars_.size(); ++index) {
+      IntVar* const vehicle_var = vehicle_vars_[index];
+      if (!IsStart(index) && !IsEnd(index) && !vehicle_var->Contains(vehicle)) {
+        nodes_unvisitability_bitmask[index / CHAR_BIT] |= 1U
+                                                          << (index % CHAR_BIT);
+      }
+    }
+    vehicle_class.unvisitable_nodes_fprint = Fingerprint2011(
+        nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
+    const VehicleClassIndex num_vehicle_classes(vehicle_classes_.size());
+    const VehicleClassIndex vehicle_class_index =
+        LookupOrInsert(&vehicle_class_map, vehicle_class, num_vehicle_classes);
+    if (vehicle_class_index == num_vehicle_classes) {  // New vehicle class
+      vehicle_classes_.push_back(vehicle_class);
+    }
+    vehicle_class_index_of_vehicle_[vehicle] = vehicle_class_index;
+  }
 }
 
 void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes) {
@@ -1360,6 +1537,14 @@ void RoutingModel::AppendArcCosts(int node_index,
   }
 }
 
+int RoutingModel::GetVehicleStartClass(int64 start_index) const {
+  const int vehicle = index_to_vehicle_[start_index];
+  if (vehicle != kUnassigned) {
+    return GetVehicleClassIndexOfVehicle(vehicle).value();
+  }
+  return kUnassigned;
+}
+
 void RoutingModel::CloseModel() {
   if (closed_) {
     LOG(WARNING) << "Model already closed";
@@ -1370,6 +1555,9 @@ void RoutingModel::CloseModel() {
   CheckDepot();
 
   ComputeCostClasses();
+  ComputeVehicleClasses();
+  vehicle_start_class_callback_.reset(
+      NewPermanentCallback(this, &RoutingModel::GetVehicleStartClass));
 
   AddNoCycleConstraintInternal();
 
@@ -1383,9 +1571,8 @@ void RoutingModel::CloseModel() {
                                                  solver_->MakeIntConst(i)));
   }
   std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
-  solver_->AddConstraint(
-      solver_->MakeDelayedPathCumul(
-          nexts_, active_, vehicle_vars_, zero_transit));
+  solver_->AddConstraint(solver_->MakeDelayedPathCumul(
+      nexts_, active_, vehicle_vars_, zero_transit));
 
   // Add constraints to bind vehicle_vars_[i] to -1 in case that node i is not
   // active.
@@ -1409,9 +1596,8 @@ void RoutingModel::CloseModel() {
   }
 
   // is_bound_to_end_ variables constraints.
-  solver_->AddConstraint(
-      solver_->MakeDelayedPathCumul(
-          nexts_, active_, is_bound_to_end_, zero_transit));
+  solver_->AddConstraint(solver_->MakeDelayedPathCumul(
+      nexts_, active_, is_bound_to_end_, zero_transit));
   for (const int64 end : ends_) {
     is_bound_to_end_[end]->SetValue(1);
   }
@@ -1474,7 +1660,7 @@ struct Link {
 };
 
 struct LinkSort {
-  bool operator()(const Link& link1, const Link& link2) {
+  bool operator()(const Link& link1, const Link& link2) const {
     return (link1.value > link2.value);
   }
 } LinkComparator;
@@ -1689,7 +1875,7 @@ class RouteConstructor {
   };
 
   struct ChainSort {
-    bool operator()(const Chain& chain1, const Chain& chain2) {
+    bool operator()(const Chain& chain1, const Chain& chain2) const {
       return (chain1.nodes < chain2.nodes);
     }
   } ChainComparator;
@@ -2120,13 +2306,13 @@ struct SweepNode {
 };
 
 struct SweepNodeSortAngle {
-  bool operator()(const SweepNode& node1, const SweepNode& node2) {
+  bool operator()(const SweepNode& node1, const SweepNode& node2) const {
     return (node1.angle < node2.angle);
   }
 } SweepNodeAngleComparator;
 
 struct SweepNodeSortDistance {
-  bool operator()(const SweepNode& node1, const SweepNode& node2) {
+  bool operator()(const SweepNode& node1, const SweepNode& node2) const {
     return (node1.distance < node2.distance);
   }
 } SweepNodeDistanceComparator;
@@ -2546,9 +2732,9 @@ bool RoutingModel::RouteCanBeUsedByVehicle(const Assignment& assignment,
   return true;
 }
 
-bool RoutingModel::ReplaceUnusedVehicle(int unused_vehicle, int active_vehicle,
-                                        Assignment* const compact_assignment)
-    const {
+bool RoutingModel::ReplaceUnusedVehicle(
+    int unused_vehicle, int active_vehicle,
+    Assignment* const compact_assignment) const {
   CHECK(compact_assignment != nullptr);
   CHECK(!IsVehicleUsed(*compact_assignment, unused_vehicle));
   CHECK(IsVehicleUsed(*compact_assignment, active_vehicle));
@@ -2624,8 +2810,8 @@ bool RoutingModel::ReplaceUnusedVehicle(int unused_vehicle, int active_vehicle,
   return true;
 }
 
-Assignment* RoutingModel::CompactAssignment(const Assignment& assignment)
-    const {
+Assignment* RoutingModel::CompactAssignment(
+    const Assignment& assignment) const {
   CHECK_EQ(assignment.solver(), solver_.get());
   if (!CostsAreHomogeneousAcrossVehicles()) {
     LOG(INFO) << "The costs are not homogeneous, routes cannot be rearranged";
@@ -2795,7 +2981,7 @@ bool RoutingModel::ParseRoutingStrategy(const std::string& strategy_str,
       return true;
     }
   }
-  return false;
+  return false;  // Visual Studio complains without it.
 }
 
 // static
@@ -2998,9 +3184,9 @@ Assignment* RoutingModel::ReadAssignmentFromRoutes(
   return DoRestoreAssignment();
 }
 
-void RoutingModel::AssignmentToRoutes(const Assignment& assignment,
-                                      std::vector<std::vector<NodeIndex>>* const routes)
-    const {
+void RoutingModel::AssignmentToRoutes(
+    const Assignment& assignment,
+    std::vector<std::vector<NodeIndex>>* const routes) const {
   CHECK(closed_);
   CHECK(routes != nullptr);
 
@@ -3097,8 +3283,8 @@ bool RoutingModel::IsVehicleUsed(const Assignment& assignment,
   return !IsEnd(assignment.Value(start_var));
 }
 
-const std::vector<IntVar*>& RoutingModel::CumulVars(const std::string& dimension_name)
-    const {
+const std::vector<IntVar*>& RoutingModel::CumulVars(
+    const std::string& dimension_name) const {
   return GetDimensionOrDie(dimension_name).cumuls();
 }
 
@@ -3267,33 +3453,53 @@ std::string RoutingModel::DebugOutputAssignment(
     }
   }
   std::string output;
-  std::vector<std::string> dimension_names(1, dimension_to_print);
+  hash_set<std::string> dimension_names;
   if (dimension_to_print == "") {
-    GetAllDimensions(&dimension_names);
+    std::vector<std::string> all_dimension_names;
+    GetAllDimensions(&all_dimension_names);
+    dimension_names.insert(all_dimension_names.begin(),
+                           all_dimension_names.end());
+  } else {
+    dimension_names.insert(dimension_to_print);
   }
-  for (int i = 0; i < vehicles(); ++i) {
-    StringAppendF(&output, "Vehicle %d:", i);
-    int64 index = Start(i);
-    if (IsEnd(solution_assignment.Value(NextVar(index)))) {
-      StringAppendF(&output, "empty");
-    } else {
+  for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+    int empty_vehicle_range_start = vehicle;
+    while (vehicle < vehicles() &&
+           IsEnd(solution_assignment.Value(NextVar(Start(vehicle))))) {
+      vehicle++;
+    }
+    if (empty_vehicle_range_start != vehicle) {
+      if (empty_vehicle_range_start == vehicle - 1) {
+        StringAppendF(&output, "Vehicle %d: empty", empty_vehicle_range_start);
+      } else {
+        StringAppendF(&output, "Vehicles %d-%d: empty",
+                      empty_vehicle_range_start, vehicle - 1);
+      }
+      StringAppendF(&output, "\n");
+    }
+    if (vehicle < vehicles()) {
+      StringAppendF(&output, "Vehicle %d:", vehicle);
+      int64 index = Start(vehicle);
       for (;;) {
-        const IntVar* vehicle = VehicleVar(index);
+        const IntVar* vehicle_var = VehicleVar(index);
         StringAppendF(&output,
                       "%" GG_LL_FORMAT "d Vehicle(%" GG_LL_FORMAT "d) ", index,
-                      solution_assignment.Value(vehicle));
+                      solution_assignment.Value(vehicle_var));
         for (const RoutingDimension* const dimension : dimensions_) {
-          const IntVar* const var = dimension->CumulVar(index);
-          StringAppendF(&output, "%s(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d) ",
-                        dimension->name().c_str(), solution_assignment.Min(var),
-                        solution_assignment.Max(var));
+          if (ContainsKey(dimension_names, dimension->name())) {
+            const IntVar* const var = dimension->CumulVar(index);
+            StringAppendF(
+                &output, "%s(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d) ",
+                dimension->name().c_str(), solution_assignment.Min(var),
+                solution_assignment.Max(var));
+          }
         }
         if (IsEnd(index)) break;
         index = solution_assignment.Value(NextVar(index));
         if (IsEnd(index)) StringAppendF(&output, "Route end ");
       }
+      StringAppendF(&output, "\n");
     }
-    StringAppendF(&output, "\n");
   }
   StringAppendF(&output, "Unperformed nodes: ");
   for (int i = 0; i < Size(); ++i) {
@@ -3350,18 +3556,17 @@ SearchLimit* RoutingModel::GetOrCreateLargeNeighborhoodSearchLimit() {
 }
 
 LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
+  std::vector<IntVar*> empty;
   if (pickup_delivery_pairs_.size() > 0) {
-    std::vector<IntVar*> empty;
     return MakePairActive(
         solver_.get(), nexts_,
         CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-        pickup_delivery_pairs_);
+        vehicle_start_class_callback_.get(), pickup_delivery_pairs_);
   } else {
-    if (CostsAreHomogeneousAcrossVehicles()) {
-      return solver_->MakeOperator(nexts_, Solver::MAKEACTIVE);
-    } else {
-      return solver_->MakeOperator(nexts_, vehicle_vars_, Solver::MAKEACTIVE);
-    }
+    return MakeLocalSearchOperator<MakeActiveOperator>(
+        solver_.get(), nexts_,
+        CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+        vehicle_start_class_callback_.get());
   }
 }
 
@@ -3373,6 +3578,14 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
     local_search_operators_[operator_type] =                            \
         solver_->MakeOperator(nexts_, vehicle_vars_, cp_operator_type); \
   }
+
+#define CP_ROUTING_ADD_OPERATOR2(operator_type, cp_operator_class) \
+  local_search_operators_[operator_type] =                         \
+      MakeLocalSearchOperator<cp_operator_class>(                  \
+          solver_.get(), nexts_,                                   \
+          CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()  \
+                                              : vehicle_vars_,     \
+          vehicle_start_class_callback_.get());
 
 #define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type) \
   if (CostsAreHomogeneousAcrossVehicles()) {                              \
@@ -3391,28 +3604,29 @@ void RoutingModel::CreateNeighborhoodOperators() {
   local_search_operators_.clear();
   local_search_operators_.resize(ROUTING_LOCAL_SEARCH_OPERATOR_COUNTER,
                                  nullptr);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_RELOCATE, Solver::RELOCATE);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_RELOCATE, Relocate);
   std::vector<IntVar*> empty;
   local_search_operators_[ROUTING_PAIR_RELOCATE] = MakePairRelocate(
       solver_.get(), nexts_,
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      pickup_delivery_pairs_);
+      vehicle_start_class_callback_.get(), pickup_delivery_pairs_);
   local_search_operators_[ROUTING_RELOCATE_NEIGHBORS] = MakeRelocateNeighbors(
       solver_.get(), nexts_,
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+      vehicle_start_class_callback_.get(),
       NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost));
-  CP_ROUTING_ADD_OPERATOR(ROUTING_EXCHANGE, Solver::EXCHANGE);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_CROSS, Solver::CROSS);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_TWO_OPT, Solver::TWOOPT);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_EXCHANGE, Exchange);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_CROSS, Cross);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_TWO_OPT, TwoOpt);
   CP_ROUTING_ADD_OPERATOR(ROUTING_OR_OPT, Solver::OROPT);
   CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_LKH, Solver::LK);
   local_search_operators_[ROUTING_MAKE_ACTIVE] = CreateInsertionOperator();
-  CP_ROUTING_ADD_OPERATOR(ROUTING_MAKE_INACTIVE, Solver::MAKEINACTIVE);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_MAKE_CHAIN_INACTIVE,
-                          Solver::MAKECHAININACTIVE);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_SWAP_ACTIVE, Solver::SWAPACTIVE);
-  CP_ROUTING_ADD_OPERATOR(ROUTING_EXTENDED_SWAP_ACTIVE,
-                          Solver::EXTENDEDSWAPACTIVE);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_MAKE_INACTIVE, MakeInactiveOperator);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_MAKE_CHAIN_INACTIVE,
+                           MakeChainInactiveOperator);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_SWAP_ACTIVE, SwapActiveOperator);
+  CP_ROUTING_ADD_OPERATOR2(ROUTING_EXTENDED_SWAP_ACTIVE,
+                           ExtendedSwapActiveOperator);
   CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_TSP_OPT, Solver::TSPOPT);
   CP_ROUTING_ADD_CALLBACK_OPERATOR(ROUTING_TSP_LNS, Solver::TSPLNS);
   CP_ROUTING_ADD_OPERATOR(ROUTING_PATH_LNS, Solver::PATHLNS);
@@ -3572,6 +3786,9 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       filters_.push_back(
           MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
     }
+    if (FLAGS_routing_use_vehicle_var_filter) {
+      feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+    }
     if (FLAGS_routing_use_path_cumul_filter) {
       // Must be added after NodeDisjunctionFilter and ObjectiveFilter.
       filters_.insert(filters_.end(), path_cumul_filters.begin(),
@@ -3597,6 +3814,9 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
         pickup_delivery_pairs_.size() > 0) {
       feasibility_filters_.push_back(
           MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
+    }
+    if (FLAGS_routing_use_vehicle_var_filter) {
+      feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
     }
   }
   return feasibility_filters_;
@@ -4268,7 +4488,7 @@ void RoutingDimension::InitializeTransits(
             solver->MakeElement(
                         NewPermanentCallback(
                             &IthEvaluatorValueOrValue<
-                                 std::unique_ptr<Solver::IndexEvaluator2>, 0LL>,
+                                std::unique_ptr<Solver::IndexEvaluator2>, 0LL>,
                             &class_evaluators_, static_cast<int64>(i)),
                         model_->NextVar(i), vehicle_class_var)->Var();
       }
@@ -4321,8 +4541,8 @@ void RoutingDimension::SetCumulVarSoftUpperBound(RoutingModel::NodeIndex node,
   VLOG(2) << "Cannot set soft upper bound on start or end nodes";
 }
 
-bool RoutingDimension::HasCumulVarSoftUpperBound(RoutingModel::NodeIndex node)
-    const {
+bool RoutingDimension::HasCumulVarSoftUpperBound(
+    RoutingModel::NodeIndex node) const {
   if (model_->HasIndex(node)) {
     const int64 index = model_->NodeToIndex(node);
     if (!model_->IsStart(index) && !model_->IsEnd(index)) {
@@ -4333,8 +4553,8 @@ bool RoutingDimension::HasCumulVarSoftUpperBound(RoutingModel::NodeIndex node)
   return false;
 }
 
-int64 RoutingDimension::GetCumulVarSoftUpperBound(RoutingModel::NodeIndex node)
-    const {
+int64 RoutingDimension::GetCumulVarSoftUpperBound(
+    RoutingModel::NodeIndex node) const {
   if (model_->HasIndex(node)) {
     const int64 index = model_->NodeToIndex(node);
     if (!model_->IsStart(index) && !model_->IsEnd(index)) {
@@ -4372,8 +4592,8 @@ int64 RoutingDimension::GetStartCumulVarSoftUpperBound(int vehicle) const {
   return GetCumulVarSoftUpperBoundFromIndex(model_->Start(vehicle));
 }
 
-int64 RoutingDimension::GetStartCumulVarSoftUpperBoundCoefficient(int vehicle)
-    const {
+int64 RoutingDimension::GetStartCumulVarSoftUpperBoundCoefficient(
+    int vehicle) const {
   return GetCumulVarSoftUpperBoundCoefficientFromIndex(model_->Start(vehicle));
 }
 
@@ -4392,8 +4612,8 @@ int64 RoutingDimension::GetEndCumulVarSoftUpperBound(int vehicle) const {
   return GetCumulVarSoftUpperBoundFromIndex(model_->End(vehicle));
 }
 
-int64 RoutingDimension::GetEndCumulVarSoftUpperBoundCoefficient(int vehicle)
-    const {
+int64 RoutingDimension::GetEndCumulVarSoftUpperBoundCoefficient(
+    int vehicle) const {
   return GetCumulVarSoftUpperBoundCoefficientFromIndex(model_->End(vehicle));
 }
 
@@ -4449,8 +4669,8 @@ void RoutingDimension::SetupCumulVarSoftUpperBoundCosts(
   }
 }
 
-void RoutingDimension::SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements)
-    const {
+void RoutingDimension::SetupGlobalSpanCost(
+    std::vector<IntVar*>* cost_elements) const {
   CHECK(cost_elements != nullptr);
   Solver* const solver = model_->solver();
   if (global_span_cost_coefficient_ != 0) {

@@ -6350,7 +6350,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
     int64 coefficient = 1;
     IntExpr* expr = nullptr;
     if (IsProduct(e, &expr, &coefficient)) {
-      result = MakeProd(MakeAbs(expr), abs(coefficient));
+      result = MakeProd(MakeAbs(expr), std::abs(coefficient));
     } else {
       result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
     }

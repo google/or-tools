@@ -188,6 +188,8 @@ DEFINE_INT_TYPE(_RoutingModel_NodeIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_CostClassIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
+DEFINE_INT_TYPE(_RoutingModel_VehicleClassIndex, int);
+
 
 // This class stores solver parameters.
 struct RoutingParameters {
@@ -395,6 +397,7 @@ class RoutingModel {
   typedef _RoutingModel_CostClassIndex CostClassIndex;
   typedef _RoutingModel_DimensionIndex DimensionIndex;
   typedef _RoutingModel_DisjunctionIndex DisjunctionIndex;
+  typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
   typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
   typedef std::pair<int, int> NodePair;
@@ -443,7 +446,36 @@ class RoutingModel {
              b.dimension_transit_evaluator_and_cost_coefficient;
     }
   };
-#endif
+
+  struct VehicleClass {
+    // The cost class of the vehicle.
+    CostClassIndex cost_class_index;
+    // Contrarily to CostClass, here we need strict equivalence.
+    int64 fixed_cost;
+    // Vehicle start and end nodes. Currently if two vehicles have different
+    // start/end nodes which are "physically" located at the same place, these
+    // two vehicles will be considered as non-equivalent.
+    // TODO(user): Find equivalent start/end nodes wrt dimensions and
+    // callbacks.
+    RoutingModel::NodeIndex start;
+    RoutingModel::NodeIndex end;
+    // Bounds of cumul variables at start and end vehicle nodes.
+    // dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d.
+    ITIVector<DimensionIndex, int64> dimension_start_cumuls_min;
+    ITIVector<DimensionIndex, int64> dimension_start_cumuls_max;
+    ITIVector<DimensionIndex, int64> dimension_end_cumuls_min;
+    ITIVector<DimensionIndex, int64> dimension_end_cumuls_max;
+    ITIVector<DimensionIndex, int64> dimension_capacities;
+    // dimension_evaluators[d]->Run(from, to) is the transit value of arc
+    // from->to for a dimension d.
+    ITIVector<DimensionIndex, Solver::IndexEvaluator2*> dimension_evaluators;
+    // Fingerprint of unvisitable non-start/end nodes.
+    uint64 unvisitable_nodes_fprint;
+
+    // Comparator for STL containers and algorithms.
+    static bool LessThan(const VehicleClass& a, const VehicleClass& b);
+  };
+#endif  // defined(SWIG)
 
   // Constants with an index of the first node (to be used in for loops for
   // iteration), and a special index to signalize an invalid/unused value.
@@ -900,6 +932,12 @@ class RoutingModel {
   int GetNonZeroCostClassesCount() const {
     return std::max(0, GetCostClassesCount() - 1);
   }
+  VehicleClassIndex GetVehicleClassIndexOfVehicle(int64 vehicle) const {
+    DCHECK(closed_);
+    return vehicle_class_index_of_vehicle_[vehicle];
+  }
+  // Returns the number of different vehicle classes in the model.
+  int GetVehicleClassesCount() const { return vehicle_classes_.size(); }
   // Returns whether the arc from->to1 is more constrained than from->to2,
   // taking into account, in order:
   // - whether the destination node isn't an end node
@@ -937,7 +975,7 @@ class RoutingModel {
   int vehicles() const { return vehicles_; }
   // Returns the number of next variables in the model.
   int64 Size() const { return nodes_ + vehicles_ - start_end_count_; }
-  // Returns the node index from an index value resulting fron a next variable.
+  // Returns the node index from an index value resulting from a next variable.
   NodeIndex IndexToNode(int64 index) const;
   // Returns the variable index from a node value.
   // Should not be used for nodes at the start / end of a route,
@@ -1068,7 +1106,9 @@ class RoutingModel {
       int64 capacity, VehicleEvaluator* vehicle_capacity,
       bool fix_start_cumul_to_zero, const std::string& dimension_name);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
+  uint64 GetFingerprintOfEvaluator(NodeEvaluator2* evaluator) const;
   void ComputeCostClasses();
+  void ComputeVehicleClasses();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
                                    CostClassIndex cost_class_index);
   void AppendHomogeneousArcCosts(int node_index,
@@ -1134,6 +1174,7 @@ class RoutingModel {
   void SetupSearchMonitors();
 
   int64 GetArcCostForCostClassInternal(int64 i, int64 j, int64 cost_class);
+  int GetVehicleStartClass(int64 start) const;
 
   // Model
   std::unique_ptr<Solver> solver_;
@@ -1164,6 +1205,11 @@ class RoutingModel {
   bool costs_are_homogeneous_across_vehicles_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<RoutingCache*> routing_caches_;
+  std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
+#ifndef SWIG
+  ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
+#endif  // SWIG
+  std::unique_ptr<ResultCallback1<int, int64> > vehicle_start_class_callback_;
   // Disjunctions
   ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<DisjunctionIndex> node_to_disjunction_;
@@ -1611,7 +1657,7 @@ class CheapestAdditionFilteredDecisionBuilder
     PartialRoutesAndLargeVehicleIndicesFirst(
         const CheapestAdditionFilteredDecisionBuilder& builder)
         : builder_(builder) {}
-    bool operator()(int vehicle1, int vehicle2);
+    bool operator()(int vehicle1, int vehicle2) const;
 
    private:
     const CheapestAdditionFilteredDecisionBuilder& builder_;
@@ -1689,7 +1735,8 @@ RoutingLocalSearchFilter* MakePathCumulFilter(
     Callback1<int64>* objective_callback);
 RoutingLocalSearchFilter* MakeNodePrecedenceFilter(
     const RoutingModel& routing_model, const RoutingModel::NodePairs& pairs);
-
+RoutingLocalSearchFilter* MakeVehicleVarFilter(
+    const RoutingModel& routing_model);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_

@@ -21,6 +21,7 @@
 #include <set>
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
+#include "util/bitset.h"
 
 namespace operations_research {
 
@@ -124,22 +125,22 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
 
  private:
   virtual void OnSynchronize() {
+    penalty_value_ = 0;
     for (RoutingModel::DisjunctionIndex i(0);
          i < active_per_disjunction_.size(); ++i) {
       active_per_disjunction_[i] = 0;
       const std::vector<int>& disjunction_nodes =
           routing_model_.GetDisjunctionIndices(i);
+      bool all_nodes_synced = true;
       for (const int64 node : disjunction_nodes) {
-        if (IsVarSynced(node) && Value(node) != node) {
+        const bool node_synced = IsVarSynced(node);
+        if (!node_synced) all_nodes_synced = false;
+        if (node_synced && Value(node) != node) {
           ++active_per_disjunction_[i];
         }
       }
-    }
-    penalty_value_ = 0;
-    for (RoutingModel::DisjunctionIndex i(0);
-         i < active_per_disjunction_.size(); ++i) {
       const int64 penalty = routing_model_.GetDisjunctionPenalty(i);
-      if (active_per_disjunction_[i] == 0 && penalty > 0) {
+      if (active_per_disjunction_[i] == 0 && penalty > 0 && all_nodes_synced) {
         penalty_value_ += penalty;
       }
     }
@@ -255,20 +256,19 @@ void BasePathFilter::OnSynchronize() {
   starts_.clear();
   // Detecting path starts, used to track which node belongs to which path.
   std::vector<int64> path_starts;
-  // TODO(user): Replace Bitmap by std::vector<bool> if it's as fast.
-  Bitmap has_prevs(nexts_size, false);
+  Bitset64<> has_prevs(nexts_size);
   for (int i = 0; i < nexts_size; ++i) {
     if (!IsVarSynced(i)) {
-      has_prevs.Set(i, true);
+      has_prevs.Set(i);
     } else {
       const int next = Value(i);
       if (next < nexts_size) {
-        has_prevs.Set(next, true);
+        has_prevs.Set(next);
       }
     }
   }
   for (int i = 0; i < nexts_size; ++i) {
-    if (!has_prevs.Get(i)) {
+    if (!has_prevs[i]) {
       paths_[i] = starts_.size();
       starts_.push_back(i);
       path_starts.push_back(i);
@@ -741,7 +741,7 @@ class NodePrecedenceFilter : public BasePathFilter {
   NodePrecedenceFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                        const RoutingModel::NodePairs& pairs);
   virtual ~NodePrecedenceFilter() {}
-  bool AcceptPath(int64 path_start);
+  virtual bool AcceptPath(int64 path_start);
 
  private:
   std::vector<int> pair_firsts_;
@@ -793,6 +793,82 @@ RoutingLocalSearchFilter* MakeNodePrecedenceFilter(
   return routing_model.solver()->RevAlloc(new NodePrecedenceFilter(
       routing_model.Nexts(), routing_model.Size() + routing_model.vehicles(),
       pairs));
+}
+
+namespace {
+
+// Vehicle variable filter
+class VehicleVarFilter : public BasePathFilter {
+ public:
+  explicit VehicleVarFilter(const RoutingModel& routing_model);
+  ~VehicleVarFilter() {}
+  virtual bool Accept(const Assignment* delta,
+                      const Assignment* deltadelta);
+  virtual bool AcceptPath(int64 path_start);
+
+ private:
+  std::vector<int64> start_to_vehicle_;
+  std::vector<IntVar*> vehicle_vars_;
+  const int64 unconstrained_vehicle_var_domain_size_;
+};
+
+VehicleVarFilter::VehicleVarFilter(const RoutingModel& routing_model)
+    : BasePathFilter(routing_model.Nexts(),
+                     routing_model.Size() + routing_model.vehicles(),
+                     nullptr),
+      vehicle_vars_(routing_model.VehicleVars()),
+      unconstrained_vehicle_var_domain_size_(routing_model.vehicles()) {
+  start_to_vehicle_.resize(Size(), -1);
+  for (int i = 0; i < routing_model.vehicles(); ++i) {
+    start_to_vehicle_[routing_model.Start(i)] = i;
+  }
+}
+
+// Avoid filtering if variable domains are unconstrained.
+bool VehicleVarFilter::Accept(const Assignment* delta,
+                              const Assignment* deltadelta) {
+  const Assignment::IntContainer& container = delta->IntVarContainer();
+  const int size = container.Size();
+  bool all_unconstrained = true;
+  for (int i = 0; i < size; ++i) {
+    int64 index = -1;
+    if (FindIndex(container.Element(i).Var(), &index)) {
+      const IntVar* const vehicle_var = vehicle_vars_[index];
+      // If vehicle variable contains -1 (optional node), then we need to
+      // add it to the "unconstrained" domain. Impact we don't filter mandatory
+      // nodes made inactive here, but it is covered by other filters.
+      const int adjusted_unconstrained_vehicle_var_domain_size =
+          vehicle_var->Min() >= 0
+          ? unconstrained_vehicle_var_domain_size_
+          : unconstrained_vehicle_var_domain_size_ + 1;
+      if (vehicle_var->Size()
+          != adjusted_unconstrained_vehicle_var_domain_size) {
+        all_unconstrained = false;
+        break;
+      }
+    }
+  }
+  if (all_unconstrained) return true;
+  return BasePathFilter::Accept(delta, deltadelta);
+}
+
+bool VehicleVarFilter::AcceptPath(int64 path_start) {
+  const int64 vehicle = start_to_vehicle_[path_start];
+  int64 node = path_start;
+  while (node < Size()) {
+    if (!vehicle_vars_[node]->Contains(vehicle)) {
+      return false;
+    }
+    node = GetNext(node);
+  }
+  return true;
+}
+
+}  // namespace
+
+RoutingLocalSearchFilter* MakeVehicleVarFilter(
+    const RoutingModel& routing_model) {
+  return routing_model.solver()->RevAlloc(new VehicleVarFilter(routing_model));
 }
 
 // TODO(user): Implement same-vehicle filter. Could be merged with node
@@ -1282,7 +1358,7 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
 
 bool CheapestAdditionFilteredDecisionBuilder::
     PartialRoutesAndLargeVehicleIndicesFirst::
-    operator()(int vehicle1, int vehicle2) {
+    operator()(int vehicle1, int vehicle2) const {
   const bool has_partial_route1 = (builder_.model()->Start(vehicle1) !=
                                    builder_.GetStartChainEnd(vehicle1));
   const bool has_partial_route2 = (builder_.model()->Start(vehicle2) !=
@@ -1350,7 +1426,7 @@ class ArcComparator {
   ArcComparator(int from,
                 ResultCallback3<bool, int64, int64, int64>* comparator)
       : from_(from), comparator_(comparator) {}
-  bool operator()(int next1, int next2) {
+  bool operator()(int next1, int next2) const {
     return comparator_->Run(from_, next1, next2);
   }
 

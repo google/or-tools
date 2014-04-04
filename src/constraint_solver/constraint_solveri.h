@@ -65,11 +65,11 @@
 #include "base/sysinfo.h"
 #include "base/timer.h"
 #include "base/join.h"
-#include "base/bitmap.h"
 #include "base/sparse_hash.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/bitset.h"
 #include "util/tuple_set.h"
 #include "util/vector_map.h"
 
@@ -800,32 +800,167 @@ class LocalSearchOperator : public BaseObject {
   virtual void Start(const Assignment* assignment) = 0;
 };
 
+// ----- Base operator class for operators manipulating variables -----
+
+template <class V, class Val, class Handler>
+class VarLocalSearchOperator : public LocalSearchOperator {
+ public:
+  VarLocalSearchOperator() : activated_(), was_activated_(), cleared_(true) {}
+  VarLocalSearchOperator(std::vector<V*> vars, Handler var_handler)
+      : activated_(),
+        was_activated_(),
+        cleared_(true),
+        var_handler_(var_handler) {}
+  virtual ~VarLocalSearchOperator() {}
+  // This method should not be overridden. Override OnStart() instead which is
+  // called before exiting this method.
+  void Start(const Assignment* assignment) {
+    const int size = Size();
+    CHECK_LE(size, assignment->Size())
+        << "Assignment contains fewer variables than operator";
+    for (int i = 0; i < size; ++i) {
+      activated_.Set(i, var_handler_.ValueFromAssignent(*assignment, vars_[i],
+                                                        i, &values_[i]));
+    }
+    old_values_ = values_;
+    was_activated_.SetContentFromBitsetOfSameSize(activated_);
+    OnStart();
+  }
+  virtual bool IsIncremental() const { return false; }
+  int Size() const { return vars_.size(); }
+  // Returns the value in the current assignment of the variable of given index.
+  const Val& Value(int64 index) const {
+    DCHECK_LT(index, vars_.size());
+    return values_[index];
+  }
+  // Returns the variable of given index.
+  V* Var(int64 index) const { return vars_[index]; }
+  virtual bool SkipUnchanged(int index) const { return false; }
+  const Val& OldValue(int64 index) const { return old_values_[index]; }
+  void SetValue(int64 index, const Val& value) {
+    values_[index] = value;
+    MarkChange(index);
+  }
+  bool Activated(int64 index) const { return activated_[index]; }
+  void Activate(int64 index) {
+    activated_.Set(index);
+    MarkChange(index);
+  }
+  void Deactivate(int64 index) {
+    activated_.Clear(index);
+    MarkChange(index);
+  }
+  bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const {
+    for (const int64 index : changes_.PositionsSetAtLeastOnce()) {
+      V* var = Var(index);
+      const Val& value = Value(index);
+      const bool activated = activated_[index];
+      if (!activated) {
+        if (!cleared_ && delta_changes_[index] && IsIncremental()) {
+          deltadelta->FastAdd(var)->Deactivate();
+        }
+        delta->FastAdd(var)->Deactivate();
+      } else if (value != OldValue(index) || !SkipUnchanged(index)) {
+        if (!cleared_ && delta_changes_[index] && IsIncremental()) {
+          var_handler_.AddToAssignment(var, value, index, deltadelta);
+        }
+        var_handler_.AddToAssignment(var, value, index, delta);
+      }
+    }
+    return true;
+  }
+  void RevertChanges(bool incremental) {
+    cleared_ = false;
+    delta_changes_.SparseClearAll();
+    if (incremental && IsIncremental()) return;
+    cleared_ = true;
+    for (const int64 index : changes_.PositionsSetAtLeastOnce()) {
+      values_[index] = old_values_[index];
+      var_handler_.OnRevertChanges(index);
+      activated_.CopyBucket(was_activated_, index);
+    }
+    changes_.SparseClearAll();
+  }
+  void AddVars(const std::vector<V*>& vars) {
+    if (!vars.empty()) {
+      vars_.insert(vars_.end(), vars.begin(), vars.end());
+      const int64 size = Size();
+      values_.resize(size);
+      old_values_.resize(size);
+      activated_.Resize(size);
+      was_activated_.Resize(size);
+      changes_.ClearAndResize(size);
+      delta_changes_.ClearAndResize(size);
+      var_handler_.OnAddVars();
+    }
+  }
+
+  // Called by Start() after synchronizing the operator with the current
+  // assignment. Should be overridden instead of Start() to avoid calling
+  // VarLocalSearchOperator::Start explicitly.
+  virtual void OnStart() {}
+  void MarkChange(int64 index) {
+    delta_changes_.Set(index);
+    changes_.Set(index);
+  }
+ protected:
+
+  std::vector<V*> vars_;
+  std::vector<Val> values_;
+  std::vector<Val> old_values_;
+  Bitset64<> activated_;
+  Bitset64<> was_activated_;
+  SparseBitset<> changes_;
+  SparseBitset<> delta_changes_;
+  bool cleared_;
+  Handler var_handler_;
+};
+
 // ----- Base operator class for operators manipulating IntVars -----
+
+class IntVarLocalSearchHandler {
+ public:
+  void AddToAssignment(IntVar* var, int64 value, int64 index,
+                       Assignment* assignment) const {
+    assignment->FastAdd(var)->SetValue(value);
+  }
+  bool ValueFromAssignent(const Assignment& assignment, IntVar* var,
+                          int64 index, int64* value) {
+    const Assignment::IntContainer& container = assignment.IntVarContainer();
+    const IntVarElement* element = &(container.Element(index));
+    if (element->Var() != var) {
+      CHECK(container.Contains(var))
+          << "Assignment does not contain operator variable " << var;
+      element = &(container.Element(var));
+    }
+    *value = element->Value();
+    return element->Activated();
+  }
+  void OnRevertChanges(int64 index) {}
+  void OnAddVars() {}
+};
 
 // Specialization of LocalSearchOperator built from an array of IntVars
 // which specifies the scope of the operator.
 // This class also takes care of storing current variable values in Start(),
 // keeps track of changes done by the operator and builds the delta.
 // The Deactivate() method can be used to perform Large Neighborhood Search.
-class IntVarLocalSearchOperator : public LocalSearchOperator {
- public:
-  IntVarLocalSearchOperator();
-  explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars);
-  virtual ~IntVarLocalSearchOperator();
-  // This method should not be overridden. Override OnStart() instead which is
-  // called before exiting this method.
-  virtual void Start(const Assignment* assignment);
-  virtual bool IsIncremental() const { return false; }
-  int Size() const { return vars_.size(); }
-  // Returns the value in the current assignment of the variable of given index.
-  int64 Value(int64 index) const {
-    DCHECK_LT(index, vars_.size());
-    return values_[index];
-  }
-  // Returns the variable of given index.
-  IntVar* Var(int64 index) const { return vars_[index]; }
-  virtual bool SkipUnchanged(int index) const { return false; }
 
+#ifdef SWIG
+%template(IntVarLocalSearchOperatorTemplate)
+    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+#endif
+
+class IntVarLocalSearchOperator
+    : public VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler> {
+ public:
+  IntVarLocalSearchOperator() {}
+  explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars)
+      : VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>(
+            vars, IntVarLocalSearchHandler()) {
+    AddVars(vars);
+  }
+  virtual ~IntVarLocalSearchOperator() {}
   // Redefines MakeNextNeighbor to export a simpler interface. The calls to
   // ApplyChanges() and RevertChanges() are factored in this method, hiding both
   // delta and deltadelta from subclasses which only need to override
@@ -834,92 +969,103 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   // instead.
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
-  int64 OldValue(int64 index) const { return old_values_[index]; }
-  void SetValue(int64 index, int64 value);
-  bool Activated(int64 index) const;
-  void Activate(int64 index);
-  void Deactivate(int64 index);
-  bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
-  void RevertChanges(bool incremental);
-  void AddVars(const std::vector<IntVar*>& vars);
-
  protected:
   // Creates a new neighbor. It returns false when the neighborhood is
   // completely explored.
   // TODO(user): make it pure virtual, implies porting all apps overriding
   // MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
   virtual bool MakeOneNeighbor();
-
- private:
-  // Called by Start() after synchronizing the operator with the current
-  // assignment. Should be overridden instead of Start() to avoid calling
-  // IntVarLocalSearchOperator::Start explicitly.
-  virtual void OnStart() {}
-  void MarkChange(int64 index);
-
-  std::vector<IntVar*> vars_;
-  std::vector<int64> values_;
-  std::vector<int64> old_values_;
-  Bitmap activated_;
-  Bitmap was_activated_;
-  std::vector<int64> changes_;
-  Bitmap has_changed_;
-  Bitmap has_delta_changed_;
-  bool cleared_;
 };
 
 // ----- SequenceVarLocalSearchOperator -----
 
-// TODO(user): Merge with IntVarLocalSearchOperator.
-class SequenceVarLocalSearchOperator : public LocalSearchOperator {
- public:
-  SequenceVarLocalSearchOperator();
-  explicit SequenceVarLocalSearchOperator(const std::vector<SequenceVar*>& vars);
-  virtual ~SequenceVarLocalSearchOperator();
-  // This method should not be overridden. Override OnStart() instead which is
-  // called before exiting this method.
-  virtual void Start(const Assignment* assignment);
-  virtual bool IsIncremental() const { return false; }
-  int Size() const { return vars_.size(); }
-// Returns the value in the current assignment of the variable of given index.
-  const std::vector<int>& Sequence(int64 index) const {
-    DCHECK_LT(index, vars_.size());
-    return values_[index];
-  }
-  // Returns the variable of given index.
-  SequenceVar* Var(int64 index) const { return vars_[index]; }
-  virtual bool SkipUnchanged(int index) const { return false; }
+class SequenceVarLocalSearchOperator;
 
-  const std::vector<int>& OldSequence(int64 index) const {
-    return old_values_[index];
+class SequenceVarLocalSearchHandler {
+ public:
+  SequenceVarLocalSearchHandler() : op_(nullptr) {}
+  explicit SequenceVarLocalSearchHandler(SequenceVarLocalSearchOperator* op)
+      : op_(op) {}
+  void AddToAssignment(SequenceVar* var, const std::vector<int>& value, int64 index,
+                       Assignment* assignment) const;
+  bool ValueFromAssignent(const Assignment& assignment, SequenceVar* var,
+                          int64 index, std::vector<int>* value);
+  void OnRevertChanges(int64 index);
+  void OnAddVars();
+
+ private:
+  SequenceVarLocalSearchOperator* const op_;
+};
+
+#ifdef SWIG
+%template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
+      SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
+#endif
+
+typedef VarLocalSearchOperator<SequenceVar, std::vector<int>,
+                               SequenceVarLocalSearchHandler>
+    SequenceVarLocalSearchOperatorTemplate;
+
+class SequenceVarLocalSearchOperator
+    : public SequenceVarLocalSearchOperatorTemplate {
+ public:
+  SequenceVarLocalSearchOperator() {}
+  explicit SequenceVarLocalSearchOperator(const std::vector<SequenceVar*>& vars)
+      : SequenceVarLocalSearchOperatorTemplate(
+            vars, SequenceVarLocalSearchHandler(this)) {
+    AddVars(vars);
   }
-  void SetForwardSequence(int64 index, const std::vector<int>& value);
-  void SetBackwardSequence(int64 index, const std::vector<int>& value);
-  bool Activated(int64 index) const;
-  void Activate(int64 index);
-  void Deactivate(int64 index);
-  bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
-  void RevertChanges(bool incremental);
-  void AddVars(const std::vector<SequenceVar*>& vars);
+  virtual ~SequenceVarLocalSearchOperator() {}
+  // Returns the value in the current assignment of the variable of given index.
+  const std::vector<int>& Sequence(int64 index) const { return Value(index); }
+  const std::vector<int>& OldSequence(int64 index) const { return OldValue(index); }
+  void SetForwardSequence(int64 index, const std::vector<int>& value) {
+    SetValue(index, value);
+  }
+  void SetBackwardSequence(int64 index, const std::vector<int>& value) {
+    backward_values_[index] = value;
+    MarkChange(index);
+  }
 
  protected:
-  // Called by Start() after synchronizing the operator with the current
-  // assignment. Should be overridden instead of Start() to avoid calling
-  // SequenceVarLocalSearchOperator::Start explicitly.
-  virtual void OnStart() {}
-  void MarkChange(int64 index);
+  friend class SequenceVarLocalSearchHandler;
 
-  std::vector<SequenceVar*> vars_;
-  std::vector<std::vector<int> > values_;
   std::vector<std::vector<int> > backward_values_;
-  std::vector<std::vector<int> > old_values_;
-  Bitmap activated_;
-  Bitmap was_activated_;
-  std::vector<int64> changes_;
-  Bitmap has_changed_;
-  Bitmap has_delta_changed_;
-  bool cleared_;
 };
+
+inline void SequenceVarLocalSearchHandler::AddToAssignment(
+    SequenceVar* var, const std::vector<int>& value, int64 index,
+    Assignment* assignment) const {
+  SequenceVarElement* const element = assignment->FastAdd(var);
+  element->SetForwardSequence(value);
+  element->SetBackwardSequence(op_->backward_values_[index]);
+}
+
+inline bool SequenceVarLocalSearchHandler::ValueFromAssignent(
+    const Assignment& assignment, SequenceVar* var, int64 index,
+    std::vector<int>* value) {
+  const Assignment::SequenceContainer& container =
+      assignment.SequenceVarContainer();
+  const SequenceVarElement* element = &(container.Element(index));
+  if (element->Var() != var) {
+    CHECK(container.Contains(var))
+        << "Assignment does not contain operator variable " << var;
+    element = &(container.Element(var));
+  }
+  const std::vector<int>& element_value = element->ForwardSequence();
+  CHECK_GE(var->size(), element_value.size());
+  op_->backward_values_[index].clear();
+  *value = element_value;
+  return element->Activated();
+}
+
+inline void SequenceVarLocalSearchHandler::OnRevertChanges(int64 index) {
+  op_->backward_values_[index].clear();
+}
+
+inline void SequenceVarLocalSearchHandler::OnAddVars() {
+  op_->backward_values_.resize(op_->Size());
+}
 
 // ----- Base Large Neighborhood Search operator class ----
 
@@ -1005,8 +1151,27 @@ class ChangeValue : public IntVarLocalSearchOperator {
 // the services above (no direct manipulation of assignments).
 class PathOperator : public IntVarLocalSearchOperator {
  public:
+  // Builds an instance of PathOperator from next and path variables.
+  // 'number_of_base_nodes' is the number of nodes needed to define a
+  // neighbor. 'start_empty_path_class' is a callback returning an index such
+  // that if
+  // c1 = start_empty_path_class->Run(StartNode(p1)),
+  // c2 = start_empty_path_class->Run(StartNode(p2)),
+  // p1 and p2 are path indices,
+  // then if c1 == c2, p1 and p2 are equivalent if they are empty.
+  // This is used to remove neighborhood symmetries on equivalent empty paths;
+  // for instance if a node cannot be moved to an empty path, then all moves
+  // moving the same node to equivalent empty paths will be skipped.
+  // 'start_empty_path_class' can be nullptr in which case no symmetries will be
+  // removed.
+  // Ownership of 'start_empty_path_class' is not taken by this class and
+  // therefore must be explicitly deleted by the caller.
+  // 'start_empty_path_class' must remain alive during the lifespan of the
+  // path operator.
   PathOperator(const std::vector<IntVar*>& next_vars,
-               const std::vector<IntVar*>& path_vars, int number_of_base_nodes);
+               const std::vector<IntVar*>& path_vars,
+               int number_of_base_nodes,
+               ResultCallback1<int, int64>* start_empty_path_class);
   virtual ~PathOperator() {}
   virtual bool MakeNeighbor() = 0;
 
@@ -1135,7 +1300,29 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
+  ResultCallback1<int, int64>* start_empty_path_class_;
 };
+
+// ----- Operator Factories ------
+
+template <class T>
+LocalSearchOperator* MakeLocalSearchOperator(
+    Solver* solver,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    ResultCallback1<int, int64>* start_empty_path_class);
+
+// Classes to which this template function can be applied to as of 03/2014.
+// Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);
+class TwoOpt;
+class Relocate;
+class Exchange;
+class Cross;
+class MakeActiveOperator;
+class MakeInactiveOperator;
+class MakeChainInactiveOperator;
+class SwapActiveOperator;
+class ExtendedSwapActiveOperator;
 
 // ----- Local Search Filters ------
 
