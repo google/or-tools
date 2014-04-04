@@ -185,6 +185,7 @@ class ITIVector : protected std::vector<T, Alloc> {
     return x.get() op y.get();                                     \
   }
 ITIVECTOR_COMPARISON_OP(== );  // NOLINT
+ITIVECTOR_COMPARISON_OP(!= );  // NOLINT
 ITIVECTOR_COMPARISON_OP(< );   // NOLINT
 ITIVECTOR_COMPARISON_OP(<= );  // NOLINT
 ITIVECTOR_COMPARISON_OP(> );   // NOLINT
