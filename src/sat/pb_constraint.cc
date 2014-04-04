@@ -35,6 +35,8 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
                                                  Coefficient* bound_shift,
                                                  Coefficient* max_value) {
+  // Note(user): For some reason, the IntType checking doesn't work here ?! that
+  // is a bit worrying, but the code seems to behave correctly.
   *bound_shift = 0;
   *max_value = 0;
 
@@ -85,12 +87,13 @@ bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* 
 
   // Finally sort by increasing coefficients.
   std::sort(cst->begin(), cst->end(), CoeffComparator);
+  DCHECK_GE(*max_value, 0);
   return true;
 }
 
 // TODO(user): Also check for no duplicates literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst) {
-  Coefficient previous = 1;
+  Coefficient previous(1);
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
     previous = term.coefficient;
@@ -112,10 +115,51 @@ void SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff>* cst
   }
 }
 
+Coefficient ComputeCanonicalRhs(Coefficient upper_bound,
+                                Coefficient bound_shift,
+                                Coefficient max_value) {
+  Coefficient rhs = upper_bound;
+  if (!SafeAddInto(bound_shift, &rhs)) {
+    if (bound_shift > 0) {
+      // Positive overflow. The constraint is trivially true.
+      // This is because the canonical linear expression is in [0, max_value].
+      return max_value;
+    } else {
+      // Negative overflow. The constraint is infeasible.
+      return Coefficient(-1);
+    }
+  }
+  if (rhs < 0) return Coefficient(-1);
+  return std::min(max_value, rhs);
+}
+
+Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
+                                       Coefficient bound_shift,
+                                       Coefficient max_value) {
+  // The new bound is "max_value - (lower_bound + bound_shift)", but we must
+  // pay attention to possible overflows.
+  Coefficient shifted_lb = lower_bound;
+  if (!SafeAddInto(bound_shift, &shifted_lb)) {
+    if (bound_shift > 0) {
+      // Positive overflow. The constraint is infeasible.
+      return Coefficient(-1);
+    } else {
+      // Negative overflow. The constraint is trivialy satisfiable.
+      return max_value;
+    }
+  }
+  if (shifted_lb <= 0) {
+    // If shifted_lb <= 0 then the constraint is trivialy satisfiable. We test
+    // this so we are sure that max_value - shifted_lb doesn't overflow below.
+    return max_value;
+  }
+  return max_value - shifted_lb;
+}
+
 bool CanonicalBooleanLinearProblem::AddLinearConstraint(
     bool use_lower_bound, Coefficient lower_bound, bool use_upper_bound,
     Coefficient upper_bound, std::vector<LiteralWithCoeff>* cst) {
-  // Cannonicalize the linear expresion of the constraint.
+  // Canonicalize the linear expression of the constraint.
   Coefficient bound_shift;
   Coefficient max_value;
   if (!ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,
@@ -123,19 +167,18 @@ bool CanonicalBooleanLinearProblem::AddLinearConstraint(
     return false;
   }
   if (use_upper_bound) {
-    Coefficient ub = upper_bound;
-    if (!SafeAddInto(bound_shift, &ub)) return false;
-    if (!AddConstraint(*cst, max_value, ub)) return false;
+    const Coefficient rhs =
+        ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
+    if (!AddConstraint(*cst, max_value, rhs)) return false;
   }
   if (use_lower_bound) {
     // We transform the constraint into an upper-bounded one.
     for (int i = 0; i < cst->size(); ++i) {
       (*cst)[i].literal = (*cst)[i].literal.Negated();
     }
-    Coefficient ub = max_value;
-    if (!SafeAddInto(-lower_bound, &ub)) return false;
-    if (!SafeAddInto(-bound_shift, &ub)) return false;
-    if (!AddConstraint(*cst, max_value, ub)) return false;
+    const Coefficient rhs =
+        ComputeNegatedCanonicalRhs(lower_bound, bound_shift, max_value);
+    if (!AddConstraint(*cst, max_value, rhs)) return false;
   }
   return true;
 }
@@ -224,19 +267,29 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
   while (index_ >= 0 && coeffs_[index_] > current_rhs) --index_;
 
   // Check propagation.
+  VariableIndex first_propagated_variable(-1);
   for (int i = starts_[index_ + 1]; i < already_propagated_end_; ++i) {
     if (trail->Assignment().IsLiteralFalse(literals_[i])) continue;
     if (trail->Assignment().IsLiteralTrue(literals_[i])) {
       if (trail->Info(literals_[i].Variable()).trail_index > trail_index) {
         // Conflict.
-        FillReason(*trail, trail_index, conflict);
+        FillReason(*trail, trail_index, literals_[i].Variable(), conflict);
         conflict->push_back(literals_[i].Negated());
         Update(current_rhs, slack);
         return false;
       }
     } else {
       // Propagation.
-      trail->EnqueueWithPbReason(literals_[i].Negated(), trail_index, this);
+      if (first_propagated_variable < 0) {
+        trail->EnqueueWithPbReason(literals_[i].Negated(), trail_index, this);
+        first_propagated_variable = literals_[i].Variable();
+      } else {
+        // Note that the reason for first_propagated_variable is always a
+        // valid reason for literals_[i].Variable() because we process the
+        // variable in increasing coefficient order.
+        trail->EnqueueWithSameReasonAs(literals_[i].Negated(),
+                                       first_propagated_variable);
+      }
     }
   }
   Update(current_rhs, slack);
@@ -245,6 +298,7 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
 
 void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
                                               int source_trail_index,
+                                              VariableIndex propagated_variable,
                                               std::vector<Literal>* reason) {
   // Optimization for an "at most one" constraint.
   if (rhs_ == 1) {
@@ -256,56 +310,52 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
   // This is needed for unsat proof.
   const bool include_level_zero = trail.NeedFixedLiteralsInReason();
 
+  // Optimization: This will be set to the index of the last literal in the
+  // reason, that is the one with smallest indices.
+  int last_i = 0;
+  int last_coeff_index = 0;
+
   // Compute the initial reason which is formed by all the literals of the
   // constraint that were assigned to true at the time of the propagation.
   // We remove literals with a level of 0 since they are not needed.
   // We also compute the current_rhs at the time.
   reason->clear();
   Coefficient current_rhs = rhs_;
+  Coefficient propagated_variable_coefficient(0);
   int coeff_index = coeffs_.size() - 1;
   for (int i = literals_.size() - 1; i >= 0; --i) {
     const Literal literal = literals_[i];
-    if (trail.Assignment().IsLiteralTrue(literal) &&
-        trail.Info(literal.Variable()).trail_index <= source_trail_index) {
-      if (include_level_zero || trail.Info(literal.Variable()).level != 0) {
-        reason->push_back(literal.Negated());
+    if (literal.Variable() == propagated_variable) {
+      propagated_variable_coefficient = coeffs_[coeff_index];
+    } else {
+      if (trail.Assignment().IsLiteralTrue(literal) &&
+          trail.Info(literal.Variable()).trail_index <= source_trail_index) {
+        if (include_level_zero || trail.Info(literal.Variable()).level != 0) {
+          reason->push_back(literal.Negated());
+          last_i = i;
+          last_coeff_index = coeff_index;
+        }
+        current_rhs -= coeffs_[coeff_index];
       }
-      current_rhs -= coeffs_[coeff_index];
-
-      // If current_rhs reaches zero, then we already have a minimal reason for
-      // the constraint to be unsat. We can stop there.
-      if (current_rhs == 0) break;
     }
     if (i == starts_[coeff_index]) {
       --coeff_index;
     }
   }
+  DCHECK_GT(propagated_variable_coefficient, current_rhs);
+  DCHECK_GE(propagated_variable_coefficient, 0);
 
   // In both cases, we can't minimize the reason further.
   if (reason->size() <= 1 || coeffs_.size() == 1) return;
 
-  // Find the smallest coefficient greater than current_rhs.
-  // We want a coefficient of a literal that wasn't assigned at the time.
-  coeff_index = coeffs_.size() - 1;
-  Coefficient coeff = coeffs_[coeff_index];
-  for (int i = literals_.size() - 1; i >= 0; --i) {
-    if (coeffs_[coeff_index] <= current_rhs) break;
-    const Literal literal = literals_[i];
-    if (!trail.Assignment().IsVariableAssigned(literal.Variable()) ||
-        trail.Info(literal.Variable()).trail_index > source_trail_index) {
-      coeff = coeffs_[coeff_index];
-      if (coeff == current_rhs + 1) break;
-    }
-    if (i == starts_[coeff_index]) --coeff_index;
-  }
-  int limit = coeff - current_rhs;
+  Coefficient limit = propagated_variable_coefficient - current_rhs;
   DCHECK_GE(limit, 1);
 
   // Remove literals with small coefficients from the reason as long as the
   // limit is still stricly positive.
-  coeff_index = 0;
+  coeff_index = last_coeff_index;
   if (coeffs_[coeff_index] >= limit) return;
-  for (int i = 0; i < literals_.size(); ++i) {
+  for (int i = last_i; i < literals_.size(); ++i) {
     const Literal literal = literals_[i];
     if (i == starts_[coeff_index + 1]) {
       ++coeff_index;
@@ -353,7 +403,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
 
   const ConstraintIndex cst_index(constraints_.size());
   constraints_.emplace_back(UpperBoundedLinearConstraint(cst, node));
-  slacks_.push_back(0);
+  slacks_.push_back(Coefficient(0));
   if (!constraints_.back().InitializeRhs(rhs, propagation_trail_index_,
                                          &slacks_.back(), trail_,
                                          &conflict_scratchpad_)) {

@@ -14,8 +14,7 @@
 #define OR_TOOLS_SAT_PB_CONSTRAINT_H_
 
 #include <deque>
-#include "base/hash.h"
-#include "base/hash.h"
+#include <limits>
 #include "sat/sat_base.h"
 #include "util/stats.h"
 
@@ -24,12 +23,18 @@ namespace sat {
 
 // The type of the integer coefficients in a pseudo-Boolean constraint.
 // This is also used for the current value of a constraint or its bounds.
-typedef int64 Coefficient;
+DEFINE_INT_TYPE(Coefficient, int64);
+
+// IMPORTANT: We can't use numeric_limits<Coefficient>::max() which will compile
+// but just returns zero!!
+const Coefficient kCoefficientMax(
+    std::numeric_limits<Coefficient::ValueType>::max());
 
 // Represents a term in a pseudo-Boolean formula.
 struct LiteralWithCoeff {
   LiteralWithCoeff() {}
   LiteralWithCoeff(Literal l, Coefficient c) : literal(l), coefficient(c) {}
+  LiteralWithCoeff(Literal l, int64 c) : literal(l), coefficient(c) {}
   Literal literal;
   Coefficient coefficient;
   bool operator==(const LiteralWithCoeff& other) const {
@@ -61,6 +66,25 @@ inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
 bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
                                                  Coefficient* bound_shift,
                                                  Coefficient* max_value);
+
+// From a constraint 'expr <= ub' and the result (bound_shift, max_value) of
+// calling ComputeBooleanLinearExpressionCanonicalForm() on 'expr', this returns
+// a new rhs such that 'canonical expression <= rhs' is an equivalent
+// constraint. This function deals with all the possible overflow corner cases.
+//
+// The result will be in [-1, max_value] where -1 means unsatisfiable and
+// max_value means trivialy satisfiable.
+Coefficient ComputeCanonicalRhs(Coefficient upper_bound,
+                                Coefficient bound_shift, Coefficient max_value);
+
+// Same as ComputeCanonicalRhs(), but uses the initial constraint lower bound
+// instead. From a constraint 'lb <= expression', this returns a rhs such that
+// 'canonical expression with literals negated <= rhs'.
+//
+// Note that the range is also [-1, max_value] with the same meaning.
+Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
+                                       Coefficient bound_shift,
+                                       Coefficient max_value);
 
 // Returns true iff the Boolean linear expression is in canonical form.
 bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst);
@@ -107,7 +131,7 @@ class CanonicalBooleanLinearProblem {
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
                      Coefficient rhs);
 
-  std::vector<int64> rhs_;
+  std::vector<Coefficient> rhs_;
   std::vector<std::vector<LiteralWithCoeff>> constraints_;
   DISALLOW_COPY_AND_ASSIGN(CanonicalBooleanLinearProblem);
 };
@@ -172,16 +196,13 @@ class UpperBoundedLinearConstraint {
   //   if it is of level 0).
   // - We make the reason more compact by greedily removing terms with small
   //   coefficients that would not have changed the propagation.
-  // - It is possible that the same source_trail_index literal propagated more
-  //   than one literal. It is important that the reason of each of these
-  //   literal is exactly the same so we can use PbReasonCache.
   //
   // TODO(user): Maybe it is possible to derive a better reason by using more
   // information. For instance one could use the mask of literals that are
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
   void FillReason(const Trail& trail, int source_trail_index,
-                  std::vector<Literal>* reason);
+                  VariableIndex propagated_variable, std::vector<Literal>* reason);
 
   // Returns the resolution node associated to this constraint. Note that it can
   // be nullptr if the solver is not configured to compute the reason for an
@@ -265,7 +286,8 @@ class PbConstraints {
     SCOPED_TIME_STAT(&stats_);
     const AssignmentInfo& info = trail_->Info(var);
     DCHECK_EQ(info.type, AssignmentInfo::PB_PROPAGATION);
-    info.pb_constraint->FillReason(*trail_, info.source_trail_index, reason);
+    info.pb_constraint->FillReason(*trail_, info.source_trail_index, var,
+                                   reason);
   }
 
  private:
@@ -313,41 +335,44 @@ class PbConstraints {
 };
 
 // Boolean linear constraints can propagate a lot of literals at the same time.
-// As a result, all these literals will have exactly the same reason. We can
-// take advantage of that during the conflict computation/minimization using
-// this simple "cache". On some problem, this can have a huge impact.
-class PbReasonCache {
+// As a result, all these literals will have exactly the same reason. It is
+// important to take advantage of that during the conflict
+// computation/minimization. On some problem, this can have a huge impact.
+//
+// TODO(user): With the new SAME_REASON_AS mechanism, this is more general so
+// move out of pb_constraint.
+class VariableWithSameReasonIdentifier {
  public:
-  explicit PbReasonCache(const Trail& trail) : trail_(trail) {}
+  explicit VariableWithSameReasonIdentifier(const Trail& trail)
+      : trail_(trail) {}
+
+  void Resize(int num_variables) {
+    first_variable_.resize(num_variables);
+    seen_.ClearAndResize(VariableIndex(num_variables));
+  }
 
   // Clears the cache. Call this before each conflict analysis.
-  void Clear() { map_.clear(); }
+  void Clear() { seen_.ClearAll(); }
 
-  // If this function was already called since the last Clear(), returns the
-  // variable that first called it. Otherwise, return the given variable.
+  // Returns the first variable with exactly the same reason as 'var' on which
+  // this function was called since the last Clear(). Note that if no variable
+  // had the same reason, then var is returned.
   VariableIndex FirstVariableWithSameReason(VariableIndex var) {
-    if (trail_.Info(var).type != AssignmentInfo::PB_PROPAGATION) return var;
-    return map_.insert(std::make_pair(Key(var), var)).first->second;
+    if (seen_[var]) return first_variable_[var];
+    if (trail_.Info(var).type != AssignmentInfo::SAME_REASON_AS) return var;
+    const VariableIndex reference_var = trail_.Info(var).reference_var;
+    if (seen_[reference_var]) return first_variable_[reference_var];
+    seen_.Set(reference_var);
+    first_variable_[reference_var] = var;
+    return var;
   }
 
  private:
   const Trail& trail_;
+  ITIVector<VariableIndex, VariableIndex> first_variable_;
+  SparseBitset<VariableIndex> seen_;
 
-  // This uniquely identify the reason for a linear constraint if there is
-  // no backtracking. Note that we clear the cache before each conflict, so
-  // this is enough.
-  std::pair<UpperBoundedLinearConstraint*, int> Key(VariableIndex var) const {
-    const AssignmentInfo& info = trail_.Info(var);
-    return std::make_pair(info.pb_constraint, info.source_trail_index);
-  }
-
-#if defined(_MSC_VER)
-  hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex,
-           PairPointerIntHasher<UpperBoundedLinearConstraint> > map_;
-#else
-  hash_map<std::pair<UpperBoundedLinearConstraint*, int>, VariableIndex> map_;
-#endif
-  DISALLOW_COPY_AND_ASSIGN(PbReasonCache);
+  DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);
 };
 
 }  // namespace sat

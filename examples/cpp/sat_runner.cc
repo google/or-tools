@@ -78,6 +78,12 @@ DEFINE_bool(refine_core, false,
 namespace operations_research {
 namespace sat {
 namespace {
+// Returns the scaled objective.
+double GetScaledObjective(const LinearBooleanProblem& problem,
+                          Coefficient objective) {
+  return objective.value() * problem.objective().scaling_factor() +
+         problem.objective().offset();
+}
 
 // To benefit from the operations_research namespace, we put all the main() code
 // here.
@@ -126,8 +132,9 @@ int Run() {
     LOG(FATAL) << "Couldn't load problem '" << FLAGS_input << "'.";
   }
   if (!AddObjectiveConstraint(
-           problem, !FLAGS_lower_bound.empty(), atoi64(FLAGS_lower_bound),
-           !FLAGS_upper_bound.empty(), atoi64(FLAGS_upper_bound), &solver)) {
+          problem, !FLAGS_lower_bound.empty(),
+          Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
+          Coefficient(atoi64(FLAGS_upper_bound)), &solver)) {
     LOG(FATAL) << "Issue when setting the objective bounds.";
   }
 
@@ -146,23 +153,28 @@ int Run() {
   if (FLAGS_search_optimal &&
       problem.type() == LinearBooleanProblem::MINIMIZATION) {
     TimeLimit time_limit(parameters.max_time_in_seconds());
-    Coefficient objective = std::numeric_limits<Coefficient>::max();
+    Coefficient objective = kCoefficientMax;
     int old_num_fixed_variables = 0;
     while (true) {
       const SatSolver::Status result = solver.Solve();
       if (result == SatSolver::MODEL_UNSAT) {
-        if (objective == std::numeric_limits<Coefficient>::max()) {
+        if (objective == kCoefficientMax) {
           LOG(INFO) << "The problem is UNSAT";
           break;
         }
         LOG(INFO) << "Optimal found!";
-        LOG(INFO) << "Objective = " << objective;
+        LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
         LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
         break;
       }
       if (result != SatSolver::MODEL_SAT) {
         LOG(INFO) << "Search aborted.";
-        LOG(INFO) << "Objective = " << objective;
+        if (objective == kCoefficientMax) {
+          LOG(INFO) << "No solution found!";
+          LOG(INFO) << "Objective = " << kCoefficientMax;
+        } else {
+          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
+        }
         LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
         break;
       }
@@ -171,11 +183,11 @@ int Run() {
       objective = ComputeObjectiveValue(problem, solver.Assignment());
       CHECK_LT(objective, old_objective);
       solver.Backtrack(0);
-      if (!AddObjectiveConstraint(problem, false, 0, true, objective - 1,
-                                  &solver)) {
+      if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
+                                  objective - 1, &solver)) {
         LOG(INFO) << "UNSAT (when tightenning the objective constraint).";
         LOG(INFO) << "Optimal found!";
-        LOG(INFO) << "Objective = " << objective;
+        LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
         LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
         break;
       }

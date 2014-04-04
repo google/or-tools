@@ -46,9 +46,15 @@ message LinearObjective {
   repeated int32 literals = 1;
   repeated int64 coefficients = 2;
 
-  // The objective offset. This is needed sometimes to report the correct
-  // objective value (after preprocessing for instance).
-  optional int64 offset = 3 [default = 0];
+  // For a given variable assignment, the problem objective value is
+  // 'scaling_factor * (sum literal * coefficient) + offset'
+  // where literal_i is 1 iff literal_i is true.
+  //
+  // Note: the scaling_factor must be positive. This is important because the
+  // solver just minimize (resp. maximize) the expression
+  // 'sum literal * coefficient'.
+  optional double offset = 3 [default = 0.0];
+  optional double scaling_factor = 4 [default = 1.0];
 }
 
 // Stores an assignment of variables as a list of true literals using their

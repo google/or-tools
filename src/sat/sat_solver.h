@@ -54,7 +54,10 @@ class SatSolver {
   SatSolver();
   ~SatSolver();
 
-  // Parameters management.
+  // Parameters management. Note that calling SetParameters() will reset the
+  // value of many heuristics. For instance:
+  // - The restart strategy will be reinitialized.
+  // - The random seed will be reset to the value given in parameters.
   void SetParameters(const SatParameters& parameters);
   const SatParameters& parameters() const;
 
@@ -126,13 +129,24 @@ class SatSolver {
   // DEFAULT_WEIGHT.
   void SetAssignmentPreference(Literal literal, double weight);
 
+  // When this is called, any currently assigned variables will be treated as
+  // assumption for the next Solve() call. If the solver backtrack or if
+  // Backtrack() is called on a lower decision level, then the assumption will
+  // be reduced to match the new level.
+  //
+  // If, given these assumptions, the model is UNSAT, calling Solve() will
+  // returns the ASSUMPTIONS_UNSAT status. MODEL_UNSAT is reserved for the case
+  // where the model is proven to be unsat without any assumptions.
+  void TreatCurrentDecisionsAsAssumption();
+
   // Solves the problem and returns its status.
   //
-  // If any EnqueueDecision*() call has been made before Solve() is called then
-  // this will treat them as assumptions. If, given these assumptions, the model
-  // is UNSAT, the ASSUMPTIONS_UNSAT status will be returned. MODEL_UNSAT is
-  // reserved for the case where the model is proven to be unsat without any
-  // assumptions.
+  // Note that the time or conflict limit applies only to this function and
+  // starts counting from the time it is called.
+  //
+  // This will restart from the current solver configuration. If a previous call
+  // to Solve() was interupted by a conflict or time limit, calling this again
+  // will resume the search exactly as it would have continued.
   enum Status {
     ASSUMPTIONS_UNSAT,
     MODEL_UNSAT,
@@ -230,7 +244,7 @@ class SatSolver {
   // Complexity remark: This is called a lot less often than Enqueue(). So it is
   // better to do as little work as possible during Enqueue() and more work
   // here. In particular, generating a reason clause lazily make sense.
-  ClauseRef Reason(VariableIndex var) const;
+  ClauseRef Reason(VariableIndex var);
 
   // Returns true if the clause is the reason for an assigned variable or was
   // the reason the last time a variable was assigned.
@@ -320,6 +334,9 @@ class SatSolver {
   // This will returns nullptr if the solver is not configured to compute unsat
   // core or if the current constraint is not relevant for the core computation.
   ResolutionNode* CreateRootResolutionNode();
+
+  // Return the resolution node associated with the given variable assignment.
+  ResolutionNode* ResolutionNodeForAssignment(VariableIndex var) const;
 
   // Creates a ResolutionNode associated to a learned conflict. Basically, the
   // node will hold the information that the learned clause can be derived from
@@ -437,6 +454,9 @@ class SatSolver {
   // The solver trail.
   Trail trail_;
 
+  // The current assumption level, 0 means no assumptions.
+  int assumption_level_;
+
   // The stack of decisions taken by the solver. They are stored in [0,
   // current_decision_level_). The vector is of size num_variables_ so it can
   // store all the decisions. This is done this way because in some situation we
@@ -551,10 +571,6 @@ class SatSolver {
   SparseBitset<VariableIndex> is_independent_;
   std::vector<int> min_trail_index_per_level_;
 
-  // Temporary member used by Reason().
-  mutable std::vector<Literal> tmp_reason_;
-  mutable std::vector<Literal> tmp_intermediate_reason_;
-
   // Temporary members used by CanBeInferedFromConflictVariables().
   std::vector<VariableIndex> dfs_stack_;
   std::vector<VariableIndex> variable_to_process_;
@@ -572,7 +588,7 @@ class SatSolver {
 
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
-  PbReasonCache reason_cache_;
+  VariableWithSameReasonIdentifier same_reason_identifier_;
 
   // Stores the resolution DAG.
   // This is only used is parameters_.unsat_proof() is true.

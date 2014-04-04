@@ -44,8 +44,9 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
       cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
     }
     if (!solver->AddLinearConstraint(
-             constraint.has_lower_bound(), constraint.lower_bound(),
-             constraint.has_upper_bound(), constraint.upper_bound(), &cst)) {
+            constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
+            constraint.has_upper_bound(), Coefficient(constraint.upper_bound()),
+            &cst)) {
       return false;
     }
   }
@@ -105,7 +106,7 @@ bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
 
 Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
                                   const VariablesAssignment& assignment) {
-  Coefficient sum = 0;
+  Coefficient sum(0);
   const LinearObjective& objective = problem.objective();
   for (int i = 0; i < objective.literals_size(); ++i) {
     if (assignment.IsLiteralTrue(objective.literals(i))) {
@@ -127,7 +128,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 
   // Check that all constraints are satisfied.
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    Coefficient sum = 0;
+    Coefficient sum(0);
     for (int i = 0; i < constraint.literals_size(); ++i) {
       if (assignment.IsLiteralTrue(constraint.literals(i))) {
         sum += constraint.coefficients(i);
@@ -157,9 +158,9 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
   // We also display the objective value of an optimization problem.
   if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
       problem.type() == LinearBooleanProblem::MAXIMIZATION) {
-    Coefficient sum = 0;
-    Coefficient min_value = 0;
-    Coefficient max_value = 0;
+    Coefficient sum(0);
+    Coefficient min_value(0);
+    Coefficient max_value(0);
     const LinearObjective& objective = problem.objective();
     for (int i = 0; i < objective.literals_size(); ++i) {
       if (objective.coefficients(i) > 0) {
@@ -171,9 +172,12 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
         sum += objective.coefficients(i);
       }
     }
-    LOG(INFO) << "objective: " << sum + objective.offset()
-              << " trivial_bounds: [" << min_value + objective.offset() << ", "
-              << max_value + objective.offset() << "]";
+    LOG(INFO) << "objective: " << sum.value() * objective.scaling_factor() +
+                                      objective.offset() << " trivial_bounds: ["
+              << min_value.value() * objective.scaling_factor() +
+                     objective.offset() << ", "
+              << max_value.value() * objective.scaling_factor() +
+                     objective.offset() << "]";
   }
   return true;
 }
@@ -257,8 +261,8 @@ class IdGenerator {
 
   // If the pair (type, coefficient) was never seen before, then generate
   // a new id, otherwise return the previously generated id.
-  int GetId(int type, int64 coefficient) {
-    const std::pair<int, int64> key(type, coefficient);
+  int GetId(int type, Coefficient coefficient) {
+    const std::pair<int, int64> key(type, coefficient.value());
     return LookupOrInsert(&id_map_, key, id_map_.size());
   }
 
@@ -300,8 +304,9 @@ Graph* GenerateGraphForSymmetryDetection(
       cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
     }
     CHECK(canonical_problem.AddLinearConstraint(
-        constraint.has_lower_bound(), constraint.lower_bound(),
-        constraint.has_upper_bound(), constraint.upper_bound(), &cst));
+        constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
+        constraint.has_upper_bound(), Coefficient(constraint.upper_bound()),
+        &cst));
   }
 
   // TODO(user): reserve the memory for the graph? not sure it is worthwhile
@@ -328,7 +333,8 @@ Graph* GenerateGraphForSymmetryDetection(
   // We use 0 for their initial equivalence class, but that may be modified
   // with the objective coefficient (see below).
   initial_equivalence_classes->assign(
-      2 * num_variables, id_generator.GetId(NodeType::LITERAL_NODE, 0));
+      2 * num_variables,
+      id_generator.GetId(NodeType::LITERAL_NODE, Coefficient(0)));
 
   // Literals with different objective coeffs shouldn't be in the same class.
   if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
@@ -343,8 +349,8 @@ Graph* GenerateGraphForSymmetryDetection(
     }
     // Note that we don't care about the offset or optimization direction here,
     // we just care about literals with the same canonical coefficient.
-    int64 shift;
-    int64 max_value;
+    Coefficient shift;
+    Coefficient max_value;
     ComputeBooleanLinearExpressionCanonicalForm(&expr, &shift, &max_value);
     for (LiteralWithCoeff term : expr) {
       (*initial_equivalence_classes)[term.literal.Index().value()] =
@@ -370,7 +376,7 @@ Graph* GenerateGraphForSymmetryDetection(
     // Note that this works because a canonical constraint is sorted by
     // increasing coefficient value (all positive).
     int current_node_index = constraint_node_index;
-    int64 previous_coefficient = 1;
+    Coefficient previous_coefficient(1);
     for (LiteralWithCoeff term : canonical_problem.Constraint(i)) {
       if (term.coefficient != previous_coefficient) {
         current_node_index = initial_equivalence_classes->size();

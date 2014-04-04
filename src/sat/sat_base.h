@@ -221,6 +221,8 @@ struct AssignmentInfo {
     BINARY_PROPAGATION,
     PB_PROPAGATION,
     SYMMETRY_PROPAGATION,
+    SAME_REASON_AS,
+    CACHED_REASON,
   };
   Type type : 3;
 
@@ -236,12 +238,13 @@ struct AssignmentInfo {
   // some fields will not be used and left uninitialized. We use unions to gain
   // a bit of memory.
 
-  union {
+  //  struct Reason {
     SatClause* sat_clause;
     ResolutionNode* resolution_node;
     UpperBoundedLinearConstraint* pb_constraint;
     int symmetry_index;
-  };
+    VariableIndex reference_var;
+  //  };
 
 // Visual C++ has a problem with a Literal inside an union.
 #if defined(_MSC_VER)
@@ -267,6 +270,8 @@ class Trail {
     assignment_.Resize(num_variables);
     info_.resize(num_variables);
     trail_.resize(num_variables);
+    cached_reasons_.resize(num_variables);
+    old_type_.resize(num_variables);
   }
 
   // Enqueues the assignment that make the given literal true on the trail. This
@@ -309,8 +314,49 @@ class Trail {
     Enqueue(true_literal, AssignmentInfo::SYMMETRY_PROPAGATION);
   }
 
+  // Some constraints propagate a lot of literals at once. In these cases, it is
+  // more efficient to have all the propagated literals except the first one
+  // refering to the reason of the first of them.
+  void EnqueueWithSameReasonAs(Literal true_literal,
+                               VariableIndex reference_var) {
+    current_info_.reference_var = reference_var;
+    Enqueue(true_literal, AssignmentInfo::SAME_REASON_AS);
+  }
+
+  // Changes the type of the variable assignment to CACHED_REASON so that we
+  // know that if it is needed again the reason can just be retrieved by
+  // CachedReason(). Note that the returned vector needs to be filled with the
+  // reason. If needed, you can get access to the initial assignment type with
+  // InitialAssignmentType().
+  //
+  // Note(user): Changing the type is not "clean" but it is efficient. The idea
+  // is that it is important to do as little as possible when pushing/poping
+  // literal on the trail. Computing the reason happens a lot less often, so it
+  // is okay to do slightly more work then. Note also, that we don't need to
+  // do anything on "untrail", the CACHED_REASON type will be overwritten when
+  // the same variable is assigned again.
+  std::vector<Literal>* CacheReasonAtReturnedAddress(VariableIndex var) {
+    old_type_[var] = info_[var].type;
+    info_[var].type = AssignmentInfo::CACHED_REASON;
+    return &(cached_reasons_[var]);
+  }
+
+  // Returns the reason for an assignment whose reason was cached.
+  ClauseRef CachedReason(VariableIndex var) const {
+    DCHECK_EQ(info_[var].type, AssignmentInfo::CACHED_REASON);
+    return ClauseRef(cached_reasons_[var]);
+  }
+
+  // Returns the initial type of an assignment. This is basically the type
+  // except for an assignment whose reason has now marked as cached where the
+  // old type is returned.
+  AssignmentInfo::Type InitialAssignmentType(VariableIndex var) const {
+    const AssignmentInfo::Type type = info_[var].type;
+    return type != AssignmentInfo::CACHED_REASON ? type : old_type_[var];
+  }
+
   // Dequeues the last assigned literal and returns it.
-  // Note that we do not touch it assignement info.
+  // Note that we do not touch its assignement info.
   Literal Dequeue() {
     --trail_index_;
     assignment_.UnassignLiteral(trail_[trail_index_]);
@@ -372,6 +418,11 @@ class Trail {
   SatClause* failing_sat_clause_;
   ResolutionNode* failing_node_;
   bool need_level_zero_;
+
+  // Reason cache.
+  ITIVector<VariableIndex, std::vector<Literal>> cached_reasons_;
+  ITIVector<VariableIndex, AssignmentInfo::Type> old_type_;
+
   DISALLOW_COPY_AND_ASSIGN(Trail);
 };
 

@@ -33,6 +33,7 @@ SatSolver::SatSolver()
       num_constraints_(0),
       pb_constraints_(&trail_),
       symmetry_propagator_(&trail_),
+      assumption_level_(0),
       current_decision_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
@@ -45,9 +46,11 @@ SatSolver::SatSolver()
       target_number_of_learned_clauses_(0),
       conflicts_until_next_restart_(0),
       restart_count_(0),
-      reason_cache_(trail_),
+      same_reason_identifier_(trail_),
       is_relevant_for_core_computation_(true),
-      stats_("SatSolver") {}
+      stats_("SatSolver") {
+  SetParameters(parameters_);
+}
 
 SatSolver::~SatSolver() {
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
@@ -90,6 +93,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   activities_.resize(num_variables, 0.0);
   objective_weights_.resize(num_variables << 1, 0.0);
   decisions_.resize(num_variables);
+  same_reason_identifier_.Resize(num_variables);
 }
 
 int64 SatSolver::num_branches() const { return counters_.num_branches; }
@@ -110,6 +114,8 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   parameters_ = parameters;
   watched_clauses_.SetParameters(parameters);
   trail_.SetNeedFixedLiteralsInReason(parameters.unsat_proof());
+  random_.Reset(parameters_.random_seed());
+  InitRestart();
 }
 
 std::string SatSolver::Indent() const {
@@ -155,8 +161,9 @@ bool SatSolver::AddProblemClause(const std::vector<Literal>& literals) {
     tmp_pb_constraint_.push_back(LiteralWithCoeff(lit, 1));
   }
   return AddLinearConstraint(
-      /*has_lower_bound=*/true, /*lower_bound=*/1,
-      /*has_lower_bound=*/false, /*upper_bound=*/0, &tmp_pb_constraint_);
+      /*has_lower_bound=*/true, /*lower_bound=*/Coefficient(1),
+      /*has_lower_bound=*/false, /*upper_bound=*/Coefficient(0),
+      &tmp_pb_constraint_);
 }
 
 bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals,
@@ -244,7 +251,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   // ResolutionNode associated with this constraint. However, for pseudo-Boolean
   // constraints, we would loose the minimization of the reason which seems
   // important in order to get smaller core.
-  Coefficient fixed_variable_shift = 0;
+  Coefficient fixed_variable_shift(0);
   if (!parameters_.unsat_proof()) {
     int index = 0;
     for (const LiteralWithCoeff& term : *cst) {
@@ -267,19 +274,18 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   CHECK(SafeAddInto(fixed_variable_shift, &bound_shift));
 
   if (use_upper_bound) {
-    Coefficient ub = upper_bound;
-    CHECK(SafeAddInto(bound_shift, &ub));
-    if (!AddLinearConstraintInternal(*cst, ub, max_value)) return ModelUnsat();
+    const Coefficient rhs =
+        ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
+    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) return ModelUnsat();
   }
   if (use_lower_bound) {
     // We transform the constraint into an upper-bounded one.
     for (int i = 0; i < cst->size(); ++i) {
       (*cst)[i].literal = (*cst)[i].literal.Negated();
     }
-    Coefficient ub = max_value;
-    CHECK(SafeAddInto(-lower_bound, &ub));
-    CHECK(SafeAddInto(-bound_shift, &ub));
-    if (!AddLinearConstraintInternal(*cst, ub, max_value)) return ModelUnsat();
+    const Coefficient rhs =
+        ComputeNegatedCanonicalRhs(lower_bound, bound_shift, max_value);
+    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) return ModelUnsat();
   }
   ++num_constraints_;
   if (!Propagate()) return ModelUnsat();
@@ -335,7 +341,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   int first_propagation_index = trail_.Index();
   NewDecision(true_literal);
   while (!Propagate()) {
-    reason_cache_.Clear();
+    same_reason_identifier_.Clear();
 
     // A conflict occured, compute a nice reason for this failure.
     ComputeFirstUIPConflict(trail_.FailingClause(), &learned_conflict_,
@@ -473,6 +479,7 @@ int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
 
 void SatSolver::Backtrack(int target_level) {
   SCOPED_TIME_STAT(&stats_);
+
   // Do nothing if the CurrentDecisionLevel() is already correct.
   // This is needed, otherwise target_trail_index below will remain at zero and
   // that will cause some problems. Note that we could forbid an user to call
@@ -505,7 +512,12 @@ void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
   DCHECK_LE(weight, 1.0);
   queue_elements_[literal.Variable()].tie_breaker = weight;
   objective_weights_[literal.Index()] = 0.0;
-  objective_weights_[literal.NegatedIndex()] = 1.0;
+  objective_weights_[literal.NegatedIndex()] = weight;
+}
+
+void SatSolver::TreatCurrentDecisionsAsAssumption() {
+  SCOPED_TIME_STAT(&stats_);
+  assumption_level_ = CurrentDecisionLevel();
 }
 
 SatSolver::Status SatSolver::Solve() {
@@ -528,15 +540,17 @@ SatSolver::Status SatSolver::Solve() {
     LOG(INFO) << "Parameters: " << parameters_.ShortDebugString();
   }
 
-  // Any decisions taken before this point is treated as an user provided
-  // assumption, and the solver will return ASSUMPTIONS_UNSAT if it proves that
-  // the model is UNSAT with the given assumption.
-  const int assumption_level = CurrentDecisionLevel();
-
-  // Initialize Solve() dependent variables.
-  InitRestart();
-  random_.Reset(parameters_.random_seed());
+  // Note that this doesn't reset the variable activity, it just reconstructs
+  // the priority queue from scratch in case it wasn't initialized or stuff
+  // changed since the last Solve().
+  //
+  // TODO(user): This isn't exactly true of the tie-breaking strategy for some
+  // parameters setting. Fix that.
   ComputeInitialVariableOrdering();
+
+  // Change the assumption level if some of the old assumptions are not assigned
+  // anymore.
+  assumption_level_ = std::min(assumption_level_, CurrentDecisionLevel());
 
   // Variables used to show the search progress.
   const int kDisplayFrequency = 10000;
@@ -608,8 +622,8 @@ SatSolver::Status SatSolver::Solve() {
 
     // Note that ShouldRestart() comes first because it had side effects and
     // should be executed even if CurrentDecisionLevel() is zero.
-    if (ShouldRestart() && CurrentDecisionLevel() > assumption_level) {
-      Backtrack(assumption_level);
+    if (ShouldRestart() && CurrentDecisionLevel() > assumption_level_) {
+      Backtrack(assumption_level_);
     }
 
     // Choose the next decision variable.
@@ -629,7 +643,7 @@ SatSolver::Status SatSolver::Solve() {
 
     // If we backtracked past the assumptions level, then the model is UNSAT
     // given the assumption.
-    if (CurrentDecisionLevel() < assumption_level) {
+    if (CurrentDecisionLevel() < assumption_level_) {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << StatusString(ASSUMPTIONS_UNSAT);
       }
@@ -996,7 +1010,7 @@ bool SatSolver::Propagate() {
   return true;
 }
 
-ClauseRef SatSolver::Reason(VariableIndex var) const {
+ClauseRef SatSolver::Reason(VariableIndex var) {
   DCHECK(trail_.Assignment().IsVariableAssigned(var));
   const AssignmentInfo& info = trail_.Info(var);
   switch (info.type) {
@@ -1010,21 +1024,22 @@ ClauseRef SatSolver::Reason(VariableIndex var) const {
       return ClauseRef(literal, literal + 1);
     }
     case AssignmentInfo::PB_PROPAGATION:
-      pb_constraints_.ReasonFor(var, &tmp_reason_);
-      return ClauseRef(tmp_reason_);
-    case AssignmentInfo::SYMMETRY_PROPAGATION:
-      // Note that we need to use an intermediate vector because
-      // Reason(source.Variable()) may be a reference to tmp_reason_ (if this
-      // variable was also propagated by symmetry).
-      //
-      // TODO(user): beware of deep recursion. Make this iterative.
-      // TODO(user): Cache some reasons to avoid recomputing them?
-      Literal source = trail_[info.source_trail_index];
+      pb_constraints_.ReasonFor(var, trail_.CacheReasonAtReturnedAddress(var));
+      return trail_.CachedReason(var);
+    case AssignmentInfo::SYMMETRY_PROPAGATION: {
+      // TODO(user): Switch to iterative code to avoid possible issue with the
+      // depth of the recursion.
+      const Literal source = trail_[info.source_trail_index];
       symmetry_propagator_.Permute(info.symmetry_index,
                                    Reason(source.Variable()),
-                                   &tmp_intermediate_reason_);
-      swap(tmp_intermediate_reason_, tmp_reason_);
-      return ClauseRef(tmp_reason_);
+                                   trail_.CacheReasonAtReturnedAddress(var));
+      return trail_.CachedReason(var);
+    }
+    case AssignmentInfo::SAME_REASON_AS:
+      // Note that this should recurse only once.
+      return Reason(info.reference_var);
+    case AssignmentInfo::CACHED_REASON:
+      return trail_.CachedReason(var);
   }
 }
 
@@ -1163,6 +1178,37 @@ ResolutionNode* SatSolver::CreateRootResolutionNode() {
              : nullptr;
 }
 
+// We currently support only two reason types.
+ResolutionNode* SatSolver::ResolutionNodeForAssignment(
+    VariableIndex var) const {
+  ResolutionNode* node = nullptr;
+  const AssignmentInfo& info = trail_.Info(var);
+  switch (trail_.InitialAssignmentType(var)) {
+    case AssignmentInfo::CLAUSE_PROPAGATION:
+      CHECK(info.sat_clause != nullptr);
+      node = info.sat_clause->ResolutionNodePointer();
+      break;
+    case AssignmentInfo::UNIT_REASON:
+      node = info.resolution_node;
+      break;
+    case AssignmentInfo::PB_PROPAGATION:
+      CHECK(info.pb_constraint != nullptr);
+      node = info.pb_constraint->ResolutionNodePointer();
+      break;
+    case AssignmentInfo::SAME_REASON_AS:
+      // There should be only one recursion level.
+      return ResolutionNodeForAssignment(info.reference_var);
+      break;
+    case AssignmentInfo::CACHED_REASON:
+    case AssignmentInfo::SEARCH_DECISION:
+    case AssignmentInfo::BINARY_PROPAGATION:
+    case AssignmentInfo::SYMMETRY_PROPAGATION:
+      LOG(FATAL) << "This shouldn't happen";
+      break;
+  }
+  return node;
+}
+
 ResolutionNode* SatSolver::CreateResolutionNode(
     ResolutionNode* failing_clause_resolution_node,
     ClauseRef reason_used_to_infer_the_conflict) {
@@ -1175,27 +1221,8 @@ ResolutionNode* SatSolver::CreateResolutionNode(
     tmp_parents_.push_back(failing_clause_resolution_node);
   }
   for (Literal literal : reason_used_to_infer_the_conflict) {
-    // We currently support only two reason types.
-    const AssignmentInfo& info = trail_.Info(literal.Variable());
-    ResolutionNode* node = nullptr;
-    switch (info.type) {
-      case AssignmentInfo::CLAUSE_PROPAGATION:
-        CHECK(info.sat_clause != nullptr);
-        node = info.sat_clause->ResolutionNodePointer();
-        break;
-      case AssignmentInfo::UNIT_REASON:
-        node = info.resolution_node;
-        break;
-      case AssignmentInfo::PB_PROPAGATION:
-        CHECK(info.pb_constraint != nullptr);
-        node = info.pb_constraint->ResolutionNodePointer();
-        break;
-      case AssignmentInfo::SEARCH_DECISION:
-      case AssignmentInfo::BINARY_PROPAGATION:
-      case AssignmentInfo::SYMMETRY_PROPAGATION:
-        LOG(FATAL) << "This shouldn't happen";
-        break;
-    }
+    const VariableIndex var = literal.Variable();
+    ResolutionNode* node = ResolutionNodeForAssignment(var);
     if (node != nullptr) tmp_parents_.push_back(node);
   }
   return tmp_parents_.empty()
@@ -1290,8 +1317,8 @@ void SatSolver::ComputeFirstUIPConflict(
 
     // If we already encountered the same reason, we can just skip this literal
     // which is what setting clause_to_expand to the empty clause do.
-    if (reason_cache_.FirstVariableWithSameReason(literal.Variable()) !=
-        literal.Variable()) {
+    if (same_reason_identifier_.FirstVariableWithSameReason(
+            literal.Variable()) != literal.Variable()) {
       clause_to_expand = ClauseRef();
     } else {
       clause_to_expand = Reason(literal.Variable());
@@ -1468,7 +1495,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   // Test for an already processed variable with the same reason.
   {
     DCHECK(is_marked_[variable]);
-    const VariableIndex v = reason_cache_.FirstVariableWithSameReason(variable);
+    const VariableIndex v =
+        same_reason_identifier_.FirstVariableWithSameReason(variable);
     if (v != variable) return !is_independent_[v];
   }
 
@@ -1477,8 +1505,14 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   // recursive call stack of the variable we are currently processing. All its
   // adjacent variable will be pushed into variable_to_process_, and we will
   // then dequeue them one by one and process them.
-  dfs_stack_.assign(1, variable);
-  variable_to_process_.assign(1, variable);
+  //
+  // Note(user): As of 03/2014, --cpu_profile seems to indicate that using
+  // dfs_stack_.assign(1, variable) is slower. My explanation is that the
+  // function call is not inlined.
+  dfs_stack_.clear();
+  dfs_stack_.push_back(variable);
+  variable_to_process_.clear();
+  variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
   DCHECK(!Reason(variable).IsEmpty());
@@ -1530,7 +1564,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
     // Test for an already processed variable with the same reason.
     {
       const VariableIndex v =
-          reason_cache_.FirstVariableWithSameReason(current_var);
+          same_reason_identifier_.FirstVariableWithSameReason(current_var);
       if (v != current_var) {
         if (is_independent_[v]) break;
         DCHECK(is_marked_[v]);
