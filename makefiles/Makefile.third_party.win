@@ -283,7 +283,7 @@ dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GL
 	$(SED) -i -e 's/nologo/nologo \/MD/g' dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)/Makefile_VC
 
 # Install scip if needed.
-install_scip: $(SCIP_TARGET)/
+install_scip: $(SCIP_TARGET)
 
 dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
 	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
