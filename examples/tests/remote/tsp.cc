@@ -24,11 +24,12 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
+#include "base/unique_ptr.h"
+
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
-#include "base/scoped_ptr.h"
 #include "base/join.h"
 #include "constraint_solver/routing.h"
 #include "base/random.h"
@@ -37,7 +38,7 @@ using operations_research::Assignment;
 using operations_research::RoutingModel;
 using operations_research::ACMRandom;
 using operations_research::StrCat;
-using operations_research::scoped_array;
+using operations_research::scoped_ptr;
 
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
@@ -46,6 +47,8 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
              "Number of random forbidden connections.");
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
+DECLARE_string(routing_first_solution);
+DECLARE_bool(routing_no_lns);
 
 // Random seed generator.
 int32 GetSeed() {
@@ -94,12 +97,12 @@ class RandomMatrix {
                     RoutingModel::NodeIndex to) const {
     return (from * size_ + to).value();
   }
-  scoped_array<int64> matrix_;
+  std::unique_ptr<int64[]> matrix_;
   const int size_;
 };
 
-int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+int main(int argc, char** argv) {
+  google::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_tsp_size > 0) {
     // TSP of size FLAGS_tsp_size.
     // Second argument = 1 to build a single tour (it's a TSP).
@@ -107,9 +110,9 @@ int main(int argc, char **argv) {
     // the route is node 0.
     RoutingModel routing(FLAGS_tsp_size, 1);
     // Setting first solution heuristic (cheapest addition).
-    routing.SetCommandLineOption("routing_first_solution", "PathCheapestArc");
+    FLAGS_routing_first_solution = "PathCheapestArc";
     // Disabling Large Neighborhood Search, comment out to activate it.
-    routing.SetCommandLineOption("routing_no_lns", "true");
+    FLAGS_routing_no_lns = true;
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -118,9 +121,11 @@ int main(int argc, char **argv) {
     RandomMatrix matrix(FLAGS_tsp_size);
     if (FLAGS_tsp_use_random_matrix) {
       matrix.Initialize();
-      routing.SetCost(NewPermanentCallback(&matrix, &RandomMatrix::Distance));
+      routing.SetArcCostEvaluatorOfAllVehicles(
+          NewPermanentCallback(&matrix, &RandomMatrix::Distance));
     } else {
-      routing.SetCost(NewPermanentCallback(MyDistance));
+      routing.SetArcCostEvaluatorOfAllVehicles(
+          NewPermanentCallback(MyDistance));
     }
     // Forbid node connections (randomly).
     ACMRandom randomizer(GetSeed());
@@ -142,9 +147,8 @@ int main(int argc, char **argv) {
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       const int route_number = 0;
-      string route;
-      for (int64 node = routing.Start(route_number);
-           !routing.IsEnd(node);
+      std::string route;
+      for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
         route = StrCat(route, StrCat(node, " -> "));
       }
