@@ -989,7 +989,7 @@ void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
     DCHECK_LE(num_left_nodes_, head);
   }
   cost *= cost_scaling_factor_;
-  const CostValue cost_magnitude = abs(cost);
+  const CostValue cost_magnitude = std::abs(cost);
   largest_scaled_cost_magnitude_ =
       std::max(largest_scaled_cost_magnitude_, cost_magnitude);
   scaled_arc_cost_.Set(arc, cost);

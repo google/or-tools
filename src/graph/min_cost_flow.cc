@@ -1063,7 +1063,7 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
     }
     for (NodeIndex node = 0; node < num_nodes; ++node) {
       if (node_supply_[node] != 0) {
-        max_flow.SetArcCapacity(PermutedArc(arc), abs(node_supply_[node]));
+        max_flow.SetArcCapacity(PermutedArc(arc), std::abs(node_supply_[node]));
         ++arc;
       }
     }
@@ -1098,7 +1098,7 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
   for (NodeIndex node = 0; node < num_nodes; ++node) {
     if (node_supply_[node] != 0) {
       ArcIndex permuted_arc = PermutedArc(arc);
-      min_cost_flow.SetArcCapacity(permuted_arc, abs(node_supply_[node]));
+      min_cost_flow.SetArcCapacity(permuted_arc, std::abs(node_supply_[node]));
       min_cost_flow.SetArcUnitCost(permuted_arc, 0);
       ++arc;
     }

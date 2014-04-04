@@ -550,7 +550,7 @@ class ForwardStaticGraph
   using Base::num_nodes_;
 
  public:
-#if !SWIG
+#if !defined(SWIG)
   using Base::end_arc_index;
   using Base::Head;
   using Base::IsNodeValid;
@@ -565,7 +565,7 @@ class ForwardStaticGraph
 
 // TODO(user): Configure SWIG to handle the
 // CycleHandlerForAnnotatedArcs class.
-#if !SWIG
+#if !defined(SWIG)
   class CycleHandlerForAnnotatedArcs
       : public ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> {
     typedef ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> Base;
@@ -1351,7 +1351,7 @@ class EbertGraph
     // The index of the current arc considered.
     ArcIndexType arc_;
   };
-#endif
+#endif  // SWIG
 
   // Utility function to check that an arc index is within the bounds.
   // It is exported so that users of the EbertGraph class can use it.
