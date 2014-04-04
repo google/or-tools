@@ -21,12 +21,15 @@ namespace operations_research {
 // ---------- Overflow utility functions ----------
 
 // Performs *b += a and returns false iff the addition overflow or underflow.
+// This function only works for typed integer type (IntType<>).
 template <typename IntegerType>
 bool SafeAddInto(IntegerType a, IntegerType* b) {
   if (a > 0) {
-    if (*b > std::numeric_limits<IntegerType>::max() - a) return false;
+    if (*b > std::numeric_limits<typename IntegerType::ValueType>::max() - a)
+      return false;
   } else {
-    if (*b < std::numeric_limits<IntegerType>::min() - a) return false;
+    if (*b < std::numeric_limits<typename IntegerType::ValueType>::min() - a)
+      return false;
   }
   *b += a;
   return true;

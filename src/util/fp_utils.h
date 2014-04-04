@@ -165,6 +165,13 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
                                     double* scaling_factor,
                                     double* relative_error);
 
+// Returns the Greatest Common Divisor of the numbers
+// round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
+// all zero then the result is 1. Note that round(fabs()) is the same as
+// fabs(round()) since the numbers are rounded away from zero.
+int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+                                 double scaling_factor);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_FP_UTILS_H_

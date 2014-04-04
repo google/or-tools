@@ -30,6 +30,7 @@ namespace operations_research {
 
 // Useful constants: word and double word will all bits set.
 static const uint64 kAllBits64 = GG_ULONGLONG(0xFFFFFFFFFFFFFFFF);
+static const uint64 kAllBitsButLsb64 = GG_ULONGLONG(0xFFFFFFFFFFFFFFFE);
 static const uint32 kAllBits32 = 0xFFFFFFFFU;
 
 // Returns a word with only bit pos set.
@@ -426,11 +427,23 @@ class Bitset64 {
     memset(data_.data(), 0, to_clear * sizeof(int64));
   }
 
+  // Sets all bits to 0.
+  void ClearAll() {
+    memset(data_.data(), 0, data_.size() * sizeof(int64));
+  }
+
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), size_);
     data_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
+  }
+
+  // Sets bucket containing bit i to 0.
+  void ClearBucket(IndexType i) {
+    DCHECK_GE(Value(i), 0);
+    DCHECK_LT(Value(i), size_);
+    data_[BitOffset64(Value(i))] = 0;
   }
 
   // Copies the bits at position i and i ^ 1 and then clear them.
@@ -475,6 +488,35 @@ class Bitset64 {
       Clear(i);
     }
   }
+
+  // Copies bucket containing bit i from "other" to "this".
+  void CopyBucket(const Bitset64<IndexType>& other, IndexType i) {
+    const uint64 offset = BitOffset64(Value(i));
+    data_[offset] = other.data_[offset];
+  }
+
+  // Copies "other" to "this". The bitsets do not have to be of the same size.
+  // If "other" is smaller, high order bits are not changed. If "other" is
+  // larger, its high order bits are ignored. In any case "this" is not resized.
+  void SetContentFromBitset(const Bitset64<IndexType>& other) {
+    const int min_size = std::min(data_.size(), other.data_.size());
+    if (min_size == 0) return;
+    const uint64 last_common_bucket = data_[min_size - 1];
+    memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64));
+    if (data_.size() >= other.data_.size()) {
+      const uint64 bitmask =
+          kAllBitsButLsb64 << BitPos64(Value(other.size() - 1));
+      data_[min_size - 1] &= ~bitmask;
+      data_[min_size - 1] |= (bitmask & last_common_bucket);
+    }
+  }
+
+  // Same as SetContentFromBitset where "this" and "other" have the same size.
+  void SetContentFromBitsetOfSameSize(const Bitset64<IndexType>& other) {
+    DCHECK_EQ(size(), other.size());
+    memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64));
+  }
+
 
   // Sets "this" to be the intersection of "this" and "other". The
   // bitsets do not have to be the same size. If other is smaller, all
@@ -585,6 +627,15 @@ class Bitset64 {
                      ((use2 << pos) & other2.data_[bucket]);
   }
 
+  // Returns a 0/1 std::string representing the bitset.
+  std::string DebugString() const {
+    std::string output;
+    for (IndexType i(0); i < size(); ++i) {
+      output += IsSet(i) ? "1" : "0";
+    }
+    return output;
+  }
+
  private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64.
@@ -620,16 +671,24 @@ class SparseBitset {
   SparseBitset() {}
   explicit SparseBitset(IntegerType size) : bitset_(size) {}
   IntegerType size() const { return bitset_.size(); }
+  void SparseClearAll() {
+    for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
+    to_clear_.clear();
+  }
+  void ClearAll() {
+    bitset_.ClearAll();
+    to_clear_.clear();
+  }
   void ClearAndResize(IntegerType size) {
     // As of 19/03/2014, experiments show that this is a reasonable threshold.
     const int kSparseThreshold = 300;
     if (to_clear_.size() * kSparseThreshold < size) {
-      for (const IntegerType i : to_clear_) Clear(i);
+      SparseClearAll();
       bitset_.Resize(size);
     } else {
       bitset_.ClearAndResize(size);
+      to_clear_.clear();
     }
-    to_clear_.clear();
   }
   bool operator[](IntegerType index) const { return bitset_[index]; }
   void Set(IntegerType index) {
