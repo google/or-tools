@@ -635,4 +635,44 @@ CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
   }
 }
 %enddef // end PROTO2_RETURN_AND_DELETE
+
+%define CS_VECTOR_RETURN0(Namespace, Class, Method, RType)
+%ignore Namespace::Class::Method;
+
+%extend Namespace::Class {
+  int Method ## Size() const {
+    return self->Method().size();
+  }
+  RType Method ## ValueAt(int index) const {
+    return self->Method()[index];
+  }
+}
+%enddef  // CS_VECTOR_RETURN0
+
+%define CS_VECTOR_RETURN1(Namespace, Class, Method, RType, ArgType)
+%ignore Namespace::Class::Method;
+
+%extend Namespace::Class {
+  int Method ## Size(ArgType a) const {
+    return self->Method(a).size();
+  }
+  RType Method ## ValueAt(ArgType a, int index) const {
+    return self->Method(a)[index];
+  }
+}
+%enddef  // CS_VECTOR_RETURN1
+
+%define CS_VECTOR_RETURN2(Namespace, Class, Method, RType,
+                          ArgType1, ArgType2)
+%ignore Namespace::Class::Method;
+
+%extend Namespace::Class {
+  int Method ## Size(ArgType1 a, ArgType2 b) const {
+    return self->Method(a, b).size();
+  }
+  RType Method ## ValueAt(ArgType1 a, ArgType2 b, int index) const {
+    return self->Method(a, b)[index];
+  }
+}
+%enddef  // CS_VECTOR_RETURN2
 #endif  // SWIGCSHARP

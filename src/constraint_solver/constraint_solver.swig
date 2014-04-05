@@ -1249,17 +1249,7 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
-%ignore operations_research::SequenceVarLocalSearchOperator::Sequence;
-%ignore operations_research::SequenceVarLocalSearchOperator::OldSequence;
-%ignore operations_research::SolutionCollector::ForwardSequence;
-%ignore operations_research::SolutionCollector::BackwardSequence;
-%ignore operations_research::SolutionCollector::Unperformed;
-%ignore operations_research::SequenceVarElement::ForwardSequence;
-%ignore operations_research::SequenceVarElement::BackwardSequence;
-%ignore operations_research::SequenceVarElement::Unperformed;
-%ignore operations_research::Assignment::ForwardSequence;
-%ignore operations_research::Assignment::BackwardSequence;
-%ignore operations_research::Assignment::Unperformed;
+%ignore operations_research::SequenceVarLocalSearchOperatorTemplate::Value;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -1946,41 +1936,140 @@ namespace operations_research {
     return index;
   }
 }
-%extend SequenceVarLocalSearchOperator {
-  int SequenceSize(int index) const {
-    return self->Sequence(index).size();
-  }
-  int SequenceValueAt(int index, int position) const {
-    return self->Sequence(index)[position];
-  }
-  int OldSequenceSize(int index) const {
-    return self->OldSequence(index).size();
-  }
-  int OldSequenceValueAt(int index, int position) const {
-    return self->OldSequence(index)[position];
-  }
-}
 
-%typemap(cscode) SequenceVarLocalSearchOperator %{
-  public int[] Sequence(int index) {
-    int size = SequenceSize(index);
+}  // namespace operations_research
+
+CS_VECTOR_RETURN1(operations_research, SequenceVarLocalSearchOperator, Sequence,
+                  int, int64)
+CS_VECTOR_RETURN1(operations_research, SequenceVarLocalSearchOperator,
+                  OldSequence, int, int64)
+
+%typemap(cscode) operations_research::SequenceVarLocalSearchOperator %{
+  public int[] Sequence(long a) {
+    int size = SequenceSize(a);
     int[] result = new int[size];
     for (int position = 0; position < size; ++position) {
-      result[position] = SequenceValueAt(index, position);
+      result[position] = SequenceValueAt(a, position);
     }
     return result;
   }
-
-  public int[] OldSequence(int index) {
-    int size = OldSequenceSize(index);
+  public int[] OldSequence(long a) {
+    int size = OldSequenceSize(a);
     int[] result = new int[size];
     for (int position = 0; position < size; ++position) {
-      result[position] = OldSequenceValueAt(index, position);
+      result[position] = OldSequenceValueAt(a, position);
     }
     return result;
   }
 %}
-}  // namespace operations_research
+
+CS_VECTOR_RETURN2(operations_research, SolutionCollector, ForwardSequence,
+                  int, int, SequenceVar*)
+CS_VECTOR_RETURN2(operations_research, SolutionCollector, BackwardSequence,
+                  int, int, SequenceVar*)
+CS_VECTOR_RETURN2(operations_research, SolutionCollector, Unperformed,
+                  int, int, SequenceVar*)
+
+%typemap(cscode) operations_research::SolutionCollector %{
+  public int[] ForwardSequence(int a, SequenceVar b) {
+    int size = ForwardSequenceSize(a, b);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = ForwardSequenceValueAt(a, b, position);
+    }
+    return result;
+  }
+  public int[] BackwardSequence(int a, SequenceVar b) {
+    int size = BackwardSequenceSize(a, b);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = BackwardSequenceValueAt(a, b, position);
+    }
+    return result;
+  }
+  public int[] Unperformed(int a, SequenceVar b) {
+    int size = UnperformedSize(a, b);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = UnperformedValueAt(a, b, position);
+    }
+    return result;
+  }
+%}
+
+CS_VECTOR_RETURN1(operations_research, Assignment, ForwardSequence,
+                  int, const SequenceVar* const)
+CS_VECTOR_RETURN1(operations_research, Assignment, BackwardSequence,
+                  int, const SequenceVar* const)
+CS_VECTOR_RETURN1(operations_research, Assignment, Unperformed,
+                  int, const SequenceVar* const)
+
+%typemap(cscode) operations_research::Assignment %{
+  public int[] ForwardSequence(SequenceVar a) {
+    int size = ForwardSequenceSize(a);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = ForwardSequenceValueAt(a, position);
+    }
+    return result;
+  }
+  public int[] BackwardSequence(SequenceVar a) {
+    int size = BackwardSequenceSize(a);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = BackwardSequenceValueAt(a, position);
+    }
+    return result;
+  }
+  public int[] Unperformed(SequenceVar a) {
+    int size = UnperformedSize(a);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = UnperformedValueAt(a, position);
+    }
+    return result;
+  }
+%}
+
+CS_VECTOR_RETURN0(operations_research, SequenceVarElement, ForwardSequence,
+                  int)
+CS_VECTOR_RETURN0(operations_research, SequenceVarElement, BackwardSequence,
+                   int)
+CS_VECTOR_RETURN0(operations_research, SequenceVarElement, Unperformed,
+                   int)
+
+%typemap(cscode) operations_research::SequenceVarElement %{
+  public int[] ForwardSequence() {
+    int size = ForwardSequenceSize();
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = ForwardSequenceValueAt(position);
+    }
+    return result;
+  }
+  public int[] BackwardSequence() {
+    int size = BackwardSequenceSize();
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = BackwardSequenceValueAt(position);
+    }
+    return result;
+  }
+  public int[] Unperformed() {
+    int size = UnperformedSize();
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = UnperformedValueAt(position);
+    }
+    return result;
+  }
+%}
+
+
+%extend operations_research::IntVarLocalSearchOperator {
+  int64 Value(int64 index) const { return self->Value(index); }
+  int64 OldValue(int64 index) const { return self->OldValue(index); }
+}
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
