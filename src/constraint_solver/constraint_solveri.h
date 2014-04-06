@@ -829,18 +829,18 @@ class VarLocalSearchOperator : public LocalSearchOperator {
   virtual bool IsIncremental() const { return false; }
   int Size() const { return vars_.size(); }
   // Returns the value in the current assignment of the variable of given index.
-#if !defined(SWIGCSHARP)
+#if !defined(SWIGCSHARP) || !defined(SWIG)
   const Val& Value(int64 index) const {
     DCHECK_LT(index, vars_.size());
     return values_[index];
   }
-#endif  // SWIGCSHARP
+#endif  // SWIGCSHARP || SWIG
   // Returns the variable of given index.
   V* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
-#if !defined(SWIGCSHARP)
+#if !defined(SWIGCSHARP) || !defined(SWIG)
   const Val& OldValue(int64 index) const { return old_values_[index]; }
-#endif  // SWIGCSHARP
+#endif  // SWIGCSHARP || SWIG
   void SetValue(int64 index, const Val& value) {
     values_[index] = value;
     MarkChange(index);
