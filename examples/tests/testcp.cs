@@ -398,6 +398,20 @@ public class CsTestCpOperator
     Console.WriteLine(y.ToString());
   }
 
+  static void TestSequence()
+  {
+    Solver solver = new Solver("TestSequence");
+    IntervalVar[] intervals =
+        solver.MakeFixedDurationIntervalVarArray(10, 0, 10, 5, false, "task");
+    DisjunctiveConstraint disjunctive = intervals.Disjunctive("Sequence");
+    SequenceVar var = disjunctive.SequenceVar();
+    Assignment ass = solver.MakeAssignment();
+    ass.Add(var);
+    ass.SetForwardSequence(var, new int[] { 1, 3, 5 });
+    int[] seq = ass.ForwardSequence(var);
+    Console.WriteLine(seq.Length);
+  }
+
   // static void TestScheduling()
   // {
   //   Solver solver = new Solver("Scheduling");
@@ -441,5 +455,6 @@ public class CsTestCpOperator
     TestWrappedConstraintWithExpr();
     TestBaseEqualityWithExpr();
     TestDowncast();
+    TestSequence();
   }
 }
