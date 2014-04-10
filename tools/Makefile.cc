@@ -53,6 +53,7 @@ ifeq ("$(SYSTEM)","unix")
     LD_FLAGS = -lz
     ORTOOLS_LIB = -L$(OR_ROOT)lib -lortools
     ARCH = -DARCH_K8
+    PORT = MacOsX64
   endif
   O = o
   E =
@@ -255,6 +256,7 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PORT = $(PORT)
 	@echo OS = $(OS)
+	@echo CCC = $(CCC)
 
 # Include user makefile
 
