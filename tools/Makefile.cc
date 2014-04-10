@@ -255,7 +255,6 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PORT = $(PORT)
 	@echo OS = $(OS)
-	@echo PLATFORM = $(PLATFORM)
 
 # Include user makefile
 
