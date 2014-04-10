@@ -253,8 +253,9 @@ $(BIN_DIR)/integer_programming$E: $(OBJ_DIR)/integer_programming.$O
 printport:
 	@echo SHELL = $(SHELL)
 	@echo SYSTEM = $(SYSTEM)
-	@echo SVNVERSION = $(SVNVERSION)
 	@echo PORT = $(PORT)
+	@echo OS = $(OS)
+	@echo PLATFORM = $(PLATFORM)
 
 # Include user makefile
 
