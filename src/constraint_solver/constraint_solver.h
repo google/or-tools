@@ -3161,7 +3161,6 @@ class DecisionBuilder : public BaseObject {
   // its work.
   virtual Decision* Next(Solver* const s) = 0;
   virtual std::string DebugString() const;
-#if !defined(SWIG)
   // This method will be called at the start of the search.  It asks
   // the decision builder if it wants to append search monitors to the
   // list of active monitors for this search. Please note there are no
@@ -3169,7 +3168,6 @@ class DecisionBuilder : public BaseObject {
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const extras);
   virtual void Accept(ModelVisitor* const visitor) const;
-#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
