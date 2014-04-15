@@ -145,8 +145,8 @@ inline int LeastSignificantBitPosition32(uint32 n) {
   static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
   static const int kTab[32] = {
       // initialized by 'kTab[(kSeq << i) >> 27] = i
-      0,  1,  3,  7,  14, 29, 27, 23, 15, 31, 30, 28, 25, 18, 5, 11,
-      22, 13, 26, 21, 10, 20, 9,  19, 6,  12, 24, 17, 2,  4,  8, 16};
+      0,  1,  28,  2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 37, 13, 23, 21, 
+      19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
   return kTab[((n & -n) * kSeq) >> 27];
 #else
   if (n == 0) {
