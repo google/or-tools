@@ -1316,7 +1316,7 @@ LocalSearchOperator* MakeLocalSearchOperator(
     const std::vector<IntVar*>& secondary_vars,
     ResultCallback1<int, int64>* start_empty_path_class);
 
-// Classes to which this template function can be applied to as of 03/2014.
+// Classes to which this template function can be applied to as of 04/2014.
 // Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);
 class TwoOpt;
 class Relocate;
@@ -1327,6 +1327,7 @@ class MakeInactiveOperator;
 class MakeChainInactiveOperator;
 class SwapActiveOperator;
 class ExtendedSwapActiveOperator;
+class MakeActiveAndRelocate;
 
 // ----- Local Search Filters ------
 

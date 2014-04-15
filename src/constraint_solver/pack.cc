@@ -23,7 +23,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
@@ -603,8 +602,8 @@ class DimensionLessThanConstant : public Dimension {
                                 const std::vector<int>& undecided) {
     Solver* const s = solver();
     int64 sum = 0LL;
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      sum += weights_[*it];
+    for (const int value : forced) {
+      sum += weights_[value];
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index, ranked_.size() - 1);
@@ -618,8 +617,8 @@ class DimensionLessThanConstant : public Dimension {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
-      for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-        sum += weights_[*it];
+      for (const int value : forced) {
+        sum += weights_[value];
       }
       sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
@@ -703,8 +702,8 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
                                 const std::vector<int>& undecided) {
     Solver* const s = solver();
     int64 sum = 0LL;
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      sum += weights_->Run(*it);
+    for (const int value : forced) {
+      sum += weights_->Run(value);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index, ranked_.size() - 1);
@@ -718,8 +717,8 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
-      for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-        sum += weights_->Run(*it);
+      for (const int value : forced) {
+        sum += weights_->Run(value);
       }
       sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
@@ -807,8 +806,8 @@ class DimensionLessThanConstantCallback2 : public Dimension {
                                 const std::vector<int>& undecided) {
     Solver* const s = solver();
     int64 sum = 0LL;
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      sum += weights_->Run(*it, bin_index);
+    for (const int value : forced) {
+      sum += weights_->Run(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index,
@@ -823,8 +822,8 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
-      for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-        sum += weights_->Run(*it, bin_index);
+      for (const int value : forced) {
+        sum += weights_->Run(value, bin_index);
       }
       sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
@@ -933,12 +932,12 @@ class DimensionWeightedSumEqVar : public Dimension {
                                 const std::vector<int>& undecided) {
     Solver* const s = solver();
     int64 sum = 0LL;
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      sum += weights_[*it];
+    for (const int value : forced) {
+      sum += weights_[value];
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
-    for (ConstIter<std::vector<int>> it(undecided); !it.at_end(); ++it) {
-      sum += weights_[*it];
+    for (const int value : undecided) {
+      sum += weights_[value];
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index, ranked_.size() - 1);
@@ -951,13 +950,13 @@ class DimensionWeightedSumEqVar : public Dimension {
                          const std::vector<int>& removed) {
     Solver* const s = solver();
     int64 down = sum_of_bound_variables_vector_[bin_index];
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      down += weights_[*it];
+    for (const int value : forced) {
+      down += weights_[value];
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
     int64 up = sum_of_all_variables_vector_[bin_index];
-    for (ConstIter<std::vector<int>> it(removed); !it.at_end(); ++it) {
-      up -= weights_[*it];
+    for (const int value : removed) {
+      up -= weights_[value];
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);
@@ -1073,12 +1072,12 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
                                 const std::vector<int>& undecided) {
     Solver* const s = solver();
     int64 sum = 0LL;
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      sum += weights_->Run(*it, bin_index);
+    for (const int value : forced) {
+      sum += weights_->Run(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
-    for (ConstIter<std::vector<int>> it(undecided); !it.at_end(); ++it) {
-      sum += weights_->Run(*it, bin_index);
+    for (const int value : undecided) {
+      sum += weights_->Run(value, bin_index);
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index,
@@ -1092,13 +1091,13 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
                          const std::vector<int>& removed) {
     Solver* const s = solver();
     int64 down = sum_of_bound_variables_vector_[bin_index];
-    for (ConstIter<std::vector<int>> it(forced); !it.at_end(); ++it) {
-      down += weights_->Run(*it, bin_index);
+    for (const int value : forced) {
+      down += weights_->Run(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
     int64 up = sum_of_all_variables_vector_[bin_index];
-    for (ConstIter<std::vector<int>> it(removed); !it.at_end(); ++it) {
-      up -= weights_->Run(*it, bin_index);
+    for (const int value : removed) {
+      up -= weights_->Run(value, bin_index);
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);

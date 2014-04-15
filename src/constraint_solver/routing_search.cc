@@ -742,10 +742,12 @@ class NodePrecedenceFilter : public BasePathFilter {
                        const RoutingModel::NodePairs& pairs);
   virtual ~NodePrecedenceFilter() {}
   virtual bool AcceptPath(int64 path_start);
+  virtual std::string DebugString() const { return "NodePrecedenceFilter"; }
 
  private:
   std::vector<int> pair_firsts_;
   std::vector<int> pair_seconds_;
+  SparseBitset<> visited_;
 };
 
 NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
@@ -753,7 +755,8 @@ NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
                                            const RoutingModel::NodePairs& pairs)
     : BasePathFilter(nexts, next_domain_size, nullptr),
       pair_firsts_(next_domain_size, kUnassigned),
-      pair_seconds_(next_domain_size, kUnassigned) {
+      pair_seconds_(next_domain_size, kUnassigned),
+      visited_(Size()) {
   for (const std::pair<int64, int64> node_pair : pairs) {
     pair_firsts_[node_pair.first] = node_pair.second;
     pair_seconds_[node_pair.second] = node_pair.first;
@@ -761,20 +764,21 @@ NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
 }
 
 bool NodePrecedenceFilter::AcceptPath(int64 path_start) {
-  std::vector<bool> visited(Size(), false);
+  visited_.ClearAll();
   int64 node = path_start;
   int64 path_length = 1;
   while (node < Size()) {
+    // Detect sub-cycles (path is longer than longest possible path).
     if (path_length > Size()) {
       return false;
     }
-    if (pair_firsts_[node] != kUnassigned && visited[pair_firsts_[node]]) {
+    if (pair_firsts_[node] != kUnassigned && visited_[pair_firsts_[node]]) {
       return false;
     }
-    if (pair_seconds_[node] != kUnassigned && !visited[pair_seconds_[node]]) {
+    if (pair_seconds_[node] != kUnassigned && !visited_[pair_seconds_[node]]) {
       return false;
     }
-    visited[node] = true;
+    visited_.Set(node);
     const int64 next = GetNext(node);
     if (next == kUnassigned) {
       // LNS detected, return true since path was ok up to now.
@@ -782,6 +786,11 @@ bool NodePrecedenceFilter::AcceptPath(int64 path_start) {
     }
     node = next;
     ++path_length;
+  }
+  for (const int64 node : visited_.PositionsSetAtLeastOnce()) {
+    if (pair_firsts_[node] != kUnassigned && !visited_[pair_firsts_[node]]) {
+      return false;
+    }
   }
   return true;
 }
@@ -805,6 +814,7 @@ class VehicleVarFilter : public BasePathFilter {
   virtual bool Accept(const Assignment* delta,
                       const Assignment* deltadelta);
   virtual bool AcceptPath(int64 path_start);
+  virtual std::string DebugString() const { return "VehicleVariableFilter"; }
 
  private:
   std::vector<int64> start_to_vehicle_;
@@ -1314,6 +1324,12 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
   if (!InitializeRoutes()) {
     return false;
   }
+  const int kUnassigned = -1;
+  const RoutingModel::NodePairs& pairs = model()->GetPickupAndDeliveryPairs();
+  std::vector<int> deliveries(Size(), kUnassigned);
+  for (const RoutingModel::NodePair pair : pairs) {
+    deliveries[pair.first] = pair.second;
+  }
   // To mimic the behavior of PathSelector (cf. search.cc), iterating on
   // routes with partial route at their start first then on routes with largest
   // index.
@@ -1327,7 +1343,7 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
   std::vector<int64> neighbors;
   for (const int vehicle : sorted_vehicles) {
     int64 index = GetStartChainEnd(vehicle);
-    const int64 end = model()->End(vehicle);
+    int64 end = model()->End(vehicle);
     bool found = true;
     // Extend the route of the current vehicle while it's possible.
     while (found && !model()->IsEnd(index)) {
@@ -1340,13 +1356,22 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
         // Insert "next" after "index", and before "end" if it is not the end
         // already.
         SetValue(index, next);
+        const int delivery = next < Size() ? deliveries[next] : kUnassigned;
         if (!model()->IsEnd(next)) {
           SetValue(next, end);
           MakeDisjunctionNodesUnperformed(next);
+          if (delivery != kUnassigned) {
+            SetValue(next, delivery);
+            SetValue(delivery, end);
+            MakeDisjunctionNodesUnperformed(delivery);
+          }
         }
         if (Commit()) {
           index = next;
           found = true;
+          if (delivery != kUnassigned) {
+            end = delivery;
+          }
           break;
         }
       }

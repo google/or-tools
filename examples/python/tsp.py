@@ -94,6 +94,7 @@ def main(_):
     parameters.first_solution = 'PathCheapestArc'
     # Disabling Large Neighborhood Search, comment out to activate it.
     parameters.no_lns = True
+    parameters.no_tsp = False
 
     # Setting the cost function.
     # Put a callback to the distance accessor here. The callback takes two

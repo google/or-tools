@@ -553,8 +553,8 @@ class AutomaticLinearization : public SearchMonitor {
   }
 
   void AssignVariables() {
-    for (ConstIter<ExprTranslation> it(translation_); !it.at_end(); ++it) {
-      it->second->SetBounds(it->first->Min(), it->first->Max());
+    for (const auto& it : translation_) {
+      it.second->SetBounds(it.first->Min(), it.first->Max());
     }
   }
 

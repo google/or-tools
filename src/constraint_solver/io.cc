@@ -22,7 +22,6 @@
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
@@ -323,85 +322,74 @@ class ArgumentHolder {
  public:
   template <class P>
   void ExportToProto(VectorMap<std::string>* const tags, P* const proto) const {
-    for (ConstIter<hash_map<std::string, int64>> it(integer_argument_); !it.at_end();
-         ++it) {
+    for (const auto& it : integer_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      arg_proto->set_integer_value(it->second);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      arg_proto->set_integer_value(it.second);
     }
 
-    for (ConstIter<hash_map<std::string, std::vector<int64>>> it(integer_array_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : integer_array_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      for (int i = 0; i < it->second.size(); ++i) {
-        arg_proto->add_integer_array(it->second[i]);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      for (int64 value : it.second) {
+        arg_proto->add_integer_array(value);
       }
     }
 
-    for (ConstIter<hash_map<std::string, std::pair<int, std::vector<int64>>>> it(
-             integer_matrix_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : integer_matrix_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
+      arg_proto->set_argument_index(tags->Add(it.first));
       CPIntegerMatrixProto* const matrix_proto =
           arg_proto->mutable_integer_matrix();
-      const int columns = it->second.first;
+      const int columns = it.second.first;
       CHECK_GT(columns, 0);
-      const int rows = it->second.second.size() / columns;
+      const int rows = it.second.second.size() / columns;
       matrix_proto->set_rows(rows);
       matrix_proto->set_columns(columns);
-      for (int i = 0; i < it->second.second.size(); ++i) {
-        matrix_proto->add_values(it->second.second[i]);
+      for (int64 value : it.second.second) {
+        matrix_proto->add_values(value);
       }
     }
 
-    for (ConstIter<hash_map<std::string, int>> it(integer_expression_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : integer_expression_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      arg_proto->set_integer_expression_index(it->second);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      arg_proto->set_integer_expression_index(it.second);
     }
 
-    for (ConstIter<hash_map<std::string, std::vector<int>>> it(
-             integer_variable_array_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : integer_variable_array_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      for (int i = 0; i < it->second.size(); ++i) {
-        arg_proto->add_integer_expression_array(it->second[i]);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      for (int expr : it.second) {
+        arg_proto->add_integer_expression_array(expr);
       }
     }
 
-    for (ConstIter<hash_map<std::string, int>> it(interval_argument_); !it.at_end();
-         ++it) {
+    for (const auto& it : interval_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      arg_proto->set_interval_index(it->second);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      arg_proto->set_interval_index(it.second);
     }
 
-    for (ConstIter<hash_map<std::string, std::vector<int>>> it(interval_array_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : interval_array_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      for (int i = 0; i < it->second.size(); ++i) {
-        arg_proto->add_interval_array(it->second[i]);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      for (int arg : it.second) {
+        arg_proto->add_interval_array(arg);
       }
     }
 
-    for (ConstIter<hash_map<std::string, int>> it(sequence_argument_); !it.at_end();
-         ++it) {
+    for (const auto& it : sequence_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      arg_proto->set_sequence_index(it->second);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      arg_proto->set_sequence_index(it.second);
     }
 
-    for (ConstIter<hash_map<std::string, std::vector<int>>> it(sequence_array_argument_);
-         !it.at_end(); ++it) {
+    for (const auto& it : sequence_array_argument_) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
-      arg_proto->set_argument_index(tags->Add(it->first));
-      for (int i = 0; i < it->second.size(); ++i) {
-        arg_proto->add_sequence_array(it->second[i]);
+      arg_proto->set_argument_index(tags->Add(it.first));
+      for (int arg : it.second) {
+        arg_proto->add_sequence_array(arg);
       }
     }
   }
@@ -520,26 +508,22 @@ class SecondPassVisitor : public ModelVisitor {
     model_proto_->set_model(model_name);
     model_proto_->set_version(kModelVersion);
     PushArgumentHolder();
-    for (ConstIter<std::vector<const IntExpr*>> it(expression_list_); !it.at_end();
-         ++it) {
-      (*it)->Accept(this);
+    for (const IntExpr* const expr : expression_list_) {
+      expr->Accept(this);
     }
 
-    for (ConstIter<std::vector<const IntervalVar*>> it(interval_list_); !it.at_end();
-         ++it) {
-      (*it)->Accept(this);
+    for (const IntervalVar* const var : interval_list_) {
+      var->Accept(this);
     }
 
-    for (ConstIter<std::vector<const SequenceVar*>> it(sequence_list_); !it.at_end();
-         ++it) {
-      (*it)->Accept(this);
+    for (const SequenceVar* const seq : sequence_list_) {
+      seq->Accept(this);
     }
   }
 
   virtual void EndVisitModel(const std::string& model_name) {
-    for (ConstIter<std::vector<ArgumentHolder*>> it(extensions_); !it.at_end();
-         ++it) {
-      WriteModelExtension(*it);
+    for (ArgumentHolder* const arg : extensions_) {
+      WriteModelExtension(arg);
     }
     PopArgumentHolder();
     // Write tags.
@@ -842,11 +826,10 @@ class SecondPassVisitor : public ModelVisitor {
       proto->set_name(argument->name());
     }
     top()->ExportToProto(&tags_, proto);
-    for (ConstIter<std::vector<ArgumentHolder*>> it(extensions_); !it.at_end();
-         ++it) {
+    for (ArgumentHolder* const arg : extensions_) {
       CPExtensionProto* const extension_proto = proto->add_extensions();
-      extension_proto->set_type_index(TagIndex((*it)->type_name()));
-      (*it)->ExportToProto(&tags_, extension_proto);
+      extension_proto->set_type_index(TagIndex(arg->type_name()));
+      arg->ExportToProto(&tags_, extension_proto);
     }
   }
 

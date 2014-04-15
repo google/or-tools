@@ -21,7 +21,6 @@
 #include "base/stringprintf.h"
 #include "base/file.h"
 #include "base/recordio.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/assignment.pb.h"

@@ -25,7 +25,6 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/fingerprint2011.h"
@@ -1891,15 +1890,15 @@ class RouteConstructor {
   bool FeasibleRoute(const std::vector<int>& route, int64 route_cumul,
                      int dimension_index) {
     const RoutingDimension& dimension = *dimensions_[dimension_index];
-    ConstIter<std::vector<int>> it(route);
+    std::vector<int>::const_iterator it = route.begin();
     int64 cumul = route_cumul;
-    while (!it.at_end()) {
+    while (it != route.end()) {
       const int previous = *it;
       const int64 cumul_previous = cumul;
       InsertOrDie(&(new_possible_cumuls_[dimension_index]), previous,
                   cumul_previous);
       ++it;
-      if (it.at_end()) {
+      if (it == route.end()) {
         return true;
       }
       const int next = *it;

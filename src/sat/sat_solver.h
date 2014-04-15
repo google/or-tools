@@ -302,6 +302,7 @@ class SatSolver {
   // Unrolls the trail until a given point. This unassign the assigned variables
   // and add them to the priority queue with the correct weight.
   void Untrail(int trail_index);
+  void UntrailWithoutPQUpdate(int trail_index);
 
   // Update the resolution node associated to all the newly fixed variables so
   // each node expresses the reason why this variable was assigned. This is
@@ -313,6 +314,10 @@ class SatSolver {
 
   // Compute an initial variable ordering.
   void ComputeInitialVariableOrdering();
+
+  // Returns the maximum trail_index of the literals in the given clause.
+  // All the literals must be assigned. Returns -1 if the clause is empty.
+  int ComputeMaxTrailIndex(ClauseRef clause) const;
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a
@@ -327,7 +332,7 @@ class SatSolver {
   // IEEE/ACM international conference on Computer-aided design, Pages 279-285.
   // http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
   void ComputeFirstUIPConflict(
-      ClauseRef failing_clause, std::vector<Literal>* conflict,
+      ClauseRef failing_clause, int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict);
 
   // Creates the root resolution node associated with the current constraint.

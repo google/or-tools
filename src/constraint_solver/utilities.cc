@@ -18,7 +18,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -460,23 +459,20 @@ class ModelStatisticsVisitor : public ModelVisitor {
     // Display statistics.
     LOG(INFO) << "Model has:";
     LOG(INFO) << "  - " << num_constraints_ << " constraints.";
-    for (ConstIter<hash_map<std::string, int> > it(constraint_types_); !it.at_end();
-         ++it) {
-      LOG(INFO) << "    * " << it->second << " " << it->first;
+    for (const auto& it : constraint_types_) {
+      LOG(INFO) << "    * " << it.second << " " << it.first;
     }
     LOG(INFO) << "  - " << num_variables_ << " integer variables.";
     LOG(INFO) << "  - " << num_expressions_ << " integer expressions.";
-    for (ConstIter<hash_map<std::string, int> > it(expression_types_); !it.at_end();
-         ++it) {
-      LOG(INFO) << "    * " << it->second << " " << it->first;
+    for (const auto& it : expression_types_) {
+      LOG(INFO) << "    * " << it.second << " " << it.first;
     }
     LOG(INFO) << "  - " << num_casts_ << " expressions casted into variables.";
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
     LOG(INFO) << "  - " << num_sequences_ << " sequence variables.";
     LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
-    for (ConstIter<hash_map<std::string, int> > it(extension_types_); !it.at_end();
-         ++it) {
-      LOG(INFO) << "    * " << it->second << " " << it->first;
+    for (const auto& it : extension_types_) {
+      LOG(INFO) << "    * " << it.second << " " << it.first;
     }
   }
 

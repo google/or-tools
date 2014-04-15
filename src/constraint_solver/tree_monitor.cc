@@ -24,7 +24,6 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/file.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
@@ -272,17 +271,17 @@ class TreeNode {
   void SetDomain(TreeMonitor::IntVarMap const& vars) {
     domain_.clear();
 
-    for (ConstIter<TreeMonitor::IntVarMap> it(vars); !it.at_end(); ++it) {
+    for (const auto& it : vars) {
       std::vector<int64> domain;
 
       std::unique_ptr<IntVarIterator> intvar_it(
-          it->second->MakeDomainIterator(false));
+          it.second->MakeDomainIterator(false));
 
       for (intvar_it->Init(); intvar_it->Ok(); intvar_it->Next()) {
         domain.push_back(intvar_it->Value());
       }
 
-      domain_[it->first] = domain;
+      domain_[it.first] = domain;
     }
   }
 
@@ -354,13 +353,13 @@ class TreeNode {
     int index = 0;
     int name = -1;
 
-    for (ConstIter<DomainMap> it(domain_); !it.at_end(); ++it) {
-      std::vector<int64> current = it->second;
+    for (const auto& it : domain_) {
+      std::vector<int64> current = it.second;
       visualization_writer->StartElement(current.size() == 1 ? "integer"
                                                              : "dvar");
       visualization_writer->AddAttribute("index", ++index);
 
-      if (it->first == name_) {
+      if (it.first == name_) {
         name = index;
       }
 

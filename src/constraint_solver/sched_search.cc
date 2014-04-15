@@ -239,8 +239,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   candidates.clear();
   int64 biggest_end_min = kint64min;
   int bem_support = -1;
-  for (ConstIter<hash_set<int>> it(to_check); !it.at_end(); ++it) {
-    const int candidate = *it;
+  for (const int candidate : to_check) {
     if (nexts_[IndexToValue(candidate)]->Contains(last)) {
       candidates.push_back(candidate);
       if (intervals_[candidate]->MustBePerformed()) {
@@ -267,8 +266,8 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
   solver()->GetPropagationMonitor()->RankSequence(this, rank_first, rank_last,
                                                   unperformed);
   // Mark unperformed.
-  for (ConstIter<std::vector<int>> it(unperformed); !it.at_end(); ++it) {
-    intervals_[*it]->SetPerformed(false);
+  for (const int value : unperformed) {
+    intervals_[value]->SetPerformed(false);
   }
   // Forward.
   int forward = 0;

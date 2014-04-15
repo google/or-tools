@@ -17,7 +17,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "base/int_type.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
@@ -130,8 +129,7 @@ class Diffn : public Constraint {
 
  private:
   void PropagateAll() {
-    for (ConstIter<hash_set<int>> it(to_propagate_); !it.at_end(); ++it) {
-      const int box = *it;
+    for (const int box : to_propagate_) {
       FillNeighbors(box);
       FailWhenEnergyIsTooLarge(box);
       PushOverlappingBoxes(box);

@@ -23,7 +23,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -250,8 +249,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
   virtual ~PositiveTableConstraint() {
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      for (ConstIter<ValueBitset> it(masks_[var_index]); !it.at_end(); ++it) {
-        delete[] it->second;
+      for (const auto& it : masks_[var_index]) {
+        delete[] it.second;
       }
     }
   }
@@ -274,10 +273,10 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   virtual void InitialPropagate() {
     // Build active_ structure.
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      for (ConstIter<ValueBitset> it(masks_[var_index]); !it.at_end(); ++it) {
-        if (!vars_[var_index]->Contains(it->first)) {
+      for (const auto& it : masks_[var_index]) {
+        if (!vars_[var_index]->Contains(it.first)) {
           for (int i = 0; i < length_; ++i) {
-            active_tuples_[i] &= ~it->second[i];
+            active_tuples_[i] &= ~it.second[i];
           }
         }
       }

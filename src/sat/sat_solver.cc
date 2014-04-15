@@ -341,10 +341,17 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   int first_propagation_index = trail_.Index();
   NewDecision(true_literal);
   while (!Propagate()) {
-    same_reason_identifier_.Clear();
+    const int max_trail_index = ComputeMaxTrailIndex(trail_.FailingClause());
+
+    // Optimization. All the activity of the variables assigned after the trail
+    // index below will not change, so there is no need to update them. This is
+    // also slightly better cache-wise, since we just enqueued these literals.
+    UntrailWithoutPQUpdate(std::max(max_trail_index + 1, first_propagation_index));
 
     // A conflict occured, compute a nice reason for this failure.
-    ComputeFirstUIPConflict(trail_.FailingClause(), &learned_conflict_,
+    same_reason_identifier_.Clear();
+    ComputeFirstUIPConflict(trail_.FailingClause(), max_trail_index,
+                            &learned_conflict_,
                             &reason_used_to_infer_the_conflict_);
 
     // An empty conflict means that the problem is UNSAT.
@@ -1113,15 +1120,32 @@ void SatSolver::ComputeInitialVariableOrdering() {
   }
 }
 
+void SatSolver::UntrailWithoutPQUpdate(int target_trail_index) {
+  SCOPED_TIME_STAT(&stats_);
+  pb_constraints_.Untrail(target_trail_index);
+  symmetry_propagator_.Untrail(target_trail_index);
+  propagation_trail_index_ = std::min(propagation_trail_index_, target_trail_index);
+  binary_propagation_trail_index_ =
+      std::min(binary_propagation_trail_index_, target_trail_index);
+  while (trail_.Index() > target_trail_index) {
+    // We check that the priority queue doesn't need to be updated.
+    const VariableIndex var = trail_.Dequeue().Variable();
+    DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
+    DCHECK_EQ(activities_[var], queue_elements_[var].weight);
+  }
+}
+
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);
   pb_constraints_.Untrail(target_trail_index);
   symmetry_propagator_.Untrail(target_trail_index);
+  propagation_trail_index_ = std::min(propagation_trail_index_, target_trail_index);
+  binary_propagation_trail_index_ =
+      std::min(binary_propagation_trail_index_, target_trail_index);
   while (trail_.Index() > target_trail_index) {
-    const Literal assigned_literal = trail_.Dequeue();
+    const VariableIndex var = trail_.Dequeue().Variable();
 
     // Update the variable weight, and make sure the priority queue is updated.
-    const VariableIndex var = assigned_literal.Variable();
     WeightedVarQueueElement* element = &(queue_elements_[var]);
     const double new_weight = activities_[var];
     if (var_ordering_.Contains(element)) {
@@ -1134,8 +1158,6 @@ void SatSolver::Untrail(int target_trail_index) {
       var_ordering_.Add(element);
     }
   }
-  propagation_trail_index_ = target_trail_index;
-  binary_propagation_trail_index_ = target_trail_index;
 }
 
 void SatSolver::ComputeUnsatCore(std::vector<int>* core) {
@@ -1230,11 +1252,20 @@ ResolutionNode* SatSolver::CreateResolutionNode(
              : unsat_proof_.CreateNewResolutionNode(&tmp_parents_);
 }
 
+int SatSolver::ComputeMaxTrailIndex(ClauseRef clause) const {
+  SCOPED_TIME_STAT(&stats_);
+  int trail_index = -1;
+  for (const Literal literal : clause) {
+    trail_index = std::max(trail_index, trail_.Info(literal.Variable()).trail_index);
+  }
+  return trail_index;
+}
+
 // This method will compute a first UIP conflict
 //   http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
 //   http://gauss.ececs.uc.edu/SAT/articles/FAIA185-0131.pdf
 void SatSolver::ComputeFirstUIPConflict(
-    ClauseRef failing_clause, std::vector<Literal>* conflict,
+    ClauseRef failing_clause, int max_trail_index, std::vector<Literal>* conflict,
     std::vector<Literal>* reason_used_to_infer_the_conflict) {
   SCOPED_TIME_STAT(&stats_);
 
@@ -1244,15 +1275,13 @@ void SatSolver::ComputeFirstUIPConflict(
 
   conflict->clear();
   reason_used_to_infer_the_conflict->clear();
+  if (max_trail_index == -1) return;
 
-  // Computes the highest trail index appearing in the failing_clause and its
-  // level (Which is almost always equals to the CurrentDecisionLevel(), except
-  // for symmetry propagation).
-  int trail_index = -1;
-  for (const Literal literal : failing_clause) {
-    trail_index = std::max(trail_index, trail_.Info(literal.Variable()).trail_index);
-  }
-  if (trail_index == -1) return;
+  // max_trail_index is the maximum trail index appearing in the failing_clause
+  // and its level (Which is almost always equals to the CurrentDecisionLevel(),
+  // except for symmetry propagation).
+  DCHECK_EQ(max_trail_index, ComputeMaxTrailIndex(failing_clause));
+  int trail_index = max_trail_index;
   const int highest_level = DecisionLevel(trail_[trail_index].Variable());
   if (highest_level == 0) return;
 

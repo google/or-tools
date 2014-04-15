@@ -262,9 +262,9 @@ LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
   std::vector<int64> values;
   vars.reserve(target.NumIntVars());
   values.reserve(target.NumIntVars());
-  for (ConstIter<Elements> it(elements); !it.at_end(); ++it) {
-    vars.push_back(it->Var());
-    values.push_back(it->Value());
+  for (const auto& it : elements) {
+    vars.push_back(it.Var());
+    values.push_back(it.Value());
   }
   return MakeMoveTowardTargetOperator(vars, values);
 }
@@ -922,6 +922,34 @@ class MakeActiveOperator : public BaseInactiveNodeToPathOperator {
 
 bool MakeActiveOperator::MakeNeighbor() {
   return MakeActive(GetInactiveNode(), BaseNode(0));
+}
+
+// ----- MakeActiveAndRelocate -----
+
+// MakeActiveAndRelocat makes a node active next to a node being relocated.
+// Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
+// 0 -> 3 -> 2 -> 4, 1 -> 5.
+
+class MakeActiveAndRelocate : public BaseInactiveNodeToPathOperator {
+ public:
+  MakeActiveAndRelocate(const std::vector<IntVar*>& vars,
+                        const std::vector<IntVar*>& secondary_vars,
+                        ResultCallback1<int, int64>* start_empty_path_class)
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
+                                       start_empty_path_class) {}
+  virtual ~MakeActiveAndRelocate() {}
+  virtual bool MakeNeighbor();
+
+  virtual std::string DebugString() const { return "MakeActiveAndRelocateOperator"; }
+};
+
+bool MakeActiveAndRelocate::MakeNeighbor() {
+  const int64 before_chain = BaseNode(1);
+  if (IsPathEnd(before_chain)) { return false; }
+  const int64 chain_end = Next(before_chain);
+  const int64 destination = BaseNode(0);
+  return MoveChain(before_chain, chain_end, destination) &&
+      MakeActive(GetInactiveNode(), destination);
 }
 
 // ----- MakeInactiveOperator -----
@@ -1666,18 +1694,21 @@ class CompoundOperator : public LocalSearchOperator {
   std::unique_ptr<LocalSearchOperator * []> operators_;
   std::unique_ptr<int[]> operator_indices_;
   std::unique_ptr<ResultCallback2<int64, int, int> > evaluator_;
+  Bitset64<> started_;
+  const Assignment* start_assignment_;
 };
 
 CompoundOperator::CompoundOperator(
     const std::vector<LocalSearchOperator*>& operators,
     ResultCallback2<int64, int, int>* const evaluator)
-    : index_(0), size_(0), evaluator_(evaluator) {
+    : index_(0), size_(0), evaluator_(evaluator),
+      started_(operators.size()), start_assignment_(nullptr) {
   for (int i = 0; i < operators.size(); ++i) {
     if (operators[i] != nullptr) {
       ++size_;
     }
   }
-  operators_.reset(new LocalSearchOperator* [size_]);
+  operators_.reset(new LocalSearchOperator*[size_]);
   operator_indices_.reset(new int[size_]);
   int index = 0;
   for (int i = 0; i < operators.size(); ++i) {
@@ -1690,10 +1721,9 @@ CompoundOperator::CompoundOperator(
 }
 
 void CompoundOperator::Start(const Assignment* assignment) {
+  start_assignment_ = assignment;
+  started_.ClearAll();
   if (size_ > 0) {
-    for (int i = 0; i < size_; ++i) {
-      operators_[i]->Start(assignment);
-    }
     OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
     std::sort(operator_indices_.get(), operator_indices_.get() + size_, comparator);
     index_ = 0;
@@ -1706,7 +1736,12 @@ bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
     do {
       // TODO(user): keep copy of delta in case MakeNextNeighbor
       // pollutes delta on a fail.
-      if (operators_[operator_indices_[index_]]
+      const int64 operator_index = operator_indices_[index_];
+      if (!started_[operator_index]) {
+        operators_[operator_index]->Start(start_assignment_);
+        started_.Set(operator_index);
+      }
+      if (operators_[operator_index]
               ->MakeNextNeighbor(delta, deltadelta)) {
         return true;
       }
@@ -1856,6 +1891,7 @@ MAKE_LOCAL_SEARCH_OPERATOR(MakeInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeChainInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(ExtendedSwapActiveOperator)
+MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveAndRelocate)
 
 #undef MAKE_LOCAL_SEARCH_OPERATOR
 
@@ -2943,8 +2979,8 @@ void LocalSearch::Accept(ModelVisitor* const visitor) const {
       assignment_->IntVarContainer().elements();
   if (!elements.empty()) {
     std::vector<IntVar*> vars;
-    for (ConstIter<std::vector<IntVarElement> > it(elements); !it.at_end(); ++it) {
-      vars.push_back((*it).Var());
+    for (const IntVarElement& elem : elements) {
+      vars.push_back(elem.Var());
     }
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars);
@@ -2953,9 +2989,8 @@ void LocalSearch::Accept(ModelVisitor* const visitor) const {
       assignment_->IntervalVarContainer().elements();
   if (!interval_elements.empty()) {
     std::vector<IntervalVar*> interval_vars;
-    for (ConstIter<std::vector<IntervalVarElement> > it(interval_elements);
-         !it.at_end(); ++it) {
-      interval_vars.push_back((*it).Var());
+    for (const IntervalVarElement& elem : interval_elements) {
+      interval_vars.push_back(elem.Var());
     }
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         interval_vars);

@@ -29,7 +29,6 @@
 #include "base/timer.h"
 #include "base/join.h"
 #include "base/bitmap.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
@@ -400,14 +399,14 @@ void CompositeDecisionBuilder::Add(DecisionBuilder* const db) {
 
 void CompositeDecisionBuilder::AppendMonitors(
     Solver* const solver, std::vector<SearchMonitor*>* const monitors) {
-  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_); !it.at_end(); ++it) {
-    (*it)->AppendMonitors(solver, monitors);
+  for (DecisionBuilder* const db : builders_) {
+    db->AppendMonitors(solver, monitors);
   }
 }
 
 void CompositeDecisionBuilder::Accept(ModelVisitor* const visitor) const {
-  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_); !it.at_end(); ++it) {
-    (*it)->Accept(visitor);
+  for (DecisionBuilder* const db : builders_) {
+    db->Accept(visitor);
   }
 }
 }  // namespace
@@ -2888,17 +2887,17 @@ void TabuSearch::ApplyDecision(Decision* const d) {
   // the tabu criterion which is tolerated; a factor of 1 means no violations
   // allowed, a factor of 0 means all violations allowed.
   std::vector<IntVar*> tabu_vars;
-  for (ConstIter<TabuList> it(keep_tabu_list_); !it.at_end(); ++it) {
+  for (const VarValue& vv : keep_tabu_list_) {
     IntVar* tabu_var = s->MakeBoolVar();
     Constraint* keep_cst =
-        s->MakeIsEqualCstCt((*it).var_, (*it).value_, tabu_var);
+        s->MakeIsEqualCstCt(vv.var_, vv.value_, tabu_var);
     s->AddConstraint(keep_cst);
     tabu_vars.push_back(tabu_var);
   }
-  for (ConstIter<TabuList> it(forbid_tabu_list_); !it.at_end(); ++it) {
+  for (const VarValue& vv : forbid_tabu_list_) {
     IntVar* tabu_var = s->MakeBoolVar();
     Constraint* forbid_cst =
-        s->MakeIsDifferentCstCt((*it).var_, (*it).value_, tabu_var);
+        s->MakeIsDifferentCstCt(vv.var_, vv.value_, tabu_var);
     s->AddConstraint(forbid_cst);
     tabu_vars.push_back(tabu_var);
   }

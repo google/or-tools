@@ -2692,10 +2692,10 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
   const int64 constant = lin.Constant();
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
-  for (ConstIter<hash_map<IntVar*, int64> > iter(map); !iter.at_end(); ++iter) {
-    if (iter->second != 0) {
-      vars.push_back(iter->first);
-      coefs.push_back(iter->second);
+  for (const auto& iter : map) {
+    if (iter.second != 0) {
+      vars.push_back(iter.first);
+      coefs.push_back(iter.second);
     }
   }
   if (vars.empty()) {
@@ -2731,10 +2731,10 @@ IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
   const int64 constant = lin.Constant();
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
-  for (ConstIter<hash_map<IntVar*, int64> > iter(map); !iter.at_end(); ++iter) {
-    if (iter->second != 0) {
-      vars.push_back(iter->first);
-      coefs.push_back(iter->second);
+  for (const auto& iter : map) {
+    if (iter.second != 0) {
+      vars.push_back(iter.first);
+      coefs.push_back(iter.second);
     }
   }
   return MakeScalProdAux(solver, vars, coefs, constant);

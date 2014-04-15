@@ -140,12 +140,12 @@ class CanonicalBooleanLinearProblem {
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
 //
 // The other half is implemented by the PbConstraints class below which takes
-// care of updating the 'slack' value of this constraint:
-//  - 'current_rhs' is rhs minus all the ci of the variables xi assigned to
+// care of updating the 'threshold' value of this constraint:
+//  - 'slack' is rhs minus all the ci of the variables xi assigned to
 //    true. Note that it is not updated as soon as xi is assigned, but only
 //    later when this assignment is "processed" by the PbConstraints class.
-//  - 'slack' is the distance from 'current_rhs' to the largest coefficient ci
-//    smaller or equal to current_rhs. By definition, all the literals with
+//  - 'threshold' is the distance from 'slack' to the largest coefficient ci
+//    smaller or equal to slack. By definition, all the literals with
 //    even larger coefficients that are yet 'processed' must be false for the
 //    constraint to be satisfiable.
 class UpperBoundedLinearConstraint {
@@ -158,33 +158,36 @@ class UpperBoundedLinearConstraint {
   bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
   Coefficient Rhs() const { return rhs_; }
 
-  // Sets the rhs of this constraint. Compute the initial slack value using only
-  // the literal with a trail index smaller than the given one. Enqueues on the
-  // trail any propagated literals.
-  bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient* slack,
+  // Sets the rhs of this constraint. Compute the initial threshold value using
+  // only the literal with a trail index smaller than the given one. Enqueues on
+  // the trail any propagated literals.
+  //
+  // Returns false if the preconditions described in
+  // PbConstraints::AddConstraint() are not meet.
+  bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient* threshold,
                      Trail* trail, std::vector<Literal>* conflict);
 
   // Tests for propagation and enqueues propagated literals on the trail.
   // Returns false if a conflict was detected, in which case conflict is filled.
   //
   // Preconditions:
-  // - For each "processed" literal, the given slack value must have been
+  // - For each "processed" literal, the given threshold value must have been
   //   decreased by its associated coefficient in the constraint. It must now
   //   be stricly negative.
   // - The given trail_index is the index of a true literal in the trail which
-  //   just caused slack to become stricly negative. All literals with smaller
-  //   index must have been "processed". All assigned literals with greater
-  //   trail index are not yet "processed".
+  //   just caused threshold to become stricly negative. All literals with
+  //   smaller index must have been "processed". All assigned literals with
+  //   greater trail index are not yet "processed".
   //
-  // The slack is updated to its new value.
-  bool Propagate(int trail_index, Coefficient* slack, Trail* trail,
+  // The threshold is updated to its new value.
+  bool Propagate(int trail_index, Coefficient* threshold, Trail* trail,
                  std::vector<Literal>* conflict);
 
-  // Updates the given slack and the internal state.
-  // This is the opposite of Propagate(). Each time a literal in unassigned,
-  // the slack value must have been increased by its coefficient. This update
-  // the slack to its new value.
-  void Untrail(Coefficient* slack);
+  // Updates the given threshold and the internal state. This is the opposite of
+  // Propagate(). Each time a literal in unassigned, the threshold value must
+  // have been increased by its coefficient. This update the threshold to its
+  // new value.
+  void Untrail(Coefficient* threshold);
 
   // Provided that the literal with given source_trail_index was the one that
   // propagated the conflict or the literal we wants to explain, then this will
@@ -212,11 +215,11 @@ class UpperBoundedLinearConstraint {
   void ChangeResolutionNode(ResolutionNode* node) { node_ = node; }
 
  private:
-  Coefficient GetCurrentRhsFromSlack(Coefficient slack) {
-    return (index_ < 0) ? slack : coeffs_[index_] + slack;
+  Coefficient GetSlackFromThreshold(Coefficient threshold) {
+    return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
   }
-  void Update(Coefficient current_rhs, Coefficient* slack) {
-    *slack = (index_ < 0) ? current_rhs : current_rhs - coeffs_[index_];
+  void Update(Coefficient slack, Coefficient* threshold) {
+    *threshold = (index_ < 0) ? slack : slack - coeffs_[index_];
     already_propagated_end_ = starts_[index_ + 1];
   }
 
@@ -247,20 +250,25 @@ class PbConstraints {
         propagation_trail_index_(0),
         stats_("PbConstraints"),
         num_constraint_lookups_(0),
-        num_slack_updates_(0) {}
+        num_threshold_updates_(0) {}
   ~PbConstraints() {
     IF_STATS_ENABLED({
       LOG(INFO) << stats_.StatString();
       LOG(INFO) << "num_constraint_lookups_: " << num_constraint_lookups_;
-      LOG(INFO) << "num_slack_updates_: " << num_slack_updates_;
+      LOG(INFO) << "num_threshold_updates_: " << num_threshold_updates_;
     });
   }
 
   // Changes the number of variables.
   void Resize(int num_variables) { to_update_.resize(num_variables << 1); }
 
-  // Adds a constraint to the set of managed constraints.
-  // Returns false if the constraint can never be satisfied.
+  // Adds a constraint in canonical form to the set of managed constraints.
+  //
+  // There are some preconditions, and the function will return false if they
+  // are not met. The constraint can be added when the trail is not empty,
+  // however given the current propagated assignment:
+  // - The constraint cannot be conflicting.
+  // - The constraint cannot have propagated at an earlier decision level.
   //
   // Note(user): There is an optimization if the last constraint added is the
   // same as the one we are trying to add.
@@ -278,6 +286,8 @@ class PbConstraints {
 
   // Reverts the state so that all the literals with trail index greater or
   // equals to the given on are not processed for propagation.
+  //
+  // Note that this should only be called at the decision level boundaries.
   void Untrail(int trail_index);
 
   // Computes the reason for the given variable assignement.
@@ -285,7 +295,8 @@ class PbConstraints {
   void ReasonFor(VariableIndex var, std::vector<Literal>* reason) const {
     SCOPED_TIME_STAT(&stats_);
     const AssignmentInfo& info = trail_->Info(var);
-    DCHECK_EQ(info.type, AssignmentInfo::PB_PROPAGATION);
+    DCHECK_EQ(trail_->InitialAssignmentType(var),
+              AssignmentInfo::PB_PROPAGATION);
     info.pb_constraint->FillReason(*trail_, info.source_trail_index, var,
                                    reason);
   }
@@ -295,8 +306,8 @@ class PbConstraints {
   // The set of indices is always [0, num_constraints_).
   DEFINE_INT_TYPE(ConstraintIndex, int32);
   struct ConstraintIndexWithCoeff {
-    ConstraintIndexWithCoeff(ConstraintIndex i, Coefficient c)
-        : need_untrail_inspection(false), index(i), coefficient(c) {}
+    ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)
+        : need_untrail_inspection(n), index(i), coefficient(c) {}
     bool need_untrail_inspection;
     ConstraintIndex index;
     Coefficient coefficient;
@@ -317,8 +328,8 @@ class PbConstraints {
   // pointers to its elements to be still valid after more push_back().
   std::deque<UpperBoundedLinearConstraint> constraints_;
 
-  // The current value of the slack for each constraints.
-  ITIVector<ConstraintIndex, Coefficient> slacks_;
+  // The current value of the threshold for each constraints.
+  ITIVector<ConstraintIndex, Coefficient> thresholds_;
 
   // For each literal, the list of all the constraints that contains it together
   // with the literal coefficient in these constraints.
@@ -330,7 +341,7 @@ class PbConstraints {
   // Some statistics.
   mutable StatsGroup stats_;
   int64 num_constraint_lookups_;
-  int64 num_slack_updates_;
+  int64 num_threshold_updates_;
   DISALLOW_COPY_AND_ASSIGN(PbConstraints);
 };
 

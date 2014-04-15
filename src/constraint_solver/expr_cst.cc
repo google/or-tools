@@ -1062,8 +1062,7 @@ Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
                             const std::vector<T>& values, IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
-  for (ConstIter<std::set<T>> it(set_of_values); !it.at_end(); ++it) {
-    const int64 value = *it;
+  for (const T value : set_of_values) {
     if (var->Contains(value)) {
       filtered_values.push_back(value);
     }

@@ -31,7 +31,6 @@
 #include "base/recordio.h"
 #include "base/stringpiece.h"
 #include "zlib.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -1937,8 +1936,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   }
   std::vector<SearchMonitor*> extras;
   db->AppendMonitors(this, &extras);
-  for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
-    SearchMonitor* const monitor = *it;
+  for (SearchMonitor* const monitor : extras) {
     if (monitor != nullptr) {
       monitor->Install();
     }

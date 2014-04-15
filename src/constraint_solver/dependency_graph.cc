@@ -16,7 +16,6 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
@@ -253,8 +252,8 @@ void DependencyGraphNode::SetMax(int64 new_max) {
 void DependencyGraphNode::PropagateMin() {
   if (State() == PERFORMED) {
     const int64 current_min = Min();
-    for (ConstIter<Arcs> it(min_dependencies_); !it.at_end(); ++it) {
-      it->node->SetMin(current_min + it->offset);
+    for (const Arc& arc : min_dependencies_) {
+      arc.node->SetMin(current_min + arc.offset);
     }
   }
 }
@@ -267,8 +266,8 @@ void DependencyGraphNode::AddMaxDependency(DependencyGraphNode* const node,
 void DependencyGraphNode::PropagateMax() {
   if (State() == PERFORMED) {
     const int64 current_max = Max();
-    for (ConstIter<Arcs> it(max_dependencies_); !it.at_end(); ++it) {
-      it->node->SetMax(current_max - it->offset);
+    for (const Arc& arc : max_dependencies_) {
+      arc.node->SetMax(current_max - arc.offset);
     }
   }
 }

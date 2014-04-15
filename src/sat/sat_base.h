@@ -365,6 +365,7 @@ class Trail {
 
   // Changes the decision level used by the next Enqueue().
   void SetDecisionLevel(int level) { current_info_.level = level; }
+  int CurrentDecisionLevel() const { return current_info_.level; }
 
   // Wrapper to the same function of the underlying assignment.
   void SetLastAssignmentValue(Literal literal) {

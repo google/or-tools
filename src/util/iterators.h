@@ -15,6 +15,8 @@
 #ifndef OR_TOOLS_UTIL_ITERATORS_H_
 #define OR_TOOLS_UTIL_ITERATORS_H_
 
+#include <iterator>
+
 namespace operations_research {
 
 // This is useful for wrapping iterators of a class that support many different
@@ -64,16 +66,33 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
 
 // Simple iterator on an integer range, see IntegerRange below.
 template <typename IntegerType>
-class IntegerRangeIterator {
+class IntegerRangeIterator
+    : public std::iterator<std::input_iterator_tag, IntegerType> {
  public:
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
+  IntegerRangeIterator(const IntegerRangeIterator& other)
+      : index_(other.index_) {}
+  IntegerRangeIterator& operator=(const IntegerRangeIterator& other) {
+    index_ = other.index_;
+  }
   bool operator!=(const IntegerRangeIterator& other) const {
     // This may seems weird, but using < instead of != avoid almost-infinite
     // loop if one use IntegerRange<int>(1, 0) below for instance.
     return index_ < other.index_;
   }
+  bool operator==(const IntegerRangeIterator& other) const {
+    return index_ == other.index_;
+  }
   IntegerType operator*() const { return index_; }
-  void operator++() { ++index_; }
+  IntegerRangeIterator& operator++() {
+    ++index_;
+    return *this;
+  }
+  IntegerRangeIterator operator++(int) {
+    IntegerRangeIterator previous_position(*this);
+    ++index_;
+    return previous_position;
+  }
 
  private:
   IntegerType index_;

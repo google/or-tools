@@ -20,7 +20,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
@@ -878,8 +877,8 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
     return RevAlloc(new SetAllToZero(this, cards));
   }
   CHECK_EQ(values.size(), cards.size());
-  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
-    CHECK_EQ(this, (*it)->solver());
+  for (IntVar* const var : vars) {
+    CHECK_EQ(this, var->solver());
   }
 
   // TODO(user) : we can sort values (and cards) before doing the test.
@@ -890,8 +889,8 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
       break;
     }
   }
-  for (ConstIter<std::vector<IntVar*> > it(cards); !it.at_end(); ++it) {
-    CHECK_EQ(this, (*it)->solver());
+  for (IntVar* const card : cards) {
+    CHECK_EQ(this, card->solver());
   }
   if (fast) {
     return RevAlloc(new FastDistribute(this, vars, cards));
@@ -911,11 +910,11 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
   if (vars.size() == 0) {
     return RevAlloc(new SetAllToZero(this, cards));
   }
-  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
-    CHECK_EQ(this, (*it)->solver());
+  for (IntVar* const var : vars) {
+    CHECK_EQ(this, var->solver());
   }
-  for (ConstIter<std::vector<IntVar*> > it(cards); !it.at_end(); ++it) {
-    CHECK_EQ(this, (*it)->solver());
+  for (IntVar* const card : cards) {
+    CHECK_EQ(this, card->solver());
   }
   return RevAlloc(new FastDistribute(this, vars, cards));
 }
@@ -924,8 +923,8 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars, int64 card_
                                    int64 card_max, int64 card_size) {
   const int vsize = vars.size();
   CHECK_NE(vsize, 0);
-  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
-    CHECK_EQ(this, (*it)->solver());
+  for (IntVar* const var : vars) {
+    CHECK_EQ(this, var->solver());
   }
   if (card_min == 0 && card_max >= vsize) {
     return MakeTrueConstraint();
