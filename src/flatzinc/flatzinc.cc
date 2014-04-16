@@ -37,7 +37,6 @@
 
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
-#include "base/concise_iterator.h"
 #include "base/hash.h"
 
 DECLARE_bool(use_sat);

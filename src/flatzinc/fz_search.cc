@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include "base/concise_iterator.h"
 #include "base/hash.h"
 #include "base/mutex.h"
 #include "base/stringprintf.h"

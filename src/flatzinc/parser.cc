@@ -497,9 +497,8 @@ void ParserState::Presolve() {
 
   FZLOG << "Model statistics" << std::endl;
   BuildStatistics();
-  for (ConstIter<hash_map<std::string, std::vector<int>>> it(constraints_per_id_);
-       !it.at_end(); ++it) {
-    FZLOG << "  - " << it->first << ": " << it->second.size() << std::endl;
+  for (const auto& it : constraints_per_id_) {
+    FZLOG << "  - " << it.first << ": " << it.second.size() << std::endl;
   }
   switch (model_->ProblemType()) {
     case FlatZincModel::SAT:
@@ -632,16 +631,15 @@ void ParserState::SortConstraints(NodeSet* const candidates,
   NodeSet forced;
   while (!to_insert.empty()) {
     std::vector<CtSpec*> inserted;
-    for (ConstIter<ConstraintSet> it(to_insert); !it.at_end(); ++it) {
-      CtSpec* const spec = *it;
+    for (CtSpec* const spec : to_insert) {
       VLOG(3) << "check " << spec->DebugString();
       if (ContainsKey(forced, spec->DefinedArg())) {
         VLOG(3) << "  - cleaning defines";
         spec->RemoveDefines();
       }
       bool ok = true;
-      for (ConstIter<NodeSet> def(spec->require_map()); !def.at_end(); ++def) {
-        if (!ContainsKey(defined, *def)) {
+      for (AstNode* const node : spec->require_map()) {
+        if (!ContainsKey(defined, node)) {
           ok = false;
           break;
         }
@@ -661,14 +659,12 @@ void ParserState::SortConstraints(NodeSet* const candidates,
       // with the smallest number of unsatisfied dependencies.
       CtSpec* to_correct = nullptr;
       int best_unsatisfied = kint32max;
-      for (ConstIter<ConstraintSet> it(to_insert); !it.at_end(); ++it) {
-        CtSpec* const spec = *it;
+      for (CtSpec* const spec : to_insert) {
         VLOG(3) << "evaluate " << spec->DebugString();
 
         int unsatisfied = 0;
         const NodeSet& required = spec->require_map();
-        for (ConstIter<NodeSet> def(required); !def.at_end(); ++def) {
-          AstNode* const dep = *def;
+        for (AstNode* const dep : required) {
           unsatisfied += !ContainsKey(defined, dep);
           if (IsAlias(dep)) {
             VLOG(3) << "  - " << dep->DebugString()
@@ -687,8 +683,8 @@ void ParserState::SortConstraints(NodeSet* const candidates,
       VLOG(3) << "Lifting " << to_correct->DebugString() << " with "
               << best_unsatisfied << " unsatisfied dependencies";
       const NodeSet& required = to_correct->require_map();
-      for (ConstIter<NodeSet> def(required); !def.at_end(); ++def) {
-        AstNode* const dep = Copy(*def);
+      for (AstNode* const node : required) {
+        AstNode* const dep = Copy(node);
         if (!ContainsKey(defined, dep)) {
           candidates->erase(dep);
           defined.insert(dep);

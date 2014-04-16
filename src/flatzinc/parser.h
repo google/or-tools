@@ -61,7 +61,6 @@ extern "C" int isatty(int t);
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 
@@ -912,8 +911,8 @@ class CtSpec {
     }
     if (!requires_.empty()) {
       output += ", requires = [";
-      for (ConstIter<NodeSet> it(requires_); !it.at_end(); ++it) {
-        output.append((*it)->DebugString());
+      for (const AstNode* const node : requires_) {
+        output.append(node->DebugString());
         output.append(" ");
       }
       output += "]";
