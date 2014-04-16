@@ -26,7 +26,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"

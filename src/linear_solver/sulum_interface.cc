@@ -28,7 +28,6 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/concise_iterator.h"
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
@@ -386,10 +385,8 @@ void SLMInterface::SetObjectiveOffset(double value) {
 // Clear objective of all its terms (linear)
 void SLMInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
-  for (ConstIter<hash_map<const MPVariable*, double> > it(
-           solver_->objective_->coefficients_);
-       !it.at_end(); ++it) {
-    const int var_index = it->first->index();
+  for (const auto& it : solver_->objective_->coefficients_) {
+    const int var_index = it.first->index();
     // Variable may have not been extracted yet.
     if (var_index == kNoIndex) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
@@ -462,13 +459,11 @@ void SLMInterface::ExtractOneConstraint(MPConstraint* const constraint,
                                          int* const indices,
                                          double* const coefs) {
   int k = 0;
-  for (ConstIter<hash_map<const MPVariable*, double> > it(
-           constraint->coefficients_);
-       !it.at_end(); ++it) {
-    const int var_index = it->first->index();
+  for (const auto& it : constraint->coefficients_) {
+    const int var_index = it.first->index();
     DCHECK_NE(kNoIndex, var_index);
     indices[k] = var_index;
-    coefs[k] = it->second;
+    coefs[k] = it.second;
     ++k;
   }
 
@@ -513,13 +508,11 @@ void SLMInterface::ExtractNewConstraints() {
       DCHECK_NE(kNoIndex, ct->index());
       int size = ct->coefficients_.size();
       int j = 0;
-      for (ConstIter<hash_map<const MPVariable*, double> >
-               it(ct->coefficients_);
-           !it.at_end(); ++it) {
-        const int index = it->first->index();
+      for (const auto& it : ct->coefficients_) {
+        const int index = it.first->index();
         DCHECK_NE(kNoIndex, index);
         indices[j] = index;
-        coefs[j] = it->second;
+        coefs[j] = it.second;
         j++;
       }
 

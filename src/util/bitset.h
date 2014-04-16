@@ -73,8 +73,8 @@ inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 #define USE_ASM_LEAST_SIGNIFICANT_BIT true  // if true, use assembly lsb
 #endif
 
-inline int LeastSignificantBitPosition64(uint64 n) {
-#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
+#if defined(USE_ASM_LEAST_SIGNIFICANT_BIT)
+inline int LeastSignificantBitPosition64Asm(uint64 n) {
 #ifdef ARCH_K8
   int64 pos;
   __asm__("bsfq %1, %0\n" : "=r"(pos) : "r"(n));
@@ -89,8 +89,10 @@ inline int LeastSignificantBitPosition64(uint64 n) {
   }
   return pos;
 #endif
-#elif defined(USE_DEBRUIJN)
-  // de Bruijn sequence
+}
+#endif
+
+inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
   static const uint64 kSeq = GG_ULONGLONG(0x0218a392dd5fb34f);
   static const int kTab[64] = {
       // initialized by 'kTab[(kSeq << i) >> 58] = i
@@ -99,10 +101,9 @@ inline int LeastSignificantBitPosition64(uint64 n) {
       63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
       62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43, };
   return kTab[((n & -n) * kSeq) >> 58];
-#else
-  if (n == 0) {
-    return -1;
-  }
+}
+
+inline int LeastSignificantBitPosition64Default(uint64 n) {
   int pos = 63;
   if (n & 0x00000000FFFFFFFFLL) {
     pos -= 32;
@@ -133,25 +134,37 @@ inline int LeastSignificantBitPosition64(uint64 n) {
     pos -= 1;
   }
   return pos;
+}
+
+inline int LeastSignificantBitPosition64(uint64 n) {
+  DCHECK_NE(n, 0);
+#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
+  return LeastSignificantBitPosition64Asm(n);
+#elif defined(USE_DEBRUIJN)
+  return LeastSignificantBitPosition64DeBruijn(n);
+#else
+  return LeastSignificantBitPosition64Default(n);
 #endif
 }
 
-inline int LeastSignificantBitPosition32(uint32 n) {
-#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
+#if defined(USE_ASM_LEAST_SIGNIFICANT_BIT)
+inline int LeastSignificantBitPosition32Asm(uint32 n) {
   int pos;
   __asm__("bsfl %1, %0\n" : "=r"(pos) : "r"(n));
   return pos;
-#elif defined(USE_DEBRUIJN)
+}
+#endif
+
+inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
   static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
   static const int kTab[32] = {
-      // initialized by 'kTab[(kSeq << i) >> 27] = i
-      0,  1,  28,  2,  29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 37, 13, 23, 21, 
-      19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
+    // initialized by 'kTab[(kSeq << i) >> 27] = i
+    0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+    31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
   return kTab[((n & -n) * kSeq) >> 27];
-#else
-  if (n == 0) {
-    return -1;
-  }
+}
+
+inline int LeastSignificantBitPosition32Default(uint32 n) {
   int pos = 31;
   if (n & 0x0000FFFFL) {
     pos -= 16;
@@ -177,6 +190,16 @@ inline int LeastSignificantBitPosition32(uint32 n) {
     pos -= 1;
   }
   return pos;
+}
+
+inline int LeastSignificantBitPosition32(uint32 n) {
+  DCHECK_NE(n, 0);
+#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
+  return LeastSignificantBitPosition32Asm(n);
+#elif defined(USE_DEBRUIJN)
+  return LeastSignificantBitPosition32DeBruijn(n);
+#else
+  return LeastSignificantBitPosition32Default(n);
 #endif
 }
 

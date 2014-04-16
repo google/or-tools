@@ -24,7 +24,6 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "linear_solver/linear_solver.h"
 

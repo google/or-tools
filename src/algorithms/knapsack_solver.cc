@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 
-#include "base/concise_iterator.h"
 #include "base/stl_util.h"
 #include "linear_solver/linear_solver.h"
 #include "util/bitset.h"
@@ -194,8 +193,7 @@ bool KnapsackPropagator::Update(bool revert,
 void KnapsackPropagator::CopyCurrentStateToSolution(
     bool has_one_propagator, std::vector<bool>* solution) const {
   CHECK_NOTNULL(solution);
-  for (ConstIter<std::vector<KnapsackItemPtr> > it(items_); !it.at_end(); ++it) {
-    const KnapsackItem* const item = *it;
+  for (const KnapsackItem* const item : items_) {
     const int item_id = item->id;
     (*solution)[item_id] = state_.is_bound(item_id) && state_.is_in(item_id);
   }
@@ -254,9 +252,8 @@ void KnapsackCapacityPropagator::InitPropagator() {
   break_item_id_ = kNoSelection;
   sorted_items_ = items();
   profit_max_ = 0;
-  for (ConstIter<std::vector<KnapsackItemPtr> > it(sorted_items_); !it.at_end();
-       ++it) {
-    profit_max_ = std::max(profit_max_, (*it)->profit);
+  for (const KnapsackItem* const item : sorted_items_) {
+    profit_max_ = std::max(profit_max_, item->profit);
   }
   ++profit_max_;
   CompareKnapsackItemsInDecreasingEfficiencyOrder compare_object(profit_max_);
@@ -283,9 +280,7 @@ void KnapsackCapacityPropagator::CopyCurrentStateToSolutionPropagator(
     std::vector<bool>* solution) const {
   CHECK_NOTNULL(solution);
   int64 remaining_capacity = capacity_ - consumed_capacity_;
-  for (ConstIter<std::vector<KnapsackItemPtr> > it(sorted_items_); !it.at_end();
-       ++it) {
-    const KnapsackItem* const item = *it;
+  for (const KnapsackItem* const item : sorted_items_) {
     if (!state().is_bound(item->id)) {
       if (remaining_capacity >= item->weight) {
         remaining_capacity -= item->weight;
@@ -460,10 +455,9 @@ bool KnapsackGenericSolver::UpdatePropagators(const KnapsackSearchPath& path) {
 
 int64 KnapsackGenericSolver::GetAggregatedProfitUpperBound() const {
   int64 upper_bound = kint64max;
-  for (ConstIter<std::vector<KnapsackPropagator*> > it(propagators_); !it.at_end();
-       ++it) {
-    (*it)->ComputeProfitBounds();
-    const int64 propagator_upper_bound = (*it)->profit_upper_bound();
+  for (KnapsackPropagator* const prop : propagators_) {
+    prop->ComputeProfitBounds();
+    const int64 propagator_upper_bound = prop->profit_upper_bound();
     upper_bound = std::min(upper_bound, propagator_upper_bound);
   }
   return upper_bound;
@@ -511,9 +505,8 @@ bool KnapsackGenericSolver::IncrementalUpdate(
   // Do not stop on a failure: To be able to be incremental on the update,
   // partial solution (state) and propagators must all be in the same state.
   bool no_fail = state_.UpdateState(revert, assignment);
-  for (ConstIter<std::vector<KnapsackPropagator*> > it(propagators_); !it.at_end();
-       ++it) {
-    no_fail = (*it)->Update(revert, assignment) && no_fail;
+  for (KnapsackPropagator* const prop : propagators_) {
+    no_fail = prop->Update(revert, assignment) && no_fail;
   }
   return no_fail;
 }

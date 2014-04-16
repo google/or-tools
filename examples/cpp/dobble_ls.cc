@@ -35,7 +35,6 @@
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"

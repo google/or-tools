@@ -21,7 +21,6 @@
 #include "base/stringprintf.h"
 #include "base/join.h"
 #include "base/strutil.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "util/fp_utils.h"
@@ -493,7 +492,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
     const std::string cst_name = GetConstraintName(cst_index);
-    if (lb == ub && lb != 0.0) {
+    if (lb == ub) {
       AppendMpsLineHeaderWithNewLine("E", cst_name, &rows_section);
     } else if (lb == -std::numeric_limits<double>::infinity()) {
       DCHECK_NE(std::numeric_limits<double>::infinity(), ub);

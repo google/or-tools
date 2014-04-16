@@ -60,7 +60,7 @@ CostValue BuildAndSolveHungarianInstance(
   for (typename GraphType::ArcIterator arc_it(graph); arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    CostValue cost_magnitude = abs(assignment.ArcCost(arc));
+    CostValue cost_magnitude = std::abs(assignment.ArcCost(arc));
     largest_cost_magnitude = std::max(largest_cost_magnitude, cost_magnitude);
   }
   double missing_arc_cost = static_cast<double>(

@@ -37,7 +37,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -546,8 +545,7 @@ class NetworkRoutingSolver {
     for (int path_id = 0; path_id < paths.size(); ++path_id) {
       std::vector<int> tuple(count_arcs() + 1);
       tuple[0] = path_id;
-      for (ConstIter<OnePath> it(paths[path_id]); !it.at_end(); ++it) {
-        const int arc = *it;
+      for (const int arc : paths[path_id]) {
         // + 1 because tuple_set.back()[0] contains path_id.
         tuple[arc + 1] = true;
       }
@@ -639,9 +637,8 @@ class NetworkRoutingSolver {
       const int demands = all_paths_.size();
       for (int i = 0; i < demands; ++i) {
         const OnePath& path = all_paths_[i][Value(i)];
-        for (ConstIter<hash_set<int> > it(arcs_to_release); !it.at_end();
-             ++it) {
-          if (ContainsKey(path, *it)) {
+        for (const int arc : arcs_to_release) {
+          if (ContainsKey(path, arc)) {
             fragment->push_back(i);
             break;
           }
@@ -680,9 +677,9 @@ class NetworkRoutingSolver {
     int64 best_cost = 0;
     const int64 traffic = demands_array_[var].traffic;
     const OnePath& path = all_paths_[var][val];
-    for (ConstIter<OnePath> it(path); !it.at_end(); ++it) {
-      const int64 current_percent = (*path_costs)[*it]->Min();
-      const int64 current_capacity = arc_capacity_[*it];
+    for (const int arc : path) {
+      const int64 current_percent = (*path_costs)[arc]->Min();
+      const int64 current_capacity = arc_capacity_[arc];
       const int64 expected_percent =
           current_percent + traffic * kOneThousand / current_capacity;
       if (expected_percent > best_cost) {
