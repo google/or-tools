@@ -16,4 +16,14 @@
 #ifndef OR_TOOLS_BASE_CASTS_H_
 #define OR_TOOLS_BASE_CASTS_H_
 
+template <class Dest, class Source>
+inline Dest bit_cast(const Source& source) {
+  COMPILE_ASSERT(sizeof(Dest) == sizeof(Source),
+                 bit_cast_on_object_with_different_sizes);
+
+  Dest dest;
+  memcpy(&dest, &source, sizeof(dest));
+  return dest;
+}
+
 #endif  // OR_TOOLS_BASE_CASTS_H_

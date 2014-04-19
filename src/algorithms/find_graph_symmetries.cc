@@ -292,11 +292,16 @@ void GraphSymmetryFinder::FindSymmetries(
     }
     node_equivalence_classes.KeepOnlyOneNodePerPart(
         &potential_root_image_nodes);
+    VLOG(4) << "Potential (pruned) images of the root node: ["
+            << strings::Join(potential_root_image_nodes, " ") << "]";
 
     // Try to map "root_node" to all of its potential images. For each image,
     // we only care about finding a single compatible permutation, if it exists.
     while (!potential_root_image_nodes.empty()) {
       const int root_image_node = potential_root_image_nodes.back();
+      VLOG(4) << "Potential (pruned) images of root node " << root_node
+              << " left: [" << strings::Join(potential_root_image_nodes, " ")
+              << "]. Trying with " << root_image_node;
 
       std::unique_ptr<SparsePermutation> permutation =
           FindOneSuitablePermutation(root_node, root_image_node,
@@ -369,6 +374,13 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     // - A base_partition that has already been refined on ss->base_node
     // - An image partition that hasn't been refined.
     const int unrefined_num_parts = image_partition->NumParts();
+    VLOG(4) << "  Search: base_node=" << ss->base_node
+            << ", potential_image_nodes=["
+            << strings::Join(ss->potential_image_nodes, " ") << "]";
+    VLOG(4) << "    Base partition (refined)   : "
+            << base_partition->DebugString(DynamicPartition::SORT_BY_PART);
+    VLOG(4) << "    Image partition (unrefined): "
+            << image_partition->DebugString(DynamicPartition::SORT_BY_PART);
     if (ss->potential_image_nodes.empty()) {
       VLOG(4) << "  Backtracking one level up: base_node " << ss->base_node
               << " has no suitable image left to consider.";
@@ -480,6 +492,8 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
           MergeNodeEquivalenceClassesAccordingToPermutation(*perm,
                                                             &tmp_partition_);
         }
+        VLOG(4) << "    Pruning the potential image nodes: ["
+                << strings::Join(ss->potential_image_nodes, ", ") << "]";
         // HACK(user): temporarily re-inject image_node in the front of
         // 'potential_image_nodes' so that it's the only one we keep in its
         // class.
@@ -490,6 +504,8 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         std::swap(ss->potential_image_nodes.back(),
                   ss->potential_image_nodes[0]);
         ss->potential_image_nodes.pop_back();
+        VLOG(4) << "    Pruned the potential image nodes: ["
+                << strings::Join(ss->potential_image_nodes, ", ") << "]";
         ss->potential_image_nodes_were_pruned = true;
 
         // Reset "tmp_partition_" sparsely.
@@ -507,6 +523,9 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         base_partition->ElementsInPart(part_to_map);
     const DynamicPartition::IterablePart image_part =
         image_partition->ElementsInPart(part_to_map);
+    VLOG(4) << "    Deepening the search on part #" << part_to_map
+            << " Base: [" << strings::Join(base_part, " ") << "]"
+            << ", Image: [" << strings::Join(image_part, " ") << "]";
     // TODO(user, fdid): try some heuristics to optimize the choice of the
     // base node. For example, select a base node that maps to itself.
     const int next_base_node = *base_part.begin();

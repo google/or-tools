@@ -136,6 +136,128 @@ class CanonicalBooleanLinearProblem {
   DISALLOW_COPY_AND_ASSIGN(CanonicalBooleanLinearProblem);
 };
 
+// Encode a constraint sum term <= rhs, where each term is a positive
+// Coefficient times a literal. This class allows efficient modification of the
+// constraint and is used during pseudo-Boolean resolution.
+class MutableUpperBoundedLinearConstraint {
+ public:
+  // This must be called before any other functions is used with an higher
+  // variable index.
+  void ClearAndResize(int num_variables);
+
+  // Reset the constraint to 0 <= 0.
+  // Note that the contraint size stays the same.
+  void ClearAll();
+
+  // Returns the coefficient (>= 0) of the given variable.
+  Coefficient GetCoefficient(VariableIndex var) const {
+    return AbsCoefficient(terms_[var]);
+  }
+
+  // Returns the literal under which the given variable appear in the
+  // constraint. Note that if GetCoefficient(var) == 0 this just returns
+  // Literal(var, true).
+  Literal GetLiteral(VariableIndex var) const {
+    return Literal(var, terms_[var] > 0);
+  }
+
+  // If we have a lower bounded constraint sum terms >= rhs, then it is trivial
+  // to see that the coefficient of any term can be reduced to rhs if it is
+  // bigger. This does exactly this operation, but on the upper bounded
+  // representation.
+  //
+  // If we take a constraint sum ci.xi <= rhs, take its negation and add max_sum
+  // on both side, we have sum ci.(1 - xi) >= max_sum - rhs
+  // So every ci > (max_sum - rhs) can be replacend by (max_sum - rhs).
+  // Not that this operation also change the original rhs of the constraint.
+  void ReduceCoefficients();
+
+  // Compute the constraint slack assuming that only the variables with index <
+  // trail_index are assigned.
+  Coefficient ComputeSlackForTrailPrefix(const Trail& trail, int trail_index);
+
+  // Relaxes the constraint so that:
+  // - ComputeSlackForTrailPrefix(trail, trail_index) == target;
+  // - All the variable that where propagated given the assignment < trail_index
+  //   are still propagated.
+  //
+  // As a precondition, ComputeSlackForTrailPrefix(trail, trail_index) >= target
+  // Note that nothing happen if the slack is already equals to target.
+  //
+  // Algorithm: Let diff = slack - target (>= 0). We will split the constraint
+  // linear expression in 3 parts:
+  // - P1: the true variables (only the one assigned < trail_index).
+  // - P2: the other variables with a coeff > diff.
+  //       Note that all these variables where the propagated ones.
+  // - P3: the other variables with a coeff <= diff.
+  // We can then transform P1 + P2 + P3 <= rhs_ into P1 + P2' <= rhs_ - diff
+  // Where P2' is the same sum as P2 with all the coefficient reduced by diff.
+  //
+  // Proof: Given the old constraint, we want to show that the relaxed one is
+  // always true. If all the variable in P2' are false, then
+  // P1 <= rhs_ - slack <= rhs_ - diff is always true. If at least one of the
+  // P2' variable is true, then P2 >= P2' + diff and we have
+  // P1 + P2' + diff <= P1 + P2 <= rhs_.
+  void ReduceSlackTo(const Trail& trail, int trail_index, Coefficient target);
+
+  // Copies this constraint into a std::vector<LiteralWithCoeff> representation.
+  void CopyIntoVector(std::vector<LiteralWithCoeff>* output);
+
+  // Adds a positive value to this constraint Rhs().
+  void AddToRhs(Coefficient value) {
+    CHECK_GT(value, 0);
+    rhs_ += value;
+  }
+  Coefficient Rhs() const { return rhs_; }
+
+  // Adds a term to this constraint. This is in the .h for efficiency.
+  // The encoding used internally is described below in the terms_ comment.
+  void AddTerm(Literal literal, Coefficient coeff) {
+    CHECK_GT(coeff, 0);
+    const VariableIndex var = literal.Variable();
+    const Coefficient term_encoding = literal.IsPositive() ? coeff : -coeff;
+    if (literal != GetLiteral(var)) {
+      // The two terms are of opposite sign.
+      // We need to change the encoding of the lower magnitude term.
+      // - If term > 0, term . x       -> term . (x - 1) + term
+      // - If term < 0, term . (x - 1) -> term . x       - term
+      // In both cases, rhs -= abs(term).
+      const Coefficient old_rhs = rhs_;
+      rhs_ -= std::min(AbsCoefficient(term_encoding), AbsCoefficient(terms_[var]));
+      CHECK_LE(rhs_, old_rhs) << "Overflow!";
+    } else {
+      // Both terms are of the same sign (or terms_[var] is zero).
+      // We test for overflow.
+      CHECK_EQ(term_encoding > 0, terms_[var] + term_encoding > 0);
+    }
+    terms_[var] += term_encoding;
+    non_zeros_.Set(var);
+  }
+
+  // Returns a set of positions that contains all the non-zeros terms of the
+  // constraint. Note that this set can also contains some zero terms.
+  const std::vector<VariableIndex>& PossibleNonZeros() const {
+    return non_zeros_.PositionsSetAtLeastOnce();
+  }
+
+  // Returns a std::string representation of the constraint.
+  std::string DebugString();
+
+ private:
+  Coefficient AbsCoefficient(Coefficient a) const { return a > 0 ? a : -a; }
+
+  // The encoding is special:
+  // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
+  // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
+  ITIVector<VariableIndex, Coefficient> terms_;
+
+  // The right hand side of the constraint (sum terms <= rhs_).
+  Coefficient rhs_;
+
+  // Contains the possibly non-zeros terms_ value.
+  SparseBitset<VariableIndex> non_zeros_;
+};
+
 // This class contains "half" the propagation logic for a constraint of the form
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
 //
@@ -207,6 +329,18 @@ class UpperBoundedLinearConstraint {
   void FillReason(const Trail& trail, int source_trail_index,
                   VariableIndex propagated_variable, std::vector<Literal>* reason);
 
+  // Same operation as SatSolver::ResolvePBConflict(), the only difference is
+  // that here the reason for var is *this.
+  void ResolvePBConflict(const Trail& trail, VariableIndex var,
+                         MutableUpperBoundedLinearConstraint* conflict);
+
+  // Adds this pb constraint into the given mutable one.
+  //
+  // TODO(user): Provides instead an easy to use iterator over an
+  // UpperBoundedLinearConstraint and move this function to
+  // MutableUpperBoundedLinearConstraint.
+  void AddToConflict(MutableUpperBoundedLinearConstraint* conflict);
+
   // Returns the resolution node associated to this constraint. Note that it can
   // be nullptr if the solver is not configured to compute the reason for an
   // unsatisfiable problem or if this constraint is not relevant for the current
@@ -248,6 +382,7 @@ class PbConstraints {
   explicit PbConstraints(Trail* trail)
       : trail_(trail),
         propagation_trail_index_(0),
+        conflicting_constraint_index_(-1),
         stats_("PbConstraints"),
         num_constraint_lookups_(0),
         num_threshold_updates_(0) {}
@@ -301,6 +436,17 @@ class PbConstraints {
                                    reason);
   }
 
+  // ConflictingConstraint() returns the last PB constraint that caused a
+  // conflict. Calling ClearConflictingConstraint() reset this to nullptr.
+  //
+  // TODO(user): This is an hack to get the PB conflict, because the rest of
+  // the solver API assume only clause conflict. Find a cleaner way?
+  void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
+  UpperBoundedLinearConstraint* ConflictingConstraint() {
+    if (conflicting_constraint_index_ == -1) return nullptr;
+    return &(constraints_[conflicting_constraint_index_.value()]);
+  }
+
  private:
   // Each constraint managed by this class is associated with an index.
   // The set of indices is always [0, num_constraints_).
@@ -337,6 +483,10 @@ class PbConstraints {
 
   // Bitset used to optimize the Untrail() function.
   SparseBitset<ConstraintIndex> to_untrail_;
+
+  // Last conflicting PB constraint index. This is reset to -1 when
+  // ClearConflictingConstraint() is called.
+  ConstraintIndex conflicting_constraint_index_;
 
   // Some statistics.
   mutable StatsGroup stats_;

@@ -186,4 +186,11 @@ message SatParameters {
   // resolution proof. This can potentially use a lot of memory and may slow
   // down the solver a bit.
   optional bool unsat_proof = 42 [default = false];
+
+  // Highly experimental!
+  // Whether to use pseudo-Boolean resolution to analyze a conflict. Note that
+  // this option only make sense if your problem is modelized using
+  // pseudo-Boolean constraints. If you only have clauses, this shouldn't change
+  // anything (except slow the solver down).
+  optional bool use_pb_resolution = 43 [default = false];
 }

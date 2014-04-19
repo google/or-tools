@@ -1545,15 +1545,15 @@ IntervalVar* BuildIntervalVariable(CPModelLoader* const builder,
   return nullptr;
 }
 
-// ----- kInverse -----
+// ----- kInversePermutation -----
 
-Constraint* BuildInverse(CPModelLoader* const builder,
-                         const CPConstraintProto& proto) {
+Constraint* BuildInversePermutation(CPModelLoader* const builder,
+                                    const CPConstraintProto& proto) {
   std::vector<IntVar*> left;
   VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
   std::vector<IntVar*> right;
   VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-  return builder->solver()->MakeInverse(left, right);
+  return builder->solver()->MakeInversePermutationConstraint(left, right);
 }
 
 // ----- kIsBetween -----
@@ -2677,7 +2677,7 @@ void Solver::InitBuilders() {
   REGISTER(kIntervalDisjunction, BuildIntervalDisjunction);
   REGISTER(kIntervalUnaryRelation, BuildIntervalUnaryRelation);
   REGISTER(kIntervalVariable, BuildIntervalVariable);
-  REGISTER(kInverse, BuildInverse);
+  REGISTER(kInversePermutation, BuildInversePermutation);
   REGISTER(kIsBetween, BuildIsBetween);
   REGISTER(kIsDifferent, BuildIsDifferent);
   REGISTER(kIsEqual, BuildIsEqual);

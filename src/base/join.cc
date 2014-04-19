@@ -48,84 +48,93 @@ static char* Append4(char* out, const AlphaNum& x1, const AlphaNum& x2,
   return out + x4.size();
 }
 
+void StrAppend(std::string* s, const AlphaNum& a) { s->append(a.data(), a.size()); }
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b) {
+  s->reserve(s->size() + a.size() + b.size());
+  s->append(a.data(), a.size());
+  s->append(b.data(), b.size());
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c) {
+  s->reserve(s->size() + a.size() + b.size() + c.size());
+  s->append(a.data(), a.size());
+  s->append(b.data(), b.size());
+  s->append(c.data(), c.size());
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d) {
+  s->reserve(s->size() + a.size() + b.size() + c.size() + d.size());
+  s->append(a.data(), a.size());
+  s->append(b.data(), b.size());
+  s->append(c.data(), c.size());
+  s->append(d.data(), d.size());
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e) {
+  StrAppend(s, a, b, c, d);
+  StrAppend(s, e);
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f) {
+  StrAppend(s, a, b, c, d);
+  StrAppend(s, e, f);
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g) {
+  StrAppend(s, a, b, c, d);
+  StrAppend(s, e, f, g);
+}
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h) {
+  StrAppend(s, a, b, c, d);
+  StrAppend(s, e, f, g, h);
+}
+
 std::string StrCat(const AlphaNum& a) { return std::string(a.data(), a.size()); }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b) {
-  std::string result;
-  result.resize(a.size() + b.size());
-  char* const begin = &*result.begin();
-  char* out = Append2(begin, a, b);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size());
-  char* const begin = &*result.begin();
-  char* out = Append2(begin, a, b);
-  out = Append1(out, c);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size());
-  char* const begin = &*result.begin();
-  char* out = Append4(begin, a, b, c, d);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c, d);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size() + e.size());
-  char* const begin = &*result.begin();
-  char* out = Append4(begin, a, b, c, d);
-  out = Append1(out, e);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c, d, e);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size() + e.size() +
-                f.size());
-  char* const begin = &*result.begin();
-  char* out = Append4(begin, a, b, c, d);
-  out = Append2(out, e, f);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c, d, e, f);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
               const AlphaNum& g) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size() + e.size() +
-                f.size() + g.size());
-  char* const begin = &*result.begin();
-  char* out = Append4(begin, a, b, c, d);
-  out = Append2(out, e, f);
-  out = Append1(out, g);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c, d, e, f, g);
+  return out;
 }
-
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
               const AlphaNum& g, const AlphaNum& h) {
-  std::string result;
-  result.resize(a.size() + b.size() + c.size() + d.size() + e.size() +
-                f.size() + g.size() + h.size());
-  char* const begin = &*result.begin();
-  char* out = Append4(begin, a, b, c, d);
-  out = Append4(out, e, f, g, h);
-  DCHECK_EQ(out, begin + result.size());
-  return result;
+  std::string out;
+  StrAppend(&out, a, b, c, d, e, f, g, h);
+  return out;
 }
+
 }  // namespace operations_research

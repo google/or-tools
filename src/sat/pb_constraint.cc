@@ -194,6 +194,112 @@ bool CanonicalBooleanLinearProblem::AddConstraint(
   return true;
 }
 
+void MutableUpperBoundedLinearConstraint::ClearAndResize(int num_variables) {
+  terms_.assign(num_variables, Coefficient(0));
+  non_zeros_.ClearAndResize(VariableIndex(num_variables));
+}
+
+void MutableUpperBoundedLinearConstraint::ClearAll() {
+  // TODO(user): We could be more efficient and have only one loop here.
+  for (VariableIndex var : non_zeros_.PositionsSetAtLeastOnce()) {
+    terms_[var] = Coefficient(0);
+  }
+  non_zeros_.ClearAll();
+  rhs_ = 0;
+}
+
+void MutableUpperBoundedLinearConstraint::ReduceCoefficients() {
+  // TODO(user): avoid the max_sum computation? we could maintain it
+  // incrementally.
+  Coefficient max_sum(0);
+  for (VariableIndex var : PossibleNonZeros()) {
+    CHECK(SafeAddInto(GetCoefficient(var), &max_sum));
+  }
+  CHECK_LT(rhs_, max_sum) << "Trivially sat.";
+  const Coefficient bound = max_sum - rhs_;
+  for (VariableIndex var : PossibleNonZeros()) {
+    const Coefficient coeff = GetCoefficient(var);
+    if (coeff > bound) {
+      rhs_ -= coeff - bound;
+      terms_[var] = (terms_[var] > 0) ? bound : -bound;
+    }
+  }
+
+  // TODO(user): Also reduce the trivially false literal when coeff > rhs_ ?
+}
+
+std::string MutableUpperBoundedLinearConstraint::DebugString() {
+  std::string result;
+  for (VariableIndex var : PossibleNonZeros()) {
+    if (!result.empty()) result += " + ";
+    result += StringPrintf("%lld[%s]", GetCoefficient(var).value(),
+                           GetLiteral(var).DebugString().c_str());
+  }
+  result += StringPrintf(" <= %lld", rhs_.value());
+  return result;
+}
+
+// TODO(user): Keep this for DCHECK(), but maintain the slack incrementally
+// instead of recomputing it.
+Coefficient MutableUpperBoundedLinearConstraint::ComputeSlackForTrailPrefix(
+    const Trail& trail, int trail_index) {
+  Coefficient sum(0);
+  for (VariableIndex var : PossibleNonZeros()) {
+    if (GetCoefficient(var) == 0) continue;
+    if (trail.Assignment().IsLiteralTrue(GetLiteral(var)) &&
+        trail.Info(var).trail_index < trail_index) {
+      sum += GetCoefficient(var);
+      CHECK_GE(sum, 0) << "Overflow!";
+    }
+  }
+  return rhs_ - sum;
+}
+
+void MutableUpperBoundedLinearConstraint::ReduceSlackTo(const Trail& trail,
+                                                        int trail_index,
+                                                        Coefficient target) {
+  // Positive slack.
+  const Coefficient slack = ComputeSlackForTrailPrefix(trail, trail_index);
+  CHECK_LE(target, slack);
+  CHECK_GE(target, 0);
+
+  // This is not stricly needed, but true in our use case:
+  // The variable assigned at trail_index was causing a conflict.
+  const Coefficient coeff = GetCoefficient(trail[trail_index].Variable());
+  CHECK_LT(slack, coeff);
+
+  // Nothing to do if the slack is already target.
+  if (slack == target) return;
+
+  // Applies the algorithm described in the .h
+  const Coefficient diff = slack - target;
+  rhs_ -= diff;
+  for (VariableIndex var : PossibleNonZeros()) {
+    if (GetCoefficient(var) == 0) continue;
+    if (trail.Assignment().IsLiteralTrue(GetLiteral(var)) &&
+        trail.Info(var).trail_index < trail_index) {
+      continue;
+    }
+    if (GetCoefficient(var) > diff) {
+      terms_[var] = (terms_[var] > 0) ? terms_[var] - diff : terms_[var] + diff;
+    } else {
+      terms_[var] = 0;
+    }
+  }
+}
+
+void MutableUpperBoundedLinearConstraint::CopyIntoVector(
+    std::vector<LiteralWithCoeff>* output) {
+  output->clear();
+  for (VariableIndex var : non_zeros_.PositionsSetAtLeastOnce()) {
+    const Coefficient coeff = GetCoefficient(var);
+    if (coeff != 0) {
+      output->push_back(LiteralWithCoeff(GetLiteral(var), GetCoefficient(var)));
+    }
+  }
+  std::sort(output->begin(), output->end(), CoeffComparator);
+}
+
 UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
     const std::vector<LiteralWithCoeff>& cst, ResolutionNode* node)
     : node_(node) {
@@ -211,6 +317,18 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
 
   // Sentinel.
   starts_.push_back(literals_.size());
+}
+
+void UpperBoundedLinearConstraint::AddToConflict(
+    MutableUpperBoundedLinearConstraint* conflict) {
+  int literal_index = 0;
+  int coeff_index = 0;
+  for (Literal literal : literals_) {
+    conflict->AddTerm(literal, coeffs_[coeff_index]);
+    ++literal_index;
+    if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
+  }
+  conflict->AddToRhs(rhs_);
 }
 
 bool UpperBoundedLinearConstraint::HasIdenticalTerms(
@@ -407,6 +525,143 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
   }
   DCHECK(!reason->empty());
   DCHECK_GE(limit, 1);
+}
+
+void UpperBoundedLinearConstraint::ResolvePBConflict(
+    const Trail& trail, VariableIndex var,
+    MutableUpperBoundedLinearConstraint* conflict) {
+  const int limit_trail_index = trail.Info(var).trail_index;
+
+  // Compute the constraint activity at the time and the coefficient of the
+  // variable var.
+  Coefficient activity(0);
+  Coefficient var_coeff(0);
+  int literal_index = 0;
+  int coeff_index = 0;
+  for (Literal literal : literals_) {
+    if (literal.Variable() == var) {
+      // The variable must be of the opposite sign in the current conflict.
+      CHECK_NE(literal, conflict->GetLiteral(var));
+      var_coeff = coeffs_[coeff_index];
+    } else if (trail.Assignment().IsLiteralTrue(literal) &&
+               trail.Info(literal.Variable()).trail_index < limit_trail_index) {
+      activity += coeffs_[coeff_index];
+    }
+    ++literal_index;
+    if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
+  }
+
+  // Special case.
+  if (activity > rhs_) {
+    // This constraint is already a conflict.
+    // Use this one instead to start the resolution.
+    //
+    // TODO(user): Investigate if this is a good idea. It doesn't happen often,
+    // but does happend. Maybe we can detect this before in Propagate()? The
+    // setup is:
+    // - At a given trail_index, var is propagated and added on the trail.
+    // - There is some constraint literals assigned to true with a trail index
+    //   in (trail_index, var.trail_index).
+    // - Their sum is high enough to cause a conflict.
+    // - But individually, their coefficients are too small to be propagated, so
+    //   the conflict is not yet detected. It will be when these variables are
+    //   processed by PropagateNext().
+    conflict->ClearAll();
+    AddToConflict(conflict);
+    return;
+  }
+
+  // This is the slack of *this for the trail prefix < limit_trail_index.
+  const Coefficient slack = rhs_ - activity;
+  CHECK_GE(slack, 0);
+
+  // This is the slack of the conflict at the same level.
+  // TODO(user): This is potentially called again in ReduceSlackTo(), fix.
+  const Coefficient conflict_slack =
+      conflict->ComputeSlackForTrailPrefix(trail, limit_trail_index);
+
+  // When we add the two constraints together, the slack of the result for the
+  // trail < limit_trail_index - 1 must be negative. We know that its value is
+  // <= slack1 + slack2 - std::min(coeffs), so we have nothing to do if this bound is
+  // already negative.
+  //
+  // TODO(user): If there is more "cancelation" (like it is the case for var)
+  // when we add the two constraints, the resulting slack may be even lower.
+  // Taking that into account is probably good.
+  const Coefficient conflict_var_coeff = conflict->GetCoefficient(var);
+  const Coefficient min_coeffs = std::min(var_coeff, conflict_var_coeff);
+  const Coefficient new_slack_ub = slack + conflict_slack - min_coeffs;
+  CHECK_LT(conflict_slack, conflict_var_coeff);
+  CHECK_LT(slack, var_coeff);
+  if (new_slack_ub < 0) {
+    AddToConflict(conflict);
+    return;
+  }
+
+  // We need to relax one or both of the constraints so the new slack is < 0.
+  // Using the relaxation described in ReduceSlackTo(), we can have this new
+  // slack bound:
+  //
+  //   (slack - diff) + (conflict_slack - conflict_diff)
+  //      - std::min(var_coeff - diff, conflict_var_coeff - conflict_diff).
+  //
+  // For all diff in [0, slack)
+  // For all conflict_diff in [0, conflict_slack)
+  Coefficient diff(0);
+  Coefficient conflict_diff(0);
+
+  // Is relaxing the constraint with the highest coeff enough?
+  if (new_slack_ub < std::max(var_coeff, conflict_var_coeff) - min_coeffs) {
+    const Coefficient reduc = new_slack_ub + 1;
+    if (var_coeff < conflict_var_coeff) {
+      conflict_diff += reduc;
+    } else {
+      diff += reduc;
+    }
+  } else {
+    // Just reduce the slack of both constraints to zero.
+    //
+    // TODO(user): The best will be to relax as little as possible.
+    diff = slack;
+    conflict_diff = conflict_slack;
+  }
+
+  // Relax the conflict.
+  CHECK_GE(conflict_diff, 0);
+  CHECK_LE(conflict_diff, conflict_slack);
+  if (conflict_diff > 0) {
+    conflict->ReduceSlackTo(trail, limit_trail_index,
+                            conflict_slack - conflict_diff);
+  }
+
+  // We apply the same algorithm as the one in ReduceSlackTo() but on
+  // the non-mutable representation and add it on the fly into conflict.
+  CHECK_GE(diff, 0);
+  CHECK_LE(diff, slack);
+  if (diff == 0) {
+    // Special case if there if no relaxation is needed.
+    AddToConflict(conflict);
+    return;
+  }
+
+  literal_index = 0;
+  coeff_index = 0;
+  for (Literal literal : literals_) {
+    if (trail.Assignment().IsLiteralTrue(literal) &&
+        trail.Info(literal.Variable()).trail_index < limit_trail_index) {
+      conflict->AddTerm(literal, coeffs_[coeff_index]);
+    } else {
+      const Coefficient new_coeff = coeffs_[coeff_index] - diff;
+      if (new_coeff > 0) {
+        conflict->AddTerm(literal, new_coeff);
+      }
+    }
+    ++literal_index;
+    if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
+  }
+
+  // And the rhs.
+  conflict->AddToRhs(rhs_ - diff);
 }
 
 void UpperBoundedLinearConstraint::Untrail(Coefficient* threshold) {

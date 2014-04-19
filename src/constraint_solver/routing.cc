@@ -22,6 +22,7 @@
 #include "base/unique_ptr.h"
 
 #include "base/callback.h"
+#include "base/casts.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -1117,7 +1118,7 @@ uint64 RoutingModel::GetFingerprintOfEvaluator(
     // If we don't fingerprint the data returned by the evaluator, we can
     // just return the address as fingerprint (ensures that evaluators with the
     // same address are considered as equivalent).
-    return reinterpret_cast<uint64>(evaluator);
+    return bit_cast<uint64>(evaluator);
   }
   // Fingerprinting by matrix row seems to be the good combination to
   // make Fingerprint2011 run fast and avoid using too much memory.

@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "base/unique_ptr.h"
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 #include "base/integral_types.h"
@@ -42,7 +43,7 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 
 DECLARE_bool(log_prefix);
-DECLARE_bool(fz_logging);
+DECLARE_bool(logging);
 
 namespace operations_research {
 void SequentialRun(const std::string& filename) {
@@ -57,13 +58,13 @@ void SequentialRun(const std::string& filename) {
   parameters.restart_log_size = FLAGS_restart_log_size;
   parameters.threads = FLAGS_workers;
   parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.use_log = FLAGS_fz_logging;
+  parameters.use_log = FLAGS_logging;
   parameters.verbose_impact = FLAGS_verbose_impact;
   parameters.worker_id = -1;
   parameters.search_type =
       FLAGS_use_impact ? FzSolverParameters::IBS : FzSolverParameters::DEFAULT;
 
-  scoped_ptr<FzParallelSupportInterface> parallel_support(
+  std::unique_ptr<FzParallelSupportInterface> parallel_support(
       operations_research::MakeSequentialSupport(
           parameters.all_solutions, parameters.num_solutions));
 
@@ -75,9 +76,8 @@ void SequentialRun(const std::string& filename) {
   }
   FzModel model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
-  FzPresolve presolve;
-  presolve.Init();
-  CHECK(presolve.Run(&model));
+  FzPresolver presolve;
+  presolve.Run(&model);
   FzModelStatistics stats(model);
   stats.PrintStatistics();
   FzSolver solver(model);
@@ -91,7 +91,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char free_param[] = "--free";
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
-  char logging_param[] = "--fz_logging";
+  char logging_param[] = "--logging";
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;

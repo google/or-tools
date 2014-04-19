@@ -303,43 +303,47 @@ class LexicalLess : public Constraint {
   Demon* demon_;
 };
 
-// ----- Inverse constraint -----
+// ----- Inverse permutation constraint -----
 
-// This constraints maintains: left[i] == j <=> right_[j] == i.
-// It assumes array are 0 based.
-class Inverse : public Constraint {
+class InversePermutationConstraint : public Constraint {
  public:
-  Inverse(Solver* const s, const std::vector<IntVar*>& left,
-          const std::vector<IntVar*>& right)
+  InversePermutationConstraint(Solver* const s, const std::vector<IntVar*>& left,
+                               const std::vector<IntVar*>& right)
       : Constraint(s),
         left_(left),
         right_(right),
-        left_holes_(left.size()),
-        left_iterators_(left_.size()),
-        right_holes_(right_.size()),
-        right_iterators_(right_.size()) {
+        left_hole_iterators_(left.size()),
+        left_domain_iterators_(left_.size()),
+        right_hole_iterators_(right_.size()),
+        right_domain_iterators_(right_.size()) {
     CHECK_EQ(left_.size(), right_.size());
     for (int i = 0; i < left_.size(); ++i) {
-      left_holes_[i] = left_[i]->MakeHoleIterator(true);
-      left_iterators_[i] = left_[i]->MakeDomainIterator(true);
-      right_holes_[i] = right_[i]->MakeHoleIterator(true);
-      right_iterators_[i] = right_[i]->MakeDomainIterator(true);
+      left_hole_iterators_[i] = left_[i]->MakeHoleIterator(true);
+      left_domain_iterators_[i] = left_[i]->MakeDomainIterator(true);
+      right_hole_iterators_[i] = right_[i]->MakeHoleIterator(true);
+      right_domain_iterators_[i] = right_[i]->MakeDomainIterator(true);
     }
   }
 
-  virtual ~Inverse() {}
+  virtual ~InversePermutationConstraint() {}
 
   virtual void Post() {
     for (int i = 0; i < left_.size(); ++i) {
-      Demon* const left_demon = MakeConstraintDemon2(
-          solver(), this, &Inverse::Propagate, "Propagate", i, true);
+      Demon* const left_demon = MakeConstraintDemon1(
+          solver(), this,
+          &InversePermutationConstraint::PropagateHolesOfLeftVarToRight,
+          "PropagateHolesOfLeftVarToRight", i);
       left_[i]->WhenDomain(left_demon);
-      Demon* const right_demon = MakeConstraintDemon2(
-          solver(), this, &Inverse::Propagate, "Propagate", i, false);
+      Demon* const right_demon = MakeConstraintDemon1(
+          solver(), this,
+          &InversePermutationConstraint::PropagateHolesOfRightVarToLeft,
+          "PropagateHolesOfRightVarToLeft", i);
       right_[i]->WhenDomain(right_demon);
     }
-    solver()->AddConstraint(solver()->MakeAllDifferent(left_, false));
-    solver()->AddConstraint(solver()->MakeAllDifferent(right_, false));
+    solver()->AddConstraint(
+        solver()->MakeAllDifferent(left_, /*stronger_propagation=*/ false));
+    solver()->AddConstraint(
+        solver()->MakeAllDifferent(right_, /*stronger_propagation=*/ false));
   }
 
   virtual void InitialPropagate() {
@@ -349,42 +353,44 @@ class Inverse : public Constraint {
       right_[i]->SetRange(0, size - 1);
     }
     for (int i = 0; i < size; ++i) {
-      PropagateDomain(i, left_[i], left_iterators_[i], right_);
-      PropagateDomain(i, right_[i], right_iterators_[i], left_);
+      PropagateDomain(i, left_[i], left_domain_iterators_[i], right_);
+      PropagateDomain(i, right_[i], right_domain_iterators_[i], left_);
     }
   }
 
-  void Propagate(int index, bool left_to_right) {
-    if (left_to_right) {
-      PropagateHoles(index, left_[index], left_holes_[index], right_);
-    } else {
-      PropagateHoles(index, right_[index], right_holes_[index], left_);
-    }
+  void PropagateHolesOfLeftVarToRight(int index) {
+    PropagateHoles(index, left_[index], left_hole_iterators_[index], right_);
+  }
+
+  void PropagateHolesOfRightVarToLeft(int index) {
+    PropagateHoles(index, right_[index], right_hole_iterators_[index], left_);
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("Inverse([%s], [%s])",
+    return StringPrintf("InversePermutationConstraint([%s], [%s])",
                         JoinDebugStringPtr(left_, ", ").c_str(),
                         JoinDebugStringPtr(right_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kInverse, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kInversePermutation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
                                                left_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kRightArgument,
                                                right_);
-    visitor->EndVisitConstraint(ModelVisitor::kInverse, this);
+    visitor->EndVisitConstraint(ModelVisitor::kInversePermutation, this);
   }
 
  private:
+  // See PropagateHolesOfLeftVarToRight() and PropagateHolesOfRightVarToLeft().
   void PropagateHoles(int index, IntVar* const var, IntVarIterator* const holes,
                       const std::vector<IntVar*>& inverse) {
+    const int64 oldmin = std::max(var->OldMin(), 0LL);
     const int64 oldmax =
         std::min(var->OldMax(), static_cast<int64>(left_.size() - 1));
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
-    for (int64 value = std::max(var->OldMin(), 0LL); value < vmin; ++value) {
+    for (int64 value = oldmin; value < vmin; ++value) {
       inverse[value]->RemoveValue(index);
     }
     for (holes->Init(); holes->Ok(); holes->Next()) {
@@ -401,25 +407,30 @@ class Inverse : public Constraint {
   void PropagateDomain(int index, IntVar* const var,
                        IntVarIterator* const domain,
                        const std::vector<IntVar*>& inverse) {
-    remove_.clear();
+    // Iterators are not safe w.r.t. removal. Postponing deletions.
+    tmp_removed_values_.clear();
     for (domain->Init(); domain->Ok(); domain->Next()) {
       const int64 value = domain->Value();
       if (!inverse[value]->Contains(index)) {
-        remove_.push_back(value);
+        tmp_removed_values_.push_back(value);
       }
     }
-    if (!remove_.empty()) {
-      var->RemoveValues(remove_);
+    // Once we've finished iterating over the domain, we may call
+    // RemoveValues().
+    if (!tmp_removed_values_.empty()) {
+      var->RemoveValues(tmp_removed_values_);
     }
   }
 
   std::vector<IntVar*> left_;
   std::vector<IntVar*> right_;
-  std::vector<IntVarIterator*> left_holes_;
-  std::vector<IntVarIterator*> left_iterators_;
-  std::vector<IntVarIterator*> right_holes_;
-  std::vector<IntVarIterator*> right_iterators_;
-  std::vector<int64> remove_;
+  std::vector<IntVarIterator*> left_hole_iterators_;
+  std::vector<IntVarIterator*> left_domain_iterators_;
+  std::vector<IntVarIterator*> right_hole_iterators_;
+  std::vector<IntVarIterator*> right_domain_iterators_;
+
+  // used only in PropagateDomain().
+  std::vector<int64> tmp_removed_values_;
 };
 }  // namespace
 
@@ -468,8 +479,8 @@ Constraint* Solver::MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
   return RevAlloc(new LexicalLess(this, left, right, false));
 }
 
-Constraint* Solver::MakeInverse(const std::vector<IntVar*>& left,
-                                const std::vector<IntVar*>& right) {
-  return RevAlloc(new Inverse(this, left, right));
+Constraint* Solver::MakeInversePermutationConstraint(
+    const std::vector<IntVar*>& left, const std::vector<IntVar*>& right) {
+  return RevAlloc(new InversePermutationConstraint(this, left, right));
 }
 }  // namespace operations_research

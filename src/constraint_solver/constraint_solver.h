@@ -1595,11 +1595,14 @@ class Solver {
   Constraint* MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
                                      const std::vector<IntVar*>& right);
 
-  // Creates the constraints that enforces left[i] == j <=> right[j] == i.
-  Constraint* MakeInverse(const std::vector<IntVar*>& left,
-                          const std::vector<IntVar*>& right);
+  // Creates the constraint that enforces that 'left' and 'right' both
+  // represent permutations of [0..left.size()-1], and that 'right' is
+  // the inverse permutation of 'left', i.e. for all i in
+  // [0..left.size()-1], right[left[i]] = i.
+  Constraint* MakeInversePermutationConstraint(const std::vector<IntVar*>& left,
+                                               const std::vector<IntVar*>& right);
 
-  // Creates a constraint that states that all variables in the first
+  // Creates a constraints that states that all variables in the first
   // vector are different from all variables from the second
   // group. Thus the set of values in the first vector does not
   // intersect the set of values in the second vector.
@@ -3263,7 +3266,7 @@ class ModelVisitor : public BaseObject {
   static const char kIntervalDisjunction[];
   static const char kIntervalUnaryRelation[];
   static const char kIntervalVariable[];
-  static const char kInverse[];
+  static const char kInversePermutation[];
   static const char kIsBetween[];
   static const char kIsDifferent[];
   static const char kIsEqual[];

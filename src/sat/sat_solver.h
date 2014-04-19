@@ -246,6 +246,15 @@ class SatSolver {
   // here. In particular, generating a reason clause lazily make sense.
   ClauseRef Reason(VariableIndex var);
 
+  // This does one step of a pseudo-Boolean resolution:
+  // - The variable var has been assigned to l at a given trail_index.
+  // - The reason for var propagates it to l.
+  // - The conflict propagates it to not(l)
+  // The goal of the operation is to combine the two constraints in order to
+  // have a new conflict at a lower trail_index.
+  void ResolvePBConflict(VariableIndex var,
+                         MutableUpperBoundedLinearConstraint* conflict);
+
   // Returns true if the clause is the reason for an assigned variable or was
   // the reason the last time a variable was assigned.
   //
@@ -334,6 +343,14 @@ class SatSolver {
   void ComputeFirstUIPConflict(
       ClauseRef failing_clause, int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict);
+
+  // Do the full pseudo-Boolean constraint analysis. This calls multiple
+  // time ResolvePBConflict() on the current conflict until we have a conflict
+  // that allow us to propagate more at a lower decision level. This level
+  // is the one returned in backjump_level.
+  void ComputePBConflict(int max_trail_index,
+                         MutableUpperBoundedLinearConstraint* conflict,
+                         int* backjump_level);
 
   // Creates the root resolution node associated with the current constraint.
   // This will returns nullptr if the solver is not configured to compute unsat
@@ -490,6 +507,9 @@ class SatSolver {
     int64 num_minimizations;
     int64 num_literals_removed;
 
+    // PB constraints.
+    int64 num_learned_pb_literals_;
+
     // Clause learning /deletion stats.
     int64 num_literals_learned;
     int64 num_literals_forgotten;
@@ -500,6 +520,7 @@ class SatSolver {
           num_failures(0),
           num_minimizations(0),
           num_literals_removed(0),
+          num_learned_pb_literals_(0),
           num_literals_learned(0),
           num_literals_forgotten(0) {}
   };
@@ -615,6 +636,9 @@ class SatSolver {
 
   // Boolean used to include/exclude constraints from the core computation.
   bool is_relevant_for_core_computation_;
+
+  // The current pseudo-Boolean conflict used in PB conflict analysis.
+  MutableUpperBoundedLinearConstraint pb_conflict_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);

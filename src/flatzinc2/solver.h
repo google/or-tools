@@ -10,8 +10,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#ifndef OR_TOOLS_FLATZINC_FZ_SOLVER_H_
-#define OR_TOOLS_FLATZINC_FZ_SOLVER_H_
+#ifndef OR_TOOLS_FLATZINC_SOLVER_H_
+#define OR_TOOLS_FLATZINC_SOLVER_H_
 
 #include "constraint_solver/constraint_solver.h"
 #include "flatzinc2/model.h"
@@ -23,7 +23,7 @@ namespace operations_research {
 // search state and perform the actual search.
 class FzSolver {
  public:
-  FzSolver(const FzModel& model)
+  explicit FzSolver(const FzModel& model)
   : model_(model), statistics_(model), solver_(model.name()) {}
 
   // Search for for solutions in the model passed at construction
@@ -78,4 +78,4 @@ class FzSolver {
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_FZ_SOLVER_H_
+#endif  // OR_TOOLS_FLATZINC_SOLVER_H_

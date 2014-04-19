@@ -99,7 +99,6 @@ typedef operations_research::LexerInfo YYSTYPE;
 
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stl_util.h"
 #include "flatzinc2/parser.tab.hh"
 #include "flatzinc2/model.h"

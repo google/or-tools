@@ -159,7 +159,24 @@ void DynamicPartition::SortElementsInPart(int p) {
 }
 
 std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
-  return "";
+  if (sorting != SORT_LEXICOGRAPHICALLY && sorting != SORT_BY_PART) {
+    return StringPrintf("Unsupported sorting: %d", sorting);
+  }
+  std::vector<std::vector<int>> parts;
+  for (int i = 0; i < NumParts(); ++i) {
+    IterablePart iterable_part = ElementsInPart(i);
+    parts.emplace_back(iterable_part.begin(), iterable_part.end());
+    std::sort(parts.back().begin(), parts.back().end());
+  }
+  if (sorting == SORT_LEXICOGRAPHICALLY) {
+    std::sort(parts.begin(), parts.end());
+  }
+  std::string out;
+  for (const std::vector<int>& part : parts) {
+    if (!out.empty()) out += " | ";
+    out += strings::Join(part, " ");
+  }
+  return out;
 }
 
 void MergingPartition::Reset(int num_nodes) {
@@ -232,7 +249,20 @@ void MergingPartition::FillEquivalenceClasses(
 }
 
 std::string MergingPartition::DebugString() {
-  return "";
+  std::vector<std::vector<int>> sorted_parts(NumNodes());
+  for (int i = 0; i < NumNodes(); ++i) {
+    sorted_parts[GetRootAndCompressPath(i)].push_back(i);
+  }
+  for (std::vector<int>& part : sorted_parts) std::sort(part.begin(), part.end());
+  std::sort(sorted_parts.begin(), sorted_parts.end());
+  // Note: typically, a lot of elements of "sorted_parts" will be empty,
+  // but these won't be visible in the std::string that we construct below.
+  std::string out;
+  for (const std::vector<int>& part : sorted_parts) {
+    if (!out.empty()) out += " | ";
+    out += strings::Join(part, " ");
+  }
+  return out;
 }
 
 }  // namespace operations_research

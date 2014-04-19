@@ -352,18 +352,18 @@ void ParserState::ReuseIgnored(NodeSet* const ignored) {
     AstNode* const bool_define = FindTarget(spec->annotations());
     AstNode* const last_arg = Copy(spec->LastArg());
     if (bool_define == nullptr && last_arg != nullptr &&
-        ContainsKey(*ignored, last_arg) &&(id == "int_lin_eq_reif" ||
-                                           id == "int_lin_ne_reif" ||
-                                           id == "int_lin_ge_reif" ||
-                                           id == "int_lin_le_reif" ||
-                                           id == "int_lin_gt_reif" ||
-                                           id == "int_lin_lt_reif" ||
-                                           id == "int_eq_reif" ||
-                                           id == "int_ne_reif" ||
-                                           id == "int_le_reif" ||
-                                           id == "int_ge_reif" ||
-                                           id == "int_lt_reif" ||
-                                           id == "int_gt_reif")) {
+        ContainsKey(*ignored, last_arg) && (id == "int_lin_eq_reif" ||
+                                            id == "int_lin_ne_reif" ||
+                                            id == "int_lin_ge_reif" ||
+                                            id == "int_lin_le_reif" ||
+                                            id == "int_lin_gt_reif" ||
+                                            id == "int_lin_lt_reif" ||
+                                            id == "int_eq_reif" ||
+                                            id == "int_ne_reif" ||
+                                            id == "int_le_reif" ||
+                                            id == "int_ge_reif" ||
+                                            id == "int_lt_reif" ||
+                                            id == "int_gt_reif")) {
       AstCall* const call =
           new AstCall("defines_var", new AstBoolVar(last_arg->getBoolVar()));
       spec->AddAnnotation(call);

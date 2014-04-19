@@ -14,6 +14,20 @@
 #ifndef OR_TOOLS_BASE_MACROS_H_
 #define OR_TOOLS_BASE_MACROS_H_
 
+#if (defined(COMPILER_GCC3) || defined(OS_MACOSX)) && !defined(SWIG)
+#define ATTRIBUTE_UNUSED __attribute__((unused))
+#else  // GCC
+#define ATTRIBUTE_UNUSED
+#endif  // GCC
+
+#define COMPILE_ASSERT(x, msg)
+
+#ifdef NDEBUG
+const bool DEBUG_MODE = false;
+#else   // NDEBUG
+const bool DEBUG_MODE = true;
+#endif  // NDEBUG
+
 // DISALLOW_COPY_AND_ASSIGN disallows the copy and operator= functions.
 // It goes in the private: declarations in a class.
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \

@@ -428,6 +428,12 @@ void FindLinearBooleanProblemSymmetries(
     for (int j = 0; j < permutation->NumCycles(); ++j) {
       if (*(permutation->Cycle(j).begin()) >= 2 * problem.num_variables()) {
         to_delete.push_back(j);
+        if (DEBUG_MODE) {
+          // Verify that the cycle's entire support does not touch any variable.
+          for (const int node : permutation->Cycle(j)) {
+            DCHECK_GE(node, 2 * problem.num_variables());
+          }
+        }
       }
     }
     permutation->RemoveCycles(to_delete);

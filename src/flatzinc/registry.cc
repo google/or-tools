@@ -3256,7 +3256,7 @@ void p_inverse(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     right[i + 1] = model->GetIntExpr(array_right->a[i])->Var();
   }
-  Constraint* const ct = solver->MakeInverse(left, right);
+  Constraint* const ct = solver->MakeInversePermutationConstraint(left, right);
   VLOG(2) << "  - posted " << ct->DebugString();
   model->AddConstraint(spec, ct);
 }

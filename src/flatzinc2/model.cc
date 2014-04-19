@@ -13,13 +13,12 @@
 #include "base/hash.h"
 #include <iostream>  // NOLINT
 
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "flatzinc2/model.h"
 #include "flatzinc2/parser.h"
 
-DEFINE_bool(fz_logging, false,
+DEFINE_bool(logging, false,
             "Print logging information from the flatzinc interpreter.");
 
 namespace operations_research {
@@ -492,10 +491,8 @@ void FzModelStatistics::PrintStatistics() {
   BuildStatistics();
   FZLOG << "Model statistics" << std::endl;
   BuildStatistics();
-  for (ConstIter<hash_map<const std::string, std::vector<FzConstraint*>>> it(
-           constraints_per_type_);
-       !it.at_end(); ++it) {
-    FZLOG << "  - " << it->first << ": " << it->second.size() << std::endl;
+  for (const auto& it : constraints_per_type_) {
+    FZLOG << "  - " << it.first << ": " << it.second.size() << std::endl;
   }
   if (model_.objective() == nullptr) {
     FZLOG << "  - Satisfaction problem" << std::endl;
@@ -523,9 +520,8 @@ void FzModelStatistics::BuildStatistics() {
           }
         }
       }
-      for (ConstIter<hash_set<const FzIntegerVariable*>> it(marked);
-           !it.at_end(); ++it) {
-        constraints_per_variables_[*it].push_back(ct);
+      for (const FzIntegerVariable* const var : marked) {
+        constraints_per_variables_[var].push_back(ct);
       }
     }
   }

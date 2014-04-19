@@ -94,6 +94,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   objective_weights_.resize(num_variables << 1, 0.0);
   decisions_.resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
+  pb_conflict_.ClearAndResize(num_variables);
 }
 
 int64 SatSolver::num_branches() const { return counters_.num_branches; }
@@ -341,6 +342,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   int first_propagation_index = trail_.Index();
   NewDecision(true_literal);
   while (!Propagate()) {
+    ++counters_.num_failures;
     const int max_trail_index = ComputeMaxTrailIndex(trail_.FailingClause());
 
     // Optimization. All the activity of the variables assigned after the trail
@@ -379,6 +381,100 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
       BumpClauseActivity(trail_.FailingSatClause());
     }
     BumpReasonActivities(reason_used_to_infer_the_conflict_);
+
+    // Decay the activities.
+    UpdateVariableActivityIncrement();
+    UpdateClauseActivityIncrement();
+
+    // Decrement the restart counter if needed.
+    if (conflicts_until_next_restart_ > 0) {
+      --conflicts_until_next_restart_;
+    }
+
+    // Hack from Glucose that seems to perform well.
+    const int period = parameters_.glucose_decay_increment_period();
+    const double max_decay = parameters_.glucose_max_decay();
+    if (counters_.num_failures % period == 0 &&
+        parameters_.variable_activity_decay() < max_decay) {
+      parameters_.set_variable_activity_decay(
+          parameters_.variable_activity_decay() +
+          parameters_.glucose_decay_increment());
+    }
+
+    // PB resolution.
+    //
+    // TODO(user): Note that we use the clause above to update the activites.
+    if (parameters_.use_pb_resolution()) {
+      pb_conflict_.ClearAll();
+      if (pb_constraints_.ConflictingConstraint() == nullptr) {
+        // Generic clause case.
+        Coefficient num_literals(0);
+        for (Literal literal : trail_.FailingClause()) {
+          pb_conflict_.AddTerm(literal.Negated(), Coefficient(1.0));
+          ++num_literals;
+        }
+        pb_conflict_.AddToRhs(num_literals - 1);
+      } else {
+        // We have a pseudo-Boolean conflict, so we start from there.
+        pb_constraints_.ConflictingConstraint()->AddToConflict(&pb_conflict_);
+        pb_constraints_.ClearConflictingConstraint();
+      }
+
+      int pb_backjump_level;
+      ComputePBConflict(max_trail_index, &pb_conflict_, &pb_backjump_level);
+      if (pb_backjump_level == -1) {
+        is_model_unsat_ = true;
+        return kUnsatTrailIndex;
+      }
+
+      // Convert the conflict into the std::vector<LiteralWithCoeff> form.
+      std::vector<LiteralWithCoeff> cst;
+      pb_conflict_.CopyIntoVector(&cst);
+
+      // Check if the learned PB conflict is just a clause:
+      // all its coefficient must be 1, and the rhs must be its size minus 1.
+      bool conflict_is_a_clause = (pb_conflict_.Rhs() == cst.size() - 1);
+      if (conflict_is_a_clause) {
+        for (LiteralWithCoeff term : cst) {
+          if (term.coefficient != Coefficient(1)) {
+            conflict_is_a_clause = false;
+            break;
+          }
+        }
+      }
+
+      if (!conflict_is_a_clause) {
+        // Use the PB conflict.
+        CHECK_LT(pb_backjump_level, CurrentDecisionLevel());
+        Backtrack(pb_backjump_level);
+        first_propagation_index = trail_.Index();
+        CHECK(pb_constraints_.AddConstraint(cst, pb_conflict_.Rhs(), nullptr));
+        CHECK_GT(trail_.Index(), first_propagation_index);
+        counters_.num_learned_pb_literals_ += cst.size();
+        continue;
+      }
+
+      // Continue with the normal clause flow, but use the PB conflict clause
+      // if it has a lower backjump level.
+      if (pb_backjump_level < ComputeBacktrackLevel(learned_conflict_)) {
+        learned_conflict_.clear();
+        int max_level = 0;
+        int max_index = 0;
+        for (LiteralWithCoeff term : cst) {
+          DCHECK_EQ(term.coefficient, 1);
+          const int level = trail_.Info(term.literal.Variable()).level;
+          if (level == 0) continue;
+          if (level > max_level) {
+            max_level = level;
+            max_index = learned_conflict_.size();
+          }
+          learned_conflict_.push_back(term.literal.Negated());
+        }
+        CHECK(!learned_conflict_.empty());
+        std::swap(learned_conflict_.front(), learned_conflict_[max_index]);
+        DCHECK(IsConflictValid(learned_conflict_));
+      }
+    }
 
     // Minimizing the conflict with binary clauses first has two advantages.
     // First, there is no need to compute a reason for the variables eliminated
@@ -419,6 +515,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     }
 
     // Compute the resolution node if needed.
+    // TODO(user): This is wrong if the clause comes from PB resolution.
     ResolutionNode* node =
         parameters_.unsat_proof()
             ? CreateResolutionNode(
@@ -431,25 +528,6 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     Backtrack(ComputeBacktrackLevel(learned_conflict_));
     first_propagation_index = trail_.Index();
     AddLearnedClauseAndEnqueueUnitPropagation(learned_conflict_, node);
-
-    // Decay the activities.
-    UpdateVariableActivityIncrement();
-    UpdateClauseActivityIncrement();
-
-    // Decrement the restart counter if needed.
-    if (conflicts_until_next_restart_ > 0) {
-      --conflicts_until_next_restart_;
-    }
-
-    // Hack from Glucose that seems to perform well.
-    const int period = parameters_.glucose_decay_increment_period();
-    const double max_decay = parameters_.glucose_max_decay();
-    if (counters_.num_failures % period == 0 &&
-        parameters_.variable_activity_decay() < max_decay) {
-      parameters_.set_variable_activity_decay(
-          parameters_.variable_activity_decay() +
-          parameters_.glucose_decay_increment());
-    }
   }
   return first_propagation_index;
 }
@@ -495,7 +573,6 @@ void SatSolver::Backtrack(int target_level) {
   if (CurrentDecisionLevel() == target_level) return;
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
-  ++counters_.num_failures;
   int target_trail_index = 0;
   while (current_decision_level_ > target_level) {
     --current_decision_level_;
@@ -833,6 +910,10 @@ std::string SatSolver::StatusString(Status status) const {
              "  num learned literals: %lld  (avg: %.1f /clause)\n",
              counters_.num_literals_learned,
              1.0 * counters_.num_literals_learned / counters_.num_failures) +
+         StringPrintf("  num learned PB literals: %lld  (avg: %.1f /clause)\n",
+                      counters_.num_learned_pb_literals_,
+                      1.0 * counters_.num_learned_pb_literals_ /
+                          counters_.num_failures) +
          StringPrintf("  num restarts: %d\n", restart_count_);
 }
 
@@ -957,6 +1038,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
 
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
+
   // Inspect all the assignements that still need to be propagated.
   // To have reasons as short as possible and easy to compute, we prioritize
   // the propagation order between the different constraint types.
@@ -1048,6 +1130,55 @@ ClauseRef SatSolver::Reason(VariableIndex var) {
     case AssignmentInfo::CACHED_REASON:
       return trail_.CachedReason(var);
   }
+}
+
+void SatSolver::ResolvePBConflict(
+    VariableIndex var, MutableUpperBoundedLinearConstraint* conflict) {
+  const AssignmentInfo& info = trail_.Info(var);
+
+  // Special pseudo-Boolean cases.
+  if (trail_.InitialAssignmentType(var) == AssignmentInfo::PB_PROPAGATION) {
+    info.pb_constraint->ResolvePBConflict(trail_, var, conflict);
+    return;
+  }
+  if (trail_.InitialAssignmentType(var) == AssignmentInfo::SAME_REASON_AS &&
+      trail_.InitialAssignmentType(info.reference_var) ==
+          AssignmentInfo::PB_PROPAGATION) {
+    const AssignmentInfo& ref_info = trail_.Info(info.reference_var);
+    ref_info.pb_constraint->ResolvePBConflict(trail_, var, conflict);
+    return;
+  }
+
+  // Generic clause case.
+  Coefficient multiplier(1);
+
+  // TODO(user): experiment and choose the "best" algo.
+  const int algorithm = 1;
+  switch (algorithm) {
+    case 1:
+      // We reduce the conflict slack to 0 before adding the clause.
+      // The advantage of this method is that the coefficients stay small.
+      conflict->ReduceSlackTo(trail_, info.trail_index, Coefficient(0));
+      break;
+    case 2:
+      // No reduction, we add the lower possible multiple.
+      multiplier =
+          conflict->ComputeSlackForTrailPrefix(trail_, info.trail_index) + 1;
+      break;
+    default:
+      // No reduction, the multiple is chosen to cancel var.
+      multiplier = conflict->GetCoefficient(var);
+  }
+
+  Coefficient num_literals(1);
+  conflict->AddTerm(
+      trail_.Assignment().GetTrueLiteralForAssignedVariable(var).Negated(),
+      multiplier);
+  for (Literal literal : Reason(var)) {
+    conflict->AddTerm(literal.Negated(), multiplier);
+    ++num_literals;
+  }
+  conflict->AddToRhs((num_literals - 1) * multiplier);
 }
 
 void SatSolver::NewDecision(Literal literal) {
@@ -1357,6 +1488,122 @@ void SatSolver::ComputeFirstUIPConflict(
     --num_literal_at_highest_level_that_needs_to_be_processed;
     --trail_index;
   }
+}
+
+// TODO(user): Remove the literals assigned at level 0.
+void SatSolver::ComputePBConflict(int max_trail_index,
+                                  MutableUpperBoundedLinearConstraint* conflict,
+                                  int* pb_backjump_level) {
+  SCOPED_TIME_STAT(&stats_);
+  int trail_index = max_trail_index;
+
+  // First compute the slack of the current conflict for the assignment up to
+  // trail_index. It must be negative since this is a conflict.
+  Coefficient slack =
+      conflict->ComputeSlackForTrailPrefix(trail_, trail_index + 1);
+  CHECK_LT(slack, 0) << "We don't have a conflict!";
+
+  // Iterate backward over the trail.
+  int backjump_level = 0;
+  while (true) {
+    const VariableIndex var = trail_[trail_index].Variable();
+    --trail_index;
+
+    if (conflict->GetCoefficient(var) > 0 &&
+        trail_.Assignment().IsLiteralTrue(conflict->GetLiteral(var))) {
+      // This can't happen at the beginning, but may happen later.
+      if (conflict->GetCoefficient(var) + slack < 0) {
+        // Even without var assigned, we still have a conflict.
+        slack += conflict->GetCoefficient(var);
+        continue;
+      }
+
+      // At this point, just removing the last assignment lift the conflict.
+      // So we can abort if the true assignment before that is at a lower level
+      // TODO(user): Somewhat inefficient.
+      // TODO(user): We could abort earlier...
+      const int current_level = DecisionLevel(var);
+      int i = trail_index;
+      while (i >= 0) {
+        const VariableIndex previous_var = trail_[i].Variable();
+        if (conflict->GetCoefficient(previous_var) > 0 &&
+            trail_.Assignment().IsLiteralTrue(
+                conflict->GetLiteral(previous_var))) {
+          break;
+        }
+        --i;
+      }
+      if (i < 0 || DecisionLevel(trail_[i].Variable()) < current_level) {
+        backjump_level = i < 0 ? 0 : DecisionLevel(trail_[i].Variable());
+        break;
+      }
+
+      // We can't abort, So resolve the current variable.
+      CHECK_NE(trail_.Info(var).type, AssignmentInfo::SEARCH_DECISION);
+      ResolvePBConflict(var, conflict);
+
+      // Note(user): this seems actually quite important, since it may
+      // impact the ComputeSlackForTrailPrefix() because it lower the rhs...
+      conflict->ReduceCoefficients();
+
+      // Note that the trail_index has already been decremented, it is why
+      // we need the +1 here.
+      slack = conflict->ComputeSlackForTrailPrefix(trail_, trail_index + 1);
+      CHECK_LT(slack, 0);
+
+      if (conflict->Rhs() < 0) {
+        *pb_backjump_level = -1;
+        return;
+      }
+    }
+  }
+
+  // Double check.
+  // The sum of the literal with level <= backjump_level must propagate.
+  std::vector<Coefficient> sum_by_level(backjump_level + 2, Coefficient(0));
+  std::vector<Coefficient> max_coeff_by_level(backjump_level + 2, Coefficient(0));
+  int size = 0;
+  Coefficient max_sum(0);
+  for (VariableIndex var : conflict->PossibleNonZeros()) {
+    const Coefficient coeff = conflict->GetCoefficient(var);
+    if (coeff == 0) continue;
+    max_sum += coeff;
+    ++size;
+    if (!trail_.Assignment().IsVariableAssigned(var) ||
+        DecisionLevel(var) > backjump_level) {
+      max_coeff_by_level[backjump_level + 1] =
+          std::max(max_coeff_by_level[backjump_level + 1], coeff);
+    } else {
+      const int level = DecisionLevel(var);
+      if (trail_.Assignment().IsLiteralTrue(conflict->GetLiteral(var))) {
+        sum_by_level[level] += coeff;
+      }
+      max_coeff_by_level[level] = std::max(max_coeff_by_level[level], coeff);
+    }
+  }
+
+  // Compute the cummulative version.
+  for (int i = 1; i < sum_by_level.size(); ++i) {
+    sum_by_level[i] += sum_by_level[i - 1];
+  }
+  for (int i = max_coeff_by_level.size() - 2; i >= 0; --i) {
+    max_coeff_by_level[i] =
+        std::max(max_coeff_by_level[i], max_coeff_by_level[i + 1]);
+  }
+
+  // Compute first propagation level. -1 means that the problem is unsat.
+  // Note that the first propagation level may be < backjump_level!
+  int new_backjump_level = 0;
+  for (int i = -1; i <= backjump_level; ++i) {
+    const Coefficient level_sum = (i == -1) ? Coefficient(0) : sum_by_level[i];
+    CHECK_LE(level_sum, conflict->Rhs());
+    if (conflict->Rhs() - level_sum < max_coeff_by_level[i + 1]) {
+      new_backjump_level = i;
+      break;
+    }
+  }
+  CHECK_LE(new_backjump_level, backjump_level);
+  *pb_backjump_level = new_backjump_level;
 }
 
 void SatSolver::MinimizeConflict(

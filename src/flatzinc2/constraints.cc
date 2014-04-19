@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <string>
-
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
 #include "flatzinc2/model.h"
+#include "flatzinc2/search.h"
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"

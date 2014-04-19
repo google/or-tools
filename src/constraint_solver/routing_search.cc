@@ -906,7 +906,6 @@ Decision* IntVarFilteredDecisionBuilder::Next(Solver* solver) {
   assignment_->MutableIntVarContainer()->Clear();
   assignment_->MutableIntVarContainer()->Resize(vars_.size());
   SynchronizeFilters();
-  SetValuesFromDomains();
   if (BuildSolution()) {
     assignment_->Restore();
   } else {
@@ -983,6 +982,20 @@ bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
   // 'start'. Values of starts[node] and ends[node] for other nodes is used
   // for intermediary computations and do not necessarily reflect actual chain
   // starts and ends.
+
+  // Start by adding partial start chains to current assignment.
+  start_chain_ends_.clear();
+  start_chain_ends_.resize(model()->vehicles(), -1);
+  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    int64 node = model()->Start(vehicle);
+    while (!model()->IsEnd(node) && Var(node)->Bound()) {
+      const int64 next = Var(node)->Min();
+      SetValue(node, next);
+      node = next;
+    }
+    start_chain_ends_[vehicle] = node;
+  }
+
   std::vector<int64> starts(Size() + model()->vehicles(), -1);
   std::vector<int64> ends(Size() + model()->vehicles(), -1);
   for (int node = 0; node < Size() + model()->vehicles(); ++node) {
@@ -995,8 +1008,9 @@ bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
     int current = node;
     while (!model()->IsEnd(current) && !touched[current]) {
       touched[current] = true;
-      if (Contains(current)) {
-        current = Value(current);
+      IntVar* const next_var = Var(current);
+      if (next_var->Bound()) {
+        current = next_var->Value();
       }
     }
     // Merge the sub-chain starting from 'node' and ending at 'current' with
@@ -1004,16 +1018,21 @@ bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
     starts[ends[current]] = starts[node];
     ends[starts[node]] = ends[current];
   }
-  start_chain_ends_.clear();
-  start_chain_ends_.reserve(model()->vehicles());
+
   // Set each route to be the concatenation of the chain at its starts and the
   // chain at its end, without nodes in between.
   for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-    const int64 start_chain_end = ends[model()->Start(vehicle)];
-    if (!model()->IsEnd(start_chain_end)) {
-      SetValue(start_chain_end, starts[model()->End(vehicle)]);
+    int64 node = start_chain_ends_[vehicle];
+    if (!model()->IsEnd(node)) {
+      int64 next = starts[model()->End(vehicle)];
+      SetValue(node, next);
+      node = next;
+      while (!model()->IsEnd(node)) {
+        next = Var(node)->Min();
+        SetValue(node, next);
+        node = next;
+      }
     }
-    start_chain_ends_.push_back(start_chain_end);
   }
   return Commit();
 }

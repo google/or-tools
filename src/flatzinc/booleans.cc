@@ -31,7 +31,8 @@ namespace Sat {
 // Index of a variable.
 DEFINE_INT_TYPE(Variable, int);
 
-// A literal (pair variable, boolean).
+// A literal, which encode the pair (variable, boolean) as an int, see
+// MakeLiteral().
 DEFINE_INT_TYPE(Literal, int);
 
 inline Literal MakeLiteral(Variable var, bool sign) {
@@ -47,9 +48,9 @@ static const Literal kErrorLiteral = Literal(-1);
 
 // Lifted boolean class with undefined value.
 DEFINE_INT_TYPE(Boolean, uint8);
-static const Boolean kTrue = Boolean((uint8) 0);
-static const Boolean kFalse = Boolean((uint8) 1);
-static const Boolean kUndefined = Boolean((uint8) 2);
+static const Boolean kTrue = Boolean(0);
+static const Boolean kFalse = Boolean(1);
+static const Boolean kUndefined = Boolean(2);
 
 inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
@@ -68,9 +69,10 @@ inline std::string ToString(Boolean b) {
   }
 }
 
-// Clause -- a simple class for representing a clause:
+// Clause -- a simple class for representing a list of literals.
 class Clause {
  public:
+  // Note the special 'swap' behavior of the constructor.
   explicit Clause(std::vector<Literal>* const ps) { literals_.swap(*ps); }
 
   int size() const { return literals_.size(); }
@@ -91,13 +93,20 @@ struct Watcher {
   Literal blocker;
 };
 
-// Solver
+// SAT Solver.
+//
+// This is not a full-fledged solver, it allows a client to
+// enqueue/backtrack decisions and it just takes care of propagating
+// them efficiently and deciding if the current decisions lead to an
+// infeasible problem.
 class Solver {
  public:
-  Solver() : ok_(true), qhead_(0), num_vars_() {}
+  Solver() : ok_(true), queue_head_(0), num_vars_() {}
   virtual ~Solver() {}
 
-  // Add a new variable.
+  // Adds a new variable to the solver and returns its index.  This
+  // must be called before adding any clause with a literal referring
+  // to this variable.
   Variable NewVariable() {
     Variable v = IncrementVariableCounter();
     watches_.resize(2 * v.value() + 2);
@@ -106,57 +115,57 @@ class Solver {
     return v;
   }
 
-  // Add a clause to the solver.
-  bool AddClause(std::vector<Literal>* const ps);
+  // Add a clause to the solver. Returns true if the problem not proven
+  // contradictory after the addition.
+  bool AddClause(std::vector<Literal>* const clause);
   // Add the empty clause, making the solver contradictory.
   bool AddEmptyClause() {
-    temporary_add_vector_.clear();
-    return AddClause(&temporary_add_vector_);
+    temp_clause_.clear();
+    return AddClause(&temp_clause_);
   }
   // Add a unit clause to the solver.
   bool AddClause(Literal p) {
-    temporary_add_vector_.clear();
-    temporary_add_vector_.push_back(p);
-    return AddClause(&temporary_add_vector_);
+    temp_clause_.clear();
+    temp_clause_.push_back(p);
+    return AddClause(&temp_clause_);
   }
   // Add a binary clause to the solver.
   bool AddClause(Literal p, Literal q) {
-    temporary_add_vector_.clear();
-    temporary_add_vector_.push_back(p);
-    temporary_add_vector_.push_back(q);
-    return AddClause(&temporary_add_vector_);
+    temp_clause_.clear();
+    temp_clause_.push_back(p);
+    temp_clause_.push_back(q);
+    return AddClause(&temp_clause_);
   }
   // Add a ternary clause to the solver.
   bool AddClause(Literal p, Literal q, Literal r) {
-    temporary_add_vector_.clear();
-    temporary_add_vector_.push_back(p);
-    temporary_add_vector_.push_back(q);
-    temporary_add_vector_.push_back(r);
-    return AddClause(&temporary_add_vector_);
+    temp_clause_.clear();
+    temp_clause_.push_back(p);
+    temp_clause_.push_back(q);
+    temp_clause_.push_back(r);
+    return AddClause(&temp_clause_);
   }
 
-  // Incremental propagation.
-  bool InitPropagator() {
-    touched_variables_.clear();
-    return !ok_;
-  }
+  // Initialize the propagator before processing the queue.
+  void ClearTouchedVariables() { touched_variables_.clear(); }
+
+  // List of touched variables since last propagate.
+  const std::vector<Literal>& TouchedVariables() const { return touched_variables_; }
 
   // Backtrack until a certain level.
   void BacktrackTo(int level) {
-    if (TrailMarker() > level) {
+    if (CurrentDecisionLevel() > level) {
       for (int c = trail_.size() - 1; c >= trail_markers_[level]; c--) {
         Variable x = Var(trail_[c]);
         assignment_[x] = kUndefined;
       }
-      qhead_ = trail_markers_[level];
+      queue_head_ = trail_markers_[level];
       trail_.resize(trail_markers_[level]);
       trail_markers_.resize(level);
     }
   }
 
   // Gives the current decisionlevel.
-  int TrailMarker() const { return trail_markers_.size(); }
-  std::vector<Literal> touched_variables_;
+  int CurrentDecisionLevel() const { return trail_markers_.size(); }
 
   // The current value of a variable.
   Boolean Value(Variable x) const { return assignment_[x]; }
@@ -166,18 +175,19 @@ class Solver {
     return b == kUndefined ? kUndefined : Xor(b, Sign(p));
   }
   // Number of clauses.
-  int NumClauses() const { return clauses.size(); }
+  int NumClauses() const { return clauses_.size(); }
   // Number of sat variables.
   int NumVariables() const { return num_vars_; }
-  // Propagates one literal, returns true if successful, false in case
-  // of failure.
-  bool PropagateOneLiteral(Literal lit);
+  // Propagates one literal. Returns true if no conflict was detected,
+  // false if the SAT problem can't be satisfied with this new
+  // decision.
+  bool PropagateOneLiteral(Literal literal);
 
  private:
   Variable IncrementVariableCounter() { return Variable(num_vars_++); }
 
   // Begins a new decision level.
-  void PushTrailMarker() { trail_markers_.push_back(trail_.size()); }
+  void PushCurrentDecisionLevel() { trail_markers_.push_back(trail_.size()); }
 
   // Enqueue a literal. Assumes value of literal is undefined.
   void UncheckedEnqueue(Literal p) {
@@ -209,13 +219,14 @@ class Solver {
   // If false, the constraints are already unsatisfiable. No part of
   // the solver state may be used!
   bool ok_;
-  // List of problem clauses.
-  std::vector<Clause*> clauses;
-  // 'watches_[lit]' is a list of constraints watching 'lit'(will go
+  // List of problem clauses. Ownership belong to the sat solver.
+  std::vector<Clause*> clauses_;
+  // 'watches_[literal]' is a list of clauses watching 'literal'(will go
   // there if literal becomes true).
   ITIVector<Literal, std::vector<Watcher>> watches_;
 
-  // implies_[lit] is a list of literals to set to true if 'lit' becomes true.
+  // implies_[literal] is a list of literals to set to true if
+  // 'literal' becomes true.
   ITIVector<Literal, std::vector<Literal>> implies_;
   // The current assignments.
   ITIVector<Variable, Boolean> assignment_;
@@ -225,52 +236,52 @@ class Solver {
   // Separator indices for different decision levels in 'trail_'.
   std::vector<int> trail_markers_;
   // Head of queue(as index into the trail_.
-  int qhead_;
+  int queue_head_;
   // Number of variables
   int num_vars_;
-
-  std::vector<Literal> temporary_add_vector_;
+  // This is a temporary vector used by the AddClause() functions.
+  std::vector<Literal> temp_clause_;
+  // Touched variables since last propagate.
+  std::vector<Literal> touched_variables_;
 };
 
-// Creates a new SAT variable in the solver. If 'decision' is cleared,
-// variable will not be used as a decision variable (NOTE! This has
-// effects on the meaning of a SATISFIABLE result).
-//
-bool Solver::AddClause(std::vector<Literal>* const ps) {
-  DCHECK_EQ(0, TrailMarker());
+bool Solver::AddClause(std::vector<Literal>* const clause) {
+  DCHECK_EQ(0, CurrentDecisionLevel());
   if (!ok_) return false;
 
   // Check if clause is satisfied and remove false/duplicate literals:
-  std::sort(ps->begin(), ps->end());
+  std::sort(clause->begin(), clause->end());
   Literal p = kUndefinedLiteral;
   int j = 0;
-  for (int i = 0; i < ps->size(); ++i) {
-    if (Value((*ps)[i]) == kTrue || (*ps)[i] == Negated(p)) {
+  for (int i = 0; i < clause->size(); ++i) {
+    if (Value((*clause)[i]) == kTrue || (*clause)[i] == Negated(p)) {
       return true;
-    } else if (Value((*ps)[i]) != kFalse && (*ps)[i] != p) {
-      (*ps)[j++] = p = (*ps)[i];
+    } else if (Value((*clause)[i]) != kFalse && (*clause)[i] != p) {
+      (*clause)[j++] = p = (*clause)[i];
     }
   }
-  ps->resize(j);
+  clause->resize(j);
 
-  switch (ps->size()) {
+  switch (clause->size()) {
     case 0: {
-      return (ok_ = false);
+      ok_ = false;
+      return false;
     }
     case 1: {
-      UncheckedEnqueue((*ps)[0]);
-      return (ok_ = Propagate());
+      UncheckedEnqueue((*clause)[0]);
+      ok_ = Propagate();
+      return ok_;
     }
     case 2: {
-      Literal l0 = (*ps)[0];
-      Literal l1 = (*ps)[1];
+      Literal l0 = (*clause)[0];
+      Literal l1 = (*clause)[1];
       implies_[Negated(l0)].push_back(l1);
       implies_[Negated(l1)].push_back(l0);
       break;
     }
     default: {
-      Clause* const cr = new Clause(ps);
-      clauses.push_back(cr);
+      Clause* const cr = new Clause(clause);
+      clauses_.push_back(cr);
       AttachClause(cr);
     }
   }
@@ -279,11 +290,11 @@ bool Solver::AddClause(std::vector<Literal>* const ps) {
 
 bool Solver::Propagate() {
   bool result = true;
-  while (qhead_ < trail_.size()) {
-    const Literal p = trail_[qhead_++];
-    // 'p' is enqueued fact to propagate.
+  while (queue_head_ < trail_.size()) {
+    const Literal propagated_fact = trail_[queue_head_++];
+    // 'propagated_fact' is enqueued fact to propagate.
     // Propagate the implies first.
-    const std::vector<Literal>& to_add = implies_[p];
+    const std::vector<Literal>& to_add = implies_[propagated_fact];
     for (int i = 0; i < to_add.size(); ++i) {
       if (!Enqueue(to_add[i])) {
         return false;
@@ -291,86 +302,85 @@ bool Solver::Propagate() {
     }
 
     // Propagate watched clauses.
-    std::vector<Watcher>& ws = watches_[p];
+    std::vector<Watcher>& watchers = watches_[propagated_fact];
 
-    int i = 0;
-    int j = 0;
-    while (i < ws.size()) {
+    int current = 0;
+    int filled = 0;
+    while (current < watchers.size()) {
       // Try to avoid inspecting the clause:
-      Literal blocker = ws[i].blocker;
+      Literal blocker = watchers[current].blocker;
       if (Value(blocker) == kTrue) {
-        ws[j++] = ws[i++];
+        watchers[filled++] = watchers[current++];
         continue;
       }
 
-      // Make sure the false literal is data[1]:
-      Clause* const cr = ws[i].clause;
-      Clause& c = *cr;
-      const Literal false_lit = Negated(p);
-      if (c[0] == false_lit) {
-        c[0] = c[1], c[1] = false_lit;
+      // Make sure the false literal is clause[1]:
+      Clause& clause = *watchers[current].clause;
+      const Literal negated_propagated_fact = Negated(propagated_fact);
+      if (clause[0] == negated_propagated_fact) {
+        clause[0] = clause[1], clause[1] = negated_propagated_fact;
       }
-      DCHECK_EQ(c[1], false_lit);
-      i++;
+      DCHECK_EQ(clause[1], negated_propagated_fact);
+      current++;
 
       // If 0th watch is true, then clause is already satisfied.
-      const Literal first = c[0];
-      const Watcher w = Watcher(cr, first);
+      const Literal first = clause[0];
+      const Watcher w = Watcher(&clause, first);
       if (first != blocker && Value(first) == kTrue) {
-        ws[j++] = w;
+        watchers[filled++] = w;
         continue;
       }
 
       // Look for new watch:
-      bool cont = false;
-      for (int k = 2; k < c.size(); k++) {
-        if (Value(c[k]) != kFalse) {
-          c[1] = c[k];
-          c[k] = false_lit;
-          watches_[Negated(c[1])].push_back(w);
-          cont = true;
+      bool contradiction = false;
+      for (int k = 2; k < clause.size(); k++) {
+        if (Value(clause[k]) != kFalse) {
+          clause[1] = clause[k];
+          clause[k] = negated_propagated_fact;
+          watches_[Negated(clause[1])].push_back(w);
+          contradiction = true;
           break;
         }
       }
 
       // Did not find watch -- clause is unit under assignment:
-      if (!cont) {
-        ws[j++] = w;
+      if (!contradiction) {
+        watchers[filled++] = w;
         if (Value(first) == kFalse) {
           result = false;
-          qhead_ = trail_.size();
+          queue_head_ = trail_.size();
           // Copy the remaining watches_:
-          while (i < ws.size()) {
-            ws[j++] = ws[i++];
+          while (current < watchers.size()) {
+            watchers[filled++] = watchers[current++];
           }
         } else {
           UncheckedEnqueue(first);
         }
       }
     }
-    ws.resize(j);
+    watchers.resize(filled);
   }
   return result;
 }
 
-bool Solver::PropagateOneLiteral(Literal lit) {
+bool Solver::PropagateOneLiteral(Literal literal) {
   DCHECK(ok_);
-  touched_variables_.clear();
+  ClearTouchedVariables();
   if (!Propagate()) {
     return false;
   }
-  if (Value(lit) == kTrue) {
+  if (Value(literal) == kTrue) {
     // Dummy decision level:
-    PushTrailMarker();
+    PushCurrentDecisionLevel();
     return true;
-  } else if (Value(lit) == kFalse) {
+  } else if (Value(literal) == kFalse) {
     return false;
   }
-  PushTrailMarker();
+  PushCurrentDecisionLevel();
   // Unchecked enqueue
-  DCHECK_EQ(Value(lit), kUndefined);
-  assignment_[Var(lit)] = MakeBoolean(!Sign(lit));
-  trail_.push_back(lit);
+  DCHECK_EQ(Value(literal), kUndefined);
+  assignment_[Var(literal)] = MakeBoolean(!Sign(literal));
+  trail_.push_back(literal);
   if (!Propagate()) {
     return false;
   }
@@ -378,6 +388,8 @@ bool Solver::PropagateOneLiteral(Literal lit) {
 }
 }  // namespace Sat
 
+// Constraint that tight together boolean variables in the CP solver to sat
+// variables and clauses.
 class SatPropagator : public Constraint {
  public:
   explicit SatPropagator(Solver* const solver)
@@ -385,21 +397,22 @@ class SatPropagator : public Constraint {
 
   ~SatPropagator() {}
 
-  bool Check(IntExpr* const expr) const {
+  bool IsExpressionBoolean(IntExpr* const expr) const {
     IntVar* expr_var = nullptr;
     bool expr_negated = false;
     return solver()->IsBooleanVar(expr, &expr_var, &expr_negated);
   }
 
-  bool Check(const std::vector<IntVar*>& vars) const {
+  bool AllVariablesBoolean(const std::vector<IntVar*>& vars) const {
     for (int i = 0; i < vars.size(); ++i) {
-      if (!Check(vars[i])) {
+      if (!IsExpressionBoolean(vars[i])) {
         return false;
       }
     }
     return true;
   }
 
+  // Converts a constraint solver literal to the SatSolver representation.
   Sat::Literal Literal(IntExpr* const expr) {
     IntVar* expr_var = nullptr;
     bool expr_negated = false;
@@ -417,23 +430,25 @@ class SatPropagator : public Constraint {
       DCHECK_EQ(vars_.size(), var.value());
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
-      Sat::Literal lit = Sat::MakeLiteral(var, !expr_negated);
+      Sat::Literal literal = Sat::MakeLiteral(var, !expr_negated);
 #ifdef SAT_DEBUG
       VLOG(2) << "    - created var = " << var.value()
-              << ", lit = " << lit.value();
+              << ", literal = " << literal.value();
 #endif
-      return lit;
+      return literal;
     }
   }
 
+  // This method is called during the processing of the CP solver queue when
+  // a bolean variable is bound.
   void VariableBound(int index) {
-    if (sat_trail_.Value() < sat_.TrailMarker()) {
+    if (sat_trail_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
       VLOG(2) << "After failure, sat_trail = " << sat_trail_.Value()
-              << ", sat decision level = " << sat_.TrailMarker();
+              << ", sat decision level = " << sat_.CurrentDecisionLevel();
 #endif
       sat_.BacktrackTo(sat_trail_.Value());
-      DCHECK_EQ(sat_trail_.Value(), sat_.TrailMarker());
+      DCHECK_EQ(sat_trail_.Value(), sat_.CurrentDecisionLevel());
     }
     const Sat::Variable var = Sat::Variable(index);
 #ifdef SAT_DEBUG
@@ -441,25 +456,24 @@ class SatPropagator : public Constraint {
             << " with sat variable " << var;
 #endif
     const bool new_value = vars_[index]->Value() != 0;
-    Sat::Literal lit = Sat::MakeLiteral(var, new_value);
+    Sat::Literal literal = Sat::MakeLiteral(var, new_value);
 #ifdef SAT_DEBUG
-    VLOG(2) << " - enqueue lit = " << lit.value() << " at depth "
+    VLOG(2) << " - enqueue literal = " << literal.value() << " at depth "
             << sat_trail_.Value();
 #endif
-    if (!sat_.PropagateOneLiteral(lit)) {
+    if (!sat_.PropagateOneLiteral(literal)) {
 #ifdef SAT_DEBUG
       VLOG(2) << " - failure detected, should backtrack";
 #endif
       solver()->Fail();
     } else {
-      sat_trail_.SetValue(solver(), sat_.TrailMarker());
-      for (int i = 0; i < sat_.touched_variables_.size(); ++i) {
-        const Sat::Literal lit = sat_.touched_variables_[i];
-        const Sat::Variable var = Sat::Var(lit);
-        const bool assigned_bool = Sat::Sign(lit);
+      sat_trail_.SetValue(solver(), sat_.CurrentDecisionLevel());
+      for (const Sat::Literal literal : sat_.TouchedVariables()) {
+        const Sat::Variable var = Sat::Var(literal);
+        const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
         VLOG(2) << " - var " << var << " was assigned to " << assigned_bool
-                << " from literal " << lit.value();
+                << " from literal " << literal.value();
 #endif
         demons_[var.value()]->inhibit(solver());
         vars_[var.value()]->SetValue(assigned_bool);
@@ -480,7 +494,7 @@ class SatPropagator : public Constraint {
 #ifdef SAT_DEBUG
     VLOG(2) << "Initial propagation on sat solver";
 #endif
-    sat_.InitPropagator();
+    sat_.ClearTouchedVariables();
     ApplyEarlyDeductions();
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
@@ -493,31 +507,27 @@ class SatPropagator : public Constraint {
 #endif
   }
 
-  // Add a clause to the solver, clears the vector.
-  bool AddClause(std::vector<Sat::Literal>* const lits) {
-    bool result = sat_.AddClause(lits);
+  // Simple wrapping of the same methods in the underlying solver class.
+  bool AddClause(std::vector<Sat::Literal>* const literals) {
+    bool result = sat_.AddClause(literals);
     StoreEarlyDeductions();
     return result;
   }
 
-  // Add the empty clause, making the solver contradictory.
   bool AddEmptyClause() { return sat_.AddEmptyClause(); }
 
-  // Add a unit clause to the solver.
   bool AddClause(Sat::Literal p) {
     bool result = sat_.AddClause(p);
     StoreEarlyDeductions();
     return result;
   }
 
-  // Add a binary clause to the solver.
   bool AddClause(Sat::Literal p, Sat::Literal q) {
     bool result = sat_.AddClause(p, q);
     StoreEarlyDeductions();
     return result;
   }
 
-  // Add a ternary clause to the solver.
   bool AddClause(Sat::Literal p, Sat::Literal q, Sat::Literal r) {
     bool result = sat_.AddClause(p, q, r);
     StoreEarlyDeductions();
@@ -535,25 +545,24 @@ class SatPropagator : public Constraint {
 
  private:
   void StoreEarlyDeductions() {
-    for (int i = 0; i < sat_.touched_variables_.size(); ++i) {
-      const Sat::Literal lit = sat_.touched_variables_[i];
+    for (const Sat::Literal literal : sat_.TouchedVariables()) {
 #ifdef SAT_DEBUG
-      VLOG(2) << "Postponing deduction " << lit.value();
+      VLOG(2) << "Postponing deduction " << literal.value();
 #endif
-      early_deductions_.push_back(lit);
+      early_deductions_.push_back(literal);
     }
-    sat_.touched_variables_.clear();
+    sat_.ClearTouchedVariables();
   }
 
   void ApplyEarlyDeductions() {
     for (int i = 0; i < early_deductions_.size(); ++i) {
-      const Sat::Literal lit = early_deductions_[i];
-      const Sat::Variable var = Sat::Var(lit);
-      const bool assigned_bool = Sat::Sign(lit);
+      const Sat::Literal literal = early_deductions_[i];
+      const Sat::Variable var = Sat::Var(literal);
+      const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
       VLOG(2) << " - var " << var << " (" << vars_[var.value()]->DebugString()
-              << ") was early assigned to " << assigned_bool
-              << " from literal " << lit.value();
+              << ") was early assigned to " << assigned_bool << " from literal "
+              << literal.value();
 #endif
       demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
@@ -570,77 +579,77 @@ class SatPropagator : public Constraint {
 };
 
 void DeclareVariable(SatPropagator* const sat, IntVar* const var) {
-  CHECK(sat->Check(var));
+  CHECK(sat->IsExpressionBoolean(var));
   sat->Literal(var);
 }
 
 bool AddBoolEq(SatPropagator* const sat, IntExpr* const left,
                IntExpr* const right) {
-  if (!sat->Check(left) || !sat->Check(right)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  sat->AddClause(Negated(left_lit), right_lit);
-  sat->AddClause(left_lit, Negated(right_lit));
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  sat->AddClause(Negated(left_literal), right_literal);
+  sat->AddClause(left_literal, Negated(right_literal));
   return true;
 }
 
 bool AddBoolLe(SatPropagator* const sat, IntExpr* const left,
                IntExpr* const right) {
-  if (!sat->Check(left) || !sat->Check(right)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  sat->AddClause(Negated(left_lit), right_lit);
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  sat->AddClause(Negated(left_literal), right_literal);
   return true;
 }
 
 bool AddBoolNot(SatPropagator* const sat, IntExpr* const left,
                 IntExpr* const right) {
-  if (!sat->Check(left) || !sat->Check(right)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  sat->AddClause(Negated(left_lit), Negated(right_lit));
-  sat->AddClause(left_lit, right_lit);
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  sat->AddClause(Negated(left_literal), Negated(right_literal));
+  sat->AddClause(left_literal, right_literal);
   return true;
 }
 
 bool AddBoolOrArrayEqVar(SatPropagator* const sat, const std::vector<IntVar*>& vars,
                          IntExpr* const target) {
-  if (!sat->Check(vars) || !sat->Check(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal target_lit = sat->Literal(target);
+  Sat::Literal target_literal = sat->Literal(target);
   std::vector<Sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
     lits[i] = sat->Literal(vars[i]);
   }
-  lits[vars.size()] = Negated(target_lit);
+  lits[vars.size()] = Negated(target_literal);
   sat->AddClause(&lits);
   for (int i = 0; i < vars.size(); ++i) {
-    sat->AddClause(target_lit, Negated(sat->Literal(vars[i])));
+    sat->AddClause(target_literal, Negated(sat->Literal(vars[i])));
   }
   return true;
 }
 
 bool AddBoolAndArrayEqVar(SatPropagator* const sat, const std::vector<IntVar*>& vars,
                           IntExpr* const target) {
-  if (!sat->Check(vars) || !sat->Check(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal target_lit = sat->Literal(target);
+  Sat::Literal target_literal = sat->Literal(target);
   std::vector<Sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
     lits[i] = Negated(sat->Literal(vars[i]));
   }
-  lits[vars.size()] = target_lit;
+  lits[vars.size()] = target_literal;
   sat->AddClause(&lits);
   for (int i = 0; i < vars.size(); ++i) {
-    sat->AddClause(Negated(target_lit), sat->Literal(vars[i]));
+    sat->AddClause(Negated(target_literal), sat->Literal(vars[i]));
   }
   return true;
 }
@@ -648,15 +657,15 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat, const std::vector<IntVar*>& 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* const sat,
                                  const std::vector<IntVar*>& vars,
                                  IntExpr* const target) {
-  if (!sat->Check(vars) || !sat->Check(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal target_lit = sat->Literal(target);
+  Sat::Literal target_literal = sat->Literal(target);
   std::vector<Sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
     lits[i] = sat->Literal(vars[i]);
   }
-  lits[vars.size()] = Negated(target_lit);
+  lits[vars.size()] = Negated(target_literal);
   sat->AddClause(&lits);
   return true;
 }
@@ -667,100 +676,106 @@ bool AddSumBoolArrayLessEqKVar(SatPropagator* const sat,
   if (vars.size() == 1) {
     return AddBoolLe(sat, vars[0], target);
   }
-  if (!sat->Check(vars) || !sat->Check(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   IntVar* const extra = target->solver()->MakeBoolVar();
-  Sat::Literal target_lit = sat->Literal(target);
-  Sat::Literal extra_lit = sat->Literal(extra);
+  Sat::Literal target_literal = sat->Literal(target);
+  Sat::Literal extra_literal = sat->Literal(extra);
   std::vector<Sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
     lits[i] = sat->Literal(vars[i]);
   }
-  lits[vars.size()] = Negated(extra_lit);
+  lits[vars.size()] = Negated(extra_literal);
   sat->AddClause(&lits);
   for (int i = 0; i < vars.size(); ++i) {
-    sat->AddClause(extra_lit, Negated(sat->Literal(vars[i])));
+    sat->AddClause(extra_literal, Negated(sat->Literal(vars[i])));
   }
-  sat->AddClause(Negated(extra_lit), target_lit);
+  sat->AddClause(Negated(extra_literal), target_literal);
   return true;
 }
 
 bool AddBoolOrEqVar(SatPropagator* const sat, IntExpr* const left,
                     IntExpr* const right, IntExpr* const target) {
-  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  Sat::Literal target_lit = sat->Literal(target);
-  sat->AddClause(left_lit, right_lit, Negated(target_lit));
-  sat->AddClause(Negated(left_lit), target_lit);
-  sat->AddClause(Negated(right_lit), target_lit);
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(left_literal, right_literal, Negated(target_literal));
+  sat->AddClause(Negated(left_literal), target_literal);
+  sat->AddClause(Negated(right_literal), target_literal);
   return true;
 }
 
 bool AddBoolAndEqVar(SatPropagator* const sat, IntExpr* const left,
                      IntExpr* const right, IntExpr* const target) {
-  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  Sat::Literal target_lit = sat->Literal(target);
-  sat->AddClause(Negated(left_lit), Negated(right_lit), target_lit);
-  sat->AddClause(left_lit, Negated(target_lit));
-  sat->AddClause(right_lit, Negated(target_lit));
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(Negated(left_literal), Negated(right_literal), target_literal);
+  sat->AddClause(left_literal, Negated(target_literal));
+  sat->AddClause(right_literal, Negated(target_literal));
   return true;
 }
 
 bool AddBoolIsEqVar(SatPropagator* const sat, IntExpr* const left,
                     IntExpr* const right, IntExpr* const target) {
-  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  Sat::Literal target_lit = sat->Literal(target);
-  sat->AddClause(Negated(left_lit), right_lit, Negated(target_lit));
-  sat->AddClause(left_lit, Negated(right_lit), Negated(target_lit));
-  sat->AddClause(left_lit, right_lit, target_lit);
-  sat->AddClause(Negated(left_lit), Negated(right_lit), target_lit);
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(Negated(left_literal), right_literal, Negated(target_literal));
+  sat->AddClause(left_literal, Negated(right_literal), Negated(target_literal));
+  sat->AddClause(left_literal, right_literal, target_literal);
+  sat->AddClause(Negated(left_literal), Negated(right_literal), target_literal);
   return true;
 }
 
 bool AddBoolIsNEqVar(SatPropagator* const sat, IntExpr* const left,
                      IntExpr* const right, IntExpr* const target) {
-  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  Sat::Literal target_lit = sat->Literal(target);
-  sat->AddClause(Negated(left_lit), right_lit, target_lit);
-  sat->AddClause(left_lit, Negated(right_lit), target_lit);
-  sat->AddClause(left_lit, right_lit, Negated(target_lit));
-  sat->AddClause(Negated(left_lit), Negated(right_lit), Negated(target_lit));
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(Negated(left_literal), right_literal, target_literal);
+  sat->AddClause(left_literal, Negated(right_literal), target_literal);
+  sat->AddClause(left_literal, right_literal, Negated(target_literal));
+  sat->AddClause(Negated(left_literal), Negated(right_literal),
+                 Negated(target_literal));
   return true;
 }
 
 bool AddBoolIsLeVar(SatPropagator* const sat, IntExpr* const left,
                     IntExpr* const right, IntExpr* const target) {
-  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal left_lit = sat->Literal(left);
-  Sat::Literal right_lit = sat->Literal(right);
-  Sat::Literal target_lit = sat->Literal(target);
-  sat->AddClause(Negated(left_lit), right_lit, Negated(target_lit));
-  sat->AddClause(left_lit, target_lit);
-  sat->AddClause(Negated(right_lit), target_lit);
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(Negated(left_literal), right_literal, Negated(target_literal));
+  sat->AddClause(left_literal, target_literal);
+  sat->AddClause(Negated(right_literal), target_literal);
   return true;
 }
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
                              const std::vector<IntVar*>& vars) {
-  if (!sat->Check(vars)) {
+  if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
   std::vector<Sat::Literal> lits(vars.size());
@@ -773,7 +788,7 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
 
 bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars) {
-  if (!sat->Check(vars)) {
+  if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
   std::vector<Sat::Literal> lits(vars.size());
@@ -785,7 +800,7 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
 }
 
 bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
-  if (!sat->Check(vars)) {
+  if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
   std::vector<Sat::Literal> lits(vars.size());
@@ -801,7 +816,7 @@ bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
 }
 
 bool AddAtMostNMinusOne(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
-  if (!sat->Check(vars)) {
+  if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
   std::vector<Sat::Literal> lits(vars.size());
@@ -813,7 +828,7 @@ bool AddAtMostNMinusOne(SatPropagator* const sat, const std::vector<IntVar*>& va
 }
 
 bool AddArrayXor(SatPropagator* const sat, const std::vector<IntVar*>& vars) {
-  if (!sat->Check(vars)) {
+  if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
   return false;

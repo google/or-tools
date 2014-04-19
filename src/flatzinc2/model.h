@@ -15,13 +15,12 @@
 
 #include <iostream>  // NOLINT
 #include <string>
-#include <vector>
-
 #include "base/hash.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
+#include "util/iterators.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -29,7 +28,7 @@ class FzConstraint;
 class FzModel;
 class FzIntegerVariable;
 #define FZLOG \
-  if (FLAGS_fz_logging) std::cout << "%% "
+  if (FLAGS_logging) std::cout << "%% "
 
 // A domain represents the possible values of a variable.
 // It can be:
@@ -132,7 +131,8 @@ struct FzConstraint {
       : type(type_),
         arguments(arguments_),
         strong_propagation(strong_propagation_),
-        target_var(target_var_) {}
+        target_var(target_var_),
+        is_trivially_true(false) {}
 
   std::string DebugString() const;
 
@@ -150,6 +150,9 @@ struct FzConstraint {
   // (target_var will be nullptr otherwise). This is the reverse field of
   // FzIntegerVariable::defining_constraint.
   FzIntegerVariable* target_var;
+  // Indicates if the constraint is trivially true. Presolve can make it so
+  // if the presolve transformation ensures that the constraints is always true.
+  bool is_trivially_true;
 };
 
 // An annotation is a set of information. It has two use cases. One during
@@ -255,7 +258,6 @@ class FzModel {
 
   const std::vector<FzIntegerVariable*>& variables() const { return variables_; }
   const std::vector<FzConstraint*>& constraints() const { return constraints_; }
-  // Takes ownership of the new constraint.
   void DeleteConstraintAtIndex(int index) {
     delete constraints_[index];
     constraints_[index] = nullptr;
@@ -263,11 +265,13 @@ class FzModel {
   const std::vector<FzAnnotation>& search_annotations() const {
     return search_annotations_;
   }
-  FzAnnotation* mutable_search_annotations(int index) {
-    return &search_annotations_[index];
+  MutableVectorIteration<FzAnnotation> mutable_search_annotations() {
+    return MutableVectorIteration<FzAnnotation>(&search_annotations_);
   }
   const std::vector<FzOnSolutionOutput>& output() const { return output_; }
-  FzOnSolutionOutput* mutable_output(int index) { return &output_[index]; }
+  MutableVectorIteration<FzOnSolutionOutput> mutable_output() {
+    return MutableVectorIteration<FzOnSolutionOutput>(&output_);
+  }
   bool maximize() const { return maximize_; }
   FzIntegerVariable* objective() const { return objective_; }
 

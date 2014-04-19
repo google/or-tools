@@ -86,5 +86,36 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
               const AlphaNum& g, const AlphaNum& h);
+
+void StrAppend(std::string* s, const AlphaNum& a);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h);
+
+namespace strings {
+template <class Iterable>
+std::string Join(const Iterable& elements, const std::string& separator) {
+  std::string out;
+  for (const auto& e : elements) {
+    if (!out.empty()) out += separator;
+    StrAppend(&out, e);
+  }
+  return out;
+}
+}  // namespace strings
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_JOIN_H_
