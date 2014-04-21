@@ -60,8 +60,8 @@ void ExtractArrayVarIntPosition(FzSolver* const solver,
 }
 
 void ExtractBool2int(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Constraint should have been presolved out: "
-             << ct->DebugString();
+  LOG(FATAL)
+      << "Constraint should have been presolved out: " << ct->DebugString();
 }
 
 void ExtractBoolAnd(FzSolver* const solver, FzConstraint* const ct) {
@@ -194,7 +194,28 @@ void ExtractIntEqReif(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void ExtractIntGe(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const s = solver->solver();
+  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeGreaterOrEqual(left, right));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      s->AddConstraint(s->MakeGreaterOrEqual(left, right));
+    }
+  } else {
+    const int64 left = ct->arguments[0].integer_value;
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeLessOrEqual(right, left));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      if (left < right) {
+        s->AddConstraint(s->MakeFalseConstraint());
+      }
+    }
+  }
 }
 
 void ExtractIntGeReif(FzSolver* const solver, FzConstraint* const ct) {
@@ -202,7 +223,28 @@ void ExtractIntGeReif(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void ExtractIntGt(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const s = solver->solver();
+  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeGreater(left, right));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      s->AddConstraint(s->MakeGreater(left, right));
+    }
+  } else {
+    const int64 left = ct->arguments[0].integer_value;
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeLess(right, left));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      if (left <= right) {
+        s->AddConstraint(s->MakeFalseConstraint());
+      }
+    }
+  }
 }
 
 void ExtractIntGtReif(FzSolver* const solver, FzConstraint* const ct) {
@@ -214,7 +256,28 @@ void ExtractIntIn(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void ExtractIntLe(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const s = solver->solver();
+  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeLessOrEqual(left, right));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      s->AddConstraint(s->MakeLessOrEqual(left, right));
+    }
+  } else {
+    const int64 left = ct->arguments[0].integer_value;
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeGreaterOrEqual(right, left));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      if (left > right) {
+        s->AddConstraint(s->MakeFalseConstraint());
+      }
+    }
+  }
 }
 
 void ExtractIntLeReif(FzSolver* const solver, FzConstraint* const ct) {
@@ -258,7 +321,28 @@ void ExtractIntLinNeReif(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void ExtractIntLt(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const s = solver->solver();
+  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeLess(left, right));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      s->AddConstraint(s->MakeLess(left, right));
+    }
+  } else {
+    const int64 left = ct->arguments[0].integer_value;
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeGreater(right, left));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      if (left >= right) {
+        s->AddConstraint(s->MakeFalseConstraint());
+      }
+    }
+  }
 }
 
 void ExtractIntLtReif(FzSolver* const solver, FzConstraint* const ct) {
@@ -282,7 +366,28 @@ void ExtractIntMod(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void ExtractIntNe(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const s = solver->solver();
+  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeNonEquality(left, right));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      s->AddConstraint(s->MakeNonEquality(left, right));
+    }
+  } else {
+    const int64 left = ct->arguments[0].integer_value;
+    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+      s->AddConstraint(s->MakeNonEquality(right, left));
+    } else {
+      const int64 right = ct->arguments[1].integer_value;
+      if (left == right) {
+        s->AddConstraint(s->MakeFalseConstraint());
+      }
+    }
+  }
 }
 
 void ExtractIntNeReif(FzSolver* const solver, FzConstraint* const ct) {
@@ -361,9 +466,7 @@ void ExtractTableInt(FzSolver* const solver, FzConstraint* const ct) {
   LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
 }
 
-void ExtractTrueConstraint(FzSolver* const solver, FzConstraint* const ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
+void ExtractTrueConstraint(FzSolver* const solver, FzConstraint* const ct) {}
 
 void ExtractVarCumulative(FzSolver* const solver, FzConstraint* const ct) {
   LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();

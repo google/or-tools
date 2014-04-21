@@ -100,7 +100,7 @@ bool FzSolver::Extract() {
   }
   for (int i = 0; i < model_.constraints().size(); ++i) {
     FzConstraint* const ct = model_.constraints()[i];
-    if (ct != nullptr) {
+    if (ct != nullptr && !ct->is_trivially_true) {
       ExtractConstraint(ct);
     }
   }
