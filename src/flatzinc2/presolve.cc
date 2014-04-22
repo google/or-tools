@@ -48,14 +48,19 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* input) {
 bool FzPresolver::PresolveIntEq(FzConstraint* input) {
   if (input->arguments[0].type == FzArgument::INT_VAR_REF) {
     if (input->arguments[1].type == FzArgument::INT_VAR_REF) {
-      MarkVariablesAsEquivalent(input->arguments[0].variable,
-                                input->arguments[1].variable);
+      if (input->arguments[0].variable->defining_constraint == nullptr ||
+          input->arguments[1].variable->defining_constraint == nullptr) {
+        MarkVariablesAsEquivalent(input->arguments[0].variable,
+                                  input->arguments[1].variable);
+        MarkAsTriviallyTrue(input);
+        return true;
+      }
     } else {
       const int64 value = input->arguments[1].integer_value;
       input->arguments[0].variable->domain.ReduceDomain(value, value);
+      MarkAsTriviallyTrue(input);
+      return true;
     }
-    MarkAsTriviallyTrue(input);
-    return true;
   } else {  // Arg0 is an integer value.
     const int64 value = input->arguments[0].integer_value;
     if (input->arguments[1].type == FzArgument::INT_VAR_REF) {
@@ -73,6 +78,7 @@ bool FzPresolver::PresolveIntEq(FzConstraint* input) {
       }
     }
   }
+  return false;
 }
 
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {

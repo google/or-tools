@@ -20,29 +20,32 @@
 #include "base/commandlineflags.h"
 #include "flatzinc2/model.h"
 #include "flatzinc2/parser.h"
+#include "flatzinc2/presolve.h"
 
-DEFINE_string(file, "", "Input file in the flatzinc format");
+DEFINE_string(file, "", "Input file in the flatzinc format.");
+DEFINE_bool(presolve, false, "Presolve loaded file.");
+
+namespace operations_research {
+void ParseFile(const string& filename, bool presolve) {
+  std::string problem_name(filename);
+  problem_name.resize(problem_name.size() - 4);
+  size_t found = problem_name.find_last_of("/\\");
+  if (found != std::string::npos) {
+    problem_name = problem_name.substr(found + 1);
+  }
+  FzModel model(problem_name);
+  CHECK(ParseFlatzincFile(filename, &model));
+  if (presolve) {
+    FzPresolver presolve;
+    presolve.Run(&model);
+  }
+  LOG(INFO) << model.DebugString();
+}
+}  // namespace operations_research
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix = false;
-  InitGoogle(
-      "Parses a flatzinc .fzn file and prints it in human-readable "
-      "format",
-      &argc, &argv, /*remove_flags=*/true);
-  std::string problem_name = FLAGS_file;
-  // Remove the .fzn extension.
-  QCHECK(problem_name.size() > 4 &&
-         problem_name.substr(problem_name.size() - 4) == ".fzn")
-      << "Please supply a valid data file name (ending with .fzn) with --file.";
-  problem_name.resize(problem_name.size() - 4);
-  // Remove the leading path if present.
-  size_t basename_offset = problem_name.find_last_of("/\\");
-  if (basename_offset != std::string::npos) {
-    problem_name = problem_name.substr(basename_offset + 1);
-  }
-  // Parse the model and print it out.
-  operations_research::FzModel model(problem_name);
-  operations_research::ParseFlatzincFile(FLAGS_file, &model);
-  LOG(INFO) << model.DebugString();
+  google::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
+  operations_research::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }

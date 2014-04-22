@@ -981,10 +981,16 @@ $(LIB_DIR)/$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX): $(FLATZINC2_LIB_OBJS)
 $(OBJ_DIR)/flatzinc2/fz.$O:$(SRC_DIR)/flatzinc2/fz.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sfz.$O
 
-fz2 : $(BIN_DIR)/fz2$E
+$(OBJ_DIR)/flatzinc2/parser_main.$O:$(SRC_DIR)/flatzinc2/parser_main.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sparser_main.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sparser_main.$O
+
+fz2 : $(BIN_DIR)/fz2$E $(BIN_DIR)/parser_main$E
 
 $(BIN_DIR)/fz2$E: $(OBJ_DIR)/flatzinc2/fz.$O $(DYNAMIC_FLATZINC2_DEPS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc2$Sfz.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz2$E
+
+$(BIN_DIR)/parser_main$E: $(OBJ_DIR)/flatzinc2/parser_main.$O $(DYNAMIC_FLATZINC2_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc2$Sparser_main.$O $(STATIC_FZ) $(DYNAMIC_FLATZINC2_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
 
 # Flow and linear assignment cpp
 

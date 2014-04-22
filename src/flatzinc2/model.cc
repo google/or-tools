@@ -250,12 +250,14 @@ std::string FzIntegerVariable::DebugString() const {
 
 std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
+  const std::string trivially_true = is_trivially_true ? "[trivially true]"
+                                                       : "";
   const std::string target = target_var != nullptr
                             ? StringPrintf(" => %s", target_var->name.c_str())
                             : "";
-  return StringPrintf("%s([%s]%s)%s", type.c_str(),
+  return StringPrintf("%s([%s]%s)%s %s", type.c_str(),
                       JoinDebugString(arguments, ", ").c_str(), strong.c_str(),
-                      target.c_str());
+                      target.c_str(), trivially_true.c_str());
 }
 
 // ----- FzAnnotation -----
