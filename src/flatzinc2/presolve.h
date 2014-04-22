@@ -58,8 +58,13 @@ class FzPresolver {
   // Presolve helpers.
   void MarkAsTriviallyTrue(FzConstraint* ct);
   void RemoveTargetVariable(FzConstraint* ct);
+  // Returns true if the argument is a variable that is not a target variable.
   bool IsIntVar(FzConstraint* ct, int position) const;
+  // Returns true if the argument is bound (integer value, singleton domain,
+  // variable with a singleton domain)
   bool IsBound(FzConstraint* ct, int position) const;
+  // Returns the bound of the argument. IsBound() must have returned true for
+  // this method to succeed.
   int64 GetBound(FzConstraint* ct, int position) const;
 
   // The presolver will discover some equivalence classes of variables [two

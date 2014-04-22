@@ -39,75 +39,7 @@ namespace operations_research {
 //   - int_lin_lt/gt -> transform to le/ge
 //   - mark target variables
 
-bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
-  MarkVariablesAsEquivalent(ct->arguments[0].variable,
-                            ct->arguments[1].variable);
-  MarkAsTriviallyTrue(ct);
-  return true;
-}
-
-bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
-  if (IsIntVar(ct, 0)) {
-    if (IsIntVar(ct, 1)) {
-      MarkVariablesAsEquivalent(ct->arguments[0].variable,
-                                ct->arguments[1].variable);
-    } else {
-      const int64 value = ct->arguments[1].integer_value;
-      ct->arguments[0].variable->domain.ReduceDomain(value, value);
-    }
-    MarkAsTriviallyTrue(ct);
-    return true;
-  } else {  // Arg0 is an integer value.
-    const int64 value = ct->arguments[0].integer_value;
-    if (IsIntVar(ct, 1)) {
-      ct->arguments[1].variable->domain.ReduceDomain(value, value);
-      MarkAsTriviallyTrue(ct);
-      return true;
-    } else {
-      if (value == ct->arguments[1].integer_value) {
-        // No-op, removing.
-        MarkAsTriviallyTrue(ct);
-        return false;
-      } else {
-        // TODO(user): Mark model as inconsistent.
-        return false;
-      }
-    }
-  }
-  return false;
-}
-
-bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
-  bool changed = false;
-  if (ct->type == "int_eq") {
-    changed = PresolveIntEq(ct);
-  } else if (ct->type == "bool2int") {
-    changed = PresolveBool2Int(ct);
-  }
-  return changed;
-}
-
-bool FzPresolver::Run(FzModel* model) {
-  bool changed_since_start = false;
-  for (;;) {
-    bool changed = false;
-    var_representative_map_.clear();
-    for (FzConstraint* const ct : model->constraints()) {
-      if (!ct->is_trivially_true) {
-        changed |= PresolveOneConstraint(ct);
-      }
-    }
-    if (!var_representative_map_.empty()) {
-      // Some new substitutions were introduced. Let's process them.
-      DCHECK(changed);
-      changed = true;  // To be safe in opt mode.
-      SubstituteEverywhere(model);
-    }
-    changed_since_start |= changed;
-    if (!changed) break;
-  }
-  return changed_since_start;
-}
+// ----- Helpers -----
 
 void FzPresolver::MarkAsTriviallyTrue(FzConstraint* ct) {
   ct->is_trivially_true = true;
@@ -159,6 +91,77 @@ int64 FzPresolver::GetBound(FzConstraint* ct, int position) const {
     }
   }
 }
+
+// ----- Presolve rules -----
+
+bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
+  MarkVariablesAsEquivalent(ct->arguments[0].variable,
+                            ct->arguments[1].variable);
+  MarkAsTriviallyTrue(ct);
+  return true;
+}
+
+bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
+  if (IsIntVar(ct, 0)) {
+    if (IsIntVar(ct, 1)) {
+      MarkVariablesAsEquivalent(ct->arguments[0].variable,
+                                ct->arguments[1].variable);
+      MarkAsTriviallyTrue(ct);
+      return true;
+    } else if (IsBound(ct, 1)) {
+      const int64 value = GetBound(ct, 1);
+      ct->arguments[0].variable->domain.ReduceDomain(value, value);
+      MarkAsTriviallyTrue(ct);
+      return true;
+    }
+  } else if (IsBound(ct, 0)) {  // Arg0 is an integer value.
+    const int64 value = GetBound(ct, 0);
+    if (IsIntVar(ct, 1)) {
+      ct->arguments[1].variable->domain.ReduceDomain(value, value);
+      MarkAsTriviallyTrue(ct);
+      return true;
+    } else if (IsBound(ct, 1) && value == GetBound(ct, 1)) {
+      // No-op, removing.
+      MarkAsTriviallyTrue(ct);
+      return false;
+    }
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
+  bool changed = false;
+  if (ct->type == "int_eq") {
+    changed = PresolveIntEq(ct);
+  } else if (ct->type == "bool2int") {
+    changed = PresolveBool2Int(ct);
+  }
+  return changed;
+}
+
+bool FzPresolver::Run(FzModel* model) {
+  bool changed_since_start = false;
+  for (;;) {
+    bool changed = false;
+    var_representative_map_.clear();
+    for (FzConstraint* const ct : model->constraints()) {
+      if (!ct->is_trivially_true) {
+        changed |= PresolveOneConstraint(ct);
+      }
+    }
+    if (!var_representative_map_.empty()) {
+      // Some new substitutions were introduced. Let's process them.
+      DCHECK(changed);
+      changed = true;  // To be safe in opt mode.
+      SubstituteEverywhere(model);
+    }
+    changed_since_start |= changed;
+    if (!changed) break;
+  }
+  return changed_since_start;
+}
+
+// ----- Substitution support -----
 
 void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
                                             FzIntegerVariable* to) {
