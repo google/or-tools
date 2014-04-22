@@ -21,6 +21,11 @@
 #include "util/string_array.h"
 
 namespace operations_research {
+// List of tricks to add to the current flatzinc extraction process.
+//   - store all different
+//   - array_var_int_element -> value bound => array_var_int_position
+
+
 void ExtractAllDifferentInt(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
   const std::vector<IntVar*> vars = solver->GetVariableArray(ct->arguments[0]);

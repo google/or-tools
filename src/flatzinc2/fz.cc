@@ -65,8 +65,8 @@ void SequentialRun(const std::string& filename) {
       FLAGS_use_impact ? FzSolverParameters::IBS : FzSolverParameters::DEFAULT;
 
   std::unique_ptr<FzParallelSupportInterface> parallel_support(
-      operations_research::MakeSequentialSupport(
-          parameters.all_solutions, parameters.num_solutions));
+      operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                 parameters.num_solutions));
 
   std::string problem_name(filename);
   problem_name.resize(problem_name.size() - 4);
@@ -109,7 +109,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = logging_param;
     }
   }
-  google::ParseCommandLineFlags( argc, argv, true);
+  google::ParseCommandLineFlags(argc, argv, true);
   // Fix the number of solutions.
   if (FLAGS_num_solutions == 0) {  // not specified
     FLAGS_num_solutions = FLAGS_all ? kint32max : 1;

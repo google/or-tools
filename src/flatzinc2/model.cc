@@ -20,6 +20,8 @@
 
 DEFINE_bool(logging, false,
             "Print logging information from the flatzinc interpreter.");
+DEFINE_bool(verbose_logging, false,
+            "Print verbose logging information from the flatzinc interpreter.");
 
 namespace operations_research {
 // ----- FzDomain -----
@@ -167,7 +169,8 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(
+    const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.integer_value = 0;
@@ -239,10 +242,10 @@ std::string FzIntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
     return StringPrintf("% " GG_LL_FORMAT "d", domain.values.back());
   } else {
-    return StringPrintf("%s(%s%s%s)", name.c_str(),
-                        domain.DebugString().c_str(),
-                        temporary ? ", temporary" : "",
-                        defining_constraint != nullptr ? ", target_var" : "");
+    return StringPrintf(
+        "%s(%s%s%s)", name.c_str(), domain.DebugString().c_str(),
+        temporary ? ", temporary" : "",
+        defining_constraint != nullptr ? ", target_variable" : "");
   }
 }
 
@@ -250,11 +253,12 @@ std::string FzIntegerVariable::DebugString() const {
 
 std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
-  const std::string trivially_true = is_trivially_true ? "[trivially true]"
-                                                       : "";
-  const std::string target = target_var != nullptr
-                            ? StringPrintf(" => %s", target_var->name.c_str())
-                            : "";
+  const std::string trivially_true =
+      is_trivially_true ? "[trivially true]" : "";
+  const std::string target =
+      target_variable != nullptr
+          ? StringPrintf(" => %s", target_variable->name.c_str())
+          : "";
   return StringPrintf("%s([%s]%s)%s %s", type.c_str(),
                       JoinDebugString(arguments, ", ").c_str(), strong.c_str(),
                       target.c_str(), trivially_true.c_str());
@@ -271,7 +275,8 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list) {
+FzAnnotation FzAnnotation::AnnotationList(
+    const std::vector<FzAnnotation>& list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -427,8 +432,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments, bool is_domain,
-                            FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments,
+                            bool is_domain, FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);

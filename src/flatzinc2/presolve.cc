@@ -1,6 +1,6 @@
 // Copyright 2010-2013 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in comÏpliance with the License.
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,21 +14,22 @@
 #include "base/stl_util.h"
 #include "flatzinc2/presolve.h"
 
+DECLARE_bool(logging);
+DECLARE_bool(verbose_logging);
+
 namespace operations_research {
 
 // For the author's reference, here is an indicative list of presolve rules that
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - int_le -> propagate bounds
+//   - int_le/ge/lt/gt -> propagate bounds
 //   - int_eq -> merge with integer value
 //   - int_ne -> remove value
 //   - set_in -> merge domain
 //   - array_bool_and -> assign all if === true
 //   - array_bool_or -> assign all if == false
 //   - reif -> unreify if boolean var is bound to true or false
-//   - store all different
-//   - array_var_int_element -> value bound => array_var_int_position
 //   - int_abs -> store info
 //   - int_eq_reif, int_ne_reif, int_ne -> simplify abs(x) ==/!= 0
 //   - int_lin_xx -> replace all negative by opposite
@@ -38,39 +39,34 @@ namespace operations_research {
 //   - int_lin_lt/gt -> transform to le/ge
 //   - mark target variables
 
-bool FzPresolver::PresolveBool2Int(FzConstraint* input) {
-  MarkVariablesAsEquivalent(input->arguments[0].variable,
-                            input->arguments[1].variable);
-  MarkAsTriviallyTrue(input);
+bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
+  MarkVariablesAsEquivalent(ct->arguments[0].variable,
+                            ct->arguments[1].variable);
+  MarkAsTriviallyTrue(ct);
   return true;
 }
 
-bool FzPresolver::PresolveIntEq(FzConstraint* input) {
-  if (input->arguments[0].type == FzArgument::INT_VAR_REF) {
-    if (input->arguments[1].type == FzArgument::INT_VAR_REF) {
-      if (input->arguments[0].variable->defining_constraint == nullptr ||
-          input->arguments[1].variable->defining_constraint == nullptr) {
-        MarkVariablesAsEquivalent(input->arguments[0].variable,
-                                  input->arguments[1].variable);
-        MarkAsTriviallyTrue(input);
-        return true;
-      }
+bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
+  if (IsIntVar(ct, 0)) {
+    if (IsIntVar(ct, 1)) {
+      MarkVariablesAsEquivalent(ct->arguments[0].variable,
+                                ct->arguments[1].variable);
     } else {
-      const int64 value = input->arguments[1].integer_value;
-      input->arguments[0].variable->domain.ReduceDomain(value, value);
-      MarkAsTriviallyTrue(input);
-      return true;
+      const int64 value = ct->arguments[1].integer_value;
+      ct->arguments[0].variable->domain.ReduceDomain(value, value);
     }
+    MarkAsTriviallyTrue(ct);
+    return true;
   } else {  // Arg0 is an integer value.
-    const int64 value = input->arguments[0].integer_value;
-    if (input->arguments[1].type == FzArgument::INT_VAR_REF) {
-      input->arguments[1].variable->domain.ReduceDomain(value, value);
-      MarkAsTriviallyTrue(input);
+    const int64 value = ct->arguments[0].integer_value;
+    if (IsIntVar(ct, 1)) {
+      ct->arguments[1].variable->domain.ReduceDomain(value, value);
+      MarkAsTriviallyTrue(ct);
       return true;
     } else {
-      if (value == input->arguments[1].integer_value) {
+      if (value == ct->arguments[1].integer_value) {
         // No-op, removing.
-        MarkAsTriviallyTrue(input);
+        MarkAsTriviallyTrue(ct);
         return false;
       } else {
         // TODO(user): Mark model as inconsistent.
@@ -118,6 +114,23 @@ void FzPresolver::MarkAsTriviallyTrue(FzConstraint* ct) {
   // TODO(user): Reclaim arguments and memory.
 }
 
+void FzPresolver::RemoveTargetVariable(FzConstraint* ct) {
+  FzIntegerVariable* const target_variable = ct->target_variable;
+  if (target_variable != nullptr) {
+    FZVLOG << "Remove target_variable from " << ct->DebugString() << std::endl;
+
+    ct->target_variable = nullptr;
+    DCHECK_EQ(target_variable->defining_constraint, ct);
+    target_variable->defining_constraint = nullptr;
+  }
+}
+
+bool FzPresolver::IsIntVar(FzConstraint* ct, int position) {
+  return position >= 0 && position < ct->arguments.size() &&
+         ct->arguments[position].type == FzArgument::INT_VAR_REF &&
+         ct->arguments[position].variable->defining_constraint == nullptr;
+}
+
 void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
                                             FzIntegerVariable* to) {
   CHECK(from != nullptr);
@@ -132,6 +145,8 @@ void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
     from = tmp;
   }
   if (from != to) {
+    FZVLOG << "Mark " << from->DebugString() << " as equivalent as "
+           << to->DebugString() << std::endl;
     CHECK(to->Merge(from->name, from->domain, from->defining_constraint,
                     from->temporary));
     var_representative_map_[from] = to;
@@ -179,7 +194,7 @@ void FzPresolver::SubstituteEverywhere(FzModel* model) {
           default: {}
         }
       }
-      ct->target_var = FindRepresentativeOfVar(ct->target_var);
+      ct->target_variable = FindRepresentativeOfVar(ct->target_variable);
     }
   }
   // Rewrite the search.
@@ -217,6 +232,55 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
       break;
     }
     default: {}
+  }
+}
+
+// ----- Clean up model -----
+
+void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
+  // First pass.
+  for (FzConstraint* const ct : model->constraints()) {
+    const string& id = ct->type;
+    // Remove useless annotations on int_lin_eq.
+    if (id == "int_lin_eq") {
+      if (ct->arguments[0].domain.values.size() > 2 &&
+          ct->target_variable != nullptr) {
+        RemoveTargetVariable(ct);
+        return;
+      } else if (ct->arguments[0].domain.values.size() <= 2 &&
+                 ct->strong_propagation) {
+        FZVLOG << "Remove strong_propagation from " << ct->DebugString()
+               << std::endl;
+        ct->strong_propagation = false;
+        return;
+      }
+    }
+    // Remove target variables from constraints passed to SAT.
+    if (ct->target_variable != nullptr &&
+        (id == "array_bool_and" || id == "array_bool_or" ||
+         id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
+      RemoveTargetVariable(ct);
+    }
+  }
+  // Second pass.
+  for (FzConstraint* const ct : model->constraints()) {
+    const string& id = ct->type;
+    // Create new target variables with unused boolean variables.
+    if (ct->target_variable == nullptr &&
+        (id == "int_lin_eq_reif" || id == "int_lin_ne_reif" ||
+         id == "int_lin_ge_reif" || id == "int_lin_le_reif" ||
+         id == "int_lin_gt_reif" || id == "int_lin_lt_reif" ||
+         id == "int_eq_reif" || id == "int_ne_reif" || id == "int_le_reif" ||
+         id == "int_ge_reif" || id == "int_lt_reif" || id == "int_gt_reif")) {
+      FzIntegerVariable* const bool_var = ct->arguments[2].variable;
+      if (bool_var != nullptr && bool_var->defining_constraint == nullptr) {
+        FZVLOG << "Create target_variable on " << ct->DebugString()
+               << std::endl;
+        ct->target_variable = bool_var;
+        bool_var->defining_constraint = ct;
+      }
+    }
   }
 }
 }  // namespace operations_research

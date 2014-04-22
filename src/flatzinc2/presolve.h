@@ -38,10 +38,15 @@ class FzPresolver {
   // This returns true iff some transformations were applied to the model
   bool Run(FzModel* model);
 
+  // Cleans the model for the CP solver.
+  // In particular, it knows about the sat connection and will remove the link
+  // (defining_constraint, target_variable) for boolean constraints.
+  void CleanUpModelForTheCpSolver(FzModel* model);
+
+ private:
   // Returns true iff the model was modified.
   bool PresolveOneConstraint(FzConstraint* ct);
 
- private:
   // Substitution support.
   void SubstituteEverywhere(FzModel* model);
   void SubstituteAnnotation(FzAnnotation* ann);
@@ -52,6 +57,8 @@ class FzPresolver {
 
   // Presolve helpers.
   void MarkAsTriviallyTrue(FzConstraint* ct);
+  void RemoveTargetVariable(FzConstraint* ct);
+  bool IsIntVar(FzConstraint* ct, int position);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
