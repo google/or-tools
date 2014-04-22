@@ -58,7 +58,9 @@ class FzPresolver {
   // Presolve helpers.
   void MarkAsTriviallyTrue(FzConstraint* ct);
   void RemoveTargetVariable(FzConstraint* ct);
-  bool IsIntVar(FzConstraint* ct, int position);
+  bool IsIntVar(FzConstraint* ct, int position) const;
+  bool IsBound(FzConstraint* ct, int position) const;
+  int64 GetBound(FzConstraint* ct, int position) const;
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

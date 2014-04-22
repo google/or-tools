@@ -125,10 +125,39 @@ void FzPresolver::RemoveTargetVariable(FzConstraint* ct) {
   }
 }
 
-bool FzPresolver::IsIntVar(FzConstraint* ct, int position) {
+bool FzPresolver::IsIntVar(FzConstraint* ct, int position) const {
   return position >= 0 && position < ct->arguments.size() &&
          ct->arguments[position].type == FzArgument::INT_VAR_REF &&
          ct->arguments[position].variable->defining_constraint == nullptr;
+}
+
+bool FzPresolver::IsBound(FzConstraint* ct, int position) const {
+  return position >= 0 && position < ct->arguments.size() &&
+         (ct->arguments[position].type == FzArgument::INT_VALUE ||
+          (ct->arguments[position].type == FzArgument::INT_DOMAIN &&
+           ct->arguments[position].domain.IsSingleton()) ||
+          (ct->arguments[position].type == FzArgument::INT_VAR_REF &&
+           ct->arguments[position].variable->domain.IsSingleton()));
+}
+
+int64 FzPresolver::GetBound(FzConstraint* ct, int position) const {
+  CHECK_GE(position, 0);
+  CHECK_LT(position, ct->arguments.size());
+  switch (ct->arguments[position].type) {
+    case FzArgument::INT_VALUE:
+      return ct->arguments[position].integer_value;
+    case FzArgument::INT_DOMAIN: {
+      return ct->arguments[position].domain.values[0];
+    }
+    case FzArgument::INT_VAR_REF: {
+      return ct->arguments[position].variable->domain.values[0];
+    }
+    default: {
+      LOG(FATAL) << "Wrong GetBound(" << position << ") on "
+                 << ct->DebugString();
+      return 0;
+    }
+  }
 }
 
 void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
