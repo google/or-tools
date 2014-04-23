@@ -54,6 +54,7 @@ class FzPresolver {
   // Presolve rules.
   bool PresolveBool2Int(FzConstraint* input);
   bool PresolveIntEq(FzConstraint* input);
+  void Unreify(FzConstraint* ct);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

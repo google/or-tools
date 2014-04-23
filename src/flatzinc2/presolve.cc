@@ -28,9 +28,8 @@ namespace operations_research {
 //   - set_in -> merge domain
 //   - array_bool_and -> assign all if === true
 //   - array_bool_or -> assign all if == false
-//   - reif -> unreify if boolean var is bound to true or false
 //   - int_abs -> store info
-//   - int_eq_reif, int_ne_reif, int_ne -> simplify abs(x) ==/!= 0
+//   - int_eq_reif, int_ne_reif, int_ne, int_eq -> simplify abs(x) ==/!= 0
 //   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
 //   - bool_eq/ne_reif -> simplify if argument is bound
@@ -74,11 +73,70 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   return false;
 }
 
+void FzPresolver::Unreify(FzConstraint* ct) {
+  const string& id = ct->type;
+  const int last_argument = ct->arguments.size() - 1;
+  ct->type.resize(id.size() - 5);
+  FzIntegerVariable* const bool_var = ct->target_variable;
+  if (bool_var != nullptr) {
+    // DCHECK bool_var is bound
+    ct->target_variable = bool_var;
+    bool_var->defining_constraint = nullptr;
+  }
+  ct->arguments.pop_back();
+  if (ct->GetBound(last_argument) == 1) {
+    FZVLOG << "Unreify " << ct->DebugString() << std::endl;
+  } else {
+    FZVLOG << "Unreify and inverse " << ct->DebugString() << std::endl;
+    if (id == "int_eq")
+      ct->type = "int_ne";
+    else if (id == "int_ne")
+      ct->type = "int_eq";
+    else if (id == "int_ge")
+      ct->type = "int_lt";
+    else if (id == "int_gt")
+      ct->type = "int_le";
+    else if (id == "int_le")
+      ct->type = "int_gt";
+    else if (id == "int_lt")
+      ct->type = "int_ge";
+    else if (id == "int_lin_eq")
+      ct->type = "int_lin_ne";
+    else if (id == "int_lin_ne")
+      ct->type = "int_lin_eq";
+    else if (id == "int_lin_ge")
+      ct->type = "int_lin_lt";
+    else if (id == "int_lin_gt")
+      ct->type = "int_lin_le";
+    else if (id == "int_lin_le")
+      ct->type = "int_lin_gt";
+    else if (id == "int_lin_lt")
+      ct->type = "int_lin_ge";
+    else if (id == "bool_eq")
+      ct->type = "bool_ne";
+    else if (id == "bool_ne")
+      ct->type = "bool_eq";
+    else if (id == "bool_ge")
+      ct->type = "bool_lt";
+    else if (id == "bool_gt")
+      ct->type = "bool_le";
+    else if (id == "bool_le")
+      ct->type = "bool_gt";
+    else if (id == "bool_lt")
+      ct->type = "bool_ge";
+  }
+}
+
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
-  if (ct->type == "int_eq") {
+  const string& id = ct->type;
+  const int num_arguments = ct->arguments.size();
+  if (id.find("_reif") != std::string::npos && ct->IsBound(num_arguments - 1)) {
+    Unreify(ct);
+    changed = true;
+  } else if (id == "int_eq") {
     changed = PresolveIntEq(ct);
-  } else if (ct->type == "bool2int") {
+  } else if (id == "bool2int") {
     changed = PresolveBool2Int(ct);
   }
   return changed;
