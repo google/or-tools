@@ -90,12 +90,16 @@ void FzDomain::ReduceDomain(int64 imin, int64 imax) {
       values[1] = std::min(values[1], imax);
     }
   } else {
+    std::sort(values.begin(), values.end());
     std::vector<int64> new_values;
     new_values.reserve(values.size());
-    for (int i = 0; i < values.size(); ++i) {
-      const int64 val = values[i];
-      if (val >= imin && val <= imax) {
+    for (const int64 val : values) {
+      if (val >= imin && val <= imax &&
+          (new_values.empty() || val != new_values.back())) {
         new_values.push_back(val);
+      }
+      if (val > imax) {
+        break;
       }
     }
     values.swap(new_values);
@@ -104,12 +108,13 @@ void FzDomain::ReduceDomain(int64 imin, int64 imax) {
 
 void FzDomain::ReduceDomain(const std::vector<int64>& ovalues) {
   // TODO(user): Investigate faster code for small arrays.
+  std::sort(values.begin(), values.end());
   hash_set<int64> other_values(ovalues.begin(), ovalues.end());
   std::vector<int64> new_values;
   new_values.reserve(std::min(values.size(), ovalues.size()));
-  for (int i = 0; i < values.size(); ++i) {
-    const int64 val = values[i];
-    if (ContainsKey(other_values, val)) {
+  for (const int64 val : values) {
+    if (ContainsKey(other_values, val) &&
+        (new_values.empty() || val != new_values.back())) {
       new_values.push_back(val);
     }
   }

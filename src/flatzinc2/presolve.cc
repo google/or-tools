@@ -24,7 +24,6 @@ namespace operations_research {
 // Presolve rule:
 //   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
-//   - bool_eq/ne_reif -> simplify if argument is bound
 //   - int_div/times -> propagate if arg0/arg1 bound
 //   - int_lin_lt/gt -> transform to le/ge
 //   - array_int_element -> reduce domain
@@ -204,6 +203,33 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   }
   return false;
 }
+
+bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
+  if (ct->IsBound(1)) {
+    FZVLOG << "Simplify " << ct->DebugString() << std::endl;
+    const int64 value = ct->GetBound(1);
+    // Remove boolean value argument.
+    ct->arguments[1] = ct->arguments[2];
+    ct->arguments.pop_back();
+    // Change type.
+    ct->type = ((ct->type == "bool_eq_reif" && value == 1) ||
+                (ct->type == "bool_ne_reif" && value == 0))
+                   ? "bool_eq"
+                   : "bool_not";
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
+  if (ct->IsIntVar(2)) {
+    FZVLOG << "Propagate domain on " << ct->DebugString() << std::endl;
+    ct->GetVar(2)->domain.IntersectWith(ct->arguments[1].domain);
+    return true;
+  }
+  return false;
+}
+
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
   const string& id = ct->type;
@@ -245,6 +271,12 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "array_bool_or") {
     changed |= PresolveArrayBoolOr(ct);
+  }
+  if (id == "bool_eq_reif" || id == "bool_ne_reif") {
+    changed |= PresolveBoolEqNeReif(ct);
+  }
+  if (id == "array_int_element") {
+    changed |= PresolveArrayIntElement(ct);
   }
   return changed;
 }
