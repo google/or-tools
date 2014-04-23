@@ -77,6 +77,7 @@ void SequentialRun(const std::string& filename) {
   FzModel model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
   FzPresolver presolve;
+  presolve.CleanUpModelForTheCpSolver(&model);
   presolve.Run(&model);
   FzModelStatistics stats(model);
   stats.PrintStatistics();
