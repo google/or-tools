@@ -12,6 +12,7 @@
 // limitations under the License.
 #include "base/hash.h"
 #include <iostream>  // NOLINT
+#include <vector>
 
 #include "base/map_util.h"
 #include "base/stl_util.h"
@@ -55,36 +56,28 @@ FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
 }
 
 void FzDomain::IntersectWith(const FzDomain& other) {
+  std::cout << "Intersect " << DebugString() << " and " << other.DebugString()
+            << std::endl;
   if (other.is_interval) {
     if (!other.values.empty()) {
       ReduceDomain(other.values[0], other.values[1]);
       return;
     }
-    if (is_interval) {
-      is_interval = false;  // Other is not an interval.
-      if (values.empty()) {
-        values = other.values;
-      } else {
-        const int64 imin = values[0];
-        const int64 imax = values[1];
-        values = other.values;
-        ReduceDomain(imin, imax);
-      }
-      return;
+  } else if (is_interval) {
+    is_interval = false;  // Other is not an interval.
+    if (values.empty()) {
+      values = other.values;
+    } else {
+      const int64 imin = values[0];
+      const int64 imax = values[1];
+      values = other.values;
+      ReduceDomain(imin, imax);
+      std::cout << "Result = " << DebugString() << std::endl;
     }
+    return;
   }
   // now deal with the intersection of two lists of values
-  // TODO(user): Investigate faster code for small arrays.
-  hash_set<int64> other_values(other.values.begin(), other.values.end());
-  std::vector<int64> new_values;
-  new_values.reserve(std::min(values.size(), other.values.size()));
-  for (int i = 0; i < values.size(); ++i) {
-    const int64 val = values[i];
-    if (ContainsKey(other_values, val)) {
-      new_values.push_back(val);
-    }
-  }
-  values.swap(new_values);
+  ReduceDomain(other.values);
 }
 
 void FzDomain::ReduceDomain(int64 imin, int64 imax) {
@@ -109,6 +102,20 @@ void FzDomain::ReduceDomain(int64 imin, int64 imax) {
   }
 }
 
+void FzDomain::ReduceDomain(const std::vector<int64>& ovalues) {
+  // TODO(user): Investigate faster code for small arrays.
+  hash_set<int64> other_values(ovalues.begin(), ovalues.end());
+  std::vector<int64> new_values;
+  new_values.reserve(std::min(values.size(), ovalues.size()));
+  for (int i = 0; i < values.size(); ++i) {
+    const int64 val = values[i];
+    if (ContainsKey(other_values, val)) {
+      new_values.push_back(val);
+    }
+  }
+  values.swap(new_values);
+}
+
 bool FzDomain::IsSingleton() const {
   return (values.size() == 1 || (values.size() == 2 && values[0] == values[1]));
 }
@@ -123,6 +130,22 @@ bool FzDomain::Contains(int64 value) const {
   } else {
     return std::find(values.begin(), values.end(), value) != values.end();
   }
+}
+
+bool FzDomain::RemoveValue(int64 value) {
+  if (is_interval) {
+    if (values.empty()) {
+      return false;
+    } else if (value == values[0]) {
+      values[0]++;
+      return true;
+    } else if (value == values[1]) {
+      values[1]--;
+      return true;
+    }
+  }
+  // TODO(user): Remove value from list.
+  return false;
 }
 
 std::string FzDomain::DebugString() const {
@@ -312,6 +335,14 @@ int64 FzConstraint::GetBound(int position) const {
       return 0;
     }
   }
+}
+
+FzIntegerVariable* FzConstraint::GetVar(int position) const {
+  if (position < 0 || position >= arguments.size() ||
+      arguments[position].type != FzArgument::INT_VAR_REF) {
+    return nullptr;
+  }
+  return arguments[position].variable;
 }
 
 // ----- FzAnnotation -----

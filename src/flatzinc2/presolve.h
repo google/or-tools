@@ -52,9 +52,14 @@ class FzPresolver {
   void SubstituteAnnotation(FzAnnotation* ann);
 
   // Presolve rules.
-  bool PresolveBool2Int(FzConstraint* input);
-  bool PresolveIntEq(FzConstraint* input);
+  bool PresolveBool2Int(FzConstraint* ct);
+  bool PresolveIntEq(FzConstraint* ct);
   void Unreify(FzConstraint* ct);
+  bool PresolveInequalities(FzConstraint* ct);
+  bool PresolveIntNe(FzConstraint* ct);
+  bool PresolveSetIn(FzConstraint* ct);
+  bool PresolveArrayBoolAnd(FzConstraint* ct);
+  bool PresolveArrayBoolOr(FzConstraint* ct);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
@@ -65,6 +70,10 @@ class FzPresolver {
   FzIntegerVariable* FindRepresentativeOfVar(FzIntegerVariable* var);
   hash_map<const FzIntegerVariable*, FzIntegerVariable*>
       var_representative_map_;
+
+  // Stores abs_map_[x] = y if x = abs(y).
+  hash_map<const FzIntegerVariable*, FzIntegerVariable*> abs_map_;
+
 };
 }  // namespace operations_research
 

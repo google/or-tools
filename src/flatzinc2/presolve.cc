@@ -22,25 +22,17 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - int_le/ge/lt/gt -> propagate bounds
-//   - int_eq -> merge with integer value
-//   - int_ne -> remove value
-//   - set_in -> merge domain
-//   - array_bool_and -> assign all if === true
-//   - array_bool_or -> assign all if == false
-//   - int_abs -> store info
-//   - int_eq_reif, int_ne_reif, int_ne, int_eq -> simplify abs(x) ==/!= 0
 //   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
 //   - bool_eq/ne_reif -> simplify if argument is bound
 //   - int_div/times -> propagate if arg0/arg1 bound
 //   - int_lin_lt/gt -> transform to le/ge
+//   - array_int_element -> reduce domain
 
 // ----- Presolve rules -----
 
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
-  MarkVariablesAsEquivalent(ct->arguments[0].variable,
-                            ct->arguments[1].variable);
+  MarkVariablesAsEquivalent(ct->GetVar(0), ct->GetVar(1));
   ct->MarkAsTriviallyTrue();
   return true;
 }
@@ -48,20 +40,19 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   if (ct->IsIntVar(0)) {
     if (ct->IsIntVar(1)) {
-      MarkVariablesAsEquivalent(ct->arguments[0].variable,
-                                ct->arguments[1].variable);
+      MarkVariablesAsEquivalent(ct->GetVar(0), ct->GetVar(1));
       ct->MarkAsTriviallyTrue();
       return true;
     } else if (ct->IsBound(1)) {
       const int64 value = ct->GetBound(1);
-      ct->arguments[0].variable->domain.ReduceDomain(value, value);
+      ct->GetVar(0)->domain.ReduceDomain(value, value);
       ct->MarkAsTriviallyTrue();
       return true;
     }
   } else if (ct->IsBound(0)) {  // Arg0 is an integer value.
     const int64 value = ct->GetBound(0);
     if (ct->IsIntVar(1)) {
-      ct->arguments[1].variable->domain.ReduceDomain(value, value);
+      ct->GetVar(1)->domain.ReduceDomain(value, value);
       ct->MarkAsTriviallyTrue();
       return true;
     } else if (ct->IsBound(1) && value == ct->GetBound(1)) {
@@ -69,6 +60,51 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
       ct->MarkAsTriviallyTrue();
       return false;
     }
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
+  if ((ct->IsIntVar(0) && ct->IsBound(1) &&
+       ct->GetVar(0)->domain.RemoveValue(ct->GetBound(1))) ||
+      (ct->IsIntVar(1) && ct->IsBound(0) &&
+       ct->GetVar(1)->domain.RemoveValue(ct->GetBound(0)))) {
+    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
+  const string& id = ct->type;
+  if (ct->IsIntVar(0) && ct->IsBound(1)) {
+    FzIntegerVariable* const var = ct->GetVar(0);
+    const int64 value = ct->GetBound(1);
+    if (id == "int_le") {
+      var->domain.ReduceDomain(kint64min, value);
+    } else if (id == "int_lt") {
+      var->domain.ReduceDomain(kint64min, value - 1);
+    } else if (id == "int_ge") {
+      var->domain.ReduceDomain(value, kint64max);
+    } else if (id == "int_gt") {
+      var->domain.ReduceDomain(value + 1, kint64max);
+    }
+    ct->MarkAsTriviallyTrue();
+    return true;
+  } else if (ct->IsBound(0) && ct->IsIntVar(1)) {
+    FzIntegerVariable* const var = ct->GetVar(1);
+    const int64 value = ct->GetBound(0);
+    if (id == "int_le") {
+      var->domain.ReduceDomain(value, kint64max);
+    } else if (id == "int_lt") {
+      var->domain.ReduceDomain(value + 1, kint64max);
+    } else if (id == "int_ge") {
+      var->domain.ReduceDomain(kint64min, value);
+    } else if (id == "int_gt") {
+      var->domain.ReduceDomain(kint64min, value - 1);
+    }
+    ct->MarkAsTriviallyTrue();
+    return true;
   }
   return false;
 }
@@ -127,6 +163,47 @@ void FzPresolver::Unreify(FzConstraint* ct) {
   }
 }
 
+bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
+  if (ct->IsIntVar(0) && ct->arguments[1].type == FzArgument::INT_DOMAIN) {
+    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    ct->GetVar(0)->domain.IntersectWith(ct->arguments[1].domain);
+    ct->MarkAsTriviallyTrue();
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
+  if (ct->IsBound(1) && ct->GetBound(1) == 0) {
+    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
+      if (!var->domain.Contains(0)) {
+        return false;
+      }
+    }
+    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
+      var->domain.ReduceDomain(0, 0);
+    }
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
+  if (ct->IsBound(1) && ct->GetBound(1) == 1) {
+    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
+      if (!var->domain.Contains(1)) {
+        return false;
+      }
+    }
+    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
+      var->domain.ReduceDomain(1, 1);
+    }
+    return true;
+  }
+  return false;
+}
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
   const string& id = ct->type;
@@ -134,10 +211,40 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id.find("_reif") != std::string::npos && ct->IsBound(num_arguments - 1)) {
     Unreify(ct);
     changed = true;
-  } else if (id == "int_eq") {
-    changed = PresolveIntEq(ct);
-  } else if (id == "bool2int") {
-    changed = PresolveBool2Int(ct);
+  }
+  if (id == "int_eq") {
+    changed |= PresolveIntEq(ct);
+  }
+  if (id == "int_ne") {
+    changed |= PresolveIntNe(ct);
+  }
+  if (id == "bool2int") {
+    changed |= PresolveBool2Int(ct);
+  }
+  if (id == "int_le" || id == "int_lt" || id == "int_ge" || id == "int_gt") {
+    changed |= PresolveInequalities(ct);
+  }
+  if (id == "int_abs" && !ContainsKey(abs_map_, ct->GetVar(1))) {
+    // Stores abs() map.
+    FZVLOG << "Stores abs map for " << ct->DebugString() << std::endl;
+    abs_map_[ct->GetVar(1)] = ct->GetVar(0);
+    changed = true;
+  }
+  if ((id == "int_eq_reif" || id == "int_ne_reif" || id == "int_ne") &&
+      ct->IsBound(1) && ct->GetBound(1) == 0 &&
+      ContainsKey(abs_map_, ct->GetVar(0))) {
+    FZVLOG << "Remove abs() from " << ct->DebugString() << std::endl;
+    ct->arguments[0].variable = abs_map_[ct->GetVar(0)];
+    changed = true;
+  }
+  if (id == "set_in") {
+    changed |= PresolveSetIn(ct);
+  }
+  if (id == "array_bool_and") {
+    changed |= PresolveArrayBoolAnd(ct);
+  }
+  if (id == "array_bool_or") {
+    changed |= PresolveArrayBoolOr(ct);
   }
   return changed;
 }
@@ -308,7 +415,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
          id == "int_lin_gt_reif" || id == "int_lin_lt_reif" ||
          id == "int_eq_reif" || id == "int_ne_reif" || id == "int_le_reif" ||
          id == "int_ge_reif" || id == "int_lt_reif" || id == "int_gt_reif")) {
-      FzIntegerVariable* const bool_var = ct->arguments[2].variable;
+      FzIntegerVariable* const bool_var = ct->GetVar(2);
       if (bool_var != nullptr && bool_var->defining_constraint == nullptr) {
         FZVLOG << "Create target_variable on " << ct->DebugString()
                << std::endl;

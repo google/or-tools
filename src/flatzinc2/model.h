@@ -50,7 +50,10 @@ struct FzDomain {
   bool IsSingleton() const;
   void IntersectWith(const FzDomain& domain);
   void ReduceDomain(int64 interval_min, int64 interval_max);
+  void ReduceDomain(const std::vector<int64>& values);
   bool Contains(int64 value) const;
+  // Returns true if the value is removed.
+  bool RemoveValue(int64 value);
   std::string DebugString() const;
 
   bool is_interval;
@@ -173,7 +176,9 @@ struct FzConstraint {
   // Returns the bound of the argument. IsBound() must have returned true for
   // this method to succeed.
   int64 GetBound(int position) const;
-
+  // Returns the variable at the given position, or nullptr if there is no
+  // variable at that position.
+  FzIntegerVariable* GetVar(int position) const;
 };
 
 // An annotation is a set of information. It has two use cases. One during
