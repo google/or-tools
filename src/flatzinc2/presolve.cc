@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "base/map_util.h"
-#include "base/stl_util.h"
 #include "flatzinc2/presolve.h"
 
 DECLARE_bool(logging);
@@ -34,95 +33,41 @@ namespace operations_research {
 //   - int_eq_reif, int_ne_reif, int_ne -> simplify abs(x) ==/!= 0
 //   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
-//   - bool_eq|ne_reif -> simplify if argument is bound
-//   - int_div|times -> propagate if arg0/arg1 bound
+//   - bool_eq/ne_reif -> simplify if argument is bound
+//   - int_div/times -> propagate if arg0/arg1 bound
 //   - int_lin_lt/gt -> transform to le/ge
-//   - mark target variables
-
-// ----- Helpers -----
-
-void FzPresolver::MarkAsTriviallyTrue(FzConstraint* ct) {
-  ct->is_trivially_true = true;
-  // TODO(user): Reclaim arguments and memory.
-}
-
-void FzPresolver::RemoveTargetVariable(FzConstraint* ct) {
-  FzIntegerVariable* const target_variable = ct->target_variable;
-  if (target_variable != nullptr) {
-    FZVLOG << "Remove target_variable from " << ct->DebugString() << std::endl;
-
-    ct->target_variable = nullptr;
-    DCHECK_EQ(target_variable->defining_constraint, ct);
-    target_variable->defining_constraint = nullptr;
-  }
-}
-
-bool FzPresolver::IsIntVar(FzConstraint* ct, int position) const {
-  return position >= 0 && position < ct->arguments.size() &&
-         ct->arguments[position].type == FzArgument::INT_VAR_REF &&
-         ct->arguments[position].variable->defining_constraint == nullptr;
-}
-
-bool FzPresolver::IsBound(FzConstraint* ct, int position) const {
-  return position >= 0 && position < ct->arguments.size() &&
-         (ct->arguments[position].type == FzArgument::INT_VALUE ||
-          (ct->arguments[position].type == FzArgument::INT_DOMAIN &&
-           ct->arguments[position].domain.IsSingleton()) ||
-          (ct->arguments[position].type == FzArgument::INT_VAR_REF &&
-           ct->arguments[position].variable->domain.IsSingleton()));
-}
-
-int64 FzPresolver::GetBound(FzConstraint* ct, int position) const {
-  CHECK_GE(position, 0);
-  CHECK_LT(position, ct->arguments.size());
-  switch (ct->arguments[position].type) {
-    case FzArgument::INT_VALUE:
-      return ct->arguments[position].integer_value;
-    case FzArgument::INT_DOMAIN: {
-      return ct->arguments[position].domain.values[0];
-    }
-    case FzArgument::INT_VAR_REF: {
-      return ct->arguments[position].variable->domain.values[0];
-    }
-    default: {
-      LOG(FATAL) << "Wrong GetBound(" << position << ") on "
-                 << ct->DebugString();
-      return 0;
-    }
-  }
-}
 
 // ----- Presolve rules -----
 
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
   MarkVariablesAsEquivalent(ct->arguments[0].variable,
                             ct->arguments[1].variable);
-  MarkAsTriviallyTrue(ct);
+  ct->MarkAsTriviallyTrue();
   return true;
 }
 
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
-  if (IsIntVar(ct, 0)) {
-    if (IsIntVar(ct, 1)) {
+  if (ct->IsIntVar(0)) {
+    if (ct->IsIntVar(1)) {
       MarkVariablesAsEquivalent(ct->arguments[0].variable,
                                 ct->arguments[1].variable);
-      MarkAsTriviallyTrue(ct);
+      ct->MarkAsTriviallyTrue();
       return true;
-    } else if (IsBound(ct, 1)) {
-      const int64 value = GetBound(ct, 1);
+    } else if (ct->IsBound(1)) {
+      const int64 value = ct->GetBound(1);
       ct->arguments[0].variable->domain.ReduceDomain(value, value);
-      MarkAsTriviallyTrue(ct);
+      ct->MarkAsTriviallyTrue();
       return true;
     }
-  } else if (IsBound(ct, 0)) {  // Arg0 is an integer value.
-    const int64 value = GetBound(ct, 0);
-    if (IsIntVar(ct, 1)) {
+  } else if (ct->IsBound(0)) {  // Arg0 is an integer value.
+    const int64 value = ct->GetBound(0);
+    if (ct->IsIntVar(1)) {
       ct->arguments[1].variable->domain.ReduceDomain(value, value);
-      MarkAsTriviallyTrue(ct);
+      ct->MarkAsTriviallyTrue();
       return true;
-    } else if (IsBound(ct, 1) && value == GetBound(ct, 1)) {
+    } else if (ct->IsBound(1) && value == ct->GetBound(1)) {
       // No-op, removing.
-      MarkAsTriviallyTrue(ct);
+      ct->MarkAsTriviallyTrue();
       return false;
     }
   }
@@ -177,7 +122,7 @@ void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
     from = tmp;
   }
   if (from != to) {
-    FZVLOG << "Mark " << from->DebugString() << " as equivalent as "
+    FZVLOG << "Mark " << from->DebugString() << " as equivalent to "
            << to->DebugString() << std::endl;
     CHECK(to->Merge(from->name, from->domain, from->defining_constraint,
                     from->temporary));
@@ -277,7 +222,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
     if (id == "int_lin_eq") {
       if (ct->arguments[0].domain.values.size() > 2 &&
           ct->target_variable != nullptr) {
-        RemoveTargetVariable(ct);
+        ct->RemoveTargetVariable();
         return;
       } else if (ct->arguments[0].domain.values.size() <= 2 &&
                  ct->strong_propagation) {
@@ -292,7 +237,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
         (id == "array_bool_and" || id == "array_bool_or" ||
          id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
          id == "bool_ge_reif")) {
-      RemoveTargetVariable(ct);
+      ct->RemoveTargetVariable();
     }
   }
   // Second pass.

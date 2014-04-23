@@ -29,7 +29,7 @@ class FzPresolver {
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
   // The reduced model will:
   // - Have some unused variables
-  // - Have some unused constraints (marked as "inactive").
+  // - Have some unused constraints (marked as "is_trivially_true").
   // - Have some modified constraints (for example, they will no longer
   //   refer to unused variables)
   // TODO(user): compute on the fly, and add an API to access the set of
@@ -54,18 +54,6 @@ class FzPresolver {
   // Presolve rules.
   bool PresolveBool2Int(FzConstraint* input);
   bool PresolveIntEq(FzConstraint* input);
-
-  // Presolve helpers.
-  void MarkAsTriviallyTrue(FzConstraint* ct);
-  void RemoveTargetVariable(FzConstraint* ct);
-  // Returns true if the argument is a variable that is not a target variable.
-  bool IsIntVar(FzConstraint* ct, int position) const;
-  // Returns true if the argument is bound (integer value, singleton domain,
-  // variable with a singleton domain)
-  bool IsBound(FzConstraint* ct, int position) const;
-  // Returns the bound of the argument. IsBound() must have returned true for
-  // this method to succeed.
-  int64 GetBound(FzConstraint* ct, int position) const;
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

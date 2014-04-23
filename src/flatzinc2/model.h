@@ -159,6 +159,21 @@ struct FzConstraint {
   // Indicates if the constraint is trivially true. Presolve can make it so
   // if the presolve transformation ensures that the constraints is always true.
   bool is_trivially_true;
+
+  // Helpers
+  void MarkAsTriviallyTrue();
+  // Cleans the field target_variable, as well as the field defining_constraint
+  // on the target_variable.
+  void RemoveTargetVariable();
+  // Returns true if the argument is a variable that is not a target variable.
+  bool IsIntVar(int position) const;
+  // Returns true if the argument is bound (integer value, singleton domain,
+  // variable with a singleton domain)
+  bool IsBound(int position) const;
+  // Returns the bound of the argument. IsBound() must have returned true for
+  // this method to succeed.
+  int64 GetBound(int position) const;
+
 };
 
 // An annotation is a set of information. It has two use cases. One during

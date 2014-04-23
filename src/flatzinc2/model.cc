@@ -264,6 +264,56 @@ std::string FzConstraint::DebugString() const {
                       target.c_str(), trivially_true.c_str());
 }
 
+void FzConstraint::MarkAsTriviallyTrue() {
+  FZVLOG << "Marking " << DebugString() << " as trivially true" << std::endl;
+  is_trivially_true = true;
+  // TODO(user): Reclaim arguments and memory.
+}
+
+void FzConstraint::RemoveTargetVariable() {
+  if (target_variable != nullptr) {
+    FZVLOG << "Remove target_variable from " << DebugString() << std::endl;
+
+    target_variable = nullptr;
+    DCHECK_EQ(target_variable->defining_constraint, this);
+    target_variable->defining_constraint = nullptr;
+  }
+}
+
+bool FzConstraint::IsIntVar(int position) const {
+  return position >= 0 && position < arguments.size() &&
+         arguments[position].type == FzArgument::INT_VAR_REF &&
+         arguments[position].variable->defining_constraint == nullptr;
+}
+
+bool FzConstraint::IsBound(int position) const {
+  return position >= 0 && position < arguments.size() &&
+         (arguments[position].type == FzArgument::INT_VALUE ||
+          (arguments[position].type == FzArgument::INT_DOMAIN &&
+           arguments[position].domain.IsSingleton()) ||
+          (arguments[position].type == FzArgument::INT_VAR_REF &&
+           arguments[position].variable->domain.IsSingleton()));
+}
+
+int64 FzConstraint::GetBound(int position) const {
+  CHECK_GE(position, 0);
+  CHECK_LT(position, arguments.size());
+  switch (arguments[position].type) {
+    case FzArgument::INT_VALUE:
+      return arguments[position].integer_value;
+    case FzArgument::INT_DOMAIN: {
+      return arguments[position].domain.values[0];
+    }
+    case FzArgument::INT_VAR_REF: {
+      return arguments[position].variable->domain.values[0];
+    }
+    default: {
+      LOG(FATAL) << "Wrong GetBound(" << position << ") on " << DebugString();
+      return 0;
+    }
+  }
+}
+
 // ----- FzAnnotation -----
 
 FzAnnotation FzAnnotation::Empty() {
