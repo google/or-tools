@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <string>
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
@@ -19,6 +20,8 @@
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"
+
+DECLARE_bool(verbose_logging);
 
 namespace operations_research {
 // List of tricks to add to the current flatzinc extraction process.
@@ -482,6 +485,7 @@ void ExtractVariableCumulative(FzSolver* const solver, FzConstraint* const ct) {
 }
 
 void FzSolver::ExtractConstraint(FzConstraint* const ct) {
+  FZVLOG << "Extracting " << ct->DebugString() << std::endl;
   const std::string& type = ct->type;
   if (type == "all_different_int") {
     ExtractAllDifferentInt(this, ct);

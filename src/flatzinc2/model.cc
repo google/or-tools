@@ -17,7 +17,6 @@
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "flatzinc2/model.h"
-#include "flatzinc2/parser.h"
 
 DEFINE_bool(logging, false,
             "Print logging information from the flatzinc interpreter.");

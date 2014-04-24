@@ -14,6 +14,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
+#include "base/map_util.h"
 #include "flatzinc2/model.h"
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
@@ -74,9 +75,9 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
     std::string result =
         StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
-      result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                                 output.bounds[i].min_value,
-                                 output.bounds[i].max_value));
+      result.append(
+          StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
+                       output.bounds[i].min_value, output.bounds[i].max_value));
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
@@ -93,16 +94,67 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
   return "";
 }
 
+namespace {
+struct ConstraintWithIo {
+  FzConstraint* ct;
+  int index;
+  hash_set<FzIntegerVariable*> required;
+
+  ConstraintWithIo(FzConstraint* cte, int i,
+                   const hash_set<FzIntegerVariable*> & defined)
+      : ct(cte), index(i) {
+    hash_set<FzIntegerVariable*> marked;
+    for (const FzArgument& arg : ct->arguments) {
+      if (arg.variable != nullptr && ContainsKey(defined, arg.variable)) {
+        required.insert(arg.variable);
+      }
+      for (FzIntegerVariable* const var : arg.variables) {
+        if (ContainsKey(defined, var)) {
+          required.insert(var);
+        }
+      }
+    }
+    if (ct->target_variable != nullptr) {
+      required.erase(ct->target_variable);
+    }
+  }
+};
+
+struct ConstraintWithIoComparator {
+  bool operator()(const ConstraintWithIo& a, const ConstraintWithIo& b) const {
+    if (a.ct->target_variable != nullptr &&
+        ContainsKey(b.required, a.ct->target_variable)) {
+      return true;
+    }
+    if (b.ct->target_variable != nullptr &&
+        ContainsKey(a.required, b.ct->target_variable)) {
+      return false;
+    }
+    return a.index < b.index;
+  }
+};
+}  // namespace
+
 bool FzSolver::Extract() {
   statistics_.BuildStatistics();
-  for (int i = 0; i < model_.variables().size(); ++i) {
-    Extract(model_.variables()[i]);
-  }
-  for (int i = 0; i < model_.constraints().size(); ++i) {
-    FzConstraint* const ct = model_.constraints()[i];
-    if (ct != nullptr && !ct->is_trivially_true) {
-      ExtractConstraint(ct);
+  hash_set<FzIntegerVariable*> defined_variables;
+  for (FzIntegerVariable* const var : model_.variables()) {
+    if (var->defining_constraint == nullptr) {
+      Extract(var);
+    } else {
+      defined_variables.insert(var);
     }
+  }
+  int index = 0;
+  std::vector<ConstraintWithIo> to_sort;
+  for (FzConstraint* ct : model_.constraints()) {
+    if (ct != nullptr && !ct->is_trivially_true) {
+      to_sort.push_back(ConstraintWithIo(ct, index++, defined_variables));
+    }
+  }
+  std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+  for (const ConstraintWithIo& ctio : to_sort) {
+    ExtractConstraint(ctio.ct);
   }
   return true;
 }
