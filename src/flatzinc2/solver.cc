@@ -121,6 +121,8 @@ struct ConstraintWithIo {
   }
 };
 
+// Comparator to sort constraints such that required variables are always
+// created before the constraints that use them.
 struct ConstraintWithIoComparator {
   bool operator()(const ConstraintWithIo& a, const ConstraintWithIo& b) const {
     if (a.ct->target_variable != nullptr &&

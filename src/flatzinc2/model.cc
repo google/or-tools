@@ -307,7 +307,7 @@ void FzConstraint::RemoveTargetVariable() {
   }
 }
 
-bool FzConstraint::IsIntVar(int position) const {
+bool FzConstraint::IsIntegerVariable(int position) const {
   return position >= 0 && position < arguments.size() &&
          arguments[position].type == FzArgument::INT_VAR_REF &&
          arguments[position].variable->defining_constraint == nullptr;

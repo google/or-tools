@@ -6,7 +6,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
+// distributed under the License is distributed on an "AS% IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
@@ -37,8 +37,8 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
-  if (ct->IsIntVar(0)) {
-    if (ct->IsIntVar(1)) {
+  if (ct->IsIntegerVariable(0)) {
+    if (ct->IsIntegerVariable(1)) {
       MarkVariablesAsEquivalent(ct->GetVar(0), ct->GetVar(1));
       ct->MarkAsTriviallyTrue();
       return true;
@@ -50,7 +50,7 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
     }
   } else if (ct->IsBound(0)) {  // Arg0 is an integer value.
     const int64 value = ct->GetBound(0);
-    if (ct->IsIntVar(1)) {
+    if (ct->IsIntegerVariable(1)) {
       ct->GetVar(1)->domain.ReduceDomain(value, value);
       ct->MarkAsTriviallyTrue();
       return true;
@@ -64,9 +64,9 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
-  if ((ct->IsIntVar(0) && ct->IsBound(1) &&
+  if ((ct->IsIntegerVariable(0) && ct->IsBound(1) &&
        ct->GetVar(0)->domain.RemoveValue(ct->GetBound(1))) ||
-      (ct->IsIntVar(1) && ct->IsBound(0) &&
+      (ct->IsIntegerVariable(1) && ct->IsBound(0) &&
        ct->GetVar(1)->domain.RemoveValue(ct->GetBound(0)))) {
     FZVLOG << "Propagate " << ct->DebugString() << std::endl;
     return true;
@@ -75,8 +75,8 @@ bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
-  const string& id = ct->type;
-  if (ct->IsIntVar(0) && ct->IsBound(1)) {
+  const std::string& id = ct->type;
+  if (ct->IsIntegerVariable(0) && ct->IsBound(1)) {
     FzIntegerVariable* const var = ct->GetVar(0);
     const int64 value = ct->GetBound(1);
     if (id == "int_le") {
@@ -90,7 +90,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     }
     ct->MarkAsTriviallyTrue();
     return true;
-  } else if (ct->IsBound(0) && ct->IsIntVar(1)) {
+  } else if (ct->IsBound(0) && ct->IsIntegerVariable(1)) {
     FzIntegerVariable* const var = ct->GetVar(1);
     const int64 value = ct->GetBound(0);
     if (id == "int_le") {
@@ -109,7 +109,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
 }
 
 void FzPresolver::Unreify(FzConstraint* ct) {
-  const string& id = ct->type;
+  const std::string& id = ct->type;
   const int last_argument = ct->arguments.size() - 1;
   ct->type.resize(id.size() - 5);
   FzIntegerVariable* const bool_var = ct->target_variable;
@@ -163,7 +163,8 @@ void FzPresolver::Unreify(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
-  if (ct->IsIntVar(0) && ct->arguments[1].type == FzArgument::INT_DOMAIN) {
+  if (ct->IsIntegerVariable(0) &&
+      ct->arguments[1].type == FzArgument::INT_DOMAIN) {
     FZVLOG << "Propagate " << ct->DebugString() << std::endl;
     ct->GetVar(0)->domain.IntersectWith(ct->arguments[1].domain);
     ct->MarkAsTriviallyTrue();
@@ -222,7 +223,7 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
-  if (ct->IsIntVar(2)) {
+  if (ct->IsIntegerVariable(2)) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << std::endl;
     ct->GetVar(2)->domain.IntersectWith(ct->arguments[1].domain);
     return true;
@@ -232,9 +233,10 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
-  const string& id = ct->type;
+  const std::string& id = ct->type;
   const int num_arguments = ct->arguments.size();
-  if (id.find("_reif") != std::string::npos && ct->IsBound(num_arguments - 1)) {
+  if (id.find("_reif") != std::string::npos &&
+      ct->IsBound(num_arguments - 1)) {
     Unreify(ct);
     changed = true;
   }
@@ -414,7 +416,7 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   // First pass.
   for (FzConstraint* const ct : model->constraints()) {
-    const string& id = ct->type;
+    const std::string& id = ct->type;
     // Remove useless annotations on int_lin_eq.
     if (id == "int_lin_eq") {
       if (ct->arguments[0].domain.values.size() > 2 &&
@@ -439,7 +441,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   }
   // Second pass.
   for (FzConstraint* const ct : model->constraints()) {
-    const string& id = ct->type;
+    const std::string& id = ct->type;
     // Create new target variables with unused boolean variables.
     if (ct->target_variable == nullptr &&
         (id == "int_lin_eq_reif" || id == "int_lin_ne_reif" ||

@@ -26,7 +26,7 @@ DEFINE_string(file, "", "Input file in the flatzinc format.");
 DEFINE_bool(presolve, false, "Presolve loaded file.");
 
 namespace operations_research {
-void ParseFile(const string& filename, bool presolve) {
+void ParseFile(const std::string& filename, bool presolve) {
   std::string problem_name(filename);
   problem_name.resize(problem_name.size() - 4);
   size_t found = problem_name.find_last_of("/\\");

@@ -89,8 +89,7 @@ struct FzIntegerVariable {
   FzDomain domain;
   // The constraint that defines this variable, if any, and nullptr otherwise.
   // This is the reverse field of FzConstraint::target_variable. This constraint
-  // is
-  // not owned by the variable.
+  // is not owned by the variable.
   FzConstraint* defining_constraint;
   // Indicates if the variable is a temporary variable created when flattening
   // the model. For instance, if you write x == y * z + y, then it will be
@@ -169,7 +168,7 @@ struct FzConstraint {
   // on the target_variable.
   void RemoveTargetVariable();
   // Returns true if the argument is a variable that is not a target variable.
-  bool IsIntVar(int position) const;
+  bool IsIntegerVariable(int position) const;
   // Returns true if the argument is bound (integer value, singleton domain,
   // variable with a singleton domain)
   bool IsBound(int position) const;
