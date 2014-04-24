@@ -103,7 +103,7 @@ struct ConstraintWithIo {
   ConstraintWithIo(FzConstraint* cte, int i,
                    const hash_set<FzIntegerVariable*>& defined)
       : ct(cte), index(i) {
-    hash_set<FzIntegerVariable*> marked;
+    // Collect required variables.
     for (const FzArgument& arg : ct->arguments) {
       if (arg.variable != nullptr && ContainsKey(defined, arg.variable)) {
         required.insert(arg.variable);
@@ -114,6 +114,7 @@ struct ConstraintWithIo {
         }
       }
     }
+    // Remove the target_variable as it always appears in the constraint.
     if (ct->target_variable != nullptr) {
       required.erase(ct->target_variable);
     }
