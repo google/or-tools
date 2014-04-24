@@ -101,7 +101,7 @@ struct ConstraintWithIo {
   hash_set<FzIntegerVariable*> required;
 
   ConstraintWithIo(FzConstraint* cte, int i,
-                   const hash_set<FzIntegerVariable*> & defined)
+                   const hash_set<FzIntegerVariable*>& defined)
       : ct(cte), index(i) {
     hash_set<FzIntegerVariable*> marked;
     for (const FzArgument& arg : ct->arguments) {
@@ -145,6 +145,8 @@ bool FzSolver::Extract() {
       defined_variables.insert(var);
     }
   }
+  // Sort constraints such that defined variables are created before the
+  // extraction of the constraints that use them.
   int index = 0;
   std::vector<ConstraintWithIo> to_sort;
   for (FzConstraint* ct : model_.constraints()) {
