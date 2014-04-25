@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "base/map_util.h"
+#include "base/strutil.h"
 #include "flatzinc2/presolve.h"
 
 DECLARE_bool(logging);
@@ -22,9 +23,9 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
-//   - array_xxx_element and index is affine -> reduce array.
+//   - array_xxx_element and index is affine -> reduce array
+//   - chain of int_min, int_max -> regroup into maximum_int, minimum_int
 
 // ----- Presolve rules -----
 
@@ -267,11 +268,39 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::PresolveLinear(FzConstraint* ct) {
+  for (const int64 coef : ct->arguments[0].domain.values) {
+    if (coef > 0) {
+      return false;
+    }
+  }
+  FZVLOG << "Reverse " << ct->DebugString() << std::endl;
+  for (int64& coef : ct->arguments[0].domain.values) {
+    coef *= -1;
+  }
+  ct->arguments[2].integer_value *= -1;
+  const std::string& id = ct->type;
+  if (id == "int_lin_le") {
+    ct->type = "int_lin_ge";
+  } else if (id == "int_lin_lt") {
+    ct->type = "int_lin_gt";
+  } else if (id == "int_lin_le") {
+    ct->type = "int_lin_ge";
+  } else if (id == "int_lin_lt") {
+    ct->type = "int_lin_gt";
+  } else if (id == "int_lin_le_reif") {
+    ct->type = "int_lin_ge_reif";
+  } else if (id == "int_lin_ge_reif") {
+    ct->type = "int_lin_le_reif";
+  }
+  return false;
+}
+
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
   const std::string& id = ct->type;
   const int num_arguments = ct->arguments.size();
-  if (id.find("_reif") != std::string::npos && ct->IsBound(num_arguments - 1)) {
+  if (HasSuffixString(id, "_reif") && ct->IsBound(num_arguments - 1)) {
     Unreify(ct);
     changed = true;
   }
@@ -326,6 +355,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_lin_lt") {
     changed |= PresolveIntLinLt(ct);
+  }
+  if (HasPrefixString(id, "int_lin_")) {
+    changed |= PresolveLinear(ct);
   }
   return changed;
 }
