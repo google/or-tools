@@ -62,6 +62,10 @@ class FzPresolver {
   bool PresolveArrayBoolOr(FzConstraint* ct);
   bool PresolveBoolEqNeReif(FzConstraint* ct);
   bool PresolveArrayIntElement(FzConstraint* ct);
+  bool PresolveIntDiv(FzConstraint* ct);
+  bool PresolveIntTimes(FzConstraint* ct);
+  bool PresolveIntLinGt(FzConstraint* ct);
+  bool PresolveIntLinLt(FzConstraint* ct);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

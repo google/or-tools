@@ -24,9 +24,7 @@ namespace operations_research {
 // Presolve rule:
 //   - int_lin_xx -> replace all negative by opposite
 //   - int_lin_le/eq -> all >0 -> bound propagation on max
-//   - int_div/times -> propagate if arg0/arg1 bound
-//   - int_lin_lt/gt -> transform to le/ge
-//   - array_int_element -> reduce domain
+//   - array_xxx_element and index is affine -> reduce array.
 
 // ----- Presolve rules -----
 
@@ -189,6 +187,26 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   return false;
 }
 
+bool PresolveIntTimes(FzConstraint* ct) {
+  if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
+      !ct->IsBound(2)) {
+    const int64 value = ct->GetBound(0) * ct->GetBound(1);
+    ct->GetVar(2)->domain.ReduceDomain(value, value);
+    return true;
+  }
+  return false;
+}
+
+bool PresolveIntDiv(FzConstraint* ct) {
+  if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
+      !ct->IsBound(2)) {
+    const int64 value = ct->GetBound(0) / ct->GetBound(1);
+    ct->GetVar(2)->domain.ReduceDomain(value, value);
+    return true;
+  }
+  return false;
+}
+
 bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   if (ct->IsBound(1) && ct->GetBound(1) == 1) {
     for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
@@ -222,6 +240,18 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
+  ct->arguments[2].integer_value++;
+  ct->type = "int_lin_ge";
+  return true;
+}
+
+bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
+  ct->arguments[2].integer_value--;
+  ct->type = "int_lin_le";
+  return true;
+}
+
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->IsIntegerVariable(2)) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << std::endl;
@@ -235,8 +265,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
   const std::string& id = ct->type;
   const int num_arguments = ct->arguments.size();
-  if (id.find("_reif") != std::string::npos &&
-      ct->IsBound(num_arguments - 1)) {
+  if (id.find("_reif") != std::string::npos && ct->IsBound(num_arguments - 1)) {
     Unreify(ct);
     changed = true;
   }
@@ -279,6 +308,18 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "array_int_element") {
     changed |= PresolveArrayIntElement(ct);
+  }
+  if (id == "int_div") {
+    changed |= PresolveIntDiv(ct);
+  }
+  if (id == "int_times") {
+    changed |= PresolveIntTimes(ct);
+  }
+  if (id == "int_lin_gt") {
+    changed |= PresolveIntLinGt(ct);
+  }
+  if (id == "int_lin_lt") {
+    changed |= PresolveIntLinLt(ct);
   }
   return changed;
 }
