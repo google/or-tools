@@ -269,6 +269,9 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveLinear(FzConstraint* ct) {
+  if (ct->arguments[0].domain.values.empty()) {
+    return false;
+  }
   for (const int64 coef : ct->arguments[0].domain.values) {
     if (coef > 0) {
       return false;
