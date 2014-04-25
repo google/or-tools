@@ -67,6 +67,7 @@ class FzPresolver {
   bool PresolveIntLinGt(FzConstraint* ct);
   bool PresolveIntLinLt(FzConstraint* ct);
   bool PresolveLinear(FzConstraint* ct);
+  bool PresolvePropagatePositiveLinear(FzConstraint* ct);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

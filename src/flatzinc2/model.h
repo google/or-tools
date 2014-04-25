@@ -140,7 +140,10 @@ struct FzConstraint {
         arguments(arguments_),
         strong_propagation(strong_propagation_),
         target_variable(target_variable_),
-        is_trivially_true(false) {}
+        is_trivially_true(false),
+        presolve_done(false),
+        presolve_propagation_done(false),
+        presolve_reverse_done(false) {}
 
   std::string DebugString() const;
 
@@ -160,7 +163,13 @@ struct FzConstraint {
   FzIntegerVariable* target_variable;
   // Indicates if the constraint is trivially true. Presolve can make it so
   // if the presolve transformation ensures that the constraints is always true.
-  bool is_trivially_true;
+  bool is_trivially_true : 1;
+  // Indicates if presolve has been done.
+  bool presolve_done : 1;
+  // Indicates if presolve has done propagation.
+  bool presolve_propagation_done : 1;
+  // Indicates if presolve has reversed the constraint.
+  bool presolve_reverse_done : 1;
 
   // Helpers
   void MarkAsTriviallyTrue();

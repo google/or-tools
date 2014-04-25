@@ -23,7 +23,6 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - int_lin_le/eq -> all >0 -> bound propagation on max
 //   - array_xxx_element and index is affine -> reduce array
 //   - chain of int_min, int_max -> regroup into maximum_int, minimum_int
 
@@ -63,11 +62,15 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
+  if (ct->presolve_propagation_done) {
+    return false;
+  }
   if ((ct->IsIntegerVariable(0) && ct->IsBound(1) &&
        ct->GetVar(0)->domain.RemoveValue(ct->GetBound(1))) ||
       (ct->IsIntegerVariable(1) && ct->IsBound(0) &&
        ct->GetVar(1)->domain.RemoveValue(ct->GetBound(0)))) {
     FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    ct->presolve_propagation_done = true;
     return true;
   }
   return false;
@@ -172,22 +175,6 @@ bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
   return false;
 }
 
-bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
-  if (ct->IsBound(1) && ct->GetBound(1) == 0) {
-    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
-      if (!var->domain.Contains(0)) {
-        return false;
-      }
-    }
-    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
-    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
-      var->domain.ReduceDomain(0, 0);
-    }
-    return true;
-  }
-  return false;
-}
-
 bool PresolveIntTimes(FzConstraint* ct) {
   if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
       !ct->IsBound(2)) {
@@ -210,8 +197,27 @@ bool PresolveIntDiv(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
+  if (!ct->presolve_propagation_done && ct->IsBound(1) &&
+      ct->GetBound(1) == 0) {
+    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
+      if (!var->domain.Contains(0)) {
+        return false;
+      }
+    }
+    FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
+      var->domain.ReduceDomain(0, 0);
+    }
+    ct->presolve_propagation_done = true;
+    return true;
+  }
+  return false;
+}
+
 bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
-  if (ct->IsBound(1) && ct->GetBound(1) == 1) {
+  if (!ct->presolve_propagation_done && ct->IsBound(1) &&
+      ct->GetBound(1) == 1) {
     for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
       if (!var->domain.Contains(1)) {
         return false;
@@ -221,6 +227,7 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
     for (FzIntegerVariable* const var : ct->arguments[0].variables) {
       var->domain.ReduceDomain(1, 1);
     }
+    ct->presolve_propagation_done = true;
     return true;
   }
   return false;
@@ -260,16 +267,17 @@ bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
-  if (ct->IsIntegerVariable(2)) {
+  if (ct->IsIntegerVariable(2) && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << std::endl;
     ct->GetVar(2)->domain.IntersectWith(ct->arguments[1].domain);
+    ct->presolve_propagation_done = true;
     return true;
   }
   return false;
 }
 
 bool FzPresolver::PresolveLinear(FzConstraint* ct) {
-  if (ct->arguments[0].domain.values.empty()) {
+  if (ct->arguments[0].domain.values.empty() || ct->presolve_reverse_done) {
     return false;
   }
   for (const int64 coef : ct->arguments[0].domain.values) {
@@ -296,7 +304,35 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
   } else if (id == "int_lin_ge_reif") {
     ct->type = "int_lin_le_reif";
   }
-  return false;
+  ct->presolve_reverse_done = true;
+  return true;
+}
+
+bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
+  const int64 rhs = ct->arguments[2].integer_value;
+  if (ct->presolve_propagation_done || rhs < 0) {
+    return false;
+  }
+  for (const int64 coef : ct->arguments[0].domain.values) {
+    if (coef < 0) {
+      return false;
+    }
+  }
+  for (FzIntegerVariable* const var : ct->arguments[1].variables) {
+    if (!var->domain.is_interval || var->domain.values.empty() ||
+        var->domain.values[0] < 0) {
+      return false;
+    }
+  }
+  for (int i = 0; i < ct->arguments[0].domain.values.size(); ++i) {
+    const int64 coef = ct->arguments[0].domain.values[i];
+    if (coef > 0) {
+      FzIntegerVariable* const var = ct->arguments[1].variables[i];
+      var->domain.ReduceDomain(0, rhs / coef);
+    }
+  }
+  ct->presolve_propagation_done = true;
+  return true;
 }
 
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
@@ -361,6 +397,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (HasPrefixString(id, "int_lin_")) {
     changed |= PresolveLinear(ct);
+  }
+  if (id == "int_lin_eq" || id == "int_lin_le") {
+    changed |= PresolvePropagatePositiveLinear(ct);
   }
   return changed;
 }
