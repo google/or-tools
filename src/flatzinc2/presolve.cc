@@ -190,6 +190,7 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
 bool PresolveIntTimes(FzConstraint* ct) {
   if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
       !ct->IsBound(2)) {
+    FZVLOG << " Propagate " << ct->DebugString() << std::endl;
     const int64 value = ct->GetBound(0) * ct->GetBound(1);
     ct->GetVar(2)->domain.ReduceDomain(value, value);
     return true;
@@ -200,6 +201,7 @@ bool PresolveIntTimes(FzConstraint* ct) {
 bool PresolveIntDiv(FzConstraint* ct) {
   if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
       !ct->IsBound(2)) {
+    FZVLOG << " Propagate " << ct->DebugString() << std::endl;
     const int64 value = ct->GetBound(0) / ct->GetBound(1);
     ct->GetVar(2)->domain.ReduceDomain(value, value);
     return true;
@@ -241,12 +243,16 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
+  FZVLOG << "Transform " << ct->DebugString() << " into int_lin_ge"
+         << std::endl;
   ct->arguments[2].integer_value++;
   ct->type = "int_lin_ge";
   return true;
 }
 
 bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
+  FZVLOG << "Transform " << ct->DebugString() << " into int_lin_le"
+         << std::endl;
   ct->arguments[2].integer_value--;
   ct->type = "int_lin_le";
   return true;
