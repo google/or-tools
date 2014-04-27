@@ -281,7 +281,8 @@ std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
   const std::string trivially_true =
       is_trivially_true
-          ? (presolve_removed ? "[presolved out]" : "[trivially true]")
+          ? (presolve_removed ? "[presolved out]"
+                              : "[propagated during presolve]")
           : "";
   const std::string target =
       target_variable != nullptr

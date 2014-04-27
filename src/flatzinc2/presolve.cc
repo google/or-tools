@@ -70,6 +70,7 @@ bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
       (ct->IsIntegerVariable(1) && ct->IsBound(0) &&
        ct->GetVar(1)->domain.RemoveValue(ct->GetBound(0)))) {
     FZVLOG << "Propagate " << ct->DebugString() << std::endl;
+    ct->is_trivially_true = true;
     ct->presolve_propagation_done = true;
     return true;
   }
@@ -489,6 +490,7 @@ bool FzPresolver::Run(FzModel* model) {
       DCHECK(changed);
       changed = true;  // To be safe in opt mode.
       SubstituteEverywhere(model);
+      var_representative_map_.clear();
     }
     changed_since_start |= changed;
     if (!changed) break;
@@ -516,6 +518,7 @@ void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
            << to->DebugString() << std::endl;
     CHECK(to->Merge(from->name, from->domain, from->defining_constraint,
                     from->temporary));
+    from->active = false;
     var_representative_map_[from] = to;
   }
 }
@@ -575,6 +578,11 @@ void FzPresolver::SubstituteEverywhere(FzModel* model) {
       output->flat_variables[i] =
           FindRepresentativeOfVar(output->flat_variables[i]);
     }
+  }
+  // Do not forget to merge domain that could have evolved asynchronously
+  // during presolve.
+  for (const auto& iter : var_representative_map_) {
+    iter.second->domain.IntersectWith(iter.first->domain);
   }
 }
 
