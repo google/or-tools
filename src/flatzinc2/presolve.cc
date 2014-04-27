@@ -546,8 +546,14 @@ void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
   start->type = start->type == "int_min" ? "minimum_int" : "maximum_int";
   start->target_variable = out;
   out->defining_constraint = start;
+  for (FzIntegerVariable* const var : carry_over) {
+    if (var != carry_over.back()) {
+      var->active = false;
+    }
+  }
   FZVLOG << "Regroup chain of min/max into " << start->DebugString()
          << std::endl;
+
 }
 }  // namespace
 

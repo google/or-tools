@@ -94,7 +94,10 @@ struct FzIntegerVariable {
   // Indicates if the variable is a temporary variable created when flattening
   // the model. For instance, if you write x == y * z + y, then it will be
   // expanded into y * z == t and x = t + y. And t will be a temporary variable.
-  bool temporary;
+  bool temporary : 1;
+  // Indicates if the variable should be created at all. A temporary variable
+  // can become useless during presolve.
+  bool active : 1;
 
   friend class FzModel;
 

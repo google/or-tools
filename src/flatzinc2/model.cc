@@ -244,7 +244,8 @@ FzIntegerVariable::FzIntegerVariable(const std::string& name_,
     : name(name_),
       domain(domain_),
       defining_constraint(nullptr),
-      temporary(temporary_) {}
+      temporary(temporary_),
+      active(true) {}
 
 bool FzIntegerVariable::Merge(const std::string& other_name,
                               const FzDomain& other_domain,
@@ -270,9 +271,10 @@ std::string FzIntegerVariable::DebugString() const {
     return StringPrintf("% " GG_LL_FORMAT "d", domain.values.back());
   } else {
     return StringPrintf(
-        "%s(%s%s%s)", name.c_str(), domain.DebugString().c_str(),
+        "%s(%s%s%s)%s", name.c_str(), domain.DebugString().c_str(),
         temporary ? ", temporary" : "",
-        defining_constraint != nullptr ? ", target_variable" : "");
+        defining_constraint != nullptr ? ", target_variable" : "",
+        active ? "" : " [presolved out]");
   }
 }
 
