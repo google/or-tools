@@ -174,7 +174,7 @@ bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
   return false;
 }
 
-bool PresolveIntTimes(FzConstraint* ct) {
+bool FzPresolver::PresolveIntTimes(FzConstraint* ct) {
   if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
       !ct->IsBound(2)) {
     FZVLOG << " Propagate " << ct->DebugString() << std::endl;
@@ -185,7 +185,7 @@ bool PresolveIntTimes(FzConstraint* ct) {
   return false;
 }
 
-bool PresolveIntDiv(FzConstraint* ct) {
+bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
   if (ct->IsBound(0) && ct->IsBound(1) && ct->IsIntegerVariable(2) &&
       !ct->IsBound(2)) {
     FZVLOG << " Propagate " << ct->DebugString() << std::endl;
