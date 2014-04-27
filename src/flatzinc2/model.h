@@ -143,7 +143,8 @@ struct FzConstraint {
         is_trivially_true(false),
         presolve_done(false),
         presolve_propagation_done(false),
-        presolve_reverse_done(false) {}
+        presolve_reverse_done(false),
+        presolve_regroup_done(false) {}
 
   std::string DebugString() const;
 
@@ -170,6 +171,8 @@ struct FzConstraint {
   bool presolve_propagation_done : 1;
   // Indicates if presolve has reversed the constraint.
   bool presolve_reverse_done : 1;
+  // Indicates if presolve has regrouped this constraint into another one.
+  bool presolve_regroup_done : 1;
 
   // Helpers
   void MarkAsTriviallyTrue();

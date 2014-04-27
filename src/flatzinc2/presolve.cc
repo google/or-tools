@@ -24,7 +24,6 @@ namespace operations_research {
 //
 // Presolve rule:
 //   - array_xxx_element and index is affine -> reduce array
-//   - chain of int_min, int_max -> regroup into maximum_int, minimum_int
 
 // ----- Presolve rules -----
 
@@ -534,6 +533,24 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
 
 // ----- Clean up model -----
 
+namespace {
+void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
+             const std::vector<FzIntegerVariable*>& carry_over) {
+  // End of chain, reconstruct.
+  FzIntegerVariable* const out = carry_over.back();
+  start->arguments.pop_back();
+  start->arguments[0].variable = out;
+  start->arguments[1].variable = nullptr;
+  start->arguments[1].type = FzArgument::INT_VAR_REF_ARRAY;
+  start->arguments[1].variables = chain;
+  start->type = start->type == "int_min" ? "minimum_int" : "maximum_int";
+  start->target_variable = out;
+  out->defining_constraint = start;
+  FZVLOG << "Regroup chain of min/max into " << start->DebugString()
+         << std::endl;
+}
+}  // namespace
+
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   // First pass.
   for (FzConstraint* const ct : model->constraints()) {
@@ -578,6 +595,50 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
         bool_var->defining_constraint = ct;
       }
     }
+  }
+  // Regroup int_min and int_max into maximum_int and maximum_int
+  FzConstraint* start = nullptr;
+  std::vector<FzIntegerVariable*> chain;
+  std::vector<FzIntegerVariable*> carry_over;
+  for (FzConstraint* const ct : model->constraints()) {
+    if (start == nullptr) {
+      if ((ct->type == "int_min" || ct->type == "int_max") &&
+                    ct->arguments[0].variable == ct->arguments[1].variable) {
+        // This is the start of the chain.
+        FZVLOG << "Recognize start of chain " << ct->DebugString() << std::endl;
+        start = ct;
+        chain.push_back(ct->arguments[0].variable);
+        carry_over.push_back(ct->arguments[2].variable);
+        carry_over.back()->defining_constraint = nullptr;
+      }
+    } else if (ct->type == start->type &&
+               ct->arguments[1].variable == carry_over.back()) {
+      chain.push_back(ct->arguments[0].variable);
+      carry_over.push_back(ct->arguments[2].variable);
+      ct->is_trivially_true = true;
+      ct->presolve_regroup_done = true;
+      ct->target_variable = nullptr;
+      carry_over.back()->defining_constraint = nullptr;
+    } else {
+      Regroup(start, chain, carry_over);
+      // Clean
+      start = nullptr;
+      chain.clear();
+      carry_over.clear();
+      // Check again ct.
+      if ((ct->type == "int_min" || ct->type == "int_max") &&
+                    ct->arguments[0].variable == ct->arguments[1].variable) {
+        // This is the start of the chain.
+        FZVLOG << "Recognize start of chain " << ct->DebugString() << std::endl;
+        start = ct;
+        chain.push_back(ct->arguments[0].variable);
+        carry_over.push_back(ct->arguments[2].variable);
+        carry_over.back()->defining_constraint = nullptr;
+      }
+    }
+  }
+  if (start != nullptr) {
+    Regroup(start, chain, carry_over);
   }
 }
 }  // namespace operations_research

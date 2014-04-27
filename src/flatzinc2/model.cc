@@ -281,7 +281,9 @@ std::string FzIntegerVariable::DebugString() const {
 std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
   const std::string trivially_true =
-      is_trivially_true ? "[trivially true]" : "";
+      is_trivially_true
+          ? (presolve_regroup_done ? "[presolved out]" : "[trivially true]")
+          : "";
   const std::string target =
       target_variable != nullptr
           ? StringPrintf(" => %s", target_variable->name.c_str())
