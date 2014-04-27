@@ -25,6 +25,11 @@ namespace operations_research {
 // Presolve rule:
 //   - array_var_int_element and index is affine -> reduce array
 //   - array_int_element and index is flattened 2d -> rewrite as 2d array.
+//
+// TODO(user):
+//   - store dependency graph of constraints -> variable to speed up presolve.
+//   - use the same dependency graph to speed up variable substitution.
+//   - add more check when presolving out a variable or a constraint.
 
 // ----- Presolve rules -----
 
