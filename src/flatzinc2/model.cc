@@ -271,7 +271,7 @@ std::string FzIntegerVariable::DebugString() const {
         "%s(%s%s%s)%s", name.c_str(), domain.DebugString().c_str(),
         temporary ? ", temporary" : "",
         defining_constraint != nullptr ? ", target_variable" : "",
-        active ? "" : " [presolved out]");
+        active ? "" : " [removed during presolve]");
   }
 }
 
@@ -281,7 +281,7 @@ std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
   const std::string trivially_true =
       is_trivially_true
-          ? (presolve_removed ? "[presolved out]"
+          ? (presolve_removed ? "[removed during presolve]"
                               : "[propagated during presolve]")
           : "";
   const std::string target =
