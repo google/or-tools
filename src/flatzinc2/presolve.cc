@@ -711,6 +711,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
     }
   }
+  // Checks left over from the loop.
   if (start != nullptr) {
     Regroup(start, chain, carry_over);
   }
