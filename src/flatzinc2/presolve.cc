@@ -23,7 +23,7 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - array_xxx_element and index is affine -> reduce array
+//   - array_var_int_element and index is affine -> reduce array
 
 // ----- Presolve rules -----
 
@@ -334,6 +334,71 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
   return true;
 }
 
+bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
+  if (ct->arguments[0].domain.values.size() == 2 &&
+      ct->arguments[1].variables[0] == ct->target_variable &&
+      ct->arguments[0].domain.values[0] == -1 &&
+      !ct->presolve_mapping_done &&
+      !ContainsKey(affine_map_, ct->arguments[1].variables[0])) {
+    affine_map_[ct->arguments[1].variables[0]] =
+        AffineMapping(ct->arguments[1].variables[1],
+                      ct->arguments[0].domain.values[1],
+                      -ct->arguments[2].integer_value,
+                      ct);
+    ct->presolve_mapping_done = true;
+    FZVLOG << "Store affine mapping info for " << ct->DebugString()
+           << std::endl;
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
+  FzIntegerVariable* const index_var = ct->arguments[0].variable;
+  if (ContainsKey(affine_map_, index_var)) {
+    const AffineMapping& mapping = affine_map_[index_var];
+    const FzDomain& domain = mapping.variable->domain;
+    if (!domain.is_interval || domain.values.size() != 2 ||
+        domain.values[0] < 0 || mapping.offset < 0) {
+      // Invalid case. Ignore it.
+      return false;
+    }
+    const std::vector<int64>& values = ct->arguments[1].domain.values;
+    std::vector<int64> new_values;
+    for (int64 i = domain.values[0]; i <= domain.values[1]; ++i) {
+      const int64 index = (i - 1) * mapping.coefficient + mapping.offset;
+      if (index < 0) {
+        return false;
+      }
+      if (index >= values.size()) {
+        break;
+      }
+      new_values.push_back(values[index]);
+    }
+    // Rewrite constraint.
+    FZVLOG << "Simplify " << ct->DebugString() << std::endl;
+    ct->arguments[0].variable = mapping.variable;
+    ct->arguments[1].domain.values.swap(new_values);
+    // Reset propagate flag.
+    ct->presolve_propagation_done = false;
+    FZVLOG << "    into  " << ct->DebugString() << std::endl;
+    // Mark old index var and affine constraint as presolved out.
+    mapping.constraint->is_trivially_true = true;
+    mapping.constraint->presolve_removed = true;
+    index_var->active = false;
+    return true;
+  }
+  if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
+      index_var->domain.values[1] < ct->arguments[1].domain.values.size()) {
+    // Reduce array of values.
+    ct->arguments[1].domain.values.resize(index_var->domain.values[1]);
+    ct->presolve_propagation_done = false;
+    FZVLOG << "Reduce array on " << ct->DebugString() << std::endl;
+    return true;
+  }
+  return false;
+}
+
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
   const std::string& id = ct->type;
@@ -379,9 +444,6 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "bool_eq_reif" || id == "bool_ne_reif") {
     changed |= PresolveBoolEqNeReif(ct);
   }
-  if (id == "array_int_element") {
-    changed |= PresolveArrayIntElement(ct);
-  }
   if (id == "int_div") {
     changed |= PresolveIntDiv(ct);
   }
@@ -399,6 +461,13 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_lin_eq" || id == "int_lin_le") {
     changed |= PresolvePropagatePositiveLinear(ct);
+  }
+  if (id == "int_lin_eq") {
+    changed |= PresolveStoreMapping(ct);
+  }
+  if (id == "array_int_element") {
+    changed |= PresolveSimplifyElement(ct);
+    changed |= PresolveArrayIntElement(ct);
   }
   return changed;
 }
@@ -622,7 +691,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       chain.push_back(ct->arguments[0].variable);
       carry_over.push_back(ct->arguments[2].variable);
       ct->is_trivially_true = true;
-      ct->presolve_regroup_done = true;
+      ct->presolve_removed = true;
       ct->target_variable = nullptr;
       carry_over.back()->defining_constraint = nullptr;
     } else {

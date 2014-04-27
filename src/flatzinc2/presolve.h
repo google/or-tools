@@ -21,6 +21,20 @@
 #include "flatzinc2/model.h"
 
 namespace operations_research {
+// This struct stores linear mapping to one variable.
+// This represents var * coefficient + offset.
+struct AffineMapping {
+  FzIntegerVariable* variable;
+  int64 coefficient;
+  int64 offset;
+  FzConstraint* constraint;
+
+  AffineMapping()
+      : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
+  AffineMapping(FzIntegerVariable* v, int64 c, int64 o, FzConstraint* ct)
+      : variable(v), coefficient(c), offset(o), constraint(ct) {}
+};
+
 
 // The FzPresolver "pre-solves" a FzModel by applying some iterative
 // transformations to it, which may simplify and/or reduce the model.
@@ -68,6 +82,8 @@ class FzPresolver {
   bool PresolveIntLinLt(FzConstraint* ct);
   bool PresolveLinear(FzConstraint* ct);
   bool PresolvePropagatePositiveLinear(FzConstraint* ct);
+  bool PresolveStoreMapping(FzConstraint* ct);
+  bool PresolveSimplifyElement(FzConstraint* ct);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
@@ -82,6 +98,8 @@ class FzPresolver {
   // Stores abs_map_[x] = y if x = abs(y).
   hash_map<const FzIntegerVariable*, FzIntegerVariable*> abs_map_;
 
+  // Stores linear_map_[x] = a * y + b.
+  hash_map<const FzIntegerVariable*, AffineMapping> affine_map_;
 };
 }  // namespace operations_research
 

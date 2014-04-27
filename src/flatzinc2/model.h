@@ -147,7 +147,8 @@ struct FzConstraint {
         presolve_done(false),
         presolve_propagation_done(false),
         presolve_reverse_done(false),
-        presolve_regroup_done(false) {}
+        presolve_removed(false),
+        presolve_mapping_done(false) {}
 
   std::string DebugString() const;
 
@@ -174,8 +175,10 @@ struct FzConstraint {
   bool presolve_propagation_done : 1;
   // Indicates if presolve has reversed the constraint.
   bool presolve_reverse_done : 1;
-  // Indicates if presolve has regrouped this constraint into another one.
-  bool presolve_regroup_done : 1;
+  // Indicates if presolve has removed this constraint.
+  bool presolve_removed : 1;
+  // Indicates if presolve has stored mapping information from this constraint.
+  bool presolve_mapping_done : 1;
 
   // Helpers
   void MarkAsTriviallyTrue();

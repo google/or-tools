@@ -55,8 +55,6 @@ FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
 }
 
 void FzDomain::IntersectWith(const FzDomain& other) {
-  std::cout << "Intersect " << DebugString() << " and " << other.DebugString()
-            << std::endl;
   if (other.is_interval) {
     if (!other.values.empty()) {
       ReduceDomain(other.values[0], other.values[1]);
@@ -71,7 +69,6 @@ void FzDomain::IntersectWith(const FzDomain& other) {
       const int64 imax = values[1];
       values = other.values;
       ReduceDomain(imin, imax);
-      std::cout << "Result = " << DebugString() << std::endl;
     }
     return;
   }
@@ -284,7 +281,7 @@ std::string FzConstraint::DebugString() const {
   const std::string strong = strong_propagation ? ", strong propagation" : "";
   const std::string trivially_true =
       is_trivially_true
-          ? (presolve_regroup_done ? "[presolved out]" : "[trivially true]")
+          ? (presolve_removed ? "[presolved out]" : "[trivially true]")
           : "";
   const std::string target =
       target_variable != nullptr
