@@ -24,6 +24,7 @@ namespace operations_research {
 //
 // Presolve rule:
 //   - array_var_int_element and index is affine -> reduce array
+//   - array_int_element and index is flattened 2d -> rewrite as 2d array.
 
 // ----- Presolve rules -----
 
