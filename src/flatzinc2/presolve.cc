@@ -635,7 +635,6 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       if ((ct->type == "int_min" || ct->type == "int_max") &&
           ct->arguments[0].variable == ct->arguments[1].variable) {
         // This is the start of the chain.
-        FZVLOG << "Recognize start of chain " << ct->DebugString() << std::endl;
         start = ct;
         chain.push_back(ct->arguments[0].variable);
         carry_over.push_back(ct->arguments[2].variable);
