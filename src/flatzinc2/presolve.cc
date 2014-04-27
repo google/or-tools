@@ -536,6 +536,7 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
 namespace {
 void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
              const std::vector<FzIntegerVariable*>& carry_over) {
+
   // End of chain, reconstruct.
   FzIntegerVariable* const out = carry_over.back();
   start->arguments.pop_back();
@@ -543,6 +544,7 @@ void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
   start->arguments[1].variable = nullptr;
   start->arguments[1].type = FzArgument::INT_VAR_REF_ARRAY;
   start->arguments[1].variables = chain;
+  const string old_type = start->type;
   start->type = start->type == "int_min" ? "minimum_int" : "maximum_int";
   start->target_variable = out;
   out->defining_constraint = start;
@@ -551,9 +553,8 @@ void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
       var->active = false;
     }
   }
-  FZVLOG << "Regroup chain of min/max into " << start->DebugString()
+  FZVLOG << "Regroup chain of " << old_type << " into " << start->DebugString()
          << std::endl;
-
 }
 }  // namespace
 
@@ -609,7 +610,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   for (FzConstraint* const ct : model->constraints()) {
     if (start == nullptr) {
       if ((ct->type == "int_min" || ct->type == "int_max") &&
-                    ct->arguments[0].variable == ct->arguments[1].variable) {
+          ct->arguments[0].variable == ct->arguments[1].variable) {
         // This is the start of the chain.
         FZVLOG << "Recognize start of chain " << ct->DebugString() << std::endl;
         start = ct;
@@ -633,7 +634,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       carry_over.clear();
       // Check again ct.
       if ((ct->type == "int_min" || ct->type == "int_max") &&
-                    ct->arguments[0].variable == ct->arguments[1].variable) {
+          ct->arguments[0].variable == ct->arguments[1].variable) {
         // This is the start of the chain.
         FZVLOG << "Recognize start of chain " << ct->DebugString() << std::endl;
         start = ct;
