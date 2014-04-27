@@ -300,11 +300,10 @@ void FzConstraint::MarkAsTriviallyTrue() {
 
 void FzConstraint::RemoveTargetVariable() {
   if (target_variable != nullptr) {
-    FZVLOG << "Remove target_variable from " << DebugString() << std::endl;
-
-    target_variable = nullptr;
     DCHECK_EQ(target_variable->defining_constraint, this);
+    FZVLOG << "Remove target_variable from " << DebugString() << std::endl;
     target_variable->defining_constraint = nullptr;
+    target_variable = nullptr;
   }
 }
 

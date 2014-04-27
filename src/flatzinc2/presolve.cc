@@ -340,7 +340,8 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
       ct->arguments[1].variables[0] == ct->target_variable &&
       ct->arguments[0].domain.values[0] == -1 &&
       !ct->presolve_mapping_done &&
-      !ContainsKey(affine_map_, ct->arguments[1].variables[0])) {
+      !ContainsKey(affine_map_, ct->arguments[1].variables[0]) &&
+      ct->strong_propagation) {
     affine_map_[ct->arguments[1].variables[0]] =
         AffineMapping(ct->arguments[1].variables[1],
                       ct->arguments[0].domain.values[1],
@@ -645,18 +646,18 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   // First pass.
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
-    // Remove useless annotations on int_lin_eq.
+    // Remove ignored annotations on int_lin_eq.
     if (id == "int_lin_eq") {
       if (ct->arguments[0].domain.values.size() > 2 &&
           ct->target_variable != nullptr) {
         ct->RemoveTargetVariable();
-        return;
-      } else if (ct->arguments[0].domain.values.size() <= 2 &&
+        continue;
+      } else if (ct->arguments[0].domain.values.size() > 2 &&
                  ct->strong_propagation) {
         FZVLOG << "Remove strong_propagation from " << ct->DebugString()
                << std::endl;
         ct->strong_propagation = false;
-        return;
+        continue;
       }
     }
     // Remove target variables from constraints passed to SAT.
@@ -686,7 +687,14 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       }
     }
   }
-  // Regroup int_min and int_max into maximum_int and maximum_int
+  // Regroup int_min and int_max into maximum_int and maximum_int.
+  // The minizinc to flatzinc expander will transform x = max([v1, .., vn])
+  // into:
+  //   tmp1 = max(v1, v1)
+  //   tmp2 = max(v2, tmp1)
+  //   tmp3 = max(v3, tmp2)
+  // ...
+  // This code reconstructs the initial min(array) or max(array).
   FzConstraint* start = nullptr;
   std::vector<FzIntegerVariable*> chain;
   std::vector<FzIntegerVariable*> carry_over;
