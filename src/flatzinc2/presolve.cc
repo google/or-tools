@@ -626,6 +626,19 @@ void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
   FZVLOG << "Regroup chain of " << old_type << " into " << start->DebugString()
          << std::endl;
 }
+
+void CheckRegroupStart(FzConstraint* ct, FzConstraint** start,
+                       std::vector<FzIntegerVariable*>* chain,
+                       std::vector<FzIntegerVariable*>* carry_over) {
+  if ((ct->type == "int_min" || ct->type == "int_max") &&
+      ct->arguments[0].variable == ct->arguments[1].variable) {
+    // This is the start of the chain.
+    *start = ct;
+    chain->push_back(ct->arguments[0].variable);
+    carry_over->push_back(ct->arguments[2].variable);
+    carry_over->back()->defining_constraint = nullptr;
+  }
+}
 }  // namespace
 
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
@@ -679,14 +692,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   std::vector<FzIntegerVariable*> carry_over;
   for (FzConstraint* const ct : model->constraints()) {
     if (start == nullptr) {
-      if ((ct->type == "int_min" || ct->type == "int_max") &&
-          ct->arguments[0].variable == ct->arguments[1].variable) {
-        // This is the start of the chain.
-        start = ct;
-        chain.push_back(ct->arguments[0].variable);
-        carry_over.push_back(ct->arguments[2].variable);
-        carry_over.back()->defining_constraint = nullptr;
-      }
+      CheckRegroupStart(ct, &start, &chain, &carry_over);
     } else if (ct->type == start->type &&
                ct->arguments[1].variable == carry_over.back()) {
       chain.push_back(ct->arguments[0].variable);
@@ -702,14 +708,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       chain.clear();
       carry_over.clear();
       // Check again ct.
-      if ((ct->type == "int_min" || ct->type == "int_max") &&
-          ct->arguments[0].variable == ct->arguments[1].variable) {
-        // This is the start of the chain.
-        start = ct;
-        chain.push_back(ct->arguments[0].variable);
-        carry_over.push_back(ct->arguments[2].variable);
-        carry_over.back()->defining_constraint = nullptr;
-      }
+      CheckRegroupStart(ct, &start, &chain, &carry_over);
     }
   }
   if (start != nullptr) {
