@@ -180,7 +180,8 @@ template<class T> const T& FzLookup(const std::vector<T>& v, int index) {
 // Again they are preceded by the name of the LexerInfo field in which
 // their value is stored. You need the %type declaration to associate a field
 // with a non-terminal rule.
-%type <domain> domain const_literal
+%type <integer_value> integer
+%type <domain> domain const_literal int_domain float_domain set_domain
 %type <domains> const_literals
 %type <integers> integers
 %type <args> arguments
@@ -257,10 +258,21 @@ variable_or_constant_declaration:
     context->integer_map[identifier] = value;
   }
 }
-| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF domain ':' IDENTIFIER
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF int_domain ':' IDENTIFIER
+    annotations '=' '[' integers ']' {
+  // Declaration of a (named) constant array. See rule right above.
+  CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
+  const int64 num_constants = $5;
+  const std::string& identifier = $10;
+  const std::vector<int64>& assignments = $14;
+  CHECK_EQ(num_constants, assignments.size());
+  // TODO(lperron): CHECK all values within domain.
+  context->integer_array_map[identifier] = assignments;
+}
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
-  // Declaration of a (named) constant array: we do like for a constant value.
-  CHECK_EQ($3, 1);  // Only [1..n] array are supported here.
+  // Declaration of a (named) constant array: See rule above.
+  CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
   const int64 num_constants = $5;
   const FzDomain& domain = $8;
   const std::string& identifier = $10;
@@ -334,7 +346,7 @@ variable_or_constant_declaration:
       vars[i] = model->AddVariable(
           var_name, FzDomain::Singleton(assignments[i].value), introduced);
     } else {
-      DCHECK(assignments[i].variable != nullptr);
+      CHECK(assignments[i].variable != nullptr);
       vars[i] = assignments[i].variable;
       vars[i]->Merge(var_name, domain, nullptr, introduced);
     }
@@ -373,11 +385,15 @@ optional_var_or_value:
 | /*empty*/ { $$ = VariableRefOrValue::Undefined(); }
 
 optional_var_or_value_array:
-  '=' '[' var_or_value_array ']' { $$.swap($3); }
+  '=' '[' var_or_value_array ']' { $$.clear(); $$.swap($3); }
 | /*empty*/ { $$.clear(); }
 
 var_or_value_array:  // Cannot be empty.
-  var_or_value_array ',' var_or_value { $$.swap($1); $$.push_back($3); }
+  var_or_value_array ',' var_or_value {
+    $$.clear();
+    $$.swap($1);
+    $$.push_back($3);
+ }
 | var_or_value { $$.clear(); $$.push_back($1); }
 
 var_or_value:
@@ -411,22 +427,38 @@ var_or_value:
     *ok = false;
   }
 }
-
-domain:
+int_domain:
   BOOL { $$ = FzDomain::Interval(0, 1); }
-| SET OF BOOL { $$ = FzDomain::Interval(0, 1); }
 | INT { $$ = FzDomain::AllInt64(); }
-| SET OF INT { $$ = FzDomain::AllInt64(); }
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
-| SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
 | '{' integers '}' { $$ = FzDomain::IntegerList($2); }
+
+set_domain:
+  SET OF BOOL { $$ = FzDomain::Interval(0, 1); }
+| SET OF INT { $$ = FzDomain::AllInt64(); }
+| SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
 | SET OF '{' integers '}' { $$ = FzDomain::IntegerList($4); }
-| FLOAT { $$ = FzDomain::AllInt64(); }  // TODO(lperron): implement floats.
+
+float_domain:
+  FLOAT { $$ = FzDomain::AllInt64(); }  // TODO(lperron): implement floats.
 | DVALUE DOTDOT DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
 
+
+domain:
+  int_domain { $$ = $1; }
+| set_domain { $$ = $1; }
+| float_domain { $$ = $1; }
+
 integers:
-  integers ',' IVALUE { $$.swap($1); $$.push_back($3); }
-| IVALUE { $$.clear(); $$.push_back($1); }
+  integers ',' integer { $$.clear(); $$.swap($1); $$.push_back($3); }
+| integer { $$.clear(); $$.push_back($1); }
+
+integer:
+  IVALUE { $$ = $1; }
+| IDENTIFIER { $$ = FindOrDie(context->integer_map, $1); }
+| IDENTIFIER '[' IVALUE ']' {
+  $$ = FzLookup(FindOrDie(context->integer_array_map, $1), $3);
+}
 
 const_literal:
   IVALUE { $$ = FzDomain::Singleton($1); }
@@ -440,7 +472,11 @@ const_literal:
 }
 
 const_literals:
-  const_literals ',' const_literal { $$.swap($1); $$.push_back($3); }
+  const_literals ',' const_literal {
+    $$.clear();
+    $$.swap($1);
+    $$.push_back($3);
+}
 | const_literal { $$.clear(); $$.push_back($1); }
 
 //---------------------------------------------------------------------------
@@ -473,7 +509,7 @@ constraint :
 }
 
 arguments:
-  arguments ',' argument { $$.swap($1); $$.push_back($3); }
+  arguments ',' argument { $$.clear(); $$.swap($1); $$.push_back($3); }
 | argument { $$.clear(); $$.push_back($1); }
 
 argument:
@@ -563,11 +599,19 @@ argument:
 //---------------------------------------------------------------------------
 
 annotations:
-  annotations COLONCOLON annotation { $$.swap($1); $$.push_back($3); }
+  annotations COLONCOLON annotation {
+    $$.clear();
+    $$.swap($1);
+    $$.push_back($3);
+  }
 | /* empty */ { $$.clear(); }
 
 annotation_arguments:  // Cannot be empty.
-  annotation_arguments ',' annotation  { $$.swap($1); $$.push_back($3); }
+  annotation_arguments ',' annotation  {
+    $$.clear();
+    $$.swap($1);
+    $$.push_back($3);
+  }
 | annotation { $$.clear(); $$.push_back($1); }
 
 annotation:
