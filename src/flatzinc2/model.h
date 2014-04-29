@@ -134,7 +134,6 @@ struct FzArgument {
   // TODO(user): Use union.
   int64 integer_value;
   FzDomain domain;
-  FzIntegerVariable* variable;
   std::vector<FzIntegerVariable*> variables;
 };
 
@@ -198,6 +197,8 @@ struct FzConstraint {
   FzIntegerVariable* GetVar(int arg_pos) const;
   // TODO(user): expose a const FzArgument& Arg(int arg_pos) API; and move
   // these shortcut to the model; or possibly to FzArgument
+  const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }
+  FzArgument* MutableArg(int arg_pos) { return &arguments[arg_pos]; }
 };
 
 // An annotation is a set of information. It has two use cases. One during

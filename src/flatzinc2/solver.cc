@@ -26,7 +26,7 @@ IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
     case FzArgument::INT_VALUE: {
       return solver_.MakeIntConst(arg.integer_value);
     }
-    case FzArgument::INT_VAR_REF: { return Extract(arg.variable); }
+    case FzArgument::INT_VAR_REF: { return Extract(arg.variables[0]); }
     default: {
       LOG(FATAL) << "Cannot extract " << arg.DebugString() << " as a variable";
       return nullptr;
@@ -105,9 +105,6 @@ struct ConstraintWithIo {
       : ct(cte), index(i) {
     // Collect required variables.
     for (const FzArgument& arg : ct->arguments) {
-      if (arg.variable != nullptr && ContainsKey(defined, arg.variable)) {
-        required.insert(arg.variable);
-      }
       for (FzIntegerVariable* const var : arg.variables) {
         if (ContainsKey(defined, var)) {
           required.insert(var);

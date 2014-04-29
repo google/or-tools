@@ -576,8 +576,8 @@ argument:
       std::vector<FzIntegerVariable*> vars(arguments.size());
       for (int i = 0; i < arguments.size(); ++i) {
         if (arguments[i].type == FzArgument::INT_VAR_REF) {
-           CHECK(arguments[i].variable != nullptr);
-           vars[i] = arguments[i].variable;
+           CHECK(arguments[i].variables[0] != nullptr);
+           vars[i] = arguments[i].variables[0];
         } else if (FzArgument::INT_VALUE == arguments[i].type) {
            vars[i] = FzIntegerVariable::Constant(arguments[i].integer_value);
         } else {
@@ -647,11 +647,11 @@ solve:
 }
 | SOLVE annotations MINIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Minimize($4.variable, $2);
+  model->Minimize($4.variables[0], $2);
 }
 | SOLVE annotations MAXIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Maximize($4.variable, $2);
+  model->Maximize($4.variables[0], $2);
 }
 
 %%

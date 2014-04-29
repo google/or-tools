@@ -23,7 +23,6 @@ DEFINE_bool(logging, false,
 DEFINE_bool(verbose_logging, false,
             "Print verbose logging information from the flatzinc interpreter.");
 
-
 namespace operations_research {
 // ----- FzDomain -----
 
@@ -169,7 +168,6 @@ FzArgument FzArgument::IntegerValue(int64 value) {
   result.type = INT_VALUE;
   result.integer_value = value;
   result.domain = FzDomain::AllInt64();
-  result.variable = nullptr;
   return result;
 }
 
@@ -178,7 +176,6 @@ FzArgument FzArgument::Domain(const FzDomain& domain) {
   result.type = INT_DOMAIN;
   result.integer_value = 0;
   result.domain = domain;
-  result.variable = nullptr;
   return result;
 }
 
@@ -187,16 +184,16 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   result.type = INT_VAR_REF;
   result.integer_value = 0;
   result.domain = FzDomain::AllInt64();
-  result.variable = var;
+  result.variables.push_back(var);
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(
+    const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.integer_value = 0;
   result.domain = FzDomain::AllInt64();
-  result.variable = nullptr;
   result.variables = vars;
   return result;
 }
@@ -206,7 +203,6 @@ FzArgument FzArgument::VoidArgument() {
   result.type = VOID_ARGUMENT;
   result.integer_value = 0;
   result.domain = FzDomain::AllInt64();
-  result.variable = nullptr;
   return result;
 }
 
@@ -217,7 +213,7 @@ std::string FzArgument::DebugString() const {
     case INT_DOMAIN:
       return domain.DebugString();
     case INT_VAR_REF:
-      return variable->name;
+      return variables[0]->name;
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -306,7 +302,7 @@ void FzConstraint::RemoveTargetVariable() {
 bool FzConstraint::ArgIsIntegerVariable(int arg_pos) const {
   return arg_pos >= 0 && arg_pos < arguments.size() &&
          arguments[arg_pos].type == FzArgument::INT_VAR_REF &&
-         arguments[arg_pos].variable->defining_constraint == nullptr;
+         arguments[arg_pos].variables[0]->defining_constraint == nullptr;
 }
 
 bool FzConstraint::ArgHasOneValue(int arg_pos) const {
@@ -315,7 +311,7 @@ bool FzConstraint::ArgHasOneValue(int arg_pos) const {
           (arguments[arg_pos].type == FzArgument::INT_DOMAIN &&
            arguments[arg_pos].domain.IsSingleton()) ||
           (arguments[arg_pos].type == FzArgument::INT_VAR_REF &&
-           arguments[arg_pos].variable->domain.IsSingleton()));
+           arguments[arg_pos].variables[0]->domain.IsSingleton()));
 }
 
 int64 FzConstraint::GetArgValue(int arg_pos) const {
@@ -324,11 +320,9 @@ int64 FzConstraint::GetArgValue(int arg_pos) const {
   switch (arguments[arg_pos].type) {
     case FzArgument::INT_VALUE:
       return arguments[arg_pos].integer_value;
-    case FzArgument::INT_DOMAIN: {
-      return arguments[arg_pos].domain.values[0];
-    }
+    case FzArgument::INT_DOMAIN: { return arguments[arg_pos].domain.values[0]; }
     case FzArgument::INT_VAR_REF: {
-      return arguments[arg_pos].variable->domain.values[0];
+      return arguments[arg_pos].variables[0]->domain.values[0];
     }
     default: {
       LOG(FATAL) << "Wrong GetBound(" << arg_pos << ") on " << DebugString();
@@ -342,7 +336,7 @@ FzIntegerVariable* FzConstraint::GetVar(int arg_pos) const {
       arguments[arg_pos].type != FzArgument::INT_VAR_REF) {
     return nullptr;
   }
-  return arguments[arg_pos].variable;
+  return arguments[arg_pos].variables[0];
 }
 
 // ----- FzAnnotation -----
@@ -356,7 +350,8 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list) {
+FzAnnotation FzAnnotation::AnnotationList(
+    const std::vector<FzAnnotation>& list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -435,9 +430,7 @@ std::string FzAnnotation::DebugString() const {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
     }
-    case IDENTIFIER: {
-      return id;
-    }
+    case IDENTIFIER: { return id; }
     case FUNCTION_CALL: {
       return StringPrintf("%s(%s)", id.c_str(),
                           JoinDebugString(annotations, ", ").c_str());
@@ -446,9 +439,7 @@ std::string FzAnnotation::DebugString() const {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
     }
-    case INT_VAR_REF: {
-      return variable->name;
-    }
+    case INT_VAR_REF: { return variable->name; }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -517,8 +508,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments, bool is_domain,
-                            FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments,
+                            bool is_domain, FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);
@@ -604,9 +595,8 @@ void FzModelStatistics::BuildStatistics() {
       hash_set<const FzIntegerVariable*> marked;
       for (int j = 0; j < ct->arguments.size(); ++j) {
         const FzArgument& arg = ct->arguments[j];
-        if (arg.type == FzArgument::INT_VAR_REF) {
-          marked.insert(arg.variable);
-        } else if (arg.type == FzArgument::INT_VAR_REF_ARRAY) {
+        if (arg.type == FzArgument::INT_VAR_REF ||
+            arg.type == FzArgument::INT_VAR_REF_ARRAY) {
           for (int k = 0; k < arg.variables.size(); ++k) {
             marked.insert(arg.variables[k]);
           }
