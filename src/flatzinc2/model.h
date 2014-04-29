@@ -27,6 +27,8 @@ namespace operations_research {
 class FzConstraint;
 class FzModel;
 class FzIntegerVariable;
+
+#define FZENDL std::endl
 #define FZLOG \
   if (FLAGS_logging) std::cout << "%% "
 
@@ -48,16 +50,18 @@ struct FzDomain {
   static FzDomain Interval(int64 included_min, int64 included_max);
 
   bool IsSingleton() const;
-  void IntersectWith(const FzDomain& domain);
-  void ReduceDomain(int64 interval_min, int64 interval_max);
-  void ReduceDomain(const std::vector<int64>& values);
+  void IntersectWithFzDomain(const FzDomain& domain);
+  void IntersectWithInterval(int64 interval_min, int64 interval_max);
+  void IntersectWithListOfIntegers(const std::vector<int64>& values);
   bool Contains(int64 value) const;
-  // Returns true if the value is removed.
+  // Returns true iff the value did belong to the domain, and was removed.
   bool RemoveValue(int64 value);
   std::string DebugString() const;
 
   bool is_interval;
   std::vector<int64> values;
+  // TODO(user): Rework domains, all int64 should be kintmin..kint64max.
+  // Empty should means invalid.
 };
 
 // An int var is a name with a domain of possible values, along with
@@ -96,7 +100,8 @@ struct FzIntegerVariable {
   // expanded into y * z == t and x = t + y. And t will be a temporary variable.
   bool temporary : 1;
   // Indicates if the variable should be created at all. A temporary variable
-  // can become useless during presolve.
+  // can be unreachable in the active model if nobody uses it. In that case,
+  // there is no need to create it.
   bool active : 1;
 
   friend class FzModel;
@@ -126,6 +131,7 @@ struct FzArgument {
   std::string DebugString() const;
 
   Type type;
+  // TODO(user): Use union.
   int64 integer_value;
   FzDomain domain;
   FzIntegerVariable* variable;
@@ -135,20 +141,15 @@ struct FzArgument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // FzConstraint is on the heap, and owned by the global FzModel object.
 struct FzConstraint {
-  FzConstraint(const std::string& type_,
-               const std::vector<FzArgument>& arguments_,
+  FzConstraint(const std::string& type_, const std::vector<FzArgument>& arguments_,
                bool strong_propagation_,
                FzIntegerVariable* const target_variable_)
       : type(type_),
         arguments(arguments_),
-        strong_propagation(strong_propagation_),
         target_variable(target_variable_),
-        is_trivially_true(false),
-        presolve_done(false),
-        presolve_propagation_done(false),
-        presolve_reverse_done(false),
-        presolve_removed(false),
-        presolve_mapping_done(false) {}
+        strong_propagation(strong_propagation_),
+        active(true),
+        presolve_propagation_done(false) {}
 
   std::string DebugString() const;
 
@@ -156,46 +157,47 @@ struct FzConstraint {
   // stored as a std::string.
   std::string type;
   std::vector<FzArgument> arguments;
+  // Indicates if the constraint actually propagates towards a target variable
+  // (target_variable will be nullptr otherwise). This is the reverse field of
+  // FzIntegerVariable::defining_constraint.
+  FzIntegerVariable* target_variable;
   // Is true if the constraint should use the strongest level of propagation.
   // This is a hint in the model. For instance, in the AllDifferent constraint,
   // there are different algorithms to propagate with different pruning/speed
   // ratios. When strong_propagation is true, one should use, if possible, the
   // algorithm with the strongest pruning.
-  bool strong_propagation;
-  // Indicates if the constraint actually propagates towards a target variable
-  // (target_variable will be nullptr otherwise). This is the reverse field of
-  // FzIntegerVariable::defining_constraint.
-  FzIntegerVariable* target_variable;
-  // Indicates if the constraint is trivially true. Presolve can make it so
-  // if the presolve transformation ensures that the constraints is always true.
-  bool is_trivially_true : 1;
-  // Indicates if presolve has been done.
-  bool presolve_done : 1;
-  // Indicates if presolve has done propagation.
+  bool strong_propagation : 1;
+  // Indicates if the constraint is active. Presolve can make it inactive by
+  // propagating it, or by regrouping it. Once a constraint is inactive, it is
+  // logically removed from the model, it is not extracted, and it is ignored by
+  // presolve.
+  bool active : 1;
+
+  // The following boolean are used to trace presolve. They are used to avoid
+  // repeating the same presolve rule again and again.
+
+  // Indicates if presolve has finished propagating this constraint.
   bool presolve_propagation_done : 1;
-  // Indicates if presolve has reversed the constraint.
-  bool presolve_reverse_done : 1;
-  // Indicates if presolve has removed this constraint.
-  bool presolve_removed : 1;
-  // Indicates if presolve has stored mapping information from this constraint.
-  bool presolve_mapping_done : 1;
 
   // Helpers
-  void MarkAsTriviallyTrue();
+  void MarkAsInactive();
   // Cleans the field target_variable, as well as the field defining_constraint
   // on the target_variable.
   void RemoveTargetVariable();
-  // Returns true if the argument is a variable that is not a target variable.
-  bool IsIntegerVariable(int position) const;
+  // Returns true if the argument at position 'arg_pos' is a variable that is
+  // not a target variable.
+  bool ArgIsIntegerVariable(int arg_pos) const;
   // Returns true if the argument is bound (integer value, singleton domain,
   // variable with a singleton domain)
-  bool IsBound(int position) const;
+  bool ArgHasOneValue(int arg_pos) const;
   // Returns the bound of the argument. IsBound() must have returned true for
   // this method to succeed.
-  int64 GetBound(int position) const;
+  int64 GetArgValue(int arg_pos) const;
   // Returns the variable at the given position, or nullptr if there is no
   // variable at that position.
-  FzIntegerVariable* GetVar(int position) const;
+  FzIntegerVariable* GetVar(int arg_pos) const;
+  // TODO(user): expose a const FzArgument& Arg(int arg_pos) API; and move
+  // these shortcut to the model; or possibly to FzArgument
 };
 
 // An annotation is a set of information. It has two use cases. One during
@@ -228,8 +230,7 @@ struct FzAnnotation {
   // Copy all the variable references contained in this annotation (and its
   // children). Depending on the type of this annotation, there can be zero,
   // one, or several.
-  void GetAllIntegerVariables(
-      std::vector<FzIntegerVariable*>* const vars) const;
+  void GetAllIntegerVariables(std::vector<FzIntegerVariable*>* const vars) const;
 
   Type type;
   int64 interval_min;
@@ -283,11 +284,10 @@ class FzModel {
 
   // The objects returned by AddVariable() and AddConstraint() are owned by the
   // FzModel and will remain live for its lifetime.
-  FzIntegerVariable* AddVariable(const std::string& name,
-                                 const FzDomain& domain, bool temporary);
-  void AddConstraint(const std::string& type,
-                     const std::vector<FzArgument>& arguments, bool is_domain,
-                     FzIntegerVariable* const target_variable);
+  FzIntegerVariable* AddVariable(const std::string& name, const FzDomain& domain,
+                                 bool temporary);
+  void AddConstraint(const std::string& type, const std::vector<FzArgument>& arguments,
+                     bool is_domain, FzIntegerVariable* const target_variable);
   void AddOutput(const FzOnSolutionOutput& output);
 
   // Set the search annotations and the objective: either simply satisfy the
@@ -301,14 +301,8 @@ class FzModel {
 
   // ----- Accessors and mutators -----
 
-  const std::vector<FzIntegerVariable*>& variables() const {
-    return variables_;
-  }
+  const std::vector<FzIntegerVariable*>& variables() const { return variables_; }
   const std::vector<FzConstraint*>& constraints() const { return constraints_; }
-  void DeleteConstraintAtIndex(int index) {
-    delete constraints_[index];
-    constraints_[index] = nullptr;
-  }
   const std::vector<FzAnnotation>& search_annotations() const {
     return search_annotations_;
   }
@@ -353,8 +347,7 @@ class FzModelStatistics {
 
  private:
   const FzModel& model_;
-  hash_map<const std::string, std::vector<FzConstraint*> >
-      constraints_per_type_;
+  hash_map<const std::string, std::vector<FzConstraint*> > constraints_per_type_;
   hash_map<const FzIntegerVariable*, std::vector<FzConstraint*> >
       constraints_per_variables_;
 };

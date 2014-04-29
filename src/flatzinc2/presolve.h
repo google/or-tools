@@ -21,8 +21,9 @@
 #include "flatzinc2/model.h"
 
 namespace operations_research {
-// This struct stores linear mapping to one variable.
-// This represents var * coefficient + offset.
+// This struct stores the affine mapping of one variable:
+// it represents var * coefficient + offset. It also stores the constraint that
+// defines this mapping.
 struct AffineMapping {
   FzIntegerVariable* variable;
   int64 coefficient;
@@ -35,7 +36,6 @@ struct AffineMapping {
       : variable(v), coefficient(c), offset(o), constraint(ct) {}
 };
 
-
 // The FzPresolver "pre-solves" a FzModel by applying some iterative
 // transformations to it, which may simplify and/or reduce the model.
 class FzPresolver {
@@ -43,13 +43,14 @@ class FzPresolver {
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
   // The reduced model will:
   // - Have some unused variables
-  // - Have some unused constraints (marked as "is_trivially_true").
+  // - Have some unused constraints (marked as inactive).
   // - Have some modified constraints (for example, they will no longer
   //   refer to unused variables)
   // TODO(user): compute on the fly, and add an API to access the set of
   // unused variables.
   //
-  // This returns true iff some transformations were applied to the model
+  // This method returns true iff some transformations were applied to the
+  // model.
   bool Run(FzModel* model);
 
   // Cleans the model for the CP solver.
@@ -65,7 +66,8 @@ class FzPresolver {
   void SubstituteEverywhere(FzModel* model);
   void SubstituteAnnotation(FzAnnotation* ann);
 
-  // Presolve rules.
+  // Presolve rules. They returns true iff that some presolve has been
+  // performed. These methods are called by the PresolveOneConstraint() method.
   bool PresolveBool2Int(FzConstraint* ct);
   bool PresolveIntEq(FzConstraint* ct);
   void Unreify(FzConstraint* ct);
@@ -98,7 +100,7 @@ class FzPresolver {
   // Stores abs_map_[x] = y if x = abs(y).
   hash_map<const FzIntegerVariable*, FzIntegerVariable*> abs_map_;
 
-  // Stores linear_map_[x] = a * y + b.
+  // Stores affine_map_[x] = a * y + b.
   hash_map<const FzIntegerVariable*, AffineMapping> affine_map_;
 };
 }  // namespace operations_research

@@ -153,7 +153,7 @@ bool FzSolver::Extract() {
   int index = 0;
   std::vector<ConstraintWithIo> to_sort;
   for (FzConstraint* ct : model_.constraints()) {
-    if (ct != nullptr && !ct->is_trivially_true) {
+    if (ct != nullptr && ct->active) {
       to_sort.push_back(ConstraintWithIo(ct, index++, defined_variables));
     }
   }

@@ -24,11 +24,15 @@
 
 DEFINE_string(file, "", "Input file in the flatzinc format.");
 DEFINE_bool(presolve, false, "Presolve loaded file.");
+DECLARE_bool(logging);
 
 namespace operations_research {
 void ParseFile(const std::string& filename, bool presolve) {
+  FZLOG << "Parsing " << filename << FZENDL;
   std::string problem_name(filename);
+  // Remove the .fzn extension.
   problem_name.resize(problem_name.size() - 4);
+  // Remove the leading path if present.
   size_t found = problem_name.find_last_of("/\\");
   if (found != std::string::npos) {
     problem_name = problem_name.substr(found + 1);
@@ -40,7 +44,7 @@ void ParseFile(const std::string& filename, bool presolve) {
     presolve.CleanUpModelForTheCpSolver(&model);
     presolve.Run(&model);
   }
-  LOG(INFO) << model.DebugString();
+  FZLOG << model.DebugString() << FZENDL;
 }
 }  // namespace operations_research
 
