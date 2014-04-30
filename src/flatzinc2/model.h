@@ -136,13 +136,14 @@ struct FzArgument {
   std::vector<FzIntegerVariable*> variables;
 
   // Helpers
+
   // Returns true if the argument is a variable that is not a target variable.
   bool IsIntegerVariable() const;
-  // Returns true if the argument is bound (integer value, singleton domain,
-  // variable with a singleton domain)
+  // Returns true if the argument has only one value (single value, or variable
+  // with a singleton domain).
   bool HasOneValue() const;
-  // Returns the value of the argument. HasOneValue() must have returned true for
-  // this method to succeed.
+  // Returns the value of the argument. HasOneValue() must have returned true
+  // for this method to succeed.
   int64 Value() const;
   // Returns the variable inside the argument, or nullptr if there is no
   // variable.
@@ -153,7 +154,8 @@ struct FzArgument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // FzConstraint is on the heap, and owned by the global FzModel object.
 struct FzConstraint {
-  FzConstraint(const std::string& type_, const std::vector<FzArgument>& arguments_,
+  FzConstraint(const std::string& type_,
+               const std::vector<FzArgument>& arguments_,
                bool strong_propagation_,
                FzIntegerVariable* const target_variable_)
       : type(type_),
@@ -232,7 +234,8 @@ struct FzAnnotation {
   // Copy all the variable references contained in this annotation (and its
   // children). Depending on the type of this annotation, there can be zero,
   // one, or several.
-  void GetAllIntegerVariables(std::vector<FzIntegerVariable*>* const vars) const;
+  void GetAllIntegerVariables(
+      std::vector<FzIntegerVariable*>* const vars) const;
 
   Type type;
   int64 interval_min;
@@ -286,10 +289,11 @@ class FzModel {
 
   // The objects returned by AddVariable() and AddConstraint() are owned by the
   // FzModel and will remain live for its lifetime.
-  FzIntegerVariable* AddVariable(const std::string& name, const FzDomain& domain,
-                                 bool temporary);
-  void AddConstraint(const std::string& type, const std::vector<FzArgument>& arguments,
-                     bool is_domain, FzIntegerVariable* const target_variable);
+  FzIntegerVariable* AddVariable(const std::string& name,
+                                 const FzDomain& domain, bool temporary);
+  void AddConstraint(const std::string& type,
+                     const std::vector<FzArgument>& arguments, bool is_domain,
+                     FzIntegerVariable* const target_variable);
   void AddOutput(const FzOnSolutionOutput& output);
 
   // Set the search annotations and the objective: either simply satisfy the
@@ -303,7 +307,9 @@ class FzModel {
 
   // ----- Accessors and mutators -----
 
-  const std::vector<FzIntegerVariable*>& variables() const { return variables_; }
+  const std::vector<FzIntegerVariable*>& variables() const {
+    return variables_;
+  }
   const std::vector<FzConstraint*>& constraints() const { return constraints_; }
   const std::vector<FzAnnotation>& search_annotations() const {
     return search_annotations_;
@@ -349,7 +355,8 @@ class FzModelStatistics {
 
  private:
   const FzModel& model_;
-  hash_map<const std::string, std::vector<FzConstraint*> > constraints_per_type_;
+  hash_map<const std::string, std::vector<FzConstraint*> >
+      constraints_per_type_;
   hash_map<const FzIntegerVariable*, std::vector<FzConstraint*> >
       constraints_per_variables_;
 };
