@@ -589,16 +589,13 @@ void FzModelStatistics::BuildStatistics() {
   constraints_per_variables_.clear();
   for (int i = 0; i < model_.constraints().size(); ++i) {
     FzConstraint* const ct = model_.constraints()[i];
-    if (ct != nullptr) {
+    if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
       hash_set<const FzIntegerVariable*> marked;
       for (int j = 0; j < ct->arguments.size(); ++j) {
         const FzArgument& arg = ct->arguments[j];
-        if (arg.type == FzArgument::INT_VAR_REF ||
-            arg.type == FzArgument::INT_VAR_REF_ARRAY) {
-          for (int k = 0; k < arg.variables.size(); ++k) {
-            marked.insert(arg.variables[k]);
-          }
+        for (int k = 0; k < arg.variables.size(); ++k) {
+          marked.insert(arg.variables[k]);
         }
       }
       for (const FzIntegerVariable* const var : marked) {

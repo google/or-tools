@@ -23,7 +23,9 @@
 #include "flatzinc2/presolve.h"
 
 DEFINE_string(file, "", "Input file in the flatzinc format.");
+DEFINE_bool(print, false, "Print model.");
 DEFINE_bool(presolve, false, "Presolve loaded file.");
+DEFINE_bool(statistics, false, "Print model statistics");
 DECLARE_bool(logging);
 
 namespace operations_research {
@@ -44,7 +46,14 @@ void ParseFile(const std::string& filename, bool presolve) {
     presolve.CleanUpModelForTheCpSolver(&model);
     presolve.Run(&model);
   }
-  FZLOG << model.DebugString() << FZENDL;
+  if (FLAGS_statistics) {
+    FzModelStatistics stats(model);
+    stats.BuildStatistics();
+    stats.PrintStatistics();
+  }
+  if (FLAGS_print) {
+    FZLOG << model.DebugString() << FZENDL;
+  }
 }
 }  // namespace operations_research
 
