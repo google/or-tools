@@ -135,6 +135,20 @@ struct FzArgument {
   int64 integer_value;
   FzDomain domain;
   std::vector<FzIntegerVariable*> variables;
+
+  // Helpers
+  // Returns true if the argument is a variable that is not a target variable.
+  bool IsIntegerVariable() const;
+  // Returns true if the argument is bound (integer value, singleton domain,
+  // variable with a singleton domain)
+  bool HasOneValue() const;
+  // Returns the value of the argument. HasOneValue() must have returned true for
+  // this method to succeed.
+  int64 Value() const;
+  // Returns the variable inside the argument, or nullptr if there is no
+  // variable.
+  FzIntegerVariable* Var() const;
+
 };
 
 // A constraint has a type, some arguments, and a few tags. Typically, a
@@ -183,18 +197,6 @@ struct FzConstraint {
   // Cleans the field target_variable, as well as the field defining_constraint
   // on the target_variable.
   void RemoveTargetVariable();
-  // Returns true if the argument at position 'arg_pos' is a variable that is
-  // not a target variable.
-  bool ArgIsIntegerVariable(int arg_pos) const;
-  // Returns true if the argument is bound (integer value, singleton domain,
-  // variable with a singleton domain)
-  bool ArgHasOneValue(int arg_pos) const;
-  // Returns the bound of the argument. IsBound() must have returned true for
-  // this method to succeed.
-  int64 GetArgValue(int arg_pos) const;
-  // Returns the variable at the given position, or nullptr if there is no
-  // variable at that position.
-  FzIntegerVariable* GetVar(int arg_pos) const;
   // TODO(user): expose a const FzArgument& Arg(int arg_pos) API; and move
   // these shortcut to the model; or possibly to FzArgument
   const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }

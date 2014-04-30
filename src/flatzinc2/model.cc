@@ -227,6 +227,32 @@ std::string FzArgument::DebugString() const {
   }
 }
 
+bool FzArgument::IsIntegerVariable() const {
+  return type == INT_VAR_REF && variables[0]->defining_constraint == nullptr;
+}
+
+bool FzArgument::HasOneValue() const {
+  return (type == INT_VALUE || (type == INT_DOMAIN && domain.IsSingleton()) ||
+          (type == INT_VAR_REF && variables[0]->domain.IsSingleton()));
+}
+
+int64 FzArgument::Value() const {
+  switch (type) {
+    case INT_VALUE:
+      return integer_value;
+    case INT_DOMAIN: { return domain.values[0]; }
+    case INT_VAR_REF: { return variables[0]->domain.values[0]; }
+    default: {
+      LOG(FATAL) << "Wrong Value() on " << DebugString();
+      return 0;
+    }
+  }
+}
+
+FzIntegerVariable* FzArgument::Var() const {
+  return type == INT_VAR_REF ? variables[0] : nullptr;
+}
+
 // ----- FzIntegerVariable -----
 
 FzIntegerVariable::FzIntegerVariable(const std::string& name_,
@@ -297,46 +323,6 @@ void FzConstraint::RemoveTargetVariable() {
     target_variable->defining_constraint = nullptr;
     target_variable = nullptr;
   }
-}
-
-bool FzConstraint::ArgIsIntegerVariable(int arg_pos) const {
-  return arg_pos >= 0 && arg_pos < arguments.size() &&
-         arguments[arg_pos].type == FzArgument::INT_VAR_REF &&
-         arguments[arg_pos].variables[0]->defining_constraint == nullptr;
-}
-
-bool FzConstraint::ArgHasOneValue(int arg_pos) const {
-  return arg_pos >= 0 && arg_pos < arguments.size() &&
-         (arguments[arg_pos].type == FzArgument::INT_VALUE ||
-          (arguments[arg_pos].type == FzArgument::INT_DOMAIN &&
-           arguments[arg_pos].domain.IsSingleton()) ||
-          (arguments[arg_pos].type == FzArgument::INT_VAR_REF &&
-           arguments[arg_pos].variables[0]->domain.IsSingleton()));
-}
-
-int64 FzConstraint::GetArgValue(int arg_pos) const {
-  CHECK_GE(arg_pos, 0);
-  CHECK_LT(arg_pos, arguments.size());
-  switch (arguments[arg_pos].type) {
-    case FzArgument::INT_VALUE:
-      return arguments[arg_pos].integer_value;
-    case FzArgument::INT_DOMAIN: { return arguments[arg_pos].domain.values[0]; }
-    case FzArgument::INT_VAR_REF: {
-      return arguments[arg_pos].variables[0]->domain.values[0];
-    }
-    default: {
-      LOG(FATAL) << "Wrong GetBound(" << arg_pos << ") on " << DebugString();
-      return 0;
-    }
-  }
-}
-
-FzIntegerVariable* FzConstraint::GetVar(int arg_pos) const {
-  if (arg_pos < 0 || arg_pos >= arguments.size() ||
-      arguments[arg_pos].type != FzArgument::INT_VAR_REF) {
-    return nullptr;
-  }
-  return arguments[arg_pos].variables[0];
 }
 
 // ----- FzAnnotation -----
