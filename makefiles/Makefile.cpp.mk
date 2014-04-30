@@ -288,12 +288,12 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DEL) $(OBJ_DIR)$algorithms$S*.$O
-	-$(DEL) $(OBJ_DIR)$base$S*.$O
-	-$(DEL) $(OBJ_DIR)$flatzinc$S*.$O
-	-$(DEL) $(OBJ_DIR)$flatzinc2$S*.$O
-	-$(DEL) $(OBJ_DIR)$graph$S*.$O
-	-$(DEL) $(OBJ_DIR)$sat$S*.$O
+	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sflatzinc2$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
+	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
