@@ -48,7 +48,7 @@ std::vector<IntVar*> FzSolver::GetVariableArray(const FzArgument& arg) {
   return result;
 }
 
-IntExpr* FzSolver::Extract(FzIntegerVariable* const var) {
+IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   IntExpr* result = FindPtrOrNull(extrated_map_, var);
   if (result != nullptr) {
     return result;
@@ -63,6 +63,11 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* const var) {
   }
   extrated_map_[var] = result;
   return nullptr;
+}
+
+void FzSolver::SetExtracted(FzIntegerVariable* var, IntExpr* expr) {
+  CHECK(!ContainsKey(extrated_map_, var));
+  extrated_map_[var] = expr;
 }
 
 // The format is fixed in the flatzinc specification.
@@ -118,19 +123,12 @@ struct ConstraintWithIo {
   }
 };
 
-// Comparator to sort constraints such that required variables are always
-// created before the constraints that use them.
+// Comparator to sort constraints based on numbers of required
+// elements and index. Reverse sorting to put elements to remove at the end.
 struct ConstraintWithIoComparator {
-  bool operator()(const ConstraintWithIo& a, const ConstraintWithIo& b) const {
-    if (a.ct->target_variable != nullptr &&
-        ContainsKey(b.required, a.ct->target_variable)) {
-      return true;
-    }
-    if (b.ct->target_variable != nullptr &&
-        ContainsKey(a.required, b.ct->target_variable)) {
-      return false;
-    }
-    return a.index < b.index;
+  bool operator()(ConstraintWithIo* a, ConstraintWithIo* b) const {
+    return a->required.size() > b->required.size() ||
+        (a->required.size() == b->required.size() && a->index > b->index);
   }
 };
 }  // namespace
@@ -148,15 +146,36 @@ bool FzSolver::Extract() {
   // Sort constraints such that defined variables are created before the
   // extraction of the constraints that use them.
   int index = 0;
-  std::vector<ConstraintWithIo> to_sort;
+  std::vector<ConstraintWithIo*> to_sort;
+  std::vector<FzConstraint*> sorted;
+  hash_map<const FzIntegerVariable*,
+           std::vector<ConstraintWithIo*>> dependencies;
   for (FzConstraint* ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
-      to_sort.push_back(ConstraintWithIo(ct, index++, defined_variables));
+      ConstraintWithIo* const ctio =
+          new ConstraintWithIo(ct, index++, defined_variables);
+      to_sort.push_back(ctio);
+      for (FzIntegerVariable* const var : ctio->required) {
+        dependencies[var].push_back(ctio);
+      }
     }
   }
-  std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
-  for (const ConstraintWithIo& ctio : to_sort) {
-    ExtractConstraint(ctio.ct);
+  while (!to_sort.empty()) {
+    std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+    ConstraintWithIo* const ctio = to_sort.back();
+    to_sort.pop_back();
+    CHECK(ctio->required.empty());
+    sorted.push_back(ctio->ct);
+    FzIntegerVariable* const var = ctio->ct->target_variable;
+    if (var != nullptr && ContainsKey(dependencies, var)) {
+      for (ConstraintWithIo* const to_clean : dependencies[var]) {
+        to_clean->required.erase(var);
+      }
+    }
+    delete ctio;
+  }
+  for (FzConstraint* const ct : sorted) {
+    ExtractConstraint(ct);
   }
   return true;
 }

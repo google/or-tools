@@ -403,15 +403,15 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
   if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const FzDomain& domain = mapping.variable->domain;
-    if (!domain.is_interval || domain.values.size() != 2 ||
-        domain.values[0] < 0 || mapping.offset < 0) {
+    if ((domain.is_interval && domain.values.empty()) ||
+        domain.values[0] < 0 || mapping.offset + mapping.coefficient <= 0) {
       // Invalid case. Ignore it.
       return false;
     }
     const std::vector<int64>& values = ct->Arg(1).values;
     std::vector<int64> new_values;
-    for (int64 i = domain.values[0]; i <= domain.values[1]; ++i) {
-      const int64 index = (i - 1) * mapping.coefficient + mapping.offset;
+    for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
+      const int64 index = i * mapping.coefficient + mapping.offset - 1;
       if (index < 0) {
         return false;
       }

@@ -28,15 +28,15 @@ namespace operations_research {
 namespace {
 class MtOptimizeVar : public OptimizeVar {
  public:
-  MtOptimizeVar(Solver* const s, bool maximize, IntVar* const v, int64 step,
-                FzParallelSupportInterface* const support, int worker_id)
+  MtOptimizeVar(Solver* s, bool maximize, IntVar* v, int64 step,
+                FzParallelSupportInterface* support, int worker_id)
       : OptimizeVar(s, maximize, v, step),
         support_(support),
         worker_id_(worker_id) {}
 
   virtual ~MtOptimizeVar() {}
 
-  virtual void RefuteDecision(Decision* const d) {
+  virtual void RefuteDecision(Decision* d) {
     const int64 polled_best = support_->BestSolution();
     if ((maximize_ && polled_best > best_) ||
         (!maximize_ && polled_best < best_)) {
@@ -56,7 +56,7 @@ class MtOptimizeVar : public OptimizeVar {
 
 class MtCustomLimit : public SearchLimit {
  public:
-  MtCustomLimit(Solver* const s, FzParallelSupportInterface* const support,
+  MtCustomLimit(Solver* s, FzParallelSupportInterface* support,
                 int worker_id)
       : SearchLimit(s), support_(support), worker_id_(worker_id) {}
 
@@ -72,7 +72,7 @@ class MtCustomLimit : public SearchLimit {
     return result;
   }
 
-  virtual void Copy(const SearchLimit* const limit) {}
+  virtual void Copy(const SearchLimit* limit) {}
 
   virtual SearchLimit* MakeClone() const { return nullptr; }
 
@@ -195,12 +195,12 @@ class MtSupportInterface : public FzParallelSupportInterface {
 
   virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* const s, bool maximize,
-                                 IntVar* const var, int64 step, int w) {
+  virtual OptimizeVar* Objective(Solver* s, bool maximize,
+                                 IntVar* var, int64 step, int w) {
     return s->RevAlloc(new MtOptimizeVar(s, maximize, var, step, this, w));
   }
 
-  virtual SearchLimit* Limit(Solver* const s, int worker_id) {
+  virtual SearchLimit* Limit(Solver* s, int worker_id) {
     return s->RevAlloc(new MtCustomLimit(s, this, worker_id));
   }
 

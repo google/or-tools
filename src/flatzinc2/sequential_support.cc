@@ -81,12 +81,12 @@ class SequentialSupportInterface : public FzParallelSupportInterface {
 
   virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* const s, bool maximize,
-                                 IntVar* const var, int64 step, int worker_id) {
+  virtual OptimizeVar* Objective(Solver* s, bool maximize,
+                                 IntVar* var, int64 step, int worker_id) {
     return s->MakeOptimize(maximize, var, step);
   }
 
-  virtual SearchLimit* Limit(Solver* const s, int worker_id) { return nullptr; }
+  virtual SearchLimit* Limit(Solver* s, int worker_id) { return nullptr; }
 
   virtual void Log(int worker_id, const std::string& message) {
     std::cout << "%%  worker " << worker_id << ": " << message << std::endl;

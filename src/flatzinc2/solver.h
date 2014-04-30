@@ -33,36 +33,38 @@ class FzSolver {
   // The parallel context (sequential, multi-threaded) is encapsulated
   // in the parallel support interface.
   void Solve(FzSolverParameters p,
-             FzParallelSupportInterface* const parallel_support);
+             FzParallelSupportInterface* parallel_support);
 
   // Extraction support.
   bool Extract();
   IntExpr* GetExpression(const FzArgument& argument);
   std::vector<IntVar*> GetVariableArray(const FzArgument& argument);
-  IntExpr* Extract(FzIntegerVariable* const var);
+  IntExpr* Extract(FzIntegerVariable* var);
+  void SetExtracted(FzIntegerVariable* var, IntExpr* expr);
+
 
   // Output support.
   std::string SolutionString(const FzOnSolutionOutput& output);
 
   // Returns the cp solver.
-  Solver* const solver() { return &solver_; }
+  Solver* solver() { return &solver_; }
 
  private:
-  void ExtractConstraint(FzConstraint* const ct);
+  void ExtractConstraint(FzConstraint* ct);
   bool HasSearchAnnotations() const;
   void ParseSearchAnnotations(bool ignore_unknown,
-                              std::vector<DecisionBuilder*>* const defined,
-                              std::vector<IntVar*>* const defined_variables,
-                              std::vector<IntVar*>* const active_variables,
-                              std::vector<int>* const defined_occurrences,
-                              std::vector<int>* const active_occurrences);
+                              std::vector<DecisionBuilder*>* defined,
+                              std::vector<IntVar*>* defined_variables,
+                              std::vector<IntVar*>* active_variables,
+                              std::vector<int>* defined_occurrences,
+                              std::vector<int>* active_occurrences);
   void AddCompletionDecisionBuilders(const std::vector<IntVar*>& defined_variables,
                                      const std::vector<IntVar*>& active_variables,
-                                     std::vector<DecisionBuilder*>* const builders);
+                                     std::vector<DecisionBuilder*>* builders);
   DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p);
   const std::vector<IntVar*>& PrimaryVariables() const;
   const std::vector<IntVar*>& SecondaryVariables() const;
-  void CollectOutputVariables(std::vector<IntVar*>* const output_variables);
+  void CollectOutputVariables(std::vector<IntVar*>* output_variables);
   void SyncWithModel();
 
   const FzModel& model_;

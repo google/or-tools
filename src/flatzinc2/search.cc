@@ -31,7 +31,7 @@ namespace {
 // that it uses stdout instead of LOG(INFO).
 class FzLog : public SearchLog {
  public:
-  FzLog(Solver* const s, OptimizeVar* const obj, int period)
+  FzLog(Solver* s, OptimizeVar* obj, int period)
       : SearchLog(s, obj, nullptr, nullptr, period) {}
   virtual ~FzLog() {}
 
@@ -42,7 +42,7 @@ class FzLog : public SearchLog {
 };
 // Flatten Search annotations.
 void FlattenAnnotations(const FzAnnotation& ann,
-                        std::vector<FzAnnotation>* const out) {
+                        std::vector<FzAnnotation>* out) {
   if (ann.type == FzAnnotation::ANNOTATION_LIST) {
     for (int i = 0; i < ann.annotations.size(); i++) {
       const FzAnnotation& inner = ann.annotations[i];
@@ -66,7 +66,7 @@ struct VarDegreeIndex {
   int d;
   int i;
 
-  VarDegreeIndex(IntVar* const var, int degree, int index)
+  VarDegreeIndex(IntVar* var, int degree, int index)
       : v(var), d(degree), i(index) {}
 
   bool operator<(const VarDegreeIndex& other) const {
@@ -75,7 +75,7 @@ struct VarDegreeIndex {
 };
 
 void SortVariableByDegree(const std::vector<int>& occurrences,
-                          std::vector<IntVar*>* const int_vars) {
+                          std::vector<IntVar*>* int_vars) {
   std::vector<VarDegreeIndex> to_sort;
   for (int i = 0; i < int_vars->size(); ++i) {
     IntVar* const var = (*int_vars)[i];
@@ -141,11 +141,11 @@ bool FzSolver::HasSearchAnnotations() const {
 }
 
 void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
-                                      std::vector<DecisionBuilder*>* const defined,
-                                      std::vector<IntVar*>* const defined_variables,
-                                      std::vector<IntVar*>* const active_variables,
-                                      std::vector<int>* const defined_occurrences,
-                                      std::vector<int>* const active_occurrences) {
+                                      std::vector<DecisionBuilder*>* defined,
+                                      std::vector<IntVar*>* defined_variables,
+                                      std::vector<IntVar*>* active_variables,
+                                      std::vector<int>* defined_occurrences,
+                                      std::vector<int>* active_occurrences) {
   const bool has_search_annotations = HasSearchAnnotations();
   std::vector<FzAnnotation> flat_annotations;
   if (has_search_annotations) {
@@ -287,7 +287,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   }
 }
 
-void FzSolver::CollectOutputVariables(std::vector<IntVar*>* const out) {
+void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
   for (int i = 0; i < model_.output().size(); ++i) {
     const FzOnSolutionOutput& output = model_.output()[i];
     if (output.variable != nullptr) {
@@ -303,7 +303,7 @@ void FzSolver::CollectOutputVariables(std::vector<IntVar*>* const out) {
 void FzSolver::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& defined_variables,
     const std::vector<IntVar*>& active_variables,
-    std::vector<DecisionBuilder*>* const builders) {
+    std::vector<DecisionBuilder*>* builders) {
   hash_set<IntVar*> already_defined(defined_variables.begin(),
                                     defined_variables.end());
   std::vector<IntVar*> output_variables;
@@ -434,9 +434,11 @@ const std::vector<IntVar*>& FzSolver::SecondaryVariables() const {
 }
 
 void FzSolver::SyncWithModel() {
-  for (int i = 0; i < model_.variables().size(); ++i) {
-    FzIntegerVariable* const fz_var = model_.variables()[i];
-    IntVar* const var = Extract(model_.variables()[i])->Var();
+  for (FzIntegerVariable* const fz_var : model_.variables()) {
+    if (!fz_var->active) {
+      continue;
+    }
+    IntVar* const var = Extract(fz_var)->Var();
     extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
     if (fz_var->temporary) {
       introduced_variables_.push_back(var);
@@ -450,7 +452,7 @@ void FzSolver::SyncWithModel() {
 }
 
 void FzSolver::Solve(FzSolverParameters p,
-                     FzParallelSupportInterface* const parallel_support) {
+                     FzParallelSupportInterface* parallel_support) {
   SyncWithModel();
   DecisionBuilder* const db = CreateDecisionBuilders(p);
   std::vector<SearchMonitor*> monitors;
