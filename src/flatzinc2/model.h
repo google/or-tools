@@ -116,7 +116,8 @@ struct FzIntegerVariable {
 struct FzArgument {
   enum Type {
     INT_VALUE,
-    INT_DOMAIN,
+    INT_INTERVAL,
+    INT_LIST,
     INT_VAR_REF,
     INT_VAR_REF_ARRAY,
     VOID_ARGUMENT,
@@ -131,9 +132,7 @@ struct FzArgument {
   std::string DebugString() const;
 
   Type type;
-  // TODO(user): Use union.
-  int64 integer_value;
-  FzDomain domain;
+  std::vector<int64> values;
   std::vector<FzIntegerVariable*> variables;
 
   // Helpers

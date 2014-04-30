@@ -166,24 +166,39 @@ std::string FzDomain::DebugString() const {
 FzArgument FzArgument::IntegerValue(int64 value) {
   FzArgument result;
   result.type = INT_VALUE;
-  result.integer_value = value;
-  result.domain = FzDomain::AllInt64();
+  result.values.push_back(value);
   return result;
 }
 
 FzArgument FzArgument::Domain(const FzDomain& domain) {
   FzArgument result;
-  result.type = INT_DOMAIN;
-  result.integer_value = 0;
-  result.domain = domain;
+  if (domain.is_interval) {
+    if (domain.values.empty()) {
+      result.type = INT_INTERVAL;
+      result.values.push_back(kint64min);
+      result.values.push_back(kint64max);
+    } else if (domain.values[0] == domain.values[1]) {
+      result.type = INT_VALUE;
+      result.values.push_back(domain.values[0]);
+    } else {
+      result.type = INT_INTERVAL;
+      result.values = domain.values;
+    }
+  } else {
+    if (domain.values.size() == 1) {
+      result.type = INT_VALUE;
+      result.values.push_back(domain.values[0]);
+    } else {
+      result.type = INT_LIST;
+      result.values = domain.values;
+    }
+  }
   return result;
 }
 
 FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   FzArgument result;
   result.type = INT_VAR_REF;
-  result.integer_value = 0;
-  result.domain = FzDomain::AllInt64();
   result.variables.push_back(var);
   return result;
 }
@@ -192,8 +207,6 @@ FzArgument FzArgument::IntVarRefArray(
     const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
-  result.integer_value = 0;
-  result.domain = FzDomain::AllInt64();
   result.variables = vars;
   return result;
 }
@@ -201,17 +214,18 @@ FzArgument FzArgument::IntVarRefArray(
 FzArgument FzArgument::VoidArgument() {
   FzArgument result;
   result.type = VOID_ARGUMENT;
-  result.integer_value = 0;
-  result.domain = FzDomain::AllInt64();
   return result;
 }
 
 std::string FzArgument::DebugString() const {
   switch (type) {
     case INT_VALUE:
-      return StringPrintf("% " GG_LL_FORMAT "d", integer_value);
-    case INT_DOMAIN:
-      return domain.DebugString();
+      return StringPrintf("% " GG_LL_FORMAT "d", values[0]);
+    case INT_INTERVAL:
+      return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
+                          values[1]);
+    case INT_LIST:
+      return StringPrintf("[%s]", IntVectorToString(values, ", ").c_str());
     case INT_VAR_REF:
       return variables[0]->name;
     case INT_VAR_REF_ARRAY: {
@@ -232,15 +246,14 @@ bool FzArgument::IsIntegerVariable() const {
 }
 
 bool FzArgument::HasOneValue() const {
-  return (type == INT_VALUE || (type == INT_DOMAIN && domain.IsSingleton()) ||
+  return (type == INT_VALUE ||
           (type == INT_VAR_REF && variables[0]->domain.IsSingleton()));
 }
 
 int64 FzArgument::Value() const {
   switch (type) {
     case INT_VALUE:
-      return integer_value;
-    case INT_DOMAIN: { return domain.values[0]; }
+      return values[0];
     case INT_VAR_REF: { return variables[0]->domain.values[0]; }
     default: {
       LOG(FATAL) << "Wrong Value() on " << DebugString();

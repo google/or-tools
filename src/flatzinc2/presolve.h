@@ -87,6 +87,9 @@ class FzPresolver {
   bool PresolveStoreMapping(FzConstraint* ct);
   bool PresolveSimplifyElement(FzConstraint* ct);
 
+  // Helpers.
+  void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);
+
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
   // logical model]. We will store them here, using a Union-find data structure.

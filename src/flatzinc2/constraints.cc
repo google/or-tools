@@ -31,14 +31,14 @@ namespace operations_research {
 
 void ExtractAllDifferentInt(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  const std::vector<IntVar*> vars = solver->GetVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars = solver->GetVariableArray(ct->Arg(0));
   s->AddConstraint(s->MakeAllDifferent(vars));
 }
 
 void ExtractAlldifferentExcept0(FzSolver* const solver,
                                 FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  const std::vector<IntVar*> vars = solver->GetVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars = solver->GetVariableArray(ct->Arg(0));
   s->AddConstraint(s->MakeAllDifferentExcept(vars, 0));
 }
 
@@ -174,22 +174,22 @@ void ExtractIntDiv(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntEq(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeEquality(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeEquality(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeEquality(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left != right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }
@@ -203,22 +203,22 @@ void ExtractIntEqReif(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntGe(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeGreaterOrEqual(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeGreaterOrEqual(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeLessOrEqual(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left < right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }
@@ -232,22 +232,22 @@ void ExtractIntGeReif(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntGt(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeGreater(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeGreater(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeLess(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left <= right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }
@@ -265,22 +265,22 @@ void ExtractIntIn(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntLe(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeLessOrEqual(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeLessOrEqual(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeGreaterOrEqual(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left > right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }
@@ -294,9 +294,9 @@ void ExtractIntLeReif(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntLinEq(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  const std::vector<int64>& coefficients = ct->arguments[0].domain.values;
-  std::vector<IntVar*> vars = solver->GetVariableArray(ct->arguments[1]);
-  const int64 rhs = ct->arguments[2].integer_value;
+  const std::vector<int64>& coefficients = ct->Arg(0).values;
+  std::vector<IntVar*> vars = solver->GetVariableArray(ct->Arg(1));
+  const int64 rhs = ct->Arg(2).Value();
   s->AddConstraint(s->MakeScalProdEquality(vars, coefficients, rhs));
 }
 
@@ -330,22 +330,22 @@ void ExtractIntLinNeReif(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntLt(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeLess(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeLess(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeGreater(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left >= right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }
@@ -375,22 +375,22 @@ void ExtractIntMod(FzSolver* const solver, FzConstraint* const ct) {
 
 void ExtractIntNe(FzSolver* const solver, FzConstraint* const ct) {
   Solver* const s = solver->solver();
-  if (ct->arguments[0].type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = solver->GetExpression(ct->arguments[0]);
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = solver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeNonEquality(left, right));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       s->AddConstraint(s->MakeNonEquality(left, right));
     }
   } else {
-    const int64 left = ct->arguments[0].integer_value;
-    if (ct->arguments[1].type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = solver->GetExpression(ct->arguments[1]);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = solver->GetExpression(ct->Arg(1));
       s->AddConstraint(s->MakeNonEquality(right, left));
     } else {
-      const int64 right = ct->arguments[1].integer_value;
+      const int64 right = ct->Arg(1).Value();
       if (left == right) {
         s->AddConstraint(s->MakeFalseConstraint());
       }

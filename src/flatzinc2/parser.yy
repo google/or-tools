@@ -567,7 +567,7 @@ argument:
       std::vector<int64> values(arguments.size());
       for (int i = 0; i < arguments.size(); ++i) {
         CHECK_EQ(FzArgument::INT_VALUE, arguments[i].type);
-        values[i] = arguments[i].integer_value;
+        values[i] = arguments[i].Value();
       }
       $$ = FzArgument::Domain(FzDomain::IntegerList(values));
       break;
@@ -579,7 +579,7 @@ argument:
            CHECK(arguments[i].variables[0] != nullptr);
            vars[i] = arguments[i].variables[0];
         } else if (FzArgument::INT_VALUE == arguments[i].type) {
-           vars[i] = FzIntegerVariable::Constant(arguments[i].integer_value);
+           vars[i] = FzIntegerVariable::Constant(arguments[i].Value());
         } else {
           LOG(FATAL) << "Unsupported parameter type: " << type;
         }

@@ -187,10 +187,9 @@ void FzPresolver::Unreify(FzConstraint* ct) {
 
 // Presolves a constraint x0 is an element of arg1.
 bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
-  if (ct->Arg(0).IsIntegerVariable() &&
-      ct->Arg(1).type == FzArgument::INT_DOMAIN) {
+  if (ct->Arg(0).IsIntegerVariable()) {
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-    ct->Arg(0).Var()->domain.IntersectWithFzDomain(ct->Arg(1).domain);
+    IntersectDomainWithIntArgument(&ct->Arg(0).Var()->domain, ct->Arg(1));
     ct->MarkAsInactive();
     // TODO(user): Returns true iff the intersection yielded some domain
     // reduction.
@@ -290,7 +289,8 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
 // Transform Sum(ai * xi) > c into Sum(ax * xi) >= c + 1.
 bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
   FZVLOG << "Transform " << ct->DebugString() << " into int_lin_ge" << FZENDL;
-  ct->MutableArg(2)->integer_value++;
+  CHECK_EQ(FzArgument::INT_VALUE, ct->Arg(2).type);
+  ct->MutableArg(2)->values[0]++;
   ct->type = "int_lin_ge";
   return true;
 }
@@ -298,7 +298,8 @@ bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
 // Transform Sum(ai * xi) < c into Sum(ax * xi) <= c - 1.
 bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
   FZVLOG << "Transform " << ct->DebugString() << " into int_lin_le" << FZENDL;
-  ct->MutableArg(2)->integer_value--;
+  CHECK_EQ(FzArgument::INT_VALUE, ct->Arg(2).type);
+  ct->MutableArg(2)->values[0]--;
   ct->type = "int_lin_le";
   return true;
 }
@@ -307,7 +308,7 @@ bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsIntegerVariable() && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
-    ct->Arg(2).Var()->domain.IntersectWithFzDomain(ct->Arg(1).domain);
+    IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
     ct->presolve_propagation_done = true;
     return true;
   }
@@ -318,19 +319,19 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 // Reverse the constraint to get the original >=. This is true for ==, !=, <=,
 // <, >, >= and their reified versions.
 bool FzPresolver::PresolveLinear(FzConstraint* ct) {
-  if (ct->arguments[0].domain.values.empty()) {
+  if (ct->arguments[0].values.empty()) {
     return false;
   }
-  for (const int64 coef : ct->arguments[0].domain.values) {
+  for (const int64 coef : ct->arguments[0].values) {
     if (coef > 0) {
       return false;
     }
   }
   FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
-  for (int64& coef : ct->arguments[0].domain.values) {
+  for (int64& coef : ct->arguments[0].values) {
     coef *= -1;
   }
-  ct->MutableArg(2)->integer_value *= -1;
+  ct->MutableArg(2)->values[0] *= -1;
   const std::string& id = ct->type;
   if (id == "int_lin_le") {
     ct->type = "int_lin_ge";
@@ -351,11 +352,11 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
 // If a scal prod only contains positive constant and variables, then we
 // can propagate an upper bound on all variables.
 bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
-  const int64 rhs = ct->Arg(2).integer_value;
+  const int64 rhs = ct->Arg(2).Value();
   if (ct->presolve_propagation_done || rhs < 0) {
     return false;
   }
-  for (const int64 coef : ct->arguments[0].domain.values) {
+  for (const int64 coef : ct->arguments[0].values) {
     if (coef < 0) {
       return false;
     }
@@ -366,8 +367,8 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
       return false;
     }
   }
-  for (int i = 0; i < ct->arguments[0].domain.values.size(); ++i) {
-    const int64 coef = ct->arguments[0].domain.values[i];
+  for (int i = 0; i < ct->arguments[0].values.size(); ++i) {
+    const int64 coef = ct->arguments[0].values[i];
     if (coef > 0) {
       FzIntegerVariable* const var = ct->Arg(1).variables[i];
       var->domain.IntersectWithInterval(0, rhs / coef);
@@ -381,14 +382,14 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
 // constraint with an affine mapping between y, z and the new index.
 // This rule stores the mapping to reconstruct the 2d element constraint.
 bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
-  if (ct->arguments[0].domain.values.size() == 2 &&
+  if (ct->arguments[0].values.size() == 2 &&
       ct->Arg(1).variables[0] == ct->target_variable &&
-      ct->arguments[0].domain.values[0] == -1 &&
+      ct->arguments[0].values[0] == -1 &&
       !ContainsKey(affine_map_, ct->Arg(1).variables[0]) &&
       ct->strong_propagation) {
-    affine_map_[ct->Arg(1).variables[0]] = AffineMapping(
-        ct->Arg(1).variables[1], ct->arguments[0].domain.values[1],
-        -ct->Arg(2).integer_value, ct);
+    affine_map_[ct->Arg(1).variables[0]] =
+        AffineMapping(ct->Arg(1).variables[1], ct->arguments[0].values[1],
+                      -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     return true;
   }
@@ -407,7 +408,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       // Invalid case. Ignore it.
       return false;
     }
-    const std::vector<int64>& values = ct->Arg(1).domain.values;
+    const std::vector<int64>& values = ct->Arg(1).values;
     std::vector<int64> new_values;
     for (int64 i = domain.values[0]; i <= domain.values[1]; ++i) {
       const int64 index = (i - 1) * mapping.coefficient + mapping.offset;
@@ -422,7 +423,11 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     // Rewrite constraint.
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     ct->arguments[0].variables[0] = mapping.variable;
-    ct->MutableArg(1)->domain.values.swap(new_values);
+    // TODO(user): Encapsulate argument setters.
+    ct->MutableArg(1)->values.swap(new_values);
+    if (ct->Arg(1).values.size() == 1) {
+      ct->MutableArg(1)->type = FzArgument::INT_VALUE;
+    }
     // Reset propagate flag.
     ct->presolve_propagation_done = false;
     FZVLOG << "    into  " << ct->DebugString() << FZENDL;
@@ -432,9 +437,9 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     return true;
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
-      index_var->domain.values[1] < ct->Arg(1).domain.values.size()) {
+      index_var->domain.values[1] < ct->Arg(1).values.size()) {
     // Reduce array of values.
-    ct->MutableArg(1)->domain.values.resize(index_var->domain.values[1]);
+    ct->MutableArg(1)->values.resize(index_var->domain.values[1]);
     ct->presolve_propagation_done = false;
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
     return true;
@@ -625,6 +630,28 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
   }
 }
 
+// ----- Helpers -----
+
+void FzPresolver::IntersectDomainWithIntArgument(FzDomain* domain,
+                                                 const FzArgument& arg) {
+  switch (arg.type) {
+    case FzArgument::INT_VALUE: {
+      const int64 value = arg.Value();
+      domain->IntersectWithInterval(value, value);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      domain->IntersectWithInterval(arg.values[0], arg.values[1]);
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      domain->IntersectWithListOfIntegers(arg.values);
+      break;
+    }
+    default: { LOG(FATAL) << "Wrong domain type" << arg.DebugString(); }
+  }
+}
+
 // ----- Clean up model -----
 
 namespace {
@@ -669,11 +696,11 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
     if (id == "int_lin_eq") {
-      if (ct->arguments[0].domain.values.size() > 2 &&
+      if (ct->arguments[0].values.size() > 2 &&
           ct->target_variable != nullptr) {
         ct->RemoveTargetVariable();
         continue;
-      } else if (ct->arguments[0].domain.values.size() > 2 &&
+      } else if (ct->arguments[0].values.size() > 2 &&
                  ct->strong_propagation) {
         FZVLOG << "Remove strong_propagation from " << ct->DebugString()
                << FZENDL;

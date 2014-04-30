@@ -24,7 +24,7 @@ namespace operations_research {
 IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
   switch (arg.type) {
     case FzArgument::INT_VALUE: {
-      return solver_.MakeIntConst(arg.integer_value);
+      return solver_.MakeIntConst(arg.Value());
     }
     case FzArgument::INT_VAR_REF: { return Extract(arg.variables[0]); }
     default: {
