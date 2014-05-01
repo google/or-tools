@@ -93,6 +93,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--logging";
+  char verbose_logging_param[] = "--verbose_logging";
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;
@@ -108,6 +109,9 @@ void FixAndParseParameters(int* argc, char*** argv) {
     }
     if (strcmp((*argv)[i], "-l") == 0) {
       (*argv)[i] = logging_param;
+    }
+    if (strcmp((*argv)[i], "-v") == 0) {
+      (*argv)[i] = verbose_logging_param;
     }
   }
   google::ParseCommandLineFlags(argc, argv, true);
