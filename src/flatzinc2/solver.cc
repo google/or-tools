@@ -160,11 +160,18 @@ bool FzSolver::Extract() {
       }
     }
   }
+  // Sort a first time.
+  std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+  // Topological sort.
   while (!to_sort.empty()) {
-    std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+    if (!to_sort.back()->required.empty()) {
+      // Sort again.
+      std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+    }
     ConstraintWithIo* const ctio = to_sort.back();
     to_sort.pop_back();
     CHECK(ctio->required.empty());
+    // TODO(user): Implement recovery mode.
     sorted.push_back(ctio->ct);
     FzIntegerVariable* const var = ctio->ct->target_variable;
     if (var != nullptr && ContainsKey(dependencies, var)) {
