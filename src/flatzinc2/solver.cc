@@ -20,6 +20,8 @@
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"
 
+DECLARE_bool(verbose_logging);
+
 namespace operations_research {
 IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
   switch (arg.type) {
@@ -61,6 +63,8 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   } else {
     result = solver_.MakeIntVar(var->domain.values, var->name);
   }
+  FZVLOG << "Extract " << var->DebugString() << " into "
+         << result->DebugString() << FZENDL;
   extrated_map_[var] = result;
   return nullptr;
 }

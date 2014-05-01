@@ -12,6 +12,7 @@
 // limitations under the License.
 #include "base/hash.h"
 #include <iostream>  // NOLINT
+#include <set>
 #include <vector>
 
 #include "base/map_util.h"
@@ -100,18 +101,39 @@ void FzDomain::IntersectWithInterval(int64 imin, int64 imax) {
 }
 
 void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
-  // TODO(user): Investigate faster code for small arrays.
-  std::sort(values.begin(), values.end());
-  hash_set<int64> other_values(ovalues.begin(), ovalues.end());
-  std::vector<int64> new_values;
-  new_values.reserve(std::min(values.size(), ovalues.size()));
-  for (const int64 val : values) {
-    if (ContainsKey(other_values, val) &&
-        (new_values.empty() || val != new_values.back())) {
-      new_values.push_back(val);
+  if (is_interval) {
+    const int64 dmin = values.empty() ? kint64min : values[0];
+    const int64 dmax = values.empty() ? kint64max : values[1];
+    std::set<int64> vset(ovalues.begin(), ovalues.end());
+    values.clear();
+    for (const int64 v : vset) {
+      if (v >= dmin && v <= dmax) {
+        values.push_back(v);
+      }
     }
+    if (values.back() - values.front() == values.size() + 1 &&
+        values.size() > 2) {
+      // Contiguous case.
+      const int64 last = values.back();
+      values.resize(2);
+      values[1] = last;
+    } else {
+      is_interval = false;
+    }
+  } else {
+    // TODO(user): Investigate faster code for small arrays.
+    std::sort(values.begin(), values.end());
+    hash_set<int64> other_values(ovalues.begin(), ovalues.end());
+    std::vector<int64> new_values;
+    new_values.reserve(std::min(values.size(), ovalues.size()));
+    for (const int64 val : values) {
+      if (ContainsKey(other_values, val) &&
+          (new_values.empty() || val != new_values.back())) {
+        new_values.push_back(val);
+      }
+    }
+    values.swap(new_values);
   }
-  values.swap(new_values);
 }
 
 bool FzDomain::IsSingleton() const {

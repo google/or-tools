@@ -309,6 +309,7 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsIntegerVariable() && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
     IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
+    FZVLOG << "  -> " << ct->Arg(2).Var()->DebugString() << FZENDL;
     ct->presolve_propagation_done = true;
     return true;
   }

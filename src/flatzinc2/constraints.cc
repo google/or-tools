@@ -32,7 +32,9 @@ namespace operations_research {
 void ExtractAllDifferentInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const s = fzsolver->solver();
   const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(0));
-  s->AddConstraint(s->MakeAllDifferent(vars));
+  Constraint* const constraint = s->MakeAllDifferent(vars);
+  FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+  s->AddConstraint(constraint);
 }
 
 void ExtractAlldifferentExcept0(FzSolver* fzsolver, FzConstraint* ct) {
@@ -82,11 +84,31 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
-
-void ExtractArrayVarIntPosition(FzSolver* solver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver =  fzsolver->solver();
+  IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
+  const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
+  const int64 imin = std::max(index->Min(), 1LL);
+  const int64 imax =
+      std::min(index->Max(), static_cast<int64>(vars.size()) + 1LL);
+  IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
+  const int64 size = imax - imin + 1;
+  std::vector<IntVar*> var_array(size);
+  for (int i = 0; i < size; ++i) {
+    var_array[i] = vars[i + imin - 1];
+  }
+  if (ct->target_variable != nullptr) {
+    DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
+    IntExpr* const target = solver->MakeElement(var_array, shifted_index);
+    FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const ct =
+        solver->MakeElementEquality(var_array, shifted_index, target);
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  }
 }
 
 void ExtractBool2int(FzSolver* fzsolver, FzConstraint* ct) {
@@ -527,8 +549,6 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractArrayVarIntElement(this, ct);
   } else if (type == "array_var_int_element") {
     ExtractArrayVarIntElement(this, ct);
-  } else if (type == "array_var_int_position") {
-    ExtractArrayVarIntPosition(this, ct);
   } else if (type == "bool2int") {
     ExtractBool2int(this, ct);
   } else if (type == "bool_and") {
