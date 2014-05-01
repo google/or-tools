@@ -33,12 +33,16 @@
  *
  */
 
-%pure-parser
-%parse-param {void* parm}
-%name-prefix = "orfz_"
+%lex-param {void* scanner}
+%parse-param {operations_research::ParserState* parm}
+%parse-param {void* scanner}
+
+%name-prefix  "orfz_"
+%define api.pure full
 %{
 #define YYPARSE_PARAM parm
-#define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
+#define YYLEX_PARAM yyscanner
+
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/flatzinc.tab.hh"
@@ -59,11 +63,10 @@
 
   using namespace operations_research;
 
-  void orfz_error(void* parm, const char* str) {
-    ParserState* const pp = static_cast<ParserState*>(parm);
+  void orfz_error(ParserState* parm, void* scanner, const char* str) {
     LOG(ERROR) << "Error: " << str
-               << " in line no. " << orfz_get_lineno(pp->yyscanner);
-    pp->hadError = true;
+               << " in line no. " << orfz_get_lineno(scanner);
+    parm->hadError = true;
   }
 
   void orfz_assert(ParserState* const pp, bool cond, const char* str)
@@ -854,7 +857,7 @@ FZ_CONSTRAINT FZ_ID '(' flat_expr_list ')' annotations
     try {
       pp->AddConstraint($2, $4, $6);
     } catch (operations_research::FzError& e) {
-      yyerror(pp, e.DebugString().c_str());
+      yyerror(pp, scanner, e.DebugString().c_str());
     }
   }
   free($2);
@@ -868,7 +871,7 @@ FZ_SOLVE annotations FZ_SATISFY
       pp->model()->Satisfy($2);
       pp->AnalyseAndCreateModel();
     } catch (operations_research::FzError& e) {
-      yyerror(pp, e.DebugString().c_str());
+      yyerror(pp, scanner, e.DebugString().c_str());
     }
   } else {
     delete $2;
@@ -885,7 +888,7 @@ FZ_SOLVE annotations FZ_SATISFY
         pp->model()->Maximize($4,$2);
       pp->AnalyseAndCreateModel();
     } catch (operations_research::FzError& e) {
-      yyerror(pp, e.DebugString().c_str());
+      yyerror(pp, scanner, e.DebugString().c_str());
     }
   } else {
     delete $2;

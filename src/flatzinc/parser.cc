@@ -30,12 +30,12 @@
 #include "flatzinc/flatzinc.tab.hh"
 #include "util/string_array.h"
 
-extern int orfz_parse(void* input);
+extern int orfz_parse(operations_research::ParserState* input, void* scanner);
 extern int orfz_lex_init(void** scanner);
 extern int orfz_lex_destroy(void* scanner);
 extern int orfz_get_lineno(void* scanner);
 extern void orfz_set_extra(void* user_defined, void* yyscanner);
-extern void yyerror(void* parm, const char* str);
+extern void yyerror(void* parm, void* scanner, const char* str);
 
 DECLARE_bool(use_sat);
 DECLARE_bool(logging);
@@ -1913,7 +1913,7 @@ bool FlatZincModel::Parse(const std::string& filename) {
   orfz_lex_init(&pp.yyscanner);
   orfz_set_extra(&pp, pp.yyscanner);
   // yydebug = 1;
-  orfz_parse(&pp);
+  orfz_parse(&pp, pp.yyscanner);
   pp.InitOutput(this);
 
   if (pp.yyscanner) orfz_lex_destroy(pp.yyscanner);
@@ -1930,7 +1930,7 @@ bool FlatZincModel::Parse(std::istream& is) {  // NOLINT
   orfz_lex_init(&pp.yyscanner);
   orfz_set_extra(&pp, pp.yyscanner);
   // yydebug = 1;
-  orfz_parse(&pp);
+  orfz_parse(&pp, pp.yyscanner);
   pp.InitOutput(this);
 
   if (pp.yyscanner) orfz_lex_destroy(pp.yyscanner);

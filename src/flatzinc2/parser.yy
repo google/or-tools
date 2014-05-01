@@ -1,5 +1,4 @@
 // Specify a reentrant parser.
-//%pure-parser
 
 // Renames all yy to orfz_ in public functions.
 %name-prefix "orfz_"

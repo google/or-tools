@@ -45,8 +45,14 @@
 
 %{
 
-void orfz_error(void*, const char*);
-#define orfz_error(s) orfz_error(yyextra, s)
+namespace operations_research {
+class ParserState;
+}  // namespace operations_research
+
+void orfz_error(operations_research::ParserState*, void*, const char*);
+#define orfz_error(s) \
+  orfz_error(static_cast<operations_research::ParserState*>(yyextra),\
+             yyscanner, s)
 
 #include "base/strtoint.h"
 #include "flatzinc/parser.h"
