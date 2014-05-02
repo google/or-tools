@@ -23,7 +23,6 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - array_var_int_element and index is affine -> reduce array
 //   - array_int_element and index is flattened 2d -> rewrite as 2d array.
 //   - table_int -> intersect variables domains with tuple set.
 //

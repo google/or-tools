@@ -24,11 +24,6 @@
 DECLARE_bool(verbose_logging);
 
 namespace operations_research {
-// List of tricks to add to the current flatzinc extraction process.
-//   - store all different
-//   - array_var_int_element -> value bound => array_var_int_position
-
-
 void ExtractAllDifferentInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const s = fzsolver->solver();
   const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(0));
