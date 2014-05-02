@@ -15,6 +15,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
+#include "flatzinc2/flatzinc_constraints.h"
 #include "flatzinc2/model.h"
 #include "flatzinc2/search.h"
 #include "flatzinc2/solver.h"
@@ -388,17 +389,17 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
       fzsolver->SetExtracted(ct->target_variable, target);
     }
   } else {
-    Constraint* ct = nullptr;
+    Constraint* constraint = nullptr;
     switch (size) {
       case 0: {
-        ct = rhs == 0 ? solver->MakeTrueConstraint()
-                      : solver->MakeFalseConstraint();
+        constraint = rhs == 0 ? solver->MakeTrueConstraint()
+                              : solver->MakeFalseConstraint();
         break;
       }
       case 1: {
         IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
         const int64 c1 = coefficients[0];
-        ct = solver->MakeEquality(solver->MakeProd(e1, c1), rhs);
+        constraint = solver->MakeEquality(solver->MakeProd(e1, c1), rhs);
         break;
       }
       case 2: {
@@ -408,20 +409,20 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
         const int64 c2 = coefficients[1];
         if (c1 > 0) {
           if (c2 > 0) {
-            ct = solver->MakeEquality(
+            constraint = solver->MakeEquality(
                 solver->MakeProd(e1, c1),
                 solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
           } else {
-            ct = solver->MakeEquality(
+            constraint = solver->MakeEquality(
                 solver->MakeProd(e1, c1),
                 solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
           }
         } else if (c2 > 0) {
-          ct = solver->MakeEquality(
+          constraint = solver->MakeEquality(
               solver->MakeProd(e2, c2),
               solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
         } else {
-          ct = solver->MakeEquality(
+          constraint = solver->MakeEquality(
               solver->MakeProd(e1, -c1),
               solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2)));
         }
@@ -434,31 +435,40 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
         const int64 c1 = coefficients[0];
         const int64 c2 = coefficients[1];
         const int64 c3 = coefficients[2];
-        if (c1 < 0 && c2 > 0 && c3 > 0) {
-          ct = solver->MakeEquality(
-              solver->MakeSum(solver->MakeProd(e2, c2),
-                              solver->MakeProd(e3, c3)),
-              solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
-        } else if (c1 > 0 && c2 < 0 && c3 > 0) {
-          ct = solver->MakeEquality(
-              solver->MakeSum(solver->MakeProd(e1, c1),
-                              solver->MakeProd(e3, c3)),
-              solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
-        } else if (c1 > 0 && c2 > 0 && c3 < 0) {
-          ct = solver->MakeEquality(
-              solver->MakeSum(solver->MakeProd(e1, c1),
-                              solver->MakeProd(e2, c2)),
-              solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
-        } else if (c1 < 0 && c2 < 0 && c3 > 0) {
-          ct = solver->MakeEquality(
-              solver->MakeSum(solver->MakeProd(e1, -c1),
-                              solver->MakeProd(e2, -c2)),
-              solver->MakeSum(solver->MakeProd(e3, c3), -rhs));
+        if (ct->strong_propagation) {
+          std::vector<IntVar*> variables;
+          variables.push_back(e1->Var());
+          variables.push_back(e2->Var());
+          variables.push_back(e3->Var());
+          constraint =
+              MakeStrongScalProdEquality(solver, variables, coefficients, rhs);
         } else {
-          ct = solver->MakeEquality(
-              solver->MakeSum(solver->MakeProd(e1, c1),
-                              solver->MakeProd(e2, c2)),
-              solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+          if (c1 < 0 && c2 > 0 && c3 > 0) {
+            constraint = solver->MakeEquality(
+                solver->MakeSum(solver->MakeProd(e2, c2),
+                                solver->MakeProd(e3, c3)),
+                solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+          } else if (c1 > 0 && c2 < 0 && c3 > 0) {
+            constraint = solver->MakeEquality(
+                solver->MakeSum(solver->MakeProd(e1, c1),
+                                solver->MakeProd(e3, c3)),
+                solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+          } else if (c1 > 0 && c2 > 0 && c3 < 0) {
+            constraint = solver->MakeEquality(
+                solver->MakeSum(solver->MakeProd(e1, c1),
+                                solver->MakeProd(e2, c2)),
+                solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
+          } else if (c1 < 0 && c2 < 0 && c3 > 0) {
+            constraint = solver->MakeEquality(
+                solver->MakeSum(solver->MakeProd(e1, -c1),
+                                solver->MakeProd(e2, -c2)),
+                solver->MakeSum(solver->MakeProd(e3, c3), -rhs));
+          } else {
+            constraint = solver->MakeEquality(
+                solver->MakeSum(solver->MakeProd(e1, c1),
+                                solver->MakeProd(e2, c2)),
+                solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+          }
         }
         break;
       }
@@ -481,12 +491,13 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
         //   PostBooleanSumInRange(model, spec, variables, rhs, rhs);
         //   return;
         // } else {
-          ct = solver->MakeScalProdEquality(variables, new_coefficients, rhs);
-        //        }
+          constraint =
+              solver->MakeScalProdEquality(variables, new_coefficients, rhs);
+        // }
       }
     }
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
+    FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+    solver->AddConstraint(constraint);
   }
 }
 

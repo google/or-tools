@@ -905,6 +905,7 @@ endif
 
 FLATZINC2_LIB_OBJS=\
 	$(OBJ_DIR)/flatzinc2/constraints.$O\
+	$(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O\
 	$(OBJ_DIR)/flatzinc2/model.$O\
 	$(OBJ_DIR)/flatzinc2/parallel_support.$O\
 	$(OBJ_DIR)/flatzinc2/parser.$O\
@@ -925,6 +926,9 @@ $(GEN_DIR)/flatzinc2/parser.tab.hh: $(GEN_DIR)/flatzinc2/parser.tab.cc
 
 $(OBJ_DIR)/flatzinc2/constraints.$O:$(SRC_DIR)/flatzinc2/constraints.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sconstraints.$O
+
+$(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc2/flatzinc_constraints.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sflatzinc_constraints.$O
 
 $(OBJ_DIR)/flatzinc2/model.$O:$(SRC_DIR)/flatzinc2/model.cc $(SRC_DIR)/flatzinc2/model.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Smodel.$O

@@ -233,13 +233,13 @@ bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
 bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 0) {
-    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
+    for (const FzIntegerVariable* const var : ct->Arg(0).variables) {
       if (!var->domain.Contains(0)) {
         return false;
       }
     }
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
+    for (FzIntegerVariable* const var : ct->Arg(0).variables) {
       var->domain.IntersectWithInterval(0, 0);
     }
     ct->presolve_propagation_done = true;
@@ -252,13 +252,13 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
 bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 1) {
-    for (const FzIntegerVariable* const var : ct->arguments[0].variables) {
+    for (const FzIntegerVariable* const var : ct->Arg(0).variables) {
       if (!var->domain.Contains(1)) {
         return false;
       }
     }
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-    for (FzIntegerVariable* const var : ct->arguments[0].variables) {
+    for (FzIntegerVariable* const var : ct->Arg(0).variables) {
       var->domain.IntersectWithInterval(1, 1);
     }
     ct->presolve_propagation_done = true;
@@ -319,16 +319,16 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 // Reverse the constraint to get the original >=. This is true for ==, !=, <=,
 // <, >, >= and their reified versions.
 bool FzPresolver::PresolveLinear(FzConstraint* ct) {
-  if (ct->arguments[0].values.empty()) {
+  if (ct->Arg(0).values.empty()) {
     return false;
   }
-  for (const int64 coef : ct->arguments[0].values) {
+  for (const int64 coef : ct->Arg(0).values) {
     if (coef > 0) {
       return false;
     }
   }
   FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
-  for (int64& coef : ct->arguments[0].values) {
+  for (int64& coef : ct->MutableArg(0)->values) {
     coef *= -1;
   }
   ct->MutableArg(2)->values[0] *= -1;
@@ -356,7 +356,7 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
   if (ct->presolve_propagation_done || rhs < 0) {
     return false;
   }
-  for (const int64 coef : ct->arguments[0].values) {
+  for (const int64 coef : ct->Arg(0).values) {
     if (coef < 0) {
       return false;
     }
@@ -367,8 +367,8 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
       return false;
     }
   }
-  for (int i = 0; i < ct->arguments[0].values.size(); ++i) {
-    const int64 coef = ct->arguments[0].values[i];
+  for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+    const int64 coef = ct->Arg(0).values[i];
     if (coef > 0) {
       FzIntegerVariable* const var = ct->Arg(1).variables[i];
       var->domain.IntersectWithInterval(0, rhs / coef);
@@ -382,14 +382,26 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
 // constraint with an affine mapping between y, z and the new index.
 // This rule stores the mapping to reconstruct the 2d element constraint.
 bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
-  if (ct->arguments[0].values.size() == 2 &&
+  if (ct->Arg(0).values.size() == 2 &&
       ct->Arg(1).variables[0] == ct->target_variable &&
-      ct->arguments[0].values[0] == -1 &&
-      !ContainsKey(affine_map_, ct->Arg(1).variables[0]) &&
+      ct->Arg(0).values[0] == -1 &&
+      !ContainsKey(affine_map_, ct->target_variable) &&
       ct->strong_propagation) {
-    affine_map_[ct->Arg(1).variables[0]] =
-        AffineMapping(ct->Arg(1).variables[1], ct->arguments[0].values[1],
+    affine_map_[ct->target_variable] =
+        AffineMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
                       -ct->Arg(2).Value(), ct);
+    FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  if (ct->Arg(0).values.size() == 3 &&
+      ct->Arg(1).variables[0] && ct->target_variable &&
+      ct->Arg(0).values[0] == -1 &&
+      ct->Arg(0).values[2] == 1 &&
+      !ContainsKey(flatten_map_, ct->target_variable) &&
+      ct->strong_propagation) {
+    flatten_map_[ct->target_variable] =
+        FlatteningMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
+                          ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     return true;
   }
@@ -422,7 +434,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     }
     // Rewrite constraint.
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
-    ct->arguments[0].variables[0] = mapping.variable;
+    ct->MutableArg(0)->variables[0] = mapping.variable;
     // TODO(user): Encapsulate argument setters.
     ct->MutableArg(1)->values.swap(new_values);
     if (ct->Arg(1).values.size() == 1) {
@@ -471,7 +483,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
       ct->Arg(1).HasOneValue() && ct->Arg(1).Value() == 0 &&
       ContainsKey(abs_map_, ct->Arg(0).Var())) {
     FZVLOG << "Remove abs() from " << ct->DebugString() << FZENDL;
-    ct->arguments[0].variables[0] = abs_map_[ct->Arg(0).Var()];
+    ct->MutableArg(0)->variables[0] = abs_map_[ct->Arg(0).Var()];
     changed = true;
   }
   if (id == "int_eq") changed |= PresolveIntEq(ct);
@@ -666,7 +678,7 @@ void Regroup(FzConstraint* start, const std::vector<FzIntegerVariable*>& chain,
   // End of chain, reconstruct.
   FzIntegerVariable* const out = carry_over.back();
   start->arguments.pop_back();
-  start->arguments[0].variables[0] = out;
+  start->MutableArg(0)->variables[0] = out;
   start->MutableArg(1)->type = FzArgument::INT_VAR_REF_ARRAY;
   start->MutableArg(1)->variables = chain;
   const std::string old_type = start->type;
@@ -701,11 +713,17 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
-    if (id == "int_lin_eq" && ct->arguments[0].values.size() > 2 &&
+    if (id == "int_lin_eq" && ct->Arg(0).values.size() > 3 &&
         ct->strong_propagation) {
       FZVLOG << "Remove strong_propagation from " << ct->DebugString()
              << FZENDL;
       ct->strong_propagation = false;
+    }
+    if (id == "int_lin_eq" && ct->Arg(0).values.size() >= 3 &&
+        ct->target_variable != nullptr) {
+      FZVLOG << "Remove target_variable from " << ct->DebugString()
+             << FZENDL;
+      ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints passed to SAT.
     if (ct->target_variable != nullptr &&

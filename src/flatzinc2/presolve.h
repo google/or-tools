@@ -36,6 +36,24 @@ struct AffineMapping {
       : variable(v), coefficient(c), offset(o), constraint(ct) {}
 };
 
+// This struct stores the flattening mapping of two variables onto
+// one: it represents var1 * coefficient + var2 + offset. It also
+// stores the constraint that defines this mapping.
+struct FlatteningMapping {
+  FzIntegerVariable* variable1;
+  int64 coefficient;
+  FzIntegerVariable* variable2;
+  int64 offset;
+  FzConstraint* constraint;
+
+  FlatteningMapping()
+      : variable1(nullptr), coefficient(0), variable2(nullptr), offset(0), constraint(nullptr) {}
+  FlatteningMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
+                    int64 o, FzConstraint* ct)
+      : variable1(v1), coefficient(c), variable2(v2), offset(o),
+        constraint(ct) {}
+};
+
 // The FzPresolver "pre-solves" a FzModel by applying some iterative
 // transformations to it, which may simplify and/or reduce the model.
 class FzPresolver {
@@ -105,6 +123,9 @@ class FzPresolver {
 
   // Stores affine_map_[x] = a * y + b.
   hash_map<const FzIntegerVariable*, AffineMapping> affine_map_;
+
+  // Stores flatten_map_[z] = a * x + y + b.
+  hash_map<const FzIntegerVariable*, FlatteningMapping> flatten_map_;
 };
 }  // namespace operations_research
 
