@@ -3424,6 +3424,7 @@ class IntBuilder {
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("alldifferent_except_0",
                                   &p_alldifferent_except_0);
+    global_model_builder.Register("count", &p_count_eq);
     global_model_builder.Register("count_eq", &p_count_eq);
     global_model_builder.Register("count_leq", &p_count_leq);
     global_model_builder.Register("count_lt", &p_count_lt);
