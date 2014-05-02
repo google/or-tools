@@ -23,7 +23,6 @@ namespace operations_research {
 // should eventually be implemented.
 //
 // Presolve rule:
-//   - array_int_element and index is flattened 2d -> rewrite as 2d array.
 //   - table_int -> intersect variables domains with tuple set.
 //
 // TODO(user):
@@ -36,6 +35,7 @@ namespace operations_research {
 // constraint: int_var = cast(bool_var). The presolve substitutes the bool_var
 // by the integer variable everywhere.
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
+  ct->RemoveTargetVariable();
   MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
   ct->MarkAsInactive();
   return true;
