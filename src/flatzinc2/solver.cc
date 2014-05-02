@@ -141,10 +141,16 @@ bool FzSolver::Extract() {
   statistics_.BuildStatistics();
   hash_set<FzIntegerVariable*> defined_variables;
   for (FzIntegerVariable* const var : model_.variables()) {
-    if (var->defining_constraint == nullptr) {
+    if (var->defining_constraint == nullptr && var->active) {
       Extract(var);
     } else {
       defined_variables.insert(var);
+    }
+  }
+  // Parse model to store info.
+  for (FzConstraint* const ct : model_.constraints()) {
+    if (ct->type == "all_different_int") {
+      StoreAllDifferent(ct->Arg(0).variables);
     }
   }
   // Sort constraints such that defined variables are created before the
@@ -189,5 +195,42 @@ bool FzSolver::Extract() {
     ExtractConstraint(ct);
   }
   return true;
+}
+
+// ----- Alldiff info support -----
+
+void FzSolver::StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs) {
+  std::vector<FzIntegerVariable*> local(diffs);
+  std::sort(local.begin(), local.end());
+  FZVLOG << "Store AllDifferent info for [" << JoinDebugStringPtr(diffs, ", ")
+         << "]" << FZENDL;
+  alldiffs_[local.front()].push_back(local);
+}
+
+namespace {
+template<class T> bool EqualVector(const std::vector<T>& v1,
+                                   const std::vector<T>& v2) {
+  if (v1.size() != v2.size()) return false;
+  for (int i = 0; i < v1.size(); ++i) {
+    if (v1[i] != v2[i]) return false;
+  }
+  return true;
+}
+}  // namespace
+
+bool FzSolver::IsAllDifferent(
+    const std::vector<FzIntegerVariable*>& diffs) const {
+  std::vector<FzIntegerVariable*> local(diffs);
+  std::sort(local.begin(), local.end());
+  const FzIntegerVariable* const start = local.front();
+  if (!ContainsKey(alldiffs_, start)) return false;
+  const std::vector<std::vector<FzIntegerVariable*>>& stored =
+      FindOrDie(alldiffs_, start);
+  for (const std::vector<FzIntegerVariable*>& one_diff : stored) {
+    if (EqualVector(local, one_diff)) {
+      return true;
+    }
+  }
+  return false;
 }
 }  // namespace operations_research

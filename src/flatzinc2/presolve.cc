@@ -646,6 +646,12 @@ void FzPresolver::IntersectDomainWithIntArgument(FzDomain* domain,
       break;
     }
     case FzArgument::INT_LIST: {
+      int64 amin = kint64max;
+      int64 amax = kint64min;
+      for (const int64 v : arg.values) {
+        amax = std::max(amax, v);
+        amin = std::min(amin, v);
+      }
       domain->IntersectWithListOfIntegers(arg.values);
       break;
     }
@@ -696,18 +702,11 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
-    if (id == "int_lin_eq") {
-      if (ct->arguments[0].values.size() > 2 &&
-          ct->target_variable != nullptr) {
-        ct->RemoveTargetVariable();
-        continue;
-      } else if (ct->arguments[0].values.size() > 2 &&
-                 ct->strong_propagation) {
-        FZVLOG << "Remove strong_propagation from " << ct->DebugString()
-               << FZENDL;
-        ct->strong_propagation = false;
-        continue;
-      }
+    if (id == "int_lin_eq" && ct->arguments[0].values.size() > 2 &&
+        ct->strong_propagation) {
+      FZVLOG << "Remove strong_propagation from " << ct->DebugString()
+             << FZENDL;
+      ct->strong_propagation = false;
     }
     // Remove target variables from constraints passed to SAT.
     if (ct->target_variable != nullptr &&

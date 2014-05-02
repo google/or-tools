@@ -41,7 +41,7 @@ class FzSolver {
   std::vector<IntVar*> GetVariableArray(const FzArgument& argument);
   IntExpr* Extract(FzIntegerVariable* var);
   void SetExtracted(FzIntegerVariable* var, IntExpr* expr);
-
+  bool IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const;
 
   // Output support.
   std::string SolutionString(const FzOnSolutionOutput& output);
@@ -77,6 +77,10 @@ class FzSolver {
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;
+  // Alldiff info before extraction
+  void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
+  hash_map<const FzIntegerVariable*,
+           std::vector<std::vector<FzIntegerVariable*> > >alldiffs_;
 };
 }  // namespace operations_research
 

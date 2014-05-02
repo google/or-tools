@@ -32,7 +32,7 @@ namespace operations_research {
 void ExtractAllDifferentInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const s = fzsolver->solver();
   const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(0));
-  Constraint* const constraint = s->MakeAllDifferent(vars);
+  Constraint* const constraint = s->MakeAllDifferent(vars, vars.size() < 100);
   FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
   s->AddConstraint(constraint);
 }
@@ -103,17 +103,24 @@ void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
            << " := " << target->DebugString() << FZENDL;
     fzsolver->SetExtracted(ct->target_variable, target);
   } else {
-    IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const ct =
-        solver->MakeElementEquality(var_array, shifted_index, target);
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
+    Constraint* constraint = nullptr;
+    if (ct->Arg(2).HasOneValue()) {
+      const int64 target = ct->Arg(2).Value();
+      if (fzsolver->IsAllDifferent(ct->Arg(1).variables)) {
+        constraint =
+            solver->MakeIndexOfConstraint(var_array, shifted_index, target);
+      } else {
+        constraint =
+            solver->MakeElementEquality(var_array, shifted_index, target);
+      }
+    } else {
+      IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+      constraint =
+          solver->MakeElementEquality(var_array, shifted_index, target);
+    }
+    FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+    solver->AddConstraint(constraint);
   }
-}
-
-void ExtractBool2int(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL)
-      << "Constraint should have been presolved out: " << ct->DebugString();
 }
 
 void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
@@ -337,11 +344,155 @@ void ExtractIntLeReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const s = fzsolver->solver();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
   const std::vector<int64>& coefficients = ct->Arg(0).values;
-  std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
-  const int64 rhs = ct->Arg(2).Value();
-  s->AddConstraint(s->MakeScalProdEquality(vars, coefficients, rhs));
+  int64 rhs = ct->Arg(2).Value();
+  const int size = ct->Arg(0).values.size();
+  if (ct->target_variable != nullptr) {
+    if (size == 2) {
+      IntExpr* other = nullptr;
+      int64 other_coef = 0;
+      if (ct->target_variable == fzvars[0] && coefficients[0] == -1) {
+        other = fzsolver->Extract(fzvars[1]);
+        other_coef = coefficients[1];
+      } else if (ct->target_variable == fzvars[1] && coefficients[1] == -1) {
+        other = fzsolver->Extract(fzvars[0]);
+        other_coef = coefficients[0];
+      } else {
+        LOG(FATAL) << "Wrong spec for " << ct->DebugString();
+      }
+
+      IntExpr* const target =
+          solver->MakeSum(solver->MakeProd(other, other_coef), -rhs);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      std::vector<int64> new_coefficients;
+      std::vector<IntVar*> variables;
+      int64 constant = 0;
+      for (int i = 0; i < size; ++i) {
+        if (fzvars[i]->domain.IsSingleton()) {
+          constant += coefficients[i] * fzvars[i]->domain.values[0];
+        } else if (fzvars[i] == ct->target_variable) {
+          CHECK_EQ(-1, coefficients[i]);
+        } else {
+          const int64 coef = coefficients[i];
+          IntVar* const var = fzsolver->Extract(fzvars[i])->Var();
+          if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+            new_coefficients.push_back(coef);
+            variables.push_back(var);
+          }
+        }
+      }
+      IntExpr* const target = solver->MakeSum(
+          solver->MakeScalProd(variables, new_coefficients), constant - rhs);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    }
+  } else {
+    Constraint* ct = nullptr;
+    switch (size) {
+      case 0: {
+        ct = rhs == 0 ? solver->MakeTrueConstraint()
+                      : solver->MakeFalseConstraint();
+        break;
+      }
+      case 1: {
+        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
+        const int64 c1 = coefficients[0];
+        ct = solver->MakeEquality(solver->MakeProd(e1, c1), rhs);
+        break;
+      }
+      case 2: {
+        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
+        IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
+        const int64 c1 = coefficients[0];
+        const int64 c2 = coefficients[1];
+        if (c1 > 0) {
+          if (c2 > 0) {
+            ct = solver->MakeEquality(
+                solver->MakeProd(e1, c1),
+                solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
+          } else {
+            ct = solver->MakeEquality(
+                solver->MakeProd(e1, c1),
+                solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+          }
+        } else if (c2 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeProd(e2, c2),
+              solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+        } else {
+          ct = solver->MakeEquality(
+              solver->MakeProd(e1, -c1),
+              solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2)));
+        }
+        break;
+      }
+      case 3: {
+        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
+        IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
+        IntExpr* const e3 = fzsolver->Extract(fzvars[2]);
+        const int64 c1 = coefficients[0];
+        const int64 c2 = coefficients[1];
+        const int64 c3 = coefficients[2];
+        if (c1 < 0 && c2 > 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e2, c2),
+                              solver->MakeProd(e3, c3)),
+              solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
+        } else if (c1 > 0 && c2 < 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e3, c3)),
+              solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
+        } else if (c1 > 0 && c2 > 0 && c3 < 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e2, c2)),
+              solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
+        } else if (c1 < 0 && c2 < 0 && c3 > 0) {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, -c1),
+                              solver->MakeProd(e2, -c2)),
+              solver->MakeSum(solver->MakeProd(e3, c3), -rhs));
+        } else {
+          ct = solver->MakeEquality(
+              solver->MakeSum(solver->MakeProd(e1, c1),
+                              solver->MakeProd(e2, c2)),
+              solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
+        }
+        break;
+      }
+      default: {
+        std::vector<int64> new_coefficients;
+        std::vector<IntVar*> variables;
+        for (int i = 0; i < size; ++i) {
+          const int64 coef = coefficients[i];
+          IntVar* const var = fzsolver->Extract(fzvars[i])->Var();
+          if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+            if (var->Bound()) {
+              rhs -= var->Min() * coef;
+            } else {
+              new_coefficients.push_back(coef);
+              variables.push_back(var);
+            }
+          }
+        }
+        // if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
+        //   PostBooleanSumInRange(model, spec, variables, rhs, rhs);
+        //   return;
+        // } else {
+          ct = solver->MakeScalProdEquality(variables, new_coefficients, rhs);
+        //        }
+      }
+    }
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  }
 }
 
 void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
@@ -549,8 +700,6 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractArrayVarIntElement(this, ct);
   } else if (type == "array_var_int_element") {
     ExtractArrayVarIntElement(this, ct);
-  } else if (type == "bool2int") {
-    ExtractBool2int(this, ct);
   } else if (type == "bool_and") {
     ExtractBoolAnd(this, ct);
   } else if (type == "bool_clause") {
