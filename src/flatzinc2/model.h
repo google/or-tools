@@ -124,7 +124,8 @@ struct FzArgument {
   };
 
   static FzArgument IntegerValue(int64 value);
-  static FzArgument Domain(const FzDomain& domain);
+  static FzArgument Interval(int64 imin, int64 imax);
+  static FzArgument IntegerList(const std::vector<int64>& values);
   static FzArgument IntVarRef(FzIntegerVariable* const var);
   static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
   static FzArgument VoidArgument();

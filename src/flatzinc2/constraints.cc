@@ -53,29 +53,66 @@ void ExtractArrayBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver =  fzsolver->solver();
-  IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
-  const std::vector<int64>& values = ct->Arg(1).values;
-  const int64 imin = std::max(index->Min(), 1LL);
-  const int64 imax =
-      std::min(index->Max(), static_cast<int64>(values.size()) + 1LL);
-  IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
-  const int64 size = imax - imin + 1;
-  std::vector<int64> coefficients(size);
-  for (int i = 0; i < size; ++i) {
-    coefficients[i] = values[i + imin - 1];
-  }
-  if (ct->target_variable != nullptr) {
-    DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
-    IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
-    FZVLOG << "  - creating " << ct->Arg(2).DebugString()
-           << " := " << target->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, target);
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
+    const std::vector<int64>& values = ct->Arg(1).values;
+    const int64 imin = std::max(index->Min(), 1LL);
+    const int64 imax =
+        std::min(index->Max(), static_cast<int64>(values.size()) + 1LL);
+    IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
+    const int64 size = imax - imin + 1;
+    std::vector<int64> coefficients(size);
+    for (int i = 0; i < size; ++i) {
+      coefficients[i] = values[i + imin - 1];
+    }
+    if (ct->target_variable != nullptr) {
+      DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
+      IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
+      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+      Constraint* const ct =
+          solver->MakeElementEquality(coefficients, shifted_index, target);
+      FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+      solver->AddConstraint(ct);
+    }
   } else {
+    CHECK_EQ(2, ct->Arg(0).variables.size());
+    CHECK_EQ(5, ct->arguments.size());
+    CHECK(ct->target_variable == nullptr);
+    IntVar* const index1 = fzsolver->Extract(ct->Arg(0).variables[0])->Var();
+    IntVar* const index2 = fzsolver->Extract(ct->Arg(0).variables[1])->Var();
+    const int64 coef1 = ct->Arg(3).values[0];
+    const int64 coef2 = ct->Arg(3).values[1];
+    const int64 offset = ct->Arg(4).values[0];
+    const std::vector<int64>& values = ct->Arg(1).values;
+    std::unique_ptr<IntVarIterator> domain1(index1->MakeDomainIterator(false));
+    std::unique_ptr<IntVarIterator> domain2(index2->MakeDomainIterator(false));
+    IntTupleSet tuples(3);
+    for (domain1->Init(); domain1->Ok(); domain1->Next()) {
+      const int64 v1 = domain1->Value();
+      FZVLOG << "v1 = " << v1 << FZENDL;
+      for (domain2->Init(); domain2->Ok(); domain2->Next()) {
+        const int64 v2 = domain2->Value();
+        FZVLOG << "v2 = " << v2 << FZENDL;
+        const int64 index = v1 * coef1 + v2 * coef2 + offset - 1;
+        if (index >= 0 && index < values.size()) {
+          FZVLOG << "index = " << index << FZENDL;
+          tuples.Insert3(v1, v2, values[index]);
+        }
+      }
+    }
+    std::vector<IntVar*> variables;
+    variables.push_back(index1);
+    variables.push_back(index2);
     IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const ct =
-        solver->MakeElementEquality(coefficients, shifted_index, target);
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
+    variables.push_back(target);
+    Constraint* const constraint =
+        solver->MakeAllowedAssignments(variables, tuples);
+    FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+    solver->AddConstraint(constraint);
   }
 }
 

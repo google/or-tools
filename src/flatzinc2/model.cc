@@ -192,29 +192,18 @@ FzArgument FzArgument::IntegerValue(int64 value) {
   return result;
 }
 
-FzArgument FzArgument::Domain(const FzDomain& domain) {
+FzArgument FzArgument::Interval(int64 imin, int64 imax) {
   FzArgument result;
-  if (domain.is_interval) {
-    if (domain.values.empty()) {
-      result.type = INT_INTERVAL;
-      result.values.push_back(kint64min);
-      result.values.push_back(kint64max);
-    } else if (domain.values[0] == domain.values[1]) {
-      result.type = INT_VALUE;
-      result.values.push_back(domain.values[0]);
-    } else {
-      result.type = INT_INTERVAL;
-      result.values = domain.values;
-    }
-  } else {
-    if (domain.values.size() == 1) {
-      result.type = INT_VALUE;
-      result.values.push_back(domain.values[0]);
-    } else {
-      result.type = INT_LIST;
-      result.values = domain.values;
-    }
-  }
+  result.type = INT_INTERVAL;
+  result.values.push_back(imin);
+  result.values.push_back(imax);
+  return result;
+}
+
+FzArgument FzArgument::IntegerList(const std::vector<int64>& values) {
+  FzArgument result;
+  result.type = INT_LIST;
+  result.values = values;
   return result;
 }
 

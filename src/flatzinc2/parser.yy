@@ -515,38 +515,55 @@ argument:
   IVALUE { $$ = FzArgument::IntegerValue($1); }
 | DVALUE { $$ = FzArgument::VoidArgument(); }
 | SVALUE { $$ = FzArgument::VoidArgument(); }
-| IVALUE DOTDOT IVALUE { $$ = FzArgument::Domain(FzDomain::Interval($1, $3)); }
-| '{' integers '}' { $$ = FzArgument::Domain(FzDomain::IntegerList($2)); }
+| IVALUE DOTDOT IVALUE { $$ = FzArgument::Interval($1, $3); }
+| '{' integers '}' { $$ = FzArgument::IntegerList($2); }
 | IDENTIFIER {
   const std::string& id = $1;
   if (ContainsKey(context->integer_map, id)) {
     $$ = FzArgument::IntegerValue(FindOrDie(context->integer_map, id));
   } else if (ContainsKey(context->integer_array_map, id)) {
-    $$ = FzArgument::Domain(
-        FzDomain::IntegerList(FindOrDie(context->integer_array_map, id)));
+    $$ = FzArgument::IntegerList(FindOrDie(context->integer_array_map, id));
   } else if (ContainsKey(context->variable_map, id)) {
     $$ = FzArgument::IntVarRef(FindOrDie(context->variable_map, id));
   } else if (ContainsKey(context->variable_array_map, id)) {
     $$ = FzArgument::IntVarRefArray(FindOrDie(context->variable_array_map, id));
   } else {
     CHECK(ContainsKey(context->domain_map, id)) << "Unknown identifier: " << id;
-    $$ = FzArgument::Domain(FindOrDie(context->domain_map, id));
+    const FzDomain& d = FindOrDie(context->domain_map, id);
+    if (d.is_interval) {
+      if (d.values.empty()) {
+        $$ = FzArgument::Interval(kint64min, kint64max);
+      } else {
+        $$ = FzArgument::Interval(d.values[0], d.values[1]);
+      }
+    } else {
+      $$ = FzArgument::IntegerList(d.values);
+    }
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
   const std::string& id = $1;
   const int64 index = $3;
   if (ContainsKey(context->integer_array_map, id)) {
-    $$ = FzArgument::Domain(FzDomain::Singleton(
-        FzLookup(FindOrDie(context->integer_array_map, id), index)));
+    $$ = FzArgument::IntegerValue(
+    FzLookup(FindOrDie(context->integer_array_map, id), index));
   } else if (ContainsKey(context->variable_array_map, id)) {
     $$ = FzArgument::IntVarRef(
         FzLookup(FindOrDie(context->variable_array_map, id), index));
   } else {
     CHECK(ContainsKey(context->domain_array_map, id))
         << "Unknown identifier: " << id;
-    $$ = FzArgument::Domain(
-        FzLookup(FindOrDie(context->domain_array_map, id), index));
+    const FzDomain& d =
+        FzLookup(FindOrDie(context->domain_array_map, id), index);
+    if (d.is_interval) {
+      if (d.values.empty()) {
+        $$ = FzArgument::Interval(kint64min, kint64max);
+      } else {
+        $$ = FzArgument::Interval(d.values[0], d.values[1]);
+      }
+    } else {
+      $$ = FzArgument::IntegerList(d.values);
+    }
   }
 }
 | '[' arguments ']' {
@@ -568,7 +585,7 @@ argument:
         CHECK_EQ(FzArgument::INT_VALUE, arguments[i].type);
         values[i] = arguments[i].Value();
       }
-      $$ = FzArgument::Domain(FzDomain::IntegerList(values));
+      $$ = FzArgument::IntegerList(values);
       break;
     }
     case FzArgument::INT_VAR_REF: {

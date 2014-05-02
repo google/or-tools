@@ -403,6 +403,7 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
         FlatteningMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
                           ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
+    //    ct->MarkAsInactive();
     return true;
   }
   return false;
@@ -444,9 +445,27 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     ct->presolve_propagation_done = false;
     FZVLOG << "    into  " << ct->DebugString() << FZENDL;
     // Mark old index var and affine constraint as presolved out.
-    mapping.constraint->active = false;
+    mapping.constraint->MarkAsInactive();
     index_var->active = false;
     return true;
+  }
+  if (ContainsKey(flatten_map_, index_var)) {
+    const FlatteningMapping& mapping = flatten_map_[index_var];
+    // Rewrite constraint.
+    ct->MutableArg(0)->variables[0] = mapping.variable1;
+    ct->MutableArg(0)->variables.push_back(mapping.variable2);
+    ct->MutableArg(0)->type = FzArgument::INT_VAR_REF_ARRAY;
+    std::vector<int64> coefs;
+    coefs.push_back(mapping.coefficient);
+    coefs.push_back(1);
+    ct->arguments.push_back(FzArgument::IntegerList(coefs));
+    ct->arguments.push_back(FzArgument::IntegerValue(mapping.offset));
+    if (ct->target_variable != nullptr) {
+      ct->RemoveTargetVariable();
+    }
+    index_var->active = false;
+    mapping.constraint->MarkAsInactive();
+    // TODO(user): Check if presolve is valid.
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
       index_var->domain.values[1] < ct->Arg(1).values.size()) {
@@ -719,7 +738,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
              << FZENDL;
       ct->strong_propagation = false;
     }
-    if (id == "int_lin_eq" && ct->Arg(0).values.size() >= 3 &&
+    if (id == "int_lin_eq" && ct->Arg(0).values.size() > 3 &&
         ct->target_variable != nullptr) {
       FZVLOG << "Remove target_variable from " << ct->DebugString()
              << FZENDL;
