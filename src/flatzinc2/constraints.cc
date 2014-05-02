@@ -93,13 +93,10 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
     IntTupleSet tuples(3);
     for (domain1->Init(); domain1->Ok(); domain1->Next()) {
       const int64 v1 = domain1->Value();
-      FZVLOG << "v1 = " << v1 << FZENDL;
       for (domain2->Init(); domain2->Ok(); domain2->Next()) {
         const int64 v2 = domain2->Value();
-        FZVLOG << "v2 = " << v2 << FZENDL;
         const int64 index = v1 * coef1 + v2 * coef2 + offset - 1;
         if (index >= 0 && index < values.size()) {
-          FZVLOG << "index = " << index << FZENDL;
           tuples.Insert3(v1, v2, values[index]);
         }
       }
