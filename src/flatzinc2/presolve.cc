@@ -478,6 +478,55 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
   return false;
 }
 
+// Reconstructs the 2d element constraint in case the mapping only contains 1
+// variable. (e.g. x = A[2][y]).
+bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
+  FzIntegerVariable* const index_var = ct->Arg(0).Var();
+  if (ContainsKey(affine_map_, index_var)) {
+    const AffineMapping& mapping = affine_map_[index_var];
+    const FzDomain& domain = mapping.variable->domain;
+    if ((domain.is_interval && domain.values.empty()) ||
+        domain.values[0] < 0 || mapping.offset + mapping.coefficient <= 0) {
+      // Invalid case. Ignore it.
+      return false;
+    }
+    const std::vector<FzIntegerVariable*>& vars = ct->Arg(1).variables;
+    std::vector<FzIntegerVariable*> new_vars;
+    for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
+      const int64 index = i * mapping.coefficient + mapping.offset - 1;
+      if (index < 0) {
+        return false;
+      }
+      if (index >= vars.size()) {
+        break;
+      }
+      new_vars.push_back(vars[index]);
+    }
+    // Rewrite constraint.
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+    ct->MutableArg(0)->variables[0] = mapping.variable;
+    // TODO(user): Encapsulate argument setters.
+    ct->MutableArg(1)->variables.swap(new_vars);
+    // Reset propagate flag.
+    ct->presolve_propagation_done = false;
+    FZVLOG << "    into  " << ct->DebugString() << FZENDL;
+    // Mark old index var and affine constraint as presolved out.
+    mapping.constraint->MarkAsInactive();
+    index_var->active = false;
+    return true;
+  }
+  if (index_var->domain.is_interval &&
+      index_var->domain.values.size() == 2 &&
+      index_var->domain.values[1] < ct->Arg(1).variables.size()) {
+    // Reduce array of variables.
+    ct->MutableArg(1)->variables.resize(index_var->domain.values[1]);
+    ct->presolve_propagation_done = false;
+    FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  return false;
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -525,6 +574,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "array_int_element") {
     changed |= PresolveSimplifyElement(ct);
     changed |= PresolveArrayIntElement(ct);
+  }
+  if (id == "array_var_int_element") {
+    changed |= PresolveSimplifyExprElement(ct);
   }
   return changed;
 }

@@ -68,7 +68,7 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
     if (ct->target_variable != nullptr) {
       DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
       IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
-      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
              << " := " << target->DebugString() << FZENDL;
       fzsolver->SetExtracted(ct->target_variable, target);
     } else {
@@ -129,7 +129,7 @@ void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   if (ct->target_variable != nullptr) {
     DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
     IntExpr* const target = solver->MakeElement(var_array, shifted_index);
-    FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
            << " := " << target->DebugString() << FZENDL;
     fzsolver->SetExtracted(ct->target_variable, target);
   } else {
@@ -279,7 +279,25 @@ void ExtractIntEq(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntEqReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  if (ct->target_variable != nullptr) {
+    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
+    IntVar* const boolvar =
+        ct->Arg(1).HasOneValue()
+            ? solver->MakeIsEqualCstVar(left, ct->Arg(1).Value())
+            : solver->MakeIsEqualVar(left,
+                                     fzsolver->GetExpression(ct->Arg(1)));
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << boolvar->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, boolvar);
+  } else {
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
+    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint = solver->MakeIsEqualCt(left, right, boolvar);
+    FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+    solver->AddConstraint(constraint);
+  }
 }
 
 void ExtractIntGe(FzSolver* fzsolver, FzConstraint* ct) {
@@ -390,7 +408,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
         other = fzsolver->Extract(fzvars[0]);
         other_coef = coefficients[0];
       } else {
-        LOG(FATAL) << "Wrong spec for " << ct->DebugString();
+        LOG(FATAL) << "Wrong ct for " << ct->DebugString();
       }
 
       IntExpr* const target =
@@ -522,7 +540,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
           }
         }
         // if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
-        //   PostBooleanSumInRange(model, spec, variables, rhs, rhs);
+        //   PostBooleanSumInRange(fzsolver, ct, variables, rhs, rhs);
         //   return;
         // } else {
           constraint =
@@ -634,7 +652,26 @@ void ExtractIntNe(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntNeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  if (ct->target_variable != nullptr) {
+    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
+    IntVar* const boolvar =
+        ct->Arg(1).HasOneValue()
+            ? solver->MakeIsDifferentCstVar(left, ct->Arg(1).Value())
+            : solver->MakeIsDifferentVar(left,
+                                         fzsolver->GetExpression(ct->Arg(1)));
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << boolvar->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, boolvar);
+  } else {
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
+    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeIsDifferentCt(left, right, boolvar);
+    FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+    solver->AddConstraint(constraint);
+  }
 }
 
 void ExtractIntNegate(FzSolver* fzsolver, FzConstraint* ct) {
