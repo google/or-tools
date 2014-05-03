@@ -231,6 +231,7 @@ bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
 }
 
 // Forces all boolean variables to false if the or(variables) is false.
+// Assign boolvar if possible, remove variables bound to false.
 bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 0) {
@@ -288,6 +289,7 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
 }
 
 // Forces all boolean variables to true if the and(variables) is true.
+// Assign boolvar if possible, remove variables bound to true.
 bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 1) {
@@ -604,6 +606,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   return false;
 }
 
+// Fix boolvar value if both arguments are equal.
 bool FzPresolver::PropagateReifiedWithEqualArguments(FzConstraint* ct) {
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
       ct->Arg(1).type == FzArgument::INT_VAR_REF &&
