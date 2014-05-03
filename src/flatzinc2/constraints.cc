@@ -41,7 +41,59 @@ void ExtractAlldifferentExcept0(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<FzIntegerVariable*>& vars = ct->Arg(0).variables;
+  const int size = vars.size();
+  std::vector<IntVar*> variables;
+  hash_set<IntExpr*> added;
+  for (FzIntegerVariable* var : vars) {
+    IntVar* const to_add = fzsolver->Extract(var)->Var();
+    if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
+      variables.push_back(to_add);
+      added.insert(to_add);
+    }
+  }
+  if (ct->target_variable != nullptr) {
+    IntExpr* const boolvar = solver->MakeMin(variables);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << boolvar->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, boolvar);
+  } else if (ct->Arg(1).HasOneValue() && ct->Arg(1).Value() == 1) {
+    FZVLOG << "  - forcing array_bool_and to 1" << FZENDL;
+    for (int i = 0; i < variables.size(); ++i) {
+      variables[i]->SetValue(1);
+    }
+  } else {
+    if (ct->Arg(1).HasOneValue()) {
+      if (ct->Arg(1).Value() == 0) {
+        // if (FLAGS_use_sat &&
+        //     AddBoolAndArrayEqualFalse(model->Sat(), variables)) {
+        //   VLOG(2) << "  - posted to sat";
+        // } else {
+          Constraint* const constraint =
+              solver->MakeSumGreaterOrEqual(variables, 1);
+          FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+          solver->AddConstraint(constraint);
+        // }
+      } else {
+        Constraint* const constraint =
+            solver->MakeSumEquality(variables, variables.size());
+        FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+        solver->AddConstraint(constraint);
+      }
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(1))->Var();
+      // if (FLAGS_use_sat &&
+      //     AddBoolAndArrayEqVar(model->Sat(), variables, boolvar)) {
+      //   VLOG(2) << "  - posted to sat";
+      // } else {
+        Constraint* const constraint =
+            solver->MakeMinEquality(variables, boolvar);
+        FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+        solver->AddConstraint(constraint);
+      // }
+    }
+  }
 }
 
 void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
@@ -58,7 +110,7 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
     }
   }
   if (ct->target_variable != nullptr) {
-    IntVar* const boolvar = solver->MakeMax(variables)->Var();
+    IntExpr* const boolvar = solver->MakeMax(variables);
     FZVLOG << "  - creating " << ct->target_variable->DebugString()
            << " := " << boolvar->DebugString() << FZENDL;
     fzsolver->SetExtracted(ct->target_variable, boolvar);
