@@ -24,6 +24,10 @@ namespace operations_research {
 //
 // Presolve rule:
 //   - table_int -> intersect variables domains with tuple set.
+//   - int_eq_reif(x, x, b) -> b == 1
+//   - int_ne_reif(x, x, b) -> b == 0
+//   - array_bool_or(xi, b) and one xi is true -> b == 1
+//   - array_bool_and(xi, b) and one xi is false -> b == 0
 //
 // TODO(user):
 //   - store dependency graph of constraints -> variable to speed up presolve.
