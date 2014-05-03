@@ -559,7 +559,27 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
 
 // Reconstructs the 2d element constraint in case the mapping only contains 1
 // variable. (e.g. x = A[2][y]).
+// Change to array_int_element if all variables are bound.
 bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
+  bool all_integers = true;
+  for (FzIntegerVariable* const var : ct->Arg(1).variables) {
+    if (!var->domain.IsSingleton()) {
+      all_integers = false;
+      break;
+    }
+  }
+  if (all_integers) {
+    FZVLOG << "Change " << ct->DebugString() << " to array_int_element"
+           << FZENDL;
+    ct->type = "array_int_element";
+    ct->MutableArg(1)->type = FzArgument::INT_LIST;
+    for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
+      ct->MutableArg(1)->values.push_back(
+          ct->Arg(1).variables[i]->domain.values[0]);
+    }
+    ct->MutableArg(1)->variables.clear();
+    return true;
+  }
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
   if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
