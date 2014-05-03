@@ -105,6 +105,7 @@ class FzPresolver {
   bool PresolveStoreMapping(FzConstraint* ct);
   bool PresolveSimplifyElement(FzConstraint* ct);
   bool PresolveSimplifyExprElement(FzConstraint* ct);
+  bool PropagateReifiedWithEqualArguments(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);

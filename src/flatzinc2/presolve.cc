@@ -24,10 +24,6 @@ namespace operations_research {
 //
 // Presolve rule:
 //   - table_int -> intersect variables domains with tuple set.
-//   - int_eq_reif(x, x, b) -> b == 1
-//   - int_ne_reif(x, x, b) -> b == 0
-//   - array_bool_or(xi, b) and one xi is true -> b == 1
-//   - array_bool_and(xi, b) and one xi is false -> b == 0
 //
 // TODO(user):
 //   - store dependency graph of constraints -> variable to speed up presolve.
@@ -144,11 +140,12 @@ void FzPresolver::Unreify(FzConstraint* ct) {
     ct->target_variable = bool_var;
     bool_var->defining_constraint = nullptr;
   }
-  ct->arguments.pop_back();
   if (ct->Arg(last_argument).Value() == 1) {
     FZVLOG << "Unreify " << ct->DebugString() << FZENDL;
+    ct->arguments.pop_back();
   } else {
     FZVLOG << "Unreify and inverse " << ct->DebugString() << FZENDL;
+    ct->arguments.pop_back();
     if (id == "int_eq")
       ct->type = "int_ne";
     else if (id == "int_ne")
@@ -249,6 +246,44 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
     ct->presolve_propagation_done = true;
     return true;
   }
+  std::vector<FzIntegerVariable*> fixed_to_true;
+  std::vector<FzIntegerVariable*> fixed_to_false;
+  std::vector<FzIntegerVariable*> unbound;
+  for(FzIntegerVariable* const var : ct->Arg(0).variables) {
+    if (var->domain.IsSingleton()) {
+      const int64 value = var->domain.values[0];
+      if (value == 1) {
+        fixed_to_true.push_back(var);
+      } else {
+        fixed_to_false.push_back(var);
+      }
+    } else {
+      unbound.push_back(var);
+    }
+  }
+  if (!fixed_to_true.empty()) {
+    if (!ct->Arg(1).HasOneValue()) {
+      FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
+      ct->Arg(1).variables[0]->domain.IntersectWithInterval(1, 1);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+    return false;
+  } else if (unbound.empty()) {
+    if (!ct->Arg(1).HasOneValue()) {
+      FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
+      ct->Arg(1).variables[0]->domain.IntersectWithInterval(0, 0);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+    return false;
+  } else if (unbound.size() < ct->Arg(0).variables.size()) {
+    FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
+    ct->MutableArg(0)->variables.swap(unbound);
+    return true;
+  }
   return false;
 }
 
@@ -266,6 +301,44 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
       var->domain.IntersectWithInterval(1, 1);
     }
     ct->presolve_propagation_done = true;
+    return true;
+  }
+  std::vector<FzIntegerVariable*> fixed_to_true;
+  std::vector<FzIntegerVariable*> fixed_to_false;
+  std::vector<FzIntegerVariable*> unbound;
+  for(FzIntegerVariable* const var : ct->Arg(0).variables) {
+    if (var->domain.IsSingleton()) {
+      const int64 value = var->domain.values[0];
+      if (value == 1) {
+        fixed_to_true.push_back(var);
+      } else {
+        fixed_to_false.push_back(var);
+      }
+    } else {
+      unbound.push_back(var);
+    }
+  }
+  if (!fixed_to_false.empty()) {
+    if (!ct->Arg(1).HasOneValue()) {
+      FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
+      ct->Arg(1).variables[0]->domain.IntersectWithInterval(0, 0);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+    return false;
+  } else if (unbound.empty()) {
+    if (!ct->Arg(1).HasOneValue()) {
+      FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
+      ct->Arg(1).variables[0]->domain.IntersectWithInterval(1, 1);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+    return false;
+  } else if (unbound.size() < ct->Arg(0).variables.size()) {
+    FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
+    ct->MutableArg(0)->variables.swap(unbound);
     return true;
   }
   return false;
@@ -531,6 +604,27 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::PropagateReifiedWithEqualArguments(FzConstraint* ct) {
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(0).variables[0] == ct->Arg(1).variables[0]) {
+    const std::string& id = ct->type;
+    const bool value = (
+        id == "int_eq_reif" || id == "int_ge_reif" || id == "int_le_reif");
+    if ((ct->Arg(2).HasOneValue() && ct->Arg(2).Value() == value) ||
+        !ct->Arg(2).HasOneValue()) {
+      FZVLOG << "Propagate boolvar from " << ct->DebugString()
+             << " to " << value << FZENDL;
+      CHECK_EQ(FzArgument::INT_VAR_REF, ct->Arg(2).type);
+      ct->Arg(2).variables[0]->domain.IntersectWithInterval(value, value);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+  }
+  return false;
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -581,6 +675,10 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "array_var_int_element") {
     changed |= PresolveSimplifyExprElement(ct);
+  }
+  if (id == "int_eq_reif" || id == "int_ne_reif" || id == "int_le_reif" ||
+      id == "int_lt_reif" || id == "int_ge_reif" || id == "int_gt_reif") {
+    changed |= PropagateReifiedWithEqualArguments(ct);
   }
   return changed;
 }
