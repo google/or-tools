@@ -15,11 +15,13 @@
 
 #include "base/commandlineflags.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "flatzinc2/model.h"
 #include "util/string_array.h"
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
 DECLARE_bool(use_sat);
+DECLARE_bool(verbose_logging);
 
 namespace operations_research {
 namespace {
@@ -729,5 +731,90 @@ Constraint* MakeVariableOdd(Solver* const s, IntVar* const var) {
 
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
   return s->RevAlloc(new VariableParity(s, var, false));
+}
+
+void PostBooleanSumInRange(Solver* solver,
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max) {
+  const int64 size = variables.size();
+  range_min = std::max(0LL, range_min);
+  range_max = std::min(size, range_max);
+  int true_vars = 0;
+  std::vector<IntVar*> alt;
+  for (int i = 0; i < size; ++i) {
+    if (!variables[i]->Bound()) {
+      alt.push_back(variables[i]);
+    } else if (variables[i]->Min() == 1) {
+      true_vars++;
+    }
+  }
+  const int possible_vars = alt.size();
+  range_min -= true_vars;
+  range_max -= true_vars;
+
+  if (range_max < 0 || range_min > possible_vars) {
+    Constraint* const ct = solver->MakeFalseConstraint();
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  } else if (range_min <= 0 && range_max >= possible_vars) {
+    Constraint* const ct = solver->MakeTrueConstraint();
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  // } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
+  //            AddAtMostOne(solver->Sat(), alt)) {
+  //   FZVLOG << "  - posted to sat" << FZENDL;
+  // } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
+  //            AddAtMostNMinusOne(solver->Sat(), alt)) {
+  //   FZVLOG << "  - posted to sat" << FZENDL;
+  // } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
+  //            AddBoolOrArrayEqualTrue(solver->Sat(), alt) &&
+  //            AddAtMostOne(solver->Sat(), alt)) {
+  //   FZVLOG << "  - posted to sat" << FZENDL;
+  } else {
+    Constraint* const ct =
+        MakeBooleanSumInRange(solver, alt, range_min, range_max);
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  }
+}
+
+void PostIsBooleanSumInRange(Solver* solver,
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target) {
+  const int64 size = variables.size();
+  range_min = std::max(0LL, range_min);
+  range_max = std::min(size, range_max);
+  int true_vars = 0;
+  int possible_vars = 0;
+  for (int i = 0; i < size; ++i) {
+    if (variables[i]->Max() == 1) {
+      possible_vars++;
+      if (variables[i]->Min() == 1) {
+        true_vars++;
+      }
+    }
+  }
+  if (true_vars > range_max || possible_vars < range_min) {
+    target->SetValue(0);
+    FZVLOG << "  - set target to 0" << FZENDL;
+  } else if (true_vars >= range_min && possible_vars <= range_max) {
+    target->SetValue(1);
+    FZVLOG << "  - set target to 1" << FZENDL;
+  // } else if (FLAGS_use_sat && range_min == size &&
+  //            AddBoolAndArrayEqVar(solver->Sat(), variables, target)) {
+  //   FZVLOG << "  - posted to sat";
+  // } else if (FLAGS_use_sat && range_max == 0 &&
+  //            AddBoolOrArrayEqVar(solver->Sat(), variables,
+  //                                solver->MakeDifference(1, target)->Var())) {
+  //   FZVLOG << "  - posted to sat";
+  // } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
+  //            AddBoolOrArrayEqVar(solver->Sat(), variables, target)) {
+  //   FZVLOG << "  - posted to sat";
+  } else {
+    Constraint* const ct = MakeIsBooleanSumInRange(solver, variables, range_min,
+                                                   range_max, target);
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  }
 }
 }  // namespace operations_research

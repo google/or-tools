@@ -20,6 +20,7 @@
 #include "flatzinc2/search.h"
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
 DECLARE_bool(verbose_logging);
@@ -237,7 +238,44 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<FzIntegerVariable*>& array_variables =
+      ct->Arg(0).variables;
+  const int size = array_variables.size();
+  std::vector<IntVar*> tmp_sum;
+  if (ct->Arg(1).HasOneValue()) {
+    const int64 value = ct->Arg(1).Value();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualCstVar(
+          fzsolver->Extract(array_variables[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  } else {
+    IntVar* const value = fzsolver->GetExpression(ct->Arg(1))->Var();
+    for (int i = 0; i < size; ++i) {
+      IntVar* const var = solver->MakeIsEqualVar(
+          fzsolver->Extract(array_variables[i]), value);
+      if (var->Max() == 1) {
+        tmp_sum.push_back(var);
+      }
+    }
+  }
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostBooleanSumInRange(solver, tmp_sum, count, count);
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    if (count->Bound()) {
+      const int64 fcount = count->Min();
+      PostBooleanSumInRange(solver, tmp_sum, fcount, fcount);
+    } else {
+      Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
+      FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
+      solver->AddConstraint(constraint);
+    }
+  }
 }
 
 void ExtractCountGeq(FzSolver* fzsolver, FzConstraint* ct) {
@@ -590,13 +628,13 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
             }
           }
         }
-        // if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
-        //   PostBooleanSumInRange(fzsolver, ct, variables, rhs, rhs);
-        //   return;
-        // } else {
+        if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
+          PostBooleanSumInRange(solver, variables, rhs, rhs);
+          return;
+        } else {
           constraint =
               solver->MakeScalProdEquality(variables, new_coefficients, rhs);
-        // }
+        }
       }
     }
     FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;

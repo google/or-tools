@@ -42,5 +42,13 @@ Constraint* MakeVariableCumulative(Solver* const solver,
 
 Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
+
+void PostIsBooleanSumInRange(Solver* solver,
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target);
+
+void PostBooleanSumInRange(Solver* solver,
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max);
 }       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
