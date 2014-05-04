@@ -292,19 +292,10 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& a_array_variables =
-      ct->Arg(0).variables;
-  const int a_size = a_array_variables.size();
-  const std::vector<FzIntegerVariable*>& b_array_variables =
-      ct->Arg(1).variables;
-  const int b_size = b_array_variables.size();
-  std::vector<IntVar*> variables;
-  for (int i = 0; i < a_size; ++i) {
-    variables.push_back(fzsolver->Extract(a_array_variables[i])->Var());
-  }
-  for (int i = 0; i < b_size; ++i) {
-    variables.push_back(solver->MakeDifference(
-        1, fzsolver->Extract(b_array_variables[i])->Var())->Var());
+  std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  for (FzIntegerVariable* const var : ct->Arg(1).variables) {
+    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
+                            ->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -386,23 +377,21 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(0).variables;
-  const int size = array_variables.size();
   std::vector<IntVar*> tmp_sum;
   if (ct->Arg(1).HasOneValue()) {
     const int64 value = ct->Arg(1).Value();
-    for (int i = 0; i < size; ++i) {
-      IntVar* const var = solver->MakeIsEqualCstVar(
-          fzsolver->Extract(array_variables[i]), value);
+    for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+      IntVar* const var =
+          solver->MakeIsEqualCstVar(fzsolver->Extract(fzvar), value);
       if (var->Max() == 1) {
         tmp_sum.push_back(var);
       }
     }
   } else {
     IntVar* const value = fzsolver->GetExpression(ct->Arg(1))->Var();
-    for (int i = 0; i < size; ++i) {
+    for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
       IntVar* const var =
-          solver->MakeIsEqualVar(fzsolver->Extract(array_variables[i]), value);
+          solver->MakeIsEqualVar(fzsolver->Extract(fzvar), value);
       if (var->Max() == 1) {
         tmp_sum.push_back(var);
       }
@@ -413,13 +402,8 @@ void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
     PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count, count);
   } else {
     IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
-    if (count->Bound()) {
-      const int64 fcount = count->Min();
-      PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, fcount, fcount);
-    } else {
-      Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
-      AddConstraint(solver, ct, constraint);
-    }
+    Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
+    AddConstraint(solver, ct, constraint);
   }
 }
 
