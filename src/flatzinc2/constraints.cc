@@ -154,7 +154,17 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractArrayBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+  IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+  if (FLAGS_use_sat && AddBoolIsNEqVar(fzsolver->Sat(), left, right, target)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
+  } else {
+    Constraint* const constraint =
+        solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
@@ -398,7 +408,11 @@ void ExtractIntEq(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
     if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
       IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeEquality(left, right));
+      if (FLAGS_use_sat && AddBoolEq(fzsolver->Sat(), left, right)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
+        AddConstraint(s, ct, s->MakeEquality(left, right));
+      }
     } else {
       const int64 right = ct->Arg(1).Value();
       AddConstraint(s, ct, s->MakeEquality(left, right));
@@ -845,7 +859,11 @@ void ExtractIntNe(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
     if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
       IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeNonEquality(left, right));
+      if (FLAGS_use_sat && AddBoolNot(fzsolver->Sat(), left, right)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
+        AddConstraint(s, ct, s->MakeNonEquality(left, right));
+      }
     } else {
       const int64 right = ct->Arg(1).Value();
       AddConstraint(s, ct, s->MakeNonEquality(left, right));
