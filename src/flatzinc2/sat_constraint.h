@@ -19,58 +19,58 @@
 namespace operations_research {
 class SatPropagator;
 
-SatPropagator* MakeSatPropagator(Solver* const solver);
+SatPropagator* MakeSatPropagator(Solver* solver);
 
-bool AddBoolEq(SatPropagator* const sat, IntExpr* const left,
-               IntExpr* const right);
+bool AddBoolEq(SatPropagator* sat, IntExpr* left,
+               IntExpr* right);
 
-bool AddBoolLe(SatPropagator* const sat, IntExpr* const left,
-               IntExpr* const right);
+bool AddBoolLe(SatPropagator* sat, IntExpr* left,
+               IntExpr* right);
 
-bool AddBoolNot(SatPropagator* const sat, IntExpr* const left,
-                IntExpr* const right);
+bool AddBoolNot(SatPropagator* sat, IntExpr* left,
+                IntExpr* right);
 
-bool AddBoolAndArrayEqVar(SatPropagator* const sat, const std::vector<IntVar*>& vars,
-                          IntExpr* const target);
+bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+                          IntExpr* target);
 
-bool AddBoolOrArrayEqVar(SatPropagator* const sat, const std::vector<IntVar*>& vars,
-                         IntExpr* const target);
+bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+                         IntExpr* target);
 
-bool AddSumBoolArrayGreaterEqVar(SatPropagator* const sat,
+bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
                                  const std::vector<IntVar*>& vars,
-                                 IntExpr* const target);
+                                 IntExpr* target);
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* const sat,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
                                const std::vector<IntVar*>& vars,
-                               IntExpr* const target);
+                               IntExpr* target);
 
-bool AddBoolAndEqVar(SatPropagator* const sat, IntExpr* const left,
-                     IntExpr* const right, IntExpr* const target);
+bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left,
+                     IntExpr* right, IntExpr* target);
 
-bool AddBoolIsNEqVar(SatPropagator* const sat, IntExpr* const left,
-                     IntExpr* const right, IntExpr* const target);
+bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left,
+                     IntExpr* right, IntExpr* target);
 
-bool AddBoolIsLeVar(SatPropagator* const sat, IntExpr* const left,
-                    IntExpr* const right, IntExpr* const target);
+bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left,
+                    IntExpr* right, IntExpr* target);
 
-bool AddBoolOrEqVar(SatPropagator* const sat, IntExpr* const left,
-                    IntExpr* const right, IntExpr* const target);
+bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left,
+                    IntExpr* right, IntExpr* target);
 
-bool AddBoolIsEqVar(SatPropagator* const sat, IntExpr* const left,
-                    IntExpr* const right, IntExpr* const target);
+bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left,
+                    IntExpr* right, IntExpr* target);
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
                              const std::vector<IntVar*>& vars);
 
-bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
+bool AddBoolAndArrayEqualFalse(SatPropagator* sat,
                                const std::vector<IntVar*>& vars);
 
-bool AddAtMostOne(SatPropagator* const sat, const std::vector<IntVar*>& vars);
+bool AddAtMostOne(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
-bool AddAtMostNMinusOne(SatPropagator* const sat, const std::vector<IntVar*>& vars);
+bool AddAtMostNMinusOne(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
-bool AddArrayXor(SatPropagator* const sat, const std::vector<IntVar*>& vars);
+bool AddArrayXor(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
-bool DeclareVariable(SatPropagator* const sat, IntVar* const var);
+bool DeclareVariable(SatPropagator* sat, IntVar* var);
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINTS_H_

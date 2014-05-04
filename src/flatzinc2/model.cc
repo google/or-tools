@@ -285,7 +285,12 @@ FzIntegerVariable::FzIntegerVariable(const std::string& name_,
       domain(domain_),
       defining_constraint(nullptr),
       temporary(temporary_),
-      active(true) {}
+      active(true) {
+  if (!domain.is_interval) {
+    std::sort(domain.values.begin(), domain.values.end());
+    // TODO(user): Remove duplicate values.
+  }
+}
 
 bool FzIntegerVariable::Merge(const std::string& other_name,
                               const FzDomain& other_domain,
