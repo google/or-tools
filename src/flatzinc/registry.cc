@@ -1461,7 +1461,6 @@ void p_int_div(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const target = model->GetIntExpr(spec->Arg(2));
   if (spec->IsDefined(spec->Arg(2))) {
     if (spec->Arg(1)->isIntVar()) {
       IntExpr* const mod = model->GetIntExpr(spec->Arg(1));
@@ -1479,6 +1478,7 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
       model->SetIntegerExpression(spec->Arg(2), target);
     }
   } else {
+    IntExpr* const target = model->GetIntExpr(spec->Arg(2));
     if (spec->Arg(1)->isIntVar()) {
       IntExpr* const mod = model->GetIntExpr(spec->Arg(1));
       Constraint* const ct =
@@ -1553,7 +1553,7 @@ void p_int_max(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_negate(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const target = model->GetIntExpr(spec->Arg(2));
+  IntExpr* const target = model->GetIntExpr(spec->Arg(1));
   Constraint* const ct =
       solver->MakeEquality(solver->MakeOpposite(left), target);
   VLOG(2) << "  - posted " << ct->DebugString();
