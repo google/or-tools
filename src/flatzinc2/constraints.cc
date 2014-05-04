@@ -1060,12 +1060,25 @@ void ExtractSubCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
-void ExtractTableBool(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
-
 void ExtractTableInt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const int size = variables.size();
+  IntTupleSet tuples(size);
+  const std::vector<int64>& t = ct->Arg(1).values;
+  const int t_size = t.size();
+  DCHECK_EQ(0, t_size % size);
+  const int num_tuples = t_size / size;
+  std::vector<int64> one_tuple(size);
+  for (int tuple_index = 0; tuple_index < num_tuples; ++tuple_index) {
+    for (int var_index = 0; var_index < size; ++var_index) {
+      one_tuple[var_index] = t[tuple_index * size + var_index];
+    }
+    tuples.Insert(one_tuple);
+  }
+  Constraint* const constraint =
+      solver->MakeAllowedAssignments(variables, tuples);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractTrueConstraint(FzSolver* fzsolver, FzConstraint* ct) {}
@@ -1260,7 +1273,7 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
   } else if (type == "subcircuit") {
     ExtractSubCircuit(this, ct);
   } else if (type == "table_bool") {
-    ExtractTableBool(this, ct);
+    ExtractTableInt(this, ct);
   } else if (type == "table_int") {
     ExtractTableInt(this, ct);
   } else if (type == "true_constraint") {
