@@ -627,7 +627,31 @@ void ExtractIntGtReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntIn(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntVar* const var = fzsolver->GetExpression(ct->Arg(0))->Var();
+  const FzArgument& arg = ct->Arg(1);
+  switch (arg.type) {
+    case FzArgument::INT_VALUE: {
+      Constraint* const constraint =
+          solver->MakeEquality(var, arg.values[0]);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
+        Constraint* const constraint =
+            solver->MakeBetweenCt(var, arg.values[0], arg.values[1]);
+        AddConstraint(solver, ct, constraint);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      Constraint* const constraint = solver->MakeMemberCt(var, arg.values);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+  }
 }
 
 void ExtractIntLe(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1015,11 +1039,19 @@ void ExtractLexLesseqInt(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractMaximumInt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeMaxEquality(variables, target);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractMinimumInt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeMinEquality(variables, target);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractNvalue(FzSolver* fzsolver, FzConstraint* ct) {
