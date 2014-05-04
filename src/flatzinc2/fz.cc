@@ -41,6 +41,7 @@ DEFINE_int32(luby_restart, -1, "Luby restart factor, <= 0 = no luby");
 DEFINE_int32(heuristic_period, 100, "Period to call heuristics in free search");
 DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
+DEFINE_bool(presolve, true, "Use presolve.");
 
 DECLARE_bool(log_prefix);
 DECLARE_bool(logging);
@@ -78,7 +79,9 @@ void SequentialRun(const std::string& filename) {
   CHECK(ParseFlatzincFile(filename, &model));
   FzPresolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model);
-  presolve.Run(&model);
+  if (FLAGS_presolve) {
+    presolve.Run(&model);
+  }
   FzModelStatistics stats(model);
   stats.PrintStatistics();
   FzSolver solver(model);

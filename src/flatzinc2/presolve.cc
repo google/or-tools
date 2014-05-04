@@ -48,6 +48,7 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   if (ct->Arg(0).IsIntegerVariable()) {
     if (ct->Arg(1).HasOneValue()) {
       const int64 value = ct->Arg(1).Value();
+      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
       ct->Arg(0).Var()->domain.IntersectWithInterval(value, value);
       ct->MarkAsInactive();
       return true;
@@ -59,6 +60,7 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   } else if (ct->Arg(0).HasOneValue()) {  // Arg0 is an integer value.
     const int64 value = ct->Arg(0).Value();
     if (ct->Arg(1).IsIntegerVariable()) {
+      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
       ct->Arg(1).Var()->domain.IntersectWithInterval(value, value);
       ct->MarkAsInactive();
       return true;
@@ -387,7 +389,6 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsIntegerVariable() && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
     IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
-    FZVLOG << "  -> " << ct->Arg(2).Var()->DebugString() << FZENDL;
     ct->presolve_propagation_done = true;
     return true;
   }
@@ -522,7 +523,6 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     }
     // Reset propagate flag.
     ct->presolve_propagation_done = false;
-    FZVLOG << "    into  " << ct->DebugString() << FZENDL;
     // Mark old index var and affine constraint as presolved out.
     mapping.constraint->MarkAsInactive();
     index_var->active = false;
@@ -922,12 +922,12 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints passed to SAT.
-    if (ct->target_variable != nullptr &&
-        (id == "array_bool_and" || id == "array_bool_or" ||
-         id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
-         id == "bool_ge_reif")) {
-      ct->RemoveTargetVariable();
-    }
+    // if (ct->target_variable != nullptr &&
+    //     (id == "array_bool_and" || id == "array_bool_or" ||
+    //      id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
+    //      id == "bool_ge_reif")) {
+    //   ct->RemoveTargetVariable();
+    // }
   }
   // Second pass.
   for (FzConstraint* const ct : model->constraints()) {
