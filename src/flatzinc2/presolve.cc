@@ -16,6 +16,7 @@
 
 DECLARE_bool(logging);
 DECLARE_bool(verbose_logging);
+DECLARE_bool(use_sat);
 
 namespace operations_research {
 
@@ -964,12 +965,12 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints passed to SAT.
-    // if (ct->target_variable != nullptr &&
-    //     (id == "array_bool_and" || id == "array_bool_or" ||
-    //      id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
-    //      id == "bool_ge_reif")) {
-    //   ct->RemoveTargetVariable();
-    // }
+    if (FLAGS_use_sat && ct->target_variable != nullptr &&
+        (id == "array_bool_and" || id == "array_bool_or" ||
+         id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
+      ct->RemoveTargetVariable();
+    }
   }
   // Second pass.
   for (FzConstraint* const ct : model->constraints()) {

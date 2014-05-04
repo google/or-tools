@@ -17,6 +17,8 @@
 #include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
+class SatPropagator;
+
 Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        const std::vector<IntVar*>& variables,
                                        const std::vector<int64>& coefficients,
@@ -43,12 +45,12 @@ Constraint* MakeVariableCumulative(Solver* const solver,
 Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
 
-void PostIsBooleanSumInRange(Solver* solver,
+void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
                              const std::vector<IntVar*>& variables,
                              int64 range_min, int64 range_max, IntVar* target);
 
-void PostBooleanSumInRange(Solver* solver,
+void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
                            const std::vector<IntVar*>& variables,
                            int64 range_min, int64 range_max);
 }       // namespace operations_research
-#endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
+#endif  // OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_

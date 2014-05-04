@@ -16,6 +16,7 @@
 #include "base/commandlineflags.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc2/model.h"
+#include "flatzinc2/sat_constraint.h"
 #include "util/string_array.h"
 
 DECLARE_bool(cp_trace_search);
@@ -733,7 +734,7 @@ Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
   return s->RevAlloc(new VariableParity(s, var, false));
 }
 
-void PostBooleanSumInRange(Solver* solver,
+void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
                            const std::vector<IntVar*>& variables,
                            int64 range_min, int64 range_max) {
   const int64 size = variables.size();
@@ -760,16 +761,16 @@ void PostBooleanSumInRange(Solver* solver,
     Constraint* const ct = solver->MakeTrueConstraint();
     FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
     solver->AddConstraint(ct);
-  // } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
-  //            AddAtMostOne(solver->Sat(), alt)) {
-  //   FZVLOG << "  - posted to sat" << FZENDL;
-  // } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
-  //            AddAtMostNMinusOne(solver->Sat(), alt)) {
-  //   FZVLOG << "  - posted to sat" << FZENDL;
-  // } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
-  //            AddBoolOrArrayEqualTrue(solver->Sat(), alt) &&
-  //            AddAtMostOne(solver->Sat(), alt)) {
-  //   FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
+             AddAtMostOne(sat, alt)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
+             AddAtMostNMinusOne(sat, alt)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
+             AddBoolOrArrayEqualTrue(sat, alt) &&
+             AddAtMostOne(sat, alt)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const ct =
         MakeBooleanSumInRange(solver, alt, range_min, range_max);
@@ -778,7 +779,7 @@ void PostBooleanSumInRange(Solver* solver,
   }
 }
 
-void PostIsBooleanSumInRange(Solver* solver,
+void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
                              const std::vector<IntVar*>& variables,
                              int64 range_min, int64 range_max, IntVar* target) {
   const int64 size = variables.size();
@@ -800,16 +801,16 @@ void PostIsBooleanSumInRange(Solver* solver,
   } else if (true_vars >= range_min && possible_vars <= range_max) {
     target->SetValue(1);
     FZVLOG << "  - set target to 1" << FZENDL;
-  // } else if (FLAGS_use_sat && range_min == size &&
-  //            AddBoolAndArrayEqVar(solver->Sat(), variables, target)) {
-  //   FZVLOG << "  - posted to sat";
-  // } else if (FLAGS_use_sat && range_max == 0 &&
-  //            AddBoolOrArrayEqVar(solver->Sat(), variables,
-  //                                solver->MakeDifference(1, target)->Var())) {
-  //   FZVLOG << "  - posted to sat";
-  // } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
-  //            AddBoolOrArrayEqVar(solver->Sat(), variables, target)) {
-  //   FZVLOG << "  - posted to sat";
+  } else if (FLAGS_use_sat && range_min == size &&
+             AddBoolAndArrayEqVar(sat, variables, target)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_max == 0 &&
+             AddBoolOrArrayEqVar(sat, variables,
+                                 solver->MakeDifference(1, target)->Var())) {
+    FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
+             AddBoolOrArrayEqVar(sat, variables, target)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const ct = MakeIsBooleanSumInRange(solver, variables, range_min,
                                                    range_max, target);

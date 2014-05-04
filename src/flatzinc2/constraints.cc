@@ -17,12 +17,14 @@
 #include "base/hash.h"
 #include "flatzinc2/flatzinc_constraints.h"
 #include "flatzinc2/model.h"
+#include "flatzinc2/sat_constraint.h"
 #include "flatzinc2/search.h"
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
+DECLARE_bool(use_sat);
 DECLARE_bool(verbose_logging);
 
 namespace operations_research {
@@ -72,14 +74,14 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
   } else {
     if (ct->Arg(1).HasOneValue()) {
       if (ct->Arg(1).Value() == 0) {
-        // if (FLAGS_use_sat &&
-        //     AddBoolAndArrayEqualFalse(model->Sat(), variables)) {
-        //   VLOG(2) << "  - posted to sat";
-        // } else {
+        if (FLAGS_use_sat &&
+            AddBoolAndArrayEqualFalse(fzsolver->Sat(), variables)) {
+          VLOG(2) << "  - posted to sat";
+        } else {
           Constraint* const constraint =
               solver->MakeSumGreaterOrEqual(variables, 1);
           AddConstraint(solver, ct, constraint);
-        // }
+        }
       } else {
         Constraint* const constraint =
             solver->MakeSumEquality(variables, variables.size());
@@ -87,14 +89,14 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
       }
     } else {
       IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(1))->Var();
-      // if (FLAGS_use_sat &&
-      //     AddBoolAndArrayEqVar(model->Sat(), variables, boolvar)) {
-      //   VLOG(2) << "  - posted to sat";
-      // } else {
+      if (FLAGS_use_sat &&
+          AddBoolAndArrayEqVar(fzsolver->Sat(), variables, boolvar)) {
+        VLOG(2) << "  - posted to sat";
+      } else {
         Constraint* const constraint =
             solver->MakeMinEquality(variables, boolvar);
         AddConstraint(solver, ct, constraint);
-      // }
+      }
     }
   }
 }
@@ -125,13 +127,13 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
   } else {
     if (ct->Arg(1).HasOneValue()) {
       if (ct->Arg(1).Value() == 1) {
-        //   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
-        //     VLOG(2) << "  - posted to sat";
-        //   } else {
+          if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
+            VLOG(2) << "  - posted to sat";
+          } else {
         Constraint* const constraint =
             solver->MakeSumGreaterOrEqual(variables, 1);
         AddConstraint(solver, ct, constraint);
-        // }
+        }
       } else {
         Constraint* const constraint =
             solver->MakeSumEquality(variables, Zero());
@@ -139,14 +141,14 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
       }
     } else {
       IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(1))->Var();
-      // if (FLAGS_use_sat &&
-      //     AddBoolOrArrayEqVar(fzsolver->Sat(), variables, boolvar)) {
-      //   FZVLOG << "  - posted to sat" << FZENDL;
-      // } else {
+      if (FLAGS_use_sat &&
+          AddBoolOrArrayEqVar(fzsolver->Sat(), variables, boolvar)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
         Constraint* const constraint =
             solver->MakeMaxEquality(variables, boolvar);
         AddConstraint(solver, ct, constraint);
-      // }
+      }
     }
   }
 }
@@ -313,12 +315,12 @@ void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
   }
   if (ct->Arg(2).HasOneValue()) {
     const int64 count = ct->Arg(2).Value();
-    PostBooleanSumInRange(solver, tmp_sum, count, count);
+    PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count, count);
   } else {
     IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
     if (count->Bound()) {
       const int64 fcount = count->Min();
-      PostBooleanSumInRange(solver, tmp_sum, fcount, fcount);
+      PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, fcount, fcount);
     } else {
       Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
       AddConstraint(solver, ct, constraint);
@@ -540,7 +542,11 @@ void ExtractIntLe(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
     if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
       IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeLessOrEqual(left, right));
+      if (FLAGS_use_sat && AddBoolLe(fzsolver->Sat(), left, right)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
+        AddConstraint(s, ct, s->MakeLessOrEqual(left, right));
+      }
     } else {
       const int64 right = ct->Arg(1).Value();
       AddConstraint(s, ct, s->MakeLessOrEqual(left, right));
@@ -730,7 +736,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
           }
         }
         if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
-          PostBooleanSumInRange(solver, variables, rhs, rhs);
+          PostBooleanSumInRange(fzsolver->Sat(), solver, variables, rhs, rhs);
           return;
         } else {
           constraint =
