@@ -476,11 +476,35 @@ void ExtractGlobalCardinalityOld(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntAbs(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeAbs(left);
+    FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(1));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeAbs(left), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntDiv(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+  if (!ct->Arg(1).HasOneValue()) {
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeDiv(left, right), target);
+    AddConstraint(solver, ct, constraint);
+  } else {
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeDiv(left, ct->Arg(1).Value()), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntEq(FzSolver* fzsolver, FzConstraint* ct) {
@@ -632,8 +656,7 @@ void ExtractIntIn(FzSolver* fzsolver, FzConstraint* ct) {
   const FzArgument& arg = ct->Arg(1);
   switch (arg.type) {
     case FzArgument::INT_VALUE: {
-      Constraint* const constraint =
-          solver->MakeEquality(var, arg.values[0]);
+      Constraint* const constraint = solver->MakeEquality(var, arg.values[0]);
       AddConstraint(solver, ct, constraint);
       break;
     }
@@ -940,11 +963,37 @@ void ExtractIntLtReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntMax(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeMax(left, right);
+    FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeMax(left, right), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntMin(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeMin(left, right);
+    FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeMin(left, right), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntMinus(FzSolver* fzsolver, FzConstraint* ct) {
@@ -952,7 +1001,54 @@ void ExtractIntMinus(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntMod(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  if (ct->target_variable != nullptr) {
+    if (!ct->Arg(1).HasOneValue()) {
+      IntExpr* const mod = fzsolver->GetExpression(ct->Arg(1));
+      IntExpr* const target = solver->MakeModulo(left, mod);
+      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      const int64 mod = ct->Arg(1).Value();
+      IntExpr* const target = solver->MakeModulo(left, mod);
+      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    }
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    if (!ct->Arg(1).HasOneValue()) {
+      IntExpr* const mod = fzsolver->GetExpression(ct->Arg(1));
+      Constraint* const constraint =
+          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      AddConstraint(solver, ct, constraint);
+    } else {
+      const int64 mod = ct->Arg(1).Value();
+      Constraint* constraint = nullptr;
+      if (mod == 2 && target->Bound()) {
+        switch (target->Min()) {
+          case 0: {
+            constraint = MakeVariableEven(solver, left->Var());
+            break;
+          }
+          case 1: {
+            constraint = MakeVariableOdd(solver, left->Var());
+            break;
+          }
+          default: {
+            constraint = solver->MakeFalseConstraint();
+            break;
+          }
+        }
+      } else {
+        constraint =
+            solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      }
+      AddConstraint(solver, ct, constraint);
+    }
+  }
 }
 
 void ExtractIntNe(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1007,7 +1103,19 @@ void ExtractIntNeReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntNegate(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeOpposite(left);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeOpposite(left), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntPlus(FzSolver* fzsolver, FzConstraint* ct) {
