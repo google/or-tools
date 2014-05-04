@@ -997,7 +997,20 @@ void ExtractIntMin(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntMinus(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeDifference(left, right);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeDifference(left, right), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntMod(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1119,11 +1132,61 @@ void ExtractIntNegate(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntPlus(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  if (!ct->Arg(0).variables.empty() &&
+      ct->target_variable == ct->Arg(0).variables[0]) {
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    IntExpr* const left = solver->MakeDifference(target, right);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << left->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, left);
+  } else if (!ct->Arg(1).variables.empty() &&
+             ct->target_variable == ct->Arg(1).variables[0]) {
+    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    IntExpr* const right = solver->MakeDifference(target, left);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << right->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, right);
+  } else if (!ct->Arg(2).variables.empty() &&
+             ct->target_variable == ct->Arg(2).variables[0]) {
+    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+    IntExpr* const target = solver->MakeSum(left, right);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    Constraint* const constraint =
+        solver->MakeEquality(solver->MakeSum(left, right), target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractIntTimes(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+  if (ct->target_variable != nullptr) {
+    IntExpr* const target = solver->MakeProd(left, right);
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    if (FLAGS_use_sat &&
+        AddBoolAndEqVar(fzsolver->Sat(), left, right, target)) {
+      FZVLOG << "  - posted to sat" << FZENDL;
+    } else {
+      Constraint* const constraint =
+          solver->MakeEquality(solver->MakeProd(left, right), target);
+      AddConstraint(solver, ct, constraint);
+    }
+  }
 }
 
 void ExtractInverse(FzSolver* fzsolver, FzConstraint* ct) {
