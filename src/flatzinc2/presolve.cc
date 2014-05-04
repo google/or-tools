@@ -627,11 +627,13 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
 }
 
 // Fix boolvar value if both arguments are equal.
-bool FzPresolver::PropagateReifiedWithEqualArguments(FzConstraint* ct) {
+// Fix boolvar if one argument is constant, and the state of the boolvar is
+// thus known.
+bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
+  const std::string& id = ct->type;
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
       ct->Arg(1).type == FzArgument::INT_VAR_REF &&
       ct->Arg(0).variables[0] == ct->Arg(1).variables[0]) {
-    const std::string& id = ct->type;
     const bool value = (
         id == "int_eq_reif" || id == "int_ge_reif" || id == "int_le_reif");
     if ((ct->Arg(2).HasOneValue() && ct->Arg(2).Value() == value) ||
@@ -640,6 +642,46 @@ bool FzPresolver::PropagateReifiedWithEqualArguments(FzConstraint* ct) {
              << " to " << value << FZENDL;
       CHECK_EQ(FzArgument::INT_VAR_REF, ct->Arg(2).type);
       ct->Arg(2).variables[0]->domain.IntersectWithInterval(value, value);
+      ct->RemoveTargetVariable();
+      ct->MarkAsInactive();
+      return true;
+    }
+  }
+  FzIntegerVariable* var = nullptr;
+  int64 value = 0;
+  bool reverse = false;
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF && ct->Arg(1).HasOneValue()) {
+    var = ct->Arg(0).Var();
+    value = ct->Arg(1).Value();
+  } else if (ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+             ct->Arg(0).HasOneValue()) {
+    var = ct->Arg(1).Var();
+    value = ct->Arg(0).Value();
+    reverse = true;
+  }
+  if (var != nullptr) {
+    int state = 2;  // 0 force_false, 1 force true, 2 unknown.
+    if (id == "int_eq_reif") {
+      if (var->domain.Contains(value)) {
+        if (var->domain.IsSingleton()) {
+          state = 1;
+        }
+      } else {
+        state = 0;
+      }
+    } else if (id == "int_ne_reif") {
+      if (var->domain.Contains(value)) {
+        if (var->domain.IsSingleton()) {
+          state = 0;
+        }
+      } else {
+        state = 1;
+      }
+    }
+    if (state != 2) {
+      FZVLOG << "Assign boolvar to " << state << " in " <<
+          ct->DebugString() << FZENDL;
+      ct->Arg(2).variables[0]->domain.IntersectWithInterval(state, state);
       ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
@@ -701,7 +743,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_eq_reif" || id == "int_ne_reif" || id == "int_le_reif" ||
       id == "int_lt_reif" || id == "int_ge_reif" || id == "int_gt_reif") {
-    changed |= PropagateReifiedWithEqualArguments(ct);
+    changed |= PropagateReifiedComparisons(ct);
   }
   return changed;
 }
