@@ -18,13 +18,15 @@
 #include "flatzinc2/search.h"
 
 namespace operations_research {
+class SatPropagator;
+
 // The main class to search for a solution in a flatzinc model.  It is
 // responsible for parsing the search annotations, setting up the
 // search state and perform the actual search.
 class FzSolver {
  public:
   explicit FzSolver(const FzModel& model)
-  : model_(model), statistics_(model), solver_(model.name()) {}
+    : model_(model), statistics_(model), solver_(model.name()), sat_(nullptr) {}
 
   // Search for for solutions in the model passed at construction
   // time.  The exact search context (search for optimal solution, for
@@ -48,6 +50,9 @@ class FzSolver {
 
   // Returns the cp solver.
   Solver* solver() { return &solver_; }
+
+  // Returns the sat constraint.
+  SatPropagator* Sat() const { return sat_; }
 
  private:
   void ExtractConstraint(FzConstraint* ct);
@@ -81,6 +86,8 @@ class FzSolver {
   void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
   hash_map<const FzIntegerVariable*,
            std::vector<std::vector<FzIntegerVariable*> > >alldiffs_;
+  // Sat constraint.
+  SatPropagator* sat_;
 };
 }  // namespace operations_research
 

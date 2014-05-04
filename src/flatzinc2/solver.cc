@@ -16,11 +16,14 @@
 #include "base/hash.h"
 #include "base/map_util.h"
 #include "flatzinc2/model.h"
+#include "flatzinc2/sat_constraint.h"
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"
 
+DECLARE_bool(logging);
 DECLARE_bool(verbose_logging);
+DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 
 namespace operations_research {
 IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
@@ -138,7 +141,17 @@ struct ConstraintWithIoComparator {
 }  // namespace
 
 bool FzSolver::Extract() {
+  // Create the sat solver.
+  if (FLAGS_use_sat) {
+    FZLOG << "  - Use sat" << FZENDL;
+    sat_ = MakeSatPropagator(&solver_);
+    solver_.AddConstraint(reinterpret_cast<Constraint*>(sat_));
+  } else {
+    sat_ = nullptr;
+  }
+  // Build statistics.
   statistics_.BuildStatistics();
+  // Extract variables.
   hash_set<FzIntegerVariable*> defined_variables;
   for (FzIntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint == nullptr && var->active) {
