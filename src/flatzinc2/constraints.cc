@@ -884,7 +884,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
         other = fzsolver->Extract(fzvars[0]);
         other_coef = coefficients[0];
       } else {
-        LOG(FATAL) << "Wrong ct for " << ct->DebugString();
+        LOG(FATAL) << "Invalid constraint " << ct->DebugString();
       }
 
       IntExpr* const target =
