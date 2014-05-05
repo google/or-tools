@@ -47,6 +47,42 @@ void ExtractAlldifferentExcept0(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(s, ct, s->MakeAllDifferentExcept(vars, 0));
 }
 
+void ExtractAmong(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  std::vector<IntVar*> tmp_sum;
+  for (FzIntegerVariable* const fzvar : ct->Arg(1).variables) {
+    IntVar* const var = fzsolver->Extract(fzvar)->Var();
+    const FzArgument& arg = ct->Arg(1);
+    switch (arg.type) {
+      case FzArgument::INT_VALUE: {
+        tmp_sum.push_back(solver->MakeIsEqualCstVar(var, arg.values[0]));
+        break;
+      }
+      case FzArgument::INT_INTERVAL: {
+        if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
+          tmp_sum.push_back(
+              solver->MakeIsBetweenVar(var, arg.values[0], arg.values[1]));
+        }
+        break;
+      }
+      case FzArgument::INT_LIST: {
+        tmp_sum.push_back(solver->MakeIsMemberVar(var, arg.values));
+        break;
+      }
+      default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+    }
+  }
+  if (ct->Arg(0).HasOneValue()) {
+    const int64 count = ct->Arg(0).Value();
+    Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
+    AddConstraint(solver, ct, constraint);
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(0))->Var();
+    Constraint* const constraint = solver->MakeSumEquality(tmp_sum, count);
+    AddConstraint(solver, ct, constraint);
+  }
+}
+
 void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables;
@@ -289,8 +325,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(
-        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
+    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
+                            ->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -1345,11 +1381,104 @@ void ExtractMinimumInt(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractNvalue(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+
+  const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
+
+  int64 lb = kint64max;
+  int64 ub = kint64min;
+  for (IntVar* const var : vars) {
+    lb = std::min(lb, var->Min());
+    ub = std::max(ub, var->Max());
+  }
+
+  int csize = ub - lb + 1;
+  int64 always_true_cards = 0;
+  std::vector<IntVar*> cards;
+  for (int b = 0; b < csize; ++b) {
+    const int value = lb + b;
+    std::vector<IntVar*> contributors;
+    bool always_true = false;
+    for (IntVar* const var : vars) {
+      if (var->Contains(value)) {
+        if (var->Bound()) {
+          always_true = true;
+          break;
+        } else {
+          contributors.push_back(var->IsEqual(value));
+        }
+      }
+    }
+    if (always_true) {
+      always_true_cards++;
+    } else if (contributors.size() == 1) {
+      cards.push_back(contributors.back());
+    } else if (contributors.size() > 1) {
+      IntVar* const contribution = solver->MakeBoolVar();
+      if (FLAGS_use_sat &&
+          AddBoolOrArrayEqVar(fzsolver->Sat(), contributors, contribution)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
+        Constraint* const constraint =
+            solver->MakeMaxEquality(contributors, contribution);
+        AddConstraint(solver, ct, constraint);
+      }
+      cards.push_back(contribution);
+    }
+  }
+  if (ct->Arg(0).HasOneValue()) {
+    const int64 card = ct->Arg(0).Value() - always_true_cards;
+    PostBooleanSumInRange(fzsolver->Sat(), solver, cards, card, card);
+  } else {
+    IntVar* const card = fzsolver->GetExpression(ct->Arg(0))->Var();
+    Constraint* const constraint = solver->MakeSumEquality(
+        cards, solver->MakeSum(card, -always_true_cards)->Var());
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractRegular(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const int64 num_states = ct->Arg(1).Value();
+  const int64 num_values = ct->Arg(2).Value();
+
+  const std::vector<int64>& array_transitions = ct->Arg(3).values;
+  IntTupleSet tuples(3);
+  int count = 0;
+  for (int q = 1; q <= num_states; ++q) {
+    for (int s = 1; s <= num_values; ++s) {
+      const int64 next = array_transitions[count++];
+      if (next != 0) {
+        tuples.Insert3(q, s, next);
+      }
+    }
+  }
+
+  const int64 initial_state = ct->Arg(4).Value();
+
+  std::vector<int64> final_states;
+  switch (ct->Arg(5).type) {
+    case FzArgument::INT_VALUE: {
+      final_states.push_back(ct->Arg(5).values[0]);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      for (int v = ct->Arg(5).values[0]; v <= ct->Arg(5).values[1]; ++v) {
+        final_states.push_back(v);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      final_states = ct->Arg(5).values;
+      break;
+    }
+    default: { LOG(FATAL) << "Wrong constraint " << ct->DebugString(); }
+  }
+  Constraint* const constraint = solver->MakeTransitionConstraint(
+      variables, tuples, initial_state, final_states);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractSetIn(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1410,11 +1539,27 @@ void ExtractSetInReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractSlidingSum(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int64 low = ct->Arg(0).Value();
+  const int64 up = ct->Arg(1).Value();
+  const int64 seq = ct->Arg(2).Value();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(3));
+  for (int i = 0; i < variables.size() - seq; ++i) {
+    std::vector<IntVar*> tmp(seq);
+    for (int k = 0; k < seq; ++k) {
+      tmp[k] = variables[i + k];
+    }
+    IntVar* const sum_var = solver->MakeSum(tmp)->Var();
+    sum_var->SetRange(low, up);
+  }
 }
 
 void ExtractSort(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> left = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> right = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeSortingConstraint(left, right);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractSubCircuit(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1462,6 +1607,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractAllDifferentInt(this, ct);
   } else if (type == "alldifferent_except_0") {
     ExtractAlldifferentExcept0(this, ct);
+  } else if (type == "among") {
+    ExtractAmong(this, ct);
   } else if (type == "array_bool_and") {
     ExtractArrayBoolAnd(this, ct);
   } else if (type == "array_bool_element") {
