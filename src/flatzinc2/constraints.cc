@@ -1293,23 +1293,39 @@ void ExtractIntTimes(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractInverse(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
+  Solver* const solver = fzsolver->solver();
+  std::vector<IntVar*> left;
+  // Account for 1 based arrays.
+  left.push_back(solver->MakeIntConst(0));
+  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+    left.push_back(fzsolver->Extract(fzvar)->Var());
+  }
 
-void ExtractLexLessBool(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  std::vector<IntVar*> right;
+  // Account for 1 based arrays.
+  right.push_back(solver->MakeIntConst(0));
+  for (FzIntegerVariable* const fzvar : ct->Arg(1).variables) {
+    right.push_back(fzsolver->Extract(fzvar)->Var());
+  }
+  Constraint* const constraint =
+      solver->MakeInversePermutationConstraint(left, right);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractLexLessInt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
-
-void ExtractLexLesseqBool(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  std::vector<IntVar*> left = fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> right = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeLexicalLess(left, right);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractLexLesseqInt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  std::vector<IntVar*> left = fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> right = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeLexicalLessOrEqual(left, right);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractMaximumInt(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1592,13 +1608,9 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractIntTimes(this, ct);
   } else if (type == "inverse") {
     ExtractInverse(this, ct);
-  } else if (type == "lex_less_bool") {
-    ExtractLexLessBool(this, ct);
-  } else if (type == "lex_less_int") {
+  } else if (type == "lex_less_bool" || type == "lex_less_int") {
     ExtractLexLessInt(this, ct);
-  } else if (type == "lex_lesseq_bool") {
-    ExtractLexLesseqBool(this, ct);
-  } else if (type == "lex_lesseq_int") {
+  } else if (type == "lex_lesseq_bool" || type == "lex_lesseq_int") {
     ExtractLexLesseqInt(this, ct);
   } else if (type == "maximum_int") {
     ExtractMaximumInt(this, ct);
