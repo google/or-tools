@@ -47,10 +47,17 @@ struct FlatteningMapping {
   FzConstraint* constraint;
 
   FlatteningMapping()
-      : variable1(nullptr), coefficient(0), variable2(nullptr), offset(0), constraint(nullptr) {}
+      : variable1(nullptr),
+        coefficient(0),
+        variable2(nullptr),
+        offset(0),
+        constraint(nullptr) {}
   FlatteningMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
                     int64 o, FzConstraint* ct)
-      : variable1(v1), coefficient(c), variable2(v2), offset(o),
+      : variable1(v1),
+        coefficient(c),
+        variable2(v2),
+        offset(o),
         constraint(ct) {}
 };
 
@@ -74,7 +81,7 @@ class FzPresolver {
   // Cleans the model for the CP solver.
   // In particular, it knows about the sat connection and will remove the link
   // (defining_constraint, target_variable) for boolean constraints.
-  void CleanUpModelForTheCpSolver(FzModel* model);
+  void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
 
  private:
   // Returns true iff the model was modified.

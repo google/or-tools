@@ -43,8 +43,9 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 DEFINE_bool(presolve, true, "Use presolve.");
 
-DECLARE_bool(log_prefix);
 DECLARE_bool(logging);
+DECLARE_bool(log_prefix);
+DECLARE_bool(use_sat);
 
 namespace operations_research {
 void SequentialRun(const std::string& filename) {
@@ -78,10 +79,8 @@ void SequentialRun(const std::string& filename) {
   FzModel model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
   FzPresolver presolve;
-  presolve.CleanUpModelForTheCpSolver(&model);
-  if (FLAGS_presolve) {
-    presolve.Run(&model);
-  }
+  presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
+  presolve.Run(&model);
   FzModelStatistics stats(model);
   stats.PrintStatistics();
   FzSolver solver(model);

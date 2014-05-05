@@ -81,8 +81,8 @@ class SequentialSupportInterface : public FzParallelSupportInterface {
 
   virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* s, bool maximize,
-                                 IntVar* var, int64 step, int worker_id) {
+  virtual OptimizeVar* Objective(Solver* s, bool maximize, IntVar* var,
+                                 int64 step, int worker_id) {
     return s->MakeOptimize(maximize, var, step);
   }
 

@@ -33,7 +33,6 @@ void AddConstraint(Solver* s, FzConstraint* ct, Constraint* cte) {
   FZVLOG << "  - post " << cte->DebugString() << FZENDL;
   s->AddConstraint(cte);
 }
-}  // namespace
 
 void ExtractAllDifferentInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const s = fzsolver->solver();
@@ -50,11 +49,9 @@ void ExtractAlldifferentExcept0(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& vars = ct->Arg(0).variables;
-  const int size = vars.size();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
-  for (FzIntegerVariable* var : vars) {
+  for (FzIntegerVariable* var : ct->Arg(0).variables) {
     IntVar* const to_add = fzsolver->Extract(var)->Var();
     if (!ContainsKey(added, to_add) && to_add->Min() != 1) {
       variables.push_back(to_add);
@@ -103,11 +100,9 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& vars = ct->Arg(0).variables;
-  const int size = vars.size();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
-  for (FzIntegerVariable* var : vars) {
+  for (FzIntegerVariable* var : ct->Arg(0).variables) {
     IntVar* const to_add = fzsolver->Extract(var)->Var();
     if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
       variables.push_back(to_add);
@@ -294,8 +289,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
-                            ->Var());
+    variables.push_back(
+        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -375,7 +370,7 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
-void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
+std::vector<IntVar*> BuildCount(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> tmp_sum;
   if (ct->Arg(1).HasOneValue()) {
@@ -397,6 +392,12 @@ void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
       }
     }
   }
+  return tmp_sum;
+}
+
+void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
   if (ct->Arg(2).HasOneValue()) {
     const int64 count = ct->Arg(2).Value();
     PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count, count);
@@ -408,55 +409,200 @@ void ExtractCountEq(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractCountGeq(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count,
+                          tmp_sum.size());
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeGreaterOrEqual(solver->MakeSum(tmp_sum), count);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractCountGt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count + 1,
+                          tmp_sum.size());
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeGreater(solver->MakeSum(tmp_sum), count);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractCountLeq(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, 0, count);
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeLessOrEqual(solver->MakeSum(tmp_sum), count);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractCountLt(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, 0, count - 1);
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeLess(solver->MakeSum(tmp_sum), count);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractCountNeq(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    if (count == 0) {
+      PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, 1,
+                            tmp_sum.size());
+    } else if (count == tmp_sum.size()) {
+      PostBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, 0,
+                            tmp_sum.size() - 1);
+    } else {
+      Constraint* const constraint =
+          solver->MakeNonEquality(solver->MakeSum(tmp_sum), count);
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeNonEquality(solver->MakeSum(tmp_sum), count);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractCountReif(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> tmp_sum = BuildCount(fzsolver, ct);
+  IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+  if (ct->Arg(2).HasOneValue()) {
+    const int64 count = ct->Arg(2).Value();
+    PostIsBooleanSumInRange(fzsolver->Sat(), solver, tmp_sum, count, count,
+                            boolvar);
+  } else {
+    IntVar* const count = fzsolver->GetExpression(ct->Arg(2))->Var();
+    Constraint* const constraint =
+        solver->MakeIsEqualCt(solver->MakeSum(tmp_sum), count, boolvar);
+    AddConstraint(solver, ct, constraint);
+  }
+}
+
+void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
   LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
 }
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
-
-void ExtractFixedCumulative(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+  std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+  Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
+      x_variables, y_variables, x_sizes, y_sizes);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<int64> values = ct->Arg(1).values;
+  std::vector<IntVar*> variables;
+  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+    IntVar* const var = fzsolver->Extract(fzvar)->Var();
+    for (int v = 0; v < values.size(); ++v) {
+      if (var->Contains(values[v])) {
+        variables.push_back(var);
+        break;
+      }
+    }
+  }
+  const std::vector<IntVar*> cards = fzsolver->GetVariableArray(ct->Arg(2));
+  Constraint* const constraint =
+      solver->MakeDistribute(variables, values, cards);
+  AddConstraint(solver, ct, constraint);
+  Constraint* const constraint2 =
+      solver->MakeSumLessOrEqual(cards, variables.size());
+  AddConstraint(solver, ct, constraint2);
 }
 
 void ExtractGlobalCardinalityClosed(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<int64> values = ct->Arg(1).values;
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+
+  const std::vector<IntVar*> cards = fzsolver->GetVariableArray(ct->Arg(2));
+  Constraint* const constraint =
+      solver->MakeDistribute(variables, values, cards);
+  AddConstraint(solver, ct, constraint);
+  for (IntVar* const var : variables) {
+    Constraint* const constraint2 = solver->MakeMemberCt(var, values);
+    AddConstraint(solver, ct, constraint2);
+  }
+
+  Constraint* const constraint3 =
+      solver->MakeSumEquality(cards, variables.size());
+  AddConstraint(solver, ct, constraint3);
 }
 
 void ExtractGlobalCardinalityLowUp(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<int64> values = ct->Arg(1).values;
+  std::vector<IntVar*> variables;
+  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+    IntVar* const var = fzsolver->Extract(fzvar)->Var();
+    for (int v = 0; v < values.size(); ++v) {
+      if (var->Contains(values[v])) {
+        variables.push_back(var);
+        break;
+      }
+    }
+  }
+  const std::vector<int64>& low = ct->Arg(2).values;
+  const std::vector<int64>& up = ct->Arg(3).values;
+  Constraint* const constraint =
+      solver->MakeDistribute(variables, values, low, up);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractGlobalCardinalityLowUpClosed(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<int64> values = ct->Arg(1).values;
+  const std::vector<int64>& low = ct->Arg(2).values;
+  const std::vector<int64>& up = ct->Arg(3).values;
+  Constraint* const constraint =
+      solver->MakeDistribute(variables, values, low, up);
+  AddConstraint(solver, ct, constraint);
+  for (IntVar* const var : variables) {
+    Constraint* const constraint2 = solver->MakeMemberCt(var, values);
+    AddConstraint(solver, ct, constraint2);
+  }
 }
 
 void ExtractGlobalCardinalityOld(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> cards = fzsolver->GetVariableArray(ct->Arg(1));
+  Constraint* const constraint = solver->MakeDistribute(variables, cards);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractIntAbs(FzSolver* fzsolver, FzConstraint* ct) {
@@ -631,33 +777,6 @@ void ExtractIntGtReif(FzSolver* fzsolver, FzConstraint* ct) {
     Constraint* const constraint =
         solver->MakeIsGreaterCt(left, right, boolvar);
     AddConstraint(solver, ct, constraint);
-  }
-}
-
-void ExtractIntIn(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const solver = fzsolver->solver();
-  IntVar* const var = fzsolver->GetExpression(ct->Arg(0))->Var();
-  const FzArgument& arg = ct->Arg(1);
-  switch (arg.type) {
-    case FzArgument::INT_VALUE: {
-      Constraint* const constraint = solver->MakeEquality(var, arg.values[0]);
-      AddConstraint(solver, ct, constraint);
-      break;
-    }
-    case FzArgument::INT_INTERVAL: {
-      if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
-        Constraint* const constraint =
-            solver->MakeBetweenCt(var, arg.values[0], arg.values[1]);
-        AddConstraint(solver, ct, constraint);
-      }
-      break;
-    }
-    case FzArgument::INT_LIST: {
-      Constraint* const constraint = solver->MakeMemberCt(var, arg.values);
-      AddConstraint(solver, ct, constraint);
-      break;
-    }
-    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
   }
 }
 
@@ -1218,11 +1337,60 @@ void ExtractRegular(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractSetIn(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntVar* const var = fzsolver->GetExpression(ct->Arg(0))->Var();
+  const FzArgument& arg = ct->Arg(1);
+  switch (arg.type) {
+    case FzArgument::INT_VALUE: {
+      Constraint* const constraint = solver->MakeEquality(var, arg.values[0]);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
+        Constraint* const constraint =
+            solver->MakeBetweenCt(var, arg.values[0], arg.values[1]);
+        AddConstraint(solver, ct, constraint);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      Constraint* const constraint = solver->MakeMemberCt(var, arg.values);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+  }
 }
 
 void ExtractSetInReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  IntVar* const var = fzsolver->GetExpression(ct->Arg(0))->Var();
+  IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+  const FzArgument& arg = ct->Arg(1);
+  switch (arg.type) {
+    case FzArgument::INT_VALUE: {
+      Constraint* const constraint =
+          solver->MakeIsEqualCstCt(var, arg.values[0], target);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
+        Constraint* const constraint =
+            solver->MakeIsBetweenCt(var, arg.values[0], arg.values[1], target);
+        AddConstraint(solver, ct, constraint);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      Constraint* const constraint =
+          solver->MakeIsMemberCt(var, arg.values, target);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+  }
 }
 
 void ExtractSlidingSum(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1269,14 +1437,7 @@ void ExtractTableInt(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractTrueConstraint(FzSolver* fzsolver, FzConstraint* ct) {}
-
-void ExtractVarCumulative(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
-
-void ExtractVariableCumulative(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
-}
+}  // namespace
 
 void FzSolver::ExtractConstraint(FzConstraint* ct) {
   FZVLOG << "Extracting " << ct->DebugString() << std::endl;
@@ -1357,10 +1518,10 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractCountNeq(this, ct);
   } else if (type == "count_reif") {
     ExtractCountReif(this, ct);
+  } else if (type == "cumulative") {
+    ExtractCumulative(this, ct);
   } else if (type == "diffn") {
     ExtractDiffn(this, ct);
-  } else if (type == "fixed_cumulative") {
-    ExtractFixedCumulative(this, ct);
   } else if (type == "global_cardinality") {
     ExtractGlobalCardinality(this, ct);
   } else if (type == "global_cardinality_closed") {
@@ -1387,8 +1548,6 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractIntGt(this, ct);
   } else if (type == "int_gt_reif") {
     ExtractIntGtReif(this, ct);
-  } else if (type == "int_in") {
-    ExtractIntIn(this, ct);
   } else if (type == "int_le") {
     ExtractIntLe(this, ct);
   } else if (type == "int_le_reif") {
@@ -1449,7 +1608,7 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractNvalue(this, ct);
   } else if (type == "regular") {
     ExtractRegular(this, ct);
-  } else if (type == "set_in") {
+  } else if (type == "set_in" || type == "int_in") {
     ExtractSetIn(this, ct);
   } else if (type == "set_in_reif") {
     ExtractSetInReif(this, ct);
@@ -1459,16 +1618,12 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractSort(this, ct);
   } else if (type == "subcircuit") {
     ExtractSubCircuit(this, ct);
-  } else if (type == "table_bool") {
-    ExtractTableInt(this, ct);
-  } else if (type == "table_int") {
+  } else if (type == "table_bool" || type == "table_int") {
     ExtractTableInt(this, ct);
   } else if (type == "true_constraint") {
     ExtractTrueConstraint(this, ct);
-  } else if (type == "var_cumulative") {
-    ExtractVarCumulative(this, ct);
-  } else if (type == "variable_cumulative") {
-    ExtractVariableCumulative(this, ct);
+  } else {
+    LOG(FATAL) << "Unknown predicate: " << type;
   }
 }
 }  // namespace operations_research

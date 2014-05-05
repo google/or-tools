@@ -41,8 +41,7 @@ class FzLog : public SearchLog {
   }
 };
 // Flatten Search annotations.
-void FlattenAnnotations(const FzAnnotation& ann,
-                        std::vector<FzAnnotation>* out) {
+void FlattenAnnotations(const FzAnnotation& ann, std::vector<FzAnnotation>* out) {
   if (ann.type == FzAnnotation::ANNOTATION_LIST) {
     for (int i = 0; i < ann.annotations.size(); i++) {
       const FzAnnotation& inner = ann.annotations[i];
@@ -362,7 +361,9 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
         }
         break;
       }
-      case FzSolverParameters::IBS: { break; }
+      case FzSolverParameters::IBS: {
+        break;
+      }
       case FzSolverParameters::FIRST_UNBOUND: {
         inner_builder =
             solver()->MakePhase(defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
@@ -460,9 +461,10 @@ void FzSolver::Solve(FzSolverParameters p,
     objective_monitor_ = parallel_support->Objective(
         solver(), model_.maximize(), objective_var_, 1, p.worker_id);
     SearchMonitor* const log =
-        p.use_log ? solver()->RevAlloc(
-                        new FzLog(solver(), objective_monitor_, p.log_period))
-                  : nullptr;
+        p.use_log
+            ? solver()->RevAlloc(
+                  new FzLog(solver(), objective_monitor_, p.log_period))
+            : nullptr;
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
     parallel_support->StartSearch(

@@ -56,8 +56,7 @@ class MtOptimizeVar : public OptimizeVar {
 
 class MtCustomLimit : public SearchLimit {
  public:
-  MtCustomLimit(Solver* s, FzParallelSupportInterface* support,
-                int worker_id)
+  MtCustomLimit(Solver* s, FzParallelSupportInterface* support, int worker_id)
       : SearchLimit(s), support_(support), worker_id_(worker_id) {}
 
   virtual ~MtCustomLimit() {}
@@ -195,8 +194,8 @@ class MtSupportInterface : public FzParallelSupportInterface {
 
   virtual int64 BestSolution() const { return best_solution_; }
 
-  virtual OptimizeVar* Objective(Solver* s, bool maximize,
-                                 IntVar* var, int64 step, int w) {
+  virtual OptimizeVar* Objective(Solver* s, bool maximize, IntVar* var,
+                                 int64 step, int w) {
     return s->RevAlloc(new MtOptimizeVar(s, maximize, var, step, this, w));
   }
 

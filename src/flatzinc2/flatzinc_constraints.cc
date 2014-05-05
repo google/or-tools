@@ -735,8 +735,8 @@ Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max) {
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -768,8 +768,7 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
              AddAtMostNMinusOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
   } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
-             AddBoolOrArrayEqualTrue(sat, alt) &&
-             AddAtMostOne(sat, alt)) {
+             AddBoolOrArrayEqualTrue(sat, alt) && AddAtMostOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const ct =
@@ -780,8 +779,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);

@@ -43,7 +43,7 @@ void ParseFile(const std::string& filename, bool presolve) {
   CHECK(ParseFlatzincFile(filename, &model));
   if (presolve) {
     FzPresolver presolve;
-    presolve.CleanUpModelForTheCpSolver(&model);
+    presolve.CleanUpModelForTheCpSolver(&model, true);
     presolve.Run(&model);
   }
   if (FLAGS_statistics) {

@@ -85,11 +85,10 @@ struct LexerInfo {
 // Tells flex to use the LexerInfo class to communicate with the bison parser.
 typedef operations_research::LexerInfo YYSTYPE;
 
-#endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
-
 // Defines the parameter to the orfz_lex() call from the orfz_parse() method.
 #define YYLEX_PARAM scanner
 
+#endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 }  // code requires
 
 // Code in the implementation file.

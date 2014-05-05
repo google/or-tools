@@ -26,7 +26,10 @@ class SatPropagator;
 class FzSolver {
  public:
   explicit FzSolver(const FzModel& model)
-    : model_(model), statistics_(model), solver_(model.name()), sat_(nullptr) {}
+      : model_(model),
+        statistics_(model),
+        solver_(model.name()),
+        sat_(nullptr) {}
 
   // Search for for solutions in the model passed at construction
   // time.  The exact search context (search for optimal solution, for
@@ -84,8 +87,8 @@ class FzSolver {
   OptimizeVar* objective_monitor_;
   // Alldiff info before extraction
   void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
-  hash_map<const FzIntegerVariable*,
-           std::vector<std::vector<FzIntegerVariable*> > >alldiffs_;
+  hash_map<const FzIntegerVariable*, std::vector<std::vector<FzIntegerVariable*> > >
+      alldiffs_;
   // Sat constraint.
   SatPropagator* sat_;
 };

@@ -54,7 +54,7 @@ static const Boolean kUndefined = Boolean(2);
 
 inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
-  return Boolean((uint8)(a.value() ^ (uint8) b));
+  return Boolean((uint8)(a.value() ^ (uint8)b));
 }
 inline std::string ToString(Boolean b) {
   switch (b.value()) {
@@ -392,8 +392,7 @@ bool Solver::PropagateOneLiteral(Literal literal) {
 // variables and clauses.
 class SatPropagator : public Constraint {
  public:
-  explicit SatPropagator(Solver* solver)
-      : Constraint(solver), sat_trail_(0) {}
+  explicit SatPropagator(Solver* solver) : Constraint(solver), sat_trail_(0) {}
 
   ~SatPropagator() {}
 
@@ -583,8 +582,7 @@ void DeclareVariable(SatPropagator* sat, IntVar* var) {
   sat->Literal(var);
 }
 
-bool AddBoolEq(SatPropagator* sat, IntExpr* left,
-               IntExpr* right) {
+bool AddBoolEq(SatPropagator* sat, IntExpr* left, IntExpr* right) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
@@ -595,8 +593,7 @@ bool AddBoolEq(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolLe(SatPropagator* sat, IntExpr* left,
-               IntExpr* right) {
+bool AddBoolLe(SatPropagator* sat, IntExpr* left, IntExpr* right) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
@@ -606,8 +603,7 @@ bool AddBoolLe(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolNot(SatPropagator* sat, IntExpr* left,
-                IntExpr* right) {
+bool AddBoolNot(SatPropagator* sat, IntExpr* left, IntExpr* right) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
     return false;
   }
@@ -655,8 +651,7 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars,
-                                 IntExpr* target) {
+                                 const std::vector<IntVar*>& vars, IntExpr* target) {
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
@@ -670,8 +665,7 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
-                               const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                                IntExpr* target) {
   if (vars.size() == 1) {
     return AddBoolLe(sat, vars[0], target);
@@ -695,8 +689,8 @@ bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
   return true;
 }
 
-bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left,
-                    IntExpr* right, IntExpr* target) {
+bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                    IntExpr* target) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
       !sat->IsExpressionBoolean(target)) {
     return false;
@@ -710,8 +704,8 @@ bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left,
-                     IntExpr* right, IntExpr* target) {
+bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                     IntExpr* target) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
       !sat->IsExpressionBoolean(target)) {
     return false;
@@ -725,8 +719,8 @@ bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left,
-                    IntExpr* right, IntExpr* target) {
+bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                    IntExpr* target) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
       !sat->IsExpressionBoolean(target)) {
     return false;
@@ -741,8 +735,8 @@ bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left,
-                     IntExpr* right, IntExpr* target) {
+bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                     IntExpr* target) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
       !sat->IsExpressionBoolean(target)) {
     return false;
@@ -758,8 +752,8 @@ bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left,
-                    IntExpr* right, IntExpr* target) {
+bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                    IntExpr* target) {
   if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
       !sat->IsExpressionBoolean(target)) {
     return false;
@@ -773,8 +767,7 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
-                             const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }

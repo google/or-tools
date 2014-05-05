@@ -88,9 +88,8 @@ class FzParallelSupportInterface {
   // Returns the value of the best solution found during search.
   virtual int64 BestSolution() const = 0;
   // Creates a dedicated search monitor for the objective.
-  virtual OptimizeVar* Objective(Solver* s, bool maximize,
-                                 IntVar* var, int64 step,
-                                 int worker_id) = 0;
+  virtual OptimizeVar* Objective(Solver* s, bool maximize, IntVar* var,
+                                 int64 step, int worker_id) = 0;
   // Creates a dedicated search limit.
   virtual SearchLimit* Limit(Solver* s, int worker_id) = 0;
   // Creates a dedicated search log.

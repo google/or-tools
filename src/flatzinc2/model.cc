@@ -24,6 +24,7 @@ DEFINE_bool(logging, false,
 DEFINE_bool(verbose_logging, false,
             "Print verbose logging information from the flatzinc interpreter.");
 
+
 namespace operations_research {
 // ----- FzDomain -----
 
@@ -214,8 +215,7 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(
-    const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.variables = vars;
@@ -265,7 +265,9 @@ int64 FzArgument::Value() const {
   switch (type) {
     case INT_VALUE:
       return values[0];
-    case INT_VAR_REF: { return variables[0]->domain.values[0]; }
+    case INT_VAR_REF: {
+      return variables[0]->domain.values[0];
+    }
     default: {
       LOG(FATAL) << "Wrong Value() on " << DebugString();
       return 0;
@@ -365,8 +367,7 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(
-    const std::vector<FzAnnotation>& list) {
+FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -445,7 +446,9 @@ std::string FzAnnotation::DebugString() const {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
     }
-    case IDENTIFIER: { return id; }
+    case IDENTIFIER: {
+      return id;
+    }
     case FUNCTION_CALL: {
       return StringPrintf("%s(%s)", id.c_str(),
                           JoinDebugString(annotations, ", ").c_str());
@@ -454,7 +457,9 @@ std::string FzAnnotation::DebugString() const {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
     }
-    case INT_VAR_REF: { return variable->name; }
+    case INT_VAR_REF: {
+      return variable->name;
+    }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -523,8 +528,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments,
-                            bool is_domain, FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments, bool is_domain,
+                            FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);
