@@ -27,7 +27,6 @@ DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 DECLARE_bool(log_prefix);
 DECLARE_bool(logging);
 
-using operations_research::scoped_ptr;
 using operations_research::ThreadPool;
 
 namespace operations_research {

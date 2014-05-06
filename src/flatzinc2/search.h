@@ -111,7 +111,8 @@ class FzParallelSupportInterface {
 FzParallelSupportInterface* MakeSequentialSupport(bool print_all,
                                                   int num_solutions);
 // Creates an interface suitable for a multi-threaded search.
-FzParallelSupportInterface* MakeMtSupport(bool print_all, bool verbose);
+FzParallelSupportInterface* MakeMtSupport(bool print_all, int num_solutions,
+                                          bool verbose);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_SEARCH_H_
