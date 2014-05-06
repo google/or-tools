@@ -24,6 +24,7 @@
 #include "flatzinc2/solver.h"
 
 DECLARE_bool(logging);
+DECLARE_bool(verbose_logging);
 
 namespace operations_research {
 namespace {
@@ -45,12 +46,10 @@ void FlattenAnnotations(const FzAnnotation& ann,
                         std::vector<FzAnnotation>* out) {
   if (ann.type == FzAnnotation::ANNOTATION_LIST ||
       ann.IsFunctionCallWithIdentifier("seq_search")) {
-    FZLOG << "Dive into " << ann.DebugString() << FZENDL;
     for (const FzAnnotation& inner : ann.annotations) {
       FlattenAnnotations(inner, out);
     }
   } else {
-    FZLOG << "Add " << ann.DebugString() << FZENDL;
     out->push_back(ann);
   }
 }
@@ -133,7 +132,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   FZLOG << "  - using search annotations" << std::endl;
   hash_set<IntVar*> added;
   for (const FzAnnotation& ann : flat_annotations) {
-    FZLOG << "Parse " << ann.DebugString() << FZENDL;
+    FZVLOG << "Parse " << ann.DebugString() << FZENDL;
     if (ann.IsFunctionCallWithIdentifier("int_search")) {
       const std::vector<FzAnnotation>& args = ann.annotations;
       const FzAnnotation& vars = args[0];
