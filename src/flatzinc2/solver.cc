@@ -208,6 +208,34 @@ bool FzSolver::Extract() {
   for (FzConstraint* const ct : sorted) {
     ExtractConstraint(ct);
   }
+  // Add domain constraints to created extressions.
+  for (FzIntegerVariable* const var : model_.variables()) {
+    if (var->defining_constraint != nullptr && var->active) {
+      const FzDomain& domain = var->domain;
+      IntExpr* const expr = Extract(var);
+      if (expr->IsVar() && domain.is_interval && !domain.values.empty()) {
+        FZVLOG << "Reduce variable domain of " << expr->DebugString()
+               << " from " << domain.DebugString() << FZENDL;
+        expr->Var()->SetRange(domain.values[0], domain.values[1]);
+      } else if (expr->IsVar() && !domain.is_interval) {
+        FZVLOG << "Reduce variable domain of " << expr->DebugString()
+               << " from " << domain.DebugString() << FZENDL;
+        expr->Var()->SetValues(domain.values);
+      } else if (domain.is_interval && !domain.values.empty() &&
+                 (expr->Min() < domain.values[0] ||
+                  expr->Max() > domain.values[1])) {
+        FZVLOG << "Add domain constraint " << domain.DebugString() << " onto "
+               << expr->DebugString() << FZENDL;
+        solver_.AddConstraint(solver_.MakeBetweenCt(
+            expr->Var(), domain.values[0], domain.values[1]));
+      } else if (!domain.is_interval) {
+        FZVLOG << "Add domain constraint " << domain.DebugString() << " onto "
+               << expr->DebugString() << FZENDL;
+        solver_.AddConstraint(solver_.MakeMemberCt(expr->Var(), domain.values));
+      }
+    }
+  }
+
   return true;
 }
 

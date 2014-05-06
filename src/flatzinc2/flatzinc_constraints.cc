@@ -817,4 +817,20 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
     solver->AddConstraint(ct);
   }
 }
+
+void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
+                               const std::vector<IntVar*>& variables, int64 value,
+                               IntVar* target) {
+  const int64 size = variables.size();
+  if (value == 0) {
+    PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
+  } else if (value == size) {
+    PostIsBooleanSumInRange(sat, solver, variables, 0, size - 1, target);
+  } else {
+    Constraint* const ct =
+        solver->MakeIsDifferentCstCt(solver->MakeSum(variables), value, target);
+    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
+    solver->AddConstraint(ct);
+  }
+}
 }  // namespace operations_research

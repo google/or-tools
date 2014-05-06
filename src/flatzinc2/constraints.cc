@@ -325,8 +325,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
-                            ->Var());
+    variables.push_back(
+        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -543,15 +543,80 @@ void ExtractCountReif(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> start_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+  if (ct->Arg(1).type == FzArgument::INT_LIST &&
+      ct->Arg(2).type == FzArgument::INT_LIST && ct->Arg(3).HasOneValue()) {
+    // Fully fixed case.
+    const std::vector<int64>& durations = ct->Arg(1).values;
+    const std::vector<int64>& demands = ct->Arg(2).values;
+    const int64 capacity = ct->Arg(3).Value();
+    std::vector<IntervalVar*> intervals;
+    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
+                                              &intervals);
+    Constraint* const constraint =
+        solver->MakeCumulative(intervals, demands, capacity, "");
+    AddConstraint(solver, ct, constraint);
+  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
+             ct->Arg(2).type == FzArgument::INT_LIST &&
+             !ct->Arg(3).HasOneValue()) {
+    // Demands and durations are fixed, capacity is variable.
+    const std::vector<int64>& durations = ct->Arg(1).values;
+    const std::vector<int64>& demands = ct->Arg(2).values;
+    std::vector<IntervalVar*> intervals;
+    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
+                                              &intervals);
+    IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+    Constraint* const constraint =
+        solver->MakeCumulative(intervals, demands, capacity, "");
+    AddConstraint(solver, ct, constraint);
+  } else {
+    // Everything is variable.
+    const std::vector<IntVar*> durations = fzsolver->GetVariableArray(ct->Arg(1));
+    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
+    IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+    if (AreAllBound(durations) && AreAllBound(demands) && capacity->Bound()) {
+      std::vector<int64> fdurations;
+      FillValues(durations, &fdurations);
+      std::vector<int64> fdemands;
+      FillValues(demands, &fdemands);
+      const int64 fcapacity = capacity->Min();
+      if (AreAllOnes(fdurations) &&
+          AreAllGreaterOrEqual(fdemands, fcapacity / 2 + 1)) {
+        // Hidden alldifferent.
+        Constraint* const constraint =
+            solver->MakeAllDifferent(start_variables);
+        AddConstraint(solver, ct, constraint);
+      } else {
+        std::vector<IntervalVar*> intervals;
+        solver->MakeFixedDurationIntervalVarArray(start_variables, fdurations,
+                                                  "", &intervals);
+        if (AreAllGreaterOrEqual(fdemands, fcapacity / 2 + 1)) {
+          Constraint* const constraint =
+              solver->MakeDisjunctiveConstraint(intervals, "");
+          AddConstraint(solver, ct, constraint);
+        } else {
+          Constraint* const constraint =
+              solver->MakeCumulative(intervals, fdemands, fcapacity, "");
+          AddConstraint(solver, ct, constraint);
+        }
+      }
+    } else {
+      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint = MakeVariableCumulative(
+          solver, start_variables, durations, demands, capacity);
+      AddConstraint(solver, ct, constraint);
+    }
+  }
 }
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
-  std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
-  std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
-  std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+  const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
   Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
       x_variables, y_variables, x_sizes, y_sizes);
   AddConstraint(solver, ct, constraint);
@@ -867,6 +932,115 @@ void ExtractIntLeReif(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
+void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
+                      IntExpr** right) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
+  const std::vector<int64>& coefficients = ct->Arg(0).values;
+  int64 rhs = ct->Arg(2).Value();
+  const int size = ct->Arg(0).values.size();
+  *left = nullptr;
+  *right = nullptr;
+
+  switch (size) {
+    case 0: {
+      *left = solver->MakeIntConst(0);
+      *right = solver->MakeIntConst(rhs);
+      break;
+    }
+    case 1: {
+      *left = solver->MakeProd(fzsolver->Extract(fzvars[0]), coefficients[0]);
+      *right = solver->MakeIntConst(rhs);
+      break;
+    }
+    case 2: {
+      IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
+      IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
+      const int64 c1 = coefficients[0];
+      const int64 c2 = coefficients[1];
+      if (c1 > 0) {
+        if (c2 > 0) {
+          *left = solver->MakeProd(e1, c1);
+          *right = solver->MakeDifference(rhs, solver->MakeProd(e2, c2));
+        } else {
+          *left = solver->MakeProd(e1, c1);
+          *right = solver->MakeSum(solver->MakeProd(e2, -c2), rhs);
+        }
+      } else if (c2 > 0) {
+        *left = solver->MakeProd(e2, c2);
+        *right = solver->MakeSum(solver->MakeProd(e1, -c1), rhs);
+      } else {
+        *left = solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2));
+        *right = solver->MakeProd(e1, -c1);
+      }
+      break;
+    }
+    case 3: {
+      IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
+      IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
+      IntExpr* const e3 = fzsolver->Extract(fzvars[2]);
+      const int64 c1 = coefficients[0];
+      const int64 c2 = coefficients[1];
+      const int64 c3 = coefficients[2];
+      if (c1 > 0 && c2 > 0 && c3 > 0) {
+        *left =
+            solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e2, c2));
+        *right = solver->MakeDifference(rhs, solver->MakeProd(e3, c3));
+
+      } else if (c1 < 0 && c2 > 0 && c3 > 0) {
+        *left =
+            solver->MakeSum(solver->MakeProd(e2, c2), solver->MakeProd(e3, c3));
+        *right = solver->MakeSum(solver->MakeProd(e1, -c1), rhs);
+      } else if (c1 > 0 && c2 < 0 && c3 > 0) {
+        *left =
+            solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e3, c3));
+        *right = solver->MakeSum(solver->MakeProd(e2, -c2), rhs);
+      } else if (c1 > 0 && c2 > 0 && c3 < 0) {
+        *left =
+            solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e2, c2));
+        *right = solver->MakeSum(solver->MakeProd(e3, -c3), rhs);
+      } else if (c1 < 0 && c2 < 0 && c3 > 0) {
+        *left = solver->MakeSum(solver->MakeProd(e3, c3), -rhs);
+        *right = solver->MakeSum(solver->MakeProd(e1, -c1),
+                                 solver->MakeProd(e2, -c2));
+      } else {
+        DCHECK_LE(c1, 0);
+        DCHECK_LE(c2, 0);
+        DCHECK_LE(c3, 0);
+        *left = solver->MakeDifference(-rhs, solver->MakeProd(e3, -c3));
+        *right = solver->MakeSum(solver->MakeProd(e1, -c1),
+                                 solver->MakeProd(e2, -c2));
+      }
+      break;
+    }
+    default: { LOG(FATAL) << "Too many terms in " << ct->DebugString(); }
+  }
+}
+
+void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
+  CHECK(vars != nullptr);
+  CHECK(coeffs != nullptr);
+  CHECK(rhs != nullptr);
+  const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
+  const std::vector<int64>& coefficients = ct->Arg(0).values;
+  *rhs = ct->Arg(2).values[0];
+  const int size = fzvars.size();
+
+  for (int i = 0; i < size; ++i) {
+    const int64 coef = coefficients[i];
+    IntVar* const var = fzsolver->Extract(fzvars[i])->Var();
+    if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
+      if (var->Bound()) {
+        (*rhs) -= var->Min() * coef;
+      } else {
+        coeffs->push_back(coef);
+        vars->push_back(var);
+      }
+    }
+  }
+}
+
 void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
@@ -918,110 +1092,20 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
     }
   } else {
     Constraint* constraint = nullptr;
-    switch (size) {
-      case 0: {
-        constraint = rhs == 0 ? solver->MakeTrueConstraint()
-                              : solver->MakeFalseConstraint();
-        break;
-      }
-      case 1: {
-        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
-        const int64 c1 = coefficients[0];
-        constraint = solver->MakeEquality(solver->MakeProd(e1, c1), rhs);
-        break;
-      }
-      case 2: {
-        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
-        IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
-        const int64 c1 = coefficients[0];
-        const int64 c2 = coefficients[1];
-        if (c1 > 0) {
-          if (c2 > 0) {
-            constraint = solver->MakeEquality(
-                solver->MakeProd(e1, c1),
-                solver->MakeDifference(rhs, solver->MakeProd(e2, c2)));
-          } else {
-            constraint = solver->MakeEquality(
-                solver->MakeProd(e1, c1),
-                solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
-          }
-        } else if (c2 > 0) {
-          constraint = solver->MakeEquality(
-              solver->MakeProd(e2, c2),
-              solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
-        } else {
-          constraint = solver->MakeEquality(
-              solver->MakeProd(e1, -c1),
-              solver->MakeDifference(-rhs, solver->MakeProd(e2, -c2)));
-        }
-        break;
-      }
-      case 3: {
-        IntExpr* const e1 = fzsolver->Extract(fzvars[0]);
-        IntExpr* const e2 = fzsolver->Extract(fzvars[1]);
-        IntExpr* const e3 = fzsolver->Extract(fzvars[2]);
-        const int64 c1 = coefficients[0];
-        const int64 c2 = coefficients[1];
-        const int64 c3 = coefficients[2];
-        if (ct->strong_propagation) {
-          std::vector<IntVar*> variables;
-          variables.push_back(e1->Var());
-          variables.push_back(e2->Var());
-          variables.push_back(e3->Var());
-          constraint =
-              MakeStrongScalProdEquality(solver, variables, coefficients, rhs);
-        } else {
-          if (c1 < 0 && c2 > 0 && c3 > 0) {
-            constraint = solver->MakeEquality(
-                solver->MakeSum(solver->MakeProd(e2, c2),
-                                solver->MakeProd(e3, c3)),
-                solver->MakeSum(solver->MakeProd(e1, -c1), rhs));
-          } else if (c1 > 0 && c2 < 0 && c3 > 0) {
-            constraint = solver->MakeEquality(
-                solver->MakeSum(solver->MakeProd(e1, c1),
-                                solver->MakeProd(e3, c3)),
-                solver->MakeSum(solver->MakeProd(e2, -c2), rhs));
-          } else if (c1 > 0 && c2 > 0 && c3 < 0) {
-            constraint = solver->MakeEquality(
-                solver->MakeSum(solver->MakeProd(e1, c1),
-                                solver->MakeProd(e2, c2)),
-                solver->MakeSum(solver->MakeProd(e3, -c3), rhs));
-          } else if (c1 < 0 && c2 < 0 && c3 > 0) {
-            constraint = solver->MakeEquality(
-                solver->MakeSum(solver->MakeProd(e1, -c1),
-                                solver->MakeProd(e2, -c2)),
-                solver->MakeSum(solver->MakeProd(e3, c3), -rhs));
-          } else {
-            constraint = solver->MakeEquality(
-                solver->MakeSum(solver->MakeProd(e1, c1),
-                                solver->MakeProd(e2, c2)),
-                solver->MakeDifference(rhs, solver->MakeProd(e3, c3)));
-          }
-        }
-        break;
-      }
-      default: {
-        std::vector<int64> new_coefficients;
-        std::vector<IntVar*> variables;
-        for (int i = 0; i < size; ++i) {
-          const int64 coef = coefficients[i];
-          IntVar* const var = fzsolver->Extract(fzvars[i])->Var();
-          if (coef != 0 && (var->Min() != 0 || var->Max() != 0)) {
-            if (var->Bound()) {
-              rhs -= var->Min() * coef;
-            } else {
-              new_coefficients.push_back(coef);
-              variables.push_back(var);
-            }
-          }
-        }
-        if (AreAllBooleans(variables) && AreAllOnes(coefficients)) {
-          PostBooleanSumInRange(fzsolver->Sat(), solver, variables, rhs, rhs);
-          return;
-        } else {
-          constraint =
-              solver->MakeScalProdEquality(variables, new_coefficients, rhs);
-        }
+    if (size <= 3) {
+      IntExpr* left = nullptr;
+      IntExpr* right = nullptr;
+      ParseShortIntLin(fzsolver, ct, &left, &right);
+      constraint = solver->MakeEquality(left, right);
+    } else {
+      std::vector<IntVar*> vars;
+      std::vector<int64> coeffs;
+      ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, rhs);
+        return;
+      } else {
+        constraint = solver->MakeScalProdEquality(vars, coeffs, rhs);
       }
     }
     AddConstraint(solver, ct, constraint);
@@ -1029,31 +1113,278 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    if (ct->target_variable != nullptr) {
+      IntVar* const boolvar = solver->MakeIsEqualVar(left, right);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeIsEqualCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (ct->target_variable != nullptr) {
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        IntVar* const boolvar = solver->MakeBoolVar();
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, rhs,
+                                boolvar);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      } else {
+        IntVar* const boolvar =
+            solver->MakeIsEqualCstVar(solver->MakeScalProd(vars, coeffs), rhs);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, rhs,
+                                boolvar);
+      } else {
+        Constraint* const constraint = solver->MakeIsEqualCstCt(
+            solver->MakeScalProd(vars, coeffs), rhs, boolvar);
+        AddConstraint(solver, ct, constraint);
+      }
+    }
+  }
 }
 
 void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  Constraint* constraint = nullptr;
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    constraint = solver->MakeGreaterOrEqual(left, right);
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
+      return;
+    } else {
+      constraint = solver->MakeScalProdGreaterOrEqual(vars, coeffs, rhs);
+    }
+  }
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    if (ct->target_variable != nullptr) {
+      IntVar* const boolvar = solver->MakeIsGreaterOrEqualVar(left, right);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (ct->target_variable != nullptr) {
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        IntVar* const boolvar = solver->MakeBoolVar();
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size,
+                                boolvar);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      } else {
+        IntVar* const boolvar = solver->MakeIsGreaterOrEqualCstVar(
+            solver->MakeScalProd(vars, coeffs), rhs);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size,
+                                boolvar);
+      } else {
+        Constraint* const constraint = solver->MakeIsGreaterOrEqualCstCt(
+            solver->MakeScalProd(vars, coeffs), rhs, boolvar);
+        AddConstraint(solver, ct, constraint);
+      }
+    }
+  }
 }
 
 void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  Constraint* constraint = nullptr;
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    constraint = solver->MakeLessOrEqual(left, right);
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
+      return;
+    } else {
+      constraint = solver->MakeScalProdLessOrEqual(vars, coeffs, rhs);
+    }
+  }
 }
 
 void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    if (ct->target_variable != nullptr) {
+      IntVar* const boolvar = solver->MakeIsLessOrEqualVar(left, right);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeIsLessOrEqualCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (ct->target_variable != nullptr) {
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        IntVar* const boolvar = solver->MakeBoolVar();
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs, boolvar);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      } else {
+        IntVar* const boolvar = solver->MakeIsLessOrEqualCstVar(
+            solver->MakeScalProd(vars, coeffs), rhs);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs, boolvar);
+      } else {
+        Constraint* const constraint = solver->MakeIsLessOrEqualCstCt(
+            solver->MakeScalProd(vars, coeffs), rhs, boolvar);
+        AddConstraint(solver, ct, constraint);
+      }
+    }
+  }
 }
 
 void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  Constraint* constraint = nullptr;
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    constraint = solver->MakeNonEquality(left, right);
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
+      return;
+    } else {
+      constraint =
+          solver->MakeNonEquality(solver->MakeScalProd(vars, coeffs), rhs);
+    }
+  }
 }
 
 void ExtractIntLinNeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  LOG(FATAL) << "Not implemented: Extract " << ct->DebugString();
+  Solver* const solver = fzsolver->solver();
+  const int size = ct->Arg(0).values.size();
+  if (size <= 3) {
+    IntExpr* left = nullptr;
+    IntExpr* right = nullptr;
+    ParseShortIntLin(fzsolver, ct, &left, &right);
+    if (ct->target_variable != nullptr) {
+      IntVar* const boolvar = solver->MakeIsDifferentVar(left, right);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeIsDifferentCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    std::vector<IntVar*> vars;
+    std::vector<int64> coeffs;
+    int64 rhs = 0;
+    ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+    if (ct->target_variable != nullptr) {
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        IntVar* const boolvar = solver->MakeBoolVar();
+        PostIsBooleanSumDifferent(fzsolver->Sat(), solver, vars, rhs, boolvar);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      } else {
+        IntVar* const boolvar = solver->MakeIsDifferentCstVar(
+            solver->MakeScalProd(vars, coeffs), rhs);
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    } else {
+      IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
+      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+        PostIsBooleanSumDifferent(fzsolver->Sat(), solver, vars, rhs, boolvar);
+      } else {
+        Constraint* const constraint = solver->MakeIsDifferentCstCt(
+            solver->MakeScalProd(vars, coeffs), rhs, boolvar);
+        AddConstraint(solver, ct, constraint);
+      }
+    }
+  }
 }
 
 void ExtractIntLt(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1681,7 +2012,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractCountNeq(this, ct);
   } else if (type == "count_reif") {
     ExtractCountReif(this, ct);
-  } else if (type == "cumulative") {
+  } else if (type == "cumulative" || type == "var_cumulative" ||
+             type == "variable_cumulative") {
     ExtractCumulative(this, ct);
   } else if (type == "diffn") {
     ExtractDiffn(this, ct);
