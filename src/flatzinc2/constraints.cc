@@ -1167,12 +1167,11 @@ void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  Constraint* constraint = nullptr;
   if (size <= 3) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
-    constraint = solver->MakeGreaterOrEqual(left, right);
+    AddConstraint(solver, ct, solver->MakeGreaterOrEqual(left, right));
   } else {
     std::vector<IntVar*> vars;
     std::vector<int64> coeffs;
@@ -1180,12 +1179,11 @@ void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
     if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
       PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
-      return;
     } else {
-      constraint = solver->MakeScalProdGreaterOrEqual(vars, coeffs, rhs);
+      AddConstraint(solver, ct,
+                    solver->MakeScalProdGreaterOrEqual(vars, coeffs, rhs));
     }
   }
-  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1243,22 +1241,21 @@ void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  Constraint* constraint = nullptr;
   if (size <= 3) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
-    constraint = solver->MakeLessOrEqual(left, right);
+    AddConstraint(solver, ct, solver->MakeLessOrEqual(left, right));
   } else {
     std::vector<IntVar*> vars;
     std::vector<int64> coeffs;
     int64 rhs = 0;
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
     if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
-      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
-      return;
+      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs);
     } else {
-      constraint = solver->MakeScalProdLessOrEqual(vars, coeffs, rhs);
+      AddConstraint(solver, ct,
+                    solver->MakeScalProdLessOrEqual(vars, coeffs, rhs));
     }
   }
 }
@@ -1316,12 +1313,11 @@ void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  Constraint* constraint = nullptr;
   if (size <= 3) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
-    constraint = solver->MakeNonEquality(left, right);
+    AddConstraint(solver, ct, solver->MakeNonEquality(left, right));
   } else {
     std::vector<IntVar*> vars;
     std::vector<int64> coeffs;
@@ -1329,10 +1325,10 @@ void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
     if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
       PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
-      return;
     } else {
-      constraint =
-          solver->MakeNonEquality(solver->MakeScalProd(vars, coeffs), rhs);
+      AddConstraint(
+          solver, ct,
+          solver->MakeNonEquality(solver->MakeScalProd(vars, coeffs), rhs));
     }
   }
 }
