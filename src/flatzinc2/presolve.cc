@@ -948,16 +948,18 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
-    if (id == "int_lin_eq" && ct->Arg(0).values.size() > 3 &&
-        ct->strong_propagation) {
-      FZVLOG << "Remove strong_propagation from " << ct->DebugString()
-             << FZENDL;
-      ct->strong_propagation = false;
-    }
-    if (id == "int_lin_eq" && ct->Arg(0).values.size() > 3 &&
-        ct->target_variable != nullptr) {
-      FZVLOG << "Remove target_variable from " << ct->DebugString() << FZENDL;
-      ct->RemoveTargetVariable();
+    if (id == "int_lin_eq" && ct->strong_propagation) {
+      if (ct->Arg(0).values.size() > 2) {
+        // We will use a table constraint. Remove the target variable flag.
+        FZVLOG << "Remove target_variable from " << ct->DebugString() << FZENDL;
+        ct->RemoveTargetVariable();
+      } else {
+        // int_lin_eq with 2 variables will propagate perfectly. Removing
+        // the strong propagation flag.
+        FZVLOG << "Remove strong_propagation from " << ct->DebugString()
+               << FZENDL;
+        ct->strong_propagation = false;
+      }
     }
     // Remove target variables from constraints passed to SAT.
     if (use_sat && ct->target_variable != nullptr &&
