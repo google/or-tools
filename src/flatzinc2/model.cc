@@ -592,7 +592,7 @@ std::string FzModel::DebugString() const {
 
 void FzModelStatistics::PrintStatistics() {
   BuildStatistics();
-  FZLOG << "Model statistics" << FZENDL;
+  FZLOG << "Model " << model_.name() << FZENDL;
   BuildStatistics();
   for (const auto& it : constraints_per_type_) {
     FZLOG << "  - " << it.first << ": " << it.second.size() << FZENDL;
