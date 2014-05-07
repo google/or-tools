@@ -407,6 +407,13 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
       return false;
     }
   }
+  if (ct->target_variable != nullptr) {
+    for (FzIntegerVariable* const var : ct->Arg(1).variables) {
+      if (var == ct->target_variable) {
+        return false;
+      }
+    }
+  }
   FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
   for (int64& coef : ct->MutableArg(0)->values) {
     coef *= -1;
@@ -572,8 +579,8 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->type = "array_int_element";
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
-      ct->MutableArg(1)
-          ->values.push_back(ct->Arg(1).variables[i]->domain.values[0]);
+      ct->MutableArg(1)->values
+          .push_back(ct->Arg(1).variables[i]->domain.values[0]);
     }
     ct->MutableArg(1)->variables.clear();
     return true;
