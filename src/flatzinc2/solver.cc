@@ -72,7 +72,7 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   FZVLOG << "Extract " << var->DebugString() << " into "
          << result->DebugString() << FZENDL;
   extrated_map_[var] = result;
-  return nullptr;
+  return result;
 }
 
 void FzSolver::SetExtracted(FzIntegerVariable* var, IntExpr* expr) {
