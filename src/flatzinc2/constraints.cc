@@ -736,16 +736,32 @@ void ExtractIntAbs(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntDiv(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
-  if (!ct->Arg(1).HasOneValue()) {
-    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-    Constraint* const constraint =
-        solver->MakeEquality(solver->MakeDiv(left, right), target);
-    AddConstraint(solver, ct, constraint);
+  if (ct->target_variable != nullptr) {
+    if (!ct->Arg(1).HasOneValue()) {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      IntExpr* const target = solver->MakeDiv(left, right);
+      FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      const int64 value = ct->Arg(1).Value();
+      IntExpr* const target = solver->MakeDiv(left, value);
+      FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    }
   } else {
-    Constraint* const constraint =
-        solver->MakeEquality(solver->MakeDiv(left, ct->Arg(1).Value()), target);
-    AddConstraint(solver, ct, constraint);
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    if (!ct->Arg(1).HasOneValue()) {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      Constraint* const constraint =
+          solver->MakeEquality(solver->MakeDiv(left, right), target);
+      AddConstraint(solver, ct, constraint);
+    } else {
+      Constraint* const constraint = solver->MakeEquality(
+          solver->MakeDiv(left, ct->Arg(1).Value()), target);
+      AddConstraint(solver, ct, constraint);
+    }
   }
 }
 
