@@ -462,6 +462,7 @@ const_literal:
   IVALUE { $$ = FzDomain::Singleton($1); }
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' { $$ = FzDomain::IntegerList($2); }
+| '{' '}' { $$ = FzDomain::IntegerList(std::vector<int64>()); }
 | DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
 | IDENTIFIER { $$ = FzDomain::Singleton(FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
