@@ -585,6 +585,11 @@ class VariableCumulativeTimeTable : public Constraint {
   // [new_start_min, new_start_min + task->interval()->DurationMin() ).
   void PushTask(VariableCumulativeTask* const task, int profile_index,
                 int64 usage) {
+    const int64 demand_max = task->demand()->Max();
+    if (demand_max == 0) {
+      return;
+    }
+
     // Init
     const int64 demand_min = task->demand()->Min();
     const int64 adjusted_demand = demand_min == 0 ? 1 : demand_min;
