@@ -187,14 +187,11 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractArrayBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-  IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
-  if (FLAGS_use_sat && AddBoolIsNEqVar(fzsolver->Sat(), left, right, target)) {
+  std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  if (FLAGS_use_sat && AddArrayXor(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat" << FZENDL;
   } else {
-    Constraint* const constraint =
-        solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
+    Constraint* const constraint = MakeBooleanSumOdd(solver, variables);
     AddConstraint(solver, ct, constraint);
   }
 }
@@ -315,7 +312,6 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
     } else {
       Constraint* const constraint =
           solver->MakeEquality(solver->MakeMin(left, right), target);
-      FZVLOG << "  - posted " << constraint->DebugString() << FZENDL;
       AddConstraint(solver, ct, constraint);
     }
   }
@@ -387,7 +383,6 @@ void ExtractBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
   } else {
     Constraint* const constraint =
         solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
-    FZVLOG << "  - posted " << constraint->DebugString();
     AddConstraint(solver, ct, constraint);
   }
 }
