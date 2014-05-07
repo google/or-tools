@@ -109,7 +109,7 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
       if (ct->Arg(1).Value() == 0) {
         if (FLAGS_use_sat &&
             AddBoolAndArrayEqualFalse(fzsolver->Sat(), variables)) {
-          VLOG(2) << "  - posted to sat";
+          FZVLOG << "  - posted to sat" << FZENDL;
         } else {
           Constraint* const constraint =
               solver->MakeSumGreaterOrEqual(variables, 1);
@@ -124,7 +124,7 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
       IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(1))->Var();
       if (FLAGS_use_sat &&
           AddBoolAndArrayEqVar(fzsolver->Sat(), variables, boolvar)) {
-        VLOG(2) << "  - posted to sat";
+        FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         Constraint* const constraint =
             solver->MakeMinEquality(variables, boolvar);
@@ -160,7 +160,7 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
       if (ct->Arg(1).Value() == 1) {
         if (FLAGS_use_sat &&
             AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
-          VLOG(2) << "  - posted to sat";
+          FZVLOG << "  - posted to sat" << FZENDL;
         } else {
           Constraint* const constraint =
               solver->MakeSumGreaterOrEqual(variables, 1);

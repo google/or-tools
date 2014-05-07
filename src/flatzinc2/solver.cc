@@ -63,6 +63,8 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   }
   if (var->domain.values.size() == 1) {
     result = solver_.MakeIntConst(var->domain.values.back());
+  } else if (var->domain.is_interval && var->domain.values.empty()) {
+    result = solver_.MakeIntVar(kint32min, kint32max, var->name);
   } else if (var->domain.is_interval) {
     result = solver_.MakeIntVar(var->domain.values[0], var->domain.values[1],
                                 var->name);
