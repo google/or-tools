@@ -816,10 +816,12 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsEqual(int64 constant) {
     Solver* const s = solver();
-    if (constant == min_.Value() && value_watcher_ == nullptr) {
+    if (constant == min_.Value() &&
+        (value_watcher_ == nullptr || bound_watcher_ != nullptr)) {
       return s->MakeIsLessOrEqualCstVar(this, constant);
     }
-    if (constant == max_.Value() && value_watcher_ == nullptr) {
+    if (constant == max_.Value() &&
+        (value_watcher_ == nullptr || bound_watcher_ != nullptr)) {
       return s->MakeIsGreaterOrEqualCstVar(this, constant);
     }
     if (!Contains(constant)) {
@@ -859,10 +861,12 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsDifferent(int64 constant) {
     Solver* const s = solver();
-    if (constant == min_.Value() && value_watcher_ == nullptr) {
+    if (constant == min_.Value() &&
+        (value_watcher_ == nullptr || bound_watcher_ != nullptr)) {
       return s->MakeIsGreaterOrEqualCstVar(this, constant + 1);
     }
-    if (constant == max_.Value() && value_watcher_ == nullptr) {
+    if (constant == max_.Value() &&
+        (value_watcher_ == nullptr || bound_watcher_ != nullptr)) {
       return s->MakeIsLessOrEqualCstVar(this, constant - 1);
     }
     if (!Contains(constant)) {
