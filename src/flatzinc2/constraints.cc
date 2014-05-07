@@ -1030,6 +1030,10 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
         *left = solver->MakeSum(solver->MakeProd(e3, c3), -rhs);
         *right = solver->MakeSum(solver->MakeProd(e1, -c1),
                                  solver->MakeProd(e2, -c2));
+      } else if (c1 < 0 && c2 > 0 && c3 < 0) {
+        *left = solver->MakeSum(solver->MakeProd(e2, c2), -rhs);
+        *right = solver->MakeSum(solver->MakeProd(e1, -c1),
+                                 solver->MakeProd(e3, -c3));
       } else {
         DCHECK_LE(c1, 0);
         DCHECK_LE(c2, 0);
