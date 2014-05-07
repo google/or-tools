@@ -266,10 +266,10 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                        "d] == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
-                        range_max_, target_->DebugString().c_str());
+    return StringPrintf(
+        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
+        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_, range_max_,
+        target_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -717,10 +717,12 @@ Constraint* MakeVariableCumulative(Solver* const solver,
                                    const std::vector<IntVar*>& durations,
                                    const std::vector<IntVar*>& usages,
                                    IntVar* const capacity) {
-  std::vector<VariableCumulativeTask*> tasks(starts.size());
+  std::vector<VariableCumulativeTask*> tasks;
   for (int i = 0; i < starts.size(); ++i) {
-    tasks[i] = solver->RevAlloc(
-        new VariableCumulativeTask(starts[i], durations[i], usages[i]));
+    if (usages[i]->Max() > 0) {
+      tasks.push_back(solver->RevAlloc(
+          new VariableCumulativeTask(starts[i], durations[i], usages[i])));
+    }
   }
   return solver->RevAlloc(
       new VariableCumulativeTimeTable(solver, tasks, capacity));
@@ -735,8 +737,8 @@ Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables, int64 range_min,
-                           int64 range_max) {
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -779,8 +781,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables, int64 range_min,
-                             int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -819,8 +821,8 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables, int64 value,
-                               IntVar* target) {
+                               const std::vector<IntVar*>& variables,
+                               int64 value, IntVar* target) {
   const int64 size = variables.size();
   if (value == 0) {
     PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
