@@ -112,7 +112,7 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
           FZVLOG << "  - posted to sat" << FZENDL;
         } else {
           Constraint* const constraint =
-              solver->MakeSumGreaterOrEqual(variables, 1);
+              solver->MakeSumLessOrEqual(variables, variables.size() - 1);
           AddConstraint(solver, ct, constraint);
         }
       } else {
