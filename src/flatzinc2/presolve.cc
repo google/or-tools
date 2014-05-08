@@ -941,7 +941,7 @@ void CheckRegroupStart(FzConstraint* ct, FzConstraint** start,
                        std::vector<FzIntegerVariable*>* chain,
                        std::vector<FzIntegerVariable*>* carry_over) {
   if ((ct->type == "int_min" || ct->type == "int_max") &&
-      ct->Arg(0).Var() == ct->Arg(0).Var()) {
+      ct->Arg(0).Var() == ct->Arg(1).Var()) {
     // This is the start of the chain.
     *start = ct;
     chain->push_back(ct->Arg(0).Var());
