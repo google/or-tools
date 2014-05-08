@@ -135,12 +135,22 @@ struct ConstraintWithIo {
   }
 };
 
+int ComputeWeight(const ConstraintWithIo& ctio) {
+  if (ctio.required.empty()) return 0;
+  if (ctio.ct->target_variable != nullptr) return 1;
+  return 2;
+}
+
 // Comparator to sort constraints based on numbers of required
 // elements and index. Reverse sorting to put elements to remove at the end.
 struct ConstraintWithIoComparator {
   bool operator()(ConstraintWithIo* a, ConstraintWithIo* b) const {
-    return a->required.size() > b->required.size() ||
-           (a->required.size() == b->required.size() && a->index > b->index);
+    const int a_weight = ComputeWeight(*a);
+    const int b_weight = ComputeWeight(*b);
+    return a_weight > b_weight ||
+           (a_weight == b_weight && a_weight != 1 && a->index > b->index) ||
+           (a_weight == b_weight && a_weight == 1 &&
+            ContainsKey(a->required, b->ct->target_variable));
   }
 };
 }  // namespace
@@ -162,6 +172,11 @@ bool FzSolver::Extract() {
     if (var->defining_constraint == nullptr && var->active) {
       Extract(var);
     } else {
+      FZVLOG << "Skip " << var->DebugString() << FZENDL;
+      if (var->defining_constraint != nullptr) {
+        FZVLOG << "  - defined by " << var->defining_constraint->DebugString()
+               << FZENDL;
+      }
       defined_variables.insert(var);
     }
   }
@@ -198,6 +213,7 @@ bool FzSolver::Extract() {
     }
     ConstraintWithIo* const ctio = to_sort.back();
     to_sort.pop_back();
+    FZVLOG << "Pop " << ctio->ct->DebugString() << FZENDL;
     CHECK(ctio->required.empty());
     // TODO(user): Implement recovery mode.
     sorted.push_back(ctio->ct);

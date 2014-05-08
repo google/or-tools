@@ -653,7 +653,6 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
   }
   FzIntegerVariable* var = nullptr;
   int64 value = 0;
-  bool reverse = false;
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF && ct->Arg(1).HasOneValue()) {
     var = ct->Arg(0).Var();
     value = ct->Arg(1).Value();
@@ -661,7 +660,6 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
              ct->Arg(0).HasOneValue()) {
     var = ct->Arg(1).Var();
     value = ct->Arg(0).Value();
-    reverse = true;
   }
   if (var != nullptr) {
     int state = 2;  // 0 force_false, 1 force true, 2 unknown.
@@ -685,7 +683,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
     if (state != 2) {
       FZVLOG << "Assign boolvar to " << state << " in " << ct->DebugString()
              << FZENDL;
-      ct->Arg(2).variables[0]->domain.IntersectWithInterval(state, state);
+      ct->Arg(2).Var()->domain.IntersectWithInterval(state, state);
       ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
