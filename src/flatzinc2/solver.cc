@@ -143,10 +143,22 @@ struct ConstraintWithIoComparator {
   bool operator()(ConstraintWithIo* a, ConstraintWithIo* b) const {
     const int a_weight = ComputeWeight(*a);
     const int b_weight = ComputeWeight(*b);
-    return a_weight > b_weight ||
-           (a_weight == b_weight && a_weight != 1 && a->index > b->index) ||
-           (a_weight == b_weight && a_weight == 1 &&
-            ContainsKey(a->required, b->ct->target_variable));
+    if (a_weight > b_weight) {
+      return true;
+    }
+    if (a_weight < b_weight) {
+      return false;
+    }
+    if (a_weight != 1) {
+      return a->index > b->index;
+    }
+    if (ContainsKey(a->required, b->ct->target_variable)) {
+      return true;
+    }
+    if (ContainsKey(b->required, a->ct->target_variable)) {
+      return false;
+    }
+    return false;
   }
 };
 }  // namespace
@@ -215,6 +227,7 @@ bool FzSolver::Extract() {
     sorted.push_back(ctio->ct);
     FzIntegerVariable* const var = ctio->ct->target_variable;
     if (var != nullptr && ContainsKey(dependencies, var)) {
+      FZVLOG << "  - clean " << var->DebugString() << FZENDL;
       for (ConstraintWithIo* const to_clean : dependencies[var]) {
         to_clean->required.erase(var);
       }

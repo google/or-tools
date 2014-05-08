@@ -794,6 +794,7 @@ void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
     CHECK(to->Merge(from->name, from->domain, from->defining_constraint,
                     from->temporary));
     from->active = false;
+    from->defining_constraint = nullptr;
     var_representative_map_[from] = to;
   }
 }
