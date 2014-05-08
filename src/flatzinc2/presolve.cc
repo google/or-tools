@@ -759,6 +759,9 @@ bool FzPresolver::Run(FzModel* model) {
       if (ct->active) {
         changed |= PresolveOneConstraint(ct);
       }
+      if (!var_representative_map_.empty()) {
+        break;
+      }
     }
     if (!var_representative_map_.empty()) {
       // Some new substitutions were introduced. Let's process them.
