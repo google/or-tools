@@ -123,14 +123,10 @@ struct ConstraintWithIo {
     // Collect required variables.
     for (const FzArgument& arg : ct->arguments) {
       for (FzIntegerVariable* const var : arg.variables) {
-        if (ContainsKey(defined, var)) {
+        if (var != cte->target_variable && ContainsKey(defined, var)) {
           required.insert(var);
         }
       }
-    }
-    // Remove the target_variable as it always appears in the constraint.
-    if (ct->target_variable != nullptr) {
-      required.erase(ct->target_variable);
     }
   }
 };
