@@ -23,6 +23,7 @@
 
 DECLARE_bool(logging);
 DECLARE_bool(fz_verbose);
+DECLARE_bool(fz_debug);
 DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 
 namespace operations_research {
@@ -221,13 +222,13 @@ bool FzSolver::Extract() {
     }
     ConstraintWithIo* const ctio = to_sort.back();
     to_sort.pop_back();
-    FZVLOG << "Pop " << ctio->ct->DebugString() << FZENDL;
+    FZDLOG << "Pop " << ctio->ct->DebugString() << FZENDL;
     CHECK(ctio->required.empty());
     // TODO(user): Implement recovery mode.
     sorted.push_back(ctio->ct);
     FzIntegerVariable* const var = ctio->ct->target_variable;
     if (var != nullptr && ContainsKey(dependencies, var)) {
-      FZVLOG << "  - clean " << var->DebugString() << FZENDL;
+      FZDLOG << "  - clean " << var->DebugString() << FZENDL;
       for (ConstraintWithIo* const to_clean : dependencies[var]) {
         to_clean->required.erase(var);
       }

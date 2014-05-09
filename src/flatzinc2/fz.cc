@@ -52,7 +52,7 @@ using operations_research::ThreadPool;
 
 namespace operations_research {
 void Run(const std::string& filename, const FzSolverParameters& parameters,
-        FzParallelSupportInterface* parallel_support) {
+         FzParallelSupportInterface* parallel_support) {
   std::string problem_name(filename);
   problem_name.resize(problem_name.size() - 4);
   size_t found = problem_name.find_last_of("/\\");
@@ -113,8 +113,7 @@ void ParallelRun(char* const file, int worker_id,
   switch (worker_id) {
     case 0: {
       parameters.free_search = false;
-      parameters.search_type =
-          operations_research::FzSolverParameters::DEFAULT;
+      parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       break;
     }
@@ -127,8 +126,7 @@ void ParallelRun(char* const file, int worker_id,
     }
     case 2: {
       parameters.free_search = true;
-      parameters.search_type =
-          operations_research::FzSolverParameters::IBS;
+      parameters.search_type = operations_research::FzSolverParameters::IBS;
       parameters.restart_log_size = FLAGS_restart_log_size;
       break;
     }
@@ -142,8 +140,7 @@ void ParallelRun(char* const file, int worker_id,
     }
     case 4: {
       parameters.free_search = true;
-      parameters.search_type =
-          operations_research::FzSolverParameters::DEFAULT;
+      parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       parameters.heuristic_period = 30;
       parameters.run_all_heuristics = true;
@@ -162,7 +159,6 @@ void ParallelRun(char* const file, int worker_id,
   Run(file, parameters, parallel_support);
 }
 
-
 void FixAndParseParameters(int* argc, char*** argv) {
   FLAGS_log_prefix = false;
   char all_param[] = "--all";
@@ -171,6 +167,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--logging";
   char verbose_param[] = "--fz_verbose";
+  char debug_param[] = "--fz_debug";
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;
@@ -190,6 +187,9 @@ void FixAndParseParameters(int* argc, char*** argv) {
     if (strcmp((*argv)[i], "-v") == 0) {
       (*argv)[i] = verbose_param;
     }
+    if (strcmp((*argv)[i], "-d") == 0) {
+      (*argv)[i] = debug_param;
+    }
   }
   google::ParseCommandLineFlags(argc, argv, true);
   // Fix the number of solutions.
@@ -208,8 +208,8 @@ int main(int argc, char** argv) {
   if (FLAGS_workers == 0) {
     operations_research::SequentialRun(argv[1]);
   } else {
-    std::unique_ptr<operations_research::FzParallelSupportInterface> parallel_support(
-        operations_research::MakeMtSupport(
+    std::unique_ptr<operations_research::FzParallelSupportInterface>
+        parallel_support(operations_research::MakeMtSupport(
             FLAGS_all, FLAGS_num_solutions, FLAGS_verbose_mt));
     {
       ThreadPool pool("Parallel FlatZinc", FLAGS_workers);

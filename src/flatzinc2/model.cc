@@ -23,6 +23,8 @@ DEFINE_bool(logging, false,
             "Print logging information from the flatzinc interpreter.");
 DEFINE_bool(fz_verbose, false,
             "Print verbose logging information from the flatzinc interpreter.");
+DEFINE_bool(fz_debug, false,
+            "Print debug logging information from the flatzinc interpreter.");
 
 
 namespace operations_research {
