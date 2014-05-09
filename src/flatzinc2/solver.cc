@@ -72,8 +72,8 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   } else {
     result = solver_.MakeIntVar(var->domain.values, var->name);
   }
-  FZVLOG << "Extract " << var->DebugString() << " into "
-         << result->DebugString() << FZENDL;
+  FZVLOG << "Extract " << var->DebugString() << FZENDL;
+  FZVLOG << "  - created " << result->DebugString() << FZENDL;
   extrated_map_[var] = result;
   return result;
 }
@@ -176,10 +176,14 @@ bool FzSolver::Extract() {
   // Build statistics.
   statistics_.BuildStatistics();
   // Extract variables.
+  FZLOG << "Extract variables" << FZENDL;
+  int extracted_variables = 0;
+  int skipped_variables = 0;
   hash_set<FzIntegerVariable*> defined_variables;
   for (FzIntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint == nullptr && var->active) {
       Extract(var);
+      extracted_variables++;
     } else {
       FZVLOG << "Skip " << var->DebugString() << FZENDL;
       if (var->defining_constraint != nullptr) {
@@ -187,9 +191,13 @@ bool FzSolver::Extract() {
                << FZENDL;
       }
       defined_variables.insert(var);
+      skipped_variables++;
     }
   }
+  FZLOG << "  - " << extracted_variables << " variables created" << FZENDL;
+  FZLOG << "  - " << skipped_variables << " variables skipped" << FZENDL;
   // Parse model to store info.
+  FZLOG << "Extract constraints" << FZENDL;
   for (FzConstraint* const ct : model_.constraints()) {
     if (ct->type == "all_different_int") {
       StoreAllDifferent(ct->Arg(0).variables);
@@ -238,7 +246,10 @@ bool FzSolver::Extract() {
   for (FzConstraint* const ct : sorted) {
     ExtractConstraint(ct);
   }
+  FZLOG << "  - " << sorted.size() << " constraints created" << FZENDL;
+
   // Add domain constraints to created extressions.
+  int domain_constraints = 0;
   for (FzIntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint != nullptr && var->active) {
       const FzDomain& domain = var->domain;
@@ -259,13 +270,17 @@ bool FzSolver::Extract() {
                << expr->DebugString() << FZENDL;
         solver_.AddConstraint(solver_.MakeBetweenCt(
             expr->Var(), domain.values[0], domain.values[1]));
+        domain_constraints++;
       } else if (!domain.is_interval) {
         FZVLOG << "Add domain constraint " << domain.DebugString() << " onto "
                << expr->DebugString() << FZENDL;
         solver_.AddConstraint(solver_.MakeMemberCt(expr->Var(), domain.values));
+        domain_constraints++;
       }
     }
   }
+  FZLOG << "  - " << domain_constraints << " domain constraints added"
+        << FZENDL;
 
   return true;
 }
