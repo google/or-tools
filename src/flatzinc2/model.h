@@ -33,10 +33,10 @@ class FzIntegerVariable;
   if (FLAGS_logging) std::cout << "%% "
 
 #define FZVLOG \
-  if (FLAGS_fz_verbose) std::cout << "%% "
+  if (FLAGS_fz_verbose) std::cout << "%%%% "
 
 #define FZDLOG \
-  if (FLAGS_fz_debug) std::cout << "%%%%"
+  if (FLAGS_fz_debug) std::cout << "%%%%%% "
 
 // A domain represents the possible values of a variable.
 // It can be:
