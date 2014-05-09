@@ -25,7 +25,7 @@
 #include "util/string_array.h"
 
 DECLARE_bool(use_sat);
-DECLARE_bool(verbose_logging);
+DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 namespace {

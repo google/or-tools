@@ -22,7 +22,7 @@
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
 DECLARE_bool(use_sat);
-DECLARE_bool(verbose_logging);
+DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 namespace {
@@ -209,7 +209,6 @@ class IsBooleanSumInRange : public Constraint {
   virtual void InitialPropagate() {
     int num_always_true = 0;
     int num_possible_true = 0;
-    int possible_true_index = -1;
     for (int i = 0; i < vars_.size(); ++i) {
       const IntVar* const var = vars_[i];
       if (var->Min() == 1) {
@@ -217,7 +216,6 @@ class IsBooleanSumInRange : public Constraint {
         num_possible_true++;
       } else if (var->Max() == 1) {
         num_possible_true++;
-        possible_true_index = i;
       }
     }
     num_possible_true_vars_.SetValue(solver(), num_possible_true);

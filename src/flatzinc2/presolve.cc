@@ -15,7 +15,7 @@
 #include "flatzinc2/presolve.h"
 
 DECLARE_bool(logging);
-DECLARE_bool(verbose_logging);
+DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 

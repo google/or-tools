@@ -22,7 +22,7 @@
 #include "util/string_array.h"
 
 DECLARE_bool(logging);
-DECLARE_bool(verbose_logging);
+DECLARE_bool(fz_verbose);
 DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 
 namespace operations_research {
