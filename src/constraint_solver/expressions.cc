@@ -4545,12 +4545,6 @@ class IntAbs : public BaseIntExpr {
     int64 emin = 0;
     int64 emax = 0;
     expr_->Range(&emin, &emax);
-    if (emin >= 0) {
-      return emax;
-    }
-    if (emax <= 0) {
-      return -emin;
-    }
     return std::max(-emin, emax);
   }
 
