@@ -413,7 +413,11 @@ void FzSolver::SyncWithModel() {
     if (!fz_var->active) {
       continue;
     }
-    IntVar* const var = Extract(fz_var)->Var();
+    IntExpr* const expr = Extract(fz_var);
+    if (!expr->IsVar()) {
+      continue;
+    }
+    IntVar* const var = expr->Var();
     extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
     if (fz_var->temporary) {
       introduced_variables_.push_back(var);

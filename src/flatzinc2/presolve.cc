@@ -692,6 +692,24 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::RemoveAbsFromIntLinReif(FzConstraint* ct) {
+  FZVLOG << "Remove abs() from " << ct->DebugString() << FZENDL;
+  ct->MutableArg(0)->variables[0] = abs_map_[ct->Arg(0).Var()];
+  const int64 value = ct->Arg(1).Value();
+  if (value == 0) {
+    ct->type = "int_eq_reif";
+    return true;
+  } else {
+    ct->type = "set_in_reif";
+    ct->MutableArg(1)->type = FzArgument::INT_INTERVAL;
+    ct->MutableArg(1)->values[0] = -value;
+    ct->MutableArg(1)->values.push_back(value);
+    // set_in_reif does not implement reification.
+    ct->RemoveTargetVariable();
+    return true;
+  }
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -718,6 +736,10 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     FZVLOG << "Remove abs() from " << ct->DebugString() << FZENDL;
     ct->MutableArg(0)->variables[0] = abs_map_[ct->Arg(0).Var()];
     changed = true;
+  }
+  if ((id == "int_le_reif") && ct->Arg(1).HasOneValue() &&
+      ContainsKey(abs_map_, ct->Arg(0).Var())) {
+    changed |= RemoveAbsFromIntLinReif(ct);
   }
   if (id == "int_eq") changed |= PresolveIntEq(ct);
   if (id == "int_ne") changed |= PresolveIntNe(ct);

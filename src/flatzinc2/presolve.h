@@ -113,6 +113,7 @@ class FzPresolver {
   bool PresolveSimplifyElement(FzConstraint* ct);
   bool PresolveSimplifyExprElement(FzConstraint* ct);
   bool PropagateReifiedComparisons(FzConstraint* ct);
+  bool RemoveAbsFromIntLinReif(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);
