@@ -2707,6 +2707,9 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
       coefs.push_back(c);
     } else {
       ok = false;
+      vars.clear();
+      coefs.clear();
+      break;
     }
   }
   if (!ok) {
