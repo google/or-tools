@@ -763,35 +763,40 @@ Constraint* Solver::MakeIsLessCstCt(IntExpr* const v, int64 c,
 namespace {
 class BetweenCt : public Constraint {
  public:
-  BetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u)
-      : Constraint(s), var_(v), min_(l), max_(u) {}
+  BetweenCt(Solver* const s, IntExpr* const v, int64 l, int64 u)
+      : Constraint(s), expr_(v), min_(l), max_(u) {}
 
-  virtual void Post() {}
+  virtual void Post() {
+    if (!expr_->IsVar()) {
+      Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
+      expr_->WhenRange(d);
+    }
+  }
 
-  virtual void InitialPropagate() { var_->SetRange(min_, max_); }
+  virtual void InitialPropagate() { expr_->SetRange(min_, max_); }
 
   virtual std::string DebugString() const {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
-                        var_->DebugString().c_str(), min_, max_);
+                        expr_->DebugString().c_str(), min_, max_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            var_);
+                                            expr_);
     visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, max_);
     visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
   }
 
  private:
-  IntVar* const var_;
+  IntExpr* const expr_;
   int64 min_;
   int64 max_;
 };
 }  // namespace
 
-Constraint* Solver::MakeBetweenCt(IntVar* const v, int64 l, int64 u) {
+Constraint* Solver::MakeBetweenCt(IntExpr* const v, int64 l, int64 u) {
   CHECK_EQ(this, v->solver());
   if (v->Min() < l || v->Max() > u) {
     return RevAlloc(new BetweenCt(this, v, l, u));
@@ -805,10 +810,10 @@ Constraint* Solver::MakeBetweenCt(IntVar* const v, int64 l, int64 u) {
 namespace {
 class IsBetweenCt : public Constraint {
  public:
-  IsBetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u,
+  IsBetweenCt(Solver* const s, IntExpr* const e, int64 l, int64 u,
               IntVar* const b)
       : Constraint(s),
-        var_(v),
+        expr_(e),
         min_(l),
         max_(u),
         boolvar_(b),
@@ -816,40 +821,46 @@ class IsBetweenCt : public Constraint {
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    var_->WhenRange(demon_);
+    expr_->WhenRange(demon_);
     boolvar_->WhenBound(demon_);
   }
 
   virtual void InitialPropagate() {
     bool inhibit = false;
-    int64 u = 1 - (var_->Min() > max_ || var_->Max() < min_);
-    int64 l = var_->Max() <= max_ && var_->Min() >= min_;
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    int64 u = 1 - (emin > max_ || emax < min_);
+    int64 l = emax <= max_ && emin >= min_;
     boolvar_->SetRange(l, u);
     if (boolvar_->Bound()) {
       inhibit = true;
       if (boolvar_->Min() == 0) {
-        var_->RemoveInterval(min_, max_);
-      } else {
-        var_->SetRange(min_, max_);
+        if (expr_->IsVar()) {
+          expr_->Var()->RemoveInterval(min_, max_);
+        } else if (emin > min_) {
+          expr_->SetMin(max_ + 1);
+        } else if (emax < max_) {
+          expr_->SetMax(min_ - 1);
+        }
       }
-    }
-    if (inhibit) {
-      demon_->inhibit(solver());
+      if (inhibit && expr_->IsVar()) {
+        demon_->inhibit(solver());
+      }
     }
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-                        "d, %s)",
-                        var_->DebugString().c_str(), min_, max_,
-                        boolvar_->DebugString().c_str());
+    return StringPrintf(
+        "IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %s)",
+        expr_->DebugString().c_str(), min_, max_,
+        boolvar_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            var_);
+                                            expr_);
     visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, max_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
@@ -857,22 +868,21 @@ class IsBetweenCt : public Constraint {
   }
 
  private:
-  IntVar* const var_;
+  IntExpr* const expr_;
   int64 min_;
   int64 max_;
   IntVar* const boolvar_;
   Demon* demon_;
 };
 }  // namespace
-
-Constraint* Solver::MakeIsBetweenCt(IntVar* const v, int64 l, int64 u,
+Constraint* Solver::MakeIsBetweenCt(IntExpr* const v, int64 l, int64 u,
                                     IntVar* const b) {
   CHECK_EQ(this, v->solver());
   CHECK_EQ(this, b->solver());
   return RevAlloc(new IsBetweenCt(this, v, l, u, b));
 }
 
-IntVar* Solver::MakeIsBetweenVar(IntVar* const v, int64 l, int64 u) {
+IntVar* Solver::MakeIsBetweenVar(IntExpr* const v, int64 l, int64 u) {
   CHECK_EQ(this, v->solver());
   IntVar* const b = MakeBoolVar();
   AddConstraint(MakeIsBetweenCt(v, l, u, b));
@@ -884,9 +894,11 @@ IntVar* Solver::MakeIsBetweenVar(IntVar* const v, int64 l, int64 u) {
 // ----- Member(IntVar, IntSet) -----
 
 namespace {
+// TODO(user): Do not create holes on expressions.
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s, IntVar* const v, const std::vector<int64>& sorted_values)
+  MemberCt(Solver* const s, IntVar* const v,
+           const std::vector<int64>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
@@ -915,22 +927,23 @@ class MemberCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeMemberCt(IntVar* const var,
+Constraint* Solver::MakeMemberCt(IntExpr* const var,
                                  const std::vector<int64>& values) {
   std::vector<int64> sorted = SortedNoDuplicates(values);
   if (IsIncreasingContiguous(sorted)) {
     return MakeBetweenCt(var, sorted.front(), sorted.back());
   } else {
-    return RevAlloc(new MemberCt(this, var, sorted));
+    return RevAlloc(new MemberCt(this, var->Var(), sorted));
   }
 }
 
-Constraint* Solver::MakeMemberCt(IntVar* const var, const std::vector<int>& values) {
+Constraint* Solver::MakeMemberCt(IntExpr* const var,
+                                 const std::vector<int>& values) {
   std::vector<int64> sorted = SortedNoDuplicates(ToInt64Vector(values));
   if (IsIncreasingContiguous(sorted)) {
     return MakeBetweenCt(var, sorted.front(), sorted.back());
   } else {
-    return RevAlloc(new MemberCt(this, var, sorted));
+    return RevAlloc(new MemberCt(this, var->Var(), sorted));
   }
 }
 
@@ -1059,7 +1072,8 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
-                            const std::vector<T>& values, IntVar* const boolvar) {
+                            const std::vector<T>& values,
+                            IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
   for (const T value : set_of_values) {
@@ -1085,27 +1099,29 @@ Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
 }
 }  // namespace
 
-Constraint* Solver::MakeIsMemberCt(IntVar* const var,
+Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
                                    const std::vector<int64>& values,
                                    IntVar* const boolvar) {
-  return BuildIsMemberCt(this, var, values, boolvar);
+  return BuildIsMemberCt(this, expr->Var(), values, boolvar);
 }
 
-Constraint* Solver::MakeIsMemberCt(IntVar* const var, const std::vector<int>& values,
+Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
+                                   const std::vector<int>& values,
                                    IntVar* const boolvar) {
-  return BuildIsMemberCt(this, var, values, boolvar);
+  return BuildIsMemberCt(this, expr->Var(), values, boolvar);
 }
 
-IntVar* Solver::MakeIsMemberVar(IntVar* const var,
+IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
                                 const std::vector<int64>& values) {
   IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(var, values, b));
+  AddConstraint(MakeIsMemberCt(expr->Var(), values, b));
   return b;
 }
 
-IntVar* Solver::MakeIsMemberVar(IntVar* const var, const std::vector<int>& values) {
+IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
+                                const std::vector<int>& values) {
   IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(var, values, b));
+  AddConstraint(MakeIsMemberCt(expr->Var(), values, b));
   return b;
 }
 

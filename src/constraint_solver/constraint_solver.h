@@ -1474,24 +1474,24 @@ class Solver {
   Demon* MakeCallbackDemon(Closure* const closure);
 
   // (l <= b <= u)
-  Constraint* MakeBetweenCt(IntVar* const v, int64 l, int64 u);
+  Constraint* MakeBetweenCt(IntExpr* const v, int64 l, int64 u);
 
   // b == (l <= v <= u)
-  Constraint* MakeIsBetweenCt(IntVar* const v, int64 l, int64 u,
+  Constraint* MakeIsBetweenCt(IntExpr* const v, int64 l, int64 u,
                               IntVar* const b);
-  IntVar* MakeIsBetweenVar(IntVar* const v, int64 l, int64 u);
+  IntVar* MakeIsBetweenVar(IntExpr* const v, int64 l, int64 u);
 
   // b == (v in set)
-  Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int64>& values,
+  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int64>& values,
                              IntVar* const b);
-  Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int>& values,
+  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int>& values,
                              IntVar* const b);
-  IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int64>& values);
-  IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int>& values);
+  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int64>& values);
+  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int>& values);
   // v in set. Propagation is lazy, i.e. this constraint does not
   // creates holes in the domain of the variable.
-  Constraint* MakeMemberCt(IntVar* const v, const std::vector<int64>& values);
-  Constraint* MakeMemberCt(IntVar* const v, const std::vector<int>& values);
+  Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int64>& values);
+  Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int>& values);
 
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);

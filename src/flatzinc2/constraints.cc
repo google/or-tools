@@ -1863,27 +1863,27 @@ void ExtractSetIn(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractSetInReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  IntVar* const var = fzsolver->GetExpression(ct->Arg(0))->Var();
+  IntExpr* const expr = fzsolver->GetExpression(ct->Arg(0));
   IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
   const FzArgument& arg = ct->Arg(1);
   switch (arg.type) {
     case FzArgument::INT_VALUE: {
       Constraint* const constraint =
-          solver->MakeIsEqualCstCt(var, arg.values[0], target);
+          solver->MakeIsEqualCstCt(expr, arg.values[0], target);
       AddConstraint(solver, ct, constraint);
       break;
     }
     case FzArgument::INT_INTERVAL: {
-      if (var->Min() < arg.values[0] || var->Max() > arg.values[1]) {
+      if (expr->Min() < arg.values[0] || expr->Max() > arg.values[1]) {
         Constraint* const constraint =
-            solver->MakeIsBetweenCt(var, arg.values[0], arg.values[1], target);
+            solver->MakeIsBetweenCt(expr, arg.values[0], arg.values[1], target);
         AddConstraint(solver, ct, constraint);
       }
       break;
     }
     case FzArgument::INT_LIST: {
       Constraint* const constraint =
-          solver->MakeIsMemberCt(var, arg.values, target);
+          solver->MakeIsMemberCt(expr, arg.values, target);
       AddConstraint(solver, ct, constraint);
       break;
     }
