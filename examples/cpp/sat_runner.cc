@@ -123,6 +123,7 @@ int Run() {
     if (!reader.Load(FLAGS_input, &problem)) {
       LOG(FATAL) << "Cannot load file '" << FLAGS_input << "'.";
     }
+  } else {
     file::ReadFileToProtoOrDie(FLAGS_input, &problem);
   }
 
