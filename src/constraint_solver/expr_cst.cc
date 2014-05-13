@@ -842,6 +842,9 @@ class IsBetweenCt : public Constraint {
         } else if (emax < max_) {
           expr_->SetMax(min_ - 1);
         }
+      } else {
+        expr_->SetRange(min_, max_);
+        inhibit = true;
       }
       if (inhibit && expr_->IsVar()) {
         demon_->inhibit(solver());
