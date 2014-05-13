@@ -28,7 +28,7 @@
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/flatzinc.tab.hh"
-#include "util/string_array.h"
+#include "base/join.h"
 
 extern int orfz_parse(operations_research::ParserState* input, void* scanner);
 extern int orfz_lex_init(void** scanner);
@@ -1758,7 +1758,7 @@ void ParserState::RegroupAux(const std::string& ct_id, int start_index,
     // Check the variables are not used elsewhere.
     VLOG(2) << "  - regroup " << ct_id << "(" << start_index << ".."
             << end_index << "), output = " << output_var_index
-            << ", contains = [" << IntVectorToString(indices, ", ") << "]";
+            << ", contains = [" << strings::Join(indices, ", ") << "]";
     for (int i = start_index; i < end_index; ++i) {
       const int intermediate = constraints_[i]->Arg(2)->getIntVar();
       if (constraints_per_int_variables_[intermediate].size() > 2) {

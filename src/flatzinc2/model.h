@@ -20,6 +20,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
+#include "base/stringprintf.h"
 #include "util/iterators.h"
 #include "util/string_array.h"
 

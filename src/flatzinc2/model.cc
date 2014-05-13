@@ -17,6 +17,7 @@
 
 #include "base/map_util.h"
 #include "base/stl_util.h"
+#include "base/join.h"
 #include "flatzinc2/model.h"
 
 DEFINE_bool(logging, false,
@@ -182,7 +183,7 @@ std::string FzDomain::DebugString() const {
   } else if (values.size() == 1) {
     return StringPrintf("% " GG_LL_FORMAT "d", values.back());
   } else {
-    return StringPrintf("[%s]", IntVectorToString(values, ", ").c_str());
+    return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
   }
 }
 
@@ -238,7 +239,7 @@ std::string FzArgument::DebugString() const {
       return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
                           values[1]);
     case INT_LIST:
-      return StringPrintf("[%s]", IntVectorToString(values, ", ").c_str());
+      return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
     case INT_VAR_REF:
       return variables[0]->name;
     case INT_VAR_REF_ARRAY: {

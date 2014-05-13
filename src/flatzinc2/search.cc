@@ -204,8 +204,10 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       const FzAnnotation& vars = args[0];
       std::vector<IntVar*> bool_vars;
       std::vector<int> occurrences;
-      for (int j = 0; j < vars.variables.size(); ++j) {
-        FzIntegerVariable* const fz_var = vars.variables[j];
+      std::vector<FzIntegerVariable*> fz_vars;
+      vars.GetAllIntegerVariables(&fz_vars);
+      for (int j = 0; j < fz_vars.size(); ++j) {
+        FzIntegerVariable* const fz_var = fz_vars[j];
         IntVar* const to_add = Extract(fz_var)->Var();
         const int occ = statistics_.VariableOccurrences(fz_var);
         if (!ContainsKey(added, to_add) && !to_add->Bound()) {
@@ -217,10 +219,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
         }
       }
       const FzAnnotation& choose = args[1];
-      Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
-      if (choose.id == "input_order") {
-        str = Solver::CHOOSE_FIRST_UNBOUND;
-      }
+      Solver::IntVarStrategy str = Solver::CHOOSE_FIRST_UNBOUND;
       if (choose.id == "occurrence") {
         SortVariableByDegree(occurrences, &bool_vars);
         str = Solver::CHOOSE_FIRST_UNBOUND;
