@@ -25,9 +25,5 @@ inline bool HasSuffixString(const StringPiece& str, const StringPiece& suffix) {
   return str.ends_with(suffix);
 }
 
-inline bool HasPrefixString(const StringPiece& str, const StringPiece& prefix) {
-  return str.starts_with(prefix);
-}
-
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_STRUTIL_H_

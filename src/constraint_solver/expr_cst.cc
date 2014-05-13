@@ -22,9 +22,9 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/string_array.h"
 
 DEFINE_int32(cache_initial_size, 1024,
              "Initial size of the array of the hash "
@@ -910,7 +910,7 @@ class MemberCt : public Constraint {
 
   virtual std::string DebugString() const {
     return StringPrintf("Member(%s, %s)", var_->DebugString().c_str(),
-                        IntVectorToString(values_, ", ").c_str());
+                        strings::Join(values_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -995,7 +995,7 @@ class IsMemberCt : public Constraint {
 
   virtual std::string DebugString() const {
     return StringPrintf("IsMemberCt(%s, %s, %s)", var_->DebugString().c_str(),
-                        IntVectorToString(values_, ", ").c_str(),
+                        strings::Join(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());
   }
 
@@ -1072,8 +1072,7 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
-                            const std::vector<T>& values,
-                            IntVar* const boolvar) {
+                            const std::vector<T>& values, IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
   for (const T value : set_of_values) {

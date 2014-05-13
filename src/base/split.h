@@ -36,11 +36,25 @@ void SplitStringUsing(const std::string& full, const char* delim,
 // We define here a very truncated version of the powerful strings::Split()
 // function. As of 2013-04, it can only be used like this:
 // const char* separators = ...;
-// std::vector<std::string> x = strings::Split(
-//     full, strings::delimiter::AnyOf(separators), strings::SkipEmpty());
+// std::vector<std::string> result = strings::Split(
+//    full, strings::delimiter::AnyOf(separators), strings::SkipEmpty());
+//
+// TODO(user): The current interface has a really bug prone side effect because
+// it can also be used without the AnyOf(). If separators contains only one
+// character, this is fine, but if it contains more, then the meaning is
+// different: Split() should interpret the whole std::string as a delimiter. Fix
+// this.
 namespace strings {
-// Slightly different API that directly returns the std::vector<std::string>.
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
+
+// StringPiece version. Its advantages is that it avoids creating a lot of
+// small strings. Note however that the full std::string must outlive the usage
+// of the result.
+//
+// Hack: the int64 allow the C++ compiler to distinguish the two functions. It
+// is possible to implement this more cleanly at the cost of more complexity.
+std::vector<StringPiece> Split(const std::string& full, const char* delim, int64 flags);
+
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }
 }  // namespace delimiter

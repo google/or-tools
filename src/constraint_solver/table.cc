@@ -23,6 +23,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -1281,7 +1282,7 @@ class TransitionConstraint : public Constraint {
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
         JoinDebugStringPtr(vars_, ", ").c_str(), transition_table_.NumTuples(),
-        initial_state_, IntVectorToString(final_states_, ", ").c_str());
+        initial_state_, strings::Join(final_states_, ", ").c_str());
   }
 
  private:

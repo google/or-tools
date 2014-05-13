@@ -3,7 +3,7 @@
 
 #include "base/integral_types.h"
 
-uint64 FingerprintCat2011(uint64 fp1, uint64 fp2) {
+inline uint64 FingerprintCat2011(uint64 fp1, uint64 fp2) {
   // Two big prime numbers.
   const uint64 kMul1 = 0xc6a4a7935bd1e995ULL;
   const uint64 kMul2 = 0x228876a7198b743ULL;
@@ -16,7 +16,7 @@ uint64 FingerprintCat2011(uint64 fp1, uint64 fp2) {
 
 // This should be better (collision-wise) than the default hash<std::string>, without
 // being much slower. It never returns 0 or 1.
-uint64 Fingerprint2011(const char* bytes, size_t len) {
+inline uint64 Fingerprint2011(const char* bytes, size_t len) {
   // Some big prime numer.
   uint64 fp = 0xa5b85c5e198ed849ULL;
   const char* end = bytes + len;

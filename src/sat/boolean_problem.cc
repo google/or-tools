@@ -14,10 +14,19 @@
 
 #include "base/hash.h"
 
+#include "base/commandlineflags.h"
 #include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "algorithms/find_graph_symmetries.h"
+#include "graph/graph.h"
+#include "graph/util.h"
+
+DEFINE_string(debug_dump_symmetry_graph_to_file, "",
+              "If this flag is non-empty, an undirected graph whose"
+              " automorphism group is in one-to-one correspondence with the"
+              " symmetries of the SAT problem will be dumped to a file every"
+              " time FindLinearBooleanProblemSymmetries() is called.");
 
 namespace operations_research {
 namespace sat {
@@ -412,6 +421,14 @@ void FindLinearBooleanProblemSymmetries(
           problem, &equivalence_classes));
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
+  if (!FLAGS_debug_dump_symmetry_graph_to_file.empty()) {
+    const util::Status status = WriteGraphToFile(
+        *graph, FLAGS_debug_dump_symmetry_graph_to_file, /*directed=*/false);
+    if (!status.ok()) {
+      LOG(DFATAL) << "Error when writing the symmetry graph to file: "
+                  << status.ToString();
+    }
+  }
   GraphSymmetryFinder symmetry_finder(*graph.get());
   std::vector<int> factorized_automorphism_group_size;
   symmetry_finder.FindSymmetries(&equivalence_classes, generators,

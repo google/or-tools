@@ -13,26 +13,55 @@
 #include "algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+
+#include "base/commandlineflags.h"
+#include "base/stringprintf.h"
 #include "base/join.h"
+#include "algorithms/dense_doubly_linked_list.h"
 #include "algorithms/dynamic_partition.h"
+#include "algorithms/dynamic_permutation.h"
 #include "algorithms/sparse_permutation.h"
 #include "util/iterators.h"
+
+DEFINE_bool(minimize_permutation_support_size, false,
+            "Tweak the algorithm to try and minimize the support size"
+            " of the generators produced. This may negatively impact the"
+            " performance, but works great on the sat_holeXXX benchmarks"
+            " to reduce the support size.");
 
 namespace operations_research {
 
 GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph)
     : graph_(graph),
-      tmp_node_mapping_(NumNodes(), -1),
+      tmp_dynamic_permutation_(NumNodes()),
       tmp_node_mask_(NumNodes(), false),
       tmp_in_degree_(NumNodes(), 0),
       tmp_nodes_with_indegree_(NumNodes() + 1) {
-  for (int i = 0; i < NumNodes(); ++i) tmp_node_mapping_[i] = i;
   tmp_partition_.Reset(NumNodes());
 }
 
 namespace {
+void SwapFrontAndBack(std::vector<int>* v) {
+  DCHECK(!v->empty());
+  std::swap((*v)[0], v->back());
+}
+
+bool PartitionsAreCompatibleAfterPartIndex(const DynamicPartition& p1,
+                                           const DynamicPartition& p2,
+                                           int part_index) {
+  const int num_parts = p1.NumParts();
+  if (p2.NumParts() != num_parts) return false;
+  for (int p = part_index; p < num_parts; ++p) {
+    if (p1.SizeOfPart(p) != p2.SizeOfPart(p) ||
+        p1.ParentOfPart(p) != p2.ParentOfPart(p)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Whether the "arcs1" adjacency list maps to "arcs2" under the
-// dense node mapping "node_mapping".
+// permutation "permutation".
 // This method uses a transient bitmask on all the graph nodes, which
 // should be entirely false before the call (and will be restored as such
 // after it).
@@ -40,9 +69,10 @@ namespace {
 // TODO(user): Make this method support multi-arcs, and see if that's
 // sufficient to make the whole algorithm support multi-arcs.
 template<class Graph, class AdjList>
-bool AdjacencyListMapsToAdjacencyList(
-    const Graph& graph, const AdjList& arcs1, const AdjList& arcs2,
-    const std::vector<int>& node_mapping, std::vector<bool>* tmp_node_mask) {
+bool AdjacencyListMapsToAdjacencyList(const Graph& graph, const AdjList& arcs1,
+                                      const AdjList& arcs2,
+                                      const DynamicPermutation& permutation,
+                                      std::vector<bool>* tmp_node_mask) {
   int num_arcs_delta = 0;
   bool match = true;
   for (const int arc : arcs2) {
@@ -51,7 +81,7 @@ bool AdjacencyListMapsToAdjacencyList(
   }
   for (const int arc : arcs1) {
     --num_arcs_delta;
-    const int mapped_head = node_mapping[graph.Head(arc)];
+    const int mapped_head = permutation.ImageOf(graph.Head(arc));
     if (!(*tmp_node_mask)[mapped_head]) {
       match = false;
       break;
@@ -67,41 +97,30 @@ bool AdjacencyListMapsToAdjacencyList(
 }
 }  // namespace
 
-bool GraphSymmetryFinder::IsGraphAutomorphism(const SparsePermutation& perm)
-    const {
-  bool is_automorphism = true;
-  // Build the node mapping for "perm".
-  for (int c = 0; c < perm.NumCycles(); ++c) {
-    // TODO(user): use the global element->image iterator when it exists.
-    int prev = *(perm.Cycle(c).end() - 1);
-    for (const int e : perm.Cycle(c)) {
-      tmp_node_mapping_[prev] = e;
-      prev = e;
+bool GraphSymmetryFinder::IsGraphAutomorphism(
+    const DynamicPermutation& permutation) const {
+  SCOPED_TIME_STAT(&stats_);
+  for (const int base : permutation.AllMappingsSrc()) {
+    const int image = permutation.ImageOf(base);
+    if (image == base) continue;
+    if (!AdjacencyListMapsToAdjacencyList(graph_, graph_.OutgoingArcs(base),
+                                          graph_.OutgoingArcs(image),
+                                          permutation, &tmp_node_mask_) ||
+        !AdjacencyListMapsToAdjacencyList(graph_, graph_.IncomingArcs(base),
+                                          graph_.IncomingArcs(image),
+                                          permutation, &tmp_node_mask_)) {
+      return false;
     }
   }
-
-  // Compare the outgoing and incoming adjacency lists.
-  for (int c = 0; is_automorphism && c < perm.NumCycles(); ++c) {
-    // TODO(user): use the global element->image iterator when it exists.
-    int prev = *(perm.Cycle(c).end() - 1);
-    for (const int e : perm.Cycle(c)) {
-      is_automorphism &= AdjacencyListMapsToAdjacencyList(
-          graph_, graph_.OutgoingArcs(prev), graph_.OutgoingArcs(e),
-          tmp_node_mapping_, &tmp_node_mask_);
-      is_automorphism &= AdjacencyListMapsToAdjacencyList(
-          graph_, graph_.IncomingArcs(prev), graph_.IncomingArcs(e),
-          tmp_node_mapping_, &tmp_node_mask_);
-      prev = e;
-    }
-  }
-
-  // Clean up tmp_node_mapping_.
-  for (const int e : perm.Support()) tmp_node_mapping_[e] = e;
-  return is_automorphism;
+  return true;
 }
 
 void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
     int first_unrefined_part_index, DynamicPartition* partition) {
+  SCOPED_TIME_STAT(&stats_);
+  // Rename, for readability of the code below.
+  std::vector<int>& tmp_nodes_with_nonzero_indegree = tmp_stack_;
+
   // Assuming that the partition was refined based on the adjacency on
   // parts [0 .. first_unrefined_part_index) already, we simply need to
   // refine parts first_unrefined_part_index ... NumParts()-1, the latter bound
@@ -121,19 +140,20 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
     for (const int src : partition->ElementsInPart(part_index)) {
       for (const int arc : graph_.OutgoingArcs(src)) {
         const int dst = graph_.Head(arc);
+        if (partition->ElementsInSamePartAs(dst).size() == 1) continue;
         const int in_degree = ++tmp_in_degree_[dst];
-        if (in_degree == 1) tmp_nodes_with_nonzero_indegree_.push_back(dst);
+        if (in_degree == 1) tmp_nodes_with_nonzero_indegree.push_back(dst);
       }
     }
     // Group the nodes by (nonzero) in-degree. Remember the maximum in-degree.
     int max_in_degree = 0;
-    for (const int node : tmp_nodes_with_nonzero_indegree_) {
+    for (const int node : tmp_nodes_with_nonzero_indegree) {
       const int in_degree = tmp_in_degree_[node];
       tmp_in_degree_[node] = 0;  // To clean up after us.
       max_in_degree = std::max(max_in_degree, in_degree);
       tmp_nodes_with_indegree_[in_degree].push_back(node);
     }
-    tmp_nodes_with_nonzero_indegree_.clear();  // To clean up after us.
+    tmp_nodes_with_nonzero_indegree.clear();  // To clean up after us.
     // For each in-degree, refine the partition by the set of nodes with
     // that in-degree.
     for (int in_degree = 1; in_degree <= max_in_degree; ++in_degree) {
@@ -144,50 +164,111 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
 }
 
 void GraphSymmetryFinder::DistinguishNodeInPartition(
-    int node, DynamicPartition* partition) {
+    int node, DynamicPartition* partition, std::vector<int>* new_singletons) {
+  SCOPED_TIME_STAT(&stats_);
+  const int original_num_parts = partition->NumParts();
   partition->Refine(std::vector<int>(1, node));
   RecursivelyRefinePartitionByAdjacency(partition->PartOf(node), partition);
-}
 
-namespace {
-// This method's API is hard to understand out of context. See its call site.
-// This creates the permutation that sends each singleton of 'base' to the
-// corresponding singleton of 'image'.
-void ExtractPermutationFromPartitionSingletons(
-    const DynamicPartition& base, const DynamicPartition& image,
-    SparsePermutation* permutation) {
-  const int num_parts = base.NumParts();
-  std::vector<bool> part_was_seen(num_parts, false);
-  for (int p = 0; p < num_parts; ++p) {
-    if (part_was_seen[p]) continue;
-    if (base.SizeOfPart(p) != 1) continue;
-    DCHECK_EQ(1, image.SizeOfPart(p));
-    const int start = *base.ElementsInPart(p).begin();
-    int next = *image.ElementsInPart(p).begin();
-    if (next == start) continue;  // Matching singletons.
-    // We found non-matching singletons. Iterate over the orbit that they
-    // are part of.
-    permutation->AddToCurrentCycle(start);
-    part_was_seen[p] = true;
-    for (int e = next; e != start;) {
-      permutation->AddToCurrentCycle(e);
-      const int part = base.PartOf(e);
-      part_was_seen[part] = true;
-      e = *image.ElementsInPart(part).begin();
+  // Explore the newly refined parts to gather all the new singletons.
+  if (new_singletons != nullptr) {
+    new_singletons->clear();
+    for (int p = original_num_parts; p < partition->NumParts(); ++p) {
+      const int parent = partition->ParentOfPart(p);
+      // We may see the same singleton parent several times, so we guard them
+      // with the tmp_node_mask_ boolean vector.
+      if (!tmp_node_mask_[parent] && parent < original_num_parts &&
+          partition->SizeOfPart(parent) == 1) {
+        tmp_node_mask_[parent] = true;
+        new_singletons->push_back(*partition->ElementsInPart(parent).begin());
+      }
+      if (partition->SizeOfPart(p) == 1) {
+        new_singletons->push_back(*partition->ElementsInPart(p).begin());
+      }
     }
-    permutation->CloseCurrentCycle();
+    // Reset tmp_node_mask_.
+    for (int p = original_num_parts; p < partition->NumParts(); ++p) {
+      tmp_node_mask_[partition->ParentOfPart(p)] = false;
+    }
   }
 }
 
+namespace {
 void MergeNodeEquivalenceClassesAccordingToPermutation(
-    const SparsePermutation& perm, MergingPartition* node_equivalence_classes) {
+    const SparsePermutation& perm, MergingPartition* node_equivalence_classes,
+    DenseDoublyLinkedList* sorted_representatives, StatsGroup* stats) {
+  SCOPED_TIME_STAT(stats);
   for (int c = 0; c < perm.NumCycles(); ++c) {
     // TODO(user): use the global element->image iterator when it exists.
     int prev = -1;
     for (const int e : perm.Cycle(c)) {
-      if (prev >= 0) node_equivalence_classes->MergePartsOf(prev, e);
+      if (prev >= 0) {
+        const int removed_representative =
+            node_equivalence_classes->MergePartsOf(prev, e);
+        if (sorted_representatives != nullptr && removed_representative != -1) {
+          sorted_representatives->Remove(removed_representative);
+        }
+      }
       prev = e;
     }
+  }
+}
+
+// Subroutine used by FindSymmetries(); see its call site. This finds and
+// outputs (in "pruned_other_nodes") the list of all representatives (under
+// "node_equivalence_classes") that are in the same part as
+// "representative_node" in "partition"; other than "representative_node"
+// itself.
+// "node_equivalence_classes" must be compatible with "partition", i.e. two
+// nodes that are in the same equivalence class must also be in the same part.
+//
+// To do this in O(output size), we also need the
+// "representatives_sorted_by_index_in_partition" data structure: the
+// representatives of the nodes of the targeted part are contiguous in that
+// linked list.
+void GetAllOtherRepresentativesInSamePartAs(
+    int representative_node, const DynamicPartition& partition,
+    const DenseDoublyLinkedList& representatives_sorted_by_index_in_partition,
+    MergingPartition* node_equivalence_classes,  // Only for debugging.
+    std::vector<int>* pruned_other_nodes, StatsGroup* stats) {
+  SCOPED_TIME_STAT(stats);
+  pruned_other_nodes->clear();
+  const int part_index = partition.PartOf(representative_node);
+  // Iterate on all contiguous representatives after the initial one...
+  int repr = representative_node;
+  while (true) {
+    DCHECK_EQ(repr, node_equivalence_classes->GetRoot(repr));
+    repr = representatives_sorted_by_index_in_partition.Prev(repr);
+    if (repr < 0 || partition.PartOf(repr) != part_index) break;
+    pruned_other_nodes->push_back(repr);
+  }
+  // ... and then on all contiguous representatives *before* it.
+  repr = representative_node;
+  while (true) {
+    DCHECK_EQ(repr, node_equivalence_classes->GetRoot(repr));
+    repr = representatives_sorted_by_index_in_partition.Next(repr);
+    if (repr < 0 || partition.PartOf(repr) != part_index) break;
+    pruned_other_nodes->push_back(repr);
+  }
+
+  // This code is a bit tricky, so we check that we're doing it right, by
+  // comparing its output to the brute-force, O(Part size) version.
+  // This also (partly) verifies that
+  // "representatives_sorted_by_index_in_partition" is what it claims it is.
+  if (DEBUG_MODE) {
+    std::vector<int> expected_output;
+    for (const int e : partition.ElementsInPart(part_index)) {
+      if (node_equivalence_classes->GetRoot(e) != representative_node) {
+        expected_output.push_back(e);
+      }
+    }
+    node_equivalence_classes->KeepOnlyOneNodePerPart(&expected_output);
+    for (int& x : expected_output) x = node_equivalence_classes->GetRoot(x);
+    std::sort(expected_output.begin(), expected_output.end());
+    std::vector<int> sorted_output = *pruned_other_nodes;
+    std::sort(sorted_output.begin(), sorted_output.end());
+    DCHECK_EQ(strings::Join(expected_output, " "),
+              strings::Join(sorted_output, " "));
   }
 }
 }  // namespace
@@ -196,18 +277,27 @@ void GraphSymmetryFinder::FindSymmetries(
     std::vector<int>* node_equivalence_classes_io,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     std::vector<int>* factorized_automorphism_group_size) {
+  // Initialization.
+  IF_STATS_ENABLED(stats_.initialization_time.StartTimer());
   if (node_equivalence_classes_io->size() != NumNodes()) {
     LOG(DFATAL) << "GraphSymmetryFinder::FindSymmetries() was given an invalid"
                 << " 'node_equivalence_classes_io' argument.";
     return;
   }
   DynamicPartition base_partition(*node_equivalence_classes_io);
-
-  // First, break all inherent asymmetries in the graph.
+  // Break all inherent asymmetries in the graph.
   RecursivelyRefinePartitionByAdjacency(/*first_unrefined_part_index=*/ 0,
                                         &base_partition);
   VLOG(4) << "Base partition: "
           << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+
+  generators->clear();
+  MergingPartition node_equivalence_classes;
+  node_equivalence_classes.Reset(NumNodes());
+  factorized_automorphism_group_size->clear();
+  std::vector<std::vector<int>> permutations_displacing_node(NumNodes());
+  std::vector<int> potential_root_image_nodes;
+  IF_STATS_ENABLED(stats_.initialization_time.StopTimerAndAddElapsedTime());
 
   // To find all permutations of the Graph that satisfy the current partition,
   // we pick an element v that is not in a singleton part, and we
@@ -222,12 +312,13 @@ void GraphSymmetryFinder::FindSymmetries(
   // Since we can't really use true recursion because it will be too deep for
   // the stack, we implement it iteratively. To do that, we unroll 1):
   // the "invariant dive" is a single pass that successively refines the node
-  // partition with elements from non-singleton parts (the 'invariant node'),
-  // until all parts are singletons.
+  // base_partition with elements from non-singleton parts (the 'invariant
+  // node'), until all parts are singletons.
   // We remember which nodes we picked as invariants, and also the successive
   // partition sizes as we refine it, to allow us to backtrack.
   // Then we'll perform 2) in the reverse order, backtracking the stack from 1)
   // as using another dedicated stack for the search (see below).
+  IF_STATS_ENABLED(stats_.invariant_dive_time.StartTimer());
   struct InvariantDiveState {
     int invariant_node;
     int num_parts_before_refinement;
@@ -236,32 +327,39 @@ void GraphSymmetryFinder::FindSymmetries(
       : invariant_node(node), num_parts_before_refinement(num_parts) {}
   };
   std::vector<InvariantDiveState> invariant_dive_stack;
+  // TODO(user): experiment with, and briefly describe the results of various
+  // algorithms for picking the invariant node:
+  // - random selection
+  // - highest/lowest degree first
+  // - enumerate by part index; or by part size
+  // - etc.
   for (int invariant_node = 0; invariant_node < NumNodes(); ++invariant_node) {
-    if (base_partition.SizeOfPart(base_partition.PartOf(invariant_node)) != 1) {
-      invariant_dive_stack.push_back(
-          InvariantDiveState(invariant_node, base_partition.NumParts()));
-      DistinguishNodeInPartition(invariant_node, &base_partition);
-      VLOG(4) << "Invariant dive: invariant node = " << invariant_node
-              << "; partition after: "
-              << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+    if (base_partition.ElementsInSamePartAs(invariant_node).size() == 1) {
+      continue;
     }
+    invariant_dive_stack.push_back(
+        InvariantDiveState(invariant_node, base_partition.NumParts()));
+    DistinguishNodeInPartition(invariant_node, &base_partition, nullptr);
+    VLOG(4) << "Invariant dive: invariant node = " << invariant_node
+            << "; partition after: "
+            << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
   }
+  DenseDoublyLinkedList representatives_sorted_by_index_in_partition(
+      base_partition.ElementsInHierarchicalOrder());
+  DynamicPartition image_partition = base_partition;
+  IF_STATS_ENABLED(stats_.invariant_dive_time.StopTimerAndAddElapsedTime());
   // Now we've dived to the bottom: we're left with the identity permutation,
   // which we don't need as a generator. We move on to phase 2).
 
-  generators->clear();
-  MergingPartition node_equivalence_classes;
-  node_equivalence_classes.Reset(NumNodes());
-  factorized_automorphism_group_size->clear();
-  std::vector<std::vector<int>> permutations_displacing_node(NumNodes());
-
   while (!invariant_dive_stack.empty()) {
     // Backtrack the last step of 1) (the invariant dive).
+    IF_STATS_ENABLED(stats_.invariant_unroll_time.StartTimer());
     const int root_node = invariant_dive_stack.back().invariant_node;
     const int base_num_parts =
         invariant_dive_stack.back().num_parts_before_refinement;
     invariant_dive_stack.pop_back();
     base_partition.UndoRefineUntilNumPartsEqual(base_num_parts);
+    image_partition.UndoRefineUntilNumPartsEqual(base_num_parts);
     VLOG(4) << "Backtracking invariant dive: root node = " << root_node
             << "; partition: "
             << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
@@ -278,30 +376,29 @@ void GraphSymmetryFinder::FindSymmetries(
     // If the partitions do match, we might either find the underlying
     // permutation directly, or we might need to further try and map other
     // nodes to their image: this is a recursive search with backtracking.
-    //
-    // TODO(user): This copy may be slow. Consider moving it upwards; and
-    // update both the image and the base partition at the same time.
-    DynamicPartition image_partition = base_partition;
 
     // The potential images of root_node are the nodes in its part. They can be
     // pruned by the already computed equivalence classes.
-    std::vector<int> potential_root_image_nodes;
-    for (const int e :
-         image_partition.ElementsInPart(image_partition.PartOf(root_node))) {
-      if (e != root_node) potential_root_image_nodes.push_back(e);
-    }
-    node_equivalence_classes.KeepOnlyOneNodePerPart(
-        &potential_root_image_nodes);
-    VLOG(4) << "Potential (pruned) images of the root node: ["
-            << strings::Join(potential_root_image_nodes, " ") << "]";
+    // TODO(user): better elect the representative of each equivalence class
+    // in order to reduce the permutation support down the line
+    // TODO(user): Don't build a list; but instead use direct, inline iteration
+    // on the representatives in the while() loop below, to benefit from the
+    // incremental merging of the equivalence classes.
+    DCHECK_EQ(1, node_equivalence_classes.NumNodesInSamePartAs(root_node));
+    GetAllOtherRepresentativesInSamePartAs(
+        root_node, base_partition, representatives_sorted_by_index_in_partition,
+        &node_equivalence_classes, &potential_root_image_nodes, &stats_);
+    DCHECK(!potential_root_image_nodes.empty());
+    IF_STATS_ENABLED(stats_.invariant_unroll_time.StopTimerAndAddElapsedTime());
 
     // Try to map "root_node" to all of its potential images. For each image,
     // we only care about finding a single compatible permutation, if it exists.
     while (!potential_root_image_nodes.empty()) {
-      const int root_image_node = potential_root_image_nodes.back();
       VLOG(4) << "Potential (pruned) images of root node " << root_node
               << " left: [" << strings::Join(potential_root_image_nodes, " ")
-              << "]. Trying with " << root_image_node;
+              << "].";
+      const int root_image_node = potential_root_image_nodes.back();
+      VLOG(4) << "Trying image of root node: " << root_image_node;
 
       std::unique_ptr<SparsePermutation> permutation =
           FindOneSuitablePermutation(root_node, root_image_node,
@@ -309,20 +406,21 @@ void GraphSymmetryFinder::FindSymmetries(
                                      *generators, permutations_displacing_node);
 
       if (permutation.get() != nullptr) {
+        IF_STATS_ENABLED(stats_.permutation_output_time.StartTimer());
         // We found a permutation. We store it in the list of generators, and
         // further prune out the remaining 'root' image candidates, taking into
         // account the permutation we just found.
         MergeNodeEquivalenceClassesAccordingToPermutation(
-            *permutation, &node_equivalence_classes);
+            *permutation, &node_equivalence_classes,
+            &representatives_sorted_by_index_in_partition, &stats_);
         // HACK(user): to make sure that we keep root_image_node as the
         // representant of its part, we temporarily move it to the front
-        // of the vector.
-        std::swap(potential_root_image_nodes[0],
-                  potential_root_image_nodes.back());
+        // of the vector, then move it again to the back so that it gets
+        // deleted by the pop_back() below.
+        SwapFrontAndBack(&potential_root_image_nodes);
         node_equivalence_classes.KeepOnlyOneNodePerPart(
             &potential_root_image_nodes);
-        std::swap(potential_root_image_nodes[0],
-                  potential_root_image_nodes.back());
+        SwapFrontAndBack(&potential_root_image_nodes);
 
         // Register it onto the permutations_displacing_node vector.
         const int permutation_index = static_cast<int>(generators->size());
@@ -333,6 +431,8 @@ void GraphSymmetryFinder::FindSymmetries(
         // Move the permutation to the generator list (this also transfers
         // ownership).
         generators->push_back(std::move(permutation));
+        IF_STATS_ENABLED(
+            stats_.permutation_output_time.StopTimerAndAddElapsedTime());
       }
 
       potential_root_image_nodes.pop_back();
@@ -345,227 +445,313 @@ void GraphSymmetryFinder::FindSymmetries(
         node_equivalence_classes.NumNodesInSamePartAs(root_node));
   }
   node_equivalence_classes.FillEquivalenceClasses(node_equivalence_classes_io);
+  IF_STATS_ENABLED(LOG(INFO) << "Statistics: " << stats_.StatString());
 }
 
+namespace {
+// This method can be easily understood in the context of
+// ConfirmFullMatchOrFindNextMappingDecision(): see its call sites.
+// Knowing that we want to map some element of part #part_index of
+// "base_partition" to part #part_index of "image_partition", pick the "best"
+// such mapping, for the global search algorithm.
+inline void GetBestMapping(const DynamicPartition& base_partition,
+                           const DynamicPartition& image_partition,
+                           int part_index, int* base_node, int* image_node) {
+  // As of pending CL 66620435, we've loosely tried three variants of
+  // GetBestMapping():
+  // 1) Just take the first element of the base part, map it to the first
+  //    element of the image part.
+  // 2) Just take the first element of the base part, and map it to itself if
+  //    possible, else map it to the first element of the image part
+  // 3) Scan all elements of the base parts until we find one that can map to
+  //    itself. If there isn't one; we just fall back to the strategy 1).
+  //
+  // Variant 2) gives the best results on most benchmarks, in terms of speed,
+  // but 3) yields much smaller supports for the sat_holeXXX benchmarks, as
+  // long as it's combined with the other tweak enabled by
+  // FLAGS_minimize_permutation_support_size.
+  if (FLAGS_minimize_permutation_support_size) {
+    // Variant 3).
+    for (const int node : base_partition.ElementsInPart(part_index)) {
+      if (image_partition.PartOf(node) == part_index) {
+        *image_node = *base_node = node;
+        return;
+      }
+    }
+    *base_node = *base_partition.ElementsInPart(part_index).begin();
+    *image_node = *image_partition.ElementsInPart(part_index).begin();
+    return;
+  }
+
+  // Variant 2).
+  *base_node = *base_partition.ElementsInPart(part_index).begin();
+  if (image_partition.PartOf(*base_node) == part_index) {
+    *image_node = *base_node;
+  } else {
+    *image_node = *image_partition.ElementsInPart(part_index).begin();
+  }
+}
+}  // namespace
+
+// TODO(user): refactor this method and its submethods into a dedicated class
+// whose members will be ominously accessed by all the class methods; most
+// notably the search state stack. This may improve readability.
 std::unique_ptr<SparsePermutation>
 GraphSymmetryFinder::FindOneSuitablePermutation(
     int root_node, int root_image_node, DynamicPartition* base_partition,
     DynamicPartition* image_partition,
     const std::vector<std::unique_ptr<SparsePermutation>>& generators_found_so_far,
     const std::vector<std::vector<int>>& permutations_displacing_node) {
-  // TODO(user): break down this method into smaller pieces, if there is a good
-  // way.
-  std::unique_ptr<SparsePermutation> permutation;
-
-  const int base_num_parts = base_partition->NumParts();
+  // DCHECKs() and statistics.
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK_EQ("", tmp_dynamic_permutation_.DebugString());
   DCHECK_EQ(base_partition->DebugString(DynamicPartition::SORT_BY_PART),
             image_partition->DebugString(DynamicPartition::SORT_BY_PART));
-  DistinguishNodeInPartition(root_node, base_partition);
-
   DCHECK(search_states_.empty());
-  search_states_.push_back(SearchState(
-      /*base_node=*/root_node,
-      /*potential_image_nodes=*/std::vector<int>(1, root_image_node),
-      /*num_parts_before_trying_to_map_base_node=*/base_num_parts,
-      /*potential_image_nodes_were_pruned=*/true));
+  IF_STATS_ENABLED(int num_search_states = 0);
+
+  // These will be used during the search. See their usage.
+  std::vector<int> base_singletons;
+  std::vector<int> image_singletons;
+  int next_base_node;
+  int next_image_node;
+  int min_potential_mismatching_part_index;
+  std::vector<int> next_potential_image_nodes;
+
+  // Initialize the search: we can already distinguish "root_node" in the base
+  // partition. See the comment below.
+  search_states_.emplace_back(
+      /*base_node=*/root_node, /*first_image_node=*/-1,
+      /*num_parts_before_trying_to_map_base_node=*/base_partition->NumParts(),
+      /*min_potential_mismatching_part_index=*/base_partition->NumParts());
+  // We inject the image node directly as the "remaining_pruned_image_nodes".
+  search_states_.back().remaining_pruned_image_nodes.assign(1, root_image_node);
+  DistinguishNodeInPartition(root_node, base_partition, &base_singletons);
+
   while (!search_states_.empty()) {
-    SearchState* const ss = &search_states_.back();
-    // At this stage, we're supposed to have:
-    // - A base_partition that has already been refined on ss->base_node
-    // - An image partition that hasn't been refined.
-    const int unrefined_num_parts = image_partition->NumParts();
-    VLOG(4) << "  Search: base_node=" << ss->base_node
-            << ", potential_image_nodes=["
-            << strings::Join(ss->potential_image_nodes, " ") << "]";
-    VLOG(4) << "    Base partition (refined)   : "
-            << base_partition->DebugString(DynamicPartition::SORT_BY_PART);
-    VLOG(4) << "    Image partition (unrefined): "
-            << image_partition->DebugString(DynamicPartition::SORT_BY_PART);
-    if (ss->potential_image_nodes.empty()) {
-      VLOG(4) << "  Backtracking one level up: base_node " << ss->base_node
-              << " has no suitable image left to consider.";
-      base_partition->UndoRefineUntilNumPartsEqual(unrefined_num_parts);
-      image_partition->UndoRefineUntilNumPartsEqual(
-          ss->num_parts_before_trying_to_map_base_node);
-      search_states_.pop_back();
-      continue;
+    // When exploring a SearchState "ss", we're supposed to have:
+    // - A base_partition that has already been refined on ss->base_node.
+    //   (base_singleton is the list of singletons created on the base
+    //    partition during that refinement).
+    // - A non-empty list of potential image nodes (we'll try them in reverse
+    //   order).
+    // - An image partition that hasn't been refined yet.
+    //
+    // Also, one should note that the base partition (before its refinement on
+    // base_node) was deemed compatible with the image partition as it is now.
+    const SearchState& ss = search_states_.back();
+    const int image_node = ss.first_image_node >= 0
+                               ? ss.first_image_node
+                               : ss.remaining_pruned_image_nodes.back();
+
+    // Statistics, DCHECKs.
+    IF_STATS_ENABLED(++num_search_states);
+    IF_STATS_ENABLED(stats_.search_depth.Add(search_states_.size()));
+    DCHECK_EQ(ss.num_parts_before_trying_to_map_base_node,
+              image_partition->NumParts());
+
+    // Apply the decision: map base_node to image_node. Since base_partition
+    // was already refined on base_node, we just need to refine image_partition.
+    DistinguishNodeInPartition(image_node, image_partition, &image_singletons);
+
+    VLOG(4) << ss.DebugString();
+    VLOG(4) << base_partition->DebugString(DynamicPartition::SORT_BY_PART);
+    VLOG(4) << image_partition->DebugString(DynamicPartition::SORT_BY_PART);
+
+    // Run some diagnoses on the two partitions. There are many outcomes, so
+    // it's a bit complicated:
+    // 1) The partitions are incompatible
+    //   - Because of a straightfoward criterion (size mismatch).
+    //   - Because they are both fully refined (i.e. singletons only), yet the
+    //     permutation induced by them is not a graph automorpshim.
+    // 2) The partitions induce a permutation (all their non-singleton parts are
+    //    identical), and this permutation is a graph automorphism.
+    // 3) The partitions need further refinement:
+    //    - Because some non-singleton parts aren't equal in the base and image
+    //      partition
+    //    - Or because they are a full match (i.e. may induce a permutation,
+    //      like in 2)), but the induced permutation isn't a graph automorphism.
+    IF_STATS_ENABLED(stats_.quick_compatibility_time.StartTimer());
+    bool compatible = PartitionsAreCompatibleAfterPartIndex(
+        *base_partition, *image_partition,
+        ss.num_parts_before_trying_to_map_base_node);
+    IF_STATS_ENABLED(
+        stats_.quick_compatibility_time.StopTimerAndAddElapsedTime());
+    bool partitions_are_full_match = false;
+    if (compatible) {
+      IF_STATS_ENABLED(stats_.dynamic_permutation_time.StartTimer());
+      tmp_dynamic_permutation_.AddMappings(base_singletons, image_singletons);
+      IF_STATS_ENABLED(
+          stats_.dynamic_permutation_time.StopTimerAndAddElapsedTime());
+      IF_STATS_ENABLED(stats_.map_election_time.StartTimer());
+      min_potential_mismatching_part_index =
+          ss.min_potential_mismatching_part_index;
+      partitions_are_full_match = ConfirmFullMatchOrFindNextMappingDecision(
+          *base_partition, *image_partition, tmp_dynamic_permutation_,
+          &min_potential_mismatching_part_index, &next_base_node,
+          &next_image_node);
+      IF_STATS_ENABLED(stats_.map_election_time.StopTimerAndAddElapsedTime());
+    }
+    if (compatible && partitions_are_full_match) {
+      DCHECK_EQ(min_potential_mismatching_part_index,
+                base_partition->NumParts());
+      // We have a permutation candidate!
+      // Note(user): we also deal with (extremely rare) false positives for
+      // "partitions_are_full_match" here: in case they aren't a full match,
+      // IsGraphAutomorphism() will catch that; and we'll simply deepen the
+      // search.
+      if (IsGraphAutomorphism(tmp_dynamic_permutation_)) {
+        IF_STATS_ENABLED(stats_.search_finalize_time.StartTimer());
+        // We found a valid permutation. We can return it, but first we
+        // must restore the partitions to their original state.
+        std::unique_ptr<SparsePermutation> sparse_permutation(
+            tmp_dynamic_permutation_.CreateSparsePermutation());
+        VLOG(4) << "Automorphism found: " << sparse_permutation->DebugString();
+        const int base_num_parts =
+            search_states_[0].num_parts_before_trying_to_map_base_node;
+        base_partition->UndoRefineUntilNumPartsEqual(base_num_parts);
+        image_partition->UndoRefineUntilNumPartsEqual(base_num_parts);
+        tmp_dynamic_permutation_.Reset();
+        search_states_.clear();
+        IF_STATS_ENABLED(stats_.num_search_states.Add(num_search_states));
+        IF_STATS_ENABLED(
+            stats_.search_finalize_time.StopTimerAndAddElapsedTime());
+        return sparse_permutation;
+      }
+
+      // The permutation isn't a valid automorphism. Either the partitions were
+      // fully refined, and we deem them incompatible, or they weren't, and we
+      // consider them as 'not a full match'.
+      VLOG(4) << "Permutation candidate isn't a valid automorphism.";
+      const int non_singleton_part = base_partition->SomeNonSingletonPart();
+      if (non_singleton_part == -1) {
+        // Fully refined: the partitions are incompatible.
+        compatible = false;
+        IF_STATS_ENABLED(stats_.dynamic_permutation_time.StartTimer());
+        tmp_dynamic_permutation_.UndoLastMappings(&base_singletons);
+        IF_STATS_ENABLED(
+            stats_.dynamic_permutation_time.StopTimerAndAddElapsedTime());
+      } else {
+        // The partitions are compatible, but we'll deepen the search on some
+        // non-singleton part. We can pick any base and image node in this case.
+        GetBestMapping(*base_partition, *image_partition, non_singleton_part,
+                       &next_base_node, &next_image_node);
+      }
     }
 
-    // Pop the currently chosen image node.
-    const int image_node = ss->potential_image_nodes.back();
-    ss->potential_image_nodes.pop_back();
-
-    // Try to see if the base permutation and the image permutation would
-    // agree.
-    // TODO(user, fdid): Optimize this: For example, check for
-    // incompatibilities between the two partition as we (recursively)
-    // refine them, to catch mismatches earlier.
-    VLOG(4) << "    Distinguishing image node " << image_node;
-    DistinguishNodeInPartition(image_node, image_partition);
-    VLOG(4) << "    Image partition (refined)  : "
-            << image_partition->DebugString(DynamicPartition::SORT_BY_PART);
-
-    // Verify the compatibility of the base and image partitions. Since they
-    // were compatible before the Refinement, it suffices to search among
-    // the newly created parts.
-    bool compatible = base_partition->NumParts() == image_partition->NumParts();
-    for (int p = unrefined_num_parts;
-         compatible && p < base_partition->NumParts(); ++p) {
-      compatible &=
-          base_partition->ParentOfPart(p) == image_partition->ParentOfPart(p) &&
-          base_partition->SizeOfPart(p) == image_partition->SizeOfPart(p);
-    }
-    int part_to_map = -1;
+    // Now we've fully diagnosed our partitions, and have already dealt with
+    // case 2). We're left to deal with 1) and 3).
+    //
+    // Case 1): partitions are incompatible.
     if (!compatible) {
-      VLOG(4) << "    Incompatible partitions!";
-    } else {
-      VLOG(4) << "    Partitions look compatible.";
-      // Look for non-trivially matching parts, i.e. non-singleton parts that
-      // don't have the same elements.
-      // TODO(user, fdid): optimize this. Some ideas:
-      // - Remember singletons to skip them quickly.
-      // - Maybe there's a way to avoid having to re-sort the elements in each
-      //   part, or to do some of that sorting in the DynamicPartition code.
-      int non_singleton_part = -1;
-      for (int p = 0; p < base_partition->NumParts(); ++p) {
-        if (base_partition->SizeOfPart(p) == 1) continue;  // Singletons.
-        if (non_singleton_part < 0) non_singleton_part = p;
-        base_partition->SortElementsInPart(p);
-        image_partition->SortElementsInPart(p);
-        const DynamicPartition::IterablePart base_part =
-            base_partition->ElementsInPart(p);
-        const DynamicPartition::IterablePart image_part =
-            image_partition->ElementsInPart(p);
-        if (!std::equal(base_part.begin(), base_part.end(),
-                        image_part.begin())) {
-          part_to_map = p;
-          break;
+      IF_STATS_ENABLED(stats_.backtracking_time.StartTimer());
+      // We invalidate the current image node, and prune the remaining image
+      // nodes. We might be left with no other image nodes, which means that
+      // we'll backtrack, i.e. pop our current SearchState and invalidate the
+      // 'current' image node of the upper SearchState (which might lead to us
+      // backtracking it, and so on).
+      while (!search_states_.empty()) {
+        SearchState* const last_ss = &search_states_.back();
+        image_partition->UndoRefineUntilNumPartsEqual(
+            last_ss->num_parts_before_trying_to_map_base_node);
+        if (last_ss->first_image_node >= 0) {
+          // Find out and prune the remaining potential image nodes: there is
+          // no permutation that maps base_node -> image_node that is
+          // compatible with the current partition, so there can't be a
+          // permutation that maps base_node -> X either, for all X in the orbit
+          // of 'image_node' under valid permutations compatible with the
+          // current partition. Ditto for other potential image nodes.
+          //
+          // TODO(user): fix this: we should really be collecting all
+          // permutations displacing any node in "image_part", for the pruning
+          // to be really exhaustive. We could also consider alternative ways,
+          // like incrementally maintaining the list of permutations compatible
+          // with the partition so far.
+          const int part = image_partition->PartOf(last_ss->first_image_node);
+          last_ss->remaining_pruned_image_nodes.reserve(
+              image_partition->SizeOfPart(part));
+          last_ss->remaining_pruned_image_nodes.push_back(
+              last_ss->first_image_node);
+          for (const int e : image_partition->ElementsInPart(part)) {
+            if (e != last_ss->first_image_node) {
+              last_ss->remaining_pruned_image_nodes.push_back(e);
+            }
+          }
+          PruneOrbitsUnderPermutationsCompatibleWithPartition(
+              *image_partition, generators_found_so_far,
+              permutations_displacing_node[last_ss->first_image_node],
+              &last_ss->remaining_pruned_image_nodes);
+          SwapFrontAndBack(&last_ss->remaining_pruned_image_nodes);
+          DCHECK_EQ(last_ss->remaining_pruned_image_nodes.back(),
+                    last_ss->first_image_node);
+          last_ss->first_image_node = -1;
         }
-      }
+        last_ss->remaining_pruned_image_nodes.pop_back();
+        if (!last_ss->remaining_pruned_image_nodes.empty()) break;
 
-      if (part_to_map == -1) {
-        // All the parts are matching! We have our permutation candidate:
-        // it sends singletons of base_permutation onto the corresponding
-        // ones of image_permutation, and is the identity on all other
-        // elements.
-        permutation.reset(new SparsePermutation(NumNodes()));
-        ExtractPermutationFromPartitionSingletons(
-            *base_partition, *image_partition, permutation.get());
-        VLOG(4) << "    Full partition match! Permutation candidate: "
-                << permutation->DebugString();
-
-        if (IsGraphAutomorphism(*permutation)) {
-          VLOG(4) << "    Valid automorphism found!";
-          break;
-        }
-        VLOG(4) << "    That permutation is NOT a valid automorphism.";
-        permutation.reset(nullptr);
-        if (non_singleton_part == -1) {
-          VLOG(4) << "    The permutation was fully specified; backtracking";
-        } else {
-          VLOG(4) << "  Deepening the search...";
-          part_to_map = non_singleton_part;
-        }
+        VLOG(4) << "Backtracking one level up.";
+        base_partition->UndoRefineUntilNumPartsEqual(
+            last_ss->num_parts_before_trying_to_map_base_node);
+        // If this was the root search state (i.e. we fully backtracked and
+        // will exit the search after that), we don't have mappings to undo.
+        // We run UndoLastMappings() anyway, because it's a no-op in that case.
+        tmp_dynamic_permutation_.UndoLastMappings(&base_singletons);
+        search_states_.pop_back();
       }
-    }
-    if (part_to_map == -1) {
-      VLOG(4) << "    Apply the backtracking: choosing a different image node.";
-      image_partition->UndoRefineUntilNumPartsEqual(unrefined_num_parts);
-      // TODO(user): apply a smarter test to decide whether to do the pruning
-      // or not: we can accurately estimate the cost of pruning (iterate through
-      // all generators found so far) and its estimated benefit (the cost of
-      // the search below the state that we're currently in, times the expected
-      // number of pruned nodes). Sometimes it may be better to skip the
-      // pruning.
-      if (!ss->potential_image_nodes_were_pruned &&
-          ss->potential_image_nodes.size() > 0) {
-        // Prune the remaining potential image nodes: there is no permutation
-        // that maps base_node -> image_node that is compatible with the current
-        // partitions, so there can't be a permutation that maps base_node -> X
-        // either, for all X in the orbit of 'image_node' under valid
-        // permutations compatible with the current partitions.
-        FindPermutationsCompatibleWithPartition(
-            permutations_displacing_node[image_node], generators_found_so_far,
-            image_partition, &tmp_compatible_permutations_);
-        for (const SparsePermutation* perm : tmp_compatible_permutations_) {
-          // TODO(user): ignore cycles that are outside of image_part.
-          MergeNodeEquivalenceClassesAccordingToPermutation(*perm,
-                                                            &tmp_partition_);
-        }
-        VLOG(4) << "    Pruning the potential image nodes: ["
-                << strings::Join(ss->potential_image_nodes, ", ") << "]";
-        // HACK(user): temporarily re-inject image_node in the front of
-        // 'potential_image_nodes' so that it's the only one we keep in its
-        // class.
-        ss->potential_image_nodes.push_back(image_node);
-        std::swap(ss->potential_image_nodes.back(),
-                  ss->potential_image_nodes[0]);
-        tmp_partition_.KeepOnlyOneNodePerPart(&ss->potential_image_nodes);
-        std::swap(ss->potential_image_nodes.back(),
-                  ss->potential_image_nodes[0]);
-        ss->potential_image_nodes.pop_back();
-        VLOG(4) << "    Pruned the potential image nodes: ["
-                << strings::Join(ss->potential_image_nodes, ", ") << "]";
-        ss->potential_image_nodes_were_pruned = true;
-
-        // Reset "tmp_partition_" sparsely.
-        for (const SparsePermutation* perm : tmp_compatible_permutations_) {
-          for (const int node : perm->Support()) tmp_partition_.ResetNode(node);
-        }
-      }
-      // Actually backtrack now.
+      // Continue the search.
+      IF_STATS_ENABLED(stats_.backtracking_time.StopTimerAndAddElapsedTime());
       continue;
     }
 
-    // There are some non-trivially matching parts, so we have to keep
-    // searching deeper, by looking into that part.
-    const DynamicPartition::IterablePart base_part =
-        base_partition->ElementsInPart(part_to_map);
-    const DynamicPartition::IterablePart image_part =
-        image_partition->ElementsInPart(part_to_map);
-    VLOG(4) << "    Deepening the search on part #" << part_to_map
-            << " Base: [" << strings::Join(base_part, " ") << "]"
-            << ", Image: [" << strings::Join(image_part, " ") << "]";
-    // TODO(user, fdid): try some heuristics to optimize the choice of the
-    // base node. For example, select a base node that maps to itself.
-    const int next_base_node = *base_part.begin();
-    search_states_.push_back(SearchState(
-        /*base_node*/ next_base_node,
-        /*potential_image_nodes*/ std::vector<int>(image_part.begin(),
-                                              image_part.end()),
-        /*num_parts_before_trying_to_map_base_node*/ unrefined_num_parts,
-        false));
-    DistinguishNodeInPartition(next_base_node, base_partition);
-    VLOG(4) << "    Distinguishing new base node " << next_base_node;
+    // Case 3): we deepen the search.
+    // Since the search loop starts from an already-refined base_partition,
+    // we must do it here.
+    VLOG(4) << "    Deepening the search.";
+    IF_STATS_ENABLED(stats_.search_deepening_time.StartTimer());
+    search_states_.emplace_back(
+        next_base_node, next_image_node,
+        /*num_parts_before_trying_to_map_base_node*/ base_partition->NumParts(),
+        min_potential_mismatching_part_index);
+    DistinguishNodeInPartition(next_base_node, base_partition,
+                               &base_singletons);
+    IF_STATS_ENABLED(stats_.search_deepening_time.StopTimerAndAddElapsedTime());
   }
-
-  // Whether we found a permutation or not, we must reset the partitions to
-  // their original state before returning, and clear the search.
-  base_partition->UndoRefineUntilNumPartsEqual(base_num_parts);
-  image_partition->UndoRefineUntilNumPartsEqual(base_num_parts);
-  search_states_.clear();
-
-  return permutation;  // Will return nullptr if uninitialized.
+  // We exhausted the search; we didn't find any permutation.
+  IF_STATS_ENABLED(stats_.num_search_states.Add(num_search_states));
+  return nullptr;
 }
 
-void GraphSymmetryFinder::FindPermutationsCompatibleWithPartition(
-    const std::vector<int>& permutation_indices,
-    const std::vector<std::unique_ptr<SparsePermutation>>& permutation_vector,
-    DynamicPartition* partition,
-    std::vector<const SparsePermutation*>* compatible_permutations) {
-  compatible_permutations->clear();
+void GraphSymmetryFinder::PruneOrbitsUnderPermutationsCompatibleWithPartition(
+    const DynamicPartition& partition,
+    const std::vector<std::unique_ptr<SparsePermutation>>& permutations,
+    const std::vector<int>& permutation_indices, std::vector<int>* nodes) {
+  SCOPED_TIME_STAT(&stats_);
+  VLOG(4) << "    Pruning [" << strings::Join(*nodes, ", ") << "]";
+  // TODO(user): apply a smarter test to decide whether to do the pruning
+  // or not: we can accurately estimate the cost of pruning (iterate through
+  // all generators found so far) and its estimated benefit (the cost of
+  // the search below the state that we're currently in, times the expected
+  // number of pruned nodes). Sometimes it may be better to skip the
+  // pruning.
+  if (nodes->size() <= 1) return;
+
+  // Iterate on all targeted permutations. If they are compatible, apply
+  // them to tmp_partition_ which will contain the incrementally merged
+  // equivalence classes.
+  std::vector<int>& tmp_nodes_on_support = tmp_stack_;  // Rename, for readability.
+  DCHECK(tmp_nodes_on_support.empty());
   // TODO(user): investigate further optimizations: maybe it's possible
   // to incrementally maintain the set of permutations that is compatible
   // with the current partition, instead of recomputing it here?
   for (const int p : permutation_indices) {
-    const SparsePermutation& permutation = *permutation_vector[p];
+    const SparsePermutation& permutation = *permutations[p];
     // First, a quick compatibility check: the permutation's cycles must be
     // smaller or equal to the size of the part that they are included in.
     bool compatible = true;
     for (int c = 0; c < permutation.NumCycles(); ++c) {
       const SparsePermutation::Iterator cycle = permutation.Cycle(c);
       if (cycle.size() >
-          partition->SizeOfPart(partition->PartOf(*cycle.begin()))) {
+          partition.SizeOfPart(partition.PartOf(*cycle.begin()))) {
         compatible = false;
         break;
       }
@@ -576,19 +762,132 @@ void GraphSymmetryFinder::FindPermutationsCompatibleWithPartition(
     for (int c = 0; c < permutation.NumCycles(); ++c) {
       int part = -1;
       for (const int node : permutation.Cycle(c)) {
-        if (partition->PartOf(node) != part) {
+        if (partition.PartOf(node) != part) {
           if (part >= 0) {
             compatible = false;
             break;
           }
-          part = partition->PartOf(node);  // Initilization of 'part'.
+          part = partition.PartOf(node);  // Initilization of 'part'.
         }
       }
     }
     if (!compatible) continue;
     // The permutation is fully compatible!
-    compatible_permutations->push_back(&permutation);
+    // TODO(user): ignore cycles that are outside of image_part.
+    MergeNodeEquivalenceClassesAccordingToPermutation(
+        permutation, &tmp_partition_, nullptr, &stats_);
+    for (const int node : permutation.Support()) {
+      if (!tmp_node_mask_[node]) {
+        tmp_node_mask_[node] = true;
+        tmp_nodes_on_support.push_back(node);
+      }
+    }
   }
+
+  // Apply the pruning.
+  tmp_partition_.KeepOnlyOneNodePerPart(nodes);
+
+  // Reset the "tmp_" structures sparsely.
+  for (const int node : tmp_nodes_on_support) {
+    tmp_node_mask_[node] = false;
+    tmp_partition_.ResetNode(node);
+  }
+  tmp_nodes_on_support.clear();
+  VLOG(4) << "    Pruned: [" << strings::Join(*nodes, ", ") << "]";
+}
+
+bool GraphSymmetryFinder::ConfirmFullMatchOrFindNextMappingDecision(
+    const DynamicPartition& base_partition,
+    const DynamicPartition& image_partition,
+    const DynamicPermutation& current_permutation_candidate,
+    int* min_potential_mismatching_part_index_io, int* next_base_node,
+    int* next_image_node) const {
+  SCOPED_TIME_STAT(&stats_);
+  *next_base_node = -1;
+  *next_image_node = -1;
+
+  // The following clause should be true most of the times, except in some
+  // specific use cases.
+  if (!FLAGS_minimize_permutation_support_size) {
+    // First, we try to map the loose ends of the current permutations: these
+    // loose ends can't be mapped to themselves, so we'll have to map them to
+    // something anyway.
+    for (const int loose_node : current_permutation_candidate.LooseEnds()) {
+      DCHECK_GT(base_partition.ElementsInSamePartAs(loose_node).size(), 1);
+      *next_base_node = loose_node;
+      const int root = current_permutation_candidate.RootOf(loose_node);
+      DCHECK_NE(root, loose_node);
+      if (image_partition.PartOf(root) == base_partition.PartOf(loose_node)) {
+        // We prioritize mapping a loose end to its own root (i.e. close a
+        // cycle), if possible, like here: we exit immediately.
+        *next_image_node = root;
+        return false;
+      }
+    }
+    if (*next_base_node != -1) {
+      // We found loose ends, but none that mapped to its own root. Just pick
+      // any valid image.
+      *next_image_node =
+          *image_partition.ElementsInPart(
+                               base_partition.PartOf(*next_base_node)).begin();
+      return false;
+    }
+  }
+
+  // If there is no loose node (i.e. the current permutation only has closed
+  // cycles), we fall back to picking any part that is different in the base and
+  // image partitions; because we know that some mapping decision will have to
+  // be made there.
+  // SUBTLE: we use "min_potential_mismatching_part_index_io" to incrementally
+  // keep running this search (for a mismatching part) from where we left off.
+  // TODO(user): implement a simpler search for a mismatching part: it's
+  // trivially possible if the base partition maintains a hash set of all
+  // Fprints of its parts, and if the image partition uses that to maintain the
+  // list of 'different' non-singleton parts.
+  const int initial_min_potential_mismatching_part_index =
+      *min_potential_mismatching_part_index_io;
+  for (; *min_potential_mismatching_part_index_io < base_partition.NumParts();
+       ++*min_potential_mismatching_part_index_io) {
+    const int p = *min_potential_mismatching_part_index_io;
+    if (base_partition.SizeOfPart(p) != 1 &&
+        base_partition.FprintOfPart(p) != image_partition.FprintOfPart(p)) {
+      GetBestMapping(base_partition, image_partition, p, next_base_node,
+                     next_image_node);
+      return false;
+    }
+
+    const int parent = base_partition.ParentOfPart(p);
+    if (parent < initial_min_potential_mismatching_part_index &&
+        base_partition.SizeOfPart(parent) != 1 &&
+        base_partition.FprintOfPart(parent) !=
+            image_partition.FprintOfPart(parent)) {
+      GetBestMapping(base_partition, image_partition, parent, next_base_node,
+                     next_image_node);
+      return false;
+    }
+  }
+
+  // We didn't find an unequal part. DCHECK that our "incremental" check was
+  // actually correct and that all non-singleton parts are indeed equal.
+  if (DEBUG_MODE) {
+    for (int p = 0; p < base_partition.NumParts(); ++p) {
+      if (base_partition.SizeOfPart(p) != 1) {
+        CHECK_EQ(base_partition.FprintOfPart(p),
+                 image_partition.FprintOfPart(p));
+      }
+    }
+  }
+  return true;
+}
+
+std::string GraphSymmetryFinder::SearchState::DebugString() const {
+  return StringPrintf(
+      "SearchState{ base_node=%d, first_image_node=%d,"
+      " remaining_pruned_image_nodes=[%s],"
+      " num_parts_before_trying_to_map_base_node=%d }",
+      base_node, first_image_node,
+      strings::Join(remaining_pruned_image_nodes, " ").c_str(),
+      num_parts_before_trying_to_map_base_node);
 }
 
 }  // namespace operations_research

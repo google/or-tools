@@ -22,10 +22,10 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/string_array.h"
 
 DEFINE_bool(
     cp_full_trace, false,
@@ -634,13 +634,13 @@ class PrintTrace : public PropagationMonitor {
   virtual void SetValues(IntVar* const var, const std::vector<int64>& values) {
     DisplayModification(StringPrintf("SetValues(%s, %s)",
                                      var->DebugString().c_str(),
-                                     IntVectorToString(values, ", ").c_str()));
+                                     strings::Join(values, ", ").c_str()));
   }
 
   virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) {
     DisplayModification(StringPrintf("RemoveValues(%s, %s)",
                                      var->DebugString().c_str(),
-                                     IntVectorToString(values, ", ").c_str()));
+                                     strings::Join(values, ", ").c_str()));
   }
 
   // ----- IntervalVar modifiers -----
@@ -727,9 +727,9 @@ class PrintTrace : public PropagationMonitor {
                             const std::vector<int>& unperformed) {
     DisplayModification(StringPrintf(
         "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
-        var->DebugString().c_str(), IntVectorToString(rank_first, ", ").c_str(),
-        IntVectorToString(rank_last, ", ").c_str(),
-        IntVectorToString(unperformed, ", ").c_str()));
+        var->DebugString().c_str(), strings::Join(rank_first, ", ").c_str(),
+        strings::Join(rank_last, ", ").c_str(),
+        strings::Join(unperformed, ", ").c_str()));
   }
 
   virtual void Install() {

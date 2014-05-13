@@ -40,9 +40,9 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "cpp/jobshop.h"
-#include "util/string_array.h"
 
 DEFINE_string(
     data_file, "",
@@ -163,7 +163,7 @@ void Jobshop(const JobShopData& data) {
     for (int m = 0; m < machine_count; ++m) {
       SequenceVar* const seq = all_sequences[m];
       LOG(INFO) << seq->name() << ": "
-                << IntVectorToString(collector->ForwardSequence(0, seq), ", ");
+                << strings::Join(collector->ForwardSequence(0, seq), ", ");
     }
   }
 }

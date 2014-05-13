@@ -63,6 +63,7 @@ class SatSolver {
 
   // Increases the number of variables of the current problem.
   void SetNumVariables(int num_variables);
+  int NumVariables() const { return num_variables_.value(); }
 
   // Fixes a variable so that the given literal is true. This can be used to
   // solve a subproblem where some variables are fixed. Note that it is more
@@ -90,6 +91,14 @@ class SatSolver {
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
                            std::vector<LiteralWithCoeff>* cst);
+
+  // Returns true if the model is UNSAT. Note that currently the status is
+  // "sticky" and once this happen, nothing else can be done with the solver.
+  //
+  // Thanks to this function, a client can safely ignore the return value of any
+  // Add*() functions. If one of them return false, then IsModelUnsat() will
+  // return true.
+  bool IsModelUnsat() const { return is_model_unsat_; }
 
   // Add a set of Literals permutation that are assumed to be symmetries of the
   // problem. The solver will take ownership of the pointers.
@@ -129,16 +138,6 @@ class SatSolver {
   // DEFAULT_WEIGHT.
   void SetAssignmentPreference(Literal literal, double weight);
 
-  // When this is called, any currently assigned variables will be treated as
-  // assumption for the next Solve() call. If the solver backtrack or if
-  // Backtrack() is called on a lower decision level, then the assumption will
-  // be reduced to match the new level.
-  //
-  // If, given these assumptions, the model is UNSAT, calling Solve() will
-  // returns the ASSUMPTIONS_UNSAT status. MODEL_UNSAT is reserved for the case
-  // where the model is proven to be unsat without any assumptions.
-  void TreatCurrentDecisionsAsAssumption();
-
   // Solves the problem and returns its status.
   //
   // Note that the time or conflict limit applies only to this function and
@@ -154,6 +153,29 @@ class SatSolver {
     LIMIT_REACHED,
   };
   Status Solve();
+
+  // Simple interface to solve a problem under the given assumptions.
+  // This function backtrack over all the current decision, tries to enqueue
+  // the given assumptions and finally calls SolveWithAssumptions() below.
+  //
+  // If, given these assumptions, the model is UNSAT, this returns the
+  // ASSUMPTIONS_UNSAT status. MODEL_UNSAT is reserved for the case where the
+  // model is proven to be unsat without any assumptions.
+  //
+  // If ASSUMPTIONS_UNSAT is returned, it is possible to get a "core" of unsat
+  // assumptions by calling GetLastIncompatibleDecisions().
+  Status ResetAndSolveWithGivenAssumptions(const std::vector<Literal>& assumptions);
+
+  // This can be called just after SolveWithAssumptions() returned
+  // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
+  // to a conflict. It returns a subset of the previously enqueued decisions
+  // that cannot be taken together without making the problem UNSAT.
+  std::vector<Literal> GetLastIncompatibleDecisions();
+
+  // Same as Solve(), but any decisions currently on the trail will be treated
+  // as assumptions. The same comment as for ResetAndSolveWithGivenAssumptions()
+  // apllies if the ASSUMPTION_UNSAT status is returned.
+  Status SolveWithAssumptions();
 
   // Returns an UNSAT core. That is a subset of the problem clauses that are
   // still UNSAT. A problem constraint of index #i is the one that was added
@@ -191,15 +213,22 @@ class SatSolver {
   // taken because it is incompatible. Note that during this process, more
   // conflicts may happen and the trail may be backtracked even further.
   //
-  // In any case, the new decisions stack will be the largest valid prefix
-  // of the old stack. Hence, the first deleted decision will corresponds to a
-  // literal that was already propagated to its opposite value.
+  // In any case, the new decisions stack will be the largest valid "prefix"
+  // of the old stack. Note that decisions that are now consequence of the ones
+  // before them will no longer be decisions.
   int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
+
+  // Tries to enqueue the given decision and performs the propagation.
+  // Returns true if no conflict occured. Otherwise, returns false and restores
+  // the solver to the state just before this was called.
+  //
+  // Note(user): With this function, the solver doesn't learn anything.
+  bool EnqueueDecisionIfNotConflicting(Literal true_literal);
 
   // Restores the state to the given target decision level. The decision at that
   // level and all its propagation will not be undone. But all the trail after
-  // this will be cleared. Calling this with 0 will revert the solver to the
-  // sate after InitialPropagation() was called.
+  // this will be cleared. Calling this with 0 will revert all the decisions and
+  // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
 
   // Various getters of the current solver state.
@@ -220,6 +249,14 @@ class SatSolver {
   int64 num_propagations() const;
 
  private:
+  // Logs the given status if parameters_.log_search_progress() is true.
+  // Also returns it.
+  Status StatusWithLog(Status status);
+
+  // Main function called from SolveWithAssumptions() or from Solve() with an
+  // assumption_level of 0 (meaning no assumptions).
+  Status SolveInternal(int assumption_level);
+
   // Returns false if the thread memory is over the limit.
   bool IsMemoryLimitReached() const;
 
@@ -322,7 +359,8 @@ class SatSolver {
   void ProcessNewlyFixedVariables();
 
   // Compute an initial variable ordering.
-  void ComputeInitialVariableOrdering();
+  void InitializeQueueElements();
+  void InitializeVariableOrdering();
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
@@ -343,6 +381,14 @@ class SatSolver {
   void ComputeFirstUIPConflict(
       ClauseRef failing_clause, int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict);
+
+  // Given an assumption (i.e. literal) currently assigned to false, this will
+  // returns the set of all assumptions that caused this particular assignment.
+  //
+  // This is useful to get a small set of assumptions that can't be all
+  // satisfied together.
+  void FillUnsatAssumptions(Literal false_assumption,
+                            std::vector<Literal>* unsat_assumptions);
 
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
   // time ResolvePBConflict() on the current conflict until we have a conflict
@@ -476,9 +522,6 @@ class SatSolver {
   // The solver trail.
   Trail trail_;
 
-  // The current assumption level, 0 means no assumptions.
-  int assumption_level_;
-
   // The stack of decisions taken by the solver. They are stored in [0,
   // current_decision_level_). The vector is of size num_variables_ so it can
   // store all the decisions. This is done this way because in some situation we
@@ -549,11 +592,22 @@ class SatSolver {
 
     // Priority order. The AdjustablePriorityQueue returns the largest element
     // first.
+    //
+    // Note(user): We used to also break ties using the variable index, however
+    // this has two drawbacks:
+    // - On problem with many variables, this slow down quite a lot the priority
+    //   queue operations (which do as little work as possible and hence benefit
+    //   from having the majority of elements with a priority of 0).
+    // - It seems to be a bad heuristics. One reason could be that the priority
+    //   queue will automatically diversify the choice of the top variables
+    //   amongst the ones with the same priority.
+    //
+    // Note(user): For the same reason as explained above, it is probably a good
+    // idea not to have too many different values for the tie_breaker field. I
+    // am not even sure we should have such a field...
     bool operator<(const WeightedVarQueueElement& other) const {
       return weight < other.weight ||
-            (weight == other.weight &&
-              (tie_breaker < other.tie_breaker ||
-              (tie_breaker == other.tie_breaker && variable < other.variable)));
+             (weight == other.weight && (tie_breaker < other.tie_breaker));
     }
 
     int heap_index;
@@ -561,8 +615,17 @@ class SatSolver {
     double tie_breaker;
     VariableIndex variable;
   };
+  bool is_var_ordering_initialized_;
   AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
   ITIVector<VariableIndex, WeightedVarQueueElement> queue_elements_;
+
+  // Whether the priority of the given variable needs to be updated in
+  // var_ordering_. Note that this is only accessed for assigned variables and
+  // that for efficiency it is indexed by trail indices. If
+  // pq_need_update_for_var_at_trail_index_[trail_.Info(var).trail_index] is
+  // true when we untrail var, then either var need to be inserted in the queue,
+  // or we need to notify that its priority has changed.
+  Bitset64<int64> pq_need_update_for_var_at_trail_index_;
 
   // Increment used to bump the variable activities.
   double variable_activity_increment_;

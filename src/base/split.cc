@@ -19,6 +19,9 @@
 #include "base/logging.h"
 
 namespace operations_research {
+
+namespace {
+
 // ----------------------------------------------------------------------
 // SplitStringUsing()
 //    Split a std::string using a character delimiter. Append the components
@@ -28,9 +31,9 @@ namespace operations_research {
 // the characters in the std::string, not the entire std::string as a single delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
-static inline void SplitStringToIteratorUsing(const std::string& full,
-                                              const char* delim,
-                                              ITR& result) {  // NOLINT
+static inline void InternalSplitStringUsing(const std::string& full,
+                                            const char* delim,
+                                            ITR* result) {
   // Optimize the common case where delim is a single character.
   if (delim[0] != '\0' && delim[1] == '\0') {
     char c = delim[0];
@@ -41,9 +44,8 @@ static inline void SplitStringToIteratorUsing(const std::string& full,
         ++p;
       } else {
         const char* start = p;
-        while (++p != end && *p != c) {
-        }
-        *result++ = std::string(start, p - start);
+        while (++p != end && *p != c) {}
+        result->emplace_back(start, p - start);
       }
     }
     return;
@@ -54,27 +56,38 @@ static inline void SplitStringToIteratorUsing(const std::string& full,
   while (begin_index != std::string::npos) {
     end_index = full.find_first_of(delim, begin_index);
     if (end_index == std::string::npos) {
-      *result++ = full.substr(begin_index);
+      end_index = full.size();
+      result->emplace_back(full.c_str() + begin_index, end_index - begin_index);
       return;
     }
-    *result++ = full.substr(begin_index, (end_index - begin_index));
+    result->emplace_back(full.c_str() + begin_index, end_index - begin_index);
     begin_index = full.find_first_not_of(delim, end_index);
   }
 }
 
+}  // namespace
+
 void SplitStringUsing(const std::string& full, const char* delim,
                       std::vector<std::string>* result) {
-  std::back_insert_iterator<std::vector<std::string> > it(*result);
-  SplitStringToIteratorUsing(full, delim, it);
+  InternalSplitStringUsing(full, delim, result);
 }
 
 namespace strings {
+
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<std::string> out;
-  SplitStringUsing(full, delim, &out);
+  InternalSplitStringUsing(full, delim, &out);
   return out;
 }
+
+std::vector<StringPiece> Split(const std::string& full, const char* delim, int64 flags) {
+  CHECK_EQ(SkipEmpty(), flags);
+  std::vector<StringPiece> out;
+  InternalSplitStringUsing(full, delim, &out);
+  return out;
+}
+
 }  // namespace strings
 
 }  // namespace operations_research

@@ -224,11 +224,11 @@ struct AssignmentInfo {
     SAME_REASON_AS,
     CACHED_REASON,
   };
-  Type type : 3;
+  Type type;
 
   // The decision level at which this assignment was made. This starts at 0 and
   // increases each time the solver takes a SEARCH_DECISION.
-  int level : 29;
+  int level;
 
   // The index of this assignment in the trail.
   int trail_index;
@@ -237,14 +237,6 @@ struct AssignmentInfo {
   // the reason clause when it becomes needed. Note that depending on the type,
   // some fields will not be used and left uninitialized. We use unions to gain
   // a bit of memory.
-
-  union {
-    SatClause* sat_clause;
-    ResolutionNode* resolution_node;
-    UpperBoundedLinearConstraint* pb_constraint;
-    int symmetry_index;
-  };
-  VariableIndex reference_var;
 
 // Visual C++ has a problem with a Literal inside an union.
 #if defined(_MSC_VER)
@@ -255,7 +247,20 @@ struct AssignmentInfo {
     Literal literal;
     int source_trail_index;
   };
+
+  union {
+    SatClause* sat_clause;
+    ResolutionNode* resolution_node;
+    UpperBoundedLinearConstraint* pb_constraint;
+    int symmetry_index;
+    };
+    VariableIndex reference_var;
 };
+
+// Note that we use <= because on 32 bits architecture, the size will actually
+// be smaller than 24 bytes.
+COMPILE_ASSERT(sizeof(AssignmentInfo) <= 24,
+               ERROR_AssignmentInfo_is_not_well_compacted);
 
 // The solver trail stores the assignement made by the solver in order.
 // This class is responsible for maintaining the assignment of each variable

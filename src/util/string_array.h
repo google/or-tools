@@ -15,9 +15,7 @@
 #define OR_TOOLS_UTIL_STRING_ARRAY_H_
 
 #include <string>
-
-#include "base/integral_types.h"
-#include "base/stringprintf.h"
+#include <vector>
 
 namespace operations_research {
 // ---------- Pretty Print Helpers ----------
@@ -60,46 +58,6 @@ std::string JoinNameFieldPtr(const std::vector<T>& v, const std::string& separat
 }
 
 #undef RETURN_STRINGIFIED_VECTOR
-
-// TODO(user): use strings::Join instead of the methods below.
-
-// Creates a std::string from an array of int64, and a separator.
-inline std::string Int64ArrayToString(const int64* const array, int size,
-                                 const std::string& separator) {
-  std::string out;
-  for (int i = 0; i < size; ++i) {
-    if (i > 0) {
-      out.append(separator);
-    }
-    StringAppendF(&out, "%" GG_LL_FORMAT "d", array[i]);
-  }
-  return out;
-}
-
-// Creates a std::string from an array of int, and a separator.
-inline std::string IntArrayToString(const int* const array, int size,
-                               const std::string& separator) {
-  std::string out;
-  for (int i = 0; i < size; ++i) {
-    if (i > 0) {
-      out.append(separator);
-    }
-    StringAppendF(&out, "%d", array[i]);
-  }
-  return out;
-}
-
-// Creates a std::string from an vector of int64, and a separator.
-inline std::string IntVectorToString(const std::vector<int64>& array,
-                                const std::string& separator) {
-  return Int64ArrayToString(array.data(), array.size(), separator);
-}
-
-// Creates a std::string from an vector of int, and a separator.
-inline std::string IntVectorToString(const std::vector<int>& array,
-                                const std::string& separator) {
-  return IntArrayToString(array.data(), array.size(), separator);
-}
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_STRING_ARRAY_H_

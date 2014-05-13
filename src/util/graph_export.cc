@@ -18,6 +18,8 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/stringprintf.h"
+#include "base/file.h"
+#include "base/status.h"
 
 namespace operations_research {
 
@@ -137,7 +139,9 @@ class FileGraphExporter : public GraphExporter {
   virtual void WriteFooter() { Append(syntax_->Footer()); }
 
  private:
-  void Append(const std::string& str) { file_->Write(str.c_str(), str.size()); }
+  void Append(const std::string& str) {
+    file::WriteString(file_, str, file::Defaults()).IgnoreError();
+  }
 
   File* const file_;
   std::unique_ptr<GraphSyntax> syntax_;

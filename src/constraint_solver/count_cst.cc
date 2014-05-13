@@ -20,6 +20,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
@@ -85,7 +86,7 @@ class Distribute : public Constraint {
   virtual std::string DebugString() const {
     return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        IntVectorToString(values_, ", ").c_str(),
+                        strings::Join(values_, ", ").c_str(),
                         JoinDebugStringPtr(cards_, ", ").c_str());
   }
 
@@ -505,9 +506,9 @@ std::string BoundedDistribute::DebugString() const {
   return StringPrintf(
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = [%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
-      IntVectorToString(values_, ", ").c_str(),
-      IntVectorToString(card_min_, ", ").c_str(),
-      IntVectorToString(card_max_, ", ").c_str());
+      strings::Join(values_, ", ").c_str(),
+      strings::Join(card_min_, ", ").c_str(),
+      strings::Join(card_max_, ", ").c_str());
 }
 
 void BoundedDistribute::Post() {
@@ -704,8 +705,8 @@ std::string BoundedFastDistribute::DebugString() const {
   return StringPrintf(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
-      IntVectorToString(card_min_, ", ").c_str(),
-      IntVectorToString(card_max_, ", ").c_str());
+      strings::Join(card_min_, ", ").c_str(),
+      strings::Join(card_max_, ", ").c_str());
 }
 
 void BoundedFastDistribute::Post() {

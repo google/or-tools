@@ -33,13 +33,13 @@ SatSolver::SatSolver()
       num_constraints_(0),
       pb_constraints_(&trail_),
       symmetry_propagator_(&trail_),
-      assumption_level_(0),
       current_decision_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
       num_processed_fixed_variables_(0),
       counters_(),
       is_model_unsat_(false),
+      is_var_ordering_initialized_(false),
       variable_activity_increment_(1.0),
       clause_activity_increment_(1.0),
       num_learned_clause_before_cleanup_(0),
@@ -95,6 +95,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   decisions_.resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
   pb_conflict_.ClearAndResize(num_variables);
+  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables);
 }
 
 int64 SatSolver::num_branches() const { return counters_.num_branches; }
@@ -143,7 +144,7 @@ bool SatSolver::ModelUnsat() {
 bool SatSolver::AddUnitClause(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (trail_.Assignment().IsLiteralFalse(true_literal)) return false;
+  if (trail_.Assignment().IsLiteralFalse(true_literal)) return ModelUnsat();
   if (trail_.Assignment().IsLiteralTrue(true_literal)) return true;
   trail_.EnqueueWithUnitReason(true_literal, CreateRootResolutionNode());
   ++num_constraints_;
@@ -562,6 +563,19 @@ int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
   return first_propagation_index;
 }
 
+bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
+  SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(propagation_trail_index_, trail_.Index());
+  const int current_level = CurrentDecisionLevel();
+  NewDecision(true_literal);
+  if (Propagate()) {
+    return true;
+  } else {
+    Backtrack(current_level);
+    return false;
+  }
+}
+
 void SatSolver::Backtrack(int target_level) {
   SCOPED_TIME_STAT(&stats_);
 
@@ -578,7 +592,11 @@ void SatSolver::Backtrack(int target_level) {
     --current_decision_level_;
     target_trail_index = decisions_[current_decision_level_].trail_index;
   }
-  Untrail(target_trail_index);
+  if (is_var_ordering_initialized_) {
+    Untrail(target_trail_index);
+  } else {
+    UntrailWithoutPQUpdate(target_trail_index);
+  }
   trail_.SetDecisionLevel(target_level);
 }
 
@@ -599,12 +617,47 @@ void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
   objective_weights_[literal.NegatedIndex()] = weight;
 }
 
-void SatSolver::TreatCurrentDecisionsAsAssumption() {
+SatSolver::Status SatSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
-  assumption_level_ = CurrentDecisionLevel();
+  return SolveInternal(0);
 }
 
-SatSolver::Status SatSolver::Solve() {
+SatSolver::Status SatSolver::SolveWithAssumptions() {
+  SCOPED_TIME_STAT(&stats_);
+  return SolveInternal(CurrentDecisionLevel());
+}
+
+SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
+    const std::vector<Literal>& assumptions) {
+  SCOPED_TIME_STAT(&stats_);
+  Backtrack(0);
+  for (const Literal literal : assumptions) {
+    if (Assignment().IsLiteralTrue(literal)) continue;
+    if (Assignment().IsLiteralFalse(literal)) {
+      // Update decision so that GetLastIncompatibleDecisions() works.
+      decisions_[CurrentDecisionLevel()].literal = literal;
+      return StatusWithLog(ASSUMPTIONS_UNSAT);
+    }
+    const int current_level = CurrentDecisionLevel();
+    if (EnqueueDecisionAndBacktrackOnConflict(literal) == -1) {
+      return StatusWithLog(MODEL_UNSAT);
+    }
+    if (CurrentDecisionLevel() != current_level + 1) {
+      return StatusWithLog(ASSUMPTIONS_UNSAT);
+    }
+  }
+  return SolveInternal(CurrentDecisionLevel());
+}
+
+SatSolver::Status SatSolver::StatusWithLog(Status status) {
+  if (parameters_.log_search_progress()) {
+    LOG(INFO) << RunningStatisticsString();
+    LOG(INFO) << StatusString(status);
+  }
+  return status;
+}
+
+SatSolver::Status SatSolver::SolveInternal(int assumption_level) {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
   TimeLimit time_limit(parameters_.max_time_in_seconds());
@@ -630,11 +683,7 @@ SatSolver::Status SatSolver::Solve() {
   //
   // TODO(user): This isn't exactly true of the tie-breaking strategy for some
   // parameters setting. Fix that.
-  ComputeInitialVariableOrdering();
-
-  // Change the assumption level if some of the old assumptions are not assigned
-  // anymore.
-  assumption_level_ = std::min(assumption_level_, CurrentDecisionLevel());
+  InitializeQueueElements();
 
   // Variables used to show the search progress.
   const int kDisplayFrequency = 10000;
@@ -659,18 +708,14 @@ SatSolver::Status SatSolver::Solve() {
     if (time_limit.LimitReached()) {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << "The time limit has been reached. Aborting.";
-        LOG(INFO) << RunningStatisticsString();
-        LOG(INFO) << StatusString(LIMIT_REACHED);
       }
-      return LIMIT_REACHED;
+      return StatusWithLog(LIMIT_REACHED);
     }
     if (num_failures() >= kFailureLimit) {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << "The conflict limit has been reached. Aborting.";
-        LOG(INFO) << RunningStatisticsString();
-        LOG(INFO) << StatusString(LIMIT_REACHED);
       }
-      return LIMIT_REACHED;
+      return StatusWithLog(LIMIT_REACHED);
     }
 
     // The current memory checking takes time, so we only execute it every
@@ -683,9 +728,8 @@ SatSolver::Status SatSolver::Solve() {
       if (IsMemoryLimitReached()) {
         if (parameters_.log_search_progress()) {
           LOG(INFO) << "The memory limit has been reached. Aborting.";
-          LOG(INFO) << StatusString(LIMIT_REACHED);
         }
-        return LIMIT_REACHED;
+        return StatusWithLog(LIMIT_REACHED);
       }
     }
 
@@ -697,17 +741,13 @@ SatSolver::Status SatSolver::Solve() {
     }
 
     if (trail_.Index() == num_variables_.value()) {  // At a leaf.
-      if (parameters_.log_search_progress()) {
-        LOG(INFO) << RunningStatisticsString();
-        LOG(INFO) << StatusString(MODEL_SAT);
-      }
-      return MODEL_SAT;
+      return StatusWithLog(MODEL_SAT);
     }
 
     // Note that ShouldRestart() comes first because it had side effects and
     // should be executed even if CurrentDecisionLevel() is zero.
-    if (ShouldRestart() && CurrentDecisionLevel() > assumption_level_) {
-      Backtrack(assumption_level_);
+    if (ShouldRestart() && CurrentDecisionLevel() > assumption_level) {
+      Backtrack(assumption_level);
     }
 
     // Choose the next decision variable.
@@ -719,23 +759,62 @@ SatSolver::Status SatSolver::Solve() {
       next_branch = next_branch.Negated();
     }
     if (EnqueueDecisionAndBackjumpOnConflict(next_branch) == -1) {
-      if (parameters_.log_search_progress()) {
-        LOG(INFO) << StatusString(MODEL_UNSAT);
-      }
-      return MODEL_UNSAT;
+      return StatusWithLog(MODEL_UNSAT);
     }
 
-    // If we backtracked past the assumptions level, then the model is UNSAT
-    // given the assumption.
-    if (CurrentDecisionLevel() < assumption_level_) {
-      if (parameters_.log_search_progress()) {
-        LOG(INFO) << StatusString(ASSUMPTIONS_UNSAT);
+    // We need to reapply any assumptions if for some reason we backtracked
+    // past the assumptions level.
+    while (CurrentDecisionLevel() < assumption_level) {
+      Literal previous_decision = decisions_[CurrentDecisionLevel()].literal;
+      if (Assignment().IsLiteralTrue(previous_decision)) continue;
+      if (Assignment().IsLiteralFalse(previous_decision)) {
+        // The given set of assumptions make the problem unsat.
+        return StatusWithLog(ASSUMPTIONS_UNSAT);
       }
-      // TODO(user): Reapply the assumptions that are still valid so it is
-      // easier for a client to see what was incompatible?
-      return ASSUMPTIONS_UNSAT;
+
+      // Not assigned, we try to take it.
+      if (EnqueueDecisionAndBackjumpOnConflict(previous_decision) == -1) {
+        return StatusWithLog(MODEL_UNSAT);
+      }
     }
   }
+}
+
+std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
+  SCOPED_TIME_STAT(&stats_);
+  std::vector<Literal> unsat_assumptions;
+  const Literal false_assumption = decisions_[CurrentDecisionLevel()].literal;
+  DCHECK(trail_.Assignment().IsLiteralFalse(false_assumption));
+  unsat_assumptions.push_back(false_assumption);
+
+  // This will be used to mark all the literals inspected while we process the
+  // false_assumption and the reasons behind each of its variable assignments.
+  is_marked_.ClearAndResize(num_variables_);
+  is_marked_.Set(false_assumption.Variable());
+
+  int trail_index = trail_.Info(false_assumption.Variable()).trail_index;
+  while (true) {
+    // Find next marked literal to expand from the trail.
+    while (trail_index >= 0 && !is_marked_[trail_[trail_index].Variable()]) {
+      --trail_index;
+    }
+    if (trail_index < 0) break;
+    const Literal marked_literal = trail_[trail_index];
+    --trail_index;
+
+    if (trail_.InitialAssignmentType(marked_literal.Variable()) ==
+        AssignmentInfo::SEARCH_DECISION) {
+      unsat_assumptions.push_back(marked_literal);
+    } else {
+      // Marks all the literals of its reason.
+      for (const Literal literal : Reason(marked_literal.Variable())) {
+        const VariableIndex var = literal.Variable();
+        const int level = DecisionLevel(var);
+        if (level > 0 && !is_marked_[var]) is_marked_.Set(var);
+      }
+    }
+  }
+  return unsat_assumptions;
 }
 
 void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
@@ -753,6 +832,7 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
       activities_[var] += variable_activity_increment_;
     }
     activities_[var] += variable_activity_increment_;
+    pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
     if (activities_[var] > max_activity_value) {
       RescaleVariableActivities(1.0 / max_activity_value);
     }
@@ -794,13 +874,9 @@ void SatSolver::RescaleVariableActivities(double scaling_factor) {
   // multiplying the current weight by scaling_factor is not guaranteed to
   // preserve the order. This is because the activity of two entries may go to
   // zero and the tie-breaking ordering may change their relative order.
-  var_ordering_.Clear();
-  for (VariableIndex var(0); var < num_variables_; ++var) {
-    if (!trail_.Assignment().IsVariableAssigned(var)) {
-      queue_elements_[var].weight = activities_[var];
-      var_ordering_.Add(&queue_elements_[var]);
-    }
-  }
+  //
+  // InitializeVariableOrdering() will be called lazily only if needed.
+  is_var_ordering_initialized_ = false;
 }
 
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
@@ -861,8 +937,8 @@ int SatSolver::ComputeLbd(const LiteralList& conflict) {
   SCOPED_TIME_STAT(&stats_);
   // We know that the first literal of the conflict is always of the highest
   // level.
-  is_level_marked_.ClearAndResize(SatDecisionLevel(
-      DecisionLevel(conflict.begin()->Variable()) + 1));
+  is_level_marked_.ClearAndResize(
+      SatDecisionLevel(DecisionLevel(conflict.begin()->Variable()) + 1));
   for (const Literal literal : conflict) {
     const SatDecisionLevel level(DecisionLevel(literal.Variable()));
     DCHECK_GE(level, 0);
@@ -1193,22 +1269,31 @@ void SatSolver::NewDecision(Literal literal) {
 Literal SatSolver::NextBranch() {
   SCOPED_TIME_STAT(&stats_);
 
+  // Lazily initialize var_ordering_ if needed.
+  if (!is_var_ordering_initialized_) {
+    InitializeVariableOrdering();
+  }
+
   // Choose the variable.
   VariableIndex var;
-  if (random_.RandDouble() < parameters_.random_branches_ratio()) {
+  const double ratio = parameters_.random_branches_ratio();
+  if (ratio != 0.0 && random_.RandDouble() < ratio) {
     ++counters_.num_random_branches;
-    do {
+    while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
       var = (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())]
                 ->variable;
+      if (!trail_.Assignment().IsVariableAssigned(var)) break;
+      pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(&queue_elements_[var]);
-    } while (trail_.Assignment().IsVariableAssigned(var));
+    }
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
     var = var_ordering_.Top()->variable;
     while (trail_.Assignment().IsVariableAssigned(var)) {
       var_ordering_.Pop();
+      pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
       var = var_ordering_.Top()->variable;
     }
@@ -1237,18 +1322,31 @@ Literal SatSolver::NextBranch() {
   }
 }
 
-// Note that the activity is left unchanged from one Solve() to the next.
-void SatSolver::ComputeInitialVariableOrdering() {
+void SatSolver::InitializeQueueElements() {
   SCOPED_TIME_STAT(&stats_);
-  var_ordering_.Clear();
   for (VariableIndex var(0); var < num_variables_; ++var) {
     queue_elements_[var].variable = var;
     queue_elements_[var].tie_breaker = ComputeInitialVariableWeight(var);
+  }
+
+  // InitializeVariableOrdering() will be called lazily only if needed.
+  is_var_ordering_initialized_ = false;
+}
+
+void SatSolver::InitializeVariableOrdering() {
+  SCOPED_TIME_STAT(&stats_);
+  var_ordering_.Clear();
+  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables_.value());
+  for (VariableIndex var(0); var < num_variables_; ++var) {
     if (!trail_.Assignment().IsVariableAssigned(var)) {
       queue_elements_[var].weight = activities_[var];
       var_ordering_.Add(&queue_elements_[var]);
     }
   }
+  for (int i = 0; i < trail_.Index(); ++i) {
+    pq_need_update_for_var_at_trail_index_.Set(i);
+  }
+  is_var_ordering_initialized_ = true;
 }
 
 void SatSolver::UntrailWithoutPQUpdate(int target_trail_index) {
@@ -1259,10 +1357,13 @@ void SatSolver::UntrailWithoutPQUpdate(int target_trail_index) {
   binary_propagation_trail_index_ =
       std::min(binary_propagation_trail_index_, target_trail_index);
   while (trail_.Index() > target_trail_index) {
-    // We check that the priority queue doesn't need to be updated.
     const VariableIndex var = trail_.Dequeue().Variable();
-    DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
-    DCHECK_EQ(activities_[var], queue_elements_[var].weight);
+
+    // We check that the priority queue doesn't need to be updated.
+    if (DEBUG_MODE && is_var_ordering_initialized_) {
+      DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
+      DCHECK_EQ(activities_[var], queue_elements_[var].weight);
+    }
   }
 }
 
@@ -1276,17 +1377,26 @@ void SatSolver::Untrail(int target_trail_index) {
   while (trail_.Index() > target_trail_index) {
     const VariableIndex var = trail_.Dequeue().Variable();
 
-    // Update the variable weight, and make sure the priority queue is updated.
-    WeightedVarQueueElement* element = &(queue_elements_[var]);
-    const double new_weight = activities_[var];
-    if (var_ordering_.Contains(element)) {
-      if (new_weight != element->weight) {
+    // Update the priority queue if needed.
+    // Note that the first test is just here for optimization, and that the
+    // code inside would work without it.
+    DCHECK_EQ(trail_.Index(), trail_.Info(var).trail_index);
+    if (pq_need_update_for_var_at_trail_index_[trail_.Index()]) {
+      pq_need_update_for_var_at_trail_index_.Clear(trail_.Index());
+      WeightedVarQueueElement* element = &(queue_elements_[var]);
+      const double new_weight = activities_[var];
+      if (var_ordering_.Contains(element)) {
+        if (new_weight != element->weight) {
+          element->weight = new_weight;
+          var_ordering_.NoteChangedPriority(element);
+        }
+      } else {
         element->weight = new_weight;
-        var_ordering_.NoteChangedPriority(element);
+        var_ordering_.Add(element);
       }
     } else {
-      element->weight = new_weight;
-      var_ordering_.Add(element);
+      DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
+      DCHECK_EQ(activities_[var], queue_elements_[var].weight);
     }
   }
 }
@@ -1560,8 +1670,9 @@ void SatSolver::ComputePBConflict(int max_trail_index,
 
   // Double check.
   // The sum of the literal with level <= backjump_level must propagate.
-  std::vector<Coefficient> sum_by_level(backjump_level + 2, Coefficient(0));
-  std::vector<Coefficient> max_coeff_by_level(backjump_level + 2, Coefficient(0));
+  std::vector<Coefficient> sum_for_le_level(backjump_level + 2, Coefficient(0));
+  std::vector<Coefficient> max_coeff_for_ge_level(backjump_level + 2,
+                                             Coefficient(0));
   int size = 0;
   Coefficient max_sum(0);
   for (VariableIndex var : conflict->PossibleNonZeros()) {
@@ -1571,39 +1682,41 @@ void SatSolver::ComputePBConflict(int max_trail_index,
     ++size;
     if (!trail_.Assignment().IsVariableAssigned(var) ||
         DecisionLevel(var) > backjump_level) {
-      max_coeff_by_level[backjump_level + 1] =
-          std::max(max_coeff_by_level[backjump_level + 1], coeff);
+      max_coeff_for_ge_level[backjump_level + 1] =
+          std::max(max_coeff_for_ge_level[backjump_level + 1], coeff);
     } else {
       const int level = DecisionLevel(var);
       if (trail_.Assignment().IsLiteralTrue(conflict->GetLiteral(var))) {
-        sum_by_level[level] += coeff;
+        sum_for_le_level[level] += coeff;
       }
-      max_coeff_by_level[level] = std::max(max_coeff_by_level[level], coeff);
+      max_coeff_for_ge_level[level] = std::max(max_coeff_for_ge_level[level], coeff);
     }
   }
 
   // Compute the cummulative version.
-  for (int i = 1; i < sum_by_level.size(); ++i) {
-    sum_by_level[i] += sum_by_level[i - 1];
+  for (int i = 1; i < sum_for_le_level.size(); ++i) {
+    sum_for_le_level[i] += sum_for_le_level[i - 1];
   }
-  for (int i = max_coeff_by_level.size() - 2; i >= 0; --i) {
-    max_coeff_by_level[i] =
-        std::max(max_coeff_by_level[i], max_coeff_by_level[i + 1]);
+  for (int i = max_coeff_for_ge_level.size() - 2; i >= 0; --i) {
+    max_coeff_for_ge_level[i] =
+        std::max(max_coeff_for_ge_level[i], max_coeff_for_ge_level[i + 1]);
   }
 
-  // Compute first propagation level. -1 means that the problem is unsat.
+  // Compute first propagation level. -1 means that the problem is UNSAT.
   // Note that the first propagation level may be < backjump_level!
-  int new_backjump_level = 0;
-  for (int i = -1; i <= backjump_level; ++i) {
-    const Coefficient level_sum = (i == -1) ? Coefficient(0) : sum_by_level[i];
+  if (sum_for_le_level[0] > conflict->Rhs()) {
+    *pb_backjump_level = -1;
+    return;
+  }
+  for (int i = 0; i <= backjump_level; ++i) {
+    const Coefficient level_sum = sum_for_le_level[i];
     CHECK_LE(level_sum, conflict->Rhs());
-    if (conflict->Rhs() - level_sum < max_coeff_by_level[i + 1]) {
-      new_backjump_level = i;
-      break;
+    if (conflict->Rhs() - level_sum < max_coeff_for_ge_level[i + 1]) {
+      *pb_backjump_level = i;
+      return;
     }
   }
-  CHECK_LE(new_backjump_level, backjump_level);
-  *pb_backjump_level = new_backjump_level;
+  LOG(FATAL) << "The code should never reach here.";
 }
 
 void SatSolver::MinimizeConflict(

@@ -16,10 +16,19 @@
 
 #include "base/stringprintf.h"
 #include "base/join.h"
+#include "base/murmur.h"
 
 namespace operations_research {
 
+namespace {
+uint64 FprintOfInt32(int i) {
+  return util_hash::MurmurHash64(reinterpret_cast<const char*>(&i),
+                                 sizeof(int));
+}
+}  // namespace
+
 DynamicPartition::DynamicPartition(int n) {
+  DCHECK_GE(n, 0);
   element_.assign(n, -1);
   index_of_.assign(n, -1);
   for (int i = 0; i < n; ++i) {
@@ -27,15 +36,29 @@ DynamicPartition::DynamicPartition(int n) {
     index_of_[i] = i;
   }
   part_of_.assign(n, 0);
-  part_.push_back(Part(/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0));
+  uint64 fprint = 0;
+  for (int i = 0; i < n; ++i) fprint ^= FprintOfInt32(i);
+  part_.push_back(Part(/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0,
+                       /*fprint=*/ fprint));
+
+  // Avoid '-1' as a special value in the "non_singleton_parts_" dense_hash_set,
+  // because it's already used as a special value in various places. Having
+  // different special values here will make debugging easier.
+  non_singleton_parts_.set_empty_key(-2);
+  non_singleton_parts_.set_deleted_key(-3);
+  if (n > 1) non_singleton_parts_.insert(0);
 }
 
 DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_element) {
   if (initial_part_of_element.empty()) return;
   part_of_ = initial_part_of_element;
+  const int n = part_of_.size();
   const int num_parts = 1 + *std::max_element(part_of_.begin(), part_of_.end());
   DCHECK_EQ(0, *std::min_element(part_of_.begin(), part_of_.end()));
   part_.resize(num_parts);
+
+  // Compute the part fingerprints.
+  for (int i = 0; i < n; ++i) part_[part_of_[i]].fprint ^= FprintOfInt32(i);
 
   // Compute the actual start indices of each part, knowing that we'll sort
   // them as they were given implicitly in "initial_part_of_element".
@@ -55,7 +78,6 @@ DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_eleme
   // start indices, and incrementally add all elements to their part, adjusting
   // the end indices as we go.
   for (Part& part : part_) part.end_index = part.start_index;
-  const int n = part_of_.size();
   element_.assign(n, -1);
   index_of_.assign(n, -1);
   for (int element = 0; element < n; ++element) {
@@ -63,6 +85,20 @@ DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_eleme
     element_[part->end_index] = element;
     index_of_[element] = part->end_index;
     ++part->end_index;
+  }
+
+  // Initialize "non_singleton_parts_".
+  non_singleton_parts_.set_empty_key(-2);
+  non_singleton_parts_.set_deleted_key(-3);
+  int num_non_singletons = 0;
+  for (int p = 0; p < num_parts; ++p) {
+    const int size = SizeOfPart(p);
+    DCHECK_NE(0, size) << "Empty part: " << p;
+    if (size != 1) ++num_non_singletons;
+  }
+  non_singleton_parts_.resize(num_non_singletons);
+  for (int p = 0; p < num_parts; ++p) {
+    if (SizeOfPart(p) != 1) non_singleton_parts_.insert(p);
   }
 
   // Verify that we did it right.
@@ -88,6 +124,7 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
     const int num_distinguished_elements_in_part = ++tmp_counter_of_part_[part];
     // Is this the first time that we touch this element's part?
     if (num_distinguished_elements_in_part == 1) {
+      // TODO(user): optimize the common singleton case.
       tmp_affected_parts_.push_back(part);
     }
     // Move the element to the end of its current Part.
@@ -110,20 +147,33 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
   // Iterate on each affected part and split it, or keep it intact if all
   // of its elements were distinguished.
   for (const int part : tmp_affected_parts_) {
+    const int start_index = part_[part].start_index;
     const int end_index = part_[part].end_index;
     const int split_index = end_index - tmp_counter_of_part_[part];
     tmp_counter_of_part_[part] = 0;  // Clean up after us.
-    DCHECK_GE(split_index, part_[part].start_index);
+    DCHECK_GE(split_index, start_index);
     DCHECK_LT(split_index, end_index);
 
     // Do nothing if all elements were distinguished.
-    if (split_index == part_[part].start_index) continue;
+    if (split_index == start_index) continue;
+
+    // Compute the fingerprint of the new part.
+    uint64 new_fprint = 0;
+    for (int i = split_index; i < end_index; ++i) {
+      new_fprint ^= FprintOfInt32(element_[i]);
+    }
+
+    const int new_part = NumParts();
+
+    // Update the list of non-singletons.
+    if (split_index - start_index == 1) non_singleton_parts_.erase(part);
+    if (end_index > split_index + 1) non_singleton_parts_.insert(new_part);
 
     // Perform the split.
     part_[part].end_index = split_index;
-    const int new_part = NumParts();
+    part_[part].fprint ^= new_fprint;
     part_.push_back(Part(/*start_index*/ split_index, /*end_index*/ end_index,
-                         /*parent_part*/ part));
+                         /*parent_part*/ part, new_fprint));
     for (const int element : ElementsInPart(new_part)) {
       part_of_[element] = new_part;
     }
@@ -135,26 +185,34 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
   DCHECK_GE(original_num_parts, 1);
   while (NumParts() > original_num_parts) {
     const int part_index = NumParts() - 1;
-    const int parent_part_index = part_[part_index].parent_part;
+    const Part& part = part_[part_index];
+    const int parent_part_index = part.parent_part;
+    const Part& parent_part = part_[parent_part_index];
     DCHECK_LT(parent_part_index, part_index) << "UndoRefineUntilNumPartsEqual()"
                                                 " called with "
                                                 "'original_num_parts' too low";
+    // Update non_singleton_parts_.
+    if (part.end_index - part.start_index != 1) {
+      DCHECK_EQ(1, non_singleton_parts_.count(part_index));
+      non_singleton_parts_.erase(part_index);
+    }
+    DCHECK_EQ(0, non_singleton_parts_.count(part_index));
+    if (parent_part.end_index - parent_part.start_index == 1) {
+      DCHECK_EQ(0, non_singleton_parts_.count(parent_part_index));
+      non_singleton_parts_.insert(parent_part_index);
+    }
+    DCHECK_EQ(1, non_singleton_parts_.count(parent_part_index));
+
+
+    // Update the part contents: actually merge "part" onto its parent.
     for (const int element : ElementsInPart(part_index)) {
       part_of_[element] = parent_part_index;
     }
     DCHECK_EQ(part_[part_index].start_index,
               part_[parent_part_index].end_index);
     part_[parent_part_index].end_index = part_[part_index].end_index;
+    part_[parent_part_index].fprint ^= part_[part_index].fprint;
     part_.pop_back();
-  }
-}
-
-void DynamicPartition::SortElementsInPart(int p) {
-  const Part& part = part_[p];
-  std::sort(element_.begin() + part.start_index, element_.begin() + part.end_index);
-  // Fix index_of_.
-  for (int index = part.start_index; index < part.end_index; ++index) {
-    index_of_[element_[index]] = index;
   }
 }
 
@@ -187,18 +245,18 @@ void MergingPartition::Reset(int num_nodes) {
   tmp_part_bit_.assign(num_nodes, false);
 }
 
-void MergingPartition::MergePartsOf(int node1, int node2) {
+int MergingPartition::MergePartsOf(int node1, int node2) {
   DCHECK_GE(node1, 0);
   DCHECK_GE(node2, 0);
   DCHECK_LT(node1, NumNodes());
   DCHECK_LT(node2, NumNodes());
   int root1 = GetRoot(node1);
   int root2 = GetRoot(node2);
-  if (root1 == root2) return;
+  if (root1 == root2) return -1;
   int s1 = part_size_[root1];
   int s2 = part_size_[root2];
   // Attach the smaller part to the larger one. Break ties by root index.
-  if (s1 < s2 || (s1 == s2 && root1 < root2)) {
+  if (s1 < s2 || (s1 == s2 && root1 > root2)) {
     std::swap(root1, root2);
     std::swap(s1, s2);
   }
@@ -208,6 +266,7 @@ void MergingPartition::MergePartsOf(int node1, int node2) {
   part_size_[root1] += part_size_[root2];
   SetParentAlongPathToRoot(node1, root1);
   SetParentAlongPathToRoot(node2, root1);
+  return root2;
 }
 
 int MergingPartition::GetRootAndCompressPath(int node) {

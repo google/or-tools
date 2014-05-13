@@ -18,12 +18,12 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
-#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -315,7 +315,7 @@ class PrintModelVisitor : public ModelVisitor {
   virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
     LOG(INFO) << Spaces() << arg_name << ": ["
-              << IntVectorToString(values, ", ") << "]";
+              << strings::Join(values, ", ") << "]";
   }
 
   virtual void VisitIntegerMatrixArgument(const std::string& arg_name,

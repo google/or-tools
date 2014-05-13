@@ -12,12 +12,12 @@
 // limitations under the License.
 // TODO(user, fdid): refine this toplevel comment when this file settles.
 //
-// Two dynamic partition classes: one that incremental splits a partition
-// into more and more parts; one that incremental merges a partition into less
+// Two dynamic partition classes: one that incrementally splits a partition
+// into more and more parts; one that incrementally merges a partition into less
 // and less parts.
 //
 // GLOSSARY:
-// The partition classes maintains a partition of N integers 0..N-1
+// The partition classes maintain a partition of N integers 0..N-1
 // (aka "elements") into disjoint equivalence classes (aka "parts").
 //
 // SAFETY:
@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 #include "base/logging.h"
+#include "base/sparse_hash.h"
 
 namespace operations_research {
 
@@ -71,6 +72,17 @@ class DynamicPartition {
   int SizeOfPart(int part) const;
   int ParentOfPart(int part) const;
 
+  // A handy shortcut to ElementsInPart(PartOf(e)). The returned IterablePart
+  // will never be empty, since it contains at least i.
+  IterablePart ElementsInSamePartAs(int i) const;
+
+  // Returns a fingerprint of the given part. While collisions are possible,
+  // their probability is quite low. Two parts that have the same size and the
+  // same fingerprint are most likely identical.
+  // Also, two parts that have the exact same set of elements will *always*
+  // have the same fingerprint.
+  uint64 FprintOfPart(int part) const;
+
   // Refines the partition such that elements that are in distinguished_subset
   // never share the same part as elements that aren't in that subset.
   // This might be a no-op: in that case, NumParts() won't change, but the
@@ -99,7 +111,11 @@ class DynamicPartition {
   // Prerequisite: NumParts() >= original_num_parts.
   void UndoRefineUntilNumPartsEqual(int original_num_parts);
 
-  void SortElementsInPart(int part);
+  int SomeNonSingletonPart() const {
+    // TODO(user): optimize! Hash set can be quite slow, especially like this.
+    // A simple adaptation of SparseBitSet could do the trick.
+    return non_singleton_parts_.empty() ? -1 : *non_singleton_parts_.begin();
+  }
 
   // Dump the partition to a std::string. There might be different conventions for
   // sorting the parts and the elements inside them.
@@ -111,6 +127,18 @@ class DynamicPartition {
     SORT_BY_PART,
   };
   std::string DebugString(DebugStringSorting sorting) const;
+
+  // ADVANCED USAGE:
+  // All elements (0..n-1) of the partition, sorted in a way that's compatible
+  // with the hierarchical partitioning:
+  // - All the elements of any given part are contiguous.
+  // - Elements of a part P are always after elements of part Parent(P).
+  // - The order remains identical (and the above property holds) after any
+  //   UndoRefine*() operation.
+  // Note that the order does get changed by Refine() operations.
+  // This is a reference, so it'll only remain valid and constant until the
+  // class is destroyed or until Refine() get called.
+  const std::vector<int>& ElementsInHierarchicalOrder() const { return element_; }
 
  private:
   // A DynamicPartition instance maintains a list of all of its elements,
@@ -124,6 +152,9 @@ class DynamicPartition {
   // part_of_[i] is the index of the part that contains element i.
   std::vector<int> part_of_;
 
+  // Contains all the non-singleton parts; at all times.
+  dense_hash_set<int> non_singleton_parts_;
+
   struct Part {
     // This part holds elements[start_index .. end_index-1].
     // INVARIANT: end_index > start_index.
@@ -135,8 +166,13 @@ class DynamicPartition {
     // has no parent.
     int parent_part;  // Index into the part[] array.
 
-    Part() : start_index(0), end_index(0), parent_part(0) {}
-    Part(int s, int e, int p) : start_index(s), end_index(e), parent_part(p) {}
+    // The part's fingerprint is the XOR of all fingerprints of its elements.
+    // See FprintOfInt32() in the .cc.
+    uint64 fprint;
+
+    Part() : start_index(0), end_index(0), parent_part(0), fprint(0) {}
+    Part(int s, int e, int p, uint64 fp)
+        : start_index(s), end_index(e), parent_part(p), fprint(fp) {}
   };
   std::vector<Part> part_;  // The disjoint parts.
 
@@ -153,10 +189,16 @@ struct DynamicPartition::IterablePart {
   std::vector<int>::const_iterator begin_;
   std::vector<int>::const_iterator end_;
 
+  int size() const { return end_ - begin_; }
+
   IterablePart() {}
   IterablePart(const std::vector<int>::const_iterator& b,
                const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}
+
+  // These typedefs allow this iterator to be used within testing::ElementsAre.
+  typedef int value_type;
+  typedef std::vector<int>::const_iterator const_iterator;
 };
 
 // Partition class that supports incremental merging, using the union-find
@@ -171,7 +213,19 @@ class MergingPartition {
 
   // Complexity: amortized O(Ackermann⁻¹(N)) -- which is essentially O(1) --
   // where N is the number of nodes.
-  void MergePartsOf(int node1, int node2);  // The 'union' of the union-find.
+  //
+  // Return value: If this merge caused a representative node (of either node1
+  // or node2) to stop being a representative (because only one can remain);
+  // this method returns that removed representative. Otherwise it returns -1.
+  //
+  // Details: a smaller part will always be merged onto a larger one.
+  // Upons ties, the smaller representative becomes the overall representative.
+  int MergePartsOf(int node1, int node2);  // The 'union' of the union-find.
+
+  // Get the representative of "node" (a node in the same equivalence class,
+  // which will also be returned for any other "node" in the same class).
+  // The complexity if the same as MergePartsOf().
+  int GetRootAndCompressPath(int node);
 
   // Specialized reader API: prunes "nodes" to only keep at most one node per
   // part: any node which is in the same part as an earlier node will be pruned.
@@ -195,21 +249,21 @@ class MergingPartition {
   // CRASHES IF USED INCORRECTLY.
   void ResetNode(int node);
 
-  // public for testing.
   int NumNodesInSamePartAs(int node) {
     return part_size_[GetRootAndCompressPath(node)];
   }
 
- private:
-  // Union-find routines:
+  // FOR DEBUGGING OR SPECIAL "CONST" ACCESS ONLY:
   // Find the root of the union-find tree with leaf 'node', i.e. its
-  // representative node.
+  // representative node, but don't use path compression.
+  // The amortized complexity can be as bad as log(N), as opposed to the
+  // version using path compression.
   int GetRoot(int node) const;
+
+ private:
   // Along the upwards path from 'node' to its root, set the parent of all
   // nodes (including the root) to 'parent'.
   void SetParentAlongPathToRoot(int node, int parent);
-  // Combine the two above operations (so-called 'path compression').
-  int GetRootAndCompressPath(int node);
 
   std::vector<int> parent_;
   std::vector<int> part_size_;
@@ -245,6 +299,17 @@ inline int DynamicPartition::ParentOfPart(int part) const {
   DCHECK_GE(part, 0);
   DCHECK_LT(part, part_.size());
   return part_[part].parent_part;
+}
+
+inline DynamicPartition::IterablePart DynamicPartition::ElementsInSamePartAs(
+    int i) const {
+  return ElementsInPart(PartOf(i));
+}
+
+inline uint64 DynamicPartition::FprintOfPart(int part) const {
+  DCHECK_GE(part, 0);
+  DCHECK_LT(part, part_.size());
+  return part_[part].fprint;
 }
 
 inline int MergingPartition::GetRoot(int node) const {

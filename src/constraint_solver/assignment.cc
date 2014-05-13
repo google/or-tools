@@ -21,11 +21,11 @@
 #include "base/stringprintf.h"
 #include "base/file.h"
 #include "base/recordio.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
-#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -336,9 +336,9 @@ void SequenceVarElement::WriteToProto(
 std::string SequenceVarElement::DebugString() const {
   if (Activated()) {
     return StringPrintf("[forward %s, backward %s, unperformed [%s]]",
-                        IntVectorToString(forward_sequence_, " -> ").c_str(),
-                        IntVectorToString(backward_sequence_, " -> ").c_str(),
-                        IntVectorToString(unperformed_, ", ").c_str());
+                        strings::Join(forward_sequence_, " -> ").c_str(),
+                        strings::Join(backward_sequence_, " -> ").c_str(),
+                        strings::Join(unperformed_, ", ").c_str());
   } else {
     return "(...)";
   }

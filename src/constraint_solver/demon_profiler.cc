@@ -28,6 +28,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/demon_profiler.pb.h"
+#include "base/status.h"
 
 namespace operations_research {
 namespace {
@@ -260,7 +261,7 @@ class DemonProfiler : public PropagationMonitor {
     const std::string model =
         StringPrintf("Model %s:\n", solver->model_name().c_str());
     if (file) {
-      file->Write(model.c_str(), model.length());
+      file::WriteString(file, model, file::Defaults()).IgnoreError();
       std::vector<Container> to_sort;
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
@@ -293,7 +294,8 @@ class DemonProfiler : public PropagationMonitor {
             StringPrintf(kConstraintFormat, ct->DebugString().c_str(), fails,
                          initial_propagation_runtime, demon_count,
                          demon_invocations, total_demon_runtime);
-        file->Write(constraint_message.c_str(), constraint_message.length());
+        file::WriteString(file, constraint_message, file::Defaults())
+            .IgnoreError();
         const std::vector<DemonRuns*>& demons = demons_per_constraint_[ct];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
@@ -310,7 +312,7 @@ class DemonProfiler : public PropagationMonitor {
           const std::string runs = StringPrintf(
               kDemonFormat, demon_runs->demon_id().c_str(), invocations, fails,
               runtime, mean_runtime, median_runtime, standard_deviation);
-          file->Write(runs.c_str(), runs.length());
+          file::WriteString(file, runs, file::Defaults()).IgnoreError();
         }
       }
     }

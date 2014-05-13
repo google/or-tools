@@ -776,7 +776,7 @@ class DomainIntVar : public IntVar {
   virtual void SetValue(int64 v);
   virtual bool Bound() const { return (min_.Value() == max_.Value()); }
   virtual int64 Value() const {
-    CHECK_EQ(min_.Value(), max_.Value()) << "variable " << DebugString().c_str()
+    CHECK_EQ(min_.Value(), max_.Value()) << "variable " << DebugString()
                                          << "is not bound.";
     return min_.Value();
   }

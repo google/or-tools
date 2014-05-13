@@ -150,8 +150,8 @@ class PartialSum {
   std::string DebugString() const {
     return StringPrintf(
         "PartialSum(offset=%lld, last_value = %lld, sum = %s, ds = %s)",
-        offset_, last_value_, IntVectorToString(sum_, ", ").c_str(),
-        IntVectorToString(ds_, ", ").c_str());
+        offset_, last_value_, strings::Join(sum_, ", ").c_str(),
+        strings::Join(ds_, ", ").c_str());
   }
 
  private:

@@ -116,6 +116,7 @@ class Status {
   explicit Status(bool ok) : ok_(ok) {}
   bool ok() const { return ok_; }
   bool CheckSuccess() const { return ok_; }
+  void IgnoreError() const {}
 
  private:
   const bool ok_;
@@ -130,6 +131,10 @@ Status SetContents(const std::string& filename, const std::string& contents, int
 // A reduced version of the file::GetContents() function, which as of 2013-09
 // can only be used with flags = file::Defaults().
 Status GetContents(const std::string& filename, std::string* output, int flags);
+
+// A reduced version of the file::WriteString() function which as of 2014-04 can
+// only be used with flags = file::Defaults().
+Status WriteString(File* file, const std::string& contents, int flags);
 
 bool ReadFileToString(const std::string& file_name, std::string* output);
 bool WriteStringToFile(const std::string& data, const std::string& file_name);

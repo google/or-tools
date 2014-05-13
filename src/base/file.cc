@@ -151,6 +151,15 @@ Status GetContents(const std::string& filename, std::string* output, int flags) 
   return Status(size == file->ReadToString(output, size));
 }
 
+Status WriteString(File* file, const std::string& contents, int flags) {
+  if (flags != Defaults()) {
+    LOG(DFATAL) << "file::WriteString() with unsupported flags=" << flags;
+    return Status(false);
+  }
+  return Status(file->Write(contents.c_str(), contents.size())
+                == contents.size() );
+}
+
 bool ReadFileToString(const std::string& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }

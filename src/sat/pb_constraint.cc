@@ -352,20 +352,19 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
                                                  Coefficient* threshold,
                                                  Trail* trail,
                                                  std::vector<Literal>* conflict) {
-  rhs_ = rhs;
-
   // Compute the slack from the assigned variables with a trail index
   // smaller than the given trail_index. The variable at trail_index has not
   // yet been propagated.
+  rhs_ = rhs;
   Coefficient slack = rhs;
+
+  // sum_at_previous_level[i] is the sum of assigned literals with a level <
+  // i. Since we want the sums up to sum_at_previous_level[last_level + 1],
+  // the size of the vector must be last_level + 2.
+  const int last_level = trail->CurrentDecisionLevel();
+  std::vector<Coefficient> sum_at_previous_level(last_level + 2, Coefficient(0));
+
   if (trail_index > 0) {
-    const int last_level = trail->CurrentDecisionLevel();
-
-    // sum_at_previous_level[i] is the sum of assigned literals with a level <
-    // i. Since we want the sums up to sum_at_previous_level[last_level + 1],
-    // the size of the vector must be last_level + 2.
-    std::vector<Coefficient> sum_at_previous_level(last_level + 2, Coefficient(0));
-
     int literal_index = 0;
     int coeff_index = 0;
     for (Literal literal : literals_) {
@@ -387,25 +386,27 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
     for (int i = 1; i < sum_at_previous_level.size(); ++i) {
       sum_at_previous_level[i] += sum_at_previous_level[i - 1];
     }
+  }
 
-    // Check the no-propagation at earlier level precondition.
-    literal_index = 0;
-    coeff_index = 0;
-    for (Literal literal : literals_) {
-      const VariableIndex var = literal.Variable();
-      const int level = trail->Assignment().IsVariableAssigned(var)
-                            ? trail->Info(var).level
-                            : last_level;
-      if (coeffs_[coeff_index] > rhs_ - sum_at_previous_level[level]) {
-        // This variable should have been propagated at an earlier level.
-        return false;
-      }
-      ++literal_index;
-      if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
+  // Check the no-propagation at earlier level precondition.
+  int literal_index = 0;
+  int coeff_index = 0;
+  for (Literal literal : literals_) {
+    const VariableIndex var = literal.Variable();
+    const int level = trail->Assignment().IsVariableAssigned(var)
+                          ? trail->Info(var).level
+                          : last_level;
+    if (level > 0) {
+      CHECK_LE(coeffs_[coeff_index], rhs_ - sum_at_previous_level[level])
+          << "var should have been propagated at an earlier level !";
     }
+    ++literal_index;
+    if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
   }
 
   // Initial propagation.
+  // TODO(user): The trail_index for the propagation reason can be higher than
+  // necessary, fix this.
   index_ = coeffs_.size() - 1;
   already_propagated_end_ = literals_.size();
   Update(slack, threshold);

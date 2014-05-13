@@ -19,11 +19,12 @@
 #include <vector>
 
 #include "algorithms/dynamic_partition.h"
+#include "algorithms/dynamic_permutation.h"
 #include "graph/graph.h"
+#include "util/stats.h"
 
 namespace operations_research {
 
-class DynamicPartition;
 class SparsePermutation;
 
 class GraphSymmetryFinder {
@@ -36,7 +37,7 @@ class GraphSymmetryFinder {
   // Whether the given permutation is an automorphism of the graph given at
   // construction. This costs O(sum(degree(x))) (the sum is over all nodes x
   // that are displaced by the permutation).
-  bool IsGraphAutomorphism(const SparsePermutation& perm) const;
+  bool IsGraphAutomorphism(const DynamicPermutation& permutation) const;
 
   // Find a set of generators of the automorphism subgroup of the graph that
   // respects the given node equivalence classes. The generators are themselves
@@ -45,7 +46,7 @@ class GraphSymmetryFinder {
   // class: two nodes i and j are in the same equivalence class iff
   // node_equivalence_classes_io[i] == node_equivalence_classes_io[j];
   //
-  // This set of generators is not necessarily the smallest possible (nor in
+  // This set of generators is not necessarily the smallest possible (neither in
   // the number of generators, nor in the size of these generators), but it is
   // minimal in that no generator can be removed while keeping the generated
   // group intact.
@@ -92,7 +93,10 @@ class GraphSymmetryFinder {
 
   // Special wrapper of the above method: assuming that partition is already
   // fully refined, further refine it by {node}, and propagate by adjacency.
-  void DistinguishNodeInPartition(int node, DynamicPartition* partition);
+  // Also, optionally collect all the new singletons of the partition in
+  // "new_singletons", sorted by their part number in the partition.
+  void DistinguishNodeInPartition(int node, DynamicPartition* partition,
+                                  std::vector<int>* new_singletons_or_null);
 
  private:
   const Graph& graph_;
@@ -115,46 +119,110 @@ class GraphSymmetryFinder {
       const std::vector<std::unique_ptr<SparsePermutation>>& generators_found_so_far,
       const std::vector<std::vector<int>>& permutations_displacing_node);
 
-  // Among a list of permutations (the subset of 'permutation_vector' whose
-  // indices are "permutation_indices"), find those that are compatible with
-  // the given partition, i.e. whose orbits are all included in a partition's
-  // part (distinct orbits may be included in distinct parts).
-  // This is used uniquely within FindOneSuitablePermutation().
-  void FindPermutationsCompatibleWithPartition(
-      const std::vector<int>& permutation_indices,
-      const std::vector<std::unique_ptr<SparsePermutation>>& permutation_vector,
-      DynamicPartition* partition,
-      std::vector<const SparsePermutation*>* compatible_permutations);
-
-  // Temporary vector used by IsGraphAutomorphism(). When not in use, the
-  // mapping should be tmp_node_mapping_[i] = i for all i.
-  mutable std::vector<int> tmp_node_mapping_;
-  mutable std::vector<bool> tmp_node_mask_;
-
-  // Temporary vectors transiently used by RefinePartitionByAdjacencyFrom(),
-  // and cleaned up after each call.
-  std::vector<int> tmp_in_degree_;
-  std::vector<int> tmp_nodes_with_nonzero_indegree_;
-  std::vector<std::vector<int>> tmp_nodes_with_indegree_;
-
-  // Temporary data used within FindOneSuitablePermutation().
-  MergingPartition tmp_partition_;
-  std::vector<const SparsePermutation*> tmp_compatible_permutations_;
-
   // Data structure used by FindOneSuitablePermutation(). See the .cc
   struct SearchState {
     int base_node;
-    std::vector<int> potential_image_nodes;
-    int num_parts_before_trying_to_map_base_node;
-    bool potential_image_nodes_were_pruned;
 
-    SearchState(int bn, const std::vector<int>& vec, int num_parts, bool pruned)
-      : base_node(bn),
-        potential_image_nodes(vec),
-        num_parts_before_trying_to_map_base_node(num_parts),
-        potential_image_nodes_were_pruned(pruned) {}
+    // We're tentatively mapping "base_node" to some image node. At first, we
+    // just pick a single candidate: we fill "first_image_node". If this
+    // candidate doesn't work out, we'll select all other candidates in the same
+    // image part, prune them by the symmetries we found already, and put them
+    // in "remaining_pruned_image_nodes" (and set "first_image_node" to -1).
+    int first_image_node;
+    std::vector<int> remaining_pruned_image_nodes;
+
+    int num_parts_before_trying_to_map_base_node;
+
+    // Only parts that are at or beyond this index, or their parent parts, may
+    // be mismatching between the base and the image partitions.
+    int min_potential_mismatching_part_index;
+
+    SearchState(int bn, int in, int np, int mi)
+        : base_node(bn),
+          first_image_node(in),
+          num_parts_before_trying_to_map_base_node(np),
+          min_potential_mismatching_part_index(mi) {}
+
+    std::string DebugString() const;
   };
   std::vector<SearchState> search_states_;
+
+  // Subroutine of FindOneSuitablePermutation(), split out for modularity:
+  // With the partial candidate mapping given by "base_partition",
+  // "image_partition" and "current_permutation_candidate", determine whether
+  // we have a full match (eg. the permutation is a valid candidate).
+  // If so, simply return true. If not, return false but also fill
+  // "next_base_node" and "next_image_node" with what should be the next mapping
+  // decision.
+  //
+  // This also uses and updates "min_potential_mismatching_part_index_io"
+  // to incrementally search for mismatching parts along the partitions.
+  //
+  // Note(user): there may be false positives, i.e. this method may return true
+  // even if the partitions aren't actually a full match, because it uses
+  // fingerprints to compare part. This should almost never happen.
+  bool ConfirmFullMatchOrFindNextMappingDecision(
+      const DynamicPartition& base_partition,
+      const DynamicPartition& image_partition,
+      const DynamicPermutation& current_permutation_candidate,
+      int* min_potential_mismatching_part_index_io, int* next_base_node,
+      int* next_image_node) const;
+
+  // Subroutine of FindOneSuitablePermutation(), split out for modularity:
+  // Keep only one node of "nodes" per orbit, where the orbits are described
+  // by a subset of "all_permutations": the ones with indices in
+  // "permutation_indices" and that are compatible with "partition".
+  // For each orbit, keep the first node that appears in "nodes".
+  void PruneOrbitsUnderPermutationsCompatibleWithPartition(
+      const DynamicPartition& partition,
+      const std::vector<std::unique_ptr<SparsePermutation>>& all_permutations,
+      const std::vector<int>& permutation_indices, std::vector<int>* nodes);
+
+  // Temporary objects used by some of the class methods, and owned by the
+  // class to avoid (costly) re-allocation. Their resting states are described
+  // in the side comments; with N = NumNodes().
+  DynamicPermutation tmp_dynamic_permutation_;   // Identity(N)
+  mutable std::vector<bool> tmp_node_mask_;           // [0..N-1] = false
+  std::vector<int> tmp_in_degree_;                    // [0..N-1] = 0.
+  std::vector<int> tmp_stack_;                        // Empty.
+  std::vector<std::vector<int>> tmp_nodes_with_indegree_;  // [0..N-1] = [].
+  MergingPartition tmp_partition_;               // Reset(N).
+  std::vector<const SparsePermutation*> tmp_compatible_permutations_;  // Empty.
+
+  // Internal statistics, used for performance tuning and debugging.
+  struct Stats : public StatsGroup {
+    Stats()
+        : StatsGroup("GraphSymmetryFinder"),
+          initialization_time("initialization_time", this),
+          invariant_dive_time("invariant_dive_time", this),
+          invariant_unroll_time("invariant_unroll_time", this),
+          permutation_output_time("permutation_output_time", this),
+          num_search_states("num_search_states", this),
+          search_depth("search_depth", this),
+          dynamic_permutation_time("dynamic_permutation_time", this),
+          quick_compatibility_time("quick_compatibility_time", this),
+          map_election_time("map_election_time", this),
+          backtracking_time("backtracking_time", this),
+          search_deepening_time("search_deepening_time", this),
+          search_finalize_time("search_finalize_time", this) {}
+
+    // Timers for the global phases.
+    TimeDistribution initialization_time;
+    TimeDistribution invariant_dive_time;
+    TimeDistribution invariant_unroll_time;
+    TimeDistribution permutation_output_time;
+
+    // Timer/counters for FindOneSuitablePermutation().
+    IntegerDistribution num_search_states;
+    IntegerDistribution search_depth;
+    TimeDistribution dynamic_permutation_time;
+    TimeDistribution quick_compatibility_time;
+    TimeDistribution map_election_time;
+    TimeDistribution backtracking_time;
+    TimeDistribution search_deepening_time;
+    TimeDistribution search_finalize_time;
+  };
+  mutable Stats stats_;
 };
 
 }  // namespace operations_research

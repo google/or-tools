@@ -23,9 +23,9 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -224,8 +224,8 @@ void Pack::InitialPropagate() {
     if (need_context) {
       solver()->GetPropagationMonitor()->PushContext(StringPrintf(
           "Pack(bin %d, forced = [%s], undecided = [%s])", bin_index,
-          IntVectorToString(forced_[bin_index], ", ").c_str(),
-          IntVectorToString(data->undecided(bin_index), ", ").c_str()));
+          strings::Join(forced_[bin_index], ", ").c_str(),
+          strings::Join(data->undecided(bin_index), ", ").c_str()));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
@@ -247,8 +247,8 @@ void Pack::InitialPropagate() {
   if (need_context) {
     solver()->GetPropagationMonitor()->PushContext(
         StringPrintf("Pack(assigned = [%s], unassigned = [%s])",
-                     IntVectorToString(data->assigned(), ", ").c_str(),
-                     IntVectorToString(data->unassigned(), ", ").c_str()));
+                     strings::Join(data->assigned(), ", ").c_str(),
+                     strings::Join(data->unassigned(), ", ").c_str()));
   }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
     if (need_context) {
@@ -280,8 +280,8 @@ void Pack::Propagate() {
       if (need_context) {
         solver()->GetPropagationMonitor()->PushContext(StringPrintf(
             "Pack(bin %d, forced = [%s], removed = [%s])", bin_index,
-            IntVectorToString(forced_[bin_index], ", ").c_str(),
-            IntVectorToString(removed_[bin_index], ", ").c_str()));
+            strings::Join(forced_[bin_index], ", ").c_str(),
+            strings::Join(removed_[bin_index], ", ").c_str()));
       }
 
       for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
@@ -304,8 +304,8 @@ void Pack::Propagate() {
     if (need_context) {
       solver()->GetPropagationMonitor()->PushContext(
           StringPrintf("Pack(removed = [%s], forced = [%s])",
-                       IntVectorToString(removed_[bins_], ", ").c_str(),
-                       IntVectorToString(forced_[bins_], ", ").c_str()));
+                       strings::Join(removed_[bins_], ", ").c_str(),
+                       strings::Join(forced_[bins_], ", ").c_str()));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {

@@ -20,6 +20,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
@@ -235,7 +236,7 @@ class IntElementConstraint : public CastConstraint {
 
   virtual std::string DebugString() const {
     return StringPrintf("IntElementConstraint(%s, %s, %s)",
-                        IntVectorToString(values_, ", ").c_str(),
+                        strings::Join(values_, ", ").c_str(),
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -275,7 +276,7 @@ class IntExprElement : public BaseIntExprElement {
                           expr_->name().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
-                          IntVectorToString(values_, ", ").c_str(),
+                          strings::Join(values_, ", ").c_str(),
                           expr_->name().c_str());
     }
   }
@@ -287,7 +288,7 @@ class IntExprElement : public BaseIntExprElement {
                           expr_->DebugString().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
-                          IntVectorToString(values_, ", ").c_str(),
+                          strings::Join(values_, ", ").c_str(),
                           expr_->DebugString().c_str());
     }
   }
@@ -340,12 +341,12 @@ class IncreasingIntExprElement : public BaseIntExpr {
   // TODO(user) : improve me, the previous test is not always true
   virtual std::string name() const {
     return StringPrintf("IntElement(%s, %s)",
-                        IntVectorToString(values_, ", ").c_str(),
+                        strings::Join(values_, ", ").c_str(),
                         index_->name().c_str());
   }
   virtual std::string DebugString() const {
     return StringPrintf("IntElement(%s, %s)",
-                        IntVectorToString(values_, ", ").c_str(),
+                        strings::Join(values_, ", ").c_str(),
                         index_->DebugString().c_str());
   }
 
