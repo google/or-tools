@@ -254,8 +254,8 @@ std::string FzArgument::DebugString() const {
   }
 }
 
-bool FzArgument::IsIntegerVariable() const {
-  return type == INT_VAR_REF && variables[0]->defining_constraint == nullptr;
+bool FzArgument::IsVariable() const {
+  return type == INT_VAR_REF;
 }
 
 bool FzArgument::HasOneValue() const {

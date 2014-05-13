@@ -141,8 +141,8 @@ struct FzArgument {
 
   // Helpers
 
-  // Returns true if the argument is a variable that is not a target variable.
-  bool IsIntegerVariable() const;
+  // Returns true if the argument is a variable.
+  bool IsVariable() const;
   // Returns true if the argument has only one value (single value, or variable
   // with a singleton domain).
   bool HasOneValue() const;
