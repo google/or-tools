@@ -1195,6 +1195,26 @@ void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
   if (size <= 3) {
+    // Checks if it is not a hidden or.
+    if (ct->Arg(2).Value() == 1 && AreAllOnes(ct->Arg(0).values)) {
+      // Good candidate.
+      bool ok = true;
+      for (FzIntegerVariable* const var : ct->Arg(1).variables) {
+        IntExpr* const expr = fzsolver->Extract(var);
+        if (expr->Min() < 0 || expr->Max() > 1 || !expr->IsVar()) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        std::vector<IntVar*> vars;
+        std::vector<int64> coeffs;
+        int64 rhs = 0;
+        ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
+        PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
+        return;
+      }
+    }
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);

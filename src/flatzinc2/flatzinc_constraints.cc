@@ -777,6 +777,9 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
   } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
              AddBoolOrArrayEqualTrue(sat, alt) && AddAtMostOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
+  } else if (FLAGS_use_sat && range_min == 1 && range_max == possible_vars &&
+             AddBoolOrArrayEqualTrue(sat, alt)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const ct =
         MakeBooleanSumInRange(solver, alt, range_min, range_max);
