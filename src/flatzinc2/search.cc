@@ -241,7 +241,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   // Create the active_variables array, push smaller variables first.
   for (int i = 0; i < active_variables_.size(); ++i) {
     IntVar* const var = active_variables_[i];
-    if (!ContainsKey(added, var)) {
+    if (!ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() < 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
@@ -251,7 +251,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   }
   for (int i = 0; i < active_variables_.size(); ++i) {
     IntVar* const var = active_variables_[i];
-    if (!ContainsKey(added, var)) {
+    if (!ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() >= 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
@@ -418,7 +418,7 @@ void FzSolver::SyncWithModel() {
     }
     IntVar* const var = expr->Var();
     extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
-    if (fz_var->temporary) {
+    if (fz_var->temporary || fz_var->defining_constraint != nullptr) {
       introduced_variables_.push_back(var);
     } else {
       active_variables_.push_back(var);
