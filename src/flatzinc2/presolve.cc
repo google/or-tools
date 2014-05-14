@@ -500,14 +500,25 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     return true;
   }
-  if (ct->Arg(0).values.size() == 3 && ct->Arg(1).variables[0] &&
-      ct->target_variable && ct->Arg(0).values[0] == -1 &&
-      ct->Arg(0).values[2] == 1 &&
+  if (ct->Arg(0).values.size() == 3 &&
+      ct->Arg(1).variables[0] == ct->target_variable &&
+      ct->Arg(0).values[0] == -1 && ct->Arg(0).values[2] == 1 &&
       !ContainsKey(flatten_map_, ct->target_variable) &&
       ct->strong_propagation) {
     flatten_map_[ct->target_variable] =
         FlatteningMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
                           ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
+    FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
+    //    ct->MarkAsInactive();
+    return true;
+  } else if (ct->Arg(0).values.size() == 3 &&
+      ct->Arg(1).variables[0] == ct->target_variable &&
+      ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
+      !ContainsKey(flatten_map_, ct->target_variable) &&
+      ct->strong_propagation) {
+    flatten_map_[ct->target_variable] =
+        FlatteningMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
+                          ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     //    ct->MarkAsInactive();
     return true;
@@ -1007,24 +1018,18 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
     if (id == "int_lin_eq" && ct->strong_propagation) {
-      if (ct->Arg(0).values.size() > 2) {
+      if (ct->Arg(0).values.size() > 3) {
         // We will use a table constraint. Remove the target variable flag.
         FZVLOG << "Remove target_variable from " << ct->DebugString() << FZENDL;
         ct->RemoveTargetVariable();
-      } else {
-        // int_lin_eq with 2 variables will propagate perfectly. Removing
-        // the strong propagation flag.
-        FZVLOG << "Remove strong_propagation from " << ct->DebugString()
-               << FZENDL;
-        ct->strong_propagation = false;
       }
     }
     // Remove target variables from constraints passed to SAT.
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) ||
-         id == "bool_le_reif" || id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.
