@@ -347,6 +347,7 @@ std::string FzConstraint::DebugString() const {
 void FzConstraint::MarkAsInactive() {
   FZVLOG << "  - marking " << DebugString() << " as inactive" << FZENDL;
   active = false;
+  RemoveTargetVariable();
   // TODO(user): Reclaim arguments and memory.
 }
 

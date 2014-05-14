@@ -35,9 +35,8 @@ namespace operations_research {
 // constraint: int_var = cast(bool_var). The presolve substitutes the bool_var
 // by the integer variable everywhere.
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
-  ct->RemoveTargetVariable();
-  MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
   ct->MarkAsInactive();
+  MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
   return true;
 }
 
@@ -268,7 +267,6 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
       ct->Arg(1).variables[0]->domain.IntersectWithInterval(1, 1);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
@@ -277,7 +275,6 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
       ct->Arg(1).variables[0]->domain.IntersectWithInterval(0, 0);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
@@ -326,7 +323,6 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
       ct->Arg(1).variables[0]->domain.IntersectWithInterval(0, 0);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
@@ -335,7 +331,6 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
       ct->Arg(1).variables[0]->domain.IntersectWithInterval(1, 1);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
@@ -672,7 +667,6 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
              << value << FZENDL;
       CHECK_EQ(FzArgument::INT_VAR_REF, ct->Arg(2).type);
       ct->Arg(2).variables[0]->domain.IntersectWithInterval(value, value);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
@@ -710,7 +704,6 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
       FZVLOG << "Assign boolvar to " << state << " in " << ct->DebugString()
              << FZENDL;
       ct->Arg(2).Var()->domain.IntersectWithInterval(state, state);
-      ct->RemoveTargetVariable();
       ct->MarkAsInactive();
       return true;
     }
