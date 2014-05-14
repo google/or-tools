@@ -1305,7 +1305,7 @@ $(BIN_DIR)/sat_runner$E: $(DYNAMIC_SAT_DEPS) $(OBJ_DIR)/sat/sat_runner.$O
 
 # OR Tools unique library.
 
-$(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(BASE_LIB_OBJS)
+$(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX) \
 	  $(ALGORITHMS_LIB_OBJS) \
@@ -1314,6 +1314,7 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OB
 	  $(GRAPH_LIB_OBJS) \
 	  $(LINEAR_SOLVER_LIB_OBJS) \
 	  $(ROUTING_LIB_OBJS) \
+	  $(SAT_LIB_OBJS) \
 	  $(SHORTESTPATHS_LIB_OBJS) \
 	  $(UTIL_LIB_OBJS) \
 	  $(STATIC_LD_LP_DEPS) \
@@ -1371,6 +1372,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)/include/gflags
 	mkdir temp/or-tools.$(PORT)/include/graph
 	mkdir temp/or-tools.$(PORT)/include/linear_solver
+	mkdir temp/or-tools.$(PORT)/include/sat
 	mkdir temp/or-tools.$(PORT)/include/util
 	mkdir temp/or-tools.$(PORT)/lib
 	mkdir temp/or-tools.$(PORT)/objs
@@ -1387,6 +1389,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cp src/graph/*.h temp/or-tools.$(PORT)/include/graph
 	cp src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
 	cp src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver
+	cp src/sat/*.h temp/or-tools.$(PORT)/include/sat
+	cp src/gen/sat/*.pb.h temp/or-tools.$(PORT)/include/sat
 	cp src/util/*.h temp/or-tools.$(PORT)/include/util
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
