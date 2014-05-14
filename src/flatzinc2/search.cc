@@ -267,8 +267,10 @@ void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
     if (output.variable != nullptr) {
       out->push_back(Extract(output.variable)->Var());
     }
-    for (int i = 0; i < output.flat_variables.size(); ++i) {
-      out->push_back(Extract(output.flat_variables[i])->Var());
+    for (FzIntegerVariable* const var : output.flat_variables) {
+      if (var->defining_constraint == nullptr) {
+        out->push_back(Extract(var)->Var());
+      }
     }
   }
 }
@@ -283,8 +285,12 @@ void FzSolver::AddCompletionDecisionBuilders(
   std::vector<IntVar*> output_variables;
   CollectOutputVariables(&output_variables);
   std::vector<IntVar*> secondary_vars;
-  for (int i = 0; i < output_variables.size(); ++i) {
-    IntVar* const var = output_variables[i];
+  for (IntVar* const var :  active_variables) {
+    if (!ContainsKey(already_defined, var) && !var->Bound()) {
+      secondary_vars.push_back(var);
+    }
+  }
+  for (IntVar* const var :  output_variables) {
     if (!ContainsKey(already_defined, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
@@ -413,12 +419,12 @@ void FzSolver::SyncWithModel() {
       continue;
     }
     IntExpr* const expr = Extract(fz_var);
-    if (!expr->IsVar()) {
+    if (!expr->IsVar() || fz_var->defining_constraint != nullptr) {
       continue;
     }
     IntVar* const var = expr->Var();
     extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
-    if (fz_var->temporary || fz_var->defining_constraint != nullptr) {
+    if (fz_var->temporary) {
       introduced_variables_.push_back(var);
     } else {
       active_variables_.push_back(var);
