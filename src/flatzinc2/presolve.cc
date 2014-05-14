@@ -402,12 +402,20 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   return false;
 }
 
-// Propagate IntLinGe:
-//   if size is 1, transform to int_ge
+bool IsNotTooSparse(const std::vector<int64>& values) {
+  std::vector<int64> copy(values);
+  std::sort(copy.begin(), copy.end());
+  int counter = 1;
+  for (int i = 1; i < copy.size(); ++i) {
+    counter += copy[i] != copy[i - 1];
+  }
+  return (copy.back() - copy.front()) / counter < 16;
+}
 
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
-  if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
+  if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done &&
+      IsNotTooSparse(ct->Arg(1).values)) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
     IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
     ct->presolve_propagation_done = true;
@@ -512,10 +520,10 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
     //    ct->MarkAsInactive();
     return true;
   } else if (ct->Arg(0).values.size() == 3 &&
-      ct->Arg(1).variables[0] == ct->target_variable &&
-      ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
-      !ContainsKey(flatten_map_, ct->target_variable) &&
-      ct->strong_propagation) {
+             ct->Arg(1).variables[0] == ct->target_variable &&
+             ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
+             !ContainsKey(flatten_map_, ct->target_variable) &&
+             ct->strong_propagation) {
     flatten_map_[ct->target_variable] =
         FlatteningMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
                           ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
@@ -569,6 +577,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     return true;
   }
   if (ContainsKey(flatten_map_, index_var)) {
+    FZVLOG << "Rewrite " << ct->DebugString() << " as a 2d element" << FZENDL;
     const FlatteningMapping& mapping = flatten_map_[index_var];
     // Rewrite constraint.
     ct->MutableArg(0)->variables[0] = mapping.variable1;
