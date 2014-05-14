@@ -697,6 +697,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
   }
   FzIntegerVariable* var = nullptr;
   int64 value = 0;
+  bool reverse = false;
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF && ct->Arg(1).HasOneValue()) {
     var = ct->Arg(0).Var();
     value = ct->Arg(1).Value();
@@ -704,6 +705,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
              ct->Arg(0).HasOneValue()) {
     var = ct->Arg(1).Var();
     value = ct->Arg(0).Value();
+    reverse = true;
   }
   if (var != nullptr) {
     int state = 2;  // 0 force_false, 1 force true, 2 unknown.
@@ -722,6 +724,34 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
         }
       } else {
         state = 1;
+      }
+    } else if (id == "int_lt_reif" && !var->domain.values.empty()) {
+      if (reverse) {  // int_gt
+        if (var->domain.values[0] > value) {
+          state = 1;
+        } else if (var->domain.values[1] <= value) {
+          state = 0;
+        }
+      } else {
+        if (var->domain.values[1] < value) {
+          state = 1;
+        } else if (var->domain.values[0] >= value) {
+          state = 0;
+        }
+      }
+    } else if (id == "int_le_reif" && !var->domain.values.empty()) {
+      if (reverse) {  // int_ge
+        if (var->domain.values[0] >= value) {
+          state = 1;
+        } else if (var->domain.values[1] < value) {
+          state = 0;
+        }
+      } else {
+        if (var->domain.values[1] <= value) {
+          state = 1;
+        } else if (var->domain.values[0] > value) {
+          state = 0;
+        }
       }
     }
     if (state != 2) {
