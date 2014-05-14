@@ -529,6 +529,9 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
 // Reconstructs the 2d element constraint in case the mapping only contains 1
 // variable. (e.g. x = A[2][y]).
 bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
+  if (ct->Arg(0).variables.size() > 1) {
+    return false;
+  }
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
   if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
@@ -582,6 +585,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     index_var->active = false;
     mapping.constraint->MarkAsInactive();
     // TODO(user): Check if presolve is valid.
+    return true;
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
       index_var->domain.values[1] < ct->Arg(1).values.size()) {
