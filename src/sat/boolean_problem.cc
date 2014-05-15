@@ -163,31 +163,6 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
       }
     }
   }
-
-  // We also display the objective value of an optimization problem.
-  if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
-      problem.type() == LinearBooleanProblem::MAXIMIZATION) {
-    Coefficient sum(0);
-    Coefficient min_value(0);
-    Coefficient max_value(0);
-    const LinearObjective& objective = problem.objective();
-    for (int i = 0; i < objective.literals_size(); ++i) {
-      if (objective.coefficients(i) > 0) {
-        max_value += objective.coefficients(i);
-      } else {
-        min_value += objective.coefficients(i);
-      }
-      if (assignment.IsLiteralTrue(objective.literals(i))) {
-        sum += objective.coefficients(i);
-      }
-    }
-    LOG(INFO) << "objective: " << sum.value() * objective.scaling_factor() +
-                                      objective.offset() << " trivial_bounds: ["
-              << min_value.value() * objective.scaling_factor() +
-                     objective.offset() << ", "
-              << max_value.value() * objective.scaling_factor() +
-                     objective.offset() << "]";
-  }
   return true;
 }
 
@@ -429,7 +404,8 @@ void FindLinearBooleanProblemSymmetries(
                   << status.ToString();
     }
   }
-  GraphSymmetryFinder symmetry_finder(*graph.get());
+  GraphSymmetryFinder symmetry_finder(*graph.get(),
+                                      /*graph_is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   symmetry_finder.FindSymmetries(&equivalence_classes, generators,
                                  &factorized_automorphism_group_size);

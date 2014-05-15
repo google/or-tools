@@ -98,4 +98,10 @@ message LinearBooleanProblem {
   // Stores an assignement of the problem variables. That may be an initial
   // feasible solution, just a partial assignement or the optimal solution.
   optional BooleanAssignment assignment = 7;
+
+  // Hack: When converting a wcnf formulat to a LinearBooleanProblem, extra
+  // variables need to be created. This stores the number of variables in the
+  // original problem (which are in one to one correspondence with the first
+  // variables of this problem).
+  optional int32 original_num_variables = 8;
 }

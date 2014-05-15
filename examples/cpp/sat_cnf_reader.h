@@ -46,11 +46,12 @@ class SatCnfReader {
     int num_lines = 0;
     for (const std::string& line : FileLines(filename)) {
       ++num_lines;
-      ProcessNewLine(problem, line);
+      ProcessNewLine(line, problem);
     }
     if (num_lines == 0) {
       LOG(FATAL) << "File '" << filename << "' is empty or can't be read.";
     }
+    problem->set_original_num_variables(num_variables_);
     problem->set_num_variables(num_variables_ + slack_variable_weights_.size());
 
     // Add the slack variables (to convert max-sat to an pseudo-Boolean
@@ -82,38 +83,56 @@ class SatCnfReader {
     return problem_name;
   }
 
-  void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
+  int64 StringPieceAtoi(StringPiece input) {
+    // Hack: data() is not null terminated, but we do know that it points
+    // inside a std::string where numbers are separated by " " and since atoi64 will
+    // stop at the first invalid char, this works.
+    return atoi64(input.data());
+  }
+
+  void ProcessNewLine(const std::string& line, LinearBooleanProblem* problem) {
     static const char kWordDelimiters[] = " ";
-    std::vector<std::string> words;
-    SplitStringUsing(line, kWordDelimiters, &words);
-    if (words.size() == 0 || words[0] == "c" || end_marker_seen_) return;
-    if (words[0] == "%") {
+    words_ = strings::Split(
+        line, kWordDelimiters,
+        static_cast<int64>(strings::SkipEmpty()));
+    if (words_.size() == 0 || words_[0] == "c" || end_marker_seen_) return;
+    if (words_[0] == "%") {
       end_marker_seen_ = true;
       return;
     }
 
-    if (words[0] == "p") {
-      if (words[1] == "cnf" || words[1] == "wcnf") {
-        num_variables_ = atoi32(words[2]);
-        num_clauses_ = atoi32(words[3]);
-        if (words[1] == "wcnf") {
+    if (words_[0] == "p") {
+      if (words_[1] == "cnf" || words_[1] == "wcnf") {
+        num_variables_ = StringPieceAtoi(words_[2]);
+        num_clauses_ = StringPieceAtoi(words_[3]);
+        if (words_[1] == "wcnf") {
           is_wcnf_ = true;
-          hard_weight_ = atoi64(words[4]);
+          hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
           problem->set_type(LinearBooleanProblem::MINIMIZATION);
         } else {
           problem->set_type(LinearBooleanProblem::SATISFIABILITY);
         }
       } else {
-        LOG(FATAL) << "Unknow file type: " << words[1];
+        LOG(FATAL) << "Unknow file type: " << words_[1];
       }
     } else {
+      // In the cnf file format, the last words should always be 0.
+      DCHECK_EQ("0", words_.back());
+      const int size = words_.size() - 1;
+
       LinearBooleanConstraint* constraint = problem->add_constraints();
+      constraint->mutable_literals()->Reserve(size);
+      constraint->mutable_coefficients()->Reserve(size);
       constraint->set_lower_bound(1);
-      for (int i = 0; i < words.size(); ++i) {
-        int64 signed_value = atoi64(words[i]);
+
+      for (int i = 0; i < size; ++i) {
+        const int64 signed_value = StringPieceAtoi(words_[i]);
         if (i == 0 && is_wcnf_) {
           // Mathematically, a soft clause of weight 0 can be removed.
-          if (signed_value == 0) break;
+          if (signed_value == 0) {
+            problem->mutable_constraints()->RemoveLast();
+            break;
+          }
           if (signed_value != hard_weight_) {
             const int slack_literal =
                 num_variables_ + slack_variable_weights_.size() + 1;
@@ -123,15 +142,23 @@ class SatCnfReader {
           }
           continue;
         }
-        if (signed_value == 0) break;
+        DCHECK_NE(signed_value, 0);
         constraint->add_literals(signed_value);
         constraint->add_coefficients(1);
+      }
+      if (DEBUG_MODE && !is_wcnf_) {
+        // If wcnf is true, we currently reserve one more literals than needed
+        // for the hard clauses.
+        DCHECK_EQ(constraint->literals_size(), size);
       }
     }
   }
 
   int num_clauses_;
   int num_variables_;
+
+  // Temporary storage for ProcessNewLine().
+  std::vector<StringPiece> words_;
 
   // Used for the wcnf format.
   bool is_wcnf_;

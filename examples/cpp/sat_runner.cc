@@ -85,6 +85,89 @@ double GetScaledObjective(const LinearBooleanProblem& problem,
          problem.objective().offset();
 }
 
+void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
+  if (HasSuffixString(filename, ".opb") ||
+      HasSuffixString(filename, ".opb.bz2")) {
+    OpbReader reader;
+    if (!reader.Load(filename, problem)) {
+      LOG(FATAL) << "Cannot load file '" << filename << "'.";
+    }
+  } else if (HasSuffixString(filename, ".cnf") ||
+             HasSuffixString(filename, ".wcnf")) {
+    SatCnfReader reader;
+    if (!reader.Load(filename, problem)) {
+      LOG(FATAL) << "Cannot load file '" << filename << "'.";
+    }
+  } else {
+    file::ReadFileToProtoOrDie(filename, problem);
+  }
+}
+
+std::string SolutionString(const LinearBooleanProblem& problem,
+                      const VariablesAssignment& assignment) {
+  std::string output;
+  VariableIndex limit(problem.original_num_variables());
+  for (VariableIndex index(0); index < limit; ++index) {
+    if (index > 0) output += " ";
+    output += StringPrintf("%d", assignment.GetTrueLiteralForAssignedVariable(
+                                                index).SignedValue());
+  }
+  return output;
+}
+
+void PrintObjective(double objective) {
+  printf("o %lld\n", static_cast<int64>(objective));
+}
+
+// Same as Run() with --solve_optimal, no logging, and an output in the cnf
+// format.
+int RunWithCnfOutputFormat(std::string filename) {
+  SatSolver solver;
+
+  // Read the problem.
+  LinearBooleanProblem problem;
+  LoadBooleanProblem(filename, &problem);
+
+  // Load the problem into the solver.
+  if (!LoadBooleanProblem(problem, &solver)) {
+    LOG(FATAL) << "Couldn't load problem '" << filename << "'.";
+  }
+
+  // This has a big positive impact on most problems.
+  UseObjectiveForSatAssignmentPreference(problem, &solver);
+
+  Coefficient objective = kCoefficientMax;
+  while (true) {
+    const SatSolver::Status result = solver.Solve();
+    if (result == SatSolver::MODEL_UNSAT) {
+      if (objective == kCoefficientMax) {
+        printf("s UNSAT\n");
+      } else {
+        printf("s OPTIMUM FOUND\n");
+        printf("v %s\n", SolutionString(problem, solver.Assignment()).c_str());
+      }
+      break;
+    }
+    if (result != SatSolver::MODEL_SAT) {
+      printf("c LIMIT REACHED\n");
+      break;
+    }
+    CHECK(IsAssignmentValid(problem, solver.Assignment()));
+    const Coefficient old_objective = objective;
+    objective = ComputeObjectiveValue(problem, solver.Assignment());
+    PrintObjective(GetScaledObjective(problem, objective));
+    CHECK_LT(objective, old_objective);
+    solver.Backtrack(0);
+    if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
+                                objective - 1, &solver)) {
+      printf("s OPTIMUM FOUND\n");
+      printf("v %s\n", SolutionString(problem, solver.Assignment()).c_str());
+      break;
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
 // To benefit from the operations_research namespace, we put all the main() code
 // here.
 int Run() {
@@ -111,21 +194,7 @@ int Run() {
 
   // Read the problem.
   LinearBooleanProblem problem;
-  if (HasSuffixString(FLAGS_input, ".opb") ||
-      HasSuffixString(FLAGS_input, ".opb.bz2")) {
-    OpbReader reader;
-    if (!reader.Load(FLAGS_input, &problem)) {
-      LOG(FATAL) << "Cannot load file '" << FLAGS_input << "'.";
-    }
-  } else if (HasSuffixString(FLAGS_input, ".cnf") ||
-             HasSuffixString(FLAGS_input, ".wcnf")) {
-    SatCnfReader reader;
-    if (!reader.Load(FLAGS_input, &problem)) {
-      LOG(FATAL) << "Cannot load file '" << FLAGS_input << "'.";
-    }
-  } else {
-    file::ReadFileToProtoOrDie(FLAGS_input, &problem);
-  }
+  LoadBooleanProblem(FLAGS_input, &problem);
 
 
   // Load the problem into the solver.
@@ -263,5 +332,10 @@ static const char kUsage[] =
 int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
-  return operations_research::sat::Run();
+  if (argc == 2) {
+    printf("c %s\n", argv[1]);
+    return operations_research::sat::RunWithCnfOutputFormat(argv[1]);
+  } else {
+    return operations_research::sat::Run();
+  }
 }
