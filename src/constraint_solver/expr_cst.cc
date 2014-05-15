@@ -875,8 +875,9 @@ class IsBetweenCt : public Constraint {
 
   virtual void InitialPropagate() {
     bool inhibit = false;
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
     int64 u = 1 - (emin > max_ || emax < min_);
     int64 l = emax <= max_ && emin >= min_;
     boolvar_->SetRange(l, u);
@@ -885,6 +886,7 @@ class IsBetweenCt : public Constraint {
       if (boolvar_->Min() == 0) {
         if (expr_->IsVar()) {
           expr_->Var()->RemoveInterval(min_, max_);
+          inhibit = true;
         } else if (emin > min_) {
           expr_->SetMin(max_ + 1);
         } else if (emax < max_) {
@@ -901,10 +903,10 @@ class IsBetweenCt : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf(
-        "IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %s)",
-        expr_->DebugString().c_str(), min_, max_,
-        boolvar_->DebugString().c_str());
+    return StringPrintf("IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
+                        "d, %s)",
+                        expr_->DebugString().c_str(), min_, max_,
+                        boolvar_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -948,8 +950,7 @@ namespace {
 // TODO(user): Do not create holes on expressions.
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s, IntVar* const v,
-           const std::vector<int64>& sorted_values)
+  MemberCt(Solver* const s, IntVar* const v, const std::vector<int64>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
@@ -1122,30 +1123,44 @@ class IsMemberCt : public Constraint {
 };
 
 template <class T>
-Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
-                            const std::vector<T>& values,
-                            IntVar* const boolvar) {
+Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
+                            const std::vector<T>& values, IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
-  for (const T value : set_of_values) {
-    if (var->Contains(value)) {
-      filtered_values.push_back(value);
+  bool all_values = false;
+  if (expr->IsVar()) {
+    IntVar* const var = expr->Var();
+    for (const T value : set_of_values) {
+      if (var->Contains(value)) {
+        filtered_values.push_back(value);
+      }
     }
+    all_values = (filtered_values.size() == var->Size());
+  } else {
+    int64 emin = 0;
+    int64 emax = 0;
+    expr->Range(&emin, &emax);
+    for (const T value : set_of_values) {
+      if (value >= emin && value <= emax) {
+        filtered_values.push_back(value);
+      }
+    }
+    all_values = (filtered_values.size() == emax - emin + 1);
   }
   if (filtered_values.empty()) {
     return solver->MakeEquality(boolvar, Zero());
-  } else if (filtered_values.size() == var->Size()) {
+  } else if (all_values) {
     return solver->MakeEquality(boolvar, 1);
   } else if (filtered_values.size() == 1) {
-    return solver->MakeIsEqualCstCt(var, filtered_values.back(), boolvar);
+    return solver->MakeIsEqualCstCt(expr, filtered_values.back(), boolvar);
   } else if (filtered_values.back() ==
              filtered_values.front() + filtered_values.size() - 1) {
     // Contiguous
-    return solver->MakeIsBetweenCt(var, filtered_values.front(),
+    return solver->MakeIsBetweenCt(expr, filtered_values.front(),
                                    filtered_values.back(), boolvar);
   } else {
     return solver->RevAlloc(
-        new IsMemberCt(solver, var, filtered_values, boolvar));
+        new IsMemberCt(solver, expr->Var(), filtered_values, boolvar));
   }
 }
 }  // namespace
@@ -1153,26 +1168,26 @@ Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
 Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
                                    const std::vector<int64>& values,
                                    IntVar* const boolvar) {
-  return BuildIsMemberCt(this, expr->Var(), values, boolvar);
+  return BuildIsMemberCt(this, expr, values, boolvar);
 }
 
 Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
                                    const std::vector<int>& values,
                                    IntVar* const boolvar) {
-  return BuildIsMemberCt(this, expr->Var(), values, boolvar);
+  return BuildIsMemberCt(this, expr, values, boolvar);
 }
 
 IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
                                 const std::vector<int64>& values) {
   IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(expr->Var(), values, b));
+  AddConstraint(MakeIsMemberCt(expr, values, b));
   return b;
 }
 
 IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
                                 const std::vector<int>& values) {
   IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(expr->Var(), values, b));
+  AddConstraint(MakeIsMemberCt(expr, values, b));
   return b;
 }
 
