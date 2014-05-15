@@ -643,7 +643,6 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/cached_log.$O \
 	$(OBJ_DIR)/util/graph_export.$O \
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
-	$(OBJ_DIR)/util/saturated_arithmetic.$O \
 	$(OBJ_DIR)/util/stats.$O \
 	$(OBJ_DIR)/util/time_limit.$O \
 	$(OBJ_DIR)/util/xml_helper.$O
@@ -659,9 +658,6 @@ $(OBJ_DIR)/util/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 
 $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Spiecewise_linear_function.$O
-
-$(OBJ_DIR)/util/saturated_arithmetic.$O:$(SRC_DIR)/util/saturated_arithmetic.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/saturated_arithmetic.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Ssaturated_arithmetic.$O
 
 $(OBJ_DIR)/util/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
