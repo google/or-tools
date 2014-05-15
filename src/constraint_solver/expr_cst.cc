@@ -165,22 +165,46 @@ std::string GreaterEqExprCst::DebugString() const {
 
 Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new GreaterEqExprCst(this, e, v));
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new GreaterEqExprCst(this, e, v));
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeGreater(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
 }
 
 Constraint* Solver::MakeGreater(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -239,22 +263,46 @@ std::string LessEqExprCst::DebugString() const {
 
 Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new LessEqExprCst(this, e, v));
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new LessEqExprCst(this, e, v));
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeLess(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
 }
 
 Constraint* Solver::MakeLess(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -1075,7 +1123,8 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntVar* const var,
-                            const std::vector<T>& values, IntVar* const boolvar) {
+                            const std::vector<T>& values,
+                            IntVar* const boolvar) {
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
   for (const T value : set_of_values) {
