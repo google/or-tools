@@ -22,6 +22,7 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/mathutil.h"
 #include "base/stringprintf.h"
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
@@ -5816,8 +5817,35 @@ IntVar* Solver::MakeBoolVar() {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
-  return RegisterIntVar(
-      RevAlloc(new DomainIntVar(this, SortedNoDuplicates(values), name)));
+  const vector<int64> cleaned = SortedNoDuplicates(values);
+  int64 gcd = 0;
+  for (int64 v : cleaned) {
+    if (v == 0) {
+      continue;
+    }
+    if (gcd == 0) {
+      gcd = std::abs(v);
+    } else {
+      gcd = MathUtil::GCD64(gcd, std::abs(v));
+    }
+    if (gcd == 1) {
+      break;
+    }
+  }
+  if (gcd == 1) {
+    return RegisterIntVar(RevAlloc(new DomainIntVar(this, cleaned, name)));
+  } else {
+    vector<int64> new_values;
+    new_values.reserve(values.size());
+    for (int64 v : cleaned) {
+      DCHECK_EQ(0, v % gcd);
+      new_values.push_back(v / gcd);
+    }
+    const std::string new_name = name.empty() ? "" : "inner_" + name;
+    IntVar* const inner =
+        RegisterIntVar(RevAlloc(new DomainIntVar(this, new_values, new_name)));
+    return MakeProd(inner, gcd)->Var();
+  }
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
@@ -5825,8 +5853,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int>& values, const std::string& name) {
-  return RegisterIntVar(RevAlloc(
-      new DomainIntVar(this, SortedNoDuplicates(ToInt64Vector(values)), name)));
+  return MakeIntVar(ToInt64Vector(values), name);
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
