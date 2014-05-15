@@ -725,33 +725,37 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
       } else {
         state = 1;
       }
-    } else if (id == "int_lt_reif" && !var->domain.values.empty()) {
-      if (reverse) {  // int_gt
-        if (var->domain.values[0] > value) {
-          state = 1;
-        } else if (var->domain.values[1] <= value) {
-          state = 0;
-        }
-      } else {
-        if (var->domain.values[1] < value) {
-          state = 1;
-        } else if (var->domain.values[0] >= value) {
-          state = 0;
-        }
+    } else if (((id == "int_le_reif" && reverse) ||
+                (id == "int_gt_reif" && !reverse)) &&
+               !var->domain.values.empty()) {  // int_gt
+      if (var->domain.values[0] > value) {
+        state = 1;
+      } else if (var->domain.values[1] <= value) {
+        state = 0;
       }
-    } else if (id == "int_le_reif" && !var->domain.values.empty()) {
-      if (reverse) {  // int_ge
-        if (var->domain.values[0] >= value) {
-          state = 1;
-        } else if (var->domain.values[1] < value) {
-          state = 0;
-        }
-      } else {
-        if (var->domain.values[1] <= value) {
-          state = 1;
-        } else if (var->domain.values[0] > value) {
-          state = 0;
-        }
+    } else if (((id == "int_lt_reif" && !reverse) ||
+                (id == "int_ge_reif" && reverse)) &&
+               !var->domain.values.empty()) {  // int_lt
+      if (var->domain.values[1] < value) {
+        state = 1;
+      } else if (var->domain.values[0] >= value) {
+        state = 0;
+      }
+    } else if (((id == "int_lt_reif" && reverse) ||
+                (id == "int_ge_reif" && !reverse)) &&
+               !var->domain.values.empty()) {  // int_ge
+      if (var->domain.values[0] >= value) {
+        state = 1;
+      } else if (var->domain.values[1] < value) {
+        state = 0;
+      }
+    } else if (((id == "int_le_reif" && !reverse) ||
+                (id == "int_gt_reif" && reverse)) &&
+               !var->domain.values.empty()) {  // int_le
+      if (var->domain.values[1] <= value) {
+        state = 1;
+      } else if (var->domain.values[0] > value) {
+        state = 0;
       }
     }
     if (state != 2) {
