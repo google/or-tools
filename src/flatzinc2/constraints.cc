@@ -321,8 +321,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
-                            ->Var());
+    variables.push_back(
+        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -542,33 +542,28 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
   const std::vector<IntVar*> start_variables =
       fzsolver->GetVariableArray(ct->Arg(0));
   if (ct->Arg(1).type == FzArgument::INT_LIST &&
-      ct->Arg(2).type == FzArgument::INT_LIST && ct->Arg(3).HasOneValue()) {
-    // Fully fixed case.
+      ct->Arg(2).type == FzArgument::INT_LIST) {
     const std::vector<int64>& durations = ct->Arg(1).values;
     const std::vector<int64>& demands = ct->Arg(2).values;
     const int64 capacity = ct->Arg(3).Value();
     std::vector<IntervalVar*> intervals;
     solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
                                               &intervals);
-    Constraint* const constraint =
-        solver->MakeCumulative(intervals, demands, capacity, "");
-    AddConstraint(solver, ct, constraint);
-  } else if (ct->Arg(1).type == FzArgument::INT_LIST && ct->Arg(2).type ==
-             FzArgument::INT_LIST && !ct->Arg(3).HasOneValue()) {
-    // Demands and durations are fixed, capacity is variable.
-    const std::vector<int64>& durations = ct->Arg(1).values;
-    const std::vector<int64>& demands = ct->Arg(2).values;
-    std::vector<IntervalVar*> intervals;
-    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
-                                              &intervals);
-    IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-    Constraint* const constraint =
-        solver->MakeCumulative(intervals, demands, capacity, "");
-    AddConstraint(solver, ct, constraint);
+    if (ct->Arg(3).HasOneValue()) {
+      // Fully fixed case.
+      Constraint* const constraint =
+          solver->MakeCumulative(intervals, demands, capacity, "");
+      AddConstraint(solver, ct, constraint);
+    } else {
+      // Capacity is variable.
+      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeCumulative(intervals, demands, capacity, "");
+      AddConstraint(solver, ct, constraint);
+    }
   } else {
     // Everything is variable.
-    const std::vector<IntVar*> durations =
-        fzsolver->GetVariableArray(ct->Arg(1));
+    const std::vector<IntVar*> durations = fzsolver->GetVariableArray(ct->Arg(1));
     const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
     IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
     if (AreAllBound(durations) && AreAllBound(demands) && capacity->Bound()) {
@@ -608,10 +603,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
     const std::vector<int64>& x_sizes = ct->Arg(2).values;
@@ -1044,8 +1037,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
-                     int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);

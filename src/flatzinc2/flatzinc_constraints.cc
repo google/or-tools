@@ -264,10 +264,10 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf(
-        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
-        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_, range_max_,
-        target_->DebugString().c_str());
+    return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                        "d] == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
+                        range_max_, target_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -742,8 +742,8 @@ Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max) {
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -789,8 +789,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -829,8 +829,8 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables,
-                               int64 value, IntVar* target) {
+                               const std::vector<IntVar*>& variables, int64 value,
+                               IntVar* target) {
   const int64 size = variables.size();
   if (value == 0) {
     PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);

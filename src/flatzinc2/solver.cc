@@ -29,8 +29,12 @@ DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 namespace operations_research {
 IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
   switch (arg.type) {
-    case FzArgument::INT_VALUE: { return solver_.MakeIntConst(arg.Value()); }
-    case FzArgument::INT_VAR_REF: { return Extract(arg.variables[0]); }
+    case FzArgument::INT_VALUE: {
+      return solver_.MakeIntConst(arg.Value());
+    }
+    case FzArgument::INT_VAR_REF: {
+      return Extract(arg.variables[0]);
+    }
     default: {
       LOG(FATAL) << "Cannot extract " << arg.DebugString() << " as a variable";
       return nullptr;
@@ -93,9 +97,9 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
     std::string result =
         StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
-      result.append(
-          StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                       output.bounds[i].min_value, output.bounds[i].max_value));
+      result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
+                                 output.bounds[i].min_value,
+                                 output.bounds[i].max_value));
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
@@ -208,8 +212,7 @@ bool FzSolver::Extract() {
   int index = 0;
   std::vector<ConstraintWithIo*> to_sort;
   std::vector<FzConstraint*> sorted;
-  hash_map<const FzIntegerVariable*, std::vector<ConstraintWithIo*>>
-      dependencies;
+  hash_map<const FzIntegerVariable*, std::vector<ConstraintWithIo*>> dependencies;
   for (FzConstraint* ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       ConstraintWithIo* const ctio =
@@ -306,8 +309,7 @@ bool EqualVector(const std::vector<T>& v1, const std::vector<T>& v2) {
 }
 }  // namespace
 
-bool FzSolver::IsAllDifferent(
-    const std::vector<FzIntegerVariable*>& diffs) const {
+bool FzSolver::IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const {
   std::vector<FzIntegerVariable*> local(diffs);
   std::sort(local.begin(), local.end());
   const FzIntegerVariable* const start = local.front();

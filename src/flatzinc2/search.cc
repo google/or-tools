@@ -42,8 +42,7 @@ class FzLog : public SearchLog {
   }
 };
 // Flatten Search annotations.
-void FlattenAnnotations(const FzAnnotation& ann,
-                        std::vector<FzAnnotation>* out) {
+void FlattenAnnotations(const FzAnnotation& ann, std::vector<FzAnnotation>* out) {
   if (ann.type == FzAnnotation::ANNOTATION_LIST ||
       ann.IsFunctionCallWithIdentifier("seq_search")) {
     for (const FzAnnotation& inner : ann.annotations) {
@@ -140,8 +139,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       std::vector<int> occurrences;
       std::vector<FzIntegerVariable*> fz_vars;
       vars.GetAllIntegerVariables(&fz_vars);
-      for (int j = 0; j < fz_vars.size(); ++j) {
-        FzIntegerVariable* const fz_var = fz_vars[j];
+      for (FzIntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = Extract(fz_var)->Var();
         const int occ = statistics_.VariableOccurrences(fz_var);
         if (!ContainsKey(added, to_add) && !to_add->Bound()) {
@@ -206,8 +204,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       std::vector<int> occurrences;
       std::vector<FzIntegerVariable*> fz_vars;
       vars.GetAllIntegerVariables(&fz_vars);
-      for (int j = 0; j < fz_vars.size(); ++j) {
-        FzIntegerVariable* const fz_var = fz_vars[j];
+      for (FzIntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = Extract(fz_var)->Var();
         const int occ = statistics_.VariableOccurrences(fz_var);
         if (!ContainsKey(added, to_add) && !to_add->Bound()) {
@@ -285,12 +282,12 @@ void FzSolver::AddCompletionDecisionBuilders(
   std::vector<IntVar*> output_variables;
   CollectOutputVariables(&output_variables);
   std::vector<IntVar*> secondary_vars;
-  for (IntVar* const var :  active_variables) {
+  for (IntVar* const var : active_variables) {
     if (!ContainsKey(already_defined, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
-  for (IntVar* const var :  output_variables) {
+  for (IntVar* const var : output_variables) {
     if (!ContainsKey(already_defined, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
@@ -342,7 +339,9 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
         }
         break;
       }
-      case FzSolverParameters::IBS: { break; }
+      case FzSolverParameters::IBS: {
+        break;
+      }
       case FzSolverParameters::FIRST_UNBOUND: {
         inner_builder =
             solver()->MakePhase(defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
@@ -444,9 +443,10 @@ void FzSolver::Solve(FzSolverParameters p,
     objective_monitor_ = parallel_support->Objective(
         solver(), model_.maximize(), objective_var_, 1, p.worker_id);
     SearchMonitor* const log =
-        p.use_log ? solver()->RevAlloc(
-                        new FzLog(solver(), objective_monitor_, p.log_period))
-                  : nullptr;
+        p.use_log
+            ? solver()->RevAlloc(
+                  new FzLog(solver(), objective_monitor_, p.log_period))
+            : nullptr;
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
     parallel_support->StartSearch(
@@ -464,9 +464,9 @@ void FzSolver::Solve(FzSolverParameters p,
   // Custom limit in case of parallelism.
   monitors.push_back(parallel_support->Limit(solver(), p.worker_id));
 
-  SearchLimit* const limit =
-      p.time_limit_in_ms > 0 ? solver()->MakeTimeLimit(p.time_limit_in_ms)
-                             : nullptr;
+  SearchLimit* const limit = p.time_limit_in_ms > 0
+                                 ? solver()->MakeTimeLimit(p.time_limit_in_ms)
+                                 : nullptr;
   if (limit != nullptr) {
     FZLOG << "  - adding a time limit of " << p.time_limit_in_ms << " ms"
           << std::endl;
@@ -590,12 +590,12 @@ void FzSolver::Solve(FzSolverParameters p,
                       : (model_.objective() == nullptr
                              ? "**sat**"
                              : (timeout ? "**feasible**" : "**proven**")));
-    const std::string obj_string =
-        (model_.objective() != nullptr && !no_solutions
-             ? StringPrintf("%" GG_LL_FORMAT "d", best)
-             : "");
-    final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "
-                        "fails, cts, demon, delayed, mem, search\n");
+    const std::string obj_string = (model_.objective() != nullptr && !no_solutions
+                                   ? StringPrintf("%" GG_LL_FORMAT "d", best)
+                                   : "");
+    final_output.append(
+        "%%  name, status, obj, solns, s_time, b_time, br, "
+        "fails, cts, demon, delayed, mem, search\n");
     final_output.append(StringPrintf(
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
