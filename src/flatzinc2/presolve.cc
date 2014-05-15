@@ -407,7 +407,7 @@ void ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
   *ub = 0;
   for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
     const FzDomain& domain = ct->Arg(1).variables[i]->domain;
-    const int64 coef = ct->Arg(1).values[i];
+    const int64 coef = ct->Arg(0).values[i];
     if (coef == 0) continue;
     if (domain.is_interval && domain.values.empty()) {
       *lb = kint64min;
@@ -430,17 +430,18 @@ void ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
 bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
   int64 lb = 0;
   int64 ub = 0;
-  ComputeLinBounds(ct, &lb & ub);
+  ComputeLinBounds(ct, &lb, &ub);
   const int64 value = ct->Arg(2).Value();
   if (ct->type == "int_lin_eq_reif") {
     if (value < lb || value > ub) {
-      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-      ct->Arg(3)->domain.ReduceValue(0, 0);
+      FZVLOG << "Assign boolean to false in " << ct->DebugString()
+             << FZENDL;
+      ct->Arg(3).Var()->domain.IntersectWithInterval(0, 0);
       ct->MarkAsInactive();
       return true;
     } else if (value == lb && value == ub) {
-      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-      ct->Arg(3)->domain.ReduceValue(1, 1);
+      FZVLOG << "Assign boolean to true in " << ct->DebugString() << FZENDL;
+      ct->Arg(3).Var()->domain.IntersectWithInterval(1, 1);
       ct->MarkAsInactive();
       return true;
     }
