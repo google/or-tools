@@ -402,6 +402,52 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   return false;
 }
 
+void ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
+  *lb = 0;
+  *ub = 0;
+  for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+    const FzDomain& domain = ct->Arg(1).variables[i]->domain;
+    const int64 coef = ct->Arg(1).values[i];
+    if (coef == 0) continue;
+    if (domain.is_interval && domain.values.empty()) {
+      *lb = kint64min;
+      *ub = kint64max;
+      return;
+    }
+    const int64 vmin = domain.values.front();
+    const int64 vmax = domain.values.back();
+    // TODO(user): use saturated arithmetic.
+    if (coef > 0) {
+      *lb += vmin * coef;
+      *ub += vmax * coef;
+    } else {
+      *lb += vmax * coef;
+      *ub += vmin * coef;
+    }
+  }
+}
+
+bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
+  int64 lb = 0;
+  int64 ub = 0;
+  ComputeLinBounds(ct, &lb & ub);
+  const int64 value = ct->Arg(2).Value();
+  if (ct->type == "int_lin_eq_reif") {
+    if (value < lb || value > ub) {
+      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+      ct->Arg(3)->domain.ReduceValue(0, 0);
+      ct->MarkAsInactive();
+      return true;
+    } else if (value == lb && value == ub) {
+      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+      ct->Arg(3)->domain.ReduceValue(1, 1);
+      ct->MarkAsInactive();
+      return true;
+    }
+  }
+  return false;
+}
+
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
@@ -613,8 +659,8 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->type = "array_int_element";
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
-      ct->MutableArg(1)
-          ->values.push_back(ct->Arg(1).variables[i]->domain.values[0]);
+      ct->MutableArg(1)->values
+          .push_back(ct->Arg(1).variables[i]->domain.values[0]);
     }
     ct->MutableArg(1)->variables.clear();
     return true;
@@ -827,6 +873,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     changed |= PresolvePropagatePositiveLinear(ct);
   }
   if (id == "int_lin_eq") changed |= PresolveStoreMapping(ct);
+  if (id == "int_lin_eq_reif") changed |= CheckIntLinReifBounds(ct);
   if (id == "array_int_element") {
     changed |= PresolveSimplifyElement(ct);
     changed |= PresolveArrayIntElement(ct);
@@ -1064,8 +1111,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) ||
-         id == "bool_le_reif" || id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.
