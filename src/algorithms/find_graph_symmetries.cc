@@ -13,6 +13,7 @@
 #include "algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+#include <numeric>
 
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
