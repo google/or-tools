@@ -21,6 +21,7 @@
 #include "algorithms/dynamic_partition.h"
 #include "algorithms/dynamic_permutation.h"
 #include "algorithms/sparse_permutation.h"
+#include "graph/util.h"
 #include "util/iterators.h"
 
 DEFINE_bool(minimize_permutation_support_size, false,
@@ -31,16 +32,8 @@ DEFINE_bool(minimize_permutation_support_size, false,
 
 namespace operations_research {
 
-GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph)
-    : graph_(graph),
-      tmp_dynamic_permutation_(NumNodes()),
-      tmp_node_mask_(NumNodes(), false),
-      tmp_in_degree_(NumNodes(), 0),
-      tmp_nodes_with_indegree_(NumNodes() + 1) {
-  tmp_partition_.Reset(NumNodes());
-}
-
 namespace {
+// Some routines used below.
 void SwapFrontAndBack(std::vector<int>* v) {
   DCHECK(!v->empty());
   std::swap((*v)[0], v->back());
@@ -60,42 +53,86 @@ bool PartitionsAreCompatibleAfterPartIndex(const DynamicPartition& p1,
   return true;
 }
 
-// Whether the "arcs1" adjacency list maps to "arcs2" under the
-// permutation "permutation".
-// This method uses a transient bitmask on all the graph nodes, which
+// Whether the "l1" list maps to "l2" under the permutation "permutation".
+// This method uses a transient bitmask on all the elements, which
 // should be entirely false before the call (and will be restored as such
 // after it).
 //
-// TODO(user): Make this method support multi-arcs, and see if that's
-// sufficient to make the whole algorithm support multi-arcs.
-template<class Graph, class AdjList>
-bool AdjacencyListMapsToAdjacencyList(const Graph& graph, const AdjList& arcs1,
-                                      const AdjList& arcs2,
-                                      const DynamicPermutation& permutation,
-                                      std::vector<bool>* tmp_node_mask) {
-  int num_arcs_delta = 0;
+// TODO(user): Make this method support multi-elements (i.e. an element may
+// be repeated in the list), and see if that's sufficient to make the whole
+// graph symmetry finder support multi-arcs.
+template <class List>
+bool ListMapsToList(const List& l1, const List& l2,
+                    const DynamicPermutation& permutation,
+                    std::vector<bool>* tmp_node_mask) {
+  int num_elements_delta = 0;
   bool match = true;
-  for (const int arc : arcs2) {
-    ++num_arcs_delta;
-    (*tmp_node_mask)[graph.Head(arc)] = true;
+  for (const int mapped_x : l2) {
+    ++num_elements_delta;
+    (*tmp_node_mask)[mapped_x] = true;
   }
-  for (const int arc : arcs1) {
-    --num_arcs_delta;
-    const int mapped_head = permutation.ImageOf(graph.Head(arc));
-    if (!(*tmp_node_mask)[mapped_head]) {
+  for (const int x : l1) {
+    --num_elements_delta;
+    const int mapped_x = permutation.ImageOf(x);
+    if (!(*tmp_node_mask)[mapped_x]) {
       match = false;
       break;
     }
-    (*tmp_node_mask)[mapped_head] = false;
+    (*tmp_node_mask)[mapped_x] = false;
   }
-  if (num_arcs_delta != 0) match = false;
+  if (num_elements_delta != 0) match = false;
   if (!match) {
     // We need to clean up tmp_node_mask.
-    for (const int arc : arcs2) (*tmp_node_mask)[graph.Head(arc)] = false;
+    for (const int x : l2) (*tmp_node_mask)[x] = false;
   }
   return match;
 }
+
 }  // namespace
+
+GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph, bool is_undirected)
+    : graph_(graph),
+      tmp_dynamic_permutation_(NumNodes()),
+      tmp_node_mask_(NumNodes(), false),
+      tmp_in_degree_(NumNodes(), 0),
+      tmp_nodes_with_indegree_(NumNodes() + 1) {
+  tmp_partition_.Reset(NumNodes());
+  if (is_undirected) {
+    //    DCHECK(GraphIsSymmetric(graph));
+  } else {
+    // Compute the reverse adjacency lists.
+    // First pass: compute the total in-degree of all nodes and put it in
+    // reverse_adj_list_index (shifted by two; see below why).
+    reverse_adj_list_index_.assign(graph.num_nodes() + /*shift*/ 2, 0);
+    for (const int node : graph.AllNodes()) {
+      for (const int arc : graph.OutgoingArcs(node)) {
+        ++reverse_adj_list_index_[graph.Head(arc) + /*shift*/ 2];
+      }
+    }
+    // Second pass: apply a cumulative sum over reverse_adj_list_index.
+    // After that, reverse_adj_list contains:
+    // [0, 0, in_degree(node0), in_degree(node0) + in_degree(node1), ...]
+    std::partial_sum(reverse_adj_list_index_.begin() + /*shift*/ 2,
+                     reverse_adj_list_index_.end(),
+                     reverse_adj_list_index_.begin() + /*shift*/ 2);
+    // Third pass: populate "flattened_reverse_adj_lists", using
+    // reverse_adj_list_index[i] as a dynamic pointer to the yet-unpopulated
+    // area of the reverse adjacency list of node #i.
+    flattened_reverse_adj_lists_.assign(graph.num_arcs(), -1);
+    for (const int node : graph.AllNodes()) {
+      for (const int arc : graph.OutgoingArcs(node)) {
+        flattened_reverse_adj_lists_
+            [reverse_adj_list_index_[graph.Head(arc) + /*shift*/ 1]++] = node;
+      }
+    }
+    // The last pass shifted reverse_adj_list_index, so it's now as we want it:
+    // [0, in_degree(node0), in_degree(node0) + in_degree(node1), ...]
+    if (DEBUG_MODE) {
+      DCHECK_EQ(graph.num_arcs(), reverse_adj_list_index_[graph.num_nodes()]);
+      for (const int i : flattened_reverse_adj_lists_) DCHECK_NE(i, -1);
+    }
+  }
+}
 
 bool GraphSymmetryFinder::IsGraphAutomorphism(
     const DynamicPermutation& permutation) const {
@@ -103,13 +140,22 @@ bool GraphSymmetryFinder::IsGraphAutomorphism(
   for (const int base : permutation.AllMappingsSrc()) {
     const int image = permutation.ImageOf(base);
     if (image == base) continue;
-    if (!AdjacencyListMapsToAdjacencyList(graph_, graph_.OutgoingArcs(base),
-                                          graph_.OutgoingArcs(image),
-                                          permutation, &tmp_node_mask_) ||
-        !AdjacencyListMapsToAdjacencyList(graph_, graph_.IncomingArcs(base),
-                                          graph_.IncomingArcs(image),
-                                          permutation, &tmp_node_mask_)) {
+    if (!ListMapsToList(graph_[base], graph_[image], permutation,
+                        &tmp_node_mask_)) {
       return false;
+    }
+  }
+  if (!reverse_adj_list_index_.empty()) {
+    // The graph was not symmetric: we must also check the incoming arcs
+    // to displaced nodes.
+    for (const int base : permutation.AllMappingsSrc()) {
+      const int image = permutation.ImageOf(base);
+      if (image == base) continue;
+      if (!ListMapsToList(TailsOfIncomingArcsTo(base),
+                          TailsOfIncomingArcsTo(image), permutation,
+                          &tmp_node_mask_)) {
+        return false;
+      }
     }
   }
   return true;
@@ -161,6 +207,8 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
       tmp_nodes_with_indegree_[in_degree].clear();  // To clean up after us.
     }
   }
+  // TODO(user): for non-symmetric graphs, also refine by the partial
+  // out-degree of nodes towards the refined subset.
 }
 
 void GraphSymmetryFinder::DistinguishNodeInPartition(
@@ -623,8 +671,7 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
       // fully refined, and we deem them incompatible, or they weren't, and we
       // consider them as 'not a full match'.
       VLOG(4) << "Permutation candidate isn't a valid automorphism.";
-      const int non_singleton_part = base_partition->SomeNonSingletonPart();
-      if (non_singleton_part == -1) {
+      if (base_partition->NumParts() == NumNodes()) {
         // Fully refined: the partitions are incompatible.
         compatible = false;
         IF_STATS_ENABLED(stats_.dynamic_permutation_time.StartTimer());
@@ -632,6 +679,13 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
         IF_STATS_ENABLED(
             stats_.dynamic_permutation_time.StopTimerAndAddElapsedTime());
       } else {
+        // TODO(user): try to get the non-singleton part from
+        // DynamicPermutation in O(1), if it matters to the overall speed.
+        int non_singleton_part = 0;
+        while (base_partition->SizeOfPart(non_singleton_part) == 1) {
+          ++non_singleton_part;
+          DCHECK_LT(non_singleton_part, base_partition->NumParts());
+        }
         // The partitions are compatible, but we'll deepen the search on some
         // non-singleton part. We can pick any base and image node in this case.
         GetBestMapping(*base_partition, *image_partition, non_singleton_part,
@@ -719,6 +773,13 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   // We exhausted the search; we didn't find any permutation.
   IF_STATS_ENABLED(stats_.num_search_states.Add(num_search_states));
   return nullptr;
+}
+
+BeginEndWrapper<std::vector<int>::const_iterator>
+GraphSymmetryFinder::TailsOfIncomingArcsTo(int node) const {
+  return BeginEndWrapper<std::vector<int>::const_iterator>(
+      flattened_reverse_adj_lists_.begin() + reverse_adj_list_index_[node],
+      flattened_reverse_adj_lists_.begin() + reverse_adj_list_index_[node + 1]);
 }
 
 void GraphSymmetryFinder::PruneOrbitsUnderPermutationsCompatibleWithPartition(

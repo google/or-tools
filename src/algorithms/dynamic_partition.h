@@ -32,7 +32,6 @@
 #include <string>
 #include <vector>
 #include "base/logging.h"
-#include "base/sparse_hash.h"
 
 namespace operations_research {
 
@@ -111,12 +110,6 @@ class DynamicPartition {
   // Prerequisite: NumParts() >= original_num_parts.
   void UndoRefineUntilNumPartsEqual(int original_num_parts);
 
-  int SomeNonSingletonPart() const {
-    // TODO(user): optimize! Hash set can be quite slow, especially like this.
-    // A simple adaptation of SparseBitSet could do the trick.
-    return non_singleton_parts_.empty() ? -1 : *non_singleton_parts_.begin();
-  }
-
   // Dump the partition to a std::string. There might be different conventions for
   // sorting the parts and the elements inside them.
   enum DebugStringSorting {
@@ -151,9 +144,6 @@ class DynamicPartition {
 
   // part_of_[i] is the index of the part that contains element i.
   std::vector<int> part_of_;
-
-  // Contains all the non-singleton parts; at all times.
-  dense_hash_set<int> non_singleton_parts_;
 
   struct Part {
     // This part holds elements[start_index .. end_index-1].

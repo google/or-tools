@@ -21,6 +21,7 @@
 #include "algorithms/dynamic_partition.h"
 #include "algorithms/dynamic_permutation.h"
 #include "graph/graph.h"
+#include "util/iterators.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -29,10 +30,20 @@ class SparsePermutation;
 
 class GraphSymmetryFinder {
  public:
-  typedef ReverseArcMixedGraph<> Graph;
+  typedef StaticGraph<> Graph;
+
+  // If the Graph passed to the GraphSymmetryFinder is undirected, i.e.
+  // for every arc a->b, b->a is also present, then you should set
+  // "is_undirected" to true.
+  // This will, in effect, DCHECK() that the graph is indeed undirected,
+  // and bypass the need for reverse adjacency lists.
+  //
+  // If you don't know this in advance, you may use GraphIsSymmetric() from
+  // graph/util.h.
+  //
   // "graph" must not have multi-arcs.
   // TODO(user): support multi-arcs.
-  explicit GraphSymmetryFinder(const Graph& graph);
+  GraphSymmetryFinder(const Graph& graph, bool is_undirected);
 
   // Whether the given permutation is an automorphism of the graph given at
   // construction. This costs O(sum(degree(x))) (the sum is over all nodes x
@@ -102,6 +113,21 @@ class GraphSymmetryFinder {
   const Graph& graph_;
 
   inline int NumNodes() const { return graph_.num_nodes(); }
+
+  // If the graph isn't symmetric, then we store the reverse adjacency lists
+  // here: for each i in 0..NumNodes()-1, the list of nodes that have an
+  // outgoing arc to i is stored (sorted by node) in:
+  //   flattened_reverse_adj_lists_[reverse_adj_list_index_[i] ...
+  //                                reverse_adj_list_index_[i + 1]]
+  // and can be iterated on easily with:
+  //   for (const int tail : TailsOfIncomingArcsTo(node)) ...
+  //
+  // If the graph was specified as symmetric upon construction, both these
+  // vectors are empty, and TailsOfIncomingArcsTo() crashes.
+  std::vector<int> flattened_reverse_adj_lists_;
+  std::vector<int> reverse_adj_list_index_;
+  BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
+      int node) const;
 
   // Internal search code used in FindSymmetries(), split out for readability:
   // find one permutation (if it exists) that maps root_node to root_image_node

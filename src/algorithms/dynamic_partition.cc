@@ -40,13 +40,6 @@ DynamicPartition::DynamicPartition(int n) {
   for (int i = 0; i < n; ++i) fprint ^= FprintOfInt32(i);
   part_.push_back(Part(/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0,
                        /*fprint=*/ fprint));
-
-  // Avoid '-1' as a special value in the "non_singleton_parts_" dense_hash_set,
-  // because it's already used as a special value in various places. Having
-  // different special values here will make debugging easier.
-  non_singleton_parts_.set_empty_key(-2);
-  non_singleton_parts_.set_deleted_key(-3);
-  if (n > 1) non_singleton_parts_.insert(0);
 }
 
 DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_element) {
@@ -85,20 +78,6 @@ DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_eleme
     element_[part->end_index] = element;
     index_of_[element] = part->end_index;
     ++part->end_index;
-  }
-
-  // Initialize "non_singleton_parts_".
-  non_singleton_parts_.set_empty_key(-2);
-  non_singleton_parts_.set_deleted_key(-3);
-  int num_non_singletons = 0;
-  for (int p = 0; p < num_parts; ++p) {
-    const int size = SizeOfPart(p);
-    DCHECK_NE(0, size) << "Empty part: " << p;
-    if (size != 1) ++num_non_singletons;
-  }
-  non_singleton_parts_.resize(num_non_singletons);
-  for (int p = 0; p < num_parts; ++p) {
-    if (SizeOfPart(p) != 1) non_singleton_parts_.insert(p);
   }
 
   // Verify that we did it right.
@@ -165,10 +144,6 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
 
     const int new_part = NumParts();
 
-    // Update the list of non-singletons.
-    if (split_index - start_index == 1) non_singleton_parts_.erase(part);
-    if (end_index > split_index + 1) non_singleton_parts_.insert(new_part);
-
     // Perform the split.
     part_[part].end_index = split_index;
     part_[part].fprint ^= new_fprint;
@@ -187,31 +162,18 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
     const int part_index = NumParts() - 1;
     const Part& part = part_[part_index];
     const int parent_part_index = part.parent_part;
-    const Part& parent_part = part_[parent_part_index];
     DCHECK_LT(parent_part_index, part_index) << "UndoRefineUntilNumPartsEqual()"
                                                 " called with "
                                                 "'original_num_parts' too low";
-    // Update non_singleton_parts_.
-    if (part.end_index - part.start_index != 1) {
-      DCHECK_EQ(1, non_singleton_parts_.count(part_index));
-      non_singleton_parts_.erase(part_index);
-    }
-    DCHECK_EQ(0, non_singleton_parts_.count(part_index));
-    if (parent_part.end_index - parent_part.start_index == 1) {
-      DCHECK_EQ(0, non_singleton_parts_.count(parent_part_index));
-      non_singleton_parts_.insert(parent_part_index);
-    }
-    DCHECK_EQ(1, non_singleton_parts_.count(parent_part_index));
-
 
     // Update the part contents: actually merge "part" onto its parent.
     for (const int element : ElementsInPart(part_index)) {
       part_of_[element] = parent_part_index;
     }
-    DCHECK_EQ(part_[part_index].start_index,
-              part_[parent_part_index].end_index);
-    part_[parent_part_index].end_index = part_[part_index].end_index;
-    part_[parent_part_index].fprint ^= part_[part_index].fprint;
+    Part* const parent_part = &part_[parent_part_index];
+    DCHECK_EQ(part.start_index, parent_part->end_index);
+    parent_part->end_index = part.end_index;
+    parent_part->fprint ^= part.fprint;
     part_.pop_back();
   }
 }
