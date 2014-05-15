@@ -374,7 +374,10 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     return false;
   }
 
-  virtual std::string DebugString() const { return "PositiveTableConstraint"; }
+  virtual std::string DebugString() const {
+    return StringPrintf("PositiveTableConstraint([%s], %d tuples)",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+  }
 
  protected:
   void InitializeMask(int tuple_index) {
@@ -416,7 +419,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
 class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  CompactPositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  CompactPositiveTableConstraint(Solver* const s,
+                                 const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         length_(BitLength64(tuples.NumTuples())),
@@ -638,7 +642,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           } else {  // Domain is sparse.
                     // Let's not collect all values below the first supported
                     // value as this can easily and more rapidly be taken care
-            // of by a SetRange() call.
+                    // of by a SetRange() call.
             new_min = kint64max;  // escape value.
             IntVarIterator* const it = iterators_[var_index];
             for (it->Init(); it->Ok(); it->Next()) {
@@ -752,6 +756,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       solver()->Fail();
     }
+  }
+
+  virtual std::string DebugString() const {
+    return StringPrintf("CompactPositiveTableConstraint([%s], %d tuples)",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
   }
 
  private:
@@ -1139,6 +1148,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
+  virtual std::string DebugString() const {
+    return StringPrintf("SmallCompactPositiveTableConstraint([%s], %d tuples)",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+  }
+
  private:
   void ApplyMask(int var_index, uint64 mask) {
     if ((~mask & active_tuples_) != 0) {
@@ -1177,16 +1191,22 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   int touched_var_;
 };
 
-bool HasCompactDomains(const IntVar* const* vars, int arity) {
+bool HasCompactDomains(const std::vector<IntVar*>& vars) {
   int64 sum_of_spans = 0LL;
   int64 sum_of_sizes = 0LL;
-  for (int i = 0; i < arity; ++i) {
-    const int64 var_min = vars[i]->Min();
-    const int64 var_max = vars[i]->Max();
-    sum_of_sizes += vars[i]->Size();
-    sum_of_spans += var_max - var_min + 1;
+  for (IntVar* const var : vars) {
+    IntExpr* inner = nullptr;
+    int64 coef = 1;
+    if (var->solver()->IsProduct(var, &inner, &coef) && inner->IsVar()) {
+      IntVar* const nvar = inner->Var();
+      sum_of_sizes += nvar->Size();
+      sum_of_spans += nvar->Max() - nvar->Min() + 1;
+    } else {
+      sum_of_sizes += var->Size();
+      sum_of_spans += var->Max() - var->Min() + 1;
+    }
   }
-  return sum_of_spans < 4 * sum_of_sizes;
+  return sum_of_spans < 512 * sum_of_sizes;
 }
 
 // ---------- Deterministic Finite Automaton ----------
@@ -1231,10 +1251,12 @@ class TransitionConstraint : public Constraint {
     int64 state_max = kint64min;
     const int nb_vars = vars_.size();
     for (int i = 0; i < transition_table_.NumTuples(); ++i) {
-      state_max = std::max(state_max, transition_table_.Value(i, kStatePosition));
+      state_max =
+          std::max(state_max, transition_table_.Value(i, kStatePosition));
       state_max =
           std::max(state_max, transition_table_.Value(i, kNextStatePosition));
-      state_min = std::min(state_min, transition_table_.Value(i, kStatePosition));
+      state_min =
+          std::min(state_min, transition_table_.Value(i, kStatePosition));
       state_min =
           std::min(state_min, transition_table_.Value(i, kNextStatePosition));
     }
@@ -1309,8 +1331,7 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
 
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
-  if (FLAGS_cp_use_compact_table &&
-      HasCompactDomains(vars.data(), vars.size())) {
+  if (FLAGS_cp_use_compact_table && HasCompactDomains(vars)) {
     if (tuples.NumTuples() < kBitsInUint64 && FLAGS_cp_use_small_table) {
       return RevAlloc(
           new SmallCompactPositiveTableConstraint(this, vars, tuples));

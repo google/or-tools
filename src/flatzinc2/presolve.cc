@@ -402,20 +402,9 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   return false;
 }
 
-bool IsNotTooSparse(const std::vector<int64>& values) {
-  std::vector<int64> copy(values);
-  std::sort(copy.begin(), copy.end());
-  int counter = 1;
-  for (int i = 1; i < copy.size(); ++i) {
-    counter += copy[i] != copy[i - 1];
-  }
-  return (copy.back() - copy.front()) / counter < 16;
-}
-
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
-  if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done &&
-      IsNotTooSparse(ct->Arg(1).values)) {
+  if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
     IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
     ct->presolve_propagation_done = true;
