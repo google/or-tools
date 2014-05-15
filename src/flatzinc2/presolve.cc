@@ -725,7 +725,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
       } else {
         state = 1;
       }
-    } else if (((id == "int_le_reif" && reverse) ||
+    } else if (((id == "int_lt_reif" && reverse) ||
                 (id == "int_gt_reif" && !reverse)) &&
                !var->domain.values.empty()) {  // int_gt
       if (var->domain.values[0] > value) {
@@ -734,7 +734,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
         state = 0;
       }
     } else if (((id == "int_lt_reif" && !reverse) ||
-                (id == "int_ge_reif" && reverse)) &&
+                (id == "int_gt_reif" && reverse)) &&
                !var->domain.values.empty()) {  // int_lt
       if (var->domain.values[1] < value) {
         state = 1;
@@ -750,7 +750,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
         state = 0;
       }
     } else if (((id == "int_le_reif" && !reverse) ||
-                (id == "int_gt_reif" && reverse)) &&
+                (id == "int_ge_reif" && reverse)) &&
                !var->domain.values.empty()) {  // int_le
       if (var->domain.values[1] <= value) {
         state = 1;
