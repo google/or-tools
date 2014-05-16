@@ -1382,7 +1382,17 @@ Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
     }
     return MakeMemberCt(index, valid_indices);
   }
-  return RevAlloc(new IntExprArrayElementCstCt(this, vars, index, target));
+  if (index->Bound()) {
+    const int64 pos = index->Min();
+    if (pos >= 0 && pos < vars.size()) {
+      IntVar* const var = vars[pos];
+      return MakeEquality(var, target);
+    } else {
+      return MakeFalseConstraint();
+    }
+  } else {
+    return RevAlloc(new IntExprArrayElementCstCt(this, vars, index, target));
+  }
 }
 
 Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
