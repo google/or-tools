@@ -117,6 +117,105 @@ FzSolverParameters::FzSolverParameters()
       time_limit_in_ms(0),
       search_type(MIN_SIZE) {}
 
+void MarkComputedVariables(FzConstraint* ct,
+                           hash_set<FzIntegerVariable*>* marked) {
+  const std::string& id = ct->type;
+  if (id == "global_cardinality") {
+    FZVLOG << "  - marking " << ct->DebugString() << FZENDL;
+    for (FzIntegerVariable* const var: ct->Arg(2).variables) {
+      marked->insert(var);
+    }
+  }
+
+  if (id == "array_var_int_element" && ct->target_variable == nullptr) {
+    FZVLOG << "  - marking " << ct->DebugString() << FZENDL;
+    marked->insert(ct->Arg(2).Var());
+  }
+
+  if (id == "maximum_int" && ct->Arg(0).IsVariable() &&
+      ct->target_variable == nullptr) {
+    marked->insert(ct->Arg(0).Var());
+  }
+
+  if (id == "minimum_int" && ct->Arg(0).IsVariable() &&
+      ct->target_variable == nullptr) {
+    marked->insert(ct->Arg(0).Var());
+  }
+
+  if (id == "int_lin_eq" && ct->target_variable == nullptr) {
+    const std::vector<int64>& array_coefficients = ct->Arg(0).values;
+    const int size = array_coefficients.size();
+    const std::vector<FzIntegerVariable*>& array_variables =
+        ct->Arg(1).variables;
+    bool todo = true;
+    if (size == 0) {
+      return;
+    }
+    if (array_coefficients[0] == -1) {
+      for (int i = 1; i < size; ++i) {
+        if (array_coefficients[i] < 0) {
+          todo = false;
+          break;
+        }
+      }
+      // Can mark the first one, this is a hidden sum.
+      if (todo) {
+        marked->insert(array_variables[0]);
+        FZVLOG << "  - marking " << ct->DebugString() << ": "
+               << array_variables[0]->DebugString() << FZENDL;
+        return;
+      }
+    }
+    todo = true;
+    if (array_coefficients[0] == 1) {
+      for (int i = 1; i < size; ++i) {
+        if (array_coefficients[i] > 0) {
+          todo = false;
+          break;
+        }
+      }
+      if (todo) {
+        marked->insert(array_variables[0]);
+        FZVLOG << "  - marking " << ct->DebugString() << ": "
+               << array_variables[0]->DebugString() << FZENDL;
+        return;
+      }
+    }
+    todo = true;
+    if (array_coefficients[size - 1] == 1) {
+      for (int i = 0; i < size - 1; ++i) {
+        if (array_coefficients[i] > 0) {
+          todo = false;
+          break;
+        }
+      }
+      if (todo) {
+        // Can mark the last one, this is a hidden sum.
+        marked->insert(array_variables[size - 1]);
+        FZVLOG << "  - marking " << ct->DebugString() << ": "
+               << array_variables[size - 1]->DebugString() << FZENDL;
+        return;
+      }
+    }
+    todo = true;
+    if (array_coefficients[size - 1] == -1) {
+      for (int i = 0; i < size - 1; ++i) {
+        if (array_coefficients[i] < 0) {
+          todo = false;
+          break;
+        }
+      }
+      if (todo) {
+        // Can mark the last one, this is a hidden sum.
+        marked->insert(array_variables[size - 1]);
+        FZVLOG << "  - marking " << ct->DebugString() << ": "
+               << array_variables[size - 1]->DebugString() << FZENDL;
+        return;
+      }
+    }
+  }
+}
+
 void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
                                       std::vector<DecisionBuilder*>* defined,
                                       std::vector<IntVar*>* defined_variables,
@@ -256,6 +355,8 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       }
     }
   }
+  FZVLOG << "Active variables = ["
+         << JoinDebugStringPtr(*active_variables, ", ") << "]" << FZENDL;
 }
 
 void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
@@ -413,12 +514,18 @@ const std::vector<IntVar*>& FzSolver::SecondaryVariables() const {
 }
 
 void FzSolver::SyncWithModel() {
+  hash_set<FzIntegerVariable*> implied;
+  for (FzConstraint* const ct : model_.constraints()) {
+    MarkComputedVariables(ct, &implied);
+  }
+
   for (FzIntegerVariable* const fz_var : model_.variables()) {
-    if (!fz_var->active) {
+    if (!fz_var->active || fz_var->defining_constraint != nullptr ||
+        ContainsKey(implied, fz_var)) {
       continue;
     }
     IntExpr* const expr = Extract(fz_var);
-    if (!expr->IsVar() || fz_var->defining_constraint != nullptr) {
+    if (!expr->IsVar() || expr->Var()->Bound()) {
       continue;
     }
     IntVar* const var = expr->Var();
