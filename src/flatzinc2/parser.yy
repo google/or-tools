@@ -498,7 +498,7 @@ constraint :
     if (ann.IsFunctionCallWithIdentifier("defines_var")) {
       CHECK_EQ(1, ann.annotations.size());
       CHECK_EQ(FzAnnotation::INT_VAR_REF, ann.annotations.back().type);
-      defines_var = ann.annotations.back().variable;
+      defines_var = ann.annotations.back().variables[0];
       break;
     }
   }

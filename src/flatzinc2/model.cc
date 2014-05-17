@@ -377,7 +377,6 @@ FzAnnotation FzAnnotation::Empty() {
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.variable = nullptr;
   return result;
 }
 
@@ -387,7 +386,6 @@ FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list)
   result.interval_min = 0;
   result.interval_max = 0;
   result.annotations = list;
-  result.variable = nullptr;
   return result;
 }
 
@@ -397,7 +395,6 @@ FzAnnotation FzAnnotation::Identifier(const std::string& id) {
   result.interval_min = 0;
   result.interval_max = 0;
   result.id = id;
-  result.variable = nullptr;
   return result;
 }
 
@@ -409,7 +406,6 @@ FzAnnotation FzAnnotation::FunctionCall(const std::string& id,
   result.interval_max = 0;
   result.id = id;
   result.annotations = args;
-  result.variable = nullptr;
   return result;
 }
 
@@ -418,7 +414,6 @@ FzAnnotation FzAnnotation::Interval(int64 interval_min, int64 interval_max) {
   result.type = INTERVAL;
   result.interval_min = interval_min;
   result.interval_max = interval_max;
-  result.variable = nullptr;
   return result;
 }
 
@@ -427,28 +422,24 @@ FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
   result.type = INT_VAR_REF;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.variable = var;
+  result.variables.push_back(var);
   return result;
 }
 
 FzAnnotation FzAnnotation::VariableList(
-    const std::vector<FzIntegerVariable*>& vars) {
+    const std::vector<FzIntegerVariable*>& variables) {
   FzAnnotation result;
   result.type = INT_VAR_REF_ARRAY;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.variable = nullptr;
-  result.variables = vars;
+  result.variables = variables;
   return result;
 }
 
 void FzAnnotation::GetAllIntegerVariables(
     std::vector<FzIntegerVariable*>* const vars) const {
-  for (int i = 0; i < annotations.size(); ++i) {
-    annotations[i].GetAllIntegerVariables(vars);
-  }
-  if (variable != nullptr) {
-    vars->push_back(variable);
+  for (const FzAnnotation& ann : annotations) {
+    ann.GetAllIntegerVariables(vars);
   }
   if (!variables.empty()) {
     vars->insert(vars->end(), variables.begin(), variables.end());
@@ -472,7 +463,7 @@ std::string FzAnnotation::DebugString() const {
                           interval_min, interval_max);
     }
     case INT_VAR_REF: {
-      return variable->name;
+      return variables.front()->name;
     }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
@@ -622,15 +613,13 @@ void FzModelStatistics::PrintStatistics() {
 void FzModelStatistics::BuildStatistics() {
   constraints_per_type_.clear();
   constraints_per_variables_.clear();
-  for (int i = 0; i < model_.constraints().size(); ++i) {
-    FzConstraint* const ct = model_.constraints()[i];
+  for (FzConstraint* const ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
       hash_set<const FzIntegerVariable*> marked;
-      for (int j = 0; j < ct->arguments.size(); ++j) {
-        const FzArgument& arg = ct->arguments[j];
-        for (int k = 0; k < arg.variables.size(); ++k) {
-          marked.insert(arg.variables[k]);
+      for (const FzArgument& arg : ct->arguments) {
+        for (FzIntegerVariable* const var : arg.variables) {
+          marked.insert(var);
         }
       }
       for (const FzIntegerVariable* const var : marked) {

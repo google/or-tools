@@ -1043,10 +1043,7 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
       }
       break;
     }
-    case FzAnnotation::INT_VAR_REF: {
-      ann->variable = FindRepresentativeOfVar(ann->variable);
-      break;
-    }
+    case FzAnnotation::INT_VAR_REF:
     case FzAnnotation::INT_VAR_REF_ARRAY: {
       for (int i = 0; i < ann->variables.size(); ++i) {
         ann->variables[i] = FindRepresentativeOfVar(ann->variables[i]);

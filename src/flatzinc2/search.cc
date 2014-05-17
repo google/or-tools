@@ -335,8 +335,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   }
 
   // Create the active_variables array, push smaller variables first.
-  for (int i = 0; i < active_variables_.size(); ++i) {
-    IntVar* const var = active_variables_[i];
+  for (IntVar* const var : active_variables_) {
     if (!ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() < 0xFFFF) {
         added.insert(var);
@@ -345,8 +344,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       }
     }
   }
-  for (int i = 0; i < active_variables_.size(); ++i) {
-    IntVar* const var = active_variables_[i];
+  for (IntVar* const var : active_variables_) {
     if (!ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() >= 0xFFFF) {
         added.insert(var);
@@ -360,13 +358,15 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
 }
 
 void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
-  for (int i = 0; i < model_.output().size(); ++i) {
-    const FzOnSolutionOutput& output = model_.output()[i];
+  for (const FzOnSolutionOutput& output : model_.output()) {
     if (output.variable != nullptr) {
-      out->push_back(Extract(output.variable)->Var());
+      if (!ContainsKey(implied_variables_, output.variable)) {
+        out->push_back(Extract(output.variable)->Var());
+      }
     }
     for (FzIntegerVariable* const var : output.flat_variables) {
-      if (var->defining_constraint == nullptr) {
+      if (var->defining_constraint == nullptr &&
+          !ContainsKey(implied_variables_, var)) {
         out->push_back(Extract(var)->Var());
       }
     }
@@ -378,18 +378,18 @@ void FzSolver::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& defined_variables,
     const std::vector<IntVar*>& active_variables,
     std::vector<DecisionBuilder*>* builders) {
-  hash_set<IntVar*> already_defined(defined_variables.begin(),
-                                    defined_variables.end());
+  hash_set<IntVar*> defined_set(defined_variables.begin(),
+                                defined_variables.end());
   std::vector<IntVar*> output_variables;
   CollectOutputVariables(&output_variables);
   std::vector<IntVar*> secondary_vars;
   for (IntVar* const var : active_variables) {
-    if (!ContainsKey(already_defined, var) && !var->Bound()) {
+    if (!ContainsKey(defined_set, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
   for (IntVar* const var : output_variables) {
-    if (!ContainsKey(already_defined, var) && !var->Bound()) {
+    if (!ContainsKey(defined_set, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
@@ -498,30 +498,21 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
   // Add completion decision builders to be more robust.
   AddCompletionDecisionBuilders(defined_variables, active_variables, &builders);
   // Reporting
-  for (int i = 0; i < builders.size(); ++i) {
-    FZLOG << "  - adding decision builder = " << builders[i]->DebugString()
-          << std::endl;
+  for (DecisionBuilder* const db : builders) {
+    FZLOG << "  - adding decision builder = " << db->DebugString()
+          << FZENDL;
   }
   return solver()->Compose(builders);
 }
 
-const std::vector<IntVar*>& FzSolver::PrimaryVariables() const {
-  return active_variables_;
-}
-
-const std::vector<IntVar*>& FzSolver::SecondaryVariables() const {
-  return introduced_variables_;
-}
-
 void FzSolver::SyncWithModel() {
-  hash_set<FzIntegerVariable*> implied;
   for (FzConstraint* const ct : model_.constraints()) {
-    MarkComputedVariables(ct, &implied);
+    MarkComputedVariables(ct, &implied_variables_);
   }
 
   for (FzIntegerVariable* const fz_var : model_.variables()) {
     if (!fz_var->active || fz_var->defining_constraint != nullptr ||
-        ContainsKey(implied, fz_var)) {
+        ContainsKey(implied_variables_, fz_var)) {
       continue;
     }
     IntExpr* const expr = Extract(fz_var);
@@ -530,11 +521,7 @@ void FzSolver::SyncWithModel() {
     }
     IntVar* const var = expr->Var();
     extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
-    if (fz_var->temporary) {
-      introduced_variables_.push_back(var);
-    } else {
-      active_variables_.push_back(var);
-    }
+    if (!fz_var->temporary) active_variables_.push_back(var);
   }
   if (model_.objective() != nullptr) {
     objective_var_ = Extract(model_.objective())->Var();
@@ -603,8 +590,8 @@ void FzSolver::Solve(FzSolverParameters p,
   while (solver()->NextSolution()) {
     if (!model_.output().empty() && !parallel_support->ShouldFinish()) {
       solution_string.clear();
-      for (unsigned int i = 0; i < model_.output().size(); i++) {
-        solution_string.append(SolutionString(model_.output()[i]));
+      for (const FzOnSolutionOutput& output : model_.output()) {
+        solution_string.append(SolutionString(output));
         solution_string.append("\n");
       }
       solution_string.append("----------");

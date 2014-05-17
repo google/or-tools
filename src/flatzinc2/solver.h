@@ -70,8 +70,6 @@ class FzSolver {
                                      const std::vector<IntVar*>& active_variables,
                                      std::vector<DecisionBuilder*>* builders);
   DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p);
-  const std::vector<IntVar*>& PrimaryVariables() const;
-  const std::vector<IntVar*>& SecondaryVariables() const;
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);
   void SyncWithModel();
 
@@ -80,8 +78,8 @@ class FzSolver {
   Solver solver_;
   hash_map<FzIntegerVariable*, IntExpr*> extrated_map_;
   std::vector<IntVar*> active_variables_;
-  std::vector<IntVar*> introduced_variables_;
   hash_map<IntVar*, int> extracted_occurrences_;
+  hash_set<FzIntegerVariable*> implied_variables_;
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;

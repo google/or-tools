@@ -244,7 +244,6 @@ struct FzAnnotation {
   int64 interval_max;
   std::string id;
   std::vector<FzAnnotation> annotations;
-  FzIntegerVariable* variable;
   std::vector<FzIntegerVariable*> variables;
 };
 
