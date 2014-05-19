@@ -63,7 +63,9 @@ void Run(const std::string& filename, const FzSolverParameters& parameters,
   CHECK(ParseFlatzincFile(filename, &model));
   FzPresolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
-  presolve.Run(&model);
+  if (FLAGS_presolve) {
+   presolve.Run(&model);
+  }
   FzModelStatistics stats(model);
   stats.PrintStatistics();
   FzSolver solver(model);
