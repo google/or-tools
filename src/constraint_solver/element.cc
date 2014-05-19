@@ -497,7 +497,9 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
   } else {
     IntExpr* result = nullptr;
     // Is Array increasing
-    if (IsIncreasing(values)) {
+    if (IsIncreasingContiguous(values)) {
+      result = solver->MakeSum(index, values[0]);
+    } else if (IsIncreasing(values)) {
       result = solver->RegisterIntExpr(solver->RevAlloc(
           new IncreasingIntExprElement(solver, values, index)));
     } else {
@@ -1291,8 +1293,12 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
       return solver->MakeEquality(target, vals[val]);
     }
   } else {
-    return solver->RevAlloc(
-        new IntElementConstraint(solver, vals, index, target));
+    if (IsIncreasingContiguous(vals)) {
+      return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
+    } else {
+      return solver->RevAlloc(
+          new IntElementConstraint(solver, vals, index, target));
+    }
   }
 }
 }  // namespace
