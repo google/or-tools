@@ -450,8 +450,7 @@ bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
   const int64 value = ct->Arg(2).Value();
   if (ct->type == "int_lin_eq_reif") {
     if (value < lb || value > ub) {
-      FZVLOG << "Assign boolean to false in " << ct->DebugString()
-             << FZENDL;
+      FZVLOG << "Assign boolean to false in " << ct->DebugString() << FZENDL;
       ct->Arg(3).Var()->domain.IntersectWithInterval(0, 0);
       ct->MarkAsInactive();
       return true;
@@ -586,6 +585,17 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
   return false;
 }
 
+namespace {
+bool IsIncreasingContiguous(const std::vector<int64>& values) {
+  for (int i = 0; i < values.size() - 1; ++i) {
+    if (values[i + 1] != values[i] + 1) {
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
+
 // Reconstructs the 2d element constraint in case the mapping only contains 1
 // variable. (e.g. x = A[2][y]).
 bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
@@ -596,8 +606,8 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
   if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const FzDomain& domain = mapping.variable->domain;
-    if ((domain.is_interval && domain.values.empty()) || domain.values[0] < 0 ||
-        mapping.offset + mapping.coefficient <= 0) {
+    if ((domain.is_interval && domain.values.empty()) ||
+        domain.values[0] != 1 || mapping.offset + mapping.coefficient <= 0) {
       // Invalid case. Ignore it.
       return false;
     }
@@ -608,7 +618,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       if (index < 0) {
         return false;
       }
-      if (index >= values.size()) {
+      if (index > values.size()) {
         break;
       }
       new_values.push_back(values[index]);
@@ -626,6 +636,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     // Mark old index var and affine constraint as presolved out.
     mapping.constraint->MarkAsInactive();
     index_var->active = false;
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
   }
   if (ContainsKey(flatten_map_, index_var)) {
@@ -654,6 +665,35 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     ct->MutableArg(1)->values.resize(index_var->domain.values[1]);
     ct->presolve_propagation_done = false;
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  if (IsIncreasingContiguous(ct->Arg(1).values)) {
+    const int64 start = ct->Arg(1).values.front();
+    FzIntegerVariable* const index = ct->Arg(0).Var();
+    FzIntegerVariable* const target = ct->Arg(2).Var();
+    FZVLOG << "Linearize " << ct->DebugString() << FZENDL;
+
+    if (start == 1) {
+      ct->type = "int_eq";
+      ct->arguments[1] = ct->Arg(2);
+      ct->arguments.pop_back();
+    } else {
+      // Rewrite constraint into a int_lin_eq
+      ct->type = "int_lin_eq";
+      ct->MutableArg(0)->type = FzArgument::INT_LIST;
+      ct->MutableArg(0)->variables.clear();
+      ct->MutableArg(0)->values.push_back(-1);
+      ct->MutableArg(0)->values.push_back(1);
+      ct->MutableArg(1)->type = FzArgument::INT_VAR_REF_ARRAY;
+      ct->MutableArg(1)->values.clear();
+      ct->MutableArg(1)->variables.push_back(target);
+      ct->MutableArg(1)->variables.push_back(index);
+      ct->MutableArg(2)->type = FzArgument::INT_VALUE;
+      ct->MutableArg(2)->variables.clear();
+      ct->MutableArg(2)->values.push_back(1 - start);
+    }
+
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
@@ -697,8 +737,8 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   } else if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const FzDomain& domain = mapping.variable->domain;
-    if ((domain.is_interval && domain.values.empty()) || domain.values[0] < 0 ||
-        mapping.offset + mapping.coefficient <= 0) {
+    if ((domain.is_interval && domain.values.empty()) ||
+        domain.values[0] != 1 || mapping.offset + mapping.coefficient <= 0) {
       // Invalid case. Ignore it.
       return false;
     }
@@ -904,6 +944,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "int_lin_eq_reif") changed |= CheckIntLinReifBounds(ct);
   if (id == "array_int_element") {
     changed |= PresolveSimplifyElement(ct);
+  }
+  // Type could have changed in the previous rule. We need to test again.
+  if (id == "array_int_element") {
     changed |= PresolveArrayIntElement(ct);
   }
   if (id == "array_var_int_element") {
