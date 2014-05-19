@@ -22,7 +22,6 @@
 #include "flatzinc2/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/string_array.h"
 
 DECLARE_bool(use_sat);
 DECLARE_bool(fz_verbose);
