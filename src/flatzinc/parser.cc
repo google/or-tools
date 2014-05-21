@@ -25,10 +25,10 @@
 
 #include "base/stl_util.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/flatzinc.tab.hh"
-#include "base/join.h"
 
 extern int orfz_parse(operations_research::ParserState* input, void* scanner);
 extern int orfz_lex_init(void** scanner);
