@@ -26,6 +26,7 @@
 // TODO(user): Move sat_cnf_reader.h and sat_runner.cc to examples?
 #include "cpp/opb_reader.h"
 #include "cpp/sat_cnf_reader.h"
+#include "base/random.h"
 #include "sat/boolean_problem.h"
 #include "sat/sat_solver.h"
 #include "util/time_limit.h"
@@ -65,6 +66,10 @@ DEFINE_bool(search_optimal, false,
             "If true, search for the optimal solution. "
             "The algorithm is currently really basic.");
 
+DEFINE_int32(randomize, 100,
+             "If positive, solve that many times the problem with a random "
+             "decision heuristic before trying to optimize it.");
+
 DEFINE_bool(use_symmetry, false,
             "If true, find and exploit the eventual symmetries "
             "of the problem.");
@@ -83,6 +88,30 @@ double GetScaledObjective(const LinearBooleanProblem& problem,
                           Coefficient objective) {
   return objective.value() * problem.objective().scaling_factor() +
          problem.objective().offset();
+}
+
+void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
+  // Random preferred variable order.
+  const google::protobuf::EnumDescriptor* order_d =
+      SatParameters::VariableOrder_descriptor();
+  parameters->set_preferred_variable_order(
+      static_cast<SatParameters::VariableOrder>(
+          order_d->value(random->Uniform(order_d->value_count()))->number()));
+
+  // Random polarity initial value.
+  const google::protobuf::EnumDescriptor* polarity_d =
+      SatParameters::Polarity_descriptor();
+  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
+      polarity_d->value(random->Uniform(polarity_d->value_count()))->number()));
+
+  // Other random parameters.
+  parameters->set_use_phase_saving(random->OneIn(2));
+  const std::vector<double> ratios = {0.0, 0.0, 0.0, 0.01, 1.0};
+  parameters->set_random_polarity_ratio(ratios[random->Uniform(ratios.size())]);
+
+  // IMPORTANT: SetParameters() will reinitialize the seed, so we must change
+  // it.
+  parameters->set_random_seed(parameters->random_seed() + 1);
 }
 
 void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
@@ -117,6 +146,56 @@ std::string SolutionString(const LinearBooleanProblem& problem,
 
 void PrintObjective(double objective) {
   printf("o %lld\n", static_cast<int64>(objective));
+}
+
+int64 SolveWithDifferentParameters(const LinearBooleanProblem& problem,
+                                   SatSolver* solver, TimeLimit* time_limit,
+                                   int num_solve) {
+  MTRandom random("A random seed.");
+  SatParameters parameters = solver->parameters();
+
+  // We start with a low limit (increased on each LIMIT_REACHED).
+  parameters.set_log_search_progress(false);
+  parameters.set_max_number_of_conflicts(10);
+
+  int64 min_seen = std::numeric_limits<int64>::max();
+  int64 max_seen = std::numeric_limits<int64>::min();
+  int64 best = min_seen;
+  for (int i = 0; i < num_solve; ++i) {
+    solver->Backtrack(0);
+    RandomizeDecisionHeuristic(&random, &parameters);
+    parameters.set_max_time_in_seconds(time_limit->GetTimeLeft());
+    solver->SetParameters(parameters);
+    solver->ResetDecisionHeuristic();
+
+    const bool use_obj = random.OneIn(4);
+    if (use_obj) UseObjectiveForSatAssignmentPreference(problem, solver);
+
+    const SatSolver::Status result = solver->Solve();
+    if (result == SatSolver::LIMIT_REACHED) {
+      printf("limit reached\n");
+      parameters.set_max_number_of_conflicts(
+          static_cast<int64>(1.1 * parameters.max_number_of_conflicts()));
+      if (time_limit->LimitReached()) return best;
+      continue;
+    }
+
+    CHECK_EQ(result, SatSolver::MODEL_SAT);
+    CHECK(IsAssignmentValid(problem, solver->Assignment()));
+
+    const Coefficient objective =
+        ComputeObjectiveValue(problem, solver->Assignment());
+    best = std::min(best, objective.value());
+    const int64 scaled_objective =
+        static_cast<int64>(GetScaledObjective(problem, objective));
+    min_seen = std::min(min_seen, scaled_objective);
+    max_seen = std::max(max_seen, scaled_objective);
+
+    printf("objective preference: %s\n", use_obj ? "true" : "false");
+    printf("%s", parameters.DebugString().c_str());
+    printf("  %lld   [%lld, %lld]\n", scaled_objective, min_seen, max_seen);
+  }
+  return best;
 }
 
 // Same as Run() with --solve_optimal, no logging, and an output in the cnf
@@ -225,41 +304,57 @@ int Run() {
     TimeLimit time_limit(parameters.max_time_in_seconds());
     Coefficient objective = kCoefficientMax;
     int old_num_fixed_variables = 0;
+    bool first_time = true;
     while (true) {
-      const SatSolver::Status result = solver.Solve();
-      if (result == SatSolver::MODEL_UNSAT) {
-        if (objective == kCoefficientMax) {
-          LOG(INFO) << "The problem is UNSAT";
+      if (first_time && FLAGS_randomize > 0) {
+        first_time = false;
+        solver.SetParameters(parameters);
+        objective = SolveWithDifferentParameters(problem, &solver, &time_limit,
+                                                 FLAGS_randomize);
+        solver.SetParameters(parameters);
+        solver.Backtrack(0);
+        solver.ResetDecisionHeuristic();
+        UseObjectiveForSatAssignmentPreference(problem, &solver);
+      } else {
+        const SatSolver::Status result = solver.Solve();
+        if (result == SatSolver::MODEL_UNSAT) {
+          if (objective == kCoefficientMax) {
+            LOG(INFO) << "The problem is UNSAT";
+            break;
+          }
+          LOG(INFO) << "Optimal found!";
+          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
+          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
           break;
         }
-        LOG(INFO) << "Optimal found!";
-        LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
-        LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-        break;
-      }
-      if (result != SatSolver::MODEL_SAT) {
-        LOG(INFO) << "Search aborted.";
-        if (objective == kCoefficientMax) {
-          LOG(INFO) << "No solution found!";
-          LOG(INFO) << "Objective = " << kCoefficientMax;
-        } else {
-          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
+        if (result != SatSolver::MODEL_SAT) {
+          LOG(INFO) << "Search aborted.";
+          if (objective == kCoefficientMax) {
+            LOG(INFO) << "No solution found!";
+            LOG(INFO) << "Objective = " << kCoefficientMax;
+          } else {
+            LOG(INFO) << "Objective = " << GetScaledObjective(problem,
+                                                              objective);
+          }
+          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
+          break;
         }
-        LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-        break;
+        CHECK(IsAssignmentValid(problem, solver.Assignment()));
+        const Coefficient old_objective = objective;
+        objective = ComputeObjectiveValue(problem, solver.Assignment());
+        PrintObjective(GetScaledObjective(problem, objective));
+        CHECK_LT(objective, old_objective);
       }
-      CHECK(IsAssignmentValid(problem, solver.Assignment()));
-      const Coefficient old_objective = objective;
-      objective = ComputeObjectiveValue(problem, solver.Assignment());
-      CHECK_LT(objective, old_objective);
       solver.Backtrack(0);
-      if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
-                                  objective - 1, &solver)) {
-        LOG(INFO) << "UNSAT (when tightenning the objective constraint).";
-        LOG(INFO) << "Optimal found!";
-        LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
-        LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-        break;
+      if (objective != kCoefficientMax) {
+        if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
+                                    objective - 1, &solver)) {
+          LOG(INFO) << "UNSAT (when tightenning the objective constraint).";
+          LOG(INFO) << "Optimal found!";
+          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
+          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
+          break;
+        }
       }
       parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());
       solver.SetParameters(parameters);

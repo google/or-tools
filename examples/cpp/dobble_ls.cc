@@ -444,7 +444,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
 
   // We build the current bitmap and the matrix of violation cost
   // between any two cards.
-  virtual void OnSynchronize() {
+  virtual void OnSynchronize(const Assignment* delta) {
     symbol_bitmask_per_card_.assign(num_cards_, 0);
     for (int card = 0; card < num_cards_; ++card) {
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {

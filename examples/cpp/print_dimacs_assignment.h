@@ -22,8 +22,10 @@
 
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/file.h"
 #include "graph/ebert_graph.h"
 #include "graph/linear_assignment.h"
+#include "base/status.h"
 
 namespace operations_research {
 
@@ -40,41 +42,22 @@ void PrintDimacsAssignmentProblem(
     const TailArrayManager<GraphType>& tail_array_manager,
     const std::string& output_filename);
 
-// Implementation is below here.
-namespace internal {
-
-void WriteOrDie(const char* buffer,
-                size_t item_size,
-                size_t buffer_length,
-                FILE* fp) {
-  size_t written = fwrite(buffer, item_size, buffer_length, fp);
-  if (written != buffer_length) {
-    fprintf(stderr, "Write failed.\n");
-    exit(1);
-  }
-}
-
-}  // namespace internal
-
-
 template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
     const std::string& output_filename) {
-  FILE* output = fopen(output_filename.c_str(), "w");
+  File* output = File::Open(output_filename, "w");
   const GraphType& graph(assignment.Graph());
   std::string output_line =
       StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
-  internal::WriteOrDie(output_line.c_str(), 1,
-                       output_line.length(), output);
+  CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
 
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok(); node_it.Next()) {
     output_line = StringPrintf("n %d\n", node_it.Index() + 1);
-    internal::WriteOrDie(output_line.c_str(), 1,
-                         output_line.length(), output);
+    CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
   }
 
   tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
@@ -84,8 +67,7 @@ void PrintDimacsAssignmentProblem(
     ArcIndex arc = arc_it.Index();
     output_line = StringPrintf("a %d %d %lld\n", graph.Tail(arc) + 1,
                                graph.Head(arc) + 1, assignment.ArcCost(arc));
-    internal::WriteOrDie(output_line.c_str(), 1,
-                         output_line.length(), output);
+    CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
   }
 }
 

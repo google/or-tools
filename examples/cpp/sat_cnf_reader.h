@@ -13,15 +13,22 @@
 #ifndef OR_TOOLS_SAT_SAT_CNF_READER_H_
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/strtoint.h"
 #include "base/split.h"
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
+
+DEFINE_bool(
+    max_sat, false,
+    "A cnf file can be both interpreted as a pure SAT or a max-SAT problem. "
+    "If this flag is true, we interpret it as the max-sat version.");
 
 namespace operations_research {
 namespace sat {
@@ -41,7 +48,10 @@ class SatCnfReader {
     problem->set_name(ExtractProblemName(filename));
     is_wcnf_ = false;
     end_marker_seen_ = false;
-    slack_variable_weights_.clear();
+    hard_weight_ = 0;
+    num_skipped_soft_clauses_ = 0;
+    num_singleton_soft_clauses_ = 0;
+    num_slack_variables_ = 0;
 
     int num_lines = 0;
     for (const std::string& line : FileLines(filename)) {
@@ -52,21 +62,11 @@ class SatCnfReader {
       LOG(FATAL) << "File '" << filename << "' is empty or can't be read.";
     }
     problem->set_original_num_variables(num_variables_);
-    problem->set_num_variables(num_variables_ + slack_variable_weights_.size());
+    problem->set_num_variables(num_variables_ + num_slack_variables_);
 
-    // Add the slack variables (to convert max-sat to an pseudo-Boolean
-    // optimization problem).
-    if (is_wcnf_) {
-      LinearObjective* objective = problem->mutable_objective();
-      int slack_literal = num_variables_ + 1;
-      for (const int weight : slack_variable_weights_) {
-        objective->add_literals(slack_literal);
-        objective->add_coefficients(weight);
-        ++slack_literal;
-      }
-    }
-
-    if (problem->constraints_size() != num_clauses_) {
+    if (num_clauses_ !=
+        problem->constraints_size() + num_singleton_soft_clauses_ +
+            num_skipped_soft_clauses_) {
       LOG(ERROR) << "Wrong number of clauses.";
       return false;
     }
@@ -110,7 +110,9 @@ class SatCnfReader {
           hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
           problem->set_type(LinearBooleanProblem::MINIMIZATION);
         } else {
-          problem->set_type(LinearBooleanProblem::SATISFIABILITY);
+          problem->set_type(FLAGS_max_sat
+                                ? LinearBooleanProblem::MINIMIZATION
+                                : LinearBooleanProblem::SATISFIABILITY);
         }
       } else {
         LOG(FATAL) << "Unknow file type: " << words_[1];
@@ -119,37 +121,63 @@ class SatCnfReader {
       // In the cnf file format, the last words should always be 0.
       DCHECK_EQ("0", words_.back());
       const int size = words_.size() - 1;
+      const int reserved_size = (!is_wcnf_ && FLAGS_max_sat) ? size + 1 : size;
 
       LinearBooleanConstraint* constraint = problem->add_constraints();
-      constraint->mutable_literals()->Reserve(size);
-      constraint->mutable_coefficients()->Reserve(size);
+      constraint->mutable_literals()->Reserve(reserved_size);
+      constraint->mutable_coefficients()->Reserve(reserved_size);
       constraint->set_lower_bound(1);
 
+      int64 weight = (!is_wcnf_ && FLAGS_max_sat) ? 1 : hard_weight_;
       for (int i = 0; i < size; ++i) {
         const int64 signed_value = StringPieceAtoi(words_[i]);
         if (i == 0 && is_wcnf_) {
           // Mathematically, a soft clause of weight 0 can be removed.
           if (signed_value == 0) {
+            ++num_skipped_soft_clauses_;
             problem->mutable_constraints()->RemoveLast();
             break;
           }
-          if (signed_value != hard_weight_) {
-            const int slack_literal =
-                num_variables_ + slack_variable_weights_.size() + 1;
-            constraint->add_literals(slack_literal);
-            constraint->add_coefficients(1);
-            slack_variable_weights_.push_back(signed_value);
-          }
-          continue;
+          weight = signed_value;
+        } else {
+          DCHECK_NE(signed_value, 0);
+          constraint->add_literals(signed_value);
+          constraint->add_coefficients(1);
         }
-        DCHECK_NE(signed_value, 0);
-        constraint->add_literals(signed_value);
-        constraint->add_coefficients(1);
       }
-      if (DEBUG_MODE && !is_wcnf_) {
+      if (weight != hard_weight_) {
+        if (constraint->literals_size() == 1) {
+          // The max-sat formulation of an optimization sat problem with a
+          // linear objective introduces many singleton soft clauses. Because we
+          // natively work with a linear objective, we can just put the cost on
+          // the unique variable of such clause and remove the clause.
+          //
+          // TODO(user): If many singleton clauses with the same variable
+          // appear, we will create duplicate entry in the objective which is
+          // not supported (and is checked by BooleanProblemIsValid()). If we do
+          // encounter this case in practice, fix this.
+          ++num_singleton_soft_clauses_;
+          LinearObjective* objective = problem->mutable_objective();
+          objective->add_literals(-constraint->literals(0));
+          objective->add_coefficients(weight);
+          problem->mutable_constraints()->RemoveLast();
+        } else {
+          // The +1 is because a positive literal is the same as the 1-based
+          // variable index.
+          const int slack_literal = num_variables_ + num_slack_variables_ + 1;
+          ++num_slack_variables_;
+          constraint->add_literals(slack_literal);
+          constraint->add_coefficients(1);
+
+          LinearObjective* objective = problem->mutable_objective();
+          objective->add_literals(slack_literal);
+          objective->add_coefficients(weight);
+          DCHECK_EQ(constraint->literals_size(), reserved_size);
+        }
+      } else {
         // If wcnf is true, we currently reserve one more literals than needed
         // for the hard clauses.
-        DCHECK_EQ(constraint->literals_size(), size);
+        DCHECK_EQ(constraint->literals_size(), is_wcnf_ ? size - 1 : size);
       }
     }
   }
@@ -164,8 +192,11 @@ class SatCnfReader {
   bool is_wcnf_;
   // Some files have text after %. This indicates if we have seen the '%'.
   bool end_marker_seen_;
-  std::vector<int64> slack_variable_weights_;
   int64 hard_weight_;
+
+  int num_slack_variables_;
+  int num_skipped_soft_clauses_;
+  int num_singleton_soft_clauses_;
 
   DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };

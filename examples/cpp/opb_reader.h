@@ -64,9 +64,8 @@ class OpbReader {
   }
 
   void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
-    static const char kWordDelimiters[] = " ";
-    std::vector<std::string> words;
-    SplitStringUsing(line, kWordDelimiters, &words);
+    const std::vector<std::string> words =
+        strings::Split(line, " ", strings::SkipEmpty());
     if (words.size() == 0 || words[0].empty() || words[0][0] == '*') {
       return;
     }

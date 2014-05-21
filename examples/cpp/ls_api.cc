@@ -89,7 +89,7 @@ class SumFilter : public IntVarLocalSearchFilter {
 
   ~SumFilter() {}
 
-  virtual void OnSynchronize() {
+  virtual void OnSynchronize(const Assignment* delta) {
     sum_ = 0;
     for (int index = 0; index < Size(); ++index) {
       sum_ += Value(index);

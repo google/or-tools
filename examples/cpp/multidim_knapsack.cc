@@ -90,9 +90,8 @@ class MultiDimKnapsackData {
 
   // Used internally.
   void ProcessNewLine(char* const line) {
-    const char* const kWordDelimiters(" ");
-    std::vector<std::string> words;
-    SplitStringUsing(line, kWordDelimiters, &words);
+    const std::vector<std::string> words =
+        strings::Split(line, " ", strings::SkipEmpty());
     line_read_++;
     if (problem_type_ == -1) {
       if (words.size() == 1) {

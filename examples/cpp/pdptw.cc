@@ -169,17 +169,15 @@ bool LoadAndSolve(const std::string& pdp_file) {
   // Load all the lines of the file in RAM (it shouldn't be too large anyway).
   std::vector<std::string> lines;
   {
-    const int64 kMaxInputFileSize = 1 << 30;  // 1GB
-    File* data_file = File::OpenOrDie(pdp_file, "r");
     std::string contents;
-    data_file->ReadToString(&contents, kMaxInputFileSize);
-    data_file->Close();
-    if (contents.size() == kMaxInputFileSize) {
+    CHECK(file::GetContents(pdp_file, &contents, file::Defaults()).ok());
+    const int64 kMaxInputFileSize = 1 << 30;  // 1GB
+    if (contents.size() >= kMaxInputFileSize) {
       LOG(WARNING) << "Input file '" << pdp_file << "' is too large (>"
                    << kMaxInputFileSize << " bytes).";
       return false;
     }
-    SplitStringUsing(contents, "\n", &lines);
+    lines = strings::Split(contents, "\n", strings::SkipEmpty());
   }
   // Reading header.
   if (lines.empty()) {
