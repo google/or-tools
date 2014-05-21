@@ -16,6 +16,7 @@
 #include <cmath>
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
+#include "base/encodingutils.h"
 #include "base/stl_util.h"
 
 namespace operations_research {
@@ -71,7 +72,8 @@ std::string StatsGroup::StatString() const {
   std::vector<Stat*> sorted_stats;
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
-    const int size = static_cast<int>(stats_[i]->Name().size());
+    // We support UTF8 characters in the stat names.
+    const int size = EncodingUtils::UTF8StrLen(stats_[i]->Name());
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
@@ -85,7 +87,9 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
     result += sorted_stats[i]->Name();
-    result.append(longest_name_size - sorted_stats[i]->Name().size(), ' ');
+    result.append(
+        longest_name_size - EncodingUtils::UTF8StrLen(sorted_stats[i]->Name()),
+        ' ');
     result += " : " + sorted_stats[i]->ValueAsString();
   }
   result += "}\n";

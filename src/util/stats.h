@@ -256,6 +256,8 @@ class IntegerDistribution : public DistributionStat {
   void Add(int64 value);
 };
 
+#ifdef OR_STATS
+
 // Helper class to time a block of code and add the result to a
 // TimeDistribution. Calls StartTimer() on creation and
 // StopTimerAndAddElapsedTime() on destruction.
@@ -290,15 +292,6 @@ class ScopedTimeDistributionUpdater {
   DISALLOW_COPY_AND_ASSIGN(ScopedTimeDistributionUpdater);
 };
 
-// If OR_STATS is not defined, we remove some instructions that may be time
-// consuming.
-#ifndef OR_STATS
-
-#define IF_STATS_ENABLED(instructions)
-#define SCOPED_TIME_STAT(stats)
-
-#else  // OR_STATS
-
 // Simple macro to be used by a client that want to execute costly operations
 // only if OR_STATS is defined.
 #define IF_STATS_ENABLED(instructions) instructions
@@ -313,6 +306,22 @@ class ScopedTimeDistributionUpdater {
 #define SCOPED_TIME_STAT(stats)                                        \
   operations_research::ScopedTimeDistributionUpdater scoped_time_stat( \
       (stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
+
+#else  // OR_STATS
+// If OR_STATS is not defined, we remove some instructions that may be time
+// consuming.
+
+class ScopedTimeDistributionUpdater {
+ public:
+  explicit ScopedTimeDistributionUpdater(TimeDistribution* stat) {}
+  void AlsoUpdate(TimeDistribution* also_update) {}
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ScopedTimeDistributionUpdater);
+};
+
+#define IF_STATS_ENABLED(instructions)
+#define SCOPED_TIME_STAT(stats)
 
 #endif  // OR_STATS
 

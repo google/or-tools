@@ -469,14 +469,11 @@ class Bitset64 {
     data_[BitOffset64(Value(i))] = 0;
   }
 
-  // Copies the bits at position i and i ^ 1 and then clear them.
-  void CopyAndClearTwoBits(IndexType i, Bitset64* to) {
+  // Clears the bits at position i and i ^ 1.
+  void ClearTwoBits(IndexType i) {
     DCHECK_GE(Value(i), 0);
     DCHECK_LT(Value(i), size_);
-    uint64 offset = BitOffset64(Value(i));
-    uint64 mask = TwoBitsFromPos64(Value(i));
-    (*to).data_[offset] ^= ((*to).data_[offset] ^ data_[offset]) & mask;
-    data_[offset] ^= (data_[offset] & mask);
+    data_[BitOffset64(Value(i))] &= ~TwoBitsFromPos64(Value(i));
   }
 
   // Returns true if the bit at position i or the one at position i ^ 1 is set.
