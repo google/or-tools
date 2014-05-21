@@ -209,9 +209,9 @@ class GraphSymmetryFinder {
   // in the side comments; with N = NumNodes().
   DynamicPermutation tmp_dynamic_permutation_;   // Identity(N)
   mutable std::vector<bool> tmp_node_mask_;           // [0..N-1] = false
-  std::vector<int> tmp_in_degree_;                    // [0..N-1] = 0.
+  std::vector<int> tmp_degree_;                       // [0..N-1] = 0.
   std::vector<int> tmp_stack_;                        // Empty.
-  std::vector<std::vector<int>> tmp_nodes_with_indegree_;  // [0..N-1] = [].
+  std::vector<std::vector<int>> tmp_nodes_with_degree_;    // [0..N-1] = [].
   MergingPartition tmp_partition_;               // Reset(N).
   std::vector<const SparsePermutation*> tmp_compatible_permutations_;  // Empty.
 
@@ -219,34 +219,92 @@ class GraphSymmetryFinder {
   struct Stats : public StatsGroup {
     Stats()
         : StatsGroup("GraphSymmetryFinder"),
-          initialization_time("initialization_time", this),
-          invariant_dive_time("invariant_dive_time", this),
-          invariant_unroll_time("invariant_unroll_time", this),
-          permutation_output_time("permutation_output_time", this),
-          num_search_states("num_search_states", this),
-          search_depth("search_depth", this),
-          dynamic_permutation_time("dynamic_permutation_time", this),
-          quick_compatibility_time("quick_compatibility_time", this),
-          map_election_time("map_election_time", this),
-          backtracking_time("backtracking_time", this),
-          search_deepening_time("search_deepening_time", this),
-          search_finalize_time("search_finalize_time", this) {}
+          initialization_time(
+              "a Initialization", this),
+          initialization_refine_time(
+              "b  ┗╸Refine", this),
+          invariant_dive_time(
+              "c Invariant Dive", this),
+          main_search_time(
+              "d Main Search", this),
+          invariant_unroll_time(
+              "e  ┣╸Dive unroll", this),
+          permutation_output_time(
+              "f  ┣╸Permutation output", this),
+          search_time(
+              "g  ┗╸FindOneSuitablePermutation()", this),
+          search_time_fail(
+              "h    ┣╸Fail", this),
+          search_time_success(
+              "i    ┣╸Success", this),
+          initial_search_refine_time(
+              "j    ┣╸Initial refine", this),
+          search_refine_time(
+              "k    ┣╸Further refines", this),
+          quick_compatibility_time(
+              "l    ┣╸Compatibility checks", this),
+          quick_compatibility_fail_time(
+              "m    ┃ ┣╸Fail", this),
+          quick_compatibility_success_time(
+              "n    ┃ ┗╸Success", this),
+          dynamic_permutation_refinement_time(
+              "o    ┣╸Dynamic permutation refinement", this),
+          map_election_std_time(
+              "p    ┣╸Mapping election / full match detection", this),
+          map_election_std_mapping_time(
+              "q    ┃ ┣╸Mapping elected", this),
+          map_election_std_full_match_time(
+              "r    ┃ ┗╸Full Match", this),
+          automorphism_test_time(
+              "s    ┣╸[Upon full match] Automorphism check", this),
+          automorphism_test_fail_time(
+              "t    ┃ ┣╸Fail", this),
+          automorphism_test_success_time(
+              "u    ┃ ┗╸Success", this),
+          search_finalize_time(
+              "v    ┣╸[Upon auto success] Finalization", this),
+          dynamic_permutation_undo_time(
+              "w    ┣╸[Upon auto fail, full] Dynamic permutation undo", this),
+          map_reelection_time(
+              "x    ┣╸[Upon auto fail, partial] Mapping re-election", this),
+          non_singleton_search_time(
+              "y    ┃ ┗╸Non-singleton search", this),
+          backtracking_time(
+              "z    ┗╸Backtracking", this),
+          pruning_time(
+              "{      ┗╸Pruning", this),
+          search_depth(
+              "~ Search Stats: search_depth", this) {}
 
-    // Timers for the global phases.
     TimeDistribution initialization_time;
+    TimeDistribution initialization_refine_time;
     TimeDistribution invariant_dive_time;
+    TimeDistribution main_search_time;
     TimeDistribution invariant_unroll_time;
     TimeDistribution permutation_output_time;
-
-    // Timer/counters for FindOneSuitablePermutation().
-    IntegerDistribution num_search_states;
-    IntegerDistribution search_depth;
-    TimeDistribution dynamic_permutation_time;
+    TimeDistribution search_time;
+    TimeDistribution search_time_fail;
+    TimeDistribution search_time_success;
+    TimeDistribution initial_search_refine_time;
+    TimeDistribution search_refine_time;
     TimeDistribution quick_compatibility_time;
-    TimeDistribution map_election_time;
-    TimeDistribution backtracking_time;
-    TimeDistribution search_deepening_time;
+    TimeDistribution quick_compatibility_fail_time;
+    TimeDistribution quick_compatibility_success_time;
+    TimeDistribution dynamic_permutation_refinement_time;
+    TimeDistribution map_election_std_time;
+    TimeDistribution map_election_std_mapping_time;
+    TimeDistribution map_election_std_full_match_time;
+    TimeDistribution automorphism_test_time;
+    TimeDistribution automorphism_test_fail_time;
+    TimeDistribution automorphism_test_success_time;
     TimeDistribution search_finalize_time;
+    TimeDistribution dynamic_permutation_undo_time;
+    TimeDistribution map_reelection_time;
+    TimeDistribution non_singleton_search_time;
+    TimeDistribution backtracking_time;
+    TimeDistribution pruning_time;
+
+    IntegerDistribution search_depth;
   };
   mutable Stats stats_;
 };
