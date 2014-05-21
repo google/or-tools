@@ -122,7 +122,7 @@ void MarkComputedVariables(FzConstraint* ct,
   const std::string& id = ct->type;
   if (id == "global_cardinality") {
     FZVLOG << "  - marking " << ct->DebugString() << FZENDL;
-    for (FzIntegerVariable* const var: ct->Arg(2).variables) {
+    for (FzIntegerVariable* const var : ct->Arg(2).variables) {
       marked->insert(var);
     }
   }
@@ -145,8 +145,7 @@ void MarkComputedVariables(FzConstraint* ct,
   if (id == "int_lin_eq" && ct->target_variable == nullptr) {
     const std::vector<int64>& array_coefficients = ct->Arg(0).values;
     const int size = array_coefficients.size();
-    const std::vector<FzIntegerVariable*>& array_variables =
-        ct->Arg(1).variables;
+    const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(1).variables;
     bool todo = true;
     if (size == 0) {
       return;
@@ -499,8 +498,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
   AddCompletionDecisionBuilders(defined_variables, active_variables, &builders);
   // Reporting
   for (DecisionBuilder* const db : builders) {
-    FZLOG << "  - adding decision builder = " << db->DebugString()
-          << FZENDL;
+    FZLOG << "  - adding decision builder = " << db->DebugString() << FZENDL;
   }
   return solver()->Compose(builders);
 }

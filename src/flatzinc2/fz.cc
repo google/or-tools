@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 
-#include "base/unique_ptr.h"
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 #include "base/integral_types.h"
@@ -64,7 +63,7 @@ void Run(const std::string& filename, const FzSolverParameters& parameters,
   FzPresolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
   if (FLAGS_presolve) {
-   presolve.Run(&model);
+    presolve.Run(&model);
   }
   FzModelStatistics stats(model);
   stats.PrintStatistics();
@@ -193,7 +192,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = debug_param;
     }
   }
-  google::ParseCommandLineFlags(argc, argv, true);
+  google::ParseCommandLineFlags( argc, argv, true);
   // Fix the number of solutions.
   if (FLAGS_num_solutions == 0) {  // not specified
     FLAGS_num_solutions = FLAGS_all ? kint32max : 1;

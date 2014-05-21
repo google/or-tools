@@ -135,7 +135,6 @@ void FzPresolver::Unreify(FzConstraint* ct) {
   const std::string& id = ct->type;
   const int last_argument = ct->arguments.size() - 1;
   ct->type.resize(id.size() - 5);
-  FzIntegerVariable* const bool_var = ct->target_variable;
   ct->RemoveTargetVariable();
   if (ct->Arg(last_argument).Value() == 1) {
     FZVLOG << "Unreify " << ct->DebugString() << FZENDL;
@@ -716,8 +715,8 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->type = "array_int_element";
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
-      ct->MutableArg(1)->values
-          .push_back(ct->Arg(1).variables[i]->domain.values[0]);
+      ct->MutableArg(1)
+          ->values.push_back(ct->Arg(1).variables[i]->domain.values[0]);
     }
     ct->MutableArg(1)->variables.clear();
     return true;
@@ -1179,8 +1178,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
-         id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) ||
+         id == "bool_le_reif" || id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.

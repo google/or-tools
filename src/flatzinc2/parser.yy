@@ -1,5 +1,3 @@
-// Specify a reentrant parser.
-
 // Renames all yy to orfz_ in public functions.
 %name-prefix "orfz_"
 
@@ -14,7 +12,9 @@
 %parse-param {bool* ok}
 %parse-param {void* scanner}
 
+// Specify a reentrant parser.
 %define api.pure full
+//%pure-parser
 
 // Code to be exported in parser.tab.hh
 %code requires {
