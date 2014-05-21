@@ -96,7 +96,7 @@ public class LsApi {
     }
 
     @Override
-    protected void onSynchronize() {
+    protected void onSynchronize(Assignment unused_delta) {
       sum_ = 0;
       for (int index = 0; index < size(); ++index) {
         sum_ += value(index);

@@ -80,7 +80,7 @@ public class SumFilter : IntVarLocalSearchFilter {
     sum_ = 0;
   }
 
-  protected override void OnSynchronize()
+  protected override void OnSynchronize(Assignment delta)
   {
     sum_ = 0;
     for (int index = 0; index < Size(); ++index)
