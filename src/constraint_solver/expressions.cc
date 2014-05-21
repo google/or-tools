@@ -491,7 +491,8 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       if (variable_->Bound()) {
         VariableBound();
-      } else if (watchers_set_.Size() <= 8) {
+      } else if (watchers_set_.Size() <= 16) {
+        // brute force loop for small numbers of watchers.
         ScanWatchers();
         CheckInhibit();
       } else {
@@ -545,7 +546,7 @@ class DomainIntVar : public IntVar {
         // propagation. Otherwise, scan the remaining watchers.
         BitSet* const bitset = variable_->bitset();
         if (bitset != nullptr && !watchers_set_.Empty()) {
-          if (bitset->NumHoles() * 8 < watchers_set_.Size()) {
+          if (bitset->NumHoles() * 2 < watchers_set_.Size()) {
             for (const int64 hole : InitAndGetValues(hole_iterator_)) {
               int pos = 0;
               IntVar* const boolvar = watchers_set_.FindPtrOrNull(hole, &pos);
