@@ -99,7 +99,6 @@ class VariablesAssignment {
   VariablesAssignment() {}
   void Resize(int num_variables) {
     assignment_.Resize(LiteralIndex(num_variables << 1));
-    last_assignment_.Resize(LiteralIndex(num_variables << 1));
   }
 
   // Makes the given literal true by assigning its underlying variable to either
@@ -114,7 +113,7 @@ class VariablesAssignment {
   // This can only be called on an assigned variable.
   void UnassignLiteral(Literal literal) {
     DCHECK(IsVariableAssigned(literal.Variable()));
-    assignment_.CopyAndClearTwoBits(literal.Index(), &last_assignment_);
+    assignment_.ClearTwoBits(literal.Index());
   }
 
   // Literal getters. Note that both can be false in which case the
@@ -139,25 +138,6 @@ class VariablesAssignment {
     return Literal(var, assignment_.IsSet(LiteralIndex(var.value() << 1)));
   }
 
-  // Returns the last value of a variable (true or false) if it was ever
-  // assigned. Returns the given default_return_value otherwise.
-  // This should only be called on unassigned variables.
-  bool GetLastVariableValueIfEverAssignedOrDefault(
-      VariableIndex var, bool default_return_value) const {
-    DCHECK(!IsVariableAssigned(var));
-    const int index = var.value() << 1;
-    if (last_assignment_.IsSet(LiteralIndex(index))) return true;
-    if (last_assignment_.IsSet(LiteralIndex(index ^ 1))) return false;
-    return default_return_value;
-  }
-
-  // Sets the given literal to true in the last assignment.
-  // This changes the behavior of GetLastVariableValueIfEverAssignedOrDefault().
-  void SetLastAssignmentValue(Literal true_literal) {
-    last_assignment_.Set(true_literal.Index());
-    last_assignment_.Clear(true_literal.NegatedIndex());
-  }
-
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
  private:
@@ -167,9 +147,6 @@ class VariablesAssignment {
   // - If both are false, then the variable (and the literal) is unassigned.
   Bitset64<LiteralIndex> assignment_;
 
-  // Stores the last assigned value of the variables.
-  // This is used for the phase-saving decision polarity heuristic.
-  Bitset64<LiteralIndex> last_assignment_;
   DISALLOW_COPY_AND_ASSIGN(VariablesAssignment);
 };
 
@@ -371,11 +348,6 @@ class Trail {
   // Changes the decision level used by the next Enqueue().
   void SetDecisionLevel(int level) { current_info_.level = level; }
   int CurrentDecisionLevel() const { return current_info_.level; }
-
-  // Wrapper to the same function of the underlying assignment.
-  void SetLastAssignmentValue(Literal literal) {
-    assignment_.SetLastAssignmentValue(literal);
-  }
 
   // Functions to store a failing clause.
   // There is a special version for a SatClause, because in this case we need to

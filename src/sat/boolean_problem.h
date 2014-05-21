@@ -20,6 +20,10 @@
 namespace operations_research {
 namespace sat {
 
+// Tests the preconditions of the given problem (as described in the proto) and
+// returns true iff they are all satisfied.
+bool BooleanProblemIsValid(const LinearBooleanProblem& problem);
+
 // Loads a BooleanProblem into a given SatSolver instance.
 bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);
 
@@ -58,6 +62,12 @@ void StoreAssignment(const VariablesAssignment& assignment,
 void ExtractSubproblem(const LinearBooleanProblem& problem,
                        const std::vector<int>& constraint_indices,
                        LinearBooleanProblem* subproblem);
+
+// Modifies the given LinearBooleanProblem so that all the literals appearing
+// inside are positive.
+//
+// TODO(user): Also do that on the objective literals + tests.
+void MakeAllLiteralsPositive(LinearBooleanProblem* problem);
 
 // Returns a list of generators of the symmetry group of the given problem. Each
 // generator is a permutation of the integer range [0, 2n) where n is the number

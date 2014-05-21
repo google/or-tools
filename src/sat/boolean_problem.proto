@@ -26,6 +26,9 @@ message LinearBooleanConstraint {
   // constraint and coefficients[i] its coefficients. The signed representation
   // is as follow: for a 0-based variable index x, (x + 1) represents the
   // variable x and -(x + 1) represents its negation.
+  //
+  // Note that the same variable shouldn't appear twice and that zero
+  // coefficients are not allowed.
   repeated int32 literals = 1;
   repeated int64 coefficients = 2;
 
@@ -43,6 +46,8 @@ message LinearBooleanConstraint {
 // maximize) this linear Boolean formula. The direction is given by the problem
 // type (see below).
 message LinearObjective {
+  // Note that the same variable shouldn't appear twice and that zero
+  // coefficients are not allowed.
   repeated int32 literals = 1;
   repeated int64 coefficients = 2;
 

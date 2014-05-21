@@ -31,8 +31,40 @@ DEFINE_string(debug_dump_symmetry_graph_to_file, "",
 namespace operations_research {
 namespace sat {
 
+namespace {
+
+// Used by BooleanProblemIsValid() to test that there is no duplicate literals,
+// that they are all within range and that there is no zero coefficient.
+template <typename LinearTerms>
+bool IsValid(const LinearTerms& terms, std::vector<bool>* variable_seen) {
+  for (int i = 0; i < terms.literals_size(); ++i) {
+    if (terms.literals(i) == 0) return false;
+    if (terms.coefficients(i) == 0) return false;
+    const int var = Literal(terms.literals(i)).Variable().value();
+    if (var >= variable_seen->size() || (*variable_seen)[var]) return false;
+    (*variable_seen)[var] = true;
+  }
+  for (int i = 0; i < terms.literals_size(); ++i) {
+    const int var = Literal(terms.literals(i)).Variable().value();
+    (*variable_seen)[var] = false;
+  }
+  return true;
+}
+
+}  // namespace
+
+bool BooleanProblemIsValid(const LinearBooleanProblem& problem) {
+  std::vector<bool> variable_seen(problem.num_variables(), false);
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
+    if (!IsValid(constraint, &variable_seen)) return false;
+  }
+  if (!IsValid(problem.objective(), &variable_seen)) return false;
+  return true;
+}
+
 bool LoadBooleanProblem(const LinearBooleanProblem& problem,
                         SatSolver* solver) {
+  DCHECK(BooleanProblemIsValid(problem));
   if (solver->parameters().log_search_progress()) {
     LOG(INFO) << "Loading problem '" << problem.name() << "', "
               << problem.num_variables() << " variables, "
@@ -166,50 +198,80 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
   return true;
 }
 
-// Note(user): This function make a few assumption for a max-sat or weighted
-// max-sat problem. Namely that the slack variable from the constraints are
-// always in first position, and appears in the same order in the objective and
-// in the constraints.
+// Note(user): This function makes a few assumptions about the format of the
+// given LinearBooleanProblem. All constraint coefficients must be 1 (and of the
+// form >= 1) and all objective weights must be strictly positive.
 std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem) {
   std::string output;
   const bool is_wcnf = (problem.type() == LinearBooleanProblem::MINIMIZATION);
   const LinearObjective& objective = problem.objective();
 
-  int64 hard_weigth = 0;
+  // Hack: We know that all the variables with index greater than this have been
+  // created "artificially" in order to encode a max-sat problem into our
+  // format. Each extra variable appear only once, and was used as a slack to
+  // reify a soft clause.
+  const int first_slack_variable = problem.original_num_variables();
+
+  // This will contains the objective.
+  hash_map<int, int64> literal_to_weight;
+  std::vector<std::pair<int, int64>> non_slack_objective;
+
+  // This will be the weight of the "hard" clauses in the wcnf format. It must
+  // be greater than the sum of the weight of all the soft clauses, so we will
+  // just set it to this sum + 1.
+  int64 hard_weigth = 1;
   if (is_wcnf) {
+    int i = 0;
     for (const int64 weight : objective.coefficients()) {
-      hard_weigth = std::max(hard_weigth, weight + 1);
+      CHECK_GT(weight, 0);  // Assumption.
+      literal_to_weight[objective.literals(i)] = weight;
+      if (Literal(objective.literals(i)).Variable() < first_slack_variable) {
+        non_slack_objective.push_back(
+            std::make_pair(objective.literals(i), weight));
+      }
+      hard_weigth += weight;
+      ++i;
     }
-    CHECK_GT(hard_weigth, 0);
-    output +=
-        StringPrintf("p wcnf %d %d %lld\n",
-                     problem.num_variables() - objective.literals().size(),
-                     problem.constraints_size(), hard_weigth);
+    output += StringPrintf("p wcnf %d %d %lld\n", first_slack_variable,
+                           static_cast<int>(problem.constraints_size() +
+                                            non_slack_objective.size()),
+                           hard_weigth);
   } else {
     output += StringPrintf("p cnf %d %d\n", problem.num_variables(),
                            problem.constraints_size());
   }
 
-  int slack_index = 0;
+  std::string constraint_output;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    if (constraint.literals_size() == 0) return "";
+    if (constraint.literals_size() == 0) return "";  // Assumption.
+    constraint_output.clear();
+    int64 weight = hard_weigth;
     for (int i = 0; i < constraint.literals_size(); ++i) {
-      if (constraint.coefficients(i) != 1) return "";
-      if (i == 0 && is_wcnf) {
-        if (slack_index < objective.literals_size() &&
-            constraint.literals(0) == objective.literals(slack_index)) {
-          output += StringPrintf("%lld ", objective.coefficients(slack_index));
-          ++slack_index;
-          continue;
-        } else {
-          output += StringPrintf("%lld ", hard_weigth);
-        }
+      if (constraint.coefficients(i) != 1) return "";  // Assumption.
+      if (is_wcnf && abs(constraint.literals(i)) - 1 >= first_slack_variable) {
+        weight = literal_to_weight[constraint.literals(i)];
+      } else {
+        if (i > 0) constraint_output += " ";
+        constraint_output += Literal(constraint.literals(i)).DebugString();
       }
-      output += Literal(constraint.literals(i)).DebugString();
-      output += " ";
     }
-    output += "0\n";
+    if (is_wcnf) {
+      output += StringPrintf("%lld ", weight);
+    }
+    output += constraint_output + " 0\n";
   }
+
+  // Output the rest of the objective as singleton constraints.
+  if (is_wcnf) {
+    for (std::pair<int, int64> p : non_slack_objective) {
+      // Since it is falsifying this clause that cost "weigth", we need to take
+      // its negation.
+      const Literal literal(-p.first);
+      output +=
+          StringPrintf("%lld %s 0\n", p.second, literal.DebugString().c_str());
+    }
+  }
+
   return output;
 }
 
@@ -387,18 +449,53 @@ Graph* GenerateGraphForSymmetryDetection(
   return graph;
 }
 
+void MakeAllLiteralsPositive(LinearBooleanProblem* problem) {
+  for (LinearBooleanConstraint& constraint :
+       *(problem->mutable_constraints())) {
+    int64 sum = 0;
+    for (int i = 0; i < constraint.literals_size(); ++i) {
+      if (constraint.literals(i) < 0) {
+        sum += constraint.coefficients(i);
+        constraint.set_literals(i, -constraint.literals(i));
+        constraint.set_coefficients(i, -constraint.coefficients(i));
+      }
+    }
+    if (constraint.has_lower_bound()) {
+      constraint.set_lower_bound(constraint.lower_bound() - sum);
+    }
+    if (constraint.has_upper_bound()) {
+      constraint.set_upper_bound(constraint.upper_bound() - sum);
+    }
+  }
+}
+
 void FindLinearBooleanProblemSymmetries(
     const LinearBooleanProblem& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators) {
+  typedef GraphSymmetryFinder::Graph Graph;
   std::vector<int> equivalence_classes;
-  std::unique_ptr<GraphSymmetryFinder::Graph> graph(
-      GenerateGraphForSymmetryDetection<GraphSymmetryFinder::Graph>(
-          problem, &equivalence_classes));
+  std::unique_ptr<Graph> graph(
+      GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
   if (!FLAGS_debug_dump_symmetry_graph_to_file.empty()) {
+    // Remap the graph nodes to sort them by equivalence classes.
+    std::vector<int> new_node_index(graph->num_nodes(), -1);
+    const int num_classes = 1 + *std::max_element(equivalence_classes.begin(),
+                                                  equivalence_classes.end());
+    std::vector<int> class_size(num_classes, 0);
+    for (const int c : equivalence_classes) ++class_size[c];
+    std::vector<int> next_index_by_class(num_classes, 0);
+    std::partial_sum(class_size.begin(), class_size.end() - 1,
+                     next_index_by_class.begin() + 1);
+    for (int node = 0; node < graph->num_nodes(); ++node) {
+      new_node_index[node] = next_index_by_class[equivalence_classes[node]]++;
+    }
+    std::unique_ptr<Graph> remapped_graph(
+        RemapGraph(*graph, new_node_index).ValueOrDie());
     const util::Status status = WriteGraphToFile(
-        *graph, FLAGS_debug_dump_symmetry_graph_to_file, /*directed=*/false);
+        *remapped_graph, FLAGS_debug_dump_symmetry_graph_to_file,
+        /*directed=*/false, class_size);
     if (!status.ok()) {
       LOG(DFATAL) << "Error when writing the symmetry graph to file: "
                   << status.ToString();

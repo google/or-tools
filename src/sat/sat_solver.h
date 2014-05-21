@@ -62,6 +62,9 @@ class SatSolver {
   const SatParameters& parameters() const;
 
   // Increases the number of variables of the current problem.
+  //
+  // TODO(user): Rename to IncreaseNumVariablesTo() until we support removing
+  // variables...
   void SetNumVariables(int num_variables);
   int NumVariables() const { return num_variables_.value(); }
 
@@ -126,17 +129,22 @@ class SatSolver {
   int NumAddedConstraints() { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
-  // sets to true. The weight is a positive number reflecting the relative
-  // importance between multiple calls to SetAssignmentPreference().
+  // set to true. Currently this take precedence over the phase saving heuristic
+  // and a variable with a preference will always be branched on according to
+  // this preference.
   //
-  // If the weight is non-zero, branching on a variable will always be done
-  // according to the preference. If the weight is zero, then the branch will
-  // be chosen with the current variable_branching() parameter.
+  // The weight is used as a tie-breaker between variable with the same
+  // activities. Larger weight will be selected first. A weight of zero is the
+  // default value for the other variables.
   //
-  // The weight is also used as a tie-breaker between variable with the same
-  // activities provided that the variable_weight parameter is set to
-  // DEFAULT_WEIGHT.
+  // Note(user): Having a lot of different weights may slow down the priority
+  // queue operations if there is millions of variables.
   void SetAssignmentPreference(Literal literal, double weight);
+
+  // Reinitializes the decision heuristics (which variables to choose with which
+  // polarity) according to the current parameters. Note that this also resets
+  // the activity of the variables to 0.
+  void ResetDecisionHeuristic();
 
   // Solves the problem and returns its status.
   //
@@ -154,7 +162,12 @@ class SatSolver {
   };
   Status Solve();
 
-  // Simple interface to solve a problem under the given assumptions.
+  // Simple interface to solve a problem under the given assumptions. This
+  // simply ask the solver to solve a problem given a set of variables fixed to
+  // a given value (the assumptions). Compared to simply calling AddUnitClause()
+  // and fixing the variables once and for all, this allow to backtrack over the
+  // assumptions and thus exploit the incrementally between subsequent solves.
+  //
   // This function backtrack over all the current decision, tries to enqueue
   // the given assumptions and finally calls SolveWithAssumptions() below.
   //
@@ -168,8 +181,9 @@ class SatSolver {
 
   // This can be called just after SolveWithAssumptions() returned
   // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
-  // to a conflict. It returns a subset of the previously enqueued decisions
-  // that cannot be taken together without making the problem UNSAT.
+  // to a conflict. It returns a subsequence (in the correct order) of the
+  // previously enqueued decisions that cannot be taken together without making
+  // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
 
   // Same as Solve(), but any decisions currently on the trail will be treated
@@ -256,6 +270,23 @@ class SatSolver {
   // Main function called from SolveWithAssumptions() or from Solve() with an
   // assumption_level of 0 (meaning no assumptions).
   Status SolveInternal(int assumption_level);
+
+  // Applies the previous decisions (which are still on decisions_), in order,
+  // starting from the one at the current decision level. Stops at the one at
+  // decisions_[level] or on the first decision already propagated to "false"
+  // and thus incompatible.
+  //
+  // Note that during this process, conflicts may arise which will lead to
+  // backjumps. In this case, we will simply keep reapplying decisions from the
+  // last one backtracked over and so on.
+  //
+  // Returns MODEL_STAT if no conflict occured, MODEL_UNSAT if the model was
+  // proven unsat and ASSUMPTION_UNSAT otherwise. In the last case the first non
+  // taken old decision will be propagated to false by the ones before.
+  //
+  // first_propagation_index will be filled with the trail index of the first
+  // newly propagated literal, or with -1 if MODEL_UNSAT is returned.
+  Status ReapplyDecisionsUpTo(int level, int* first_propagation_index);
 
   // Returns false if the thread memory is over the limit.
   bool IsMemoryLimitReached() const;
@@ -359,7 +390,6 @@ class SatSolver {
   void ProcessNewlyFixedVariables();
 
   // Compute an initial variable ordering.
-  void InitializeQueueElements();
   void InitializeVariableOrdering();
 
   // Returns the maximum trail_index of the literals in the given clause.
@@ -460,10 +490,6 @@ class SatSolver {
   void CompressLearnedClausesIfNeeded();
   void InitLearnedClauseLimit();
 
-  // Returns the initial weight of a variable. Higher is better. This depends on
-  // the variable_ordering parameter.
-  double ComputeInitialVariableWeight(VariableIndex var) const;
-
   // Bumps the activity of all variables appearing in the conflict.
   // See VSIDS decision heuristic: Chaff: Engineering an Efficient SAT Solver.
   // M.W. Moskewicz et al. ANNUAL ACM IEEE DESIGN AUTOMATION CONFERENCE 2001.
@@ -489,10 +515,9 @@ class SatSolver {
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
 
-  // Decides if we should restart from scratch or not. It is called after each
-  // conflict generation. If it returns true, it updates
-  // conflicts_until_next_restart_ as a side effect.
-  bool ShouldRestart();
+  // Reinitializes the polarity of all the variables with an index greater than
+  // or equal to the given one.
+  void ResetPolarity(VariableIndex from);
 
   // Init restart period.
   void InitRestart();
@@ -584,7 +609,7 @@ class SatSolver {
   // var_ordering_ (it uses pointers).
   struct WeightedVarQueueElement {
     WeightedVarQueueElement()
-        : heap_index(-1), weight(0.0), tie_breaker(0.0), variable(-1) {}
+        : heap_index(-1), variable(-1), weight(0.0), tie_breaker(0.0) {}
 
     // Interface for the AdjustablePriorityQueue.
     void SetHeapIndex(int h) { heap_index = h; }
@@ -611,10 +636,16 @@ class SatSolver {
     }
 
     int heap_index;
+    VariableIndex variable;
     double weight;
     double tie_breaker;
-    VariableIndex variable;
   };
+
+  // Note that we use <= because on 32 bits architecture, the size will actually
+  // be smaller than 24 bytes.
+  COMPILE_ASSERT(sizeof(WeightedVarQueueElement) <= 24,
+                 ERROR_WeightedVarQueueElement_is_not_well_compacted);
+
   bool is_var_ordering_initialized_;
   AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
   ITIVector<VariableIndex, WeightedVarQueueElement> queue_elements_;
@@ -634,12 +665,17 @@ class SatSolver {
   // Stores variable activity.
   ITIVector<VariableIndex, double> activities_;
 
-  // The solver will heuristically try to find an assignment with a small sum
-  // of weigths. Note that all weights are positive, so the minimum is zero.
-  // Moreover, out of a literal and its negation, at most one has a non-zero
-  // weight. If both are zero, then the solver polarity logic will not change
-  // for the corresponding variable.
-  ITIVector<LiteralIndex, double> objective_weights_;
+  // Used by NextBranch() to choose the polarity of the next decision.
+  struct Polarity {
+    bool value;
+    bool use_phase_saving;
+    void SetLastAssignmentValue(bool v) {
+      if (use_phase_saving) value = v;
+    }
+  };
+  bool is_decision_heuristic_initialized_;
+  ITIVector<VariableIndex, Polarity> polarity_;
+  ITIVector<VariableIndex, double> weighted_sign_;
 
   // If true, leave the initial variable activities to their current value.
   bool leave_initial_activities_unchanged_;

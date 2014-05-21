@@ -17,44 +17,53 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 message SatParameters {
-  // Tie breaking for the variable activity. If two variables have the same
-  // activity, then the one with higher weight will be selected first for
-  // branching.
-  enum VariableWeight {
-    // Zero by default but can be changed with SetAssignmentPreference().
-    // This stays the same between Solve() calls.
-    DEFAULT_WEIGHT = 0;
-    // Both value below are recomputed at the beginning of each Solve() call.
-    RANDOM_WEIGHT = 1;
-    STATIC_SCALED_USAGE_WEIGHT = 2;
+  // Variables without activity (i.e. at the beginning of the search) will be
+  // tried in this preferred order.
+  enum VariableOrder {
+    IN_ORDER = 0;  // As specified by the problem.
+    IN_REVERSE_ORDER = 1;
+    IN_RANDOM_ORDER = 2;
   }
-  optional VariableWeight variable_weight = 1 [default = DEFAULT_WEIGHT];
+  optional VariableOrder preferred_variable_order = 1 [default = IN_ORDER];
 
-  // Specifies how branching on variable should be done.
-  // Note that this is overridden by calls to SetAssignmentPreference().
-  enum VariableBranching {
-    // Always branch on the variable being true.
-    FIXED_POSITIVE = 0;
-    // Always branch on the variable being false.
-    FIXED_NEGATIVE = 1;
-    // The sign of a variable is true if it appears in more clauses in a
-    // positive literal than in clauses in a negative literal. With that
-    // definition, branching will follow the sign of the variable.
-    SIGN = 2;
-    // Branching will follow the reverse of the sign.
-    REVERSE_SIGN = 3;
-    // The polarity of the variable is the last value it was assigned
-    // to, or its sign if it was never assigned.
-    // Note this is also referenced as 'literal phase saving' in some papers.
-    // For details see 'A Lightweight Component Caching Scheme for
-    // Satisfiability Solvers' K. Pipatsrisawat and A.Darwiche, In 10th
-    // International Conference on Theory and Applications of Satisfiability
-    // Testing, 2007.
-    POLARITY = 4;
-    // Branching will follow the reverse of the polarity.
-    REVERSE_POLARITY = 5;
+  // Specifies the initial polarity (true/false) when the solver branches on a
+  // variable. This can be modified later by the user, or the phase saving
+  // heuristic.
+  //
+  // Note(user): POLARITY_FALSE is usually a good choice because of the
+  // "natural" way to express a linear boolean problem.
+  enum Polarity {
+    POLARITY_TRUE = 0;
+    POLARITY_FALSE = 1;
+    POLARITY_RANDOM = 2;
+
+    // Choose the sign that tends to satisfy the most constraints. This is
+    // computed using a weighted sum: if a literal l appears in a constraint of
+    // the form: ... + coeff * l +... <= rhs with positive coefficients and
+    // rhs, then -sign(l) * coeff / rhs is added to the weight of l.variable().
+    POLARITY_WEIGHTED_SIGN = 3;
+
+    // The opposite choice of POLARITY_WEIGHTED_SIGN.
+    POLARITY_REVERSE_WEIGHTED_SIGN = 4;
   }
-  optional VariableBranching variable_branching = 2 [default = POLARITY];
+  optional Polarity initial_polarity = 2 [default = POLARITY_FALSE];
+
+  // If this is true, then the polarity of a variable will be the last value it
+  // was assigned to, or its default polarity if it was never assigned since the
+  // call to ResetDecisionHeuristic().
+  //
+  // This is called 'literal phase saving'. For details see 'A Lightweight
+  // Component Caching Scheme for Satisfiability Solvers' K. Pipatsrisawat and
+  // A.Darwiche, In 10th International Conference on Theory and Applications of
+  // Satisfiability Testing, 2007.
+  optional bool use_phase_saving = 44 [default = true];
+
+  // The proportion of polarity choosen at random. Note that this take
+  // precedence over the phase saving heuristic. This is different from
+  // initial_polarity:POLARITY_RANDOM because it will select a new random
+  // polarity each time the variable is branched upon instead of selecting one
+  // initially and then always taking this choice.
+  optional double random_polarity_ratio = 45 [default = 0.0];
 
   // Specifies how literals should be initially sorted in a clause.
   enum LiteralOrdering {
