@@ -11,19 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_STRUTIL_H_
-#define OR_TOOLS_BASE_STRUTIL_H_
+#ifndef OR_TOOLS_BASE_NUMBERS_H_
+#define OR_TOOLS_BASE_NUMBERS_H_
 
 #include <string>
-#include "base/stringpiece.h"
-
-using std::string;
+#include "base/integral_types.h"
 
 namespace operations_research {
-
-inline bool HasSuffixString(const StringPiece& str, const StringPiece& suffix) {
-  return str.ends_with(suffix);
-}
-
+// Convert strings to numerical values.
+// Leading and trailing spaces are allowed.
+// Values may be rounded on over- and underflow.
+bool safe_strtof(const char* str, float* value);
+bool safe_strtod(const char* str, double* value);
+bool safe_strtof(const std::string& str, float* value);
+bool safe_strtod(const std::string& str, double* value);
+bool safe_strto64(const std::string& str, int64* value);
 }  // namespace operations_research
-#endif  // OR_TOOLS_BASE_STRUTIL_H_
+
+#endif  // OR_TOOLS_BASE_NUMBERS_H_

@@ -24,14 +24,17 @@
 #include "base/stringpiece.h"
 
 namespace operations_research {
-// ----------------------------------------------------------------------
-// SplitStringUsing()
-//    Split a std::string using a character delimiter. Append the components
-//    to 'result'.  If there are consecutive delimiters, this function skips
-//    over all of them.
-// ----------------------------------------------------------------------
-void SplitStringUsing(const std::string& full, const char* delim,
-                      std::vector<std::string>* res);
+// Split a std::string using a nul-terminated list of character
+// delimiters.  For each component, parse using the provided
+// parsing function and if successful, append it to 'result'.
+// Return true if and only if all components parse successfully.
+// If there are consecutive delimiters, this function skips over
+// all of them.  This function will correctly handle parsing
+// strings that have embedded \0s.
+template <class T>
+bool SplitStringAndParse(StringPiece source, const std::string& delim,
+                         bool (*parse)(const std::string& str, T* value),
+                         std::vector<T>* result);
 
 // We define here a very truncated version of the powerful strings::Split()
 // function. As of 2013-04, it can only be used like this:
@@ -61,6 +64,25 @@ inline const char* AnyOf(const char* x) { return x; }
 
 inline int SkipEmpty() { return 0xDEADBEEF; }
 }  // namespace strings
+
+// ###################### TEMPLATE INSTANTIATIONS BELOW #######################
+template <class T>
+bool SplitStringAndParse(const std::string& source, const std::string& delim,
+                         bool (*parse)(const std::string& str, T* value),
+                         std::vector<T>* result) {
+  CHECK(nullptr != parse);
+  CHECK(nullptr != result);
+  CHECK_GT(delim.size(), 0);
+  const std::vector<StringPiece> pieces =
+      strings::Split(source, strings::delimiter::AnyOf(delim.c_str()),
+                     static_cast<int64>(strings::SkipEmpty()));
+  T t;
+  for (StringPiece piece : pieces) {
+    if (!parse(piece.as_string(), &t)) return false;
+    result->push_back(t);
+  }
+  return true;
+}
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_SPLIT_H_

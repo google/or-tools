@@ -23,9 +23,14 @@ namespace operations_research {
 class ACMRandom {
  public:
   explicit ACMRandom(int32 seed) : seed_(seed) {}
+
   int32 Next();
-  int32 Uniform(int32 max_value);
+
+  // Returns a random value in [0..n-1]. If n == 0, always returns 0.
+  int32 Uniform(int32 n);
+
   int64 Next64();
+
   float RndFloat() {
     return Next() * 0.000000000465661273646;  // x: x * (M-1) = 1 - eps
   }
@@ -49,6 +54,9 @@ class ACMRandom {
 
   // Returns a double in [a, b). The distribution is uniform.
   double UniformDouble(double a, double b) { return a + (b - a) * RndDouble(); }
+
+  // Returns true with probability 1/n. If n=0; always returns true.
+  bool OneIn(int n) { return Uniform(n) == 0; }
 
   void Reset(int32 seed) { seed_ = seed; }
   static int32 HostnamePidTimeSeed();

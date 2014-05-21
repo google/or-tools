@@ -98,7 +98,7 @@ class ITIVector : protected std::vector<T, Alloc> {
   // This const accessor is useful in defining the comparison operators below.
   const ParentType& get() const { return *this; }
   // The mutable accessor is useful when using auxiliar methods relying on
-  // vector parameters such as JoinUsing(), SplitStringUsing(), etc.  Methods
+  // vector parameters such as JoinUsing(), strings::Split(), etc.  Methods
   // relying solely on iterators (e.g. STLDeleteElements) should work just fine
   // without the need for mutable_get().  NB: It should be used only in this
   // case and thus should not be abused to index the underlying vector without

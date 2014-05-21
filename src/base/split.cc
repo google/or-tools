@@ -23,7 +23,7 @@ namespace operations_research {
 namespace {
 
 // ----------------------------------------------------------------------
-// SplitStringUsing()
+// InternalSplitStringUsing()
 //    Split a std::string using a character delimiter. Append the components
 //    to 'result'.
 //
@@ -66,11 +66,6 @@ static inline void InternalSplitStringUsing(const std::string& full,
 }
 
 }  // namespace
-
-void SplitStringUsing(const std::string& full, const char* delim,
-                      std::vector<std::string>* result) {
-  InternalSplitStringUsing(full, delim, result);
-}
 
 namespace strings {
 
