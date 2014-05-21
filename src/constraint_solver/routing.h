@@ -174,8 +174,8 @@
 
 namespace operations_research {
 
+class IntVarFilteredDecisionBuilder;
 class LocalSearchOperator;
-class RoutingCache;
 class RoutingDimension;
 #ifndef SWIG
 class SweepArranger;
@@ -857,6 +857,7 @@ class RoutingModel {
   Assignment* CompactAssignment(const Assignment& assignment) const;
   // Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
+  void AddIntervalToAssignment(IntervalVar* const interval);
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
   void SetSweepArranger(SweepArranger* sweep_arranger) {
@@ -994,6 +995,11 @@ class RoutingModel {
   void UpdateTimeLimit(int64 limit_ms);
   // Updates the time limit used in the Large Neighborhood search tree.
   void UpdateLNSTimeLimit(int64 limit_ms);
+
+  // Returns statistics on first solution search, number of decisions sent to
+  // filters, number of decisions rejected by filters.
+  int64 GetNumberOfDecisionsInFirstSolution() const;
+  int64 GetNumberofRejectsInFirstSolution() const;
 
   // Conversion between enums and strings; the Parse*() conversions return true
   // on success and the *Name() conversions return nullptr when given unknown
@@ -1165,6 +1171,8 @@ class RoutingModel {
   DecisionBuilder* CreateSolutionFinalizer();
   void CreateFirstSolutionDecisionBuilders();
   DecisionBuilder* GetFirstSolutionDecisionBuilder() const;
+  IntVarFilteredDecisionBuilder* GetFilteredFirstSolutionDecisionBuilderOrNull()
+      const;
   LocalSearchPhaseParameters* CreateLocalSearchParameters();
   DecisionBuilder* CreateLocalSearchDecisionBuilder();
   void SetupDecisionBuilders();
@@ -1204,12 +1212,13 @@ class RoutingModel {
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
-  std::vector<RoutingCache*> routing_caches_;
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG
   ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
 #endif  // SWIG
   std::unique_ptr<ResultCallback1<int, int64> > vehicle_start_class_callback_;
+  // Cached callbacks
+  hash_map<const NodeEvaluator2*, NodeEvaluator2*> cached_node_callbacks_;
   // Disjunctions
   ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<DisjunctionIndex> node_to_disjunction_;
@@ -1229,6 +1238,8 @@ class RoutingModel {
 
   // Search data
   std::vector<DecisionBuilder*> first_solution_decision_builders_;
+  std::vector<IntVarFilteredDecisionBuilder*>
+      first_solution_filtered_decision_builders_;
   RoutingStrategy first_solution_strategy_;
   std::unique_ptr<Solver::IndexEvaluator2> first_solution_evaluator_;
   std::vector<LocalSearchOperator*> local_search_operators_;
@@ -1241,6 +1252,7 @@ class RoutingModel {
   Assignment* assignment_;
   Assignment* preassignment_;
   std::vector<IntVar*> extra_vars_;
+  std::vector<IntervalVar*> extra_intervals_;
   std::vector<LocalSearchOperator*> extra_operators_;
   std::vector<LocalSearchFilter*> filters_;
   std::vector<LocalSearchFilter*> feasibility_filters_;
@@ -1301,6 +1313,10 @@ class RoutingDimension {
     return transit_evaluators_[vehicle];
   }
 #endif
+  // Sets an upper bound on the dimension span on a given vehicle. This is the
+  // preferred way to limit the "length" of the route of a vehicle according to
+  // a dimension.
+  void SetSpanUpperBoundForVehicle(int64 upper_bound, int vehicle);
   // Sets a cost proportional to the dimension span on a given vehicle,
   // or on all vehicles at once. "coefficient" must be nonnegative.
   // This is handy to model costs proportional to idle time when the dimension
@@ -1381,6 +1397,14 @@ class RoutingDimension {
   const std::string& name() const { return name_; }
 
   // Accessors.
+  int64 GetSpanUpperBoundForVehicle(int vehicle) const {
+    return vehicle_span_upper_bounds_[vehicle];
+  }
+#ifndef SWIG
+  const std::vector<int64>& vehicle_span_upper_bounds() const {
+    return vehicle_span_upper_bounds_;
+  }
+#endif  // SWIG
   int64 GetSpanCostCoefficientForVehicle(int vehicle) const {
     return vehicle_span_cost_coefficients_[vehicle];
   }
@@ -1426,6 +1450,7 @@ class RoutingDimension {
   std::vector<Solver::IndexEvaluator2*> transit_evaluators_;
   std::vector<std::unique_ptr<Solver::IndexEvaluator2> > class_evaluators_;
   std::vector<IntVar*> slacks_;
+  std::vector<int64> vehicle_span_upper_bounds_;
   int64 global_span_cost_coefficient_;
   std::vector<int64> vehicle_span_cost_coefficients_;
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
@@ -1482,6 +1507,10 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
   virtual Decision* Next(Solver* solver);
   // Virtual method to redefine to build a solution.
   virtual bool BuildSolution() = 0;
+  // Returns statistics on search, number of decisions sent to filters, number
+  // of decisions rejected by filters.
+  int64 number_of_decisions() const { return number_of_decisions_; }
+  int64 number_of_rejects() const { return number_of_rejects_; }
 
  protected:
   // Commits the modifications to the current solution if these modifications
@@ -1530,6 +1559,9 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
   std::vector<bool> is_in_delta_;
   const Assignment* const empty_;
   std::vector<LocalSearchFilter*> filters_;
+  // Stats on search
+  int64 number_of_decisions_;
+  int64 number_of_rejects_;
 };
 
 // Filter-based decision builder dedicated to routing.

@@ -1320,8 +1320,7 @@ int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
   cache_.clear();
   int64 best = kint64max;
   std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
-  for (it->Init(); it->Ok(); it->Next()) {
-    const int i = it->Value();
+  for (const int64 i : InitAndGetValues(it.get())) {
     int64 eval = eval_->Run(id, i);
     if (eval < best) {
       best = eval;
@@ -1480,8 +1479,7 @@ IntVar* DynamicEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
     const IntVar* const var = vars_[i];
     if (!var->Bound()) {
       std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int j = it->Value();
+      for (const int64 j : InitAndGetValues(it.get())) {
         const int64 value = evaluator_->Run(i, j);
         if (value < best_evaluation) {
           best_evaluation = value;
@@ -1573,8 +1571,8 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
       const IntVar* const var = vars_[i];
       if (!var->Bound()) {
         std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
-        for (it->Init(); it->Ok(); it->Next()) {
-          elements_[count++] = Element(i, it->Value());
+        for (const int64 value : InitAndGetValues(it.get())) {
+          elements_[count++] = Element(i, value);
         }
       }
     }

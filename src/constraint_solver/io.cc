@@ -671,8 +671,8 @@ class SecondPassVisitor : public ModelVisitor {
         values_proto->set_argument_index(
             TagIndex(ModelVisitor::kValuesArgument));
         std::unique_ptr<IntVarIterator> it(variable->MakeDomainIterator(false));
-        for (it->Init(); it->Ok(); it->Next()) {
-          values_proto->add_integer_array(it->Value());
+        for (const int64 value : InitAndGetValues(it.get())) {
+          values_proto->add_integer_array(value);
         }
       }
     }

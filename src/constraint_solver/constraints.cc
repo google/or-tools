@@ -131,9 +131,9 @@ class MapDomain : public Constraint {
     Demon* vb =
         MakeConstraintDemon0(solver(), this, &MapDomain::VarBound, "VarBound");
     var_->WhenBound(vb);
-    std::unique_ptr<IntVarIterator> it(var_->MakeDomainIterator(false));
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int64 index = it->Value();
+    std::unique_ptr<IntVarIterator> domain_it(
+        var_->MakeDomainIterator(/*reversible=*/ false));
+    for (const int64 index : InitAndGetValues(domain_it.get())) {
       if (index >= 0 && index < actives_.size() && !actives_[index]->Bound()) {
         Demon* d = MakeConstraintDemon1(
             solver(), this, &MapDomain::UpdateActive, "UpdateActive", index);
@@ -177,8 +177,7 @@ class MapDomain : public Constraint {
     for (int64 j = std::max(oldmin, 0LL); j < std::min(vmin, size); ++j) {
       actives_[j]->SetValue(0);
     }
-    for (holes_->Init(); holes_->Ok(); holes_->Next()) {
-      const int64 j = holes_->Value();
+    for (const int64 j : InitAndGetValues(holes_)) {
       if (j >= 0 && j < size) {
         actives_[j]->SetValue(0);
       }
@@ -393,8 +392,7 @@ class InversePermutationConstraint : public Constraint {
     for (int64 value = oldmin; value < vmin; ++value) {
       inverse[value]->RemoveValue(index);
     }
-    for (holes->Init(); holes->Ok(); holes->Next()) {
-      const int64 hole = holes->Value();
+    for (const int64 hole : InitAndGetValues(holes)) {
       if (hole >= 0 && hole < left_.size()) {
         inverse[hole]->RemoveValue(index);
       }
@@ -409,8 +407,7 @@ class InversePermutationConstraint : public Constraint {
                        const std::vector<IntVar*>& inverse) {
     // Iterators are not safe w.r.t. removal. Postponing deletions.
     tmp_removed_values_.clear();
-    for (domain->Init(); domain->Ok(); domain->Next()) {
-      const int64 value = domain->Value();
+    for (const int64 value : InitAndGetValues(domain)) {
       if (!inverse[value]->Contains(index)) {
         tmp_removed_values_.push_back(value);
       }

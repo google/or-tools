@@ -375,9 +375,7 @@ void FastDistribute::OneDomain(int index) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  IntVarIterator* const holes = holes_[index];
-  for (holes->Init(); holes->Ok(); holes->Next()) {
-    const int64 card_index = holes->Value();
+  for (const int64 card_index : InitAndGetValues(holes_[index])) {
     if (card_index >= 0 && card_index < card_size() &&
         undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -791,9 +789,7 @@ void BoundedFastDistribute::OneDomain(int index) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  IntVarIterator* const holes = holes_[index];
-  for (holes->Init(); holes->Ok(); holes->Next()) {
-    const int64 card_index = holes->Value();
+  for (const int64 card_index : InitAndGetValues(holes_[index])) {
     if (card_index >= 0 && card_index < card_size() &&
         undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);

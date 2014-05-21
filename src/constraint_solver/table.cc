@@ -297,9 +297,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       const ValueBitset& mask = masks_[var_index];
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      IntVarIterator* const it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
+      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
         if (!ContainsKey(mask, value)) {
           to_remove_.push_back(value);
         }
@@ -314,9 +312,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      IntVarIterator* const it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
+      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
         if (!Supported(var_index, value)) {
           to_remove_.push_back(value);
         }
@@ -336,8 +332,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     for (int64 value = var->OldMin(); value < vmin; ++value) {
       BlankActives(FindPtrOrNull(mask, value));
     }
-    for (holes_[index]->Init(); holes_[index]->Ok(); holes_[index]->Next()) {
-      BlankActives(FindPtrOrNull(mask, holes_[index]->Value()));
+    for (const int64 value : InitAndGetValues(holes_[index])) {
+      BlankActives(FindPtrOrNull(mask, value));
     }
     for (int64 value = vmax + 1; value <= old_max; ++value) {
       BlankActives(FindPtrOrNull(mask, value));
@@ -419,8 +415,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
 class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  CompactPositiveTableConstraint(Solver* const s,
-                                 const std::vector<IntVar*>& vars,
+  CompactPositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         length_(BitLength64(tuples.NumTuples())),
@@ -546,9 +541,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
-      IntVarIterator* const it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
+      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
         if (!masks_[var_index][value - original_min_[var_index]]) {
           to_remove_.push_back(value);
         }
@@ -644,9 +637,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                     // value as this can easily and more rapidly be taken care
                     // of by a SetRange() call.
             new_min = kint64max;  // escape value.
-            IntVarIterator* const it = iterators_[var_index];
-            for (it->Init(); it->Ok(); it->Next()) {
-              const int64 value = it->Value();
+            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
               if (!Supported(var_index, value - original_min)) {
                 to_remove_.push_back(value);
               } else {
@@ -710,9 +701,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           for (int64 value = old_min; value < var_min; ++value) {
             OrTempMask(var_index, value - omin);
           }
-          IntVarIterator* const hole = holes_[var_index];
-          for (hole->Init(); hole->Ok(); hole->Next()) {
-            OrTempMask(var_index, hole->Value() - omin);
+          for (const int64 value : InitAndGetValues(holes_[var_index])) {
+            OrTempMask(var_index, value - omin);
           }
           for (int64 value = var_max + 1; value <= old_max; ++value) {
             OrTempMask(var_index, value - omin);
@@ -727,9 +717,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
               OrTempMask(var_index, value - omin);
             }
           } else {
-            IntVarIterator* const it = iterators_[var_index];
-            for (it->Init(); it->Ok(); it->Next()) {
-              OrTempMask(var_index, it->Value() - omin);
+            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+              OrTempMask(var_index, value - omin);
             }
           }
           // Then we and this mask with active_tuples_.
@@ -949,9 +938,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       IntVar* const var = vars_[var_index];
       const int64 original_min = original_min_[var_index];
       to_remove_.clear();
-      IntVarIterator* const it = iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
+      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
         if (masks_[var_index][value - original_min] == 0) {
           to_remove_.push_back(value);
         }
@@ -1050,11 +1037,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           } else {
             bool min_set = false;
             int last_size = 0;
-            IntVarIterator* const it = iterators_[var_index];
-            for (it->Init(); it->Ok(); it->Next()) {
+            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
               // The iterator is not safe w.r.t. deletion. Thus we
               // postpone all value removals.
-              const int64 value = it->Value();
               if ((var_mask[value - original_min] & actives) == 0) {
                 if (min_set) {
                   to_remove_.push_back(value);
@@ -1114,9 +1099,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         // to remove this code and the var_sizes in the non_small
         // version.
         uint64 hole_mask = 0;
-        IntVarIterator* const hole = holes_[var_index];
-        for (hole->Init(); hole->Ok(); hole->Next()) {
-          hole_mask |= var_mask[hole->Value() - original_min];
+        for (const int64 value : InitAndGetValues(holes_[var_index])) {
+          hole_mask |= var_mask[value - original_min];
         }
         const int64 hole_operations = var_min - old_min + old_max - var_max;
         // We estimate the domain iterator to be 4x slower.
@@ -1137,9 +1121,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
               domain_mask |= var_mask[value - original_min];
             }
           } else {
-            IntVarIterator* const it = iterators_[var_index];
-            for (it->Init(); it->Ok(); it->Next()) {
-              domain_mask |= var_mask[it->Value() - original_min];
+            for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+              domain_mask |= var_mask[value - original_min];
             }
           }
           ApplyMask(var_index, domain_mask);
@@ -1251,12 +1234,10 @@ class TransitionConstraint : public Constraint {
     int64 state_max = kint64min;
     const int nb_vars = vars_.size();
     for (int i = 0; i < transition_table_.NumTuples(); ++i) {
-      state_max =
-          std::max(state_max, transition_table_.Value(i, kStatePosition));
+      state_max = std::max(state_max, transition_table_.Value(i, kStatePosition));
       state_max =
           std::max(state_max, transition_table_.Value(i, kNextStatePosition));
-      state_min =
-          std::min(state_min, transition_table_.Value(i, kStatePosition));
+      state_min = std::min(state_min, transition_table_.Value(i, kStatePosition));
       state_min =
           std::min(state_min, transition_table_.Value(i, kNextStatePosition));
     }

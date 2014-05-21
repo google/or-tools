@@ -3496,9 +3496,9 @@ class Constraint : public PropagationBaseObject {
   // Is the constraint created by a cast from expression to integer variable?
   bool IsCastConstraint() const;
 
-  // Creates an boolean variable representing the status of the
-  // variable (false = constraint is violated, true constraint is
-  // satisfied). It returns nullptr if the constraint does not support his API.
+  // Creates a Boolean variable representing the status of the constraint (false
+  // = constraint is violated, true = constraint is satisfied). It returns
+  // nullptr if the constraint does not support this API.
   virtual IntVar* Var();
 
  private:
@@ -3785,8 +3785,7 @@ class IntExpr : public PropagationBaseObject {
 
 // IntVar* current_var;
 // scoped_ptr<IntVarIterator> it(current_var->MakeHoleIterator(false));
-// for (it->Init(); it->Ok(); it->Next()) {
-//   const int64 hole = it->Value();
+// for (const int64 hole : InitAndGetValues(it)) {
 //   // use the hole
 // }
 
@@ -3809,6 +3808,64 @@ class IntVarIterator : public BaseObject {
   // Pretty Print.
   virtual std::string DebugString() const { return "IntVar::Iterator"; }
 };
+
+#ifndef SWIG
+// Utility class to encapsulate an IntVarIterator and use it in a range-based
+// loop. See the code snippet above IntVarIterator.
+// Furthermore, it contains DEBUG_MODE-enabled code that DCHECKs that the
+// same iterator instance isn't being iterated on in several places at a time.
+class InitAndGetValues {
+ public:
+  explicit InitAndGetValues(IntVarIterator* it)
+      : it_(it), begin_was_called_(false) {
+    it_->Init();
+  }
+  struct Iterator;
+  Iterator begin() {
+    if (DEBUG_MODE) {
+      DCHECK(!begin_was_called_);
+      begin_was_called_ = true;
+    }
+    return Iterator::Begin(it_);
+  }
+  Iterator end() { return Iterator::End(it_); }
+
+  struct Iterator {
+    // These are the only way to construct an Iterator.
+    static Iterator Begin(IntVarIterator* it) {
+      return {it, /*is_end=*/false};
+    }
+    static Iterator End(IntVarIterator* it) {
+      return {it, /*is_end=*/true};
+    }
+
+    int64 operator*() const {
+      DCHECK(it_->Ok());
+      return it_->Value();
+    }
+    Iterator& operator++() {
+      DCHECK(it_->Ok());
+      it_->Next();
+      return *this;
+    }
+    bool operator!=(const Iterator& other) const {
+      DCHECK(other.it_ == it_);
+      DCHECK(other.is_end_);
+      return it_->Ok();
+    }
+
+   private:
+    Iterator(IntVarIterator* it, bool is_end) : it_(it), is_end_(is_end) {}
+
+    IntVarIterator* const it_;
+    const bool is_end_;
+  };
+
+ private:
+  IntVarIterator* const it_;
+  bool begin_was_called_;
+};
+#endif  // SWIG
 
 // The class IntVar is a subset of IntExpr. In addition to the
 // IntExpr protocol, it offers persistance,

@@ -268,9 +268,7 @@ void NoCycle::ComputeSupports() {
             }
           }
         } else {
-          for (iterators_[i]->Init(); iterators_[i]->Ok();
-               iterators_[i]->Next()) {
-            const int64 value = iterators_[i]->Value();
+          for (const int64 value : InitAndGetValues(iterators_[i])) {
             if (sink_handler_->Run(value)) {
               outbound_supports_[i] = value;
               support_leaves_.push_back(i);
@@ -327,9 +325,7 @@ void NoCycle::ComputeSupport(int index) {
   // Try to reconnect the node to the support tree by finding a next node
   // which is both supported and was not a descendant of the node in the tree.
   if (active_[index]->Max() != 0) {
-    for (iterators_[index]->Init(); iterators_[index]->Ok();
-         iterators_[index]->Next()) {
-      const int64 next = iterators_[index]->Value();
+    for (const int64 next : InitAndGetValues(iterators_[index])) {
       if (sink_handler_->Run(next)) {
         outbound_supports_[index] = next;
         return;
@@ -540,8 +536,8 @@ class Circuit : public Constraint {
         }
         default: {
           IntVarIterator* const domain = domains_[candidate];
-          for (domain->Init(); domain->Ok(); domain->Next()) {
-            TryInsertReached(candidate, domain->Value());
+          for (const int64 value : InitAndGetValues(domain)) {
+            TryInsertReached(candidate, value);
           }
         }
       }

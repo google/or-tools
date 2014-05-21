@@ -2116,7 +2116,8 @@ class VariableDomainFilter : public LocalSearchFilter {
   VariableDomainFilter() {}
   virtual ~VariableDomainFilter() {}
   virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void Synchronize(const Assignment* assignment) {}
+  virtual void Synchronize(const Assignment* assignment,
+                           const Assignment* delta) {}
 
   virtual std::string DebugString() const { return "VariableDomainFilter"; }
 };
@@ -2159,8 +2160,19 @@ void IntVarLocalSearchFilter::AddVars(const std::vector<IntVar*>& vars) {
 
 IntVarLocalSearchFilter::~IntVarLocalSearchFilter() {}
 
-void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment) {
-  var_synced_.assign(var_synced_.size(), false);
+void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment,
+                                          const Assignment* delta) {
+  if (delta == nullptr || delta->Empty()) {
+    var_synced_.assign(var_synced_.size(), false);
+    SynchronizeOnAssignment(assignment);
+  } else {
+    SynchronizeOnAssignment(delta);
+  }
+  OnSynchronize(delta);
+}
+
+void IntVarLocalSearchFilter::SynchronizeOnAssignment(
+    const Assignment* assignment) {
   const Assignment::IntContainer& container = assignment->IntVarContainer();
   const int size = container.Size();
   for (int i = 0; i < size; ++i) {
@@ -2180,7 +2192,6 @@ void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment) {
       }
     }
   }
-  OnSynchronize();
 }
 
 // ----- Objective filter ------
@@ -2221,7 +2232,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   bool incremental_;
 
  private:
-  virtual void OnSynchronize();
+  virtual void OnSynchronize(const Assignment* delta);
   int64 Evaluate(const Assignment* delta, int64 current_value,
                  const int64* const out_values, bool cache_delta_values);
 };
@@ -2300,7 +2311,7 @@ bool ObjectiveFilter::Accept(const Assignment* delta,
   }
 }
 
-void ObjectiveFilter::OnSynchronize() {
+void ObjectiveFilter::OnSynchronize(const Assignment* delta) {
   op_->Init();
   for (int i = 0; i < primary_vars_size_; ++i) {
     const int64 obj_value = SynchronizedElementValue(i);
@@ -2693,7 +2704,7 @@ void FindOneNeighbor::SynchronizeAll() {
 
 void FindOneNeighbor::SynchronizeFilters(const Assignment* assignment) {
   for (int i = 0; i < filters_.size(); ++i) {
-    filters_[i]->Synchronize(assignment);
+    filters_[i]->Synchronize(assignment, nullptr);
   }
 }
 

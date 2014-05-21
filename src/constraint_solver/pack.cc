@@ -209,8 +209,7 @@ void Pack::InitialPropagate() {
         data->PushAssigned(var_index);
       }
       std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
+      for (const int64 value : InitAndGetValues(it.get())) {
         if (value >= 0 && value <= bins_) {
           unprocessed_->SetToOne(s, value, var_index);
           if (value != bins_) {
@@ -353,9 +352,7 @@ void Pack::OneDomain(int var_index) {
     }
   }
   if (!bound) {
-    IntVarIterator* const holes = holes_[var_index];
-    for (holes->Init(); holes->Ok(); holes->Next()) {
-      const int64 value = holes->Value();
+    for (const int64 value : InitAndGetValues(holes_[var_index])) {
       if (value >= std::max(0LL, vmin) &&
           value <= std::min(static_cast<int64>(bins_), vmax)) {
         DCHECK(unprocessed_->IsSet(value, var_index));

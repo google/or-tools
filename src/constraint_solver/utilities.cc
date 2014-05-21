@@ -314,8 +314,8 @@ class PrintModelVisitor : public ModelVisitor {
 
   virtual void VisitIntegerArrayArgument(const std::string& arg_name,
                                          const std::vector<int64>& values) {
-    LOG(INFO) << Spaces() << arg_name << ": ["
-              << strings::Join(values, ", ") << "]";
+    LOG(INFO) << Spaces() << arg_name << ": [" << strings::Join(values, ", ")
+              << "]";
   }
 
   virtual void VisitIntegerMatrixArgument(const std::string& arg_name,

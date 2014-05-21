@@ -158,9 +158,7 @@ void BaseIntExprElement::UpdateSupports() const {
           }
         }
       } else {
-        for (expr_iterator_->Init(); expr_iterator_->Ok();
-             expr_iterator_->Next()) {
-          const int64 index = expr_iterator_->Value();
+        for (const int64 index : InitAndGetValues(expr_iterator_)) {
           if (index >= emin && index <= emax) {
             const int64 value = ElementValue(index);
             if (value > max_value) {
@@ -213,9 +211,7 @@ class IntElementConstraint : public CastConstraint {
     int64 new_min = target_var_max;
     int64 new_max = target_var_min;
     to_remove_.clear();
-    for (index_iterator_->Init(); index_iterator_->Ok();
-         index_iterator_->Next()) {
-      const int64 index = index_iterator_->Value();
+    for (const int64 index : InitAndGetValues(index_iterator_)) {
       const int64 value = values_[index];
       if (value < target_var_min || value > target_var_max) {
         to_remove_.push_back(index);
@@ -264,8 +260,7 @@ IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64>* values);
 
 class IntExprElement : public BaseIntExprElement {
  public:
-  IntExprElement(Solver* const s, const std::vector<int64>& vals,
-                 IntVar* const expr)
+  IntExprElement(Solver* const s, const std::vector<int64>& vals, IntVar* const expr)
       : BaseIntExprElement(s, expr), values_(vals) {}
 
   virtual ~IntExprElement() {}
@@ -373,8 +368,9 @@ class IncreasingIntExprElement : public BaseIntExpr {
   IntVar* const index_;
 };
 
-IncreasingIntExprElement::IncreasingIntExprElement(
-    Solver* const s, const std::vector<int64>& values, IntVar* const index)
+IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
+                                                   const std::vector<int64>& values,
+                                                   IntVar* const index)
     : BaseIntExpr(s), values_(values), index_(index) {
   DCHECK(index);
   DCHECK(s);
@@ -515,8 +511,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const std::vector<int64>& values,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -525,8 +520,7 @@ IntExpr* Solver::MakeElement(const std::vector<int64>& values,
   return BuildElement(this, values, index);
 }
 
-IntExpr* Solver::MakeElement(const std::vector<int>& values,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -928,12 +922,8 @@ void IntIntExprFunctionElement::UpdateSupports() const {
     int max_support1 = emax1;
     int min_support2 = emax2;
     int max_support2 = emax2;
-    for (expr1_iterator_->Init(); expr1_iterator_->Ok();
-         expr1_iterator_->Next()) {
-      const int64 index1 = expr1_iterator_->Value();
-      for (expr2_iterator_->Init(); expr2_iterator_->Ok();
-           expr2_iterator_->Next()) {
-        const int64 index2 = expr2_iterator_->Value();
+    for (const int64 index1 : InitAndGetValues(expr1_iterator_)) {
+      for (const int64 index2 : InitAndGetValues(expr2_iterator_)) {
         const int64 value = ElementValue(index1, index2);
         if (value > max_value) {
           max_value = value;
@@ -1101,10 +1091,10 @@ void IntExprArrayElementCt::UpdateExpr() {
 
 std::string IntExprArrayElementCt::DebugString() const {
   if (size() > 10) {
-    return StringPrintf(
-        "IntExprArrayElement(var array of size %" GG_LL_FORMAT "d, %s) == %s",
-        size(), index_->DebugString().c_str(),
-        target_var_->DebugString().c_str());
+    return StringPrintf("IntExprArrayElement(var array of size %" GG_LL_FORMAT
+                        "d, %s) == %s",
+                        size(), index_->DebugString().c_str(),
+                        target_var_->DebugString().c_str());
   } else {
     return StringPrintf("IntExprArrayElement([%s], %s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
@@ -1241,9 +1231,7 @@ class IntExprIndexOfCt : public Constraint {
       vars_[value]->RemoveValue(target_);
       demons_[value]->inhibit(solver());
     }
-    for (index_iterator_->Init(); index_iterator_->Ok();
-         index_iterator_->Next()) {
-      const int64 value = index_iterator_->Value();
+    for (const int64 value : InitAndGetValues(index_iterator_)) {
       vars_[value]->RemoveValue(target_);
       demons_[value]->inhibit(solver());
     }
@@ -1303,8 +1291,7 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   if (index->Bound()) {
     return vars[index->Min()];
   }
@@ -1319,8 +1306,7 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
   int64 emin = kint64max;
   int64 emax = kint64min;
   std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
-  for (iterator->Init(); iterator->Ok(); iterator->Next()) {
-    const int64 index_value = iterator->Value();
+  for (const int64 index_value : InitAndGetValues(iterator.get())) {
     if (index_value >= 0 && index_value < size) {
       emin = std::min(emin, vars[index_value]->Min());
       emax = std::max(emax, vars[index_value]->Max());
@@ -1416,16 +1402,14 @@ Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
   }
 }
 
-IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
-                                     int64 value) {
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value) {
   IntExpr* const cache = model_cache_->FindVarArrayConstantExpression(
       vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name =
-        StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                     JoinNamePtr(vars, ", ").c_str(), value);
+    const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+                                     JoinNamePtr(vars, ", ").c_str(), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

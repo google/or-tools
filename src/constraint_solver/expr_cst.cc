@@ -1081,8 +1081,7 @@ class IsMemberCt : public Constraint {
             return;
           } else {
             // Look for a new negative support.
-            for (domain_->Init(); domain_->Ok(); domain_->Next()) {
-              const int64 value = domain_->Value();
+            for (const int64 value : InitAndGetValues(domain_)) {
               if (!ContainsKey(values_as_set_, value)) {
                 neg_support_ = value;
                 return;

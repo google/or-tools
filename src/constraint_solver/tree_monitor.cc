@@ -277,8 +277,8 @@ class TreeNode {
       std::unique_ptr<IntVarIterator> intvar_it(
           it.second->MakeDomainIterator(false));
 
-      for (intvar_it->Init(); intvar_it->Ok(); intvar_it->Next()) {
-        domain.push_back(intvar_it->Value());
+      for (const int64 value : InitAndGetValues(intvar_it.get())) {
+        domain.push_back(value);
       }
 
       domain_[it.first] = domain;

@@ -90,7 +90,7 @@ class CPIntervalVariableProto;
 // and subclasses of BaseIntExpr. Variables are stateful objects that
 // provide a rich API (remove values, WhenBound...). On the other hand,
 // subclasses of BaseIntExpr represent range-only stateless objects.
-// That is the min(A + B) is recomputed each time as min(A) + min(B).
+// That is the std::min(A + B) is recomputed each time as std::min(A) + std::min(B).
 // Furthermore, sometimes, the propagation on an expression is not complete,
 // and Min(), Max() are not monotonic with respect to SetMin() and SetMax().
 // For instance, A is a var with domain [0 .. 5], and B another variable
@@ -1343,8 +1343,13 @@ class LocalSearchFilter : public BaseObject {
   virtual bool Accept(const Assignment* delta,
                       const Assignment* deltadelta) = 0;
 
-  // Synchronizes the filter with the current solution
-  virtual void Synchronize(const Assignment* assignment) = 0;
+  // Synchronizes the filter with the current solution, delta being the
+  // difference with the solution passed to the previous call to Synchronize()
+  // or IncrementalSynchronize(). 'delta' can be used to incrementally
+  // synchronizing the filter with the new solution by only considering the
+  // changes in delta.
+  virtual void Synchronize(const Assignment* assignment,
+                           const Assignment* delta) = 0;
   virtual bool IsIncremental() const { return false; }
 };
 
@@ -1356,7 +1361,8 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   ~IntVarLocalSearchFilter();
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
-  virtual void Synchronize(const Assignment* assignment);
+  virtual void Synchronize(const Assignment* assignment,
+                           const Assignment* delta);
 
   bool FindIndex(IntVar* const var, int64* index) const {
     DCHECK(index != nullptr);
@@ -1374,7 +1380,8 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   bool IsVarSynced(int index) const { return var_synced_[index]; }
 
  protected:
-  virtual void OnSynchronize() {}
+  virtual void OnSynchronize(const Assignment* delta) {}
+  void SynchronizeOnAssignment(const Assignment* assignment);
 
  private:
   std::vector<IntVar*> vars_;

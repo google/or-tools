@@ -167,8 +167,8 @@ class InitVarImpacts : public DecisionBuilder {
     CHECK(iterator_ != nullptr);
     if (new_start_) {
       active_values_.clear();
-      for (iterator_->Init(); iterator_->Ok(); iterator_->Next()) {
-        active_values_.push_back(iterator_->Value());
+      for (const int64 value : InitAndGetValues(iterator_)) {
+        active_values_.push_back(value);
       }
       new_start_ = false;
     }
@@ -279,8 +279,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   virtual ~InitVarImpactsWithSplits() {}
 
   void UpdateImpacts() {
-    for (iterator_->Init(); iterator_->Ok(); iterator_->Next()) {
-      update_impact_callback_->Run(var_index_, iterator_->Value());
+    for (const int64 value : InitAndGetValues(iterator_)) {
+      update_impact_callback_->Run(var_index_, value);
     }
   }
 
@@ -486,8 +486,7 @@ class ImpactRecorder : public SearchMonitor {
       // removed values in an intermediate vector.
       if (init_count_ != var->Size()) {
         container->ClearRemovedValues();
-        for (iterator->Init(); iterator->Ok(); iterator->Next()) {
-          const int64 value = iterator->Value();
+        for (const int64 value : InitAndGetValues(iterator)) {
           const int64 value_index = value - original_min_[var_index];
           if (impacts_[var_index][value_index] == kInitFailureImpact) {
             container->PushBackRemovedValue(value);
@@ -528,9 +527,7 @@ class ImpactRecorder : public SearchMonitor {
     double sum_var_impact = 0.0;
     int64 min_impact_value = -1;
     int64 max_impact_value = -1;
-    IntVarIterator* const it = domain_iterators_[var_index];
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int64 value = it->Value();
+    for (const int64 value : InitAndGetValues(domain_iterators_[var_index])) {
       const int64 value_index = value - original_min_[var_index];
       DCHECK_LT(var_index, size_);
       DCHECK_LT(value_index, impacts_[var_index].size());

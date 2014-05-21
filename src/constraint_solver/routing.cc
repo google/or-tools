@@ -605,12 +605,17 @@ LocalSearchOperator* MakePairRelocate(
       vars, secondary_vars, start_empty_path_class, pairs));
 }
 
-}  // namespace
-
 // Cached callbacks
 
-class RoutingCache {
+class RoutingCache : public RoutingModel::NodeEvaluator2 {
  public:
+  // Creates a new cached callback based on 'callback'. The cache object does
+  // not take ownership of the callback; the user must ensure that the callback
+  // gets deleted when it or the cache is no longer used.
+  //
+  // When used in the RoutingModel class, the constructor should not be called
+  // directly, but through RoutingModel::NewCachedCallback that ensures that the
+  // base callback is deleted properly.
   RoutingCache(RoutingModel::NodeEvaluator2* callback, int size)
       : cached_(size), cache_(size), callback_(callback) {
     for (RoutingModel::NodeIndex i(0); i < RoutingModel::NodeIndex(size); ++i) {
@@ -619,7 +624,8 @@ class RoutingCache {
     }
     callback->CheckIsRepeatable();
   }
-  int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
+  virtual bool IsRepeatable() const { return true; }
+  virtual int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
     // This method does lazy caching of results of callbacks: first
     // checks if it has been run with these parameters before, and
     // returns previous result if so, or runs underlaying callback and
@@ -640,10 +646,8 @@ class RoutingCache {
       cached_;
   ITIVector<RoutingModel::NodeIndex, ITIVector<RoutingModel::NodeIndex, int64>>
       cache_;
-  std::unique_ptr<RoutingModel::NodeEvaluator2> callback_;
+  RoutingModel::NodeEvaluator2* const callback_;
 };
-
-namespace {
 
 // Evaluators
 
@@ -888,7 +892,6 @@ void RoutingModel::Initialize() {
 }
 
 RoutingModel::~RoutingModel() {
-  STLDeleteElements(&routing_caches_);
   STLDeleteElements(&owned_node_callbacks_);
   STLDeleteElements(&owned_index_callbacks_);
   STLDeleteElements(&dimensions_);
@@ -949,16 +952,9 @@ bool RoutingModel::AddDimensionWithCapacityInternal(
     dimensions_.push_back(new RoutingDimension(this, dimension_name));
     RoutingDimension* const dimension = dimensions_[dimension_index];
     std::vector<NodeEvaluator2*> cached_evaluators;
-    hash_map<NodeEvaluator2*, NodeEvaluator2*> evaluator_to_cached;
     for (NodeEvaluator2* const evaluator : evaluators) {
       CHECK(evaluator != nullptr);
-      NodeEvaluator2* cached_evaluator =
-          FindPtrOrNull(evaluator_to_cached, evaluator);
-      if (cached_evaluator == nullptr) {
-        cached_evaluator = NewCachedCallback(evaluator);
-        evaluator_to_cached[evaluator] = cached_evaluator;
-      }
-      cached_evaluators.push_back(cached_evaluator);
+      cached_evaluators.push_back(NewCachedCallback(evaluator));
     }
     dimension->Initialize(vehicle_capacity, capacity, cached_evaluators,
                           slack_max);
@@ -2527,8 +2523,7 @@ class FastOnePathBuilder : public DecisionBuilder {
     if (index < size) {
       IntVar* const next = nexts[index];
       std::unique_ptr<IntVarIterator> it(next->MakeDomainIterator(false));
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int value = it->Value();
+      for (const int64 value : InitAndGetValues(it.get())) {
         if (value != index &&
             (value >= size || !assignment.Contains(nexts[value]))) {
           const int64 evaluation = evaluator_->Run(index, value);
@@ -2688,8 +2683,7 @@ int64 RoutingModel::ComputeLowerBound() {
   for (int tail = 0; tail < Size(); ++tail) {
     std::unique_ptr<IntVarIterator> iterator(
         nexts_[tail]->MakeDomainIterator(false));
-    for (iterator->Init(); iterator->Ok(); iterator->Next()) {
-      const int head = iterator->Value();
+    for (const int64 head : InitAndGetValues(iterator.get())) {
       // Given there are no disjunction constraints, a node cannot point to
       // itself. Doing this explicitely given that outside the search,
       // propagation hasn't removed this value from next variables yet.
@@ -2934,6 +2928,20 @@ void RoutingModel::UpdateLNSTimeLimit(int64 limit_ms) {
     solver_->UpdateLimits(lns_time_limit_ms_, kint64max, kint64max, kint64max,
                           lns_limit_);
   }
+}
+
+int64 RoutingModel::GetNumberOfDecisionsInFirstSolution() const {
+  IntVarFilteredDecisionBuilder* const decision_builder =
+      GetFilteredFirstSolutionDecisionBuilderOrNull();
+  return decision_builder != nullptr ? decision_builder->number_of_decisions()
+                                     : 0;
+}
+
+int64 RoutingModel::GetNumberofRejectsInFirstSolution() const {
+  IntVarFilteredDecisionBuilder* const decision_builder =
+      GetFilteredFirstSolutionDecisionBuilderOrNull();
+  return decision_builder != nullptr ? decision_builder->number_of_rejects()
+                                     : 0;
 }
 
 // static
@@ -3840,6 +3848,8 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer() {
 void RoutingModel::CreateFirstSolutionDecisionBuilders() {
   first_solution_decision_builders_.resize(
       ROUTING_FIRST_SOLUTION_STRATEGY_COUNTER);
+  first_solution_filtered_decision_builders_.resize(
+      ROUTING_FIRST_SOLUTION_STRATEGY_COUNTER, nullptr);
   DecisionBuilder* const finalize_solution = CreateSolutionFinalizer();
   // Default heuristic
   first_solution_decision_builders_[ROUTING_DEFAULT_STRATEGY] =
@@ -3869,13 +3879,13 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
         fast_one_path_builder,
         first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC]);
   } else if (FLAGS_routing_use_filtered_first_solutions) {
-    DecisionBuilder* cheapest_addition_builder =
+    first_solution_filtered_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] =
         solver_->RevAlloc(new EvaluatorCheapestAdditionFilteredDecisionBuilder(
             this, NewPermanentCallback(
                       this, &RoutingModel::GetArcCostForFirstSolution),
             GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] = solver_->Try(
-        cheapest_addition_builder,
+        first_solution_filtered_decision_builders_[ROUTING_PATH_CHEAPEST_ARC],
         first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC]);
   }
   // Path-based most constrained arc addition heuristic.
@@ -3884,13 +3894,15 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
                          NewPermanentCallback(
                              this, &RoutingModel::ArcIsMoreConstrainedThanArc));
   if (FLAGS_routing_use_filtered_first_solutions) {
-    DecisionBuilder* cheapest_addition_builder =
-        solver_->RevAlloc(new ComparatorCheapestAdditionFilteredDecisionBuilder(
-            this, NewPermanentCallback(
-                      this, &RoutingModel::ArcIsMoreConstrainedThanArc),
-            GetOrCreateFeasibilityFilters()));
+    first_solution_filtered_decision_builders_
+        [ROUTING_PATH_MOST_CONSTRAINED_ARC] = solver_->RevAlloc(
+            new ComparatorCheapestAdditionFilteredDecisionBuilder(
+                this, NewPermanentCallback(
+                          this, &RoutingModel::ArcIsMoreConstrainedThanArc),
+                GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_[ROUTING_PATH_MOST_CONSTRAINED_ARC] =
-        solver_->Try(cheapest_addition_builder,
+        solver_->Try(first_solution_filtered_decision_builders_
+                         [ROUTING_PATH_MOST_CONSTRAINED_ARC],
                      first_solution_decision_builders_
                          [ROUTING_PATH_MOST_CONSTRAINED_ARC]);
   }
@@ -3932,19 +3944,23 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
   first_solution_decision_builders_[ROUTING_BEST_INSERTION] = solver_->Compose(
       first_solution_decision_builders_[ROUTING_BEST_INSERTION], finalize);
   // Global cheapest insertion
-  DecisionBuilder* const global_cheapest_insertion_builder =
-      solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
-          this, NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
-          GetOrCreateFeasibilityFilters()));
+  first_solution_filtered_decision_builders_
+      [ROUTING_GLOBAL_CHEAPEST_INSERTION] =
+          solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
+              this,
+              NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
+              GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_INSERTION] =
-      global_cheapest_insertion_builder;
+      first_solution_filtered_decision_builders_
+          [ROUTING_GLOBAL_CHEAPEST_INSERTION];
   // Local cheapest insertion
-  DecisionBuilder* const local_cheapest_insertion_builder =
+  first_solution_filtered_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
       solver_->RevAlloc(new LocalCheapestInsertionFilteredDecisionBuilder(
           this, NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
           GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
-      local_cheapest_insertion_builder;
+      first_solution_filtered_decision_builders_
+          [ROUTING_LOCAL_CHEAPEST_INSERTION];
   // Savings
   first_solution_decision_builders_[ROUTING_SAVINGS] =
       solver_->RevAlloc(new SavingsBuilder(this, true));
@@ -3975,6 +3991,13 @@ DecisionBuilder* RoutingModel::GetFirstSolutionDecisionBuilder() const {
   VLOG(1) << "Using first solution strategy: "
           << RoutingStrategyName(first_solution_strategy);
   return first_solution_decision_builders_[first_solution_strategy];
+}
+
+IntVarFilteredDecisionBuilder*
+RoutingModel::GetFilteredFirstSolutionDecisionBuilderOrNull() const {
+  const RoutingStrategy first_solution_strategy =
+      GetSelectedFirstSolutionStrategy();
+  return first_solution_filtered_decision_builders_[first_solution_strategy];
 }
 
 LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters() {
@@ -4065,6 +4088,9 @@ void RoutingModel::SetupAssignmentCollector() {
   for (IntVar* const extra_var : extra_vars_) {
     full_assignment->Add(extra_var);
   }
+  for (IntervalVar* const extra_interval : extra_intervals_) {
+    full_assignment->Add(extra_interval);
+  }
   full_assignment->Add(nexts_);
   full_assignment->Add(active_);
   full_assignment->Add(vehicle_vars_);
@@ -4113,16 +4139,23 @@ void RoutingModel::AddToAssignment(IntVar* const var) {
   extra_vars_.push_back(var);
 }
 
+void RoutingModel::AddIntervalToAssignment(IntervalVar* const interval) {
+  extra_intervals_.push_back(interval);
+}
+
 RoutingModel::NodeEvaluator2* RoutingModel::NewCachedCallback(
     NodeEvaluator2* callback) {
   const int size = node_to_index_.size();
   if (FLAGS_routing_cache_callbacks && size <= FLAGS_routing_max_cache_size) {
-    routing_caches_.push_back(new RoutingCache(callback, size));
-    NodeEvaluator2* const cached_evaluator =
-        NewPermanentCallback(routing_caches_.back(), &RoutingCache::Run);
-    // Cache takes ownership of callback,
-    owned_node_callbacks_.erase(callback);
-    owned_node_callbacks_.insert(cached_evaluator);
+    NodeEvaluator2* cached_evaluator = nullptr;
+    if (!FindCopy(cached_node_callbacks_, callback, &cached_evaluator)) {
+      cached_evaluator = new RoutingCache(callback, size);
+      cached_node_callbacks_[callback] = cached_evaluator;
+      // Make sure that both the cache and the base callback get deleted
+      // properly.
+      owned_node_callbacks_.insert(callback);
+      owned_node_callbacks_.insert(cached_evaluator);
+    }
     return cached_evaluator;
   } else {
     owned_node_callbacks_.insert(callback);
@@ -4270,6 +4303,7 @@ IntVar* RoutingModel::SlackVar(int64 index, const std::string& name) const {
 RoutingDimension::RoutingDimension(RoutingModel* model, const std::string& name)
     : global_span_cost_coefficient_(0), model_(model), name_(name) {
   CHECK(model != nullptr);
+  vehicle_span_upper_bounds_.assign(model->vehicles(), kint64max);
   vehicle_span_cost_coefficients_.assign(model->vehicles(), 0);
 }
 
@@ -4508,6 +4542,19 @@ int64 RoutingDimension::GetTransitValue(int64 from_index, int64 to_index,
                                         int64 vehicle) const {
   DCHECK(transit_evaluators_[vehicle] != nullptr);
   return transit_evaluators_[vehicle]->Run(from_index, to_index);
+}
+
+void RoutingDimension::SetSpanUpperBoundForVehicle(int64 upper_bound,
+                                                   int vehicle) {
+  CHECK_GE(vehicle, 0);
+  CHECK_LT(vehicle, vehicle_span_upper_bounds_.size());
+  CHECK_GE(upper_bound, 0);
+  vehicle_span_upper_bounds_[vehicle] = upper_bound;
+  Solver* const solver = model_->solver();
+  IntVar* const start = cumuls_[model_->Start(vehicle)];
+  IntVar* const end = cumuls_[model_->End(vehicle)];
+  solver->AddConstraint(solver->MakeLessOrEqual(
+      solver->MakeDifference(end, start), upper_bound));
 }
 
 void RoutingDimension::SetSpanCostCoefficientForVehicle(int64 coefficient,
