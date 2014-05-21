@@ -216,8 +216,7 @@ class DomainIntVar : public IntVar {
     void Next() {
       if (++current_ <= max_) {
         current_ = UnsafeLeastSignificantBitPosition64(
-                       bitset_, current_ - omin_, max_ - omin_) +
-                   omin_;
+            bitset_, current_ - omin_, max_ - omin_) + omin_;
       }
     }
 
@@ -261,6 +260,10 @@ class DomainIntVar : public IntVar {
 
     void AddHole(int64 value) { holes_.push_back(value); }
 
+    int NumHoles() const {
+      return holes_stamp_ < solver_->stamp() ? 0 : holes_.size();
+    }
+
    protected:
     Solver* const solver_;
 
@@ -289,29 +292,124 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const var_;
   };
 
+  // Bounds and Value watchers
+
+  template <class T> class RevIntPtrMap {
+   public:
+    RevIntPtrMap(Solver* const solver, int64 rmin, int64 rmax)
+        : solver_(solver), range_min_(rmin), start_(0) {}
+
+    ~RevIntPtrMap() {}
+
+    bool Empty() const { return start_.Value() == elements_.size(); }
+
+    void SortActive() {
+      std::sort(elements_.begin() + start_.Value(), elements_.end());
+    }
+
+    // Access with value.
+    void UnsafeRevInsert(int64 value, T* elem) {
+      // TODO(user): Make it reversible.
+      elements_.push_back(std::make_pair(value, elem));
+    }
+
+    T* FindPtrOrNull(int64 value, int* position) const {
+      const int pos = FindActivePosition(value);
+      if (pos != -1) {
+        if (position != nullptr) *position = pos;
+        return At(pos).second;
+      }
+      return nullptr;
+    }
+
+    // Access map through the underlying vector.
+    void RemoveAt(int position) {
+      const int start = start_.Value();
+      DCHECK_GE(position, start);
+      DCHECK_LT(position, elements_.size());
+      if (position > start) {
+        // Swap elements.
+        const std::pair<int64, T*> copy = elements_[start];
+        elements_[start] = elements_[position];
+        elements_[position] = copy;
+      }
+      start_.Incr(solver_);
+    }
+
+    const std::pair<int64, T*>& At(int position) const {
+      DCHECK_GE(position, start_.Value());
+      DCHECK_LT(position, elements_.size());
+      return elements_[position];
+    }
+
+    void RemoveAll() { start_.SetValue(solver_, elements_.size()); }
+
+    int end() const { return elements_.size(); }
+    int start() const { return start_.Value(); }
+    int Size() const { return elements_.size() - start_.Value(); }
+
+   private:
+    int FindActivePosition(int64 value) const {
+      int start = start_.Value();
+      int end = elements_.size() - 1;
+      if (end - start < 5) {
+        for (int pos = start; pos < end; ++pos) {
+          if (elements_[pos].first == value) {
+            return pos;
+          }
+        }
+        return -1;
+      } else {
+        while (end - start > 0) {
+          const int pivot = (start + end) / 2;
+          const int pivot_value = elements_[pivot].first;
+          if (pivot_value == value) return pivot;
+          if (pivot_value < value) {
+            start = pivot + 1;
+          } else {
+            end = pivot - 1;
+          }
+        }
+        if (start >= start_.Value() && end < elements_.size() && start == end &&
+            elements_[start].first == value) {
+          return start;
+        } else {
+          return -1;
+        }
+      }
+    }
+
+    Solver* const solver_;
+    const int64 range_min_;
+    NumericalRev<int> start_;
+    std::vector<std::pair<int64, T*>> elements_;
+  };
+
   // This class monitors the domain of the variable and updates the
   // IsEqual/IsDifferent boolean variables accordingly.
   class ValueWatcher : public Constraint {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(ValueWatcher* const watcher, int64 index)
-          : value_watcher_(watcher), index_(index) {}
+      WatchDemon(ValueWatcher* const watcher, int64 value, IntVar* var)
+          : value_watcher_(watcher), value_(value), var_(var) {}
       virtual ~WatchDemon() {}
 
       virtual void Run(Solver* const solver) {
-        value_watcher_->ProcessValueWatcher(index_);
+        value_watcher_->ProcessValueWatcher(value_, var_);
       }
 
      private:
       ValueWatcher* const value_watcher_;
-      const int64 index_;
+      const int64 value_;
+      IntVar* const var_;
     };
 
     class VarDemon : public Demon {
      public:
       explicit VarDemon(ValueWatcher* const watcher)
           : value_watcher_(watcher) {}
+
       virtual ~VarDemon() {}
 
       virtual void Run(Solver* const solver) { value_watcher_->ProcessVar(); }
@@ -323,152 +421,201 @@ class DomainIntVar : public IntVar {
     ValueWatcher(Solver* const solver, DomainIntVar* const variable)
         : Constraint(solver),
           variable_(variable),
-          iterator_(variable_->MakeHoleIterator(true)),
-          watchers_(16),
-          min_range_(kint64max),
-          max_range_(kint64min),
+          hole_iterator_(variable_->MakeHoleIterator(true)),
           var_demon_(nullptr),
-          active_watchers_(0) {}
-
-    ValueWatcher(Solver* const solver, DomainIntVar* const variable,
-                 const std::vector<int64>& values, const std::vector<IntVar*>& vars)
-        : Constraint(solver),
-          variable_(variable),
-          iterator_(variable_->MakeHoleIterator(true)),
-          watchers_(16),
-          min_range_(kint64max),
-          max_range_(kint64min),
-          var_demon_(nullptr),
-          active_watchers_(0) {
-      CHECK_EQ(vars.size(), values.size());
-      for (int i = 0; i < values.size(); ++i) {
-        SetValueWatcher(vars[i], values[i]);
-      }
-    }
+          watchers_set_(solver, variable->Min(), variable->Max()) {}
 
     virtual ~ValueWatcher() {}
 
     IntVar* GetOrMakeValueWatcher(int64 value) {
-      IntVar* const watcher = watchers_.At(value);
-      if (watcher != nullptr) {
-        return watcher;
-      }
+      IntVar* const watcher = watchers_set_.FindPtrOrNull(value, nullptr);
+      if (watcher != nullptr) return watcher;
       IntVar* boolvar = nullptr;
       if (variable_->Contains(value)) {
         if (variable_->Bound()) {
-          boolvar = solver()->MakeIntConst(1);
+          return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
+          const std::string vname =
+              variable_->HasName() ? variable_->name()
+                                   : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s == %" GG_LL_FORMAT "d>", vname.c_str(), value);
           boolvar = solver()->MakeBoolVar(bname);
         }
-        active_watchers_.Incr(solver());
+        watchers_set_.UnsafeRevInsert(value, boolvar);
+        if (posted_.Switched() && !boolvar->Bound()) {
+          boolvar->WhenBound(
+              solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+        }
+        return boolvar;
       } else {
-        boolvar = variable_->solver()->MakeIntConst(0);
+        return variable_->solver()->MakeIntConst(0);
       }
-      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
-      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
-      watchers_.RevInsert(solver(), value, boolvar);
-      if (posted_.Switched() && !boolvar->Bound()) {
-        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
-      }
-      return boolvar;
     }
 
     void SetValueWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_.At(value) == nullptr);
-      active_watchers_.Incr(solver());
-      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
-      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
-      watchers_.RevInsert(solver(), value, boolvar);
-      if (posted_.Switched() && !boolvar->Bound()) {
-        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      CHECK(watchers_set_.FindPtrOrNull(value, nullptr) == nullptr);
+      if (!boolvar->Bound()) {
+        watchers_set_.UnsafeRevInsert(value, boolvar);
+        if (posted_.Switched() && !boolvar->Bound()) {
+          boolvar->WhenBound(
+              solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+        }
       }
     }
 
     virtual void Post() {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenDomain(var_demon_);
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      for (int64 value = min_r; value <= max_r; ++value) {
-        IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != nullptr && !boolvar->Bound()) {
-          boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        const int64 value = w.first;
+        IntVar* const boolvar = w.second;
+        if (!boolvar->Bound()) {
+          boolvar->WhenBound(
+              solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
         }
       }
       posted_.Switch(solver());
     }
 
     virtual void InitialPropagate() {
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      for (int64 value = min_r; value <= max_r; ++value) {
-        IntVar* const boolvar = watchers_.At(value);
-        if (!variable_->Contains(value)) {
-          Zero(value);
-        }
-        if (boolvar != nullptr && boolvar->Bound()) {
-          if (boolvar->Min() == 0) {
-            variable_->RemoveValue(value);
+      if (variable_->Bound()) {
+        VariableBound();
+      } else {
+        watchers_set_.SortActive();  // Makes it easier on the RemoveValue part.
+        for (int pos = watchers_set_.start(); pos < watchers_set_.end();
+             ++pos) {
+          const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+          const int64 value = w.first;
+          IntVar* const boolvar = w.second;
+          if (!variable_->Contains(value)) {
+            boolvar->SetValue(0);
+            watchers_set_.RemoveAt(pos);
           } else {
-            variable_->SetValue(value);
+            if (boolvar->Bound()) {
+              ProcessValueWatcher(value, boolvar);
+              watchers_set_.RemoveAt(pos);
+            }
           }
         }
-      }
-      if (variable_->Bound()) {
-        One(variable_->Min());
+        CheckInhibit();
       }
     }
 
-    void ProcessValueWatcher(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      DCHECK(boolvar != nullptr);
+    void ProcessValueWatcher(int64 value, IntVar* boolvar) {
       if (boolvar->Min() == 0) {
         if (variable_->Size() < 0xFFFFFF) {
-          variable_->RemoveValue(index);
+          variable_->RemoveValue(value);
         } else {
-          solver()->AddConstraint(solver()->MakeNonEquality(variable_, index));
+          solver()->AddConstraint(solver()->MakeNonEquality(variable_, value));
         }
       } else {
-        variable_->SetValue(index);
+        variable_->SetValue(value);
       }
     }
 
     void ProcessVar() {
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      if (max_r - min_r < 5) {
-        for (int64 i = min_r; i <= max_r; ++i) {
-          if (!variable_->Contains(i)) {
-            Zero(i);
-          }
-        }
+      if (variable_->Bound()) {
+        VariableBound();
+      } else if (watchers_set_.Size() < 8) {
+        ScanWatchers();
+        CheckInhibit();
       } else {
-        const int64 old_min_domain = variable_->OldMin();
         const int64 min_domain = variable_->Min();
         const int64 max_domain = variable_->Max();
-        for (int64 val = std::max(min_r, old_min_domain);
-             val <= std::min(min_domain - 1, max_r); ++val) {
-          Zero(val);
+        const int64 old_min = variable_->OldMin();
+        const int64 old_max = variable_->OldMax();
+
+        if (old_min != min_domain || old_max != max_domain) {
+          watchers_set_.SortActive();
         }
-        // Second iteration: "delta" domain iteration.
-        for (const int64 val : InitAndGetValues(iterator_)) {
-          if (val >= min_r && val <= max_r) {
-            Zero(val);
+
+        // This loop keeps the active watchers sorted.
+        if (old_min != min_domain) {
+          // Set watchers below min_domain to 0.
+          while (!watchers_set_.Empty()) {
+            const int pos = watchers_set_.start();
+            const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+            if (w.first < min_domain) {
+              w.second->SetValue(0);
+              watchers_set_.RemoveAt(pos);
+            } else {
+              break;
+            }
           }
         }
-        // Third iteration: from max to old_max.
-        const int64 old_max_domain = variable_->OldMax();
-        for (int64 val = std::max(min_r, max_domain + 1);
-             val <= std::min(max_r, old_max_domain); ++val) {
-          Zero(val);
+
+        if (old_max != max_domain) {
+          // Set watchers above max_domain to 0.
+
+          // Find the first watcher above max domain.
+          int current = watchers_set_.end() - 1;
+          while (current >= watchers_set_.start()) {
+            if (watchers_set_.At(current).first > max_domain) {
+              current--;
+            } else {
+              break;
+            }
+          }
+          // Then erase them in order.
+          for (int pos = current + 1; pos < watchers_set_.end(); ++pos) {
+            const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+            DCHECK_GT(w.first, max_domain);
+            w.second->SetValue(0);
+            watchers_set_.RemoveAt(pos);
+          }
+        }
+
+        // If there is no bitset, then there are no holes.
+        // In that case, the two loops above should have performed all
+        // propagation. Otherwise, scan the remaining watchers.
+        BitSet* const bitset = variable_->bitset();
+        if (bitset != nullptr && !watchers_set_.Empty()) {
+          if (bitset->NumHoles() * 8 < watchers_set_.Size()) {
+            for (const int64 hole : InitAndGetValues(hole_iterator_)) {
+              int pos = 0;
+              IntVar* const boolvar = watchers_set_.FindPtrOrNull(hole, &pos);
+              if (boolvar != nullptr) {
+                boolvar->SetValue(0);
+                watchers_set_.RemoveAt(pos);
+              }
+            }
+          } else {
+            ScanWatchers();
+          }
+        }
+        CheckInhibit();
+      }
+    }
+
+    // Optimized case if the variable is bound.
+    void VariableBound() {
+      DCHECK(variable_->Bound());
+      const int64 value = variable_->Min();
+      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        w.second->SetValue(w.first == value);
+      }
+      watchers_set_.RemoveAll();
+      var_demon_->inhibit(solver());
+    }
+
+    // Fast scan of the watchers to check and assign them.
+    void ScanWatchers() {
+      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        if (!variable_->Contains(w.first)) {
+          IntVar* const boolvar = w.second;
+          boolvar->SetValue(0);
+          watchers_set_.RemoveAt(pos);
         }
       }
-      if (variable_->Bound()) {
-        One(variable_->Min());
+    }
+
+    void CheckInhibit() {
+      if (watchers_set_.Empty()) {
+        var_demon_->inhibit(solver());
       }
     }
 
@@ -478,14 +625,11 @@ class DomainIntVar : public IntVar {
                                               variable_);
       std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      for (int64 i = min_r; i <= max_r; ++i) {
-        IntVar* const boolvar = watchers_.At(i);
-        if (boolvar != nullptr) {
-          all_coefficients.push_back(i);
-          all_bool_vars.push_back(boolvar);
-        }
+      for (int position = watchers_set_.start(); position < watchers_set_.end();
+           ++position) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+        all_coefficients.push_back(w.first);
+        all_bool_vars.push_back(w.second);
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
@@ -499,34 +643,11 @@ class DomainIntVar : public IntVar {
     }
 
    private:
-    void Zero(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != nullptr) {
-        if (boolvar->Max() == 1) {
-          boolvar->SetValue(0);
-          active_watchers_.Decr(solver());
-        }
-      }
-      if (active_watchers_.Value() == 0) {
-        var_demon_->inhibit(solver());
-      }
-    }
-
-    void One(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != nullptr) {
-        boolvar->SetValue(1);
-      }
-    }
-
     DomainIntVar* const variable_;
-    IntVarIterator* const iterator_;
-    RevGrowingArray<IntVar*, void*> watchers_;
+    IntVarIterator* const hole_iterator_;
     RevSwitch posted_;
-    NumericalRev<int64> min_range_;
-    NumericalRev<int64> max_range_;
     Demon* var_demon_;
-    NumericalRev<int> active_watchers_;
+    RevIntPtrMap<IntVar> watchers_set_;
   };
 
   // This class watches the bounds of the variable and updates the
@@ -536,17 +657,18 @@ class DomainIntVar : public IntVar {
    public:
     class WatchDemon : public Demon {
      public:
-      WatchDemon(BoundWatcher* const watcher, int64 index)
-          : value_watcher_(watcher), index_(index) {}
+      WatchDemon(BoundWatcher* const watcher, int64 index, IntVar* const var)
+          : value_watcher_(watcher), index_(index), var_(var) {}
       virtual ~WatchDemon() {}
 
       virtual void Run(Solver* const solver) {
-        value_watcher_->ProcessBoundWatcher(index_);
+        value_watcher_->ProcessBoundWatcher(index_, var_);
       }
 
      private:
       BoundWatcher* const value_watcher_;
       const int64 index_;
+      IntVar* const var_;
     };
 
     class VarDemon : public Demon {
@@ -564,68 +686,44 @@ class DomainIntVar : public IntVar {
     BoundWatcher(Solver* const solver, DomainIntVar* const variable)
         : Constraint(solver),
           variable_(variable),
-          iterator_(variable_->MakeHoleIterator(true)),
-          watchers_(16),
-          min_range_(kint64max),
-          max_range_(kint64min),
           var_demon_(nullptr),
-          active_watchers_(0) {}
-
-    BoundWatcher(Solver* const solver, DomainIntVar* const variable,
-                 const std::vector<int64>& values, const std::vector<IntVar*>& vars)
-        : Constraint(solver),
-          variable_(variable),
-          iterator_(variable_->MakeHoleIterator(true)),
-          watchers_(16),
-          min_range_(kint64max),
-          max_range_(kint64min),
-          var_demon_(nullptr),
-          active_watchers_(0) {
-      CHECK_EQ(vars.size(), values.size());
-      for (int i = 0; i < values.size(); ++i) {
-        SetBoundWatcher(vars[i], values[i]);
-      }
-    }
+          watchers_set_(solver, variable->Min(), variable->Max()) {}
 
     virtual ~BoundWatcher() {}
 
     IntVar* GetOrMakeBoundWatcher(int64 value) {
-      IntVar* const watcher = watchers_.At(value);
+      IntVar* const watcher = watchers_set_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) {
         return watcher;
       }
-      IntVar* boolvar = nullptr;
       if (variable_->Max() >= value) {
         if (variable_->Min() >= value) {
-          boolvar = solver()->MakeIntConst(1);
+          return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s >= %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
-          boolvar = solver()->MakeBoolVar(bname);
+          const std::string vname =
+              variable_->HasName() ? variable_->name()
+                                   : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s >= %" GG_LL_FORMAT "d>", vname.c_str(), value);
+          IntVar* const boolvar = solver()->MakeBoolVar(bname);
+          watchers_set_.UnsafeRevInsert(value, boolvar);
+          if (posted_.Switched() && !boolvar->Bound()) {
+            boolvar->WhenBound(
+                solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+          }
+          return boolvar;
         }
-        active_watchers_.Incr(solver());
       } else {
-        boolvar = variable_->solver()->MakeIntConst(0);
+        return variable_->solver()->MakeIntConst(0);
       }
-      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
-      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
-      watchers_.RevInsert(variable_->solver(), value, boolvar);
-      if (posted_.Switched() && !boolvar->Bound()) {
-        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
-      }
-      return boolvar;
     }
 
     void SetBoundWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_.At(value) == nullptr);
-      active_watchers_.Incr(solver());
-      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
-      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
-      watchers_.RevInsert(solver(), value, boolvar);
+      CHECK(watchers_set_.FindPtrOrNull(value, nullptr) == nullptr);
+      watchers_set_.UnsafeRevInsert(value, boolvar);
       if (posted_.Switched() && !boolvar->Bound()) {
-        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+        boolvar->WhenBound(
+            solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
       }
     }
 
@@ -633,73 +731,32 @@ class DomainIntVar : public IntVar {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenRange(var_demon_);
 
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      for (int64 value = min_r; value <= max_r; ++value) {
-        IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != nullptr && !boolvar->Bound()) {
-          boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        IntVar* const boolvar = w.second;
+        const int64 value = w.first;
+        if (!boolvar->Bound()) {
+          boolvar->WhenBound(
+              solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
         }
       }
       posted_.Switch(solver());
     }
 
     virtual void InitialPropagate() {
-      const int64 min_r = min_range_.Value();
-      const int64 max_r = max_range_.Value();
-      for (int value = min_r; value <= max_r; ++value) {
-        IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != nullptr && boolvar->Bound()) {
+      ProcessVar();
+      for (int position = watchers_set_.start(); position < watchers_set_.end();
+           ++position) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+        IntVar* const boolvar = w.second;
+        const int64 value = w.first;
+        if (boolvar->Bound()) {
           if (boolvar->Min() == 0) {
             variable_->SetMax(value - 1);
           } else {
             variable_->SetMin(value);
           }
-        }
-      }
-      const int64 vmin = variable_->Min();
-      const int64 vmax = variable_->Max();
-      for (int64 value = min_r; value <= std::min(vmin, max_r); ++value) {
-        One(value);
-      }
-      for (int64 value = std::max(vmax + 1, min_r); value <= max_r; ++value) {
-        Zero(value);
-      }
-    }
-
-    void ProcessBoundWatcher(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      DCHECK(boolvar != nullptr);
-      if (boolvar->Min() == 0) {
-        variable_->SetMax(index - 1);
-      } else {
-        variable_->SetMin(index);
-      }
-    }
-
-    void ProcessVar() {
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      const int64 min_domain = variable_->Min();
-      const int64 max_domain = variable_->Max();
-      if (max_r - min_r < 4) {
-        for (int64 value = min_r; value <= max_r; ++value) {
-          if (min_domain >= value) {
-            One(value);
-          } else if (max_domain < value) {
-            Zero(value);
-          }
-        }
-      } else {
-        const int64 old_min_domain = variable_->OldMin();
-        for (int64 val = std::max(min_r, old_min_domain);
-             val <= std::min(min_domain, max_r); ++val) {
-          One(val);
-        }
-        const int64 old_max_domain = variable_->OldMax();
-        for (int64 val = std::max(min_r, max_domain + 1);
-             val <= std::min(max_r, old_max_domain); ++val) {
-          Zero(val);
+          watchers_set_.RemoveAt(position);
         }
       }
     }
@@ -710,14 +767,11 @@ class DomainIntVar : public IntVar {
                                               variable_);
       std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
-      const int64 max_r = max_range_.Value();
-      const int64 min_r = min_range_.Value();
-      for (int64 i = min_r; i <= max_r; ++i) {
-        IntVar* const boolvar = watchers_.At(i);
-        if (boolvar != nullptr) {
-          all_coefficients.push_back(i);
-          all_bool_vars.push_back(boolvar);
-        }
+      for (int position = watchers_set_.start(); position < watchers_set_.end();
+           ++position) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+        all_coefficients.push_back(w.first);
+        all_bool_vars.push_back(w.second);
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
@@ -731,38 +785,57 @@ class DomainIntVar : public IntVar {
     }
 
    private:
-    void Zero(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != nullptr) {
-        if (boolvar->Max() == 1) {
-          boolvar->SetValue(0);
-          active_watchers_.Decr(solver());
+    void ProcessBoundWatcher(int64 value, IntVar* const boolvar) {
+      if (boolvar->Min() == 0) {
+        variable_->SetMax(value - 1);
+      } else {
+        variable_->SetMin(value);
+      }
+    }
+
+    void ProcessVar() {
+      const int64 min_domain = variable_->Min();
+      const int64 max_domain = variable_->Max();
+      watchers_set_.SortActive();
+      // This loop keeps the active watchers sorted.
+      while (!watchers_set_.Empty()) {
+        const int position = watchers_set_.start();
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+        if (w.first <= min_domain) {
+          w.second->SetValue(1);
+          watchers_set_.RemoveAt(position);
+        } else {
+          break;
         }
       }
-      if (active_watchers_.Value() == 0) {
+      int current = watchers_set_.end() - 1;
+      while (current >= watchers_set_.start()) {
+        if (watchers_set_.At(current).first > max_domain) {
+          current--;
+        } else {
+          break;
+        }
+      }
+      for (int pos = current + 1; pos < watchers_set_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        CHECK_GT(w.first, max_domain);
+        w.second->SetValue(0);
+        watchers_set_.RemoveAt(pos);
+      }
+      if (watchers_set_.Empty()) {
         var_demon_->inhibit(solver());
       }
     }
 
-    void One(int64 index) {
-      IntVar* const boolvar = watchers_.At(index);
-      if (boolvar != nullptr) {
-        boolvar->SetValue(1);
-      }
-    }
-
     DomainIntVar* const variable_;
-    IntVarIterator* const iterator_;
-    RevGrowingArray<IntVar*, void*> watchers_;
     RevSwitch posted_;
-    NumericalRev<int64> min_range_;
-    NumericalRev<int64> max_range_;
     Demon* var_demon_;
-    NumericalRev<int> active_watchers_;
+    RevIntPtrMap<IntVar> watchers_set_;
   };
 
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64 vmin, int64 vmax, const std::string& name);
+  DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
+               const std::string& name);
   DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
                const std::string& name);
   virtual ~DomainIntVar();
@@ -848,10 +921,12 @@ class DomainIntVar : public IntVar {
   Constraint* SetIsEqual(const std::vector<int64>& values,
                          const std::vector<IntVar*>& vars) {
     if (value_watcher_ == nullptr) {
-      solver()->SaveAndSetValue(
-          reinterpret_cast<void**>(&value_watcher_),
-          reinterpret_cast<void*>(solver()->RevAlloc(
-              new ValueWatcher(solver(), this, values, vars))));
+      solver()->SaveAndSetValue(reinterpret_cast<void**>(&value_watcher_),
+                                reinterpret_cast<void*>(solver()->RevAlloc(
+                                    new ValueWatcher(solver(), this))));
+      for (int i = 0; i < vars.size(); ++i) {
+        value_watcher_->SetValueWatcher(vars[i], values[i]);
+      }
     }
     return value_watcher_;
   }
@@ -912,10 +987,12 @@ class DomainIntVar : public IntVar {
   Constraint* SetIsGreaterOrEqual(const std::vector<int64>& values,
                                   const std::vector<IntVar*>& vars) {
     if (bound_watcher_ == nullptr) {
-      solver()->SaveAndSetValue(
-          reinterpret_cast<void**>(&bound_watcher_),
-          reinterpret_cast<void*>(solver()->RevAlloc(
-              new BoundWatcher(solver(), this, values, vars))));
+      solver()->SaveAndSetValue(reinterpret_cast<void**>(&bound_watcher_),
+                                reinterpret_cast<void*>(solver()->RevAlloc(
+                                    new BoundWatcher(solver(), this))));
+      for (int i = 0; i < values.size(); ++i) {
+        bound_watcher_->SetBoundWatcher(vars[i], values[i]);
+      }
     }
     return bound_watcher_;
   }
@@ -1027,8 +1104,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values, int64 vmin,
-               int64 vmax)
+  SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values,
+               int64 vmin, int64 vmax)
       : BitSet(s),
         bits_(nullptr),
         stamps_(nullptr),
@@ -1066,9 +1143,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64 new_min =
-        UnsafeLeastSignificantBitPosition64(bits_, nmin - omin_, cmax - omin_) +
-        omin_;
+    const int64 new_min = UnsafeLeastSignificantBitPosition64(
+        bits_, nmin - omin_, cmax - omin_) + omin_;
     const uint64 removed_bits =
         BitCountRange64(bits_, cmin - omin_, new_min - omin_ - 1);
     size_.Add(solver_, -removed_bits);
@@ -1081,9 +1157,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64 new_max =
-        UnsafeMostSignificantBitPosition64(bits_, cmin - omin_, nmax - omin_) +
-        omin_;
+    const int64 new_max = UnsafeMostSignificantBitPosition64(
+        bits_, cmin - omin_, nmax - omin_) + omin_;
     const uint64 removed_bits =
         BitCountRange64(bits_, new_max - omin_ + 1, cmax - omin_);
     size_.Add(solver_, -removed_bits);
@@ -1131,9 +1206,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual std::string DebugString() const {
     std::string out;
-    SStringPrintf(&out,
-                  "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ",
-                  omin_, omax_);
+    SStringPrintf(
+        &out, "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ", omin_,
+        omax_);
     for (int i = 0; i < bsize_; ++i) {
       StringAppendF(&out, "%llx", bits_[i]);
     }
@@ -1145,8 +1220,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
-         ++it) {
+    for (std::vector<int64>::iterator it = removed_.begin();
+         it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
   }
@@ -1228,8 +1303,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
     bits_ = OneRange64(0, size_.Value() - 1);
   }
 
-  SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values, int64 vmin,
-              int64 vmax)
+  SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values,
+              int64 vmin, int64 vmax)
       : BitSet(s),
         bits_(GG_ULONGLONG(0)),
         stamp_(s->stamp() - 1),
@@ -1347,9 +1422,9 @@ class SmallBitSet : public DomainIntVar::BitSet {
   virtual uint64 Size() const { return size_.Value(); }
 
   virtual std::string DebugString() const {
-    return StringPrintf("SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                        "d : %llx)",
-                        omin_, omax_, bits_);
+    return StringPrintf(
+        "SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : %llx)", omin_,
+        omax_, bits_);
   }
 
   virtual void DelayRemoveValue(int64 val) {
@@ -1360,8 +1435,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
-         ++it) {
+    for (std::vector<int64>::iterator it = removed_.begin();
+         it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
   }
@@ -1614,7 +1689,8 @@ DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
       value_watcher_(nullptr),
       bound_watcher_(nullptr) {}
 
-DomainIntVar::DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
+DomainIntVar::DomainIntVar(Solver* const s,
+                           const std::vector<int64>& sorted_values,
                            const std::string& name)
     : IntVar(s, name),
       min_(kint64max),
@@ -3648,7 +3724,7 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::min(std::min(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-               std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+                    std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
@@ -3657,7 +3733,7 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::max(std::max(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-               std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+                    std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
@@ -5248,19 +5324,19 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   }
 
   virtual std::string name() const {
-    return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
-                        "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
-                        "d, lc = %" GG_LL_FORMAT "d)",
-                        expr_->name().c_str(), early_cost_, early_date_,
-                        late_date_, late_cost_);
+    return StringPrintf(
+        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
+        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
+        expr_->name().c_str(), early_cost_, early_date_, late_date_,
+        late_cost_);
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT
-                        "d, ed = %" GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT
-                        "d, lc = %" GG_LL_FORMAT "d)",
-                        expr_->DebugString().c_str(), early_cost_, early_date_,
-                        late_date_, late_cost_);
+    return StringPrintf(
+        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
+        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
+        expr_->DebugString().c_str(), early_cost_, early_date_, late_date_,
+        late_cost_);
   }
 
   virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
@@ -5758,7 +5834,8 @@ Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
   return dvar->SetIsEqual(values, vars);
 }
 
-Constraint* SetIsGreaterOrEqual(IntVar* const var, const std::vector<int64>& values,
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
                                 const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -5810,7 +5887,8 @@ IntVar* Solver::MakeBoolVar() {
   return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
+                           const std::string& name) {
   const std::vector<int64> cleaned = SortedNoDuplicates(values);
   int64 gcd = 0;
   for (int64 v : cleaned) {
@@ -5846,7 +5924,8 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
   return MakeIntVar(values, "");
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int>& values, const std::string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int>& values,
+                           const std::string& name) {
   return MakeIntVar(ToInt64Vector(values), name);
 }
 
@@ -5873,11 +5952,11 @@ namespace {
 std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #if 0
 #if defined(_MSC_VER)
-  const int digits = max_index > 0 ?
-      static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
-      1;
+  const int digits =
+      max_index > 0 ? static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1
+                    : 1;
 #else
-  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
+  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1 : 1;
 #endif
   return StringPrintf("%s%0*d", prefix.c_str(), digits, index);
 #else
@@ -5887,7 +5966,8 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 }  // namespace
 
 void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                             const std::string& name, std::vector<IntVar*>* vars) {
+                             const std::string& name,
+                             std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
   }
