@@ -297,23 +297,30 @@ class DomainIntVar : public IntVar {
   template <class T> class RevIntPtrMap {
    public:
     RevIntPtrMap(Solver* const solver, int64 rmin, int64 rmax)
-        : solver_(solver), range_min_(rmin), start_(0) {}
+        : solver_(solver), range_min_(rmin), start_(0), sorted_(false) {}
 
     ~RevIntPtrMap() {}
 
     bool Empty() const { return start_.Value() == elements_.size(); }
 
+    // Lazy sorting.
     void SortActive() {
-      std::sort(elements_.begin() + start_.Value(), elements_.end());
+      if (!sorted_) {
+        std::sort(elements_.begin() + start_.Value(), elements_.end());
+        MarkSorted();
+      }
     }
 
     // Access with value.
     void UnsafeRevInsert(int64 value, T* elem) {
       // TODO(user): Make it reversible.
+      if (!elements_.empty() && value <= elements_.back().first) {
+        MarkUnsorted();
+      }
       elements_.push_back(std::make_pair(value, elem));
     }
 
-    T* FindPtrOrNull(int64 value, int* position) const {
+    T* FindPtrOrNull(int64 value, int* position) {
       const int pos = FindActivePosition(value);
       if (pos != -1) {
         if (position != nullptr) *position = pos;
@@ -332,6 +339,7 @@ class DomainIntVar : public IntVar {
         const std::pair<int64, T*> copy = elements_[start];
         elements_[start] = elements_[position];
         elements_[position] = copy;
+        MarkUnsorted();
       }
       start_.Incr(solver_);
     }
@@ -349,10 +357,24 @@ class DomainIntVar : public IntVar {
     int Size() const { return elements_.size() - start_.Value(); }
 
    private:
-    int FindActivePosition(int64 value) const {
+    void MarkSorted() {
+      if (!sorted_) {
+        solver_->SaveValue(&sorted_);
+        sorted_ = true;
+      }
+    }
+
+    void MarkUnsorted() {
+      if (sorted_) {
+        solver_->SaveValue(&sorted_);
+        sorted_ = true;
+      }
+    }
+
+    int FindActivePosition(int64 value) {
       int start = start_.Value();
       int end = elements_.size() - 1;
-      if (end - start < 5) {
+      if (end - start < 256) {
         for (int pos = start; pos < end; ++pos) {
           if (elements_[pos].first == value) {
             return pos;
@@ -360,6 +382,7 @@ class DomainIntVar : public IntVar {
         }
         return -1;
       } else {
+        SortActive();
         while (end - start > 0) {
           const int pivot = (start + end) / 2;
           const int pivot_value = elements_[pivot].first;
@@ -379,10 +402,24 @@ class DomainIntVar : public IntVar {
       }
     }
 
+    void CheckMap() {
+      if (solver_->fail_stamp() > fail_stamp_) {
+        fail_stamp_ = solver_->fail_stamp();
+        value_position_map_.clear();
+        for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
+          const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+          value_position_map_[w.first] = pos;
+        }
+      }
+    }
+
     Solver* const solver_;
     const int64 range_min_;
     NumericalRev<int> start_;
     std::vector<std::pair<int64, T*>> elements_;
+    bool sorted_;
+    hash_map<int64, int> value_position_map_;
+    uint64 fail_stamp_;
   };
 
   // This class monitors the domain of the variable and updates the
@@ -483,7 +520,6 @@ class DomainIntVar : public IntVar {
       if (variable_->Bound()) {
         VariableBound();
       } else {
-        watchers_set_.SortActive();  // Makes it easier on the RemoveValue part.
         for (int pos = watchers_set_.start(); pos < watchers_set_.end();
              ++pos) {
           const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
