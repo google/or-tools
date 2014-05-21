@@ -5811,7 +5811,7 @@ IntVar* Solver::MakeBoolVar() {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
-  const vector<int64> cleaned = SortedNoDuplicates(values);
+  const std::vector<int64> cleaned = SortedNoDuplicates(values);
   int64 gcd = 0;
   for (int64 v : cleaned) {
     if (v == 0) {
@@ -5829,7 +5829,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& 
   if (gcd == 1) {
     return RegisterIntVar(RevAlloc(new DomainIntVar(this, cleaned, name)));
   } else {
-    vector<int64> new_values;
+    std::vector<int64> new_values;
     new_values.reserve(values.size());
     for (int64 v : cleaned) {
       DCHECK_EQ(0, v % gcd);

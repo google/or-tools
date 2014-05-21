@@ -1175,6 +1175,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
 };
 
 bool HasCompactDomains(const std::vector<IntVar*>& vars) {
+  return true;
   int64 sum_of_spans = 0LL;
   int64 sum_of_sizes = 0LL;
   for (IntVar* const var : vars) {
