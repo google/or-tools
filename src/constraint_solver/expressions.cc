@@ -402,9 +402,22 @@ class DomainIntVar : public IntVar {
     std::vector<std::pair<int64, T*>> elements_;
   };
 
+  // Base class for value watchers
+  class BaseValueWatcher : public Constraint {
+   public:
+     BaseValueWatcher(Solver* const solver) : Constraint(solver) {}
+
+    virtual ~BaseValueWatcher() {}
+
+    virtual IntVar* GetOrMakeValueWatcher(int64 value) = 0;
+
+    virtual void SetValueWatcher(IntVar* const boolvar, int64 value) = 0;
+  };
+
+
   // This class monitors the domain of the variable and updates the
   // IsEqual/IsDifferent boolean variables accordingly.
-  class ValueWatcher : public Constraint {
+  class ValueWatcher : public BaseValueWatcher {
    public:
     class WatchDemon : public Demon {
      public:
@@ -436,7 +449,7 @@ class DomainIntVar : public IntVar {
     };
 
     ValueWatcher(Solver* const solver, DomainIntVar* const variable)
-        : Constraint(solver),
+        : BaseValueWatcher(solver),
           variable_(variable),
           hole_iterator_(variable_->MakeHoleIterator(true)),
           var_demon_(nullptr),
@@ -444,7 +457,7 @@ class DomainIntVar : public IntVar {
 
     virtual ~ValueWatcher() {}
 
-    IntVar* GetOrMakeValueWatcher(int64 value) {
+    virtual IntVar* GetOrMakeValueWatcher(int64 value) {
       IntVar* const watcher = watchers_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) return watcher;
       if (variable_->Contains(value)) {
@@ -470,7 +483,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void SetValueWatcher(IntVar* const boolvar, int64 value) {
+    virtual void SetValueWatcher(IntVar* const boolvar, int64 value) {
       CHECK(watchers_.FindPtrOrNull(value, nullptr) == nullptr);
       if (!boolvar->Bound()) {
         watchers_.UnsafeRevInsert(value, boolvar);
@@ -1086,7 +1099,7 @@ class DomainIntVar : public IntVar {
   QueueHandler handler_;
   bool in_process_;
   BitSet* bits_;
-  ValueWatcher* value_watcher_;
+  BaseValueWatcher* value_watcher_;
   BoundWatcher* bound_watcher_;
 };
 
