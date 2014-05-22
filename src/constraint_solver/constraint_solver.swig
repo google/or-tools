@@ -21,6 +21,7 @@
 
 %feature("director") operations_research::SearchMonitor;
 %feature("director") operations_research::Constraint;
+%feature("director") operations_research::Demon;
 
 // We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
 // the recommended replacement $descriptor(...) is only available within

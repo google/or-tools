@@ -64,6 +64,52 @@ def test_search_monitor():
   solver.Solve(db, monitor)
 
 
+class DemonTest(pywrapcp.Demon):
+  def __init__(self, x):
+    pywrapcp.Demon.__init__(self)
+    self._x = x
+    print 'Demon built'
+
+  def Run(self, solver):
+    print 'in Run(), saw ' + str(self._x)
+
+
+class ConstraintTest(pywrapcp.Constraint):
+  def __init__(self, solver, x):
+    pywrapcp.Constraint.__init__(self, solver)
+    self._x = x
+    print 'Constraint built'
+
+  def Post(self):
+    print 'in Post()'
+    self._demon = DemonTest(self._x)
+    self._x.WhenBound(self._demon)
+    print 'out of Post()'
+
+  def InitialPropagate(self):
+    print 'in InitialPropagate()'
+    self._x.SetMin(5)
+    print self._x
+    print 'out of InitialPropagate()'
+
+
+def test_demon():
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  demon = DemonTest(x)
+  demon.Run(solver)
+
+
+def test_constraint():
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  myct = ConstraintTest(solver, x)
+  solver.Add(myct)
+  db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  solver.Solve(db)
+
+
+
 def main():
   test_member()
   test_sparse_var()
@@ -71,6 +117,8 @@ def main():
   test_limit()
   test_export()
   test_search_monitor()
+  test_demon()
+  test_constraint()
 
 
 if __name__ == '__main__':
