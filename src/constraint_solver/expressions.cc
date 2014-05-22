@@ -296,6 +296,24 @@ class DomainIntVar : public IntVar {
 
   template <class T> class RevIntPtrMap {
    public:
+    class UninsertAction : public Action {
+     public:
+      UninsertAction(RevIntPtrMap<T>* map, int64 value) : map_(map), value_(value) {}
+      virtual ~UninsertAction() {}
+
+      virtual void Run(Solver* const s) {
+        map_->Uninsert(value_);
+      }
+
+      virtual std::string DebugString() const {
+        return "Uninsert";
+      }
+
+     private:
+      RevIntPtrMap<T>* const map_;
+      const int64 value_;
+    };
+
     RevIntPtrMap(Solver* const solver, int64 rmin, int64 rmax)
         : solver_(solver), range_min_(rmin), start_(0) {}
 
@@ -303,15 +321,32 @@ class DomainIntVar : public IntVar {
 
     bool Empty() const { return start_.Value() == elements_.size(); }
 
-    // Lazy sorting.
     void SortActive() {
       std::sort(elements_.begin() + start_.Value(), elements_.end());
     }
 
     // Access with value.
     void UnsafeRevInsert(int64 value, T* elem) {
-      // TODO(user): Make it reversible.
       elements_.push_back(std::make_pair(value, elem));
+      if (solver_->state() != Solver::OUTSIDE_SEARCH) {
+        solver_->AddBacktrackAction(
+            solver_->RevAlloc(new UninsertAction(this, value)), false);
+      }
+    }
+
+    void Uninsert(int64 value) {
+      for (int pos = 0; pos < elements_.size(); ++pos) {
+        if (elements_[pos].first == value) {
+          DCHECK_GE(pos, start_.Value());
+          const int last = elements_.size() - 1;
+          if (pos != last) {  // Swap the current with the last.
+            elements_[pos] = elements_.back();
+          }
+          elements_.pop_back();
+          return;
+        }
+      }
+      LOG(FATAL) << "The element should have been removed";
     }
 
     T* FindPtrOrNull(int64 value, int* position) {
