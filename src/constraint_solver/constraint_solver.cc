@@ -242,12 +242,14 @@ class Queue {
         solver_->TopPeriodicCheck();
       }
       demon->Run(solver_);
+      solver_->CheckFail();
     } else {
       solver_->GetPropagationMonitor()->BeginDemonRun(demon);
       if (++solver_->demon_runs_[demon->priority()] % kTestPeriod == 0) {
         solver_->TopPeriodicCheck();
       }
       demon->Run(solver_);
+      solver_->CheckFail();
       solver_->GetPropagationMonitor()->EndDemonRun(demon);
     }
   }
@@ -257,6 +259,7 @@ class Queue {
       solver_->TopPeriodicCheck();
     }
     demon->Run(solver_);
+    solver_->CheckFail();
   }
 
   void ProcessInstrumentedNormalDemon(Demon* const demon) {
@@ -265,6 +268,7 @@ class Queue {
       solver_->TopPeriodicCheck();
     }
     demon->Run(solver_);
+    solver_->CheckFail();
     solver_->GetPropagationMonitor()->EndDemonRun(demon);
   }
 
@@ -307,6 +311,7 @@ class Queue {
             solver_->TopPeriodicCheck();
           }
           demon->Run(solver_);
+          solver_->CheckFail();
         }
       }
     } else {
@@ -1420,7 +1425,8 @@ Solver::Solver(const std::string& name, const SolverParameters& parameters)
       additional_constraint_index_(0),
       propagation_monitor_(BuildTrace(this)),
       print_trace_(nullptr),
-      anonymous_variable_index_(0) {
+      anonymous_variable_index_(0) ,
+      should_fail_(false) {
   Init();
 }
 
@@ -1453,7 +1459,8 @@ Solver::Solver(const std::string& name)
       additional_constraint_index_(0),
       propagation_monitor_(BuildTrace(this)),
       print_trace_(nullptr),
-      anonymous_variable_index_(0) {
+      anonymous_variable_index_(0),
+      should_fail_(false) {
   Init();
 }
 
@@ -2460,6 +2467,17 @@ void Solver::Fail() {
   searches_.back()->JumpBack();
 }
 
+void Solver::ShouldFail() {
+  should_fail_ = true;
+}
+
+void Solver::CheckFail() {
+  if (should_fail_) {
+    should_fail_ = false;
+    Fail();
+  }
+}
+
 // ----- Cast Expression -----
 
 IntExpr* Solver::CastExpression(const IntVar* const var) const {
@@ -3214,6 +3232,7 @@ void Constraint::PostAndPropagate() {
   FreezeQueue();
   Post();
   InitialPropagate();
+  solver()->CheckFail();
   UnfreezeQueue();
 }
 

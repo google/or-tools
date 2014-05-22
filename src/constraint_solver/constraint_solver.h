@@ -2883,6 +2883,10 @@ class Solver {
   // method returns expr, nullptr otherwise.
   IntExpr* CastExpression(const IntVar* const var) const;
 
+  // Support for swig.
+  void ShouldFail();
+  void CheckFail();
+
  private:
   void Init();  // Initialization. To be called by the constructors only.
   void PushState(MarkerType t, const StateInfo& info);
@@ -3021,6 +3025,7 @@ class Solver {
   std::unique_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
   int anonymous_variable_index_;
+  bool should_fail_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };

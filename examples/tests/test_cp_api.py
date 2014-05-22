@@ -64,7 +64,7 @@ def test_search_monitor():
   solver.Solve(db, monitor)
 
 
-class DemonTest(pywrapcp.Demon):
+class DemonTest(pywrapcp.PyDemon):
   def __init__(self, x):
     pywrapcp.Demon.__init__(self)
     self._x = x
@@ -74,7 +74,7 @@ class DemonTest(pywrapcp.Demon):
     print 'in Run(), saw ' + str(self._x)
 
 
-class ConstraintTest(pywrapcp.Constraint):
+class ConstraintTest(pywrapcp.PyConstraint):
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -91,6 +91,14 @@ class ConstraintTest(pywrapcp.Constraint):
     self._x.SetMin(5)
     print self._x
     print 'out of InitialPropagate()'
+
+class InitialPropagateDemon(pywrapcp.PyDemon):
+  def __init__(self, ct):
+    pywrapcp.Demon.__init__(self)
+    self._ct = ct
+
+  def Run(self, solver):
+    self._ct.InitialPropagate()
 
 
 def test_demon():
@@ -109,6 +117,32 @@ def test_constraint():
   solver.Solve(db)
 
 
+class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
+  def __init__(self, solver, x):
+    pywrapcp.Constraint.__init__(self, solver)
+    self._x = x
+
+  def Post(self):
+    self._demon = InitialPropagateDemon(self)
+    self._x.WhenBound(self._demon)
+
+  def InitialPropagate(self):
+    if self._x.Bound():
+      if self._x.Value() < 5:
+        print 'Reject %d' % self._x.Value()
+        self.solver().Fail()
+      else:
+        print 'Accept %d' % self._x.Value()
+
+
+def test_failing_constraint():
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  myct = DumbGreaterOrEqualToFive(solver, x)
+  solver.Add(myct)
+  db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  solver.Solve(db)
+
 
 def main():
   test_member()
@@ -119,6 +153,7 @@ def main():
   test_search_monitor()
   test_demon()
   test_constraint()
+  test_failing_constraint()
 
 
 if __name__ == '__main__':

@@ -260,21 +260,13 @@ gflags.DEFINE_boolean('cp_no_solve', False,
 gflags.DEFINE_string('cp_profile_file', '',
                      'exports profiling overview to file.')
 }
-%pythoncode {
-
-class PyDecisionBuilder(object):
-  def NextWrapper(self, solver):
-    result = None
-    try:
-      result = self.Next(solver)
-    except Exception:
-      return solver.FailDecision()
-    return result
-
-  def DebugString(self):
-    return "PyDecisionBuilder"
-}
 }  // namespace operations_research
+
+// Rename rules for directors
+%rename (InitialPropagateWrapper)
+    operations_research::Constraint::InitialPropagate;
+%rename (RunWrapper) operations_research::Demon::Run;
+
 
 // Rename rules on SolutionCollector.
 %rename (Branches) operations_research::SolutionCollector::branches;
@@ -1260,7 +1252,7 @@ struct FailureProtect {
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
 
-// Rename rule on DecisionBuilder;
+// Rename rule on directors;
 %rename (NextWrap) operations_research::DecisionBuilder::Next;
 
 // Rename rule on SearchLimit
@@ -2098,3 +2090,49 @@ namespace operations_research {
 typedef Assignment::AssignmentContainer AssignmentContainer;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 }
+
+#if defined(SWIGPYTHON)
+%pythoncode {
+class PyDecisionBuilder(object):
+  def NextWrapper(self, solver):
+    result = None
+    try:
+      result = self.Next(solver)
+    except Exception:
+      return solver.FailDecision()
+    return result
+
+  def DebugString(self):
+    return "PyDecisionBuilder"
+
+
+class PyConstraint(Constraint):
+  def __init__(self, solver):
+    pywrapcp.Constraint.__init__(self, solver)
+
+  def InitialPropagateWrapper(self):
+    try:
+      self.InitialPropagate()
+    except:
+      self.solver().ShouldFail()
+
+  def DebugString(self):
+    return "PyConstraint"
+
+
+class PyDemon(Demon):
+  def __init__(self):
+    pywrapcp.Demon.__init__(self)
+
+  def RunWrapper(self, solver):
+    try:
+      self.Run(solver)
+    except:
+      solver.ShouldFail()
+
+  def DebugString(self):
+    return "PyDemon"
+
+}
+#endif  // SWIGPYTHON
+
