@@ -42,6 +42,27 @@ def test_export():
   print repr(proto)
   print str(proto)
 
+class SearchMonitorTest(pywrapcp.SearchMonitor):
+  def __init__(self, solver, nexts):
+    pywrapcp.SearchMonitor.__init__(self, solver)
+    self._nexts = nexts
+
+  def BeginInitialPropagation(self):
+    print self._nexts
+
+  def EndInitialPropagation(self):
+    print self._nexts
+
+
+def test_search_monitor():
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  ct = (x == 3)
+  solver.Add(ct)
+  db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  monitor = SearchMonitorTest(solver, x)
+  solver.Solve(db, monitor)
+
 
 def main():
   test_member()
@@ -49,6 +70,7 @@ def main():
   test_modulo()
   test_limit()
   test_export()
+  test_search_monitor()
 
 
 if __name__ == '__main__':
