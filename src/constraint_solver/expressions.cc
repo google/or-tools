@@ -294,26 +294,11 @@ class DomainIntVar : public IntVar {
 
   // Bounds and Value watchers
 
+  // This class stores the watchers variables attached to values. It is
+  // reversible and it help maintaining the set of 'active' watchers
+  // (variables not bound to a single value).
   template <class T> class RevIntPtrMap {
    public:
-    class UninsertAction : public Action {
-     public:
-      UninsertAction(RevIntPtrMap<T>* map, int64 value) : map_(map), value_(value) {}
-      virtual ~UninsertAction() {}
-
-      virtual void Run(Solver* const s) {
-        map_->Uninsert(value_);
-      }
-
-      virtual std::string DebugString() const {
-        return "Uninsert";
-      }
-
-     private:
-      RevIntPtrMap<T>* const map_;
-      const int64 value_;
-    };
-
     RevIntPtrMap(Solver* const solver, int64 rmin, int64 rmax)
         : solver_(solver), range_min_(rmin), start_(0) {}
 
@@ -321,11 +306,14 @@ class DomainIntVar : public IntVar {
 
     bool Empty() const { return start_.Value() == elements_.size(); }
 
+    // Sort watchers by increasing watched value.
     void SortActive() {
       std::sort(elements_.begin() + start_.Value(), elements_.end());
     }
 
-    // Access with value.
+    // Access with value API.
+
+    // Add the pointer to the map attached to the given value..
     void UnsafeRevInsert(int64 value, T* elem) {
       elements_.push_back(std::make_pair(value, elem));
       if (solver_->state() != Solver::OUTSIDE_SEARCH) {
@@ -334,21 +322,7 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void Uninsert(int64 value) {
-      for (int pos = 0; pos < elements_.size(); ++pos) {
-        if (elements_[pos].first == value) {
-          DCHECK_GE(pos, start_.Value());
-          const int last = elements_.size() - 1;
-          if (pos != last) {  // Swap the current with the last.
-            elements_[pos] = elements_.back();
-          }
-          elements_.pop_back();
-          return;
-        }
-      }
-      LOG(FATAL) << "The element should have been removed";
-    }
-
+    // Find the pointed mapped to a value.
     T* FindPtrOrNull(int64 value, int* position) {
       for (int pos = start_.Value(); pos < elements_.size(); ++pos) {
         if (elements_[pos].first == value) {
@@ -385,9 +359,43 @@ class DomainIntVar : public IntVar {
 
     int start() const { return start_.Value(); }
     int end() const { return elements_.size(); }
+    // Number of active elements.
     int Size() const { return elements_.size() - start_.Value(); }
 
    private:
+    // If an object is added during search (root node, or tree search), we need
+    // to remove it when backtracking. We use a backtrack action for this.
+    class UninsertAction : public Action {
+     public:
+      UninsertAction(RevIntPtrMap<T>* map, int64 value)
+          : map_(map), value_(value) {}
+      virtual ~UninsertAction() {}
+
+      virtual void Run(Solver* const s) { map_->Uninsert(value_); }
+
+      virtual std::string DebugString() const { return "Uninsert"; }
+
+     private:
+      RevIntPtrMap<T>* const map_;
+      const int64 value_;
+    };
+
+    // Removes the object permanently from the map.
+    void Uninsert(int64 value) {
+      for (int pos = 0; pos < elements_.size(); ++pos) {
+        if (elements_[pos].first == value) {
+          DCHECK_GE(pos, start_.Value());
+          const int last = elements_.size() - 1;
+          if (pos != last) {  // Swap the current with the last.
+            elements_[pos] = elements_.back();
+          }
+          elements_.pop_back();
+          return;
+        }
+      }
+      LOG(FATAL) << "The element should have been removed";
+    }
+
     Solver* const solver_;
     const int64 range_min_;
     NumericalRev<int> start_;
@@ -432,14 +440,13 @@ class DomainIntVar : public IntVar {
           variable_(variable),
           hole_iterator_(variable_->MakeHoleIterator(true)),
           var_demon_(nullptr),
-          watchers_set_(solver, variable->Min(), variable->Max()) {}
+          watchers_(solver, variable->Min(), variable->Max()) {}
 
     virtual ~ValueWatcher() {}
 
     IntVar* GetOrMakeValueWatcher(int64 value) {
-      IntVar* const watcher = watchers_set_.FindPtrOrNull(value, nullptr);
+      IntVar* const watcher = watchers_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) return watcher;
-      IntVar* boolvar = nullptr;
       if (variable_->Contains(value)) {
         if (variable_->Bound()) {
           return solver()->MakeIntConst(1);
@@ -449,11 +456,12 @@ class DomainIntVar : public IntVar {
                                    : variable_->DebugString();
           const std::string bname = StringPrintf(
               "Watch<%s == %" GG_LL_FORMAT "d>", vname.c_str(), value);
-          boolvar = solver()->MakeBoolVar(bname);
-          watchers_set_.UnsafeRevInsert(value, boolvar);
+          IntVar* const boolvar = solver()->MakeBoolVar(bname);
+          watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
             boolvar->WhenBound(
                 solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+            var_demon_->desinhibit(solver());
           }
           return boolvar;
         }
@@ -463,12 +471,13 @@ class DomainIntVar : public IntVar {
     }
 
     void SetValueWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_set_.FindPtrOrNull(value, nullptr) == nullptr);
+      CHECK(watchers_.FindPtrOrNull(value, nullptr) == nullptr);
       if (!boolvar->Bound()) {
-        watchers_set_.UnsafeRevInsert(value, boolvar);
+        watchers_.UnsafeRevInsert(value, boolvar);
         if (posted_.Switched() && !boolvar->Bound()) {
           boolvar->WhenBound(
               solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+          var_demon_->desinhibit(solver());
         }
       }
     }
@@ -476,11 +485,11 @@ class DomainIntVar : public IntVar {
     virtual void Post() {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenDomain(var_demon_);
-      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         const int64 value = w.first;
         IntVar* const boolvar = w.second;
-        if (!boolvar->Bound()) {
+        if (!boolvar->Bound() && variable_->Contains(value)) {
           boolvar->WhenBound(
               solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
         }
@@ -492,18 +501,17 @@ class DomainIntVar : public IntVar {
       if (variable_->Bound()) {
         VariableBound();
       } else {
-        for (int pos = watchers_set_.start(); pos < watchers_set_.end();
-             ++pos) {
-          const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+        for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+          const std::pair<int64, IntVar*>& w = watchers_.At(pos);
           const int64 value = w.first;
           IntVar* const boolvar = w.second;
           if (!variable_->Contains(value)) {
             boolvar->SetValue(0);
-            watchers_set_.RemoveAt(pos);
+            watchers_.RemoveAt(pos);
           } else {
             if (boolvar->Bound()) {
               ProcessValueWatcher(value, boolvar);
-              watchers_set_.RemoveAt(pos);
+              watchers_.RemoveAt(pos);
             }
           }
         }
@@ -516,6 +524,7 @@ class DomainIntVar : public IntVar {
         if (variable_->Size() < 0xFFFFFF) {
           variable_->RemoveValue(value);
         } else {
+          // Delay removal.
           solver()->AddConstraint(solver()->MakeNonEquality(variable_, value));
         }
       } else {
@@ -526,7 +535,7 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       if (variable_->Bound()) {
         VariableBound();
-      } else if (watchers_set_.Size() <= 16) {
+      } else if (watchers_.Size() <= 16) {
         // brute force loop for small numbers of watchers.
         ScanWatchers();
         CheckInhibit();
@@ -537,18 +546,18 @@ class DomainIntVar : public IntVar {
         const int64 old_max = variable_->OldMax();
 
         if (old_min != min_domain || old_max != max_domain) {
-          watchers_set_.SortActive();
+          watchers_.SortActive();
         }
 
         // This loop keeps the active watchers sorted.
         if (old_min != min_domain) {
           // Set watchers below min_domain to 0.
-          while (!watchers_set_.Empty()) {
-            const int pos = watchers_set_.start();
-            const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+          while (!watchers_.Empty()) {
+            const int pos = watchers_.start();
+            const std::pair<int64, IntVar*>& w = watchers_.At(pos);
             if (w.first < min_domain) {
               w.second->SetValue(0);
-              watchers_set_.RemoveAt(pos);
+              watchers_.RemoveAt(pos);
             } else {
               break;
             }
@@ -559,20 +568,20 @@ class DomainIntVar : public IntVar {
           // Set watchers above max_domain to 0.
 
           // Find the first watcher above max domain.
-          int current = watchers_set_.end() - 1;
-          while (current >= watchers_set_.start()) {
-            if (watchers_set_.At(current).first > max_domain) {
+          int current = watchers_.end() - 1;
+          while (current >= watchers_.start()) {
+            if (watchers_.At(current).first > max_domain) {
               current--;
             } else {
               break;
             }
           }
           // Then erase them in order.
-          for (int pos = current + 1; pos < watchers_set_.end(); ++pos) {
-            const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+          for (int pos = current + 1; pos < watchers_.end(); ++pos) {
+            const std::pair<int64, IntVar*>& w = watchers_.At(pos);
             DCHECK_GT(w.first, max_domain);
             w.second->SetValue(0);
-            watchers_set_.RemoveAt(pos);
+            watchers_.RemoveAt(pos);
           }
         }
 
@@ -580,14 +589,14 @@ class DomainIntVar : public IntVar {
         // In that case, the two loops above should have performed all
         // propagation. Otherwise, scan the remaining watchers.
         BitSet* const bitset = variable_->bitset();
-        if (bitset != nullptr && !watchers_set_.Empty()) {
-          if (bitset->NumHoles() * 2 < watchers_set_.Size()) {
+        if (bitset != nullptr && !watchers_.Empty()) {
+          if (bitset->NumHoles() * 2 < watchers_.Size()) {
             for (const int64 hole : InitAndGetValues(hole_iterator_)) {
               int pos = 0;
-              IntVar* const boolvar = watchers_set_.FindPtrOrNull(hole, &pos);
+              IntVar* const boolvar = watchers_.FindPtrOrNull(hole, &pos);
               if (boolvar != nullptr) {
                 boolvar->SetValue(0);
-                watchers_set_.RemoveAt(pos);
+                watchers_.RemoveAt(pos);
               }
             }
           } else {
@@ -602,28 +611,30 @@ class DomainIntVar : public IntVar {
     void VariableBound() {
       DCHECK(variable_->Bound());
       const int64 value = variable_->Min();
-      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         w.second->SetValue(w.first == value);
       }
-      watchers_set_.RemoveAll();
+      watchers_.RemoveAll();
       var_demon_->inhibit(solver());
     }
 
-    // Fast scan of the watchers to check and assign them.
+    // Scans all the watchers to check and assign them.
     void ScanWatchers() {
-      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         if (!variable_->Contains(w.first)) {
           IntVar* const boolvar = w.second;
           boolvar->SetValue(0);
-          watchers_set_.RemoveAt(pos);
+          watchers_.RemoveAt(pos);
         }
       }
     }
 
+    // If the set of active watchers is empty, we can inhibit the demon on the
+    // main variable.
     void CheckInhibit() {
-      if (watchers_set_.Empty()) {
+      if (watchers_.Empty()) {
         var_demon_->inhibit(solver());
       }
     }
@@ -634,9 +645,9 @@ class DomainIntVar : public IntVar {
                                               variable_);
       std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
-      for (int position = watchers_set_.start(); position < watchers_set_.end();
+      for (int position = watchers_.start(); position < watchers_.end();
            ++position) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+        const std::pair<int64, IntVar*>& w = watchers_.At(position);
         all_coefficients.push_back(w.first);
         all_bool_vars.push_back(w.second);
       }
@@ -656,7 +667,7 @@ class DomainIntVar : public IntVar {
     IntVarIterator* const hole_iterator_;
     RevSwitch posted_;
     Demon* var_demon_;
-    RevIntPtrMap<IntVar> watchers_set_;
+    RevIntPtrMap<IntVar> watchers_;
   };
 
   // This class watches the bounds of the variable and updates the
@@ -696,12 +707,12 @@ class DomainIntVar : public IntVar {
         : Constraint(solver),
           variable_(variable),
           var_demon_(nullptr),
-          watchers_set_(solver, variable->Min(), variable->Max()) {}
+          watchers_(solver, variable->Min(), variable->Max()) {}
 
     virtual ~BoundWatcher() {}
 
     IntVar* GetOrMakeBoundWatcher(int64 value) {
-      IntVar* const watcher = watchers_set_.FindPtrOrNull(value, nullptr);
+      IntVar* const watcher = watchers_.FindPtrOrNull(value, nullptr);
       if (watcher != nullptr) {
         return watcher;
       }
@@ -715,10 +726,11 @@ class DomainIntVar : public IntVar {
           const std::string bname = StringPrintf(
               "Watch<%s >= %" GG_LL_FORMAT "d>", vname.c_str(), value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
-          watchers_set_.UnsafeRevInsert(value, boolvar);
+          watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
             boolvar->WhenBound(
                 solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+            var_demon_->desinhibit(solver());
           }
           return boolvar;
         }
@@ -728,11 +740,12 @@ class DomainIntVar : public IntVar {
     }
 
     void SetBoundWatcher(IntVar* const boolvar, int64 value) {
-      CHECK(watchers_set_.FindPtrOrNull(value, nullptr) == nullptr);
-      watchers_set_.UnsafeRevInsert(value, boolvar);
+      CHECK(watchers_.FindPtrOrNull(value, nullptr) == nullptr);
+      watchers_.UnsafeRevInsert(value, boolvar);
       if (posted_.Switched() && !boolvar->Bound()) {
         boolvar->WhenBound(
             solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
+        var_demon_->desinhibit(solver());
       }
     }
 
@@ -740,11 +753,12 @@ class DomainIntVar : public IntVar {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenRange(var_demon_);
 
-      for (int pos = watchers_set_.start(); pos < watchers_set_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         IntVar* const boolvar = w.second;
         const int64 value = w.first;
-        if (!boolvar->Bound() && variable_->Contains(value)) {
+        if (!boolvar->Bound() && value > variable_->Min() &&
+            value <= variable_->Max()) {
           boolvar->WhenBound(
               solver()->RevAlloc(new WatchDemon(this, value, boolvar)));
         }
@@ -753,24 +767,20 @@ class DomainIntVar : public IntVar {
     }
 
     virtual void InitialPropagate() {
-      for (int position = watchers_set_.start(); position < watchers_set_.end();
-           ++position) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
-        IntVar* const boolvar = w.second;
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         const int64 value = w.first;
+        IntVar* const boolvar = w.second;
+
         if (value <= variable_->Min()) {
           boolvar->SetValue(1);
-          watchers_set_.RemoveAt(position);
+          watchers_.RemoveAt(pos);
         } else if (value > variable_->Max()) {
           boolvar->SetValue(0);
-          watchers_set_.RemoveAt(position);
+          watchers_.RemoveAt(pos);
         } else if (boolvar->Bound()) {
-          if (boolvar->Min() == 0) {
-            variable_->SetMax(value - 1);
-          } else {
-            variable_->SetMin(value);
-          }
-          watchers_set_.RemoveAt(position);
+          ProcessBoundWatcher(value, boolvar);
+          watchers_.RemoveAt(pos);
         }
       }
     }
@@ -781,9 +791,8 @@ class DomainIntVar : public IntVar {
                                               variable_);
       std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
-      for (int position = watchers_set_.start(); position < watchers_set_.end();
-           ++position) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         all_coefficients.push_back(w.first);
         all_bool_vars.push_back(w.second);
       }
@@ -810,35 +819,34 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       const int64 min_domain = variable_->Min();
       const int64 max_domain = variable_->Max();
-      watchers_set_.SortActive();
+      watchers_.SortActive();
       // This loop keeps the active watchers sorted.
-      while (!watchers_set_.Empty()) {
-        const int position = watchers_set_.start();
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(position);
+      while (!watchers_.Empty()) {
+        const int pos = watchers_.start();
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         if (w.first <= min_domain) {
           w.second->SetValue(1);
-          watchers_set_.RemoveAt(position);
+          watchers_.RemoveAt(pos);
         } else {
           break;
         }
       }
 
-      int current = watchers_set_.end() - 1;
-      while (current >= watchers_set_.start()) {
-        if (watchers_set_.At(current).first > max_domain) {
+      int current = watchers_.end() - 1;
+      while (current >= watchers_.start()) {
+        if (watchers_.At(current).first > max_domain) {
           current--;
         } else {
           break;
         }
       }
 
-      for (int pos = current + 1; pos < watchers_set_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_set_.At(pos);
-        CHECK_GT(w.first, max_domain);
+      for (int pos = current + 1; pos < watchers_.end(); ++pos) {
+        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
         w.second->SetValue(0);
-        watchers_set_.RemoveAt(pos);
+        watchers_.RemoveAt(pos);
       }
-      if (watchers_set_.Empty()) {
+      if (watchers_.Empty()) {
         var_demon_->inhibit(solver());
       }
     }
@@ -846,7 +854,7 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const variable_;
     RevSwitch posted_;
     Demon* var_demon_;
-    RevIntPtrMap<IntVar> watchers_set_;
+    RevIntPtrMap<IntVar> watchers_;
   };
 
   // ----- Main Class -----
