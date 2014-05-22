@@ -17,6 +17,7 @@
 %include util/util.swig
 
 #ifdef SWIGPYTHON
+%module(directors="1") operations_research
 // We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
 // the recommended replacement $descriptor(...) is only available within
 // SWIG code.
@@ -958,6 +959,8 @@ static void SetPythonFlags(bool trace_propagation,
     return self->Size();
   }
 }
+%feature("director") SearchMonitor;
+%feature("director") Constraint;
 }  // namespace operations_research
 #endif  // SWIGPYTHON
 
