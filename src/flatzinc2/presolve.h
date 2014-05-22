@@ -116,6 +116,7 @@ class FzPresolver {
   bool RemoveAbsFromIntLinReif(FzConstraint* ct);
   bool SimplifyUnaryLinear(FzConstraint* ct);
   bool CheckIntLinReifBounds(FzConstraint* ct);
+  bool MergeAffineVariables(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);

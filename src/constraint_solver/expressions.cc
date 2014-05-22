@@ -770,8 +770,6 @@ class DomainIntVar : public IntVar {
     virtual void Post() {
       var_demon_ = solver()->RevAlloc(new VarDemon(this));
       variable_->WhenDomain(var_demon_);
-      const int64 var_min = variable_->Min();
-      const int64 var_max = variable_->Max();
       for (int pos = 0; pos < watchers_.size(); ++pos) {
         const int64 value = pos + offset_;
         IntVar* const boolvar = watchers_[pos];
@@ -789,9 +787,9 @@ class DomainIntVar : public IntVar {
         VariableBound();
       } else {
         for (int pos = 0; pos < watchers_.size(); ++pos) {
-          const int64 value = pos + offset_;
           IntVar* const boolvar = watchers_[pos];
           if (boolvar == nullptr) continue;
+          const int64 value = pos + offset_;
           if (!variable_->Contains(value)) {
             boolvar->SetValue(0);
             RevRemove(pos);

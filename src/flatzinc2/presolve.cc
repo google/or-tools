@@ -463,6 +463,20 @@ bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::MergeAffineVariables(FzConstraint* ct) {
+  if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == -1 &&
+      ct->target_variable == nullptr &&
+      ct->Arg(1).variables[0]->defining_constraint == nullptr) {
+    FZVLOG << "Mark first variable of " << ct->DebugString() << " as target"
+           << FZENDL;
+    FzIntegerVariable* const var = ct->Arg(1).variables[0];
+    var->defining_constraint = ct;
+    ct->target_variable = var;
+    return true;
+  }
+  return false;
+}
+
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
@@ -938,6 +952,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_lin_eq" || id == "int_lin_le") {
     changed |= PresolvePropagatePositiveLinear(ct);
+  }
+  if (id == "int_lin_eq") {
+    changed |= MergeAffineVariables(ct);
   }
   if (id == "int_lin_eq") changed |= PresolveStoreMapping(ct);
   if (id == "int_lin_eq_reif") changed |= CheckIntLinReifBounds(ct);
