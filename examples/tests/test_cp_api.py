@@ -92,14 +92,6 @@ class ConstraintTest(pywrapcp.PyConstraint):
     print self._x
     print 'out of InitialPropagate()'
 
-class InitialPropagateDemon(pywrapcp.PyDemon):
-  def __init__(self, ct):
-    pywrapcp.Demon.__init__(self)
-    self._ct = ct
-
-  def Run(self, solver):
-    self._ct.InitialPropagate()
-
 
 def test_demon():
   solver = pywrapcp.Solver('test export')
@@ -115,6 +107,15 @@ def test_constraint():
   solver.Add(myct)
   db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
   solver.Solve(db)
+
+
+class InitialPropagateDemon(pywrapcp.PyDemon):
+  def __init__(self, ct):
+    pywrapcp.Demon.__init__(self)
+    self._ct = ct
+
+  def Run(self, solver):
+    self._ct.InitialPropagate()
 
 
 class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
