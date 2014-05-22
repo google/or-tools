@@ -42,6 +42,7 @@ def test_export():
   print repr(proto)
   print str(proto)
 
+
 class SearchMonitorTest(pywrapcp.SearchMonitor):
   def __init__(self, solver, nexts):
     pywrapcp.SearchMonitor.__init__(self, solver)
@@ -74,6 +75,13 @@ class DemonTest(pywrapcp.PyDemon):
     print 'in Run(), saw ' + str(self._x)
 
 
+def test_demon():
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  demon = DemonTest(x)
+  demon.Run(solver)
+
+
 class ConstraintTest(pywrapcp.PyConstraint):
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
@@ -91,13 +99,6 @@ class ConstraintTest(pywrapcp.PyConstraint):
     self._x.SetMin(5)
     print self._x
     print 'out of InitialPropagate()'
-
-
-def test_demon():
-  solver = pywrapcp.Solver('test export')
-  x = solver.IntVar(1, 10, 'x')
-  demon = DemonTest(x)
-  demon.Run(solver)
 
 
 def test_constraint():
@@ -153,8 +154,8 @@ def main():
   test_export()
   test_search_monitor()
   test_demon()
-  test_constraint()
   test_failing_constraint()
+  test_constraint()
 
 
 if __name__ == '__main__':
