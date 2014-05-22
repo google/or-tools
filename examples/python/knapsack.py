@@ -15,7 +15,6 @@
 """Bi-dimensional knapsack problem."""
 
 
-
 from google.apputils import app
 import gflags
 from ortools.algorithms import pywrapknapsack_solver

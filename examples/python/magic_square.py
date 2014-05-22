@@ -19,88 +19,88 @@
   Magic square problem.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import string, sys
+import string
+import sys
 from ortools.constraint_solver import pywrapcp
 
 
 def main(n=4):
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    #
-    # declare variables
-    #
-    x = {}
+  #
+  # declare variables
+  #
+  x = {}
+  for i in range(n):
+    for j in range(n):
+      x[(i, j)] = solver.IntVar(1, n * n, "x(%i,%i)" % (i, j))
+  x_flat = [x[(i, j)] for i in range(n) for j in range(n)]
+
+  # the sum
+  # s = ( n * (n*n + 1)) / 2
+  s = solver.IntVar(1, n * n * n, "s")
+
+  #
+  # constraints
+  #
+  # solver.Add(s == ( n * (n*n + 1)) / 2)
+
+  solver.Add(solver.AllDifferent(x_flat))
+
+  [solver.Add(solver.Sum([x[(i, j)] for j in range(n)]) == s) for i in range(n)]
+  [solver.Add(solver.Sum([x[(i, j)] for i in range(n)]) == s) for j in range(n)]
+
+  solver.Add(solver.Sum([x[(i, i)] for i in range(n)]) == s)  # diag 1
+  solver.Add(solver.Sum([x[(i, n - i - 1)] for i in range(n)]) == s)  # diag 2
+
+  # symmetry breaking
+  # solver.Add(x[(0,0)] == 1)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x_flat)
+  solution.Add(s)
+
+  # db: DecisionBuilder
+  db = solver.Phase(x_flat,
+                    # solver.INT_VAR_DEFAULT,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    # solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+
+                    # solver.ASSIGN_MIN_VALUE
+                    solver.ASSIGN_CENTER_VALUE)
+
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "s:", s.Value()
     for i in range(n):
-        for j in range(n):
-            x[(i, j)] = solver.IntVar(1, n*n, 'x(%i,%i)' % (i, j))
-    x_flat = [x[(i,j)] for i in range(n) for j in range(n)]
-
-    # the sum
-    # s = ( n * (n*n + 1)) / 2
-    s = solver.IntVar(1, n*n*n,'s')
-
-
-    #
-    # constraints
-    #
-    # solver.Add(s == ( n * (n*n + 1)) / 2)
-
-    solver.Add(solver.AllDifferent(x_flat))
-
-    [solver.Add(solver.Sum([x[(i,j)] for j in range(n)]) == s) for i in range(n)]
-    [solver.Add(solver.Sum([x[(i,j)] for i in range(n)]) == s) for j in range(n)]
-
-    solver.Add(solver.Sum([ x[(i,i)]     for i in range(n)]) == s) # diag 1
-    solver.Add(solver.Sum([ x[(i,n-i-1)] for i in range(n)]) == s) # diag 2
-
-    # symmetry breaking
-    # solver.Add(x[(0,0)] == 1)
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x_flat)
-    solution.Add(s)
-
-    # db: DecisionBuilder
-    db = solver.Phase(x_flat,
-                      #solver.INT_VAR_DEFAULT,
-                      solver.CHOOSE_FIRST_UNBOUND,
-                      #solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-
-                      solver.ASSIGN_CENTER_VALUE
-                      #solver.ASSIGN_MIN_VALUE
-                      )
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "s:", s.Value()
-        for i in range(n):
-            for j in range(n):
-                print "%2i" % x[(i,j)].Value(),
-            print
-
-        print
-        num_solutions += 1
-    solver.EndSearch()
+      for j in range(n):
+        print "%2i" % x[(i, j)].Value(),
+      print
 
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 n = 4
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
-    main(n)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+  main(n)

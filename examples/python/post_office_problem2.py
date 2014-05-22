@@ -51,7 +51,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -59,76 +60,73 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Post office problem')
+  # Create the solver.
+  solver = pywrapcp.Solver('Post office problem')
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    # days 0..6, monday 0
-    n = 7
-    days = range(n)
-    need = [17, 13, 15, 19, 14, 16, 11]
+  # days 0..6, monday 0
+  n = 7
+  days = range(n)
+  need = [17, 13, 15, 19, 14, 16, 11]
 
-    # Total cost for the 5 day schedule.
-    # Base cost per day is 100.
-    # Working saturday is 100 extra
-    # Working sunday is 200 extra.
-    cost = [500, 600, 800, 800, 800, 800, 700]
+  # Total cost for the 5 day schedule.
+  # Base cost per day is 100.
+  # Working saturday is 100 extra
+  # Working sunday is 200 extra.
+  cost = [500, 600, 800, 800, 800, 800, 700]
 
+  #
+  # variables
+  #
 
-    #
-    # variables
-    #
+  # No. of workers starting at day i
+  x = [solver.IntVar(0, 100, 'x[%i]' % i) for i in days]
 
-    # No. of workers starting at day i
-    x = [solver.IntVar(0, 100, 'x[%i]'%i) for i in days]
+  total_cost = solver.IntVar(0, 20000, 'total_cost')
+  num_workers = solver.IntVar(0, 100, 'num_workers')
 
-    total_cost = solver.IntVar(0, 20000, 'total_cost')
-    num_workers = solver.IntVar(0, 100, 'num_workers')
+  #
+  # constraints
+  #
+  solver.Add(total_cost == solver.ScalProd(x, cost))
+  solver.Add(num_workers == solver.Sum(x))
 
-    #
-    # constraints
-    #
-    solver.Add(total_cost == solver.ScalProd(x, cost))
-    solver.Add(num_workers == solver.Sum(x))
+  for i in days:
+    s = solver.Sum([x[j] for j in days
+                    if j != (i + 5) % n and j != (i + 6) % n])
+    solver.Add(s >= need[i])
 
-    for i in days:
-        s = solver.Sum([x[j] for j in days
-                        if j != (i+5) % n and j != (i+6) % n])
-        solver.Add(s >= need[i])
+  # objective
+  objective = solver.Minimize(total_cost, 1)
 
-    # objective
-    objective = solver.Minimize(total_cost, 1)
+  #
+  # search and result
+  #
+  db = solver.Phase(x,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_MIN_VALUE)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(x,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                      solver.ASSIGN_MIN_VALUE
-                      )
+  solver.NewSearch(db, [objective])
 
-    solver.NewSearch(db, [objective])
+  num_solutions = 0
 
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'num_workers:', num_workers.Value()
+    print 'total_cost:', total_cost.Value()
+    print 'x:', [x[i].Value() for i in days]
 
-    num_solutions = 0
+  solver.EndSearch()
 
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'num_workers:', num_workers.Value()
-        print 'total_cost:', total_cost.Value()
-        print 'x:', [x[i].Value() for i in days]
-
-    solver.EndSearch()
-
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime()
 
 
 if __name__ == '__main__':
-    main()
+  main()

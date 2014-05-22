@@ -48,10 +48,12 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
-import string, sys
+import string
+import sys
 
 from ortools.constraint_solver import pywrapcp
 
@@ -65,114 +67,115 @@ from ortools.constraint_solver import pywrapcp
 # The ECLiPSe source code:
 # http://www.hakank.org/eclipse/modulo_propagator.ecl
 #
+
+
 def my_mod(solver, x, y, r):
 
-    if not isinstance(y, int):
-        solver.Add(y != 0)
+  if not isinstance(y, int):
+    solver.Add(y != 0)
 
-    lbx = x.Min()
-    ubx = x.Max()
-    ubx_neg = -ubx
-    lbx_neg = -lbx
-    min_x = min(lbx, ubx_neg)
-    max_x = max(ubx, lbx_neg)
+  lbx = x.Min()
+  ubx = x.Max()
+  ubx_neg = -ubx
+  lbx_neg = -lbx
+  min_x = min(lbx, ubx_neg)
+  max_x = max(ubx, lbx_neg)
 
-    d = solver.IntVar(max(0,min_x), max_x, 'd')
+  d = solver.IntVar(max(0, min_x), max_x, "d")
 
-    if not isinstance(r, int):
-        solver.Add(r >= 0)
-        solver.Add(x*r >= 0)
+  if not isinstance(r, int):
+    solver.Add(r >= 0)
+    solver.Add(x * r >= 0)
 
-    if not isinstance(r, int) and not isinstance(r, int):
-        solver.Add(-abs(y) < r)
-        solver.Add(r < abs(y))
+  if not isinstance(r, int) and not isinstance(r, int):
+    solver.Add(-abs(y) < r)
+    solver.Add(r < abs(y))
 
-    solver.Add(min_x <= d)
-    solver.Add(d <= max_x)
-    solver.Add(x == y*d+r)
+  solver.Add(min_x <= d)
+  solver.Add(d <= max_x)
+  solver.Add(x == y * d + r)
 
 
 #
 # converts a number (s) <-> an array of integers (t) in the specific base.
 #
 def toNum(solver, t, s, base):
-    tlen = len(t)
-    solver.Add(s == solver.Sum([(base**(tlen-i-1))*t[i] for i in range(tlen)]))
+  tlen = len(t)
+  solver.Add(
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Divisible by 9 through 1')
+  # Create the solver.
+  solver = pywrapcp.Solver("Divisible by 9 through 1")
 
-    # data
-    m = base**(base-1)-1
-    n = base - 1
+  # data
+  m = base ** (base - 1) - 1
+  n = base - 1
 
-    digits_str = "_0123456789ABCDEFGH"
+  digits_str = "_0123456789ABCDEFGH"
 
-    print "base:", base
+  print "base:", base
 
-    # declare variables
+  # declare variables
 
-    # the digits
-    x = [solver.IntVar(1, base-1, 'x[%i]' % i) for i in range(n)]
+  # the digits
+  x = [solver.IntVar(1, base - 1, "x[%i]" % i) for i in range(n)]
 
-    # the numbers, t[0] contains the answer
-    t = [solver.IntVar(0, m, 't[%i]' % i) for i in range(n)]
+  # the numbers, t[0] contains the answer
+  t = [solver.IntVar(0, m, "t[%i]" % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
 
-    for i in range(n):
-        mm = base-i-1
-        toNum(solver, [x[j] for j in range(mm)], t[i], base)
-        my_mod(solver, t[i], mm, 0)
+  for i in range(n):
+    mm = base - i - 1
+    toNum(solver, [x[j] for j in range(mm)], t[i], base)
+    my_mod(solver, t[i], mm, 0)
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(t)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(t)
+  db = solver.Phase(x,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
 
-    db = solver.Phase(x,
-                      solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "x: ", [x[i].Value() for i in range(n)]
+    print "t: ", [t[i].Value() for i in range(n)]
+    print "number base 10: %i base %i: %s" % (t[0].Value(),
+                                              base,
+                                              "".join([digits_str[x[i].Value() + 1] for i in range(n)]))
+    print
+    num_solutions += 1
+  solver.EndSearch()
 
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "x: ", [x[i].Value() for i in range(n)]
-        print "t: ", [t[i].Value() for i in range(n)]
-        print "number base 10: %i base %i: %s" % (t[0].Value(),\
-                                base,
-                                "".join([digits_str[x[i].Value()+1] for i in range(n)]))
-        print
-        num_solutions += 1
-    solver.EndSearch()
-
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 base = 10
 default_base = 10
 max_base = 16
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        base = string.atoi(sys.argv[1])
-        if base > max_base:
-            print "Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base)
-            base = default_base
-    main(base)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    base = string.atoi(sys.argv[1])
+    if base > max_base:
+      print "Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base)
+      base = default_base
+  main(base)
 
-    # for base in range(2, 17):
-    #     print
-    #     main(base)
+  # for base in range(2, 17):
+  #     print
+  #     main(base)

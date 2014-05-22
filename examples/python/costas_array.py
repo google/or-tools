@@ -41,10 +41,10 @@
   the array, e.g. those listed in
   http://mathworld.wolfram.com/CostasArray.html
 
-  1	1	(1)
-  2	2	(1, 2), (2,1)
-  3	4	(1, 3, 2), (2, 1, 3), (2, 3, 1), (3, 1, 2)
-  4	12	(1, 2, 4, 3), (1, 3, 4, 2), (1, 4, 2, 3), (2, 1, 3, 4),
+  1     1       (1)
+  2     2       (1, 2), (2,1)
+  3     4       (1, 3, 2), (2, 1, 3), (2, 3, 1), (3, 1, 2)
+  4     12      (1, 2, 4, 3), (1, 3, 4, 2), (1, 4, 2, 3), (2, 1, 3, 4),
                 (2, 3, 1, 4), (2, 4, 3, 1), (3, 1, 2, 4), (3, 2, 4, 1),
                 (3, 4, 2, 1), (4, 1, 3, 2), (4, 2, 1, 3), (4, 3, 1, 2)
   ....
@@ -57,7 +57,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 import string
@@ -67,109 +68,105 @@ from ortools.constraint_solver import pywrapcp
 
 def main(n=6):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Costas array')
+  # Create the solver.
+  solver = pywrapcp.Solver("Costas array")
 
-    #
-    # data
-    #
-    print "n:", n
+  #
+  # data
+  #
+  print "n:", n
 
-    #
-    # declare variables
-    #
-    costas = [solver.IntVar(1, n, "costas[%i]"%i) for i in range(n)]
-    differences = {}
+  #
+  # declare variables
+  #
+  costas = [solver.IntVar(1, n, "costas[%i]" % i) for i in range(n)]
+  differences = {}
+  for i in range(n):
+    for j in range(n):
+      differences[(i, j)] = solver.IntVar(-n + 1, n - 1,
+                                          "differences[%i,%i]" % (i, j))
+  differences_flat = [differences[i, j] for i in range(n) for j in range(n)]
+
+  #
+  # constraints
+  #
+
+  # Fix the values in the lower triangle in the
+  # difference matrix to -n+1. This removes variants
+  # of the difference matrix for the the same Costas array.
+  for i in range(n):
+    for j in range(i + 1):
+      solver.Add(differences[i, j] == -n + 1)
+
+  # hakank: All the following constraints are from
+  # Barry O'Sullivans's original model.
+  #
+  solver.Add(solver.AllDifferent(costas))
+
+  # "How do the positions in the Costas array relate
+  #  to the elements of the distance triangle."
+  for i in range(n):
+    for j in range(n):
+      if i < j:
+        solver.Add(differences[(i, j)] == costas[j] - costas[j - i - 1])
+
+  # "All entries in a particular row of the difference
+  #  triangle must be distint."
+  for i in range(n - 2):
+    solver.Add(solver.AllDifferent([differences[i, j]
+                                    for j in range(n) if j > i]))
+
+  #
+  # "All the following are redundant - only here to speed up search."
+  #
+
+  # "We can never place a 'token' in the same row as any other."
+  for i in range(n):
+    for j in range(n):
+      if i < j:
+        solver.Add(differences[i, j] != 0)
+
+  for k in range(2, n):
+    for l in range(2, n):
+      if k < l:
+        solver.Add(differences[k - 2, l - 1] +
+                   differences[k, l] ==
+                   differences[k - 1, l - 1] +
+                   differences[k - 1, l])
+
+  #
+  # search and result
+  #
+  db = solver.Phase(costas + differences_flat,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "costas:", [costas[i].Value() for i in range(n)]
+    print "differences:"
     for i in range(n):
-        for j in range(n):
-            differences[(i,j)] = solver.IntVar(-n+1, n-1,
-                                               "differences[%i,%i]"%(i,j))
-    differences_flat = [differences[i,j] for i in range(n) for j in range(n) ]
-
-    #
-    # constraints
-    #
-
-    # Fix the values in the lower triangle in the
-    # difference matrix to -n+1. This removes variants
-    # of the difference matrix for the the same Costas array.
-    for i in range(n):
-        for j in range(i+1):
-            solver.Add(differences[i,j] == -n+1)
-
-    # hakank: All the following constraints are from
-    # Barry O'Sullivans's original model.
-    #
-    solver.Add(solver.AllDifferent(costas))
-
-
-    # "How do the positions in the Costas array relate
-    #  to the elements of the distance triangle."
-    for i in range(n):
-        for j in range(n):
-            if i < j:
-                solver.Add(differences[(i,j)] == costas[j] - costas[j-i-1])
-
-
-    # "All entries in a particular row of the difference
-    #  triangle must be distint."
-    for i in range(n-2):
-          solver.Add(solver.AllDifferent([differences[i,j]
-                                          for j in range(n) if j > i]))
-
-    #
-    # "All the following are redundant - only here to speed up search."
-    #
-
-    # "We can never place a 'token' in the same row as any other."
-    for i in range(n):
-           for j in range(n):
-               if i < j:
-                   solver.Add(differences[i,j] != 0)
-
-
-    for k in range(2,n):
-        for l in range(2, n):
-            if k < l:
-                solver.Add(differences[k-2,l-1] +
-                           differences[k,l]     ==
-                           differences[k-1,l-1] +
-                           differences[k-1,l])
-
-
-    #
-    # search and result
-    #
-    db = solver.Phase(costas + differences_flat,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MIN_VALUE)
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "costas:", [costas[i].Value() for i in range(n)]
-        print "differences:"
-        for i in range(n):
-            for j in range(n):
-                v = differences[i,j].Value()
-                if v == -n+1:
-                    print "  ",
-                else:
-                    print "%2d" % v,
-            print
-        print
-        num_solutions += 1
-
-    solver.EndSearch()
-
+      for j in range(n):
+        v = differences[i, j].Value()
+        if v == -n + 1:
+          print "  ",
+        else:
+          print "%2d" % v,
+      print
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 n = 6
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
-    main(n)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+  main(n)

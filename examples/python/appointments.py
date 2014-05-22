@@ -84,7 +84,7 @@ def Select(combinations, loads, max_number_of_workers):
   # Simple bound.
   solver.Add(solver.Sum(variables) <= max_number_of_workers)
 
-  obj_vars = [solver.IntVar(0, 1000, 'obj_vars[%d]' %i)
+  obj_vars = [solver.IntVar(0, 1000, 'obj_vars[%d]' % i)
               for i in range(num_vars)]
   for i in range(num_vars):
     solver.Add(obj_vars[i] >= achieved[i] - loads[i])

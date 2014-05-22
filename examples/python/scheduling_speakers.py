@@ -26,7 +26,8 @@
   * Gecode: http://hakank.org/gecode/scheduling_speakers.cpp
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -34,64 +35,61 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Scheduling speakers')
+  # Create the solver.
+  solver = pywrapcp.Solver('Scheduling speakers')
 
-    #
-    # data
-    #
-    n = 6 # number of speakers
+  #
+  # data
+  #
+  n = 6  # number of speakers
 
-    # slots available to speak
-    available = [
-                      # Reasoning:
-        [3,4,5,6],    # 2) the only one with 6 after speaker F -> 1
-        [3,4],        # 5) 3 or 4
-        [2,3,4,5],    # 3) only with 5 after F -> 1 and A -> 6
-        [2,3,4],      # 4) only with 2 after C -> 5 and F -> 1
-        [3,4],        # 5) 3 or 4
-        [1,2,3,4,5,6] # 1) the only with 1
-        ]
+  # slots available to speak
+  available = [
+      # Reasoning:
+      [3, 4, 5, 6],    # 2) the only one with 6 after speaker F -> 1
+      [3, 4],        # 5) 3 or 4
+      [2, 3, 4, 5],    # 3) only with 5 after F -> 1 and A -> 6
+      [2, 3, 4],      # 4) only with 2 after C -> 5 and F -> 1
+      [3, 4],        # 5) 3 or 4
+      [1, 2, 3, 4, 5, 6]  # 1) the only with 1
+  ]
 
-    #
-    # variables
-    #
-    x = [solver.IntVar(1, n, 'x[%i]'%i) for i in range(n)]
+  #
+  # variables
+  #
+  x = [solver.IntVar(1, n, 'x[%i]' % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
 
-    for i in range(n):
-        solver.Add(solver.MemberCt(x[i], available[i]))
+  for i in range(n):
+    solver.Add(solver.MemberCt(x[i], available[i]))
 
+  #
+  # search and result
+  #
+  db = solver.Phase(x,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(x,
-                      solver.INT_VAR_DEFAULT,
-                      solver.INT_VALUE_DEFAULT
-                      )
+  solver.NewSearch(db)
 
-    solver.NewSearch(db)
+  num_solutions = 0
 
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'x:', [x[i].Value() for i in range(n)]
 
-    num_solutions = 0
+  solver.EndSearch()
 
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'x:', [x[i].Value() for i in range(n)]
-
-    solver.EndSearch()
-
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

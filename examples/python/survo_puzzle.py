@@ -23,7 +23,8 @@
   Survo system which is a general environment for statistical computing and
   related areas.
 
-  In a Survo puzzle the task is to fill an m * n table by integers 1,2,...,m*n so
+  In a Survo puzzle the task is to fill an m * n table by integers 1,2,...,m*n
+  so
   that each of these numbers appears only once and their row and column sums are
   equal to integers given on the bottom and the right side of the table.
   Often some of the integers are given readily in the table in order to
@@ -56,7 +57,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -65,115 +67,113 @@ from ortools.constraint_solver import pywrapcp
 
 def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Survo puzzle')
+  # Create the solver.
+  solver = pywrapcp.Solver("Survo puzzle")
 
-    #
-    # data
-    #
-    if r == 0:
-        r = 3
-        c = 4
-        rowsums = [30,18,30]
-        colsums = [27,16,10,25]
-        game = [[0, 6, 0, 0],
-                [8, 0, 0, 0],
-                [0, 0, 3, 0]]
+  #
+  # data
+  #
+  if r == 0:
+    r = 3
+    c = 4
+    rowsums = [30, 18, 30]
+    colsums = [27, 16, 10, 25]
+    game = [[0, 6, 0, 0],
+            [8, 0, 0, 0],
+            [0, 0, 3, 0]]
 
-    print "r:", r, "c:",c
+  print "r:", r, "c:", c
 
-
-    # declare variables
-    x = {}
-    for i in range(r):
-        for j in range(c):
-            x[(i,j)] = solver.IntVar(1,r*c, 'x %i %i' % (i, j))
-
-    #
-    # constraints
-    #
-
-    #
-    # set the clues
-    #
-    for i in range(r):
-        for j in range(c):
-            if game[i][j] > 0:
-                solver.Add(x[i,j] == game[i][j])
-
-
-    xflat = [x[(i,j)] for i in range(r) for j in range(c)]
-    solver.Add(solver.AllDifferent(xflat))
-    #
-    # calculate rowsums and colsums
-    #
-    for i in range(r):
-        solver.Add(rowsums[i] == solver.Sum([x[i,j] for j in range(c)]))
-
+  # declare variables
+  x = {}
+  for i in range(r):
     for j in range(c):
-        solver.Add(colsums[j] == solver.Sum([x[i,j] for i in range(r)]))
+      x[(i, j)] = solver.IntVar(1, r * c, "x %i %i" % (i, j))
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([x[(i,j)] for i in range(r) for j in range(c)])
+  #
+  # constraints
+  #
 
-    collector = solver.AllSolutionCollector(solution)
-    solver.Solve(solver.Phase(xflat,
-                              solver.CHOOSE_FIRST_UNBOUND,
-                              solver.ASSIGN_MIN_VALUE),
-                              [collector])
+  #
+  # set the clues
+  #
+  for i in range(r):
+    for j in range(c):
+      if game[i][j] > 0:
+        solver.Add(x[i, j] == game[i][j])
 
-    num_solutions = collector.SolutionCount()
-    print "\nnum_solutions: ", num_solutions
-    if num_solutions > 0:
-        for s in range(num_solutions):
-            xval = [collector.Value(s, x[(i,j)])
-                    for i in range(r) for j in range(c)]
+  xflat = [x[(i, j)] for i in range(r) for j in range(c)]
+  solver.Add(solver.AllDifferent(xflat))
+  #
+  # calculate rowsums and colsums
+  #
+  for i in range(r):
+    solver.Add(rowsums[i] == solver.Sum([x[i, j] for j in range(c)]))
 
-            for i in range(r):
-                for j in range(c):
-                    print "%2i" % (xval[i*c+j]),
-                print
-            print
+  for j in range(c):
+    solver.Add(colsums[j] == solver.Sum([x[i, j] for i in range(r)]))
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([x[(i, j)] for i in range(r) for j in range(c)])
+
+  collector = solver.AllSolutionCollector(solution)
+  solver.Solve(solver.Phase(xflat,
+                            solver.CHOOSE_FIRST_UNBOUND,
+                            solver.ASSIGN_MIN_VALUE),
+               [collector])
+
+  num_solutions = collector.SolutionCount()
+  print "\nnum_solutions: ", num_solutions
+  if num_solutions > 0:
+    for s in range(num_solutions):
+      xval = [collector.Value(s, x[(i, j)])
+              for i in range(r) for j in range(c)]
+
+      for i in range(r):
+        for j in range(c):
+          print "%2i" % (xval[i * c + j]),
         print
-        print "num_solutions:", num_solutions
-        print "failures:", solver.Failures()
-        print "branches:", solver.Branches()
-        print "WallTime:", solver.WallTime()
+      print
 
-    else:
-        print "No solutions found"
+    print
+    print "num_solutions:", num_solutions
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
+
+  else:
+    print "No solutions found"
 
 
 #
 # Read a problem instance from a file
 #
 def read_problem(file):
-    f = open(file, 'r')
-    r = int(f.readline())
-    c = int(f.readline())
-    rowsums = f.readline()
-    colsums = f.readline()
-    rowsums = [int(t) for t in (rowsums.rstrip()).split(",")]
-    colsums = [int(t) for t in (colsums.rstrip()).split(",")]
-    game = []
-    for i in range(r):
-        x = f.readline()
-        x = [int(t) for t in (x.rstrip()).split(",")]
-        row = [0]*c
-        for j in range(c):
-            row[j] = int(x[j])
-        game.append(row)
-    return [r, c, rowsums, colsums, game]
+  f = open(file, "r")
+  r = int(f.readline())
+  c = int(f.readline())
+  rowsums = f.readline()
+  colsums = f.readline()
+  rowsums = [int(t) for t in (rowsums.rstrip()).split(",")]
+  colsums = [int(t) for t in (colsums.rstrip()).split(",")]
+  game = []
+  for i in range(r):
+    x = f.readline()
+    x = [int(t) for t in (x.rstrip()).split(",")]
+    row = [0] * c
+    for j in range(c):
+      row[j] = int(x[j])
+    game.append(row)
+  return [r, c, rowsums, colsums, game]
 
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        file = sys.argv[1]
-        [r, c, rowsums, colsums, game] = read_problem(file)
-        main(r, c, rowsums, colsums, game)
-    else:
-        main()
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    file = sys.argv[1]
+    [r, c, rowsums, colsums, game] = read_problem(file)
+    main(r, c, rowsums, colsums, game)
+  else:
+    main()

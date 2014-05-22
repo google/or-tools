@@ -44,7 +44,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -52,94 +53,94 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Labeled dice')
+  # Create the solver.
+  solver = pywrapcp.Solver("Labeled dice")
 
-    #
-    # data
-    #
-    n = 4
-    m = 24
-    A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,Y = range(m)
-    letters = ["A","B","C","D","E","F","G","H","I","J","K","L","M",
-               "N","O","P","Q","R","S","T","U","V","W","Y"]
+  #
+  # data
+  #
+  n = 4
+  m = 24
+  A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, Y = (
+      range(m))
+  letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+             "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y"]
 
-    num_words = 13
-    words = [
-        [B,U,O,Y],
-        [C,A,V,E],
-        [C,E,L,T],
-        [F,L,U,B],
-        [F,O,R,K],
-        [H,E,M,P],
-        [J,U,D,Y],
-        [J,U,N,K],
-        [L,I,M,N],
-        [Q,U,I,P],
-        [S,W,A,G],
-        [V,I,S,A],
-        [W,I,S,H]
-        ]
+  num_words = 13
+  words = [
+      [B, U, O, Y],
+      [C, A, V, E],
+      [C, E, L, T],
+      [F, L, U, B],
+      [F, O, R, K],
+      [H, E, M, P],
+      [J, U, D, Y],
+      [J, U, N, K],
+      [L, I, M, N],
+      [Q, U, I, P],
+      [S, W, A, G],
+      [V, I, S, A],
+      [W, I, S, H]
+  ]
 
-    #
-    # declare variables
-    #
-    dice = [solver.IntVar(0, n-1, 'dice[%i]'%i) for i in range(m)]
+  #
+  # declare variables
+  #
+  dice = [solver.IntVar(0, n - 1, "dice[%i]" % i) for i in range(m)]
 
-    #
-    # constraints
-    #
+  #
+  # constraints
+  #
 
-    # the letters in a word must be on a different die
+  # the letters in a word must be on a different die
+  for i in range(num_words):
+    solver.Add(solver.AllDifferent([dice[words[i][j]] for j in range(n)]))
+
+  # there must be exactly 6 letters of each die
+  for i in range(n):
+    b = [solver.IsEqualCstVar(dice[j], i) for j in range(m)]
+    solver.Add(solver.Sum(b) == 6)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(dice)
+
+  db = solver.Phase(dice,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+
+  #
+  # result
+  #
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    # print "dice:", [(letters[i],dice[i].Value()) for i in range(m)]
+    for d in range(n):
+      print "die %i:" % d,
+      for i in range(m):
+        if dice[i].Value() == d:
+          print letters[i],
+      print
+
+    print "The words with the cube label:"
     for i in range(num_words):
-        solver.Add(solver.AllDifferent([dice[words[i][j]] for j in range(n)]))
-
-    # there must be exactly 6 letters of each die
-    for i in range(n):
-        b = [solver.IsEqualCstVar(dice[j], i)  for j in range(m)]
-        solver.Add(solver.Sum(b) == 6)
-
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(dice)
-
-    db = solver.Phase(dice,
-                      solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-
-    #
-    # result
-    #
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        # print "dice:", [(letters[i],dice[i].Value()) for i in range(m)]
-        for d in range(n):
-            print "die %i:" % d,
-            for i in range(m):
-                if dice[i].Value() == d:
-                    print letters[i],
-            print
-
-        print "The words with the cube label:"
-        for i in range(num_words):
-            for j in range(n):
-                print "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()),
-            print
-
-        print
-
-    solver.EndSearch()
+      for j in range(n):
+        print "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()),
+      print
 
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
 
-if __name__ == '__main__':
-    main()
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
+
+if __name__ == "__main__":
+  main()

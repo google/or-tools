@@ -34,71 +34,71 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import sys, string
+import sys
+import string
 from ortools.constraint_solver import pywrapcp
 
 
 def main():
-    # Create the solver.
-    solver = pywrapcp.Solver('Coins')
+  # Create the solver.
+  solver = pywrapcp.Solver("Coins")
 
-    #
-    # data
-    #
-    n = 6 # number of different coins
-    variables = [1, 2, 5, 10, 25, 50]
+  #
+  # data
+  #
+  n = 6  # number of different coins
+  variables = [1, 2, 5, 10, 25, 50]
 
+  # declare variables
+  x = [solver.IntVar(0, 99, "x%i" % i) for i in range(n)]
+  num_coins = solver.IntVar(0, 99, "num_coins")
 
-    # declare variables
-    x = [solver.IntVar(0, 99, 'x%i' % i) for i in range(n)]
-    num_coins = solver.IntVar(0, 99, 'num_coins')
+  #
+  # constraints
+  #
 
-    #
-    # constraints
-    #
+  # number of used coins, to be minimized
+  solver.Add(num_coins == solver.Sum(x))
 
-    # number of used coins, to be minimized
-    solver.Add(num_coins == solver.Sum(x))
+  # Check that all changes from 1 to 99 can be made.
+  for j in range(1, 100):
+    tmp = [solver.IntVar(0, 99, "b%i" % i) for i in range(n)]
+    solver.Add(solver.ScalProd(tmp, variables) == j)
+    [solver.Add(tmp[i] <= x[i]) for i in range(n)]
 
-    # Check that all changes from 1 to 99 can be made.
-    for j in range(1, 100):
-        tmp = [solver.IntVar(0, 99, 'b%i'%i) for i in range(n)]
-        solver.Add(solver.ScalProd(tmp, variables) == j)
-        [solver.Add(tmp[i] <= x[i]) for i in range(n)]
+  # objective
+  objective = solver.Minimize(num_coins, 1)
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(num_coins)
+  solution.AddObjective(num_coins)
 
-    # objective
-    objective = solver.Minimize(num_coins, 1)
+  db = solver.Phase(x,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+                    solver.ASSIGN_MIN_VALUE)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(num_coins)
-    solution.AddObjective(num_coins)
-
-    db = solver.Phase(x,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                      solver.ASSIGN_MIN_VALUE)
-
-    solver.NewSearch(db, [objective])
-    num_solutions = 0
-    while solver.NextSolution():
-        print "x: ", [x[i].Value() for i in range(n)]
-        print "num_coins:", num_coins.Value()
-        print
-        num_solutions += 1
-    solver.EndSearch()
-
+  solver.NewSearch(db, [objective])
+  num_solutions = 0
+  while solver.NextSolution():
+    print "x: ", [x[i].Value() for i in range(n)]
+    print "num_coins:", num_coins.Value()
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

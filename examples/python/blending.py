@@ -19,13 +19,14 @@
   From the OPL model blending.mod.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
 
 
-def main(sol = 'GLPK'):
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -36,10 +37,9 @@ def main(sol = 'GLPK'):
     solver = pywraplp.Solver('CoinsGridGLPK',
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
-  # Using CLP
-      solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
+    # Using CLP
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
@@ -54,15 +54,15 @@ def main(sol = 'GLPK'):
   Ingos = range(NbIngo)
 
   CostMetal = [22, 10, 13]
-  CostRaw =  [6, 5]
-  CostScrap =  [ 7, 8]
-  CostIngo =   [9 ]
-  Low =  [0.05, 0.30, 0.60]
-  Up =  [0.10, 0.40, 0.80]
-  PercRaw = [ [ 0.20, 0.01 ], [ 0.05, 0 ], [ 0.05, 0.30 ] ]
-  PercScrap =  [ [ 0 , 0.01 ], [ 0.60, 0 ], [ 0.40, 0.70 ] ]
-  PercIngo =  [ [ 0.10 ], [ 0.45 ], [ 0.45 ] ]
-  Alloy  = 71
+  CostRaw = [6, 5]
+  CostScrap = [7, 8]
+  CostIngo = [9]
+  Low = [0.05, 0.30, 0.60]
+  Up = [0.10, 0.40, 0.80]
+  PercRaw = [[0.20, 0.01], [0.05, 0], [0.05, 0.30]]
+  PercScrap = [[0, 0.01], [0.60, 0], [0.40, 0.70]]
+  PercIngo = [[0.10], [0.45], [0.45]]
+  Alloy = 71
 
   #
   # variables
@@ -71,7 +71,7 @@ def main(sol = 'GLPK'):
   r = [solver.NumVar(0, solver.Infinity(), 'r[%i]' % i) for i in Raws]
   s = [solver.NumVar(0, solver.Infinity(), 's[%i]' % i) for i in Scraps]
   ii = [solver.IntVar(0, solver.Infinity(), 'ii[%i]' % i) for i in Ingos]
-  metal = [solver.NumVar(Low[j]*Alloy,  Up[j]*Alloy, 'metal[%i]' % j)
+  metal = [solver.NumVar(Low[j] * Alloy, Up[j] * Alloy, 'metal[%i]' % j)
            for j in Metals]
 
   z = solver.NumVar(0, solver.Infinity(), 'z')
@@ -81,19 +81,17 @@ def main(sol = 'GLPK'):
   #
 
   solver.Add(z ==
-             solver.Sum([CostMetal[i] * p[i]  for i in Metals]) +
-             solver.Sum([CostRaw[i]   * r[i]  for i in Raws]) +
-             solver.Sum([CostScrap[i] * s[i]  for i in Scraps]) +
-             solver.Sum([CostIngo[i]  * ii[i] for i in Ingos]))
-
+             solver.Sum([CostMetal[i] * p[i] for i in Metals]) +
+             solver.Sum([CostRaw[i] * r[i] for i in Raws]) +
+             solver.Sum([CostScrap[i] * s[i] for i in Scraps]) +
+             solver.Sum([CostIngo[i] * ii[i] for i in Ingos]))
 
   for j in Metals:
     solver.Add(
-      metal[j] == p[j] +
-      solver.Sum([PercRaw[j][k]   * r[k]  for k in Raws]) +
-      solver.Sum([PercScrap[j][k] * s[k]  for k in Scraps]) +
-      solver.Sum([PercIngo[j][k]  * ii[k] for k in Ingos]))
-
+        metal[j] == p[j] +
+        solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
+        solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
+        solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
 
   solver.Add(solver.Sum(metal) == Alloy)
 
@@ -140,12 +138,12 @@ def main(sol = 'GLPK'):
 
 
 if __name__ == '__main__':
-    sol = 'GLPK'
+  sol = 'GLPK'
 
-    if len(sys.argv) > 1:
-      sol = sys.argv[1]
-      if sol != 'GLPK' and sol != 'CBC':
-        print 'Solver must be either GLPK or CBC'
-        sys.exit(1)
+  if len(sys.argv) > 1:
+    sol = sys.argv[1]
+    if sol != 'GLPK' and sol != 'CBC':
+      print 'Solver must be either GLPK or CBC'
+      sys.exit(1)
 
-    main(sol)
+  main(sol)

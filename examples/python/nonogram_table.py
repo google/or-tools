@@ -49,7 +49,8 @@
      to about 1 second'
      http://www.hakank.org/constraint_programming_blog/2009/03/comet_nonogram_improved_solvin_1.html
 
-  * 'Comet: regular constraint, a much faster Nonogram with the regular constraint,
+  * 'Comet: regular constraint, a much faster Nonogram with the regular
+  constraint,
      some OPL models, and more'
      http://www.hakank.org/constraint_programming_blog/2009/02/comet_regular_constraint_a_muc_1.html
 
@@ -61,7 +62,8 @@
     Note: nonogram_create_automaton2.mzn is the preferred model
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -120,9 +122,9 @@ def regular(x, Q, S, d, q0, F):
 
   a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
-    # Check that the final state is in F
+  # Check that the final state is in F
   solver.Add(solver.MemberCt(a[-1], F))
-    # First state is q0
+  # First state is q0
   solver.Add(a[m] == q0)
   for i in x_range:
     solver.Add(x[i] >= 1)
@@ -134,6 +136,8 @@ def regular(x, Q, S, d, q0, F):
 # Make a transition (automaton) matrix from a
 # single pattern, e.g. [3,2,1]
 #
+
+
 def make_transition_matrix(pattern):
 
   p_len = len(pattern)
@@ -160,26 +164,25 @@ def make_transition_matrix(pattern):
     for j in range(pattern[i]):
       c += 1
       tmp[c] = 1
-    if c < num_states-1:
+    if c < num_states - 1:
       c += 1
       tmp[c] = 0
 
-  t_matrix[num_states-1][0] = num_states
-  t_matrix[num_states-1][1] = 0
+  t_matrix[num_states - 1][0] = num_states
+  t_matrix[num_states - 1][1] = 0
 
   for i in range(num_states):
     if tmp[i] == 0:
-      t_matrix[i][0] = i+1
-      t_matrix[i][1] = i+2
+      t_matrix[i][0] = i + 1
+      t_matrix[i][1] = i + 2
     else:
-      if i < num_states-1:
-        if tmp[i+1] == 1:
+      if i < num_states - 1:
+        if tmp[i + 1] == 1:
           t_matrix[i][0] = 0
-          t_matrix[i][1] = i+2
+          t_matrix[i][1] = i + 2
         else:
-          t_matrix[i][0] = i+2
+          t_matrix[i][0] = i + 2
           t_matrix[i][1] = 0
-
 
   # print 'The states:'
   # for i in range(num_states):
@@ -194,6 +197,8 @@ def make_transition_matrix(pattern):
 # check each rule by creating an automaton
 # and regular
 #
+
+
 def check_rule(rules, y):
   solver = y[0].solver()
 
@@ -209,11 +214,10 @@ def check_rule(rules, y):
 
   # Note: we cannot use 0 since it's the failing state
   initial_state = 1
-  accepting_states = [n_states] # This is the last state
+  accepting_states = [n_states]  # This is the last state
 
   regular(y, n_states, input_max, transition_fn,
           initial_state, accepting_states)
-
 
 
 def main(rows, row_rule_len, row_rules,
@@ -248,18 +252,16 @@ def main(rows, row_rule_len, row_rules,
       for i in range(rows):
         board_label.append(board[i, j])
 
-
   #
   # constraints
   #
   for i in range(rows):
     check_rule([row_rules[i][j] for j in range(row_rule_len)],
-               [board[i,j] for j in range(cols)])
+               [board[i, j] for j in range(cols)])
 
   for j in range(cols):
     check_rule([col_rules[j][k] for k in range(col_rule_len)],
                [board[i, j] for i in range(rows)])
-
 
   #
   # solution and search
@@ -299,7 +301,6 @@ def main(rows, row_rule_len, row_rules,
   print 'WallTime:', solver.WallTime(), 'ms'
 
 
-
 #
 # Default problem
 #
@@ -309,34 +310,34 @@ def main(rows, row_rule_len, row_rules,
 rows = 12
 row_rule_len = 3
 row_rules = [
-    [0,0,2],
-    [0,1,2],
-    [0,1,1],
-    [0,0,2],
-    [0,0,1],
-    [0,0,3],
-    [0,0,3],
-    [0,2,2],
-    [0,2,1],
-    [2,2,1],
-    [0,2,3],
-    [0,2,2]
-    ]
+    [0, 0, 2],
+    [0, 1, 2],
+    [0, 1, 1],
+    [0, 0, 2],
+    [0, 0, 1],
+    [0, 0, 3],
+    [0, 0, 3],
+    [0, 2, 2],
+    [0, 2, 1],
+    [2, 2, 1],
+    [0, 2, 3],
+    [0, 2, 2]
+]
 
 cols = 10
 col_rule_len = 2
 col_rules = [
-    [2,1],
-    [1,3],
-    [2,4],
-    [3,4],
-    [0,4],
-    [0,3],
-    [0,3],
-    [0,3],
-    [0,2],
-    [0,2]
-    ]
+    [2, 1],
+    [1, 3],
+    [2, 4],
+    [3, 4],
+    [0, 4],
+    [0, 3],
+    [0, 3],
+    [0, 3],
+    [0, 2],
+    [0, 2]
+]
 
 
 if __name__ == '__main__':

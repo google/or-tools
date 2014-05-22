@@ -30,14 +30,15 @@ def BinPacking(solver, binvars, weights, loadvars):
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   '''
   pack = solver.Pack(binvars, len(binvars))
-  pack.AddWeightedSumEqualVarDimension(weights, loadvars);
+  pack.AddWeightedSumEqualVarDimension(weights, loadvars)
   solver.Add(pack)
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
 
 #------------------------------data reading-------------------
 
+
 def ReadData(filename):
-  '''Read data from <filename>.'''
+  """Read data from <filename>."""
   f = open(filename)
   capacity = [int(nb) for nb in f.readline().split()]
   capacity.pop(0)
@@ -51,7 +52,7 @@ def ReadData(filename):
   loss = [min(filter(lambda x: x >= c, capacity)) - c
           for c in range(max_capacity + 1)]
   color_orders = [filter(lambda o: colors[o] == c, range(nb_slabs))
-                      for c in range(1, nb_colors + 1)]
+                  for c in range(1, nb_colors + 1)]
   print 'Solving steel mill with', nb_slabs, 'slabs'
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
@@ -77,11 +78,10 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
     self.__weights = weights
     self.__losstab = losstab
     self.__loads = loads
-    self.__maxcapa = len(losstab)-1
-
+    self.__maxcapa = len(losstab) - 1
 
   def Next(self, solver):
-    var,weight = self.NextVar()
+    var, weight = self.NextVar()
     if var:
       v = self.MaxBound()
       if v + 1 == var.Min():
@@ -94,41 +94,40 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
         #   try first to place the order in the slab that will induce
         #   the least increase of the loss
         loads = self.getLoads()
-        l,v =  min((self.__losstab[loads[i]+weight],i)
-                   for i in range(var.Min(),var.Max()+1)
-                   if var.Contains(i) and loads[i]+weight <= self.__maxcapa)
+        l, v = min((self.__losstab[loads[i] + weight], i)
+                   for i in range(var.Min(), var.Max() + 1)
+                   if var.Contains(i) and loads[i] + weight <= self.__maxcapa)
         decision = solver.AssignVariableValue(var, v)
         return decision
     else:
       return None
 
   def getLoads(self):
-      load = [0]*len(self.__loads)
-      for w,x in zip(self.__weights,self.__x):
-          if x.Bound():
-              load[x.Min()] += w
-      return load
-
+    load = [0] * len(self.__loads)
+    for w, x in zip(self.__weights, self.__x):
+      if x.Bound():
+        load[x.Min()] += w
+    return load
 
   def MaxBound(self):
-    ''' returns the max value bound to a variable, -1 if no variables bound'''
+    """ returns the max value bound to a variable, -1 if no variables bound"""
     return max([-1] + [self.__x[o].Min()
                        for o in range(self.__nb_slabs)
                        if self.__x[o].Bound()])
 
   def NextVar(self):
-    ''' mindom size heuristic with tie break on the weights of orders '''
+    """ mindom size heuristic with tie break on the weights of orders """
     res = [(self.__x[o].Size(), -self.__weights[o], self.__x[o])
            for o in range(self.__nb_slabs)
            if self.__x[o].Size() > 1]
     if res:
       res.sort()
-      return res[0][2],-res[0][1] #returns the order var and its weight
+      return res[0][2], -res[0][1]  # returns the order var and its weight
     else:
       return None, None
 
   def DebugString(self):
-    return 'SteelMillDecisionBuilder(' +  str(self.__x) + ')'
+    return 'SteelMillDecisionBuilder(' + str(self.__x) + ')'
 
 
 def main(unused_argv):

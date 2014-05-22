@@ -34,7 +34,8 @@
   using an array of size 10.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -63,50 +64,50 @@ from ortools.constraint_solver import pywrapcp
 # F : accepting states
 def regular(x, Q, S, d, q0, F):
 
-    solver = x[0].solver()
+  solver = x[0].solver()
 
-    assert Q > 0, 'regular: "Q" must be greater than zero'
-    assert S > 0, 'regular: "S" must be greater than zero'
+  assert Q > 0, 'regular: "Q" must be greater than zero'
+  assert S > 0, 'regular: "S" must be greater than zero'
 
-    # d2 is the same as d, except we add one extra transition for
-    # each possible input;  each extra transition is from state zero
-    # to state zero.  This allows us to continue even if we hit a
-    # non-accepted input.
+  # d2 is the same as d, except we add one extra transition for
+  # each possible input;  each extra transition is from state zero
+  # to state zero.  This allows us to continue even if we hit a
+  # non-accepted input.
 
-    # int d2[0..Q, 1..S];
-    d2 = []
-    for i in range(Q+1):
-        row = []
-        for j in range(S):
-            if i == 0:
-                row.append(0)
-            else:
-                row.append(d[i-1][j])
-        d2.append(row)
+  # int d2[0..Q, 1..S];
+  d2 = []
+  for i in range(Q + 1):
+    row = []
+    for j in range(S):
+      if i == 0:
+        row.append(0)
+      else:
+        row.append(d[i - 1][j])
+    d2.append(row)
 
-    d2_flatten = [d2[i][j] for i in range(Q+1) for j in range(S)]
+  d2_flatten = [d2[i][j] for i in range(Q + 1) for j in range(S)]
 
-    # If x has index set m..n, then a[m-1] holds the initial state
-    # (q0), and a[i+1] holds the state we're in after processing
-    # x[i].  If a[n] is in F, then we succeed (ie. accept the
-    # string).
-    x_range = range(0,len(x))
-    m = 0
-    n = len(x)
+  # If x has index set m..n, then a[m-1] holds the initial state
+  # (q0), and a[i+1] holds the state we're in after processing
+  # x[i].  If a[n] is in F, then we succeed (ie. accept the
+  # string).
+  x_range = range(0, len(x))
+  m = 0
+  n = len(x)
 
-    a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)]
+  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
 
-    # Check that the final state is in F
-    solver.Add(solver.MemberCt(a[-1], F))
-    # First state is q0
-    solver.Add(a[m] == q0)
-    for i in x_range:
-        solver.Add(x[i] >= 1)
-        solver.Add(x[i] <= S)
+  # Check that the final state is in F
+  solver.Add(solver.MemberCt(a[-1], F))
+  # First state is q0
+  solver.Add(a[m] == q0)
+  for i in x_range:
+    solver.Add(x[i] >= 1)
+    solver.Add(x[i] <= S)
 
-        # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-        solver.Add(a[i+1] == solver.Element(d2_flatten, ((a[i])*S)+(x[i]-1)))
-
+    # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
+    solver.Add(
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 #
@@ -115,111 +116,110 @@ def regular(x, Q, S, d, q0, F):
 #
 def make_transition_matrix(pattern):
 
-    p_len = len(pattern)
-    print 'p_len:', p_len
-    num_states = p_len + sum(pattern)
-    print 'num_states:', num_states
-    t_matrix = []
-    for i in range(num_states):
-        row = []
-        for j in range(2):
-            row.append(0)
-        t_matrix.append(row)
+  p_len = len(pattern)
+  print 'p_len:', p_len
+  num_states = p_len + sum(pattern)
+  print 'num_states:', num_states
+  t_matrix = []
+  for i in range(num_states):
+    row = []
+    for j in range(2):
+      row.append(0)
+    t_matrix.append(row)
 
-    # convert pattern to a 0/1 pattern for easy handling of
-    # the states
-    tmp = [0 for i in range(num_states)]
-    c = 0
-    tmp[c] = 0
-    for i in range(p_len):
-        for j in range(pattern[i]):
-            c += 1
-            tmp[c] = 1
-        if c < num_states-1:
-            c += 1
-            tmp[c] = 0
-    print 'tmp:', tmp
+  # convert pattern to a 0/1 pattern for easy handling of
+  # the states
+  tmp = [0 for i in range(num_states)]
+  c = 0
+  tmp[c] = 0
+  for i in range(p_len):
+    for j in range(pattern[i]):
+      c += 1
+      tmp[c] = 1
+    if c < num_states - 1:
+      c += 1
+      tmp[c] = 0
+  print 'tmp:', tmp
 
+  t_matrix[num_states - 1][0] = num_states
+  t_matrix[num_states - 1][1] = 0
 
-    t_matrix[num_states-1][0] = num_states
-    t_matrix[num_states-1][1] = 0
-
-    for i in range(num_states):
-        if tmp[i] == 0:
-            t_matrix[i][0] = i+1
-            t_matrix[i][1] = i+2
+  for i in range(num_states):
+    if tmp[i] == 0:
+      t_matrix[i][0] = i + 1
+      t_matrix[i][1] = i + 2
+    else:
+      if i < num_states - 1:
+        if tmp[i + 1] == 1:
+          t_matrix[i][0] = 0
+          t_matrix[i][1] = i + 2
         else:
-            if i < num_states-1:
-                if tmp[i+1] == 1:
-                    t_matrix[i][0] = 0
-                    t_matrix[i][1] = i+2
-                else:
-                    t_matrix[i][0] = i+2
-                    t_matrix[i][1] = 0
+          t_matrix[i][0] = i + 2
+          t_matrix[i][1] = 0
 
-    print 'The states:'
-    for i in range(num_states):
-        for j in range(2):
-            print t_matrix[i][j],
-        print
+  print 'The states:'
+  for i in range(num_states):
+    for j in range(2):
+      print t_matrix[i][j],
     print
+  print
 
-    return t_matrix
+  return t_matrix
+
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Regular test')
+  # Create the solver.
+  solver = pywrapcp.Solver('Regular test')
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    this_len = 10
-    pp = [3,2,1]
+  this_len = 10
+  pp = [3, 2, 1]
 
-    transition_fn = make_transition_matrix(pp)
-    n_states = len(transition_fn)
-    input_max = 2
+  transition_fn = make_transition_matrix(pp)
+  n_states = len(transition_fn)
+  input_max = 2
 
-    # Note: we use '1' and '2' (rather than 0 and 1)
-    # since 0 represents the failing state.
-    initial_state = 1
+  # Note: we use '1' and '2' (rather than 0 and 1)
+  # since 0 represents the failing state.
+  initial_state = 1
 
-    accepting_states = [n_states]
+  accepting_states = [n_states]
 
-    # declare variables
-    reg_input = [solver.IntVar(1, input_max, 'reg_input[%i]' % i)
-                 for i in range(this_len)]
+  # declare variables
+  reg_input = [solver.IntVar(1, input_max, 'reg_input[%i]' % i)
+               for i in range(this_len)]
 
-    #
-    # constraints
-    #
-    regular(reg_input, n_states, input_max, transition_fn,
-            initial_state, accepting_states)
+  #
+  # constraints
+  #
+  regular(reg_input, n_states, input_max, transition_fn,
+          initial_state, accepting_states)
 
+  #
+  # solution and search
+  #
+  db = solver.Phase(reg_input,
+                    solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                    solver.ASSIGN_MIN_VALUE)
 
-    #
-    # solution and search
-    #
-    db = solver.Phase(reg_input,
-                      solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                      solver.ASSIGN_MIN_VALUE)
+  solver.NewSearch(db)
 
-    solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print 'reg_input:', [reg_input[i].Value() - 1 for i in range(this_len)]
+    num_solutions += 1
 
-    num_solutions = 0
-    while solver.NextSolution():
-        print 'reg_input:', [reg_input[i].Value()-1 for i in range(this_len)]
-        num_solutions += 1
-
-    solver.EndSearch()
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  solver.EndSearch()
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

@@ -23,7 +23,6 @@ of the rule.
 """
 
 
-
 from google.apputils import app
 import gflags
 from ortools.constraint_solver import pywrapcp
@@ -50,7 +49,7 @@ def main(unused_argv):
   solver.Add(marks[0] == 0)
   solver.Add(solver.AllDifferent([marks[j] - marks[i]
                                   for i in range(0, size - 1)
-                                  for j in range(i +1, size)]))
+                                  for j in range(i + 1, size)]))
 
   solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
   for i in range(0, size - 2):
@@ -65,7 +64,7 @@ def main(unused_argv):
                             solver.ASSIGN_MIN_VALUE),
                [objective, collector])
   for i in range(0, collector.SolutionCount()):
-    obj_value = collector.Value(i, marks[size -1])
+    obj_value = collector.Value(i, marks[size - 1])
     time = collector.WallTime(i)
     branches = collector.Branches(i)
     failures = collector.Failures(i)

@@ -38,7 +38,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -46,71 +47,68 @@ import sys
 import string
 from ortools.constraint_solver import pywrapcp
 
+
 def main(base=10):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Send most money')
+  # Create the solver.
+  solver = pywrapcp.Solver('Send most money')
 
-    # data
-    print "base:", base
+  # data
+  print 'base:', base
 
-    # declare variables
-    s = solver.IntVar(0,base-1,'s')
-    e = solver.IntVar(0,base-1,'e')
-    n = solver.IntVar(0,base-1,'n')
-    d = solver.IntVar(0,base-1,'d')
-    m = solver.IntVar(0,base-1,'m')
-    o = solver.IntVar(0,base-1,'o')
-    r = solver.IntVar(0,base-1,'r')
-    y = solver.IntVar(0,base-1,'y')
+  # declare variables
+  s = solver.IntVar(0, base - 1, 's')
+  e = solver.IntVar(0, base - 1, 'e')
+  n = solver.IntVar(0, base - 1, 'n')
+  d = solver.IntVar(0, base - 1, 'd')
+  m = solver.IntVar(0, base - 1, 'm')
+  o = solver.IntVar(0, base - 1, 'o')
+  r = solver.IntVar(0, base - 1, 'r')
+  y = solver.IntVar(0, base - 1, 'y')
 
-    x = [s,e,n,d,m,o,r,y]
+  x = [s, e, n, d, m, o, r, y]
 
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
+  solver.Add(s * base ** 3 + e * base ** 2 + n * base + d +
+             m * base ** 3 + o * base ** 2 + r * base + e ==
+             m * base ** 4 + o * base ** 3 + n * base ** 2 + e * base + y,)
+  solver.Add(s > 0)
+  solver.Add(m > 0)
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
-    solver.Add(      s*base**3 + e*base**2 + n*base + d +
-                     m*base**3 + o*base**2 + r*base + e ==
-         m*base**4 + o*base**3 + n*base**2 + e*base + y,
-               )
-    solver.Add(s > 0)
-    solver.Add(m > 0)
+  collector = solver.AllSolutionCollector(solution)
 
+  solver.Solve(solver.Phase(x,
+                            solver.CHOOSE_FIRST_UNBOUND,
+                            solver.ASSIGN_MAX_VALUE),
+               [collector])
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
+  num_solutions = collector.SolutionCount()
+  money_val = 0
+  for s in range(num_solutions):
+    print 'x:', [collector.Value(s, x[i]) for i in range(len(x))]
 
-    collector = solver.AllSolutionCollector(solution)
-
-    solver.Solve(solver.Phase(x,
-                              solver.CHOOSE_FIRST_UNBOUND,
-                              solver.ASSIGN_MAX_VALUE),
-                              [collector])
-
-    num_solutions = collector.SolutionCount()
-    money_val = 0
-    for s in range(num_solutions):
-        print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
-
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-    print
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime()
+  print
 
 
 base = 10
 if __name__ == '__main__':
-    # for base in range(10,30):
-    #    main(base)
-    if len(sys.argv) > 1:
-        base=string.atoi(sys.argv[1])
+  # for base in range(10,30):
+  #    main(base)
+  if len(sys.argv) > 1:
+    base = string.atoi(sys.argv[1])
 
-    main(base)
+  main(base)

@@ -19,81 +19,80 @@
   N queens problem.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
 
 
 def main(n=8):
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
-    # n = 8 # size of board (n x n)
+  #
+  # data
+  #
+  # n = 8 # size of board (n x n)
 
-    # declare variables
-    q = [solver.IntVar(0,n-1, 'x%i' % i) for i in range(n)]
+  # declare variables
+  q = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(q))
-    for i in range(n):
-        for j in range(i):
-            solver.Add(q[i] != q[j])
-            solver.Add(q[i] + i != q[j] + j)
-            solver.Add(q[i] - i != q[j] - j)
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(q))
+  for i in range(n):
+    for j in range(i):
+      solver.Add(q[i] != q[j])
+      solver.Add(q[i] + i != q[j] + j)
+      solver.Add(q[i] - i != q[j] - j)
 
-    # for i in range(n):
-    #     for j in range(i):
-    #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
+  # for i in range(n):
+  #     for j in range(i):
+  #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
 
-    # symmetry breaking
-    # solver.Add(q[0] == 0)
+  # symmetry breaking
+  # solver.Add(q[0] == 0)
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([q[i] for i in range(n)])
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([q[i] for i in range(n)])
+  collector = solver.AllSolutionCollector(solution)
+  # collector = solver.FirstSolutionCollector(solution)
+  # search_log = solver.SearchLog(100, x[0])
+  solver.Solve(solver.Phase([q[i] for i in range(n)],
+                            solver.INT_VAR_SIMPLE,
+                            solver.ASSIGN_MIN_VALUE),
+               [collector])
 
-    collector = solver.AllSolutionCollector(solution)
-    # collector = solver.FirstSolutionCollector(solution)
-    # search_log = solver.SearchLog(100, x[0])
-    solver.Solve(solver.Phase([q[i] for i in range(n)],
-                              solver.INT_VAR_SIMPLE,
-                              solver.ASSIGN_MIN_VALUE),
-                              [collector])
-
-
-    num_solutions = collector.SolutionCount()
-    print "num_solutions: ", num_solutions
-    if num_solutions > 0:
-        for s in range(num_solutions):
-            qval = [collector.Value(s, q[i]) for i in range(n)]
-            print "q:", qval
-            for i in range(n):
-                for j in range(n):
-                    if qval[i] == j:
-                        print "Q",
-                    else:
-                        print "_",
-                print
-            print
-
+  num_solutions = collector.SolutionCount()
+  print "num_solutions: ", num_solutions
+  if num_solutions > 0:
+    for s in range(num_solutions):
+      qval = [collector.Value(s, q[i]) for i in range(n)]
+      print "q:", qval
+      for i in range(n):
+        for j in range(n):
+          if qval[i] == j:
+            print "Q",
+          else:
+            print "_",
         print
-        print "num_solutions:", num_solutions
-        print "failures:", solver.Failures()
-        print "branches:", solver.Branches()
-        print "WallTime:", solver.WallTime()
+      print
 
-    else:
-         print "No solutions found"
+    print
+    print "num_solutions:", num_solutions
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
+
+  else:
+    print "No solutions found"
 
 n = 8
-if __name__ == '__main__':
-    main(n)
+if __name__ == "__main__":
+  main(n)

@@ -57,7 +57,8 @@
   - WallTime: 23735 ms (note: without any printing of the solutions)
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -65,53 +66,53 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Secret Santa problem')
+  # Create the solver.
+  solver = pywrapcp.Solver('Secret Santa problem')
 
-    #
-    # data
-    #
-    family = [1,1,1,1, 2, 3,3,3,3,3, 4,4]
-    num_families = max(family)
-    n = len(family)
+  #
+  # data
+  #
+  family = [1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 4, 4]
+  num_families = max(family)
+  n = len(family)
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(0, n-1, 'x[%i]' % i) for i in range(n)]
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(0, n - 1, 'x[%i]' % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
 
-    # Can't be one own's Secret Santa
-    # Ensure that there are no fix-point in the array
-    for i in range(n):
-        solver.Add(x[i] != i)
+  # Can't be one own's Secret Santa
+  # Ensure that there are no fix-point in the array
+  for i in range(n):
+    solver.Add(x[i] != i)
 
-    # No Secret Santa to a person in the same family
-    for i in range(n):
-        solver.Add(family[i] != solver.Element(family, x[i]))
+  # No Secret Santa to a person in the same family
+  for i in range(n):
+    solver.Add(family[i] != solver.Element(family, x[i]))
 
-    #
-    # solution and search
-    #
-    db = solver.Phase(x,
-                      solver.INT_VAR_SIMPLE,
-                      solver.INT_VALUE_SIMPLE)
+  #
+  # solution and search
+  #
+  db = solver.Phase(x,
+                    solver.INT_VAR_SIMPLE,
+                    solver.INT_VALUE_SIMPLE)
 
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'x:', [x[i].Value() for i in range(n)]
-        print
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'x:', [x[i].Value() for i in range(n)]
+    print
 
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
-    main()
+  main()

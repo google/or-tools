@@ -51,87 +51,89 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(unused_argv):
-    # Create the solver.
-    solver = pywrapcp.Solver('Seseman Convent problem')
+  # Create the solver.
+  solver = pywrapcp.Solver("Seseman Convent problem")
 
-    # data
-    n = 3
-    border_sum = n*n
+  # data
+  n = 3
+  border_sum = n * n
 
-    # declare variables
-    total_sum = solver.IntVar(1,n*n*n*n, 'total_sum')
-    # x[0..n-1,0..n-1]
-    x = {}
+  # declare variables
+  total_sum = solver.IntVar(1, n * n * n * n, "total_sum")
+  # x[0..n-1,0..n-1]
+  x = {}
+  for i in range(n):
+    for j in range(n):
+      x[(i, j)] = solver.IntVar(0, n * n, "x %i %i" % (i, j))
+
+  #
+  # constraints
+  #
+  # zero all middle cells
+  for i in range(1, n - 1):
+    for j in range(1, n - 1):
+      solver.Add(x[(i, j)] == 0)
+
+  # all borders must be >= 1
+  for i in range(n):
+    for j in range(n):
+      if i == 0 or j == 0 or i == n - 1 or j == n - 1:
+        solver.Add(x[(i, j)] >= 1)
+
+  # sum the borders (border_sum)
+  solver.Add(solver.Sum([x[(i, 0)] for i in range(n)]) == border_sum)
+  solver.Add(solver.Sum([x[(i, n - 1)] for i in range(n)]) == border_sum)
+  solver.Add(solver.Sum([x[(0, i)] for i in range(n)]) == border_sum)
+  solver.Add(solver.Sum([x[(n - 1, i)] for i in range(n)]) == border_sum)
+
+  # total
+  solver.Add(
+      solver.Sum([x[(i, j)] for i in range(n) for j in range(n)]) ==
+      total_sum)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([x[(i, j)] for i in range(n) for j in range(n)])
+  solution.Add(total_sum)
+
+  # all solutions
+  collector = solver.AllSolutionCollector(solution)
+  # search_log = solver.SearchLog(100, total_sum)
+  solver.Solve(solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
+                            solver.CHOOSE_PATH,
+                            solver.ASSIGN_MIN_VALUE),
+               [collector])
+  #[collector, search_log])
+
+  num_solutions = collector.SolutionCount()
+  # print "x:", x
+  print "num_solutions:", num_solutions
+  print
+  for s in range(num_solutions):
+    # print [collector.Value(s, x[(i,j)])
+    #        for i in range(n) for j in range(n)]
+    print "total_sum:", collector.Value(s, total_sum)
     for i in range(n):
-        for j in range(n):
-            x[(i,j)] = solver.IntVar(0,n*n, 'x %i %i' % (i, j))
-
-
-    #
-    # constraints
-    #
-    # zero all middle cells
-    for i in range(1,n-1):
-        for j in range(1,n-1):
-            solver.Add(x[(i,j)] == 0)
-
-    # all borders must be >= 1
-    for i in range(n):
-        for j in range(n):
-            if i == 0 or j == 0 or i == n-1 or j == n-1:
-                solver.Add(x[(i,j)] >= 1)
-
-
-    # sum the borders (border_sum)
-    solver.Add(solver.Sum([x[(i,0)]   for i in range(n)]) == border_sum)
-    solver.Add(solver.Sum([x[(i,n-1)] for i in range(n)]) == border_sum)
-    solver.Add(solver.Sum([x[(0,i)]   for i in range(n)]) == border_sum)
-    solver.Add(solver.Sum([x[(n-1,i)] for i in range(n)]) == border_sum)
-
-    # total
-    solver.Add(solver.Sum([x[(i,j)] for i in range(n) for j in range(n)]) == total_sum)
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([x[(i,j)] for i in range(n) for j in range(n)])
-    solution.Add(total_sum)
-
-    # all solutions
-    collector = solver.AllSolutionCollector(solution)
-    # search_log = solver.SearchLog(100, total_sum)
-    solver.Solve(solver.Phase([x[(i,j)] for i in range(n) for j in range(n)],
-                              solver.CHOOSE_PATH,
-                              solver.ASSIGN_MIN_VALUE),
-                              [collector])
-                              #[collector, search_log])
-
-    num_solutions = collector.SolutionCount()
-    # print "x:", x
-    print "num_solutions:", num_solutions
+      for j in range(n):
+        print collector.Value(s, x[(i, j)]),
+      print
     print
-    for s in range(num_solutions):
-        # print [collector.Value(s, x[(i,j)])
-        #        for i in range(n) for j in range(n)]
-        print "total_sum:", collector.Value(s, total_sum)
-        for i in range(n):
-            for j in range(n):
-                print collector.Value(s, x[(i,j)]),
-            print
-        print
 
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-    print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
+  print "num_solutions:", num_solutions
 
 
-if __name__ == '__main__':
-    main("cp sample")
+if __name__ == "__main__":
+  main("cp sample")

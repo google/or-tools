@@ -27,71 +27,73 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(unused_argv):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Set covering')
+  # Create the solver.
+  solver = pywrapcp.Solver("Set covering")
 
-    #
-    # data
-    #
-    min_distance = 15
-    num_cities = 6
+  #
+  # data
+  #
+  min_distance = 15
+  num_cities = 6
 
-    distance = [
-        [ 0,10,20,30,30,20],
-        [10, 0,25,35,20,10],
-        [20,25, 0,15,30,20],
-        [30,35,15, 0,15,25],
-        [30,20,30,15, 0,14],
-        [20,10,20,25,14, 0]
-        ]
+  distance = [
+      [0, 10, 20, 30, 30, 20],
+      [10, 0, 25, 35, 20, 10],
+      [20, 25, 0, 15, 30, 20],
+      [30, 35, 15, 0, 15, 25],
+      [30, 20, 30, 15, 0, 14],
+      [20, 10, 20, 25, 14, 0]
+  ]
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(0,1, 'x[%i]' % i) for i in range(num_cities)]
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(num_cities)]
 
-    #
-    # constraints
-    #
+  #
+  # constraints
+  #
 
-    # objective to minimize
-    z = solver.Sum(x)
+  # objective to minimize
+  z = solver.Sum(x)
 
-    # ensure that all cities are covered
-    for i in range(num_cities):
-        b = [x[j] for j in range(num_cities) if distance[i][j] <= min_distance]
-        solver.Add(solver.SumGreaterOrEqual(b, 1))
+  # ensure that all cities are covered
+  for i in range(num_cities):
+    b = [x[j] for j in range(num_cities) if distance[i][j] <= min_distance]
+    solver.Add(solver.SumGreaterOrEqual(b, 1))
 
-    objective = solver.Minimize(z, 1)
+  objective = solver.Minimize(z, 1)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.AddObjective(z)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.AddObjective(z)
 
-    collector = solver.LastSolutionCollector(solution)
-    solver.Solve(solver.Phase(x + [z],
-                              solver.INT_VAR_DEFAULT,
-                              solver.INT_VALUE_DEFAULT),
-                 [collector, objective])
+  collector = solver.LastSolutionCollector(solution)
+  solver.Solve(solver.Phase(x + [z],
+                            solver.INT_VAR_DEFAULT,
+                            solver.INT_VALUE_DEFAULT),
+               [collector, objective])
 
-    print "z:", collector.ObjectiveValue(0)
-    print "x:", [collector.Value(0, x[i]) for i in range(num_cities)]
+  print "z:", collector.ObjectiveValue(0)
+  print "x:", [collector.Value(0, x[i]) for i in range(num_cities)]
 
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main("cp sample")
+if __name__ == "__main__":
+  main("cp sample")

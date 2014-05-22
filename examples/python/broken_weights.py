@@ -44,7 +44,8 @@
   * Comet: http://hakank.org/comet/broken_weights.co
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 import string
@@ -54,90 +55,89 @@ from ortools.constraint_solver import pywrapcp
 
 def main(m=40, n=4):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Broken weights')
+  # Create the solver.
+  solver = pywrapcp.Solver('Broken weights')
 
-    #
-    # data
-    #
-    print 'total weight (m):', m
-    print 'number of pieces (n):', n
+  #
+  # data
+  #
+  print 'total weight (m):', m
+  print 'number of pieces (n):', n
+  print
+
+  #
+  # variables
+  #
+  weights = [solver.IntVar(1, m, 'weights[%i]' % j) for j in range(n)]
+  x = {}
+  for i in range(m):
+    for j in range(n):
+      x[i, j] = solver.IntVar(-1, 1, 'x[%i,%i]' % (i, j))
+  x_flat = [x[i, j] for i in range(m) for j in range(n)]
+
+  #
+  # constraints
+  #
+
+  # symmetry breaking
+  for j in range(1, n):
+    solver.Add(weights[j - 1] < weights[j])
+
+  solver.Add(solver.SumEquality(weights, m))
+
+  # Check that all weights from 1 to 40 can be made.
+  #
+  # Since all weights can be on either side
+  # of the side of the scale we allow either
+  # -1, 0, or 1 or the weights, assuming that
+  # -1 is the weights on the left and 1 is on the right.
+  #
+  for i in range(m):
+    solver.Add(i + 1 == solver.Sum([weights[j] * x[i, j]
+                                    for j in range(n)]))
+
+  # objective
+  objective = solver.Minimize(weights[n - 1], 1)
+
+  #
+  # search and result
+  #
+  db = solver.Phase(weights + x_flat,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+
+  search_log = solver.SearchLog(1)
+
+  solver.NewSearch(db, [objective])
+
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'weights:   ',
+    for w in [weights[j].Value() for j in range(n)]:
+      print '%3i ' % w,
     print
-
-    #
-    # variables
-    #
-    weights = [solver.IntVar(1, m, 'weights[%i]' % j) for j in range(n)]
-    x = {}
+    print '-' * 30
     for i in range(m):
-        for j in range(n):
-            x[i,j] = solver.IntVar(-1, 1, 'x[%i,%i]' % (i, j))
-    x_flat = [x[i,j] for i in range(m) for j in range(n)]
-
-    #
-    # constraints
-    #
-
-    # symmetry breaking
-    for j in range(1, n):
-        solver.Add(weights[j-1] < weights[j])
-
-    solver.Add(solver.SumEquality(weights, m))
-
-    # Check that all weights from 1 to 40 can be made.
-    #
-    # Since all weights can be on either side
-    # of the side of the scale we allow either
-    # -1, 0, or 1 or the weights, assuming that
-    # -1 is the weights on the left and 1 is on the right.
-    #
-    for i in range(m):
-        solver.Add(i+1 == solver.Sum([weights[j]*x[i,j]
-                                      for j in range(n)]))
-
-
-    # objective
-    objective = solver.Minimize(weights[n-1], 1)
-
-    #
-    # search and result
-    #
-    db = solver.Phase(weights + x_flat,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MIN_VALUE)
-
-    search_log = solver.SearchLog(1)
-
-    solver.NewSearch(db, [objective])
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'weights:   ',
-        for w in [weights[j].Value() for j in range(n)]:
-            print '%3i ' % w,
-        print
-        print '-' * 30
-        for i in range(m):
-            print 'weight  %2i:' % (i+1),
-            for j in range(n):
-                print '%3i ' % x[i,j].Value(),
-            print
-        print
+      print 'weight  %2i:' % (i + 1),
+      for j in range(n):
+        print '%3i ' % x[i, j].Value(),
+      print
     print
-    solver.EndSearch()
+  print
+  solver.EndSearch()
 
-    print 'num_solutions:', num_solutions
-    print 'failures :', solver.Failures()
-    print 'branches :', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print 'num_solutions:', num_solutions
+  print 'failures :', solver.Failures()
+  print 'branches :', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 m = 40
 n = 4
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        m = string.atoi(sys.argv[1])
-    if len(sys.argv) > 2:
-        n = string.atoi(sys.argv[2])
-    main(m, n)
+  if len(sys.argv) > 1:
+    m = string.atoi(sys.argv[1])
+  if len(sys.argv) > 2:
+    n = string.atoi(sys.argv[2])
+  main(m, n)

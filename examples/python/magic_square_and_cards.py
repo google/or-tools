@@ -25,90 +25,89 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import string, sys
+import string
+import sys
 from ortools.constraint_solver import pywrapcp
 
 
 def main(n=3):
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
-    # n = 3
+  #
+  # data
+  #
+  # n = 3
 
-    #
-    # declare variables
-    #
-    x = {}
+  #
+  # declare variables
+  #
+  x = {}
+  for i in range(n):
+    for j in range(n):
+      x[(i, j)] = solver.IntVar(1, 13, "x(%i,%i)" % (i, j))
+  x_flat = [x[(i, j)] for i in range(n) for j in range(n)]
+
+  s = solver.IntVar(1, 13 * 4, "s")
+  counts = [solver.IntVar(0, 4, "counts(%i)" % i) for i in range(14)]
+
+  #
+  # constraints
+  #
+  solver.Add(solver.Distribute(x_flat, range(14), counts))
+
+  # the standard magic square constraints (sans all_different)
+  [solver.Add(solver.Sum([x[(i, j)] for j in range(n)]) == s) for i in range(n)]
+  [solver.Add(solver.Sum([x[(i, j)] for i in range(n)]) == s) for j in range(n)]
+
+  solver.Add(solver.Sum([x[(i, i)] for i in range(n)]) == s)  # diag 1
+  solver.Add(solver.Sum([x[(i, n - i - 1)] for i in range(n)]) == s)  # diag 2
+
+  # redundant constraint
+  solver.Add(solver.Sum(counts) == n * n)
+
+  # objective
+  objective = solver.Maximize(s, 1)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x_flat)
+  solution.Add(s)
+  solution.Add(counts)
+
+  # db: DecisionBuilder
+  db = solver.Phase(x_flat,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MAX_VALUE)
+
+  solver.NewSearch(db, [objective])
+  num_solutions = 0
+  while solver.NextSolution():
+    print "s:", s.Value()
+    print "counts:", [counts[i].Value() for i in range(14)]
     for i in range(n):
-        for j in range(n):
-            x[(i, j)] = solver.IntVar(1, 13, 'x(%i,%i)' % (i, j))
-    x_flat = [x[(i,j)] for i in range(n) for j in range(n)]
-
-    s = solver.IntVar(1, 13*4,'s')
-    counts = [solver.IntVar(0,4,"counts(%i)"%i) for i in range(14)]
-
-    #
-    # constraints
-    #
-    solver.Add(solver.Distribute(x_flat, range(14), counts))
-
-    # the standard magic square constraints (sans all_different)
-    [solver.Add(solver.Sum([x[(i,j)]     for j in range(n)]) == s) for i in range(n)]
-    [solver.Add(solver.Sum([x[(i,j)]     for i in range(n)]) == s) for j in range(n)]
-
-    solver.Add(solver.Sum([ x[(i,i)]     for i in range(n)]) == s    ) # diag 1
-    solver.Add(solver.Sum([ x[(i,n-i-1)] for i in range(n)]) == s) # diag 2
-
-    # redundant constraint
-    solver.Add(solver.Sum(counts) == n*n)
-
-
-    # objective
-    objective = solver.Maximize(s,1)
-
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x_flat)
-    solution.Add(s)
-    solution.Add(counts)
-
-
-    # db: DecisionBuilder
-    db = solver.Phase(x_flat,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MAX_VALUE)
-
-    solver.NewSearch(db,[objective])
-    num_solutions = 0
-    while solver.NextSolution():
-        print "s:", s.Value()
-        print "counts:", [counts[i].Value() for i in range(14)]
-        for i in range(n):
-            for j in range(n):
-                print x[(i,j)].Value(),
-            print
-
-        print
-        num_solutions += 1
-    solver.EndSearch()
+      for j in range(n):
+        print x[(i, j)].Value(),
+      print
 
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 n = 3
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
-    main(n)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+  main(n)

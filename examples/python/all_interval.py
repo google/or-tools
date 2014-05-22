@@ -46,68 +46,71 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
-import string, sys
+import string
+import sys
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(n=12):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('All interval')
+  # Create the solver.
+  solver = pywrapcp.Solver("All interval")
 
-    #
-    # data
-    #
-    print "n:", n
+  #
+  # data
+  #
+  print "n:", n
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(1, n, 'x[%i]' % i) for i in range(n)]
-    diffs = [solver.IntVar(1, n-1, 'diffs[%i]' % i) for i in range(n-1)]
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(1, n, "x[%i]" % i) for i in range(n)]
+  diffs = [solver.IntVar(1, n - 1, "diffs[%i]" % i) for i in range(n - 1)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
-    solver.Add(solver.AllDifferent(diffs))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
+  solver.Add(solver.AllDifferent(diffs))
 
-    for k in range(n-1):
-        solver.Add(diffs[k] == abs(x[k+1]-x[k]))
+  for k in range(n - 1):
+    solver.Add(diffs[k] == abs(x[k + 1] - x[k]))
 
-    # symmetry breaking
-    solver.Add(x[0] < x[n-1])
-    solver.Add(diffs[0] < diffs[1])
+  # symmetry breaking
+  solver.Add(x[0] < x[n - 1])
+  solver.Add(diffs[0] < diffs[1])
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(diffs)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(diffs)
 
-    db = solver.Phase(x,
-                      solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
 
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "x:", [x[i].Value() for i in range(n)]
-        print "diffs:", [diffs[i].Value() for i in range(n-1)]
-        num_solutions += 1
-        print
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "x:", [x[i].Value() for i in range(n)]
+    print "diffs:", [diffs[i].Value() for i in range(n - 1)]
+    num_solutions += 1
+    print
 
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
-n=12
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
-    main(n)
+n = 12
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+  main(n)

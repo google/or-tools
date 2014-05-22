@@ -64,7 +64,7 @@ def make_transition_tuples(pattern):
 
   # convert pattern to a 0/1 pattern for easy handling of
   # the states
-  tmp = [0];
+  tmp = [0]
   c = 0
   for pattern_index in range(p_len):
     tmp.extend([1] * pattern[pattern_index])
@@ -100,6 +100,7 @@ def check_rule(rules, y):
                                          transition_tuples,
                                          initial_state,
                                          accepting_states))
+
 
 def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 
@@ -138,7 +139,6 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 
   for j in range(cols):
     check_rule(col_rules[j], [board[i, j] for i in range(rows)])
-
 
   #
   # solution and search
@@ -189,34 +189,34 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 rows = 12
 row_rule_len = 3
 row_rules = [
-    [0,0,2],
-    [0,1,2],
-    [0,1,1],
-    [0,0,2],
-    [0,0,1],
-    [0,0,3],
-    [0,0,3],
-    [0,2,2],
-    [0,2,1],
-    [2,2,1],
-    [0,2,3],
-    [0,2,2]
-    ]
+    [0, 0, 2],
+    [0, 1, 2],
+    [0, 1, 1],
+    [0, 0, 2],
+    [0, 0, 1],
+    [0, 0, 3],
+    [0, 0, 3],
+    [0, 2, 2],
+    [0, 2, 1],
+    [2, 2, 1],
+    [0, 2, 3],
+    [0, 2, 2]
+]
 
 cols = 10
 col_rule_len = 2
 col_rules = [
-    [2,1],
-    [1,3],
-    [2,4],
-    [3,4],
-    [0,4],
-    [0,3],
-    [0,3],
-    [0,3],
-    [0,2],
-    [0,2]
-    ]
+    [2, 1],
+    [1, 3],
+    [2, 4],
+    [3, 4],
+    [0, 4],
+    [0, 3],
+    [0, 3],
+    [0, 3],
+    [0, 2],
+    [0, 2]
+]
 
 
 if __name__ == '__main__':

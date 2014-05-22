@@ -34,42 +34,44 @@
   * Zinc    : http://hakank.org/minizinc/least_diff.zinc
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_cp_solver/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_cp_solver/
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver('Least diff')
+  solver = pywrapcp.Solver("Least diff")
 
   #
   # declare variables
   #
   digits = range(0, 10)
-  a = solver.IntVar(digits, 'a')
-  b = solver.IntVar(digits, 'b')
-  c = solver.IntVar(digits, 'c')
-  d = solver.IntVar(digits, 'd')
-  e = solver.IntVar(digits, 'e')
+  a = solver.IntVar(digits, "a")
+  b = solver.IntVar(digits, "b")
+  c = solver.IntVar(digits, "c")
+  d = solver.IntVar(digits, "d")
+  e = solver.IntVar(digits, "e")
 
-  f = solver.IntVar(digits, 'f')
-  g = solver.IntVar(digits, 'g')
-  h = solver.IntVar(digits, 'h')
-  i = solver.IntVar(digits, 'i')
-  j = solver.IntVar(digits, 'j')
+  f = solver.IntVar(digits, "f")
+  g = solver.IntVar(digits, "g")
+  h = solver.IntVar(digits, "h")
+  i = solver.IntVar(digits, "i")
+  j = solver.IntVar(digits, "j")
 
-  letters = [a,b,c,d,e,f,g,h,i,j]
+  letters = [a, b, c, d, e, f, g, h, i, j]
 
-  x = solver.IntVar(range(0,99999), "x")
-  y = solver.IntVar(range(0,99999), "y")
-  diff = solver.IntVar(range(0,99999), "y")
+  x = solver.IntVar(range(0, 99999), "x")
+  y = solver.IntVar(range(0, 99999), "y")
+  diff = solver.IntVar(range(0, 99999), "y")
 
   #
   # constraints
   #
-  solver.Add(x == 10000*a +1000*b +100*c +10*d + e)
-  solver.Add(y == 10000*f +1000*g +100*h +10*i + j)
+  solver.Add(x == 10000 * a + 1000 * b + 100 * c + 10 * d + e)
+  solver.Add(y == 10000 * f + 1000 * g + 100 * h + 10 * i + j)
   solver.Add(diff == x - y)
   solver.Add(diff > 0)
   solver.Add(solver.AllDifferent(letters))
@@ -91,10 +93,10 @@ def main(unused_argv):
   search_log = solver.SearchLog(100, diff)
   # Note: I'm not sure what CHOOSE_PATH do, but it is fast:
   #       find the solution in just 4 steps
-  solver.Solve(solver.Phase(letters + [x,y,diff],
+  solver.Solve(solver.Phase(letters + [x, y, diff],
                             solver.CHOOSE_PATH,
                             solver.ASSIGN_MIN_VALUE),
-                            [objective, search_log, collector])
+               [objective, search_log, collector])
 
   # get the first (and only) solution
 
@@ -104,7 +106,7 @@ def main(unused_argv):
   print "x:", xval
   print "y:", yval
   print "diff:", diffval
-  print xval,"-", yval,"=", diffval
+  print xval, "-", yval, "=", diffval
   print [("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)]
   print
   print "failures:", solver.Failures()
@@ -112,5 +114,5 @@ def main(unused_argv):
   print "WallTime:", solver.WallTime()
   print
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   main("cp sample")

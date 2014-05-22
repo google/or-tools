@@ -25,12 +25,14 @@
      http://www.hakank.org/google_or_tools/3_jugs_regular
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
 
-def main(sol = 'GLPK'):
+
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -41,20 +43,19 @@ def main(sol = 'GLPK'):
     solver = pywraplp.Solver('CoinsGridGLPK',
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
-  # Using CLP
-      solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
+    # Using CLP
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
   #
   n = 15
-  start = 0 # start node
+  start = 0  # start node
   end = 14  # end node
   M = 999   # a large number
 
-  nodes = ['8,0,0', # start
+  nodes = ['8,0,0',  # start
            '5,0,3',
            '5,3,0',
            '2,3,3',
@@ -88,7 +89,6 @@ def main(sol = 'GLPK'):
        [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
        [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
 
-
   #
   # variables
   #
@@ -99,20 +99,19 @@ def main(sol = 'GLPK'):
   x = {}
   for i in range(n):
     for j in range(n):
-        x[i,j] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
 
   out_flow = [solver.IntVar(0, 1, 'out_flow[%i]' % i) for i in range(n)]
   in_flow = [solver.IntVar(0, 1, 'in_flow[%i]' % i) for i in range(n)]
 
   # length of path, to be minimized
-  z = solver.Sum([d[i][j]*x[i,j]
-                               for i in range(n)
-                               for j in range(n) if d[i][j] < M])
+  z = solver.Sum([d[i][j] * x[i, j]
+                  for i in range(n)
+                  for j in range(n) if d[i][j] < M])
 
   #
   # constraints
   #
-
 
   for i in range(n):
     if i == start:
@@ -122,27 +121,24 @@ def main(sol = 'GLPK'):
     else:
       solver.Add(rhs[i] == 0)
 
-
   # outflow constraint
   for i in range(n):
-    solver.Add(out_flow[i] == solver.Sum([x[i,j]
+    solver.Add(out_flow[i] == solver.Sum([x[i, j]
                                           for j in range(n)
                                           if d[i][j] < M]))
 
   # inflow constraint
   for j in range(n):
-    solver.Add(in_flow[j] == solver.Sum([x[i,j]
+    solver.Add(in_flow[j] == solver.Sum([x[i, j]
                                          for i in range(n)
                                          if d[i][j] < M]))
 
   # inflow = outflow
   for i in range(n):
-     solver.Add(out_flow[i]-in_flow[i] == rhs[i])
-
+    solver.Add(out_flow[i] - in_flow[i] == rhs[i])
 
   # objective
   objective = solver.Minimize(z)
-
 
   #
   # solution and search
@@ -156,7 +152,7 @@ def main(sol = 'GLPK'):
   while t != end:
     print nodes[t], '->',
     for j in range(n):
-      if x[t,j].SolutionValue() == 1:
+      if x[t, j].SolutionValue() == 1:
         print nodes[j]
         t = j
         break

@@ -36,76 +36,76 @@
   * SICStus: http://hakank.org/sicstus/subset_sum.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import string, sys
+import string
+import sys
 from ortools.constraint_solver import pywrapcp
 
 
 def subset_sum(solver, values, total):
-    n = len(values)
-    x = [solver.IntVar(0, n) for i in range(n)]
-    ss = solver.IntVar(0, n)
+  n = len(values)
+  x = [solver.IntVar(0, n) for i in range(n)]
+  ss = solver.IntVar(0, n)
 
+  solver.Add(ss == solver.Sum(x))
+  solver.Add(total == solver.ScalProd(x, values))
 
-    solver.Add(ss == solver.Sum(x))
-    solver.Add(total == solver.ScalProd(x, values))
+  return x, ss
 
-    return x, ss
 
 def main(coins, total):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
-    print "coins:", coins
-    print "total:", total
+  #
+  # data
+  #
+  print "coins:", coins
+  print "total:", total
+  print
+
+  #
+  # declare variables
+  #
+
+  #
+  # constraints
+  #
+  x, ss = subset_sum(solver, coins, total)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(ss)
+
+  # db: DecisionBuilder
+  db = solver.Phase(x,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "ss:", ss.Value()
+    print "x: ", [x[i].Value() for i in range(len(x))]
     print
+    num_solutions += 1
+  solver.EndSearch()
 
-    #
-    # declare variables
-    #
-
-    #
-    # constraints
-    #
-    x, ss = subset_sum(solver, coins, total)
-
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(ss)
-
-    # db: DecisionBuilder
-    db = solver.Phase(x,
-                      solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE
-                      )
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "ss:", ss.Value()
-        print "x: ", [x[i].Value() for i in range(len(x))]
-        print
-        num_solutions += 1
-    solver.EndSearch()
-
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 coins = [16, 17, 23, 24, 39, 40]
 total = 100
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        total = string.atoi(sys.argv[1])
-    main(coins, total)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    total = string.atoi(sys.argv[1])
+  main(coins, total)

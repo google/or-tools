@@ -15,7 +15,6 @@
 """This model implements a sudoku solver."""
 
 
-
 from google.apputils import app
 import gflags
 from ortools.constraint_solver import pywrapcp

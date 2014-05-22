@@ -41,46 +41,43 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
 
 
-
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver('Diet')
-
+  solver = pywrapcp.Solver("Diet")
 
   #
   # data
   #
   n = 4
-  price  = [ 50, 20, 30, 80] # in cents
-  limits = [500,  6, 10,  8] # requirements for each nutrition type
+  price = [50, 20, 30, 80]  # in cents
+  limits = [500, 6, 10, 8]  # requirements for each nutrition type
 
   # nutritions for each product
-  calories  = [400, 200, 150, 500]
-  chocolate = [3,2,0,0]
-  sugar     = [2,2,4,4]
-  fat       = [2,4,1,5]
-
+  calories = [400, 200, 150, 500]
+  chocolate = [3, 2, 0, 0]
+  sugar = [2, 2, 4, 4]
+  fat = [2, 4, 1, 5]
 
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 100, 'x%d' % i) for i in range(n)]
-  cost = solver.IntVar(0,10000, 'cost')
+  x = [solver.IntVar(0, 100, "x%d" % i) for i in range(n)]
+  cost = solver.IntVar(0, 10000, "cost")
 
   #
   # constraints
   #
-  solver.Add(solver.Sum([x[i]*calories[i]  for i in range(n)])   >= limits[0])
-  solver.Add(solver.Sum([x[i]*chocolate[i] for i in range(n)])   >= limits[1])
-  solver.Add(solver.Sum([x[i]*sugar[i]     for i in range(n)])   >= limits[2])
-  solver.Add(solver.Sum([x[i]*fat[i]       for i in range(n)])   >= limits[3])
-
+  solver.Add(solver.Sum([x[i] * calories[i] for i in range(n)]) >= limits[0])
+  solver.Add(solver.Sum([x[i] * chocolate[i] for i in range(n)]) >= limits[1])
+  solver.Add(solver.Sum([x[i] * sugar[i] for i in range(n)]) >= limits[2])
+  solver.Add(solver.Sum([x[i] * fat[i] for i in range(n)]) >= limits[3])
 
   # objective
   objective = solver.Minimize(cost, 1)
@@ -98,12 +95,12 @@ def main(unused_argv):
   solver.Solve(solver.Phase(x + [cost],
                             solver.INT_VAR_SIMPLE,
                             solver.ASSIGN_MIN_VALUE),
-                            [objective, search_log, collector])
+               [objective, search_log, collector])
 
   # get the first (and only) solution
 
   print "cost:", collector.ObjectiveValue(0)
-  print [("abcdefghij"[i],collector.Value(0, x[i])) for i in range(n)]
+  print [("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)]
   print
   print "failures:", solver.Failures()
   print "branches:", solver.Branches()
@@ -111,5 +108,5 @@ def main(unused_argv):
   print
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   main("cp sample")

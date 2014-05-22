@@ -41,7 +41,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -50,84 +51,83 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Lectures')
+  # Create the solver.
+  solver = pywrapcp.Solver('Lectures')
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    #
-    # The schedule requirements:
-    # lecture a cannot be held at the same time as b
-    # Note: 1-based
-    g = [
-        [1, 2],
-        [1, 4],
-        [3, 5],
-        [2, 6],
-        [4, 5],
-        [5, 6],
-        [1, 6]
-        ]
+  #
+  # The schedule requirements:
+  # lecture a cannot be held at the same time as b
+  # Note: 1-based
+  g = [
+      [1, 2],
+      [1, 4],
+      [3, 5],
+      [2, 6],
+      [4, 5],
+      [5, 6],
+      [1, 6]
+  ]
 
-    # number of nodes
-    n = 6
+  # number of nodes
+  n = 6
 
-    # number of edges
-    edges = len(g)
+  # number of edges
+  edges = len(g)
 
-    #
-    # declare variables
-    #
-    v = [solver.IntVar(0, n-1, 'v[%i]' % i) for i in range(n)]
+  #
+  # declare variables
+  #
+  v = [solver.IntVar(0, n - 1, 'v[%i]' % i) for i in range(n)]
 
-    # maximum color, to minimize
-    # Note: since Python is 0-based, the
-    # number of colors is +1
-    max_c = solver.IntVar(0, n-1, 'max_c')
+  # maximum color, to minimize
+  # Note: since Python is 0-based, the
+  # number of colors is +1
+  max_c = solver.IntVar(0, n - 1, 'max_c')
 
+  #
+  # constraints
+  #
+  solver.Add(max_c == solver.Max(v))
 
-    #
-    # constraints
-    #
-    solver.Add(max_c == solver.Max(v))
+  # ensure that there are no clashes
+  # also, adjust to 0-base
+  for i in range(edges):
+    solver.Add(v[g[i][0] - 1] != v[g[i][1] - 1])
 
-    # ensure that there are no clashes
-    # also, adjust to 0-base
-    for i in range(edges):
-        solver.Add(v[g[i][0]-1] != v[g[i][1]-1])
+  # symmetry breaking:
+  # - v0 has the color 0,
+  # - v1 has either color 0 or 1
+  solver.Add(v[0] == 0)
+  solver.Add(v[1] <= 1)
 
-    # symmetry breaking:
-    # - v0 has the color 0,
-    # - v1 has either color 0 or 1
-    solver.Add(v[0] == 0)
-    solver.Add(v[1] <= 1)
+  # objective
+  objective = solver.Minimize(max_c, 1)
 
-    # objective
-    objective = solver.Minimize(max_c, 1)
+  #
+  # solution and search
+  #
+  db = solver.Phase(v,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_CENTER_VALUE)
 
-    #
-    # solution and search
-    #
-    db = solver.Phase(v,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                      solver.ASSIGN_CENTER_VALUE)
+  solver.NewSearch(db, [objective])
 
-    solver.NewSearch(db, [objective])
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'max_c:', max_c.Value() + 1, 'colors'
+    print 'v:', [v[i].Value() for i in range(n)]
+    print
 
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'max_c:', max_c.Value()+1, 'colors'
-        print 'v:', [v[i].Value() for i in range(n)]
-        print
-
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

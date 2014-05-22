@@ -37,12 +37,14 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
 
-def main(sol = 'GLPK'):
+
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -53,10 +55,9 @@ def main(sol = 'GLPK'):
     solver = pywraplp.Solver('CoinsGridGLPK',
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
-  # Using CLP
-      solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
+    # Using CLP
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
@@ -80,14 +81,14 @@ def main(sol = 'GLPK'):
   #
   # Optimal solution is 76
   # """
-  c = [[13, 21, 20, 12,  8, 26, 22, 11],
-       [12, 36, 25, 41, 40, 11,  4,  8],
+  c = [[13, 21, 20, 12, 8, 26, 22, 11],
+       [12, 36, 25, 41, 40, 11, 4, 8],
        [35, 32, 13, 36, 26, 21, 13, 37],
-       [34, 54,  7,  8, 12, 22, 11, 40],
-       [21,  6, 45, 18, 24, 34, 12, 48],
+       [34, 54, 7, 8, 12, 22, 11, 40],
+       [21, 6, 45, 18, 24, 34, 12, 48],
        [42, 19, 39, 15, 14, 16, 28, 46],
-       [16, 34, 38,  3, 34, 40, 22, 24],
-       [26, 20,  5, 17, 45, 31, 37, 43]]
+       [16, 34, 38, 3, 34, 40, 22, 24],
+       [26, 20, 5, 17, 45, 31, 37, 43]]
 
   #
   # variables
@@ -101,34 +102,31 @@ def main(sol = 'GLPK'):
   x = {}
   for i in range(n):
     for j in range(n):
-        x[i,j] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
+      x[i, j] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
 
   # total cost, to be minimized
-  z = solver.Sum([c[i][j]*x[i,j]
-                               for i in I
-                               for j in J])
+  z = solver.Sum([c[i][j] * x[i, j]
+                  for i in I
+                  for j in J])
 
   #
   # constraints
   #
   # each agent can perform at most one task
   for i in I:
-    solver.Add(solver.Sum([x[i,j] for j in J]) <= 1)
+    solver.Add(solver.Sum([x[i, j] for j in J]) <= 1)
 
   # each task must be assigned exactly to one agent
   for j in J:
-    solver.Add(solver.Sum([x[i,j] for i in I]) == 1)
-
+    solver.Add(solver.Sum([x[i, j] for i in I]) == 1)
 
   # to which task and what cost is person i assigned (for output in MiniZinc)
   for i in I:
-    solver.Add(assigned[i] == solver.Sum([ j*x[i,j]  for j in J]))
-    solver.Add(costs[i] == solver.Sum([c[i][j]*x[i,j] for j in J]))
-
+    solver.Add(assigned[i] == solver.Sum([j * x[i, j] for j in J]))
+    solver.Add(costs[i] == solver.Sum([c[i][j] * x[i, j] for j in J]))
 
   # objective
   objective = solver.Minimize(z)
-
 
   #
   # solution and search
@@ -146,11 +144,9 @@ def main(sol = 'GLPK'):
   print 'Matrix:'
   for i in I:
     for j in J:
-      print int(x[i,j].SolutionValue()),
+      print int(x[i, j].SolutionValue()),
     print
   print
-
-
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'

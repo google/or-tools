@@ -34,7 +34,8 @@
   using an array of size 10.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -73,7 +74,7 @@ def regular(x, Q, S, d, q0, F):
   # to state zero.  This allows us to continue even if we hit a
   # non-accepted input.
 
-  d2 = pywrapcp.IntTupleSet(3);
+  d2 = pywrapcp.IntTupleSet(3)
   for i in range(Q + 1):
     for j in range(S):
       if i == 0:
@@ -85,15 +86,15 @@ def regular(x, Q, S, d, q0, F):
   # (q0), and a[i+1] holds the state we're in after processing
   # x[i].  If a[n] is in F, then we succeed (ie. accept the
   # string).
-  x_range = range(0,len(x))
+  x_range = range(0, len(x))
   m = 0
   n = len(x)
 
-  a = [solver.IntVar(0, Q, 'a[%i]' % i) for i in range(m, n+1)]
+  a = [solver.IntVar(0, Q, 'a[%i]' % i) for i in range(m, n + 1)]
 
-    # Check that the final state is in F
+  # Check that the final state is in F
   solver.Add(solver.MemberCt(a[-1], F))
-    # First state is q0
+  # First state is q0
   solver.Add(a[m] == q0)
   for i in x_range:
     solver.Add(x[i] >= 1)
@@ -108,111 +109,110 @@ def regular(x, Q, S, d, q0, F):
 #
 def make_transition_matrix(pattern):
 
-    p_len = len(pattern)
-    print 'p_len:', p_len
-    num_states = p_len + sum(pattern)
-    print 'num_states:', num_states
-    t_matrix = []
-    for i in range(num_states):
-        row = []
-        for j in range(2):
-            row.append(0)
-        t_matrix.append(row)
+  p_len = len(pattern)
+  print 'p_len:', p_len
+  num_states = p_len + sum(pattern)
+  print 'num_states:', num_states
+  t_matrix = []
+  for i in range(num_states):
+    row = []
+    for j in range(2):
+      row.append(0)
+    t_matrix.append(row)
 
-    # convert pattern to a 0/1 pattern for easy handling of
-    # the states
-    tmp = [0 for i in range(num_states)]
-    c = 0
-    tmp[c] = 0
-    for i in range(p_len):
-        for j in range(pattern[i]):
-            c += 1
-            tmp[c] = 1
-        if c < num_states - 1:
-            c += 1
-            tmp[c] = 0
-    print 'tmp:', tmp
+  # convert pattern to a 0/1 pattern for easy handling of
+  # the states
+  tmp = [0 for i in range(num_states)]
+  c = 0
+  tmp[c] = 0
+  for i in range(p_len):
+    for j in range(pattern[i]):
+      c += 1
+      tmp[c] = 1
+    if c < num_states - 1:
+      c += 1
+      tmp[c] = 0
+  print 'tmp:', tmp
 
+  t_matrix[num_states - 1][0] = num_states
+  t_matrix[num_states - 1][1] = 0
 
-    t_matrix[num_states - 1][0] = num_states
-    t_matrix[num_states - 1][1] = 0
-
-    for i in range(num_states):
-        if tmp[i] == 0:
-            t_matrix[i][0] = i + 1
-            t_matrix[i][1] = i + 2
+  for i in range(num_states):
+    if tmp[i] == 0:
+      t_matrix[i][0] = i + 1
+      t_matrix[i][1] = i + 2
+    else:
+      if i < num_states - 1:
+        if tmp[i + 1] == 1:
+          t_matrix[i][0] = 0
+          t_matrix[i][1] = i + 2
         else:
-            if i < num_states - 1:
-                if tmp[i+1] == 1:
-                    t_matrix[i][0] = 0
-                    t_matrix[i][1] = i + 2
-                else:
-                    t_matrix[i][0] = i + 2
-                    t_matrix[i][1] = 0
+          t_matrix[i][0] = i + 2
+          t_matrix[i][1] = 0
 
-    print 'The states:'
-    for i in range(num_states):
-        for j in range(2):
-            print t_matrix[i][j],
-        print
+  print 'The states:'
+  for i in range(num_states):
+    for j in range(2):
+      print t_matrix[i][j],
     print
+  print
 
-    return t_matrix
+  return t_matrix
+
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Regular test')
+  # Create the solver.
+  solver = pywrapcp.Solver('Regular test')
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    this_len = 10
-    pp = [3,2,1]
+  this_len = 10
+  pp = [3, 2, 1]
 
-    transition_fn = make_transition_matrix(pp)
-    n_states = len(transition_fn)
-    input_max = 2
+  transition_fn = make_transition_matrix(pp)
+  n_states = len(transition_fn)
+  input_max = 2
 
-    # Note: we use '1' and '2' (rather than 0 and 1)
-    # since 0 represents the failing state.
-    initial_state = 1
+  # Note: we use '1' and '2' (rather than 0 and 1)
+  # since 0 represents the failing state.
+  initial_state = 1
 
-    accepting_states = [n_states]
+  accepting_states = [n_states]
 
-    # declare variables
-    reg_input = [solver.IntVar(1, input_max, 'reg_input[%i]' % i)
-                 for i in range(this_len)]
+  # declare variables
+  reg_input = [solver.IntVar(1, input_max, 'reg_input[%i]' % i)
+               for i in range(this_len)]
 
-    #
-    # constraints
-    #
-    regular(reg_input, n_states, input_max, transition_fn,
-            initial_state, accepting_states)
+  #
+  # constraints
+  #
+  regular(reg_input, n_states, input_max, transition_fn,
+          initial_state, accepting_states)
 
+  #
+  # solution and search
+  #
+  db = solver.Phase(reg_input,
+                    solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                    solver.ASSIGN_MIN_VALUE)
 
-    #
-    # solution and search
-    #
-    db = solver.Phase(reg_input,
-                      solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                      solver.ASSIGN_MIN_VALUE)
+  solver.NewSearch(db)
 
-    solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print 'reg_input:', [reg_input[i].Value() - 1 for i in range(this_len)]
+    num_solutions += 1
 
-    num_solutions = 0
-    while solver.NextSolution():
-        print 'reg_input:', [reg_input[i].Value()-1 for i in range(this_len)]
-        num_solutions += 1
-
-    solver.EndSearch()
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  solver.EndSearch()
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

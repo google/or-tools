@@ -56,7 +56,8 @@
   * Gecode: http://hakank.org/gecode/sicherman_dice.cpp
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -64,79 +65,76 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Sicherman dice')
+  # Create the solver.
+  solver = pywrapcp.Solver("Sicherman dice")
 
-    #
-    # data
-    #
-    n = 6
-    m = 10
+  #
+  # data
+  #
+  n = 6
+  m = 10
 
-    # standard distribution
-    standard_dist = [1,2,3,4,5,6,5,4,3,2,1]
+  # standard distribution
+  standard_dist = [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1]
 
-    #
-    # declare variables
-    #
+  #
+  # declare variables
+  #
 
-    # the two dice
-    x1 = [solver.IntVar(0, m,"x1(%i)"%i) for i in range(n)]
-    x2 = [solver.IntVar(0, m,"x2(%i)"%i) for i in range(n)]
+  # the two dice
+  x1 = [solver.IntVar(0, m, "x1(%i)" % i) for i in range(n)]
+  x2 = [solver.IntVar(0, m, "x2(%i)" % i) for i in range(n)]
 
+  #
+  # constraints
+  #
+  # [solver.Add(standard_dist[k] == solver.Sum([x1[i] + x2[j] == k+2 for i in range(n) for j in range(n)]))
+  # for k in range(len(standard_dist))]
+  for k in range(len(standard_dist)):
+    tmp = [solver.BoolVar() for i in range(n) for j in range(n)]
+    for i in range(n):
+      for j in range(n):
+        solver.Add(tmp[i * n + j] == solver.IsEqualCstVar(x1[i] + x2[j], k + 2))
+    solver.Add(standard_dist[k] == solver.Sum(tmp))
 
-    #
-    # constraints
-    #
-    # [solver.Add(standard_dist[k] == solver.Sum([x1[i] + x2[j] == k+2 for i in range(n) for j in range(n)]))
-    #                                                   for k in range(len(standard_dist))]
-    for k in range(len(standard_dist)):
-        tmp = [solver.BoolVar() for i in range(n) for j in range(n)]
-        for i in range(n):
-            for j in range(n):
-                solver.Add(tmp[i*n+j] == solver.IsEqualCstVar(x1[i] + x2[j],k+2))
-        solver.Add(standard_dist[k] == solver.Sum(tmp))
+  # symmetry breaking
+  [solver.Add(x1[i] <= x1[i + 1]) for i in range(n - 1)],
+  [solver.Add(x2[i] <= x2[i + 1]) for i in range(n - 1)],
+  [solver.Add(x1[i] <= x2[i]) for i in range(n - 1)],
 
-    # symmetry breaking
-    [solver.Add(x1[i] <= x1[i+1]) for i in range(n-1)],
-    [solver.Add(x2[i] <= x2[i+1]) for i in range(n-1)],
-    [solver.Add(x1[i] <= x2[i]) for i in range(n-1)],
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x1)
+  solution.Add(x2)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x1)
-    solution.Add(x2)
+  # db: DecisionBuilder
+  db = solver.Phase(x1 + x2,
+                    solver.INT_VAR_SIMPLE,
+                    solver.ASSIGN_MIN_VALUE)
 
-
-    # db: DecisionBuilder
-    db = solver.Phase(x1 + x2,
-                 solver.INT_VAR_SIMPLE,
-                 solver.ASSIGN_MIN_VALUE)
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "x1:", [x1[i].Value() for i in range(n)]
-        print "x2:", [x2[i].Value() for i in range(n)]
-        print
-
-        num_solutions += 1
-    solver.EndSearch()
-
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "x1:", [x1[i].Value() for i in range(n)]
+    print "x2:", [x2[i].Value() for i in range(n)]
     print
-    print "num_solutions:", num_solutions, "solver.solutions:", solver.solutions()
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-    print "MemoryUsage:", solver.MemoryUsage()
-    print "SearchDepth:", solver.SearchDepth()
-    print "SolveDepth:", solver.SolveDepth()
-    print "stamp:", solver.stamp()
-    print "solver", solver
+
+    num_solutions += 1
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions, "solver.solutions:", solver.solutions()
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
+  print "MemoryUsage:", solver.MemoryUsage()
+  print "SearchDepth:", solver.SearchDepth()
+  print "SolveDepth:", solver.SolveDepth()
+  print "stamp:", solver.stamp()
+  print "solver", solver
 
 
-if __name__ == '__main__':
-    main()
-
+if __name__ == "__main__":
+  main()

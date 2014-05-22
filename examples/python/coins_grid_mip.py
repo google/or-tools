@@ -37,10 +37,12 @@
   and use
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.linear_solver import pywraplp
+
 
 def main(unused_argv):
 
@@ -48,22 +50,21 @@ def main(unused_argv):
 
   # using GLPK
   solver = pywraplp.Solver('CoinsGridGLPK',
-                          pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
+                           pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
 
   # Using CLP
   # solver = pywraplp.Solver('CoinsGridCLP',
   #                          pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
-
   # data
-  n =  31  # the grid size
-  c =  14  # number of coins per row/column
+  n = 31  # the grid size
+  c = 14  # number of coins per row/column
 
   # declare variables
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i,j)] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
+      x[(i, j)] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
 
   #
   # constraints
@@ -72,14 +73,14 @@ def main(unused_argv):
   # sum rows/columns == c
   for i in range(n):
     solver.Add(solver.Sum(
-      [x[(i, j)] for j in range(n)]) == c)      # sum rows
+        [x[(i, j)] for j in range(n)]) == c)      # sum rows
     solver.Add(solver.Sum(
-      [x[(j, i)] for j in range(n)]) == c) # sum cols
+        [x[(j, i)] for j in range(n)]) == c)  # sum cols
 
   # quadratic horizonal distance var
   objective_var = solver.Sum(
-    [x[(i, j)] * (i - j) * (i - j)
-     for i in range(n) for j in range(n)])
+      [x[(i, j)] * (i - j) * (i - j)
+       for i in range(n) for j in range(n)])
 
   # objective
   objective = solver.Minimize(objective_var)
@@ -102,4 +103,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-    main("coin grids")
+  main('coin grids')

@@ -32,14 +32,15 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
 from ortools.linear_solver import pywraplp
 
 
-def main(sol = 'GLPK'):
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -51,39 +52,38 @@ def main(sol = 'GLPK'):
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
     # Using CBC
-        solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
   #
   n = 4
-  price  = [ 50, 20, 30, 80] # in cents
-  limits = [500,  6, 10,  8] # requirements for each nutrition type
+  price = [50, 20, 30, 80]  # in cents
+  limits = [500, 6, 10, 8]  # requirements for each nutrition type
 
   # nutritions for each product
-  calories  = [400, 200, 150, 500]
-  chocolate = [3,2,0,0]
-  sugar     = [2,2,4,4]
-  fat       = [2,4,1,5]
-
+  calories = [400, 200, 150, 500]
+  chocolate = [3, 2, 0, 0]
+  sugar = [2, 2, 4, 4]
+  fat = [2, 4, 1, 5]
 
   #
   # declare variables
   #
   x = [solver.IntVar(0, 100, 'x%d' % i) for i in range(n)]
-  cost = solver.Sum([x[i]*price[i]       for i in range(n)])
+  cost = solver.Sum([x[i] * price[i] for i in range(n)])
 
   #
   # constraints
   #
-  solver.Add(solver.Sum([x[i]*calories[i]
+  solver.Add(solver.Sum([x[i] * calories[i]
                          for i in range(n)]) >= limits[0])
-  solver.Add(solver.Sum([x[i]*chocolate[i]
+  solver.Add(solver.Sum([x[i] * chocolate[i]
                          for i in range(n)]) >= limits[1])
-  solver.Add(solver.Sum([x[i]*sugar[i]
+  solver.Add(solver.Sum([x[i] * sugar[i]
                          for i in range(n)]) >= limits[2])
-  solver.Add(solver.Sum([x[i]*fat[i]
+  solver.Add(solver.Sum([x[i] * fat[i]
                          for i in range(n)]) >= limits[3])
 
   # objective
@@ -94,14 +94,13 @@ def main(sol = 'GLPK'):
   #
   solver.Solve()
 
-  print "Cost:", solver.Objective().Value()
+  print 'Cost:', solver.Objective().Value()
   print [int(x[i].SolutionValue()) for i in range(n)]
 
   print
-  print "WallTime:", solver.WallTime()
+  print 'WallTime:', solver.WallTime()
   if sol == 'CBC':
     print 'iterations:', solver.Iterations()
-
 
 
 if __name__ == '__main__':

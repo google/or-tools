@@ -27,7 +27,6 @@ in the meeting and a maximum of non mandatory people are also in the meeting.
 """
 
 
-
 from google.apputils import app
 import gflags
 from ortools.constraint_solver import pywrapcp
@@ -134,7 +133,7 @@ def main(unused_argv):
     disj = solver.DisjunctiveConstraint(calendar, 'room %d calendar' % r)
     all_rooms_calendars[r] = disj.SequenceVar()
     solver.Add(disj)
-    all_rooms_presence[r] = solver.BoolVar('presence of room %d' %r)
+    all_rooms_presence[r] = solver.BoolVar('presence of room %d' % r)
 
   # Objective: maximum number of people.
   objective = solver.Maximize(people_count, 1)

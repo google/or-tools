@@ -14,7 +14,6 @@
 """MaxFlow and MinCostFlow examples."""
 
 
-
 from google.apputils import app
 from ortools.graph import pywrapgraph
 

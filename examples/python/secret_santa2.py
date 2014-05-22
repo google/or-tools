@@ -58,7 +58,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -67,159 +68,154 @@ from ortools.constraint_solver import pywrapcp
 
 def main(singe=0):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Secret Santa problem II')
+  # Create the solver.
+  solver = pywrapcp.Solver('Secret Santa problem II')
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    #
-    # The matrix version of earlier rounds.
-    # M means that no earlier Santa has been assigned.
-    # Note: Ryan and Mia has the same recipient for years 3 and 4,
-    #       and Ella and John has for year 4.
-    #       This seems to be caused by modification of
-    #       original data.
-    #
-    n_no_single = 8
-    M = n_no_single + 1
-    rounds_no_single = [
-         # N  A  R  M  El J  L  Ev
-          [0, M, 3, M, 1, 4, M, 2], # Noah
-          [M, 0, 4, 2, M, 3, M, 1], # Ava
-          [M, 2, 0, M, 1, M, 3, 4], # Ryan
-          [M, 1, M, 0, 2, M, 3, 4], # Mia
-          [M, 4, M, 3, 0, M, 1, 2], # Ella
-          [1, 4, 3, M, M, 0, 2, M], # John
-          [M, 3, M, 2, 4, 1, 0, M], # Lily
-          [4, M, 3, 1, M, 2, M, 0]  # Evan
-        ]
+  #
+  # The matrix version of earlier rounds.
+  # M means that no earlier Santa has been assigned.
+  # Note: Ryan and Mia has the same recipient for years 3 and 4,
+  #       and Ella and John has for year 4.
+  #       This seems to be caused by modification of
+  #       original data.
+  #
+  n_no_single = 8
+  M = n_no_single + 1
+  rounds_no_single = [
+      # N  A  R  M  El J  L  Ev
+      [0, M, 3, M, 1, 4, M, 2],  # Noah
+      [M, 0, 4, 2, M, 3, M, 1],  # Ava
+      [M, 2, 0, M, 1, M, 3, 4],  # Ryan
+      [M, 1, M, 0, 2, M, 3, 4],  # Mia
+      [M, 4, M, 3, 0, M, 1, 2],  # Ella
+      [1, 4, 3, M, M, 0, 2, M],  # John
+      [M, 3, M, 2, 4, 1, 0, M],  # Lily
+      [4, M, 3, 1, M, 2, M, 0]  # Evan
+  ]
 
-    #
-    # Rounds with a single person (fake data)
-    #
-    n_with_single = 9
-    M = n_with_single + 1
-    rounds_single = [
-        # N  A  R  M  El J  L  Ev S
-        [0, M, 3, M, 1, 4, M, 2, 2], # Noah
-        [M, 0, 4, 2, M, 3, M, 1, 1], # Ava
-        [M, 2, 0, M, 1, M, 3, 4, 4], # Ryan
-        [M, 1, M, 0, 2, M, 3, 4, 3], # Mia
-        [M, 4, M, 3, 0, M, 1, 2, M], # Ella
-        [1, 4, 3, M, M, 0, 2, M, M], # John
-        [M, 3, M, 2, 4, 1, 0, M, M], # Lily
-        [4, M, 3, 1, M, 2, M, 0, M], # Evan
-        [1, 2, 3, 4, M, 2, M, M, 0]  # Single
-        ]
+  #
+  # Rounds with a single person (fake data)
+  #
+  n_with_single = 9
+  M = n_with_single + 1
+  rounds_single = [
+      # N  A  R  M  El J  L  Ev S
+      [0, M, 3, M, 1, 4, M, 2, 2],  # Noah
+      [M, 0, 4, 2, M, 3, M, 1, 1],  # Ava
+      [M, 2, 0, M, 1, M, 3, 4, 4],  # Ryan
+      [M, 1, M, 0, 2, M, 3, 4, 3],  # Mia
+      [M, 4, M, 3, 0, M, 1, 2, M],  # Ella
+      [1, 4, 3, M, M, 0, 2, M, M],  # John
+      [M, 3, M, 2, 4, 1, 0, M, M],  # Lily
+      [4, M, 3, 1, M, 2, M, 0, M],  # Evan
+      [1, 2, 3, 4, M, 2, M, M, 0]  # Single
+  ]
 
+  if single == 1:
+    n = n_with_single
+    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan, Single = range(n)
+    rounds = rounds_single
+  else:
+    n = n_no_single
+    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan = range(n)
+    rounds = rounds_no_single
 
-    if single == 1:
-        n = n_with_single
-        Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan, Single = range(n)
-        rounds = rounds_single
-    else:
-        n = n_no_single
-        Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan = range(n)
-        rounds = rounds_no_single
+  M = n + 1
 
-    M = n + 1
+  persons = ['Noah', 'Ava', 'Ryan', 'Mia', 'Ella',
+             'John', 'Lily', 'Evan', 'Single']
 
-    persons = ['Noah', 'Ava', 'Ryan', 'Mia', 'Ella',
-               'John', 'Lily', 'Evan', 'Single']
+  spouses = [
+      Ava,  # Noah
+      Noah,  # Ava
+      Mia,  # Rya
+      Ryan,  # Mia
+      John,  # Ella
+      Ella,  # John
+      Evan,  # Lily
+      Lily,  # Evan
+      -1    # Single has no spouse
+  ]
 
-    spouses = [
-        Ava,  # Noah
-        Noah, # Ava
-        Mia,  # Rya
-        Ryan, # Mia
-        John, # Ella
-        Ella, # John
-        Evan, # Lily
-        Lily, # Evan
-        -1    # Single has no spouse
-    ]
+  #
+  # declare variables
+  #
+  santas = [solver.IntVar(0, n - 1, 'santas[%i]' % i)
+            for i in range(n)]
+  santa_distance = [solver.IntVar(0, M, 'santa_distance[%i]' % i)
+                    for i in range(n)]
 
+  # total of 'distance', to maximize
+  z = solver.IntVar(0, n * n * n, 'z')
 
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(santas))
 
-    #
-    # declare variables
-    #
-    santas = [solver.IntVar(0, n-1, 'santas[%i]' % i)
-              for i in range(n)]
-    santa_distance = [solver.IntVar(0, M, 'santa_distance[%i]' % i)
-                      for i in range(n)]
+  solver.Add(z == solver.Sum(santa_distance))
 
-    # total of 'distance', to maximize
-    z = solver.IntVar(0, n*n*n, 'z')
+  # Can't be one own's Secret Santa
+  # (i.e. ensure that there are no fix-point in the array.)
+  for i in range(n):
+    solver.Add(santas[i] != i)
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(santas))
+  # no Santa for a spouses
+  for i in range(n):
+    if spouses[i] > -1:
+      solver.Add(santas[i] != spouses[i])
 
-    solver.Add(z == solver.Sum(santa_distance))
+  # optimize 'distance' to earlier rounds:
+  for i in range(n):
+    solver.Add(santa_distance[i] ==
+               solver.Element(rounds[i], santas[i]))
 
-    # Can't be one own's Secret Santa
-    # (i.e. ensure that there are no fix-point in the array.)
+  # cannot be a Secret Santa for the same person
+  # two years in a row.
+  for i in range(n):
+    for j in range(n):
+      if rounds[i][j] == 1:
+        solver.Add(santas[i] != j)
+
+  # objective
+  objective = solver.Maximize(z, 1)
+
+  #
+  # solution and search
+  #
+  db = solver.Phase(santas,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_CENTER_VALUE)
+
+  solver.NewSearch(db, [objective])
+
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'total distances:', z.Value()
+    print 'santas:', [santas[i].Value() for i in range(n)]
     for i in range(n):
-        solver.Add(santas[i] != i)
+      print '%s\tis a Santa to %s (distance %i)' % \
+            (persons[i],
+             persons[santas[i].Value()],
+             santa_distance[i].Value())
+    # print 'distance:', [santa_distance[i].Value()
+    #                     for i in range(n)]
+    print
 
-
-    # no Santa for a spouses
-    for i in range(n):
-      if spouses[i] > -1 :
-         solver.Add(santas[i] != spouses[i])
-
-    # optimize 'distance' to earlier rounds:
-    for i in range(n):
-        solver.Add(santa_distance[i] ==
-                   solver.Element(rounds[i], santas[i]))
-
-
-    # cannot be a Secret Santa for the same person
-    # two years in a row.
-    for i in range(n):
-        for j in range(n):
-            if rounds[i][j] == 1:
-                solver.Add(santas[i] != j)
-
-    # objective
-    objective = solver.Maximize(z, 1)
-
-    #
-    # solution and search
-    #
-    db = solver.Phase(santas,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                      solver.ASSIGN_CENTER_VALUE)
-
-    solver.NewSearch(db, [objective])
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'total distances:', z.Value()
-        print 'santas:', [santas[i].Value() for i in range(n)]
-        for i in range(n):
-            print '%s\tis a Santa to %s (distance %i)' % \
-                  (persons[i],
-                   persons[santas[i].Value()],
-                   santa_distance[i].Value())
-        # print 'distance:', [santa_distance[i].Value()
-        #                     for i in range(n)]
-        print
-
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 single = 0
 if __name__ == '__main__':
-    print 'Secret Santas without single'
-    main(single)
-    print '\nSecret Santas with single:'
-    single = 1
-    main(single)
+  print 'Secret Santas without single'
+  main(single)
+  print '\nSecret Santas with single:'
+  single = 1
+  main(single)

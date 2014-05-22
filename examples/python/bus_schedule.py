@@ -30,7 +30,8 @@
   * SICStus: http://hakank.org/sicstus/bus_schedule.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -39,78 +40,74 @@ import string
 from ortools.constraint_solver import pywrapcp
 
 
-
 def main(num_buses_check=0):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Bus scheduling')
+  # Create the solver.
+  solver = pywrapcp.Solver("Bus scheduling")
 
-    # data
-    time_slots = 6
-    demands = [8, 10, 7, 12, 4, 4]
-    max_num = sum(demands)
+  # data
+  time_slots = 6
+  demands = [8, 10, 7, 12, 4, 4]
+  max_num = sum(demands)
 
-    # declare variables
-    x = [solver.IntVar(0, max_num, "x%i"%i) for i in range(time_slots)]
-    num_buses = solver.IntVar(0, max_num, 'num_buses')
+  # declare variables
+  x = [solver.IntVar(0, max_num, "x%i" % i) for i in range(time_slots)]
+  num_buses = solver.IntVar(0, max_num, "num_buses")
 
-    #
-    # constraints
-    #
-    solver.Add(num_buses == solver.Sum(x))
+  #
+  # constraints
+  #
+  solver.Add(num_buses == solver.Sum(x))
 
-    # Meet the demands for this and the next time slot
-    for i in range(time_slots-1):
-        solver.Add(x[i]+x[i+1] >= demands[i])
+  # Meet the demands for this and the next time slot
+  for i in range(time_slots - 1):
+    solver.Add(x[i] + x[i + 1] >= demands[i])
 
-    # The demand "around the clock"
-    solver.Add(x[time_slots-1] + x[0] == demands[time_slots-1])
+  # The demand "around the clock"
+  solver.Add(x[time_slots - 1] + x[0] == demands[time_slots - 1])
 
-    if num_buses_check > 0:
-        solver.Add(num_buses == num_buses_check)
+  if num_buses_check > 0:
+    solver.Add(num_buses == num_buses_check)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(num_buses)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(num_buses)
 
-    collector = solver.AllSolutionCollector(solution)
-    cargs = [collector]
+  collector = solver.AllSolutionCollector(solution)
+  cargs = [collector]
 
-    # objective
-    if num_buses_check == 0:
-        objective = solver.Minimize(num_buses, 1)
-        cargs.extend([objective])
+  # objective
+  if num_buses_check == 0:
+    objective = solver.Minimize(num_buses, 1)
+    cargs.extend([objective])
 
+  solver.Solve(solver.Phase(x,
+                            solver.CHOOSE_FIRST_UNBOUND,
+                            solver.ASSIGN_MIN_VALUE),
+               cargs)
 
+  num_solutions = collector.SolutionCount()
+  num_buses_check_value = 0
+  for s in range(num_solutions):
+    print "x:", [collector.Value(s, x[i]) for i in range(len(x))],
+    num_buses_check_value = collector.Value(s, num_buses)
+    print " num_buses:", num_buses_check_value
 
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
+  print
+  if num_buses_check == 0:
+    return num_buses_check_value
 
-    solver.Solve(solver.Phase(x,
-                              solver.CHOOSE_FIRST_UNBOUND,
-                              solver.ASSIGN_MIN_VALUE),
-                              cargs)
-
-    num_solutions = collector.SolutionCount()
-    num_buses_check_value = 0
-    for s in range(num_solutions):
-        print "x:", [collector.Value(s, x[i]) for i in range(len(x))],
-        num_buses_check_value = collector.Value(s, num_buses)
-        print " num_buses:", num_buses_check_value
-
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-    print
-    if num_buses_check == 0:
-        return num_buses_check_value
-
-if __name__ == '__main__':
-    print "Check for minimun number of buses"
-    num_buses_check = main()
-    print "... got ", num_buses_check, "buses"
-    print "All solutions:"
-    main(num_buses_check)
+if __name__ == "__main__":
+  print "Check for minimun number of buses"
+  num_buses_check = main()
+  print "... got ", num_buses_check, "buses"
+  print "All solutions:"
+  main(num_buses_check)

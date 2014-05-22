@@ -50,24 +50,26 @@
   * JaCoP: http://hakank.org/JaCoP/CoinsGrid.java
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver('Coins grid')
+  solver = pywrapcp.Solver("Coins grid")
 
-    # data
-  n =  31  # the grid size
-  c =  14  # number of coins per row/column
+  # data
+  n = 31  # the grid size
+  c = 14  # number of coins per row/column
   # (6, 4)
-    # declare variables
+  # declare variables
   x = {}
   for i in range(n):
     for j in range(n):
-      x[(i,j)] = solver.BoolVar('x %i %i' % (i, j))
+      x[(i, j)] = solver.BoolVar("x %i %i" % (i, j))
 
   #
   # constraints
@@ -75,8 +77,8 @@ def main(unused_argv):
 
   # sum rows/columns == c
   for i in range(n):
-    solver.Add(solver.SumEquality([x[(i, j)] for j in range(n)], c)) # sum rows
-    solver.Add(solver.SumEquality([x[(j, i)] for j in range(n)], c)) # sum cols
+    solver.Add(solver.SumEquality([x[(i, j)] for j in range(n)], c))  # sum rows
+    solver.Add(solver.SumEquality([x[(j, i)] for j in range(n)], c))  # sum cols
 
   # quadratic horizonal distance var
   objective_var = solver.Sum([x[(i, j)] * (i - j) * (i - j)
@@ -89,14 +91,14 @@ def main(unused_argv):
   # solution and search
   #
   solution = solver.Assignment()
-  solution.Add([x[(i,j)] for i in range(n) for j in range(n)])
+  solution.Add([x[(i, j)] for i in range(n) for j in range(n)])
   solution.AddObjective(objective_var)
 
   # last solutions
   collector = solver.LastSolutionCollector(solution)
   search_log = solver.SearchLog(1000000, objective_var)
   restart = solver.ConstantRestart(300)
-  solver.Solve(solver.Phase([x[(i,j)] for i in range(n) for j in range(n)],
+  solver.Solve(solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
                             solver.CHOOSE_RANDOM,
                             solver.ASSIGN_MAX_VALUE),
                [collector, search_log, objective])
@@ -113,5 +115,5 @@ def main(unused_argv):
   print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main("coin grids")
+if __name__ == "__main__":
+  main("coin grids")

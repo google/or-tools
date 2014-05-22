@@ -20,10 +20,12 @@
   Using arrays.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.linear_solver import pywraplp
+
 
 def main(unused_argv):
 
@@ -31,12 +33,11 @@ def main(unused_argv):
 
   # using GLPK
   solver = pywraplp.Solver('CoinsGridGLPK',
-                          pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+                           pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
   # Using CLP
   # solver = pywraplp.Solver('CoinsGridCLP',
   #                          pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
-
 
   # data
   num_products = 2
@@ -44,27 +45,25 @@ def main(unused_argv):
   products = ['Gas', 'Chloride']
   components = ['nitrogen', 'hydrogen', 'chlorine']
 
-  demand = [ [1,3,0], [1,4,1]]
-  profit = [30,40]
-  stock = [50,180,40]
+  demand = [[1, 3, 0], [1, 4, 1]]
+  profit = [30, 40]
+  stock = [50, 180, 40]
 
   # declare variables
-  production = [solver.NumVar(0, 100000, 'production[%i]' % i )
+  production = [solver.NumVar(0, 100000, 'production[%i]' % i)
                 for i in range(num_products)]
 
   #
   # constraints
   #
   for c in range(len(components)):
-    solver.Add(solver.Sum([demand[p][c]*production[p]
-                           for p in range(len(products)) ]) <= stock[c])
-
+    solver.Add(solver.Sum([demand[p][c] * production[p]
+                           for p in range(len(products))]) <= stock[c])
 
   # objective
   # Note: there is no support for solver.ScalProd in the LP/IP interface
-  objective = solver.Maximize(solver.Sum([production[p]*profit[p]
+  objective = solver.Maximize(solver.Sum([production[p] * profit[p]
                                           for p in range(num_products)]))
-
 
   print 'NumConstraints:', solver.NumConstraints()
   print 'NumVariables:', solver.NumVariables()
@@ -78,8 +77,8 @@ def main(unused_argv):
   print
   print 'objective = ', solver.Objective().Value()
   for i in range(num_products):
-      print products[i], '=', production[i].SolutionValue(),
-      print 'ReducedCost = ', production[i].ReducedCost()
+    print products[i], '=', production[i].SolutionValue(),
+    print 'ReducedCost = ', production[i].ReducedCost()
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'
@@ -87,4 +86,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-    main('Volsay')
+  main('Volsay')

@@ -57,107 +57,108 @@
    * Zinc: http://hakank.org/minizinc/young_tableaux.zinc
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import sys,string
+import sys
+import string
 from ortools.constraint_solver import pywrapcp
 
 
-def main(n = 5):
+def main(n=5):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Problem')
+  # Create the solver.
+  solver = pywrapcp.Solver("Problem")
 
-    #
-    # data
-    #
-    print "n:", n
+  #
+  # data
+  #
+  print "n:", n
 
-    #
-    # declare variables
-    #
-    x = {}
-    for i in range(n):
-        for j in range(n):
-            x[(i,j)] = solver.IntVar(1,n+1, 'x(%i,%i)' % (i, j))
-
-    x_flat = [x[(i,j)] for i in range(n) for j in range(n)]
-
-    # partition structure
-    p = [solver.IntVar(0,n+1,"p%i"%i) for i in range(n)]
-
-    #
-    # constraints
-    #
-
-    # 1..n is used exactly once
-    for i in range(1,n+1):
-         solver.Add(solver.Count(x_flat, i, 1))
-
-    solver.Add(x[(0,0)] == 1)
-
-    # row wise
-    for i in range(n):
-      for j in range(1,n):
-         solver.Add(x[(i,j)] >= x[(i,j-1)])
-
-    # column wise
+  #
+  # declare variables
+  #
+  x = {}
+  for i in range(n):
     for j in range(n):
-      for i in range(1,n):
-        solver.Add(x[(i,j)] >= x[(i-1,j)])
+      x[(i, j)] = solver.IntVar(1, n + 1, "x(%i,%i)" % (i, j))
 
+  x_flat = [x[(i, j)] for i in range(n) for j in range(n)]
 
-    # calculate the structure (the partition)
+  # partition structure
+  p = [solver.IntVar(0, n + 1, "p%i" % i) for i in range(n)]
+
+  #
+  # constraints
+  #
+
+  # 1..n is used exactly once
+  for i in range(1, n + 1):
+    solver.Add(solver.Count(x_flat, i, 1))
+
+  solver.Add(x[(0, 0)] == 1)
+
+  # row wise
+  for i in range(n):
+    for j in range(1, n):
+      solver.Add(x[(i, j)] >= x[(i, j - 1)])
+
+  # column wise
+  for j in range(n):
+    for i in range(1, n):
+      solver.Add(x[(i, j)] >= x[(i - 1, j)])
+
+  # calculate the structure (the partition)
+  for i in range(n):
+      # MiniZinc/Zinc version:
+      # p[i] == sum(j in 1..n) (bool2int(x[i,j] <= n))
+
+    b = [solver.IsLessOrEqualCstVar(x[(i, j)], n) for j in range(n)]
+    solver.Add(p[i] == solver.Sum(b))
+
+  solver.Add(solver.Sum(p) == n)
+
+  for i in range(1, n):
+    solver.Add(p[i - 1] >= p[i])
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x_flat)
+  solution.Add(p)
+
+  # db: DecisionBuilder
+  db = solver.Phase(x_flat + p,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    print "p:", [p[i].Value() for i in range(n)]
+    print "x:"
     for i in range(n):
-        # MiniZinc/Zinc version:
-        # p[i] == sum(j in 1..n) (bool2int(x[i,j] <= n))
-
-        b = [solver.IsLessOrEqualCstVar(x[(i, j)], n) for j in range(n)]
-        solver.Add(p[i] == solver.Sum(b))
-
-    solver.Add(solver.Sum(p) == n)
-
-    for i in range(1,n):
-        solver.Add(p[i-1] >= p[i])
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x_flat)
-    solution.Add(p)
-
-    # db: DecisionBuilder
-    db = solver.Phase(x_flat + p,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MIN_VALUE)
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        print "p:", [p[i].Value() for i in range(n)]
-        print "x:"
-        for i in range(n):
-            for j in range(n):
-                val = x_flat[i*n+j].Value()
-                if val <= n:
-                    print val,
-            if p[i].Value() > 0:
-                print
+      for j in range(n):
+        val = x_flat[i * n + j].Value()
+        if val <= n:
+          print val,
+      if p[i].Value() > 0:
         print
-        num_solutions += 1
-
-    solver.EndSearch()
-
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
 
-n=5
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
+  solver.EndSearch()
 
-    main(n)
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
+
+n = 5
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+
+  main(n)

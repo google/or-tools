@@ -2,39 +2,42 @@ from constraint_solver import pywrapcp
 
 # Control-C test. Hit Control-C during execution of this program.
 
+
 def main():
-   solver = pywrapcp.Solver('time limit test')
-   n = 10
-   x = [solver.IntVar(1, n, 'x[%i]'%i) for i in range(n)]
-   solver.Add(solver.AllDifferent(x, True))
+  solver = pywrapcp.Solver("time limit test")
+  n = 10
+  x = [solver.IntVar(1, n, "x[%i]" % i) for i in range(n)]
+  solver.Add(solver.AllDifferent(x, True))
 
-   solution = solver.Assignment()
-   solution.Add(x)
+  solution = solver.Assignment()
+  solution.Add(x)
 
-   db = solver.Phase(x,
-                     solver.CHOOSE_FIRST_UNBOUND,
-                     solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
 
-   time_limit = 10000
-   branch_limit = 100000000
-   failures_limit = 100000000
-   solutions_limit = 10000000
-   limits = solver.Limit(time_limit, branch_limit, failures_limit, solutions_limit, True)
+  time_limit = 10000
+  branch_limit = 100000000
+  failures_limit = 100000000
+  solutions_limit = 10000000
+  limits = (
+      solver.Limit(
+          time_limit, branch_limit, failures_limit, solutions_limit, True))
 
-   search_log = solver.SearchLog(1000)
-   assignment = solver.Assignment()
-   assignment.Add(x)
-   collector = solver.LastSolutionCollector(assignment)
-   try:
-     solver.Solve(db, [limits, search_log, collector])
-   except KeyboardInterrupt:
-     print "Control-C caught"
+  search_log = solver.SearchLog(1000)
+  assignment = solver.Assignment()
+  assignment.Add(x)
+  collector = solver.LastSolutionCollector(assignment)
+  try:
+    solver.Solve(db, [limits, search_log, collector])
+  except KeyboardInterrupt:
+    print "Control-C caught"
 
-   print
-   print "failures:", solver.failures()
-   print "branches:", solver.branches()
-   print "wall_time:", solver.wall_time()
+  print
+  print "failures:", solver.failures()
+  print "branches:", solver.branches()
+  print "wall_time:", solver.wall_time()
 
 
-if __name__ == '__main__':
-   main()
+if __name__ == "__main__":
+  main()

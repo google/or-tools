@@ -56,75 +56,74 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
 
 
 def decreasing(solver, x):
-    for i in range(len(x)-1):
-        solver.Add(x[i] <= x[i+1])
+  for i in range(len(x) - 1):
+    solver.Add(x[i] <= x[i + 1])
+
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Curious set of integers')
+  # Create the solver.
+  solver = pywrapcp.Solver("Curious set of integers")
 
-    #
-    # data
-    #
-    n = 5
-    max_val = 10000
+  #
+  # data
+  #
+  n = 5
+  max_val = 10000
 
-    #
-    # variables
-    #
-    x = [solver.IntVar(0, max_val, 'x[%i]' % i) for i in range(n)]
+  #
+  # variables
+  #
+  x = [solver.IntVar(0, max_val, "x[%i]" % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
-    decreasing(solver, x)
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
+  decreasing(solver, x)
 
-    for i in range(n):
-        for j in range(n):
-            if i !=j:
-                p = solver.IntVar(0, max_val, "p[%i,%i]" % (i,j))
-                solver.Add(p*p-1 == (x[i]*x[j]))
+  for i in range(n):
+    for j in range(n):
+      if i != j:
+        p = solver.IntVar(0, max_val, "p[%i,%i]" % (i, j))
+        solver.Add(p * p - 1 == (x[i] * x[j]))
 
+  # This is the original problem:
+  # Which is the fifth number?
+  v = [1, 3, 8, 120]
+  b = [solver.IsMemberVar(x[i], v) for i in range(n)]
+  solver.Add(solver.Sum(b) == 4)
 
-    # This is the original problem:
-    # Which is the fifth number?
-    v = [1,3,8,120]
-    b = [solver.IsMemberVar(x[i], v) for i in range(n)]
-    solver.Add(solver.Sum(b) == 4)
+  #
+  # search and result
+  #
+  db = solver.Phase(x,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_MIN_VALUE)
 
+  solver.NewSearch(db)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(x,
-                 solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                 solver.ASSIGN_MIN_VALUE)
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print "x:", [x[i].Value() for i in range(n)]
 
-    solver.NewSearch(db)
+  solver.EndSearch()
 
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print "x:", [x[i].Value() for i in range(n)]
-
-    solver.EndSearch()
-
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

@@ -41,129 +41,131 @@
   * MiniZinc: http://www.hakank.org/minizinc/rogo2.mzn
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
-import sys, string, re
+import sys
+import string
+import re
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(problem, rows, cols, max_steps):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Rogo grid puzzle')
+  # Create the solver.
+  solver = pywrapcp.Solver("Rogo grid puzzle")
 
-    #
-    # data
-    #
-    W = 0
-    B = -1
-    print "rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps)
+  #
+  # data
+  #
+  W = 0
+  B = -1
+  print "rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps)
 
-    problem_flatten = [problem[i][j] for i in range(rows) for j in range(cols)]
-    max_point = max(problem_flatten)
-    print "max_point:", max_point
-    max_sum = sum(problem_flatten)
-    print "max_sum:", max_sum
+  problem_flatten = [problem[i][j] for i in range(rows) for j in range(cols)]
+  max_point = max(problem_flatten)
+  print "max_point:", max_point
+  max_sum = sum(problem_flatten)
+  print "max_sum:", max_sum
+  print
+
+  #
+  # declare variables
+  #
+
+  # the coordinates
+  x = [solver.IntVar(0, rows - 1, "x[%i]" % i) for i in range(max_steps)]
+  y = [solver.IntVar(0, cols - 1, "y[%i]" % i) for i in range(max_steps)]
+
+  # the collected points
+  points = [solver.IntVar(0, max_point, "points[%i]" % i)
+            for i in range(max_steps)]
+
+  # objective: sum of points in the path
+  sum_points = solver.IntVar(0, max_sum)
+
+  #
+  # constraints
+  #
+
+  # all coordinates must be unique
+  for s in range(max_steps):
+    for t in range(s + 1, max_steps):
+      b1 = solver.IsDifferentVar(x[s], x[t])
+      b2 = solver.IsDifferentVar(y[s], y[t])
+      solver.Add(b1 + b2 >= 1)
+
+  # calculate the points (to maximize)
+  for s in range(max_steps):
+    solver.Add(points[s] == solver.Element(problem_flatten, x[s] * cols + y[s]))
+
+  solver.Add(sum_points == sum(points))
+
+  # ensure that there are not black cells in
+  # the path
+  for s in range(max_steps):
+    solver.Add(solver.Element(problem_flatten, x[s] * cols + y[s]) != B)
+
+  # get the path
+  for s in range(max_steps - 1):
+    solver.Add(abs(x[s] - x[s + 1]) + abs(y[s] - y[s + 1]) == 1)
+
+  # close the path around the corner
+  solver.Add(abs(x[max_steps - 1] - x[0]) + abs(y[max_steps - 1] - y[0]) == 1)
+
+  # symmetry breaking: the cell with lowest coordinates
+  # should be in the first step.
+  for i in range(1, max_steps):
+    solver.Add(x[0] * cols + y[0] < x[i] * cols + y[i])
+
+  # symmetry breaking: second step is larger than
+  # first step
+  # solver.Add(x[0]*cols+y[0] < x[1]*cols+y[1])
+
+  #
+  # objective
+  #
+  objective = solver.Maximize(sum_points, 1)
+
+  #
+  # solution and search
+  #
+  # db = solver.Phase(x + y,
+  #                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+  #                    solver.ASSIGN_MIN_VALUE)
+
+  # Default search
+  parameters = pywrapcp.DefaultPhaseParameters()
+
+  parameters.heuristic_period = 200000
+  # parameters.var_selection_schema = parameters.CHOOSE_MAX_SUM_IMPACT
+  parameters.var_selection_schema = parameters.CHOOSE_MAX_AVERAGE_IMPACT  # <-
+  # parameters.var_selection_schema = parameters.CHOOSE_MAX_VALUE_IMPACT
+
+  parameters.value_selection_schema = parameters.SELECT_MIN_IMPACT  # <-
+  # parameters.value_selection_schema = parameters.SELECT_MAX_IMPACT
+
+  # parameters.initialization_splits = 10
+
+  db = solver.DefaultPhase(x + y, parameters)
+
+  solver.NewSearch(db, [objective])
+
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print "sum_points:", sum_points.Value()
+    print "adding 1 to coords..."
+    for s in range(max_steps):
+      print "%i %i" % (x[s].Value() + 1, y[s].Value() + 1)
     print
 
-    #
-    # declare variables
-    #
-
-    # the coordinates
-    x = [solver.IntVar(0, rows-1, "x[%i]"%i) for i in range(max_steps)]
-    y = [solver.IntVar(0, cols-1, "y[%i]"%i) for i in range(max_steps)]
-
-    # the collected points
-    points = [solver.IntVar(0, max_point, "points[%i]"%i) for i in range(max_steps)]
-
-    # objective: sum of points in the path
-    sum_points = solver.IntVar(0, max_sum)
-
-    #
-    # constraints
-    #
-
-    # all coordinates must be unique
-    for s in range(max_steps):
-        for t in range(s+1, max_steps):
-            b1 = solver.IsDifferentVar(x[s], x[t])
-            b2 = solver.IsDifferentVar(y[s], y[t])
-            solver.Add(b1+b2 >= 1)
-
-    # calculate the points (to maximize)
-    for s in range(max_steps):
-        solver.Add(points[s] == solver.Element(problem_flatten, x[s]*cols+y[s]))
-
-    solver.Add(sum_points == sum(points))
-
-    # ensure that there are not black cells in
-    # the path
-    for s in range(max_steps):
-        solver.Add(solver.Element(problem_flatten, x[s]*cols+y[s]) != B)
-
-    # get the path
-    for s in range(max_steps-1):
-        solver.Add(abs(x[s]-x[s+1]) + abs(y[s]-y[s+1]) == 1)
-
-    # close the path around the corner
-    solver.Add(abs(x[max_steps-1]-x[0]) + abs(y[max_steps-1]-y[0]) == 1)
-
-
-    # symmetry breaking: the cell with lowest coordinates
-    # should be in the first step.
-    for i in range(1,max_steps):
-        solver.Add(x[0]*cols+y[0] < x[i]*cols+y[i])
-
-    # symmetry breaking: second step is larger than
-    # first step
-    # solver.Add(x[0]*cols+y[0] < x[1]*cols+y[1])
-
-
-    #
-    # objective
-    #
-    objective = solver.Maximize(sum_points, 1)
-
-    #
-    # solution and search
-    #
-    # db = solver.Phase(x + y,
-    #                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-    #                    solver.ASSIGN_MIN_VALUE)
-
-    # Default search
-    parameters = pywrapcp.DefaultPhaseParameters()
-
-    parameters.heuristic_period = 200000
-    # parameters.var_selection_schema = parameters.CHOOSE_MAX_SUM_IMPACT
-    parameters.var_selection_schema = parameters.CHOOSE_MAX_AVERAGE_IMPACT # <-
-    # parameters.var_selection_schema = parameters.CHOOSE_MAX_VALUE_IMPACT
-
-    parameters.value_selection_schema = parameters.SELECT_MIN_IMPACT # <-
-    # parameters.value_selection_schema = parameters.SELECT_MAX_IMPACT
-
-    # parameters.initialization_splits = 10
-
-    db = solver.DefaultPhase(x + y, parameters)
-
-    solver.NewSearch(db, [objective])
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print "sum_points:", sum_points.Value()
-        print "adding 1 to coords..."
-        for s in range(max_steps):
-            print "%i %i" % (x[s].Value()+1,y[s].Value()+1)
-        print
-
-    print "\nnum_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-
+  print "\nnum_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 # Default problem:
@@ -185,8 +187,8 @@ problem = [
     [W, W, W, W, W, W, B, W, 2],
     [W, W, 2, B, W, W, W, W, W],
     [W, W, W, W, 2, W, W, 1, W]
-    ]
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        execfile(sys.argv[1])
-    main(problem, rows, cols, max_steps)
+]
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    execfile(sys.argv[1])
+  main(problem, rows, cols, max_steps)

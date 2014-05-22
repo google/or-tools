@@ -22,7 +22,6 @@ flavors of constraint programming interfaces.
 """
 
 
-
 from ortools.constraint_solver import pywrapcp
 
 

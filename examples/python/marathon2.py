@@ -44,7 +44,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -53,86 +54,82 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Marathon')
+  # Create the solver.
+  solver = pywrapcp.Solver('Marathon')
 
-    #
-    # data
-    #
-    n = 6
+  #
+  # data
+  #
+  n = 6
 
-    runners_str = ['Dominique', 'Ignace', 'Naren',
-                   'Olivier', 'Philippe', 'Pascal']
+  runners_str = ['Dominique', 'Ignace', 'Naren',
+                 'Olivier', 'Philippe', 'Pascal']
 
-    #
-    # declare variables
-    #
-    runners = [solver.IntVar(1, n, 'runners[%i]' % i) for i in range(n)]
-    Dominique, Ignace, Naren, Olivier, Philippe, Pascal = runners
+  #
+  # declare variables
+  #
+  runners = [solver.IntVar(1, n, 'runners[%i]' % i) for i in range(n)]
+  Dominique, Ignace, Naren, Olivier, Philippe, Pascal = runners
 
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(runners))
 
+  # a: Olivier not last
+  solver.Add(Olivier != n)
 
+  # b: Dominique, Pascal and Ignace before Naren and Olivier
+  solver.Add(Dominique < Naren)
+  solver.Add(Dominique < Olivier)
+  solver.Add(Pascal < Naren)
+  solver.Add(Pascal < Olivier)
+  solver.Add(Ignace < Naren)
+  solver.Add(Ignace < Olivier)
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(runners))
+  # c: Dominique better than third
+  solver.Add(Dominique < 3)
 
-    # a: Olivier not last
-    solver.Add(Olivier != n)
+  # d: Philippe is among the first four
+  solver.Add(Philippe <= 4)
 
-    # b: Dominique, Pascal and Ignace before Naren and Olivier
-    solver.Add(Dominique  < Naren)
-    solver.Add(Dominique  < Olivier)
-    solver.Add(Pascal     < Naren)
-    solver.Add(Pascal     < Olivier)
-    solver.Add(Ignace     < Naren)
-    solver.Add(Ignace     < Olivier)
+  # e: Ignace neither second nor third
+  solver.Add(Ignace != 2)
+  solver.Add(Ignace != 3)
 
-    # c: Dominique better than third
-    solver.Add(Dominique  < 3)
+  # f: Pascal three places earlier than Naren
+  solver.Add(Pascal + 3 == Naren)
 
-    # d: Philippe is among the first four
-    solver.Add(Philippe   <= 4)
+  # g: Neither Ignace nor Dominique on fourth position
+  solver.Add(Ignace != 4)
+  solver.Add(Dominique != 4)
 
-    # e: Ignace neither second nor third
-    solver.Add(Ignace     != 2)
-    solver.Add(Ignace     != 3)
+  #
+  # solution and search
+  #
+  db = solver.Phase(runners,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_CENTER_VALUE)
 
-    # f: Pascal three places earlier than Naren
-    solver.Add(Pascal + 3 == Naren)
+  solver.NewSearch(db)
 
-    # g: Neither Ignace nor Dominique on fourth position
-    solver.Add(Ignace     != 4)
-    solver.Add(Dominique  != 4)
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    runners_val = [runners[i].Value() for i in range(n)]
+    print 'runners:', runners_val
+    print 'Places:'
+    for i in range(1, n + 1):
+      for j in range(n):
+        if runners_val[j] == i:
+          print '%i: %s' % (i, runners_str[j])
+    print
 
-
-    #
-    # solution and search
-    #
-    db = solver.Phase(runners,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                      solver.ASSIGN_CENTER_VALUE)
-
-    solver.NewSearch(db)
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        runners_val = [runners[i].Value() for i in range(n)]
-        print 'runners:', runners_val
-        print "Places:"
-        for i in range(1, n+1):
-            for j in range(n):
-                if runners_val[j] == i:
-                    print "%i: %s" % (i, runners_str[j])
-        print
-
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

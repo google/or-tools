@@ -20,7 +20,6 @@ Each letter corresponds to one figure and all letters have different values.
 """
 
 
-
 from google.apputils import app
 import gflags
 from ortools.constraint_solver import pywrapcp
@@ -44,8 +43,8 @@ def main(unused_argv):
 
   letters = [s, e, n, d, m, o, r, y]
 
-  solver.Add(1000*s + 100*e + 10*n + d + 1000*m + 100*o + 10*r + e ==
-             10000*m + 1000*o + 100*n + 10*e + y)
+  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * r + e ==
+             10000 * m + 1000 * o + 100 * n + 10 * e + y)
 
   # pylint: disable=g-explicit-bool-comparison
   solver.Add(s != 0)

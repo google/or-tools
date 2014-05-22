@@ -25,7 +25,6 @@
 """
 
 
-
 import random
 
 from google.apputils import app
@@ -35,11 +34,11 @@ from ortools.constraint_solver import pywrapcp
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_integer('tsp_size', 10,
-                     'Size of Traveling Salesman Problem instance.')
+                      'Size of Traveling Salesman Problem instance.')
 gflags.DEFINE_boolean('tsp_use_random_matrix', True,
-                     'Use random cost matrix.')
+                      'Use random cost matrix.')
 gflags.DEFINE_integer('tsp_random_forbidden_connections', 0,
-                     'Number of random forbidden connections.')
+                      'Number of random forbidden connections.')
 gflags.DEFINE_integer('tsp_random_seed', 0, 'Random seed.')
 gflags.DEFINE_boolean('light_propagation', False, 'Use light propagation')
 

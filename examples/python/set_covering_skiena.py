@@ -36,7 +36,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -44,82 +45,79 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Set covering Skiena')
+  # Create the solver.
+  solver = pywrapcp.Solver('Set covering Skiena')
 
-    #
-    # data
-    #
-    num_sets = 7
-    num_elements = 12
-    belongs =  [
+  #
+  # data
+  #
+  num_sets = 7
+  num_elements = 12
+  belongs = [
       # 1 2 3 4 5 6 7 8 9 0 1 2  elements
-        [1,1,0,0,0,0,0,0,0,0,0,0], # Set 1
-        [0,1,0,0,0,0,0,1,0,0,0,0], #     2
-        [0,0,0,0,1,1,0,0,0,0,0,0], #     3
-        [0,0,0,0,0,1,1,0,0,1,1,0], #     4
-        [0,0,0,0,0,0,0,0,1,1,0,0], #     5
-        [1,1,1,0,1,0,0,0,1,1,1,0], #     6
-        [0,0,1,1,0,0,1,1,0,0,1,1]  #     7
-        ]
+      [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Set 1
+      [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],  # 2
+      [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],  # 3
+      [0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],  # 4
+      [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0],  # 5
+      [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0],  # 6
+      [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]  # 7
+  ]
 
-    #
-    # variables
-    #
-    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_sets)]
+  #
+  # variables
+  #
+  x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_sets)]
 
-    # number of choosen sets
-    z = solver.IntVar(0, num_sets*2, 'z')
+  # number of choosen sets
+  z = solver.IntVar(0, num_sets * 2, 'z')
 
-    # total number of elements in the choosen sets
-    tot_elements = solver.IntVar(0, num_sets*num_elements)
+  # total number of elements in the choosen sets
+  tot_elements = solver.IntVar(0, num_sets * num_elements)
 
+  #
+  # constraints
+  #
+  solver.Add(z == solver.Sum(x))
 
-    #
-    # constraints
-    #
-    solver.Add(z == solver.Sum(x))
+  # all sets must be used
+  for j in range(num_elements):
+    s = solver.Sum([belongs[i][j] * x[i] for i in range(num_sets)])
+    solver.Add(s >= 1)
 
-    # all sets must be used
-    for j in range(num_elements):
-        s = solver.Sum([belongs[i][j]*x[i] for i in range(num_sets)])
-        solver.Add(s >= 1)
+  # number of used elements
+  solver.Add(tot_elements ==
+             solver.Sum([x[i] * belongs[i][j]
+                         for i in range(num_sets)
+                         for j in range(num_elements)]))
 
-    # number of used elements
-    solver.Add(tot_elements ==
-            solver.Sum([x[i]*belongs[i][j]
-                        for i in range(num_sets)
-                        for j in range(num_elements)]))
+  # objective
+  objective = solver.Minimize(z, 1)
 
-    # objective
-    objective = solver.Minimize(z, 1)
+  #
+  # search and result
+  #
+  db = solver.Phase(x,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(x,
-                      solver.INT_VAR_DEFAULT,
-                      solver.INT_VALUE_DEFAULT
-                      )
+  solver.NewSearch(db, [objective])
 
-    solver.NewSearch(db, [objective])
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'z:', z.Value()
+    print 'tot_elements:', tot_elements.Value()
+    print 'x:', [x[i].Value() for i in range(num_sets)]
 
+  solver.EndSearch()
 
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print "z:", z.Value()
-        print "tot_elements:", tot_elements.Value()
-        print 'x:', [x[i].Value() for i in range(num_sets)]
-
-    solver.EndSearch()
-
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

@@ -10,10 +10,12 @@ def test_member():
   ct = x.Member([1, 2, 3, 5])
   print(ct)
 
+
 def test_sparse_var():
   solver = pywrapcp.Solver('test sparse')
   x = solver.IntVar([1, 3, 5], 'x')
   print(x)
+
 
 def test_modulo():
   solver = pywrapcp.Solver('test modulo')
@@ -21,6 +23,7 @@ def test_modulo():
   y = solver.IntVar(2, 4, 'y')
   print(x % 3)
   print(x % y)
+
 
 def test_limit():
   solver = pywrapcp.Solver('test limit')
@@ -30,6 +33,7 @@ def test_limit():
   print limit_proto
   limit = solver.Limit(limit_proto)
   print limit
+
 
 def test_export():
   solver = pywrapcp.Solver('test export')
@@ -44,6 +48,7 @@ def test_export():
 
 
 class SearchMonitorTest(pywrapcp.SearchMonitor):
+
   def __init__(self, solver, nexts):
     pywrapcp.SearchMonitor.__init__(self, solver)
     self._nexts = nexts
@@ -66,6 +71,7 @@ def test_search_monitor():
 
 
 class DemonTest(pywrapcp.PyDemon):
+
   def __init__(self, x):
     pywrapcp.Demon.__init__(self)
     self._x = x
@@ -83,6 +89,7 @@ def test_demon():
 
 
 class ConstraintTest(pywrapcp.PyConstraint):
+
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -111,6 +118,7 @@ def test_constraint():
 
 
 class InitialPropagateDemon(pywrapcp.PyDemon):
+
   def __init__(self, ct):
     pywrapcp.Demon.__init__(self)
     self._ct = ct
@@ -120,6 +128,7 @@ class InitialPropagateDemon(pywrapcp.PyDemon):
 
 
 class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
+
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x

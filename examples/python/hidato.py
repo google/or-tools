@@ -38,7 +38,8 @@
         (and more elegant) model: hidato_table.py .
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -46,22 +47,22 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
-    #
-    # Simple problem
-    #
-    # r = 3
-    # c = r
-    # puzzle = [
-    #     [6,0,9],
-    #     [0,2,8],
-    #     [1,0,0]
-    #     ]
+  #
+  # data
+  #
+  #
+  # Simple problem
+  #
+  # r = 3
+  # c = r
+  # puzzle = [
+  #     [6,0,9],
+  #     [0,2,8],
+  #     [1,0,0]
+  #     ]
 
 
 #     r = 7
@@ -76,34 +77,33 @@ def main():
 #         [0, 0, 0,14, 0, 0, 0]
 #         ]
 
+  # Problems from the book:
+  # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
 
-    # Problems from the book:
-    # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
-
-    # Problem 1 (Practice)
-    # r = 5
-    # c = r
-    # puzzle = [
-    #    [ 0, 0,20, 0, 0],
-    #    [ 0, 0, 0,16,18],
-    #    [22, 0,15, 0, 0],
-    #    [23, 0, 1,14,11],
-    #    [ 0,25, 0, 0,12],
-    #    ]
+  # Problem 1 (Practice)
+  # r = 5
+  # c = r
+  # puzzle = [
+  #    [ 0, 0,20, 0, 0],
+  #    [ 0, 0, 0,16,18],
+  #    [22, 0,15, 0, 0],
+  #    [23, 0, 1,14,11],
+  #    [ 0,25, 0, 0,12],
+  #    ]
 
 
 #     # problem 2 (Practice)
-    r = 5
-    c = r
-    puzzle= [
-        [0, 0, 0, 0,14],
-        [0,18,12, 0, 0],
-        [0, 0,17, 4, 5],
-        [0, 0, 7, 0, 0],
-        [9, 8,25, 1, 0],
-        ];
+  r = 5
+  c = r
+  puzzle = [
+      [0, 0, 0, 0, 14],
+      [0, 18, 12, 0, 0],
+      [0, 0, 17, 4, 5],
+      [0, 0, 7, 0, 0],
+      [9, 8, 25, 1, 0],
+  ]
 
-    # problem 3 (Beginner)
+  # problem 3 (Beginner)
 #     r = 6
 #     c = r
 #     puzzle =  [
@@ -115,9 +115,8 @@ def main():
 #         [35,36, 0,10, 0, 0]
 #         ];
 
-
-    # Problem 15 (Intermediate)
-    # Note: This takes very long time to solve...
+  # Problem 15 (Intermediate)
+  # Note: This takes very long time to solve...
 #     r = 8
 #     c = r
 #     puzzle = [
@@ -131,121 +130,111 @@ def main():
 #          [28,30, 0,35, 0, 0, 0, 0]
 #          ]
 
+  print_game(puzzle, r, c)
 
-    print_game(puzzle, r,c)
+  #
+  # declare variables
+  #
+  x = {}
+  for i in range(r):
+    for j in range(c):
+      x[(i, j)] = solver.IntVar(1, r * c, "dice(%i,%i)" % (i, j))
+  x_flat = [x[(i, j)] for i in range(r) for j in range(c)]
 
-    #
-    # declare variables
-    #
-    x = {}
-    for i in range(r):
-        for j in range(c):
-            x[(i,j)] = solver.IntVar(1,r*c, 'dice(%i,%i)' % (i, j))
-    x_flat = [x[(i,j)] for i in range(r) for j in range(c)]
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x_flat))
 
+  #
+  # Fill in the clues
+  #
+  for i in range(r):
+    for j in range(c):
+      if puzzle[i][j] > 0:
+        solver.Add(x[(i, j)] == puzzle[i][j])
 
+  # From the numbers k = 1 to r*c-1, find this position,
+  # and then the position of k+1
+  for k in range(1, r * c):
+    i = solver.IntVar(0, r)
+    j = solver.IntVar(0, c)
+    a = solver.IntVar(-1, 1)
+    b = solver.IntVar(-1, 1)
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x_flat))
+    # 1) First: fix "this" k
+    # 2) and then find the position of the next value (k+1)
+    # solver.Add(k == x[(i,j)])
+    solver.Add(k == solver.Element(x_flat, i * c + j))
+    # solver.Add(k + 1 == x[(i+a,j+b)])
+    solver.Add(k + 1 == solver.Element(x_flat, (i + a) * c + (j + b)))
 
-    #
-    # Fill in the clues
-    #
-    for i in range(r):
-        for j in range(c):
-            if puzzle[i][j] > 0:
-                solver.Add(x[(i,j)] == puzzle[i][j])
+    solver.Add(i + a >= 0)
+    solver.Add(j + b >= 0)
+    solver.Add(i + a < r)
+    solver.Add(j + b < c)
 
+    # solver.Add(((a != 0) | (b != 0)))
+    a_nz = solver.BoolVar()
+    b_nz = solver.BoolVar()
+    solver.Add(a_nz == solver.IsDifferentCstVar(a, 0))
+    solver.Add(b_nz == solver.IsDifferentCstVar(b, 0))
+    solver.Add(a_nz + b_nz >= 1)
 
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x_flat)
 
-    # From the numbers k = 1 to r*c-1, find this position,
-    # and then the position of k+1
-    for k in range(1,r*c):
-        i = solver.IntVar(0,r)
-        j = solver.IntVar(0,c)
-        a = solver.IntVar(-1,1)
-        b = solver.IntVar(-1,1)
+  # db: DecisionBuilder
+  db = solver.Phase(x_flat,
+                    # solver.INT_VAR_DEFAULT
+                    # solver.INT_VAR_SIMPLE
+                    # solver.CHOOSE_RANDOM
+                    # solver.CHOOSE_MIN_SIZE_LOWEST_MIN
+                    # solver.CHOOSE_MIN_SIZE_HIGHEST_MIN
+                    # solver.CHOOSE_MIN_SIZE_LOWEST_MAX
+                    # solver.CHOOSE_MIN_SIZE_HIGHEST_MAX
+                    # solver.CHOOSE_PATH
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    # solver.INT_VALUE_DEFAULT
+                    # solver.INT_VALUE_SIMPLE
+                    # solver.ASSIGN_MAX_VALUE
+                    # solver.ASSIGN_RANDOM_VALUE
+                    # solver.ASSIGN_CENTER_VALUE
+                    solver.ASSIGN_MIN_VALUE)
 
-        # 1) First: fix "this" k
-        # 2) and then find the position of the next value (k+1)
-        # solver.Add(k == x[(i,j)])
-        solver.Add(k == solver.Element(x_flat, i*c+j))
-        # solver.Add(k + 1 == x[(i+a,j+b)])
-        solver.Add(k + 1 == solver.Element(x_flat, (i+a)*c+(j+b)))
-
-        solver.Add(i+a >= 0)
-        solver.Add(j+b >= 0)
-        solver.Add(i+a < r)
-        solver.Add(j+b < c)
-
-        # solver.Add(((a != 0) | (b != 0)))
-        a_nz = solver.BoolVar()
-        b_nz = solver.BoolVar()
-        solver.Add(a_nz == solver.IsDifferentCstVar(a,0))
-        solver.Add(b_nz == solver.IsDifferentCstVar(b,0))
-        solver.Add(a_nz + b_nz >= 1)
-
-
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x_flat)
-
-
-    # db: DecisionBuilder
-    db = solver.Phase(x_flat,
-                      #solver.INT_VAR_DEFAULT
-                      #solver.INT_VAR_SIMPLE
-                      solver.CHOOSE_FIRST_UNBOUND
-                      # solver.CHOOSE_RANDOM
-                      #solver.CHOOSE_MIN_SIZE_LOWEST_MIN
-                      #solver.CHOOSE_MIN_SIZE_HIGHEST_MIN
-                      #solver.CHOOSE_MIN_SIZE_LOWEST_MAX
-                      #solver.CHOOSE_MIN_SIZE_HIGHEST_MAX
-                      #solver.CHOOSE_PATH
-                      ,
-                      # solver.INT_VALUE_DEFAULT
-                      # solver.INT_VALUE_SIMPLE
-                      solver.ASSIGN_MIN_VALUE
-                      #solver.ASSIGN_MAX_VALUE
-                      #solver.ASSIGN_RANDOM_VALUE
-                      #solver.ASSIGN_CENTER_VALUE
-                      )
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print "\nSolution:", num_solutions
-        print_board(x, r, c)
-        print
-
-    solver.EndSearch()
-
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print "\nSolution:", num_solutions
+    print_board(x, r, c)
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 def print_board(x, rows, cols):
-    for i in range(rows):
-        for j in range(cols):
-            print "% 2s" % x[i,j].Value(),
-        print ''
+  for i in range(rows):
+    for j in range(cols):
+      print "% 2s" % x[i, j].Value(),
+    print ""
+
 
 def print_game(game, rows, cols):
-    for i in range(rows):
-        for j in range(cols):
-            print "% 2s" % game[i][j],
-        print ''
+  for i in range(rows):
+    for j in range(cols):
+      print "% 2s" % game[i][j],
+    print ""
 
 
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

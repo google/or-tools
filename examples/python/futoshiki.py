@@ -42,7 +42,8 @@
   * SICStus: http://hakank.org/sicstus/futoshiki.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -50,77 +51,72 @@ from ortools.constraint_solver import pywrapcp
 
 def main(values, lt):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Futoshiki problem')
+  # Create the solver.
+  solver = pywrapcp.Solver("Futoshiki problem")
 
-    #
-    # data
-    #
-    size = len(values)
-    RANGE = range(size)
-    NUMQD = range(len(lt))
+  #
+  # data
+  #
+  size = len(values)
+  RANGE = range(size)
+  NUMQD = range(len(lt))
 
+  #
+  # variables
+  #
+  field = {}
+  for i in RANGE:
+    for j in RANGE:
+      field[i, j] = solver.IntVar(1, size, "field[%i,%i]" % (i, j))
+  field_flat = [field[i, j] for i in RANGE for j in RANGE]
 
-    #
-    # variables
-    #
-    field = {}
-    for i in RANGE:
-        for j in RANGE:
-            field[i,j] = solver.IntVar(1, size, "field[%i,%i]" % (i,j))
-    field_flat = [field[i,j] for i in RANGE for j in RANGE]
-
-    #
-    # constraints
-    #
-    # set initial values
-    for row in RANGE:
-        for col in RANGE:
-            if values[row][col] > 0:
-                solver.Add(field[row,col] == values[row][col])
-
-
-    # all rows have to be different
-    for row in RANGE:
-        solver.Add(solver.AllDifferent([field[row,col] for col in RANGE]))
-
-
-    # all columns have to be different
+  #
+  # constraints
+  #
+  # set initial values
+  for row in RANGE:
     for col in RANGE:
-        solver.Add(solver.AllDifferent([field[row,col] for row in RANGE]))
+      if values[row][col] > 0:
+        solver.Add(field[row, col] == values[row][col])
 
+  # all rows have to be different
+  for row in RANGE:
+    solver.Add(solver.AllDifferent([field[row, col] for col in RANGE]))
 
-    # all < constraints are satisfied
-    # Also: make 0-based
-    for i in NUMQD:
-        solver.Add(field[ lt[i][0]-1, lt[i][1]-1 ] <
-                   field[ lt[i][2]-1, lt[i][3]-1 ] )
+  # all columns have to be different
+  for col in RANGE:
+    solver.Add(solver.AllDifferent([field[row, col] for row in RANGE]))
 
+  # all < constraints are satisfied
+  # Also: make 0-based
+  for i in NUMQD:
+    solver.Add(field[lt[i][0] - 1, lt[i][1] - 1] <
+               field[lt[i][2] - 1, lt[i][3] - 1])
 
-    #
-    # search and result
-    #
-    db = solver.Phase(field_flat,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MIN_VALUE)
+  #
+  # search and result
+  #
+  db = solver.Phase(field_flat,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
 
-    solver.NewSearch(db)
+  solver.NewSearch(db)
 
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        for i in RANGE:
-            for j in RANGE:
-                print field[i,j].Value(),
-            print
-        print
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    for i in RANGE:
+      for j in RANGE:
+        print field[i, j].Value(),
+      print
+    print
 
-    solver.EndSearch()
+  solver.EndSearch()
 
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 #
@@ -146,17 +142,17 @@ values1 = [
 # [i1,j1, i2,j2] requires that values[i1,j1] < values[i2,j2]
 # Note: 1-based
 lt1 = [
-    [1,2,  1,1],
-    [1,4,  1,5],
-    [2,3,  1,3],
-    [3,3,  2,3],
-    [3,4,  2,4],
-    [2,5,  3,5],
-    [3,2,  4,2],
-    [4,4,  4,3],
-    [5,2,  5,1],
-    [5,4,  5,3],
-    [5,5,  4,5]]
+    [1, 2, 1, 1],
+    [1, 4, 1, 5],
+    [2, 3, 1, 3],
+    [3, 3, 2, 3],
+    [3, 4, 2, 4],
+    [2, 5, 3, 5],
+    [3, 2, 4, 2],
+    [4, 4, 4, 3],
+    [5, 2, 5, 1],
+    [5, 4, 5, 3],
+    [5, 5, 4, 5]]
 
 
 #
@@ -177,17 +173,17 @@ values2 = [
 
 # Note: 1-based
 lt2 = [
-    [1,2,  1,1],
-    [1,4,  1,3],
-    [1,5,  1,4],
-    [4,4,  4,5],
-    [5,1,  5,2],
-    [5,2,  5,3]
-    ]
+    [1, 2, 1, 1],
+    [1, 4, 1, 3],
+    [1, 5, 1, 4],
+    [4, 4, 4, 5],
+    [5, 1, 5, 2],
+    [5, 2, 5, 3]
+]
 
 
-if __name__ == '__main__':
-    print "Problem 1"
-    main(values1, lt1)
-    print "\nProblem 2"
-    main(values2, lt2)
+if __name__ == "__main__":
+  print "Problem 1"
+  main(values1, lt1)
+  print "\nProblem 2"
+  main(values2, lt2)

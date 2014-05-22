@@ -33,7 +33,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_cp_solver/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_cp_solver/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -41,71 +42,68 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('xkcd knapsack')
+  # Create the solver.
+  solver = pywrapcp.Solver("xkcd knapsack")
 
-    #
-    # data
-    #
-    num_prices = 6
-    # for price and total: multiplied by 100 to be able to use integers
-    price = [215, 275, 335, 355, 420, 580]
-    total = 1505
+  #
+  # data
+  #
+  num_prices = 6
+  # for price and total: multiplied by 100 to be able to use integers
+  price = [215, 275, 335, 355, 420, 580]
+  total = 1505
 
-    products = ["mixed fruit", "french fries", "side salad",
-                "host wings", "mozzarella sticks", "samples place"]
+  products = ["mixed fruit", "french fries", "side salad",
+              "host wings", "mozzarella sticks", "samples place"]
 
-    # declare variables
+  # declare variables
 
-    # how many items of each dish
-    x = [solver.IntVar(0,10, 'x%i' % i) for i in range(num_prices)]
-    z = solver.IntVar(0,1505,'z')
+  # how many items of each dish
+  x = [solver.IntVar(0, 10, "x%i" % i) for i in range(num_prices)]
+  z = solver.IntVar(0, 1505, "z")
 
-    #
-    # constraints
-    #
-    solver.Add(z == solver.Sum([x[i]*price[i]  for i in range(num_prices)] ))
-    solver.Add(z == total)
+  #
+  # constraints
+  #
+  solver.Add(z == solver.Sum([x[i] * price[i] for i in range(num_prices)]))
+  solver.Add(z == total)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([x[i] for i in range(num_prices)])
-    solution.Add(z)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([x[i] for i in range(num_prices)])
+  solution.Add(z)
 
+  collector = solver.AllSolutionCollector(solution)
+  # collector = solver.FirstSolutionCollector(solution)
+  # search_log = solver.SearchLog(100, x[0])
+  solver.Solve(solver.Phase([x[i] for i in range(num_prices)],
+                            solver.INT_VAR_SIMPLE,
+                            solver.ASSIGN_MIN_VALUE),
+               [collector])
 
-    collector = solver.AllSolutionCollector(solution)
-    # collector = solver.FirstSolutionCollector(solution)
-    # search_log = solver.SearchLog(100, x[0])
-    solver.Solve(solver.Phase([x[i] for i in range(num_prices)],
-                              solver.INT_VAR_SIMPLE,
-                              solver.ASSIGN_MIN_VALUE),
-                              [collector])
+  num_solutions = collector.SolutionCount()
+  print "num_solutions: ", num_solutions
+  if num_solutions > 0:
+    for s in range(num_solutions):
+      print "z:", collector.Value(s, z)
+      xval = [collector.Value(s, x[i]) for i in range(num_prices)]
+      print "x:", xval
+      for i in range(num_prices):
+        if xval[i] > 0:
+          print xval[i], "of", products[i], ":", price[i] / 100.0
+      print
 
+    print
+    print "num_solutions:", num_solutions
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
-    num_solutions = collector.SolutionCount()
-    print "num_solutions: ", num_solutions
-    if num_solutions > 0:
-        for s in range(num_solutions):
-            print "z:", collector.Value(s, z)
-            xval = [collector.Value(s, x[i]) for i in range(num_prices)]
-            print "x:", xval
-            for i in range(num_prices):
-                if xval[i] > 0:
-                    print xval[i], "of", products[i], ":", price[i]/100.0
-            print
-
-
-        print
-        print "num_solutions:", num_solutions
-        print "failures:", solver.Failures()
-        print "branches:", solver.Branches()
-        print "WallTime:", solver.WallTime()
-
-    else:
-         print "No solutions found"
+  else:
+    print "No solutions found"
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

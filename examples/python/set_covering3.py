@@ -42,84 +42,85 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(unused_argv):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Set covering')
+  # Create the solver.
+  solver = pywrapcp.Solver("Set covering")
 
-    #
-    # data
-    #
-    num_groups = 6
-    num_senators = 10
+  #
+  # data
+  #
+  num_groups = 6
+  num_senators = 10
 
-    # which group does a senator belong to?
-    belongs = [
-        [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],   # 1 southern
-        [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],   # 2 northern
-        [0, 1, 1, 0, 0, 0, 0, 1, 1, 1],   # 3 liberals
-        [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],   # 4 conservative
-        [0, 0, 1, 1, 1, 1, 1, 0, 1, 0],   # 5 democrats
-        [1, 1, 0, 0, 0, 0, 0, 1, 0, 1]    # 6 republicans
-        ]
+  # which group does a senator belong to?
+  belongs = [
+      [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],   # 1 southern
+      [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],   # 2 northern
+      [0, 1, 1, 0, 0, 0, 0, 1, 1, 1],   # 3 liberals
+      [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],   # 4 conservative
+      [0, 0, 1, 1, 1, 1, 1, 0, 1, 0],   # 5 democrats
+      [1, 1, 0, 0, 0, 0, 0, 1, 0, 1]    # 6 republicans
+  ]
+
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(num_senators)]
+
+  #
+  # constraints
+  #
+
+  # number of assigned senators (to minimize)
+  z = solver.Sum(x)
+
+  # ensure that each group is covered by at least
+  # one senator
+  for i in range(num_groups):
+    solver.Add(
+        solver.SumGreaterOrEqual([x[j] * belongs[i][j]
+                                  for j in range(num_senators)],
+                                 1))
+
+  objective = solver.Minimize(z, 1)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.AddObjective(z)
+
+  collector = solver.LastSolutionCollector(solution)
+  solver.Solve(solver.Phase(x,
+                            solver.INT_VAR_DEFAULT,
+                            solver.INT_VALUE_DEFAULT),
+               [collector, objective])
+
+  print "z:", collector.ObjectiveValue(0)
+  print "x:", [collector.Value(0, x[i]) for i in range(num_senators)]
+  for j in range(num_senators):
+    if collector.Value(0, x[j]) == 1:
+      print "Senator", j + 1, "belongs to these groups:",
+      for i in range(num_groups):
+        if belongs[i][j] == 1:
+          print i + 1,
+      print
+
+  print
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_senators)]
-
-    #
-    # constraints
-    #
-
-    # number of assigned senators (to minimize)
-    z = solver.Sum(x)
-
-    # ensure that each group is covered by at least
-    # one senator
-    for i in range(num_groups):
-        solver.Add(
-            solver.SumGreaterOrEqual([x[j]*belongs[i][j]
-                                      for j in range(num_senators)],
-                                     1))
-
-    objective = solver.Minimize(z, 1)
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.AddObjective(z)
-
-    collector = solver.LastSolutionCollector(solution)
-    solver.Solve(solver.Phase(x,
-                              solver.INT_VAR_DEFAULT,
-                              solver.INT_VALUE_DEFAULT),
-                 [collector, objective])
-
-    print "z:", collector.ObjectiveValue(0)
-    print "x:", [collector.Value(0, x[i]) for i in range(num_senators)]
-    for j in range(num_senators):
-        if collector.Value(0, x[j]) == 1:
-            print "Senator", j+1, "belongs to these groups:",
-            for i in range(num_groups):
-                if belongs[i][j] == 1:
-                    print i + 1,
-            print
-
-    print
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-
-
-if __name__ == '__main__':
-    main("cp sample")
+if __name__ == "__main__":
+  main("cp sample")

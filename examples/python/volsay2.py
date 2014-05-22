@@ -20,10 +20,12 @@
   Using arrays.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.linear_solver import pywraplp
+
 
 def main(unused_argv):
 
@@ -31,12 +33,11 @@ def main(unused_argv):
 
   # using GLPK
   solver = pywraplp.Solver('CoinsGridGLPK',
-                          pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+                           pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
   # Using CLP
   # solver = pywraplp.Solver('CoinsGridCLP',
   #                          pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
-
 
   # data
   num_products = 2
@@ -46,7 +47,7 @@ def main(unused_argv):
   products = ['Gas', 'Chloride']
 
   # declare variables
-  production = [solver.NumVar(0, 100000, 'production[%i]' % i )
+  production = [solver.NumVar(0, 100000, 'production[%i]' % i)
                 for i in range(num_products)]
 
   #
@@ -58,7 +59,6 @@ def main(unused_argv):
   # objective
   objective = solver.Maximize(40 * production[Gas] + 50 * production[Chloride])
 
-
   print 'NumConstraints:', solver.NumConstraints()
 
   #
@@ -69,8 +69,8 @@ def main(unused_argv):
   print
   print 'objective = ', solver.Objective().Value()
   for i in range(num_products):
-      print products[i], '=', production[i].SolutionValue(),
-      print 'ReducedCost = ', production[i].ReducedCost()
+    print products[i], '=', production[i].SolutionValue(),
+    print 'ReducedCost = ', production[i].ReducedCost()
 
 if __name__ == '__main__':
-    main('Volsay')
+  main('Volsay')

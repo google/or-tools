@@ -53,7 +53,8 @@
   * SICStus: http://hakank.org/sicstus/covering_opl.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -64,91 +65,89 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Set covering')
+  # Create the solver.
+  solver = pywrapcp.Solver("Set covering")
 
-    #
-    # data
-    #
-    nb_workers = 32
-    Workers = range(nb_workers)
-    num_tasks = 15
-    Tasks = range(num_tasks)
+  #
+  # data
+  #
+  nb_workers = 32
+  Workers = range(nb_workers)
+  num_tasks = 15
+  Tasks = range(num_tasks)
 
-    # Which worker is qualified for each task.
-    # Note: This is 1-based and will be made 0-base below.
-    Qualified = [
-        [ 1,  9, 19,  22,  25,  28,  31 ],
-        [ 2, 12, 15, 19, 21, 23, 27, 29, 30, 31, 32 ],
-        [ 3, 10, 19, 24, 26, 30, 32 ],
-        [ 4, 21, 25, 28, 32 ],
-        [ 5, 11, 16, 22, 23, 27, 31 ],
-        [ 6, 20, 24, 26, 30, 32 ],
-        [ 7, 12, 17, 25, 30, 31 ] ,
-        [ 8, 17, 20, 22, 23  ],
-        [ 9, 13, 14,  26, 29, 30, 31 ],
-        [ 10, 21, 25, 31, 32 ],
-        [ 14, 15, 18, 23, 24, 27, 30, 32 ],
-        [ 18, 19, 22, 24, 26, 29, 31 ],
-        [ 11, 20, 25, 28, 30, 32 ],
-        [ 16, 19, 23, 31 ],
-        [ 9, 18, 26, 28, 31, 32 ]
-        ]
+  # Which worker is qualified for each task.
+  # Note: This is 1-based and will be made 0-base below.
+  Qualified = [
+      [1, 9, 19, 22, 25, 28, 31],
+      [2, 12, 15, 19, 21, 23, 27, 29, 30, 31, 32],
+      [3, 10, 19, 24, 26, 30, 32],
+      [4, 21, 25, 28, 32],
+      [5, 11, 16, 22, 23, 27, 31],
+      [6, 20, 24, 26, 30, 32],
+      [7, 12, 17, 25, 30, 31],
+      [8, 17, 20, 22, 23],
+      [9, 13, 14, 26, 29, 30, 31],
+      [10, 21, 25, 31, 32],
+      [14, 15, 18, 23, 24, 27, 30, 32],
+      [18, 19, 22, 24, 26, 29, 31],
+      [11, 20, 25, 28, 30, 32],
+      [16, 19, 23, 31],
+      [9, 18, 26, 28, 31, 32]
+  ]
 
-    Cost = [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 8, 9 ]
+  Cost = [
+      1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5,
+      5, 5, 6, 6, 6, 7, 8, 9]
 
+  #
+  # variables
+  #
+  Hire = [solver.IntVar(0, 1, "Hire[%i]" % w) for w in Workers]
+  total_cost = solver.IntVar(0, nb_workers * sum(Cost), "total_cost")
 
-    #
-    # variables
-    #
-    Hire = [solver.IntVar(0, 1, 'Hire[%i]' % w) for w in Workers]
-    total_cost = solver.IntVar(0, nb_workers*sum(Cost), 'total_cost')
+  #
+  # constraints
+  #
+  solver.Add(total_cost == solver.ScalProd(Hire, Cost))
 
-    #
-    # constraints
-    #
-    solver.Add(total_cost == solver.ScalProd(Hire, Cost))
+  for j in Tasks:
+    # Sum the cost for hiring the qualified workers
+    # (also, make 0-base)
+    b = solver.Sum([Hire[c - 1] for c in Qualified[j]])
+    solver.Add(b >= 1)
 
-    for j in Tasks:
-        # Sum the cost for hiring the qualified workers
-        # (also, make 0-base)
-        b = solver.Sum([Hire[c-1] for c in Qualified[j]])
-        solver.Add(b >= 1)
+  # objective: Minimize total cost
+  objective = solver.Minimize(total_cost, 1)
 
+  #
+  # search and result
+  #
+  db = solver.Phase(Hire,
+                    solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
 
+  solver.NewSearch(db, [objective])
 
-    # objective: Minimize total cost
-    objective = solver.Minimize(total_cost, 1)
-
-    #
-    # search and result
-    #
-    db = solver.Phase(Hire,
-                 solver.CHOOSE_FIRST_UNBOUND,
-                 solver.ASSIGN_MIN_VALUE)
-
-    solver.NewSearch(db, [objective])
-
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print "Total cost", total_cost.Value()
-        print "We should hire these workers: ",
-        for w in Workers:
-            if Hire[w].Value() == 1:
-                print w,
-        print
-        print
-
-    solver.EndSearch()
-
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print "Total cost", total_cost.Value()
+    print "We should hire these workers: ",
+    for w in Workers:
+      if Hire[w].Value() == 1:
+        print w,
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    print
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

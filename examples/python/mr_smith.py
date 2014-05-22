@@ -44,7 +44,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -53,73 +54,70 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Mr Smith problem')
+  # Create the solver.
+  solver = pywrapcp.Solver('Mr Smith problem')
 
-    #
-    # data
-    #
-    n = 5
+  #
+  # data
+  #
+  n = 5
 
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(n)]
+  Mr_Smith, Mrs_Smith, Matt, John, Tim = x
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(n)]
-    Mr_Smith, Mrs_Smith, Matt, John, Tim = x
+  #
+  # constraints
+  #
 
+  #
+  # I've kept the MiniZinc constraints for clarity
+  # and debugging.
+  #
 
-    #
-    # constraints
-    #
+  # If Mr Smith comes then his wife will come too.
+  # (Mr_Smith -> Mrs_Smith)
+  solver.Add(Mr_Smith - Mrs_Smith <= 0)
 
-    #
-    # I've kept the MiniZinc constraints for clarity
-    # and debugging.
-    #
+  # At least one of their two sons Matt and John will come.
+  # (Matt \/ John)
+  solver.Add(Matt + John >= 1)
 
-    # If Mr Smith comes then his wife will come too.
-    # (Mr_Smith -> Mrs_Smith)
-    solver.Add(Mr_Smith-Mrs_Smith <= 0)
+  # Either Mrs Smith or Tim will come but not both.
+  # bool2int(Mrs_Smith) + bool2int(Tim) = 1 /\
+  # (Mrs_Smith xor Tim)
+  solver.Add(Mrs_Smith + Tim == 1)
 
-    # At least one of their two sons Matt and John will come.
-    # (Matt \/ John)
-    solver.Add(Matt+John >= 1)
+  # Either Tim and John will come or neither will come.
+  # (Tim = John)
+  solver.Add(Tim == John)
 
-    # Either Mrs Smith or Tim will come but not both.
-    # bool2int(Mrs_Smith) + bool2int(Tim) = 1 /\
-    # (Mrs_Smith xor Tim)
-    solver.Add(Mrs_Smith + Tim == 1)
+  # If Matt comes /\ then John and his father will also come.
+  # (Matt -> (John /\ Mr_Smith))
+  solver.Add(Matt - (John * Mr_Smith) <= 0)
 
-    # Either Tim and John will come or neither will come.
-    # (Tim = John)
-    solver.Add(Tim == John)
+  #
+  # solution and search
+  #
+  db = solver.Phase(x,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
 
-    # If Matt comes /\ then John and his father will also come.
-    # (Matt -> (John /\ Mr_Smith))
-    solver.Add(Matt - (John*Mr_Smith) <= 0)
+  solver.NewSearch(db)
 
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'x:', [x[i].Value() for i in range(n)]
 
-    #
-    # solution and search
-    #
-    db = solver.Phase(x,
-                      solver.INT_VAR_DEFAULT,
-                      solver.INT_VALUE_DEFAULT)
-
-    solver.NewSearch(db)
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'x:', [x[i].Value() for i in range(n)]
-
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

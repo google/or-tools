@@ -45,7 +45,8 @@
   * Gecode: http://hakank.org/gecode/ski_assignment.cpp
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -55,69 +56,67 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Ski assignment')
+  # Create the solver.
+  solver = pywrapcp.Solver('Ski assignment')
 
-    #
-    # data
-    #
-    num_skis = 6
-    num_skiers = 5
-    ski_heights = [1, 2, 5, 7, 13, 21]
-    skier_heights = [3, 4, 7, 11, 18]
+  #
+  # data
+  #
+  num_skis = 6
+  num_skiers = 5
+  ski_heights = [1, 2, 5, 7, 13, 21]
+  skier_heights = [3, 4, 7, 11, 18]
 
+  #
+  # variables
+  #
 
-    #
-    # variables
-    #
+  # which ski to choose for each skier
+  x = [solver.IntVar(0, num_skis - 1, 'x[%i]' % i)
+       for i in range(num_skiers)]
+  z = solver.IntVar(0, sum(ski_heights), 'z')
 
-    # which ski to choose for each skier
-    x = [solver.IntVar(0, num_skis-1, 'x[%i]' % i)
-         for i in range(num_skiers)]
-    z = solver.IntVar(0, sum(ski_heights), 'z')
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
+  z_tmp = [abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
+           for i in range(num_skiers)]
+  solver.Add(z == sum(z_tmp))
 
-    z_tmp = [abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
-             for i in range(num_skiers)]
-    solver.Add(z == sum(z_tmp))
+  # objective
+  objective = solver.Minimize(z, 1)
 
-    # objective
-    objective = solver.Minimize(z, 1)
+  #
+  # search and result
+  #
+  db = solver.Phase(x,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(x,
-                 solver.INT_VAR_DEFAULT,
-                 solver.INT_VALUE_DEFAULT)
+  solver.NewSearch(db, [objective])
 
-    solver.NewSearch(db, [objective])
-
-
-    num_solutions = 0
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'total differences:', z.Value()
-        for i in range(num_skiers):
-            x_val = x[i].Value()
-            ski_height = ski_heights[x[i].Value()]
-            diff = ski_height - skier_heights[i]
-            print 'Skier %i: Ski %i with length %2i (diff: %2i)' %\
-                  (i, x_val, ski_height, diff )
-        print
-
-    solver.EndSearch()
-
+  num_solutions = 0
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'total differences:', z.Value()
+    for i in range(num_skiers):
+      x_val = x[i].Value()
+      ski_height = ski_heights[x[i].Value()]
+      diff = ski_height - skier_heights[i]
+      print 'Skier %i: Ski %i with length %2i (diff: %2i)' %\
+            (i, x_val, ski_height, diff)
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+
+  solver.EndSearch()
+
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime()
 
 
 if __name__ == '__main__':
-    main()
+  main()

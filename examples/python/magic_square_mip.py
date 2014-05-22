@@ -39,7 +39,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -49,7 +50,9 @@ from ortools.linear_solver import pywraplp
 #   n: size of matrix
 #   use_output_matrix: use the output_matrix
 #
-def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
+
+
+def main(n=3, sol='GLPK', use_output_matrix=0):
 
   # Create the solver.
 
@@ -60,21 +63,19 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
     solver = pywraplp.Solver('CoinsGridGLPK',
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
-  # Using CLP
-      solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
+    # Using CLP
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
   #
   print 'n = ', n
 
-
   # range_n = range(1, n+1)
   range_n = range(0, n)
 
-  N = n*n
+  N = n * n
   range_N = range(1, N + 1)
 
   #
@@ -86,15 +87,15 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
   for i in range_n:
     for j in range_n:
       for k in range_N:
-        x[i,j,k] = solver.IntVar(0, 1, 'x[%i,%i,%i]' % (i, j, k))
+        x[i, j, k] = solver.IntVar(0, 1, 'x[%i,%i,%i]' % (i, j, k))
 
-  ## For output. Much slower....
+  # For output. Much slower....
   if use_output_matrix == 1:
     print 'Using an output matrix'
     square = {}
     for i in range_n:
       for j in range_n:
-        square[i,j] = solver.IntVar(1, n*n, 'square[%i,%i]' % (i, j))
+        square[i, j] = solver.IntVar(1, n * n, 'square[%i,%i]' % (i, j))
 
   # the magic sum
   s = solver.IntVar(1, n * n * n, 's')
@@ -106,41 +107,40 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
   # each cell must be assigned exactly one integer
   for i in range_n:
     for j in range_n:
-      solver.Add(solver.Sum([x[i,j,k] for k in range_N]) == 1)
+      solver.Add(solver.Sum([x[i, j, k] for k in range_N]) == 1)
 
   # each integer must be assigned exactly to one cell
   for k in range_N:
-    solver.Add(solver.Sum([x[i,j,k]
+    solver.Add(solver.Sum([x[i, j, k]
                            for i in range_n
                            for j in range_n]) == 1)
 
   # # the sum in each row must be the magic sum
   for i in range_n:
-     solver.Add(solver.Sum([k * x[i,j,k]
-                            for j in range_n
-                            for k in range_N]) == s)
+    solver.Add(solver.Sum([k * x[i, j, k]
+                           for j in range_n
+                           for k in range_N]) == s)
 
   # # the sum in each column must be the magic sum
   for j in range_n:
-     solver.Add(solver.Sum([k * x[i,j,k]
-                            for i in range_n
-                            for k in range_N]) == s)
+    solver.Add(solver.Sum([k * x[i, j, k]
+                           for i in range_n
+                           for k in range_N]) == s)
 
   # # the sum in the diagonal must be the magic sum
-  solver.Add(solver.Sum([k * x[i,i,k]
+  solver.Add(solver.Sum([k * x[i, i, k]
                          for i in range_n
                          for k in range_N]) == s)
 
-
   # # the sum in the co-diagonal must be the magic sum
   if range_n[0] == 1:
-     # for range_n = 1..n
-     solver.Add(solver.Sum([k * x[i,n-i+1,k]
-                            for i in range_n
-                            for k in range_N]) == s)
+    # for range_n = 1..n
+    solver.Add(solver.Sum([k * x[i, n - i + 1, k]
+                           for i in range_n
+                           for k in range_N]) == s)
   else:
     # for range_n = 0..n-1
-    solver.Add(solver.Sum([k * x[i,n-i-1,k]
+    solver.Add(solver.Sum([k * x[i, n - i - 1, k]
                            for i in range_n
                            for k in range_N]) == s)
 
@@ -148,9 +148,8 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
-        solver.Add(square[i,j] ==
-                   solver.Sum([k * x[i,j,k] for k in range_N]))
-
+        solver.Add(square[i, j] ==
+                   solver.Sum([k * x[i, j, k] for k in range_N]))
 
   #
   # solution and search
@@ -169,14 +168,14 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
   else:
     for i in range_n:
       for j in range_n:
-        print sum([int(k * x[i,j,k].SolutionValue()) for k in range_N]), " ",
+        print sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]), ' ',
       print
 
-  print "\nx:"
+  print '\nx:'
   for i in range_n:
     for j in range_n:
       for k in range_N:
-        print int(x[i,j,k].SolutionValue()),
+        print int(x[i, j, k].SolutionValue()),
       print
 
   print
@@ -186,19 +185,19 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
 
 
 if __name__ == '__main__':
-    n = 3
-    sol = 'GLPK'
-    use_output_matrix = 0
-    if len(sys.argv) > 1:
-      n = int(sys.argv[1])
+  n = 3
+  sol = 'GLPK'
+  use_output_matrix = 0
+  if len(sys.argv) > 1:
+    n = int(sys.argv[1])
 
-    if len(sys.argv) > 2:
-      sol = sys.argv[2]
-      if sol != 'GLPK' and sol != 'CBC':
-        print 'Solver must be either GLPK or CBC'
-        sys.exit(1)
+  if len(sys.argv) > 2:
+    sol = sys.argv[2]
+    if sol != 'GLPK' and sol != 'CBC':
+      print 'Solver must be either GLPK or CBC'
+      sys.exit(1)
 
-    if len(sys.argv) > 3:
-      use_output_matrix = int(sys.argv[3])
+  if len(sys.argv) > 3:
+    use_output_matrix = int(sys.argv[3])
 
-    main(n, sol, use_output_matrix)
+  main(n, sol, use_output_matrix)

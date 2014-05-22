@@ -19,12 +19,14 @@
   From the OPL model knapsack.mod
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
 
-def main(sol = 'GLPK'):
+
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -35,10 +37,9 @@ def main(sol = 'GLPK'):
     solver = pywraplp.Solver('CoinsGridGLPK',
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
-  # Using CLP
-      solver = pywraplp.Solver('CoinsGridCLP',
-                               pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
+    # Using CLP
+    solver = pywraplp.Solver('CoinsGridCLP',
+                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
   # data
@@ -48,15 +49,15 @@ def main(sol = 'GLPK'):
   items = range(nb_items)
   resources = range(nb_resources)
 
-  capacity = [ 18209, 7692, 1333, 924, 26638, 61188, 13360 ]
-  value = [ 96, 76, 56, 11, 86, 10, 66, 86, 83, 12, 9, 81 ]
-  use = [[ 19,  1, 10, 1,   1, 14, 152, 11, 1,  1, 1, 1 ],
-         [ 0,   4, 53, 0,   0, 80,   0, 4, 5,   0, 0, 0 ],
-         [ 4, 660,  3, 0, 30,    0,  3, 0, 4, 90, 0, 0],
-         [ 7,   0, 18, 6, 770, 330,  7, 0, 0,   6, 0, 0],
-         [ 0, 20,   0, 4, 52,    3,  0, 0, 0,   5, 4, 0],
-         [ 0,   0, 40, 70,  4, 63,   0, 0, 60,  0, 4, 0],
-         [ 0, 32,   0, 0,   0,   5,  0, 3, 0, 660, 0, 9]]
+  capacity = [18209, 7692, 1333, 924, 26638, 61188, 13360]
+  value = [96, 76, 56, 11, 86, 10, 66, 86, 83, 12, 9, 81]
+  use = [[19, 1, 10, 1, 1, 14, 152, 11, 1, 1, 1, 1],
+         [0, 4, 53, 0, 0, 80, 0, 4, 5, 0, 0, 0],
+         [4, 660, 3, 0, 30, 0, 3, 0, 4, 90, 0, 0],
+         [7, 0, 18, 6, 770, 330, 7, 0, 0, 6, 0, 0],
+         [0, 20, 0, 4, 52, 3, 0, 0, 0, 5, 4, 0],
+         [0, 0, 40, 70, 4, 63, 0, 0, 60, 0, 4, 0],
+         [0, 32, 0, 0, 0, 5, 0, 3, 0, 660, 0, 9]]
 
   max_value = max(capacity)
 
@@ -64,7 +65,6 @@ def main(sol = 'GLPK'):
   # variables
   #
   take = [solver.IntVar(0, max_value, 'take[%i]' % j) for j in items]
-
 
   # total cost, to be maximized
   z = solver.Sum([value[i] * take[i] for i in items])
@@ -79,7 +79,6 @@ def main(sol = 'GLPK'):
   # objective
   objective = solver.Maximize(z)
 
-
   #
   # solution and search
   #
@@ -92,7 +91,6 @@ def main(sol = 'GLPK'):
   for i in items:
     print int(take[i].SolutionValue()),
   print
-
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'

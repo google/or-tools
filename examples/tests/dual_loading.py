@@ -7,5 +7,5 @@ def main():
   lp = pywraplp.Solver("test", pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   main()

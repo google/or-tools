@@ -24,7 +24,6 @@ jobs. This is called the makespan.
 """
 
 
-
 from google.apputils import app
 import gflags
 from ortools.constraint_solver import pywrapcp

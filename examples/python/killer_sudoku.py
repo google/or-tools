@@ -64,7 +64,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
@@ -75,128 +76,128 @@ from ortools.constraint_solver import pywrapcp
 # Ensure that the sum of the segments
 # in cc == res
 #
+
+
 def calc(cc, x, res):
 
-    solver = x.values()[0].solver()
+  solver = x.values()[0].solver()
 
-    # sum the numbers
-    solver.Add(solver.Sum([x[i[0]-1,i[1]-1] for i in cc]) == res)
-
+  # sum the numbers
+  solver.Add(solver.Sum([x[i[0] - 1, i[1] - 1] for i in cc]) == res)
 
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Killer Sudoku')
+  # Create the solver.
+  solver = pywrapcp.Solver("Killer Sudoku")
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    # size of matrix
-    n = 9
+  # size of matrix
+  n = 9
 
-    # For a better view of the problem, see
-    #  http://en.wikipedia.org/wiki/File:Killersudoku_color.svg
+  # For a better view of the problem, see
+  #  http://en.wikipedia.org/wiki/File:Killersudoku_color.svg
 
-    # hints
-    #    [sum, [segments]]
-    # Note: 1-based
-    problem = [
-            [ 3, [[1,1], [1,2]]],
-            [15, [[1,3], [1,4], [1,5]]],
-            [22, [[1,6], [2,5], [2,6], [3,5]]],
-            [ 4, [[1,7], [2,7]]],
-            [16, [[1,8], [2,8]]],
-            [15, [[1,9], [2,9], [3,9], [4,9]]],
-            [25, [[2,1], [2,2], [3,1], [3,2]]],
-            [17, [[2,3], [2,4]]],
-            [ 9, [[3,3], [3,4], [4,4]]],
-            [ 8, [[3,6], [4,6],[5,6]]],
-            [20, [[3,7], [3,8],[4,7]]],
-            [ 6, [[4,1], [5,1]]],
-            [14, [[4,2], [4,3]]],
-            [17, [[4,5], [5,5],[6,5]]],
-            [17, [[4,8], [5,7],[5,8]]],            
-            [13, [[5,2], [5,3],[6,2]]],
-            [20, [[5,4], [6,4],[7,4]]],
-            [12, [[5,9], [6,9]]],
-            [27, [[6,1], [7,1],[8,1],[9,1]]],
-            [ 6, [[6,3], [7,2],[7,3]]],
-            [20, [[6,6], [7,6], [7,7]]],
-            [ 6, [[6,7], [6,8]]],
-            [10, [[7,5], [8,4],[8,5],[9,4]]],
-            [14, [[7,8], [7,9],[8,8],[8,9]]],
-            [ 8, [[8,2], [9,2]]],
-            [16, [[8,3], [9,3]]],
-            [15, [[8,6], [8,7]]],
-            [13, [[9,5], [9,6],[9,7]]],
-            [17, [[9,8], [9,9]]]]
+  # hints
+  #    [sum, [segments]]
+  # Note: 1-based
+  problem = [
+      [3, [[1, 1], [1, 2]]],
+      [15, [[1, 3], [1, 4], [1, 5]]],
+      [22, [[1, 6], [2, 5], [2, 6], [3, 5]]],
+      [4, [[1, 7], [2, 7]]],
+      [16, [[1, 8], [2, 8]]],
+      [15, [[1, 9], [2, 9], [3, 9], [4, 9]]],
+      [25, [[2, 1], [2, 2], [3, 1], [3, 2]]],
+      [17, [[2, 3], [2, 4]]],
+      [9, [[3, 3], [3, 4], [4, 4]]],
+      [8, [[3, 6], [4, 6], [5, 6]]],
+      [20, [[3, 7], [3, 8], [4, 7]]],
+      [6, [[4, 1], [5, 1]]],
+      [14, [[4, 2], [4, 3]]],
+      [17, [[4, 5], [5, 5], [6, 5]]],
+      [17, [[4, 8], [5, 7], [5, 8]]],
+      [13, [[5, 2], [5, 3], [6, 2]]],
+      [20, [[5, 4], [6, 4], [7, 4]]],
+      [12, [[5, 9], [6, 9]]],
+      [27, [[6, 1], [7, 1], [8, 1], [9, 1]]],
+      [6, [[6, 3], [7, 2], [7, 3]]],
+      [20, [[6, 6], [7, 6], [7, 7]]],
+      [6, [[6, 7], [6, 8]]],
+      [10, [[7, 5], [8, 4], [8, 5], [9, 4]]],
+      [14, [[7, 8], [7, 9], [8, 8], [8, 9]]],
+      [8, [[8, 2], [9, 2]]],
+      [16, [[8, 3], [9, 3]]],
+      [15, [[8, 6], [8, 7]]],
+      [13, [[9, 5], [9, 6], [9, 7]]],
+      [17, [[9, 8], [9, 9]]]]
 
-    #
-    # variables
-    #
+  #
+  # variables
+  #
 
-    # the set
-    x = {}
+  # the set
+  x = {}
+  for i in range(n):
+    for j in range(n):
+      x[i, j] = solver.IntVar(1, n, "x[%i,%i]" % (i, j))
+
+  x_flat = [x[i, j] for i in range(n) for j in range(n)]
+
+  #
+  # constraints
+  #
+
+  # all rows and columns must be unique
+  for i in range(n):
+    row = [x[i, j] for j in range(n)]
+    solver.Add(solver.AllDifferent(row))
+
+    col = [x[j, i] for j in range(n)]
+    solver.Add(solver.AllDifferent(col))
+
+  # cells
+  for i in range(2):
+    for j in range(2):
+      cell = [x[r, c]
+              for r in range(i * 3, i * 3 + 3)
+              for c in range(j * 3, j * 3 + 3)]
+      solver.Add(solver.AllDifferent(cell))
+
+  # calculate the segments
+  for (res, segment) in problem:
+    calc(segment, x, res)
+
+  #
+  # search and solution
+  #
+  db = solver.Phase(x_flat,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
+
+  solver.NewSearch(db)
+
+  num_solutions = 0
+  while solver.NextSolution():
     for i in range(n):
-        for j in range(n):
-            x[i,j] = solver.IntVar(1, n, 'x[%i,%i]' % (i,j))
-
-    x_flat = [x[i,j] for i in range(n) for j in range(n)]
-
-    #
-    # constraints
-    #
-
-    # all rows and columns must be unique
-    for i in range(n):
-        row = [x[i,j] for j in range(n)]
-        solver.Add(solver.AllDifferent(row))
-
-        col = [x[j,i] for j in range(n)]
-        solver.Add(solver.AllDifferent(col))
-
-    # cells
-    for i in range(2):
-        for j in range(2):
-            cell = [x[r,c]
-                    for r in range(i*3,i*3+3)
-                    for c in range(j*3,j*3+3)]
-            solver.Add(solver.AllDifferent(cell));
-
-    # calculate the segments
-    for (res, segment) in problem:
-        calc(segment, x, res)
-
-
-    #
-    # search and solution
-    #
-    db = solver.Phase(x_flat,
-                 solver.INT_VAR_DEFAULT,
-                 solver.INT_VALUE_DEFAULT)
-
-    solver.NewSearch(db)
-
-    num_solutions = 0
-    while solver.NextSolution():
-        for i in range(n):
-            for j in range(n):
-                print x[i,j].Value(),
-            print
-
-        print
-        num_solutions += 1
-
-    solver.EndSearch()
+      for j in range(n):
+        print x[i, j].Value(),
+      print
 
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

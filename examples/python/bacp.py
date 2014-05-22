@@ -23,34 +23,35 @@ gflags.DEFINE_string('data', 'python/data/bacp/bacp12.txt',
 
 #----------------helper for binpacking posting----------------
 
+
 def BinPacking(solver, binvars, weights, loadvars):
   '''post the load constraint on bins.
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   '''
   pack = solver.Pack(binvars, len(loadvars))
-  pack.AddWeightedSumEqualVarDimension(weights, loadvars);
+  pack.AddWeightedSumEqualVarDimension(weights, loadvars)
   solver.Add(pack)
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
 
 #------------------------------data reading-------------------
 
+
 def ReadData(filename):
-  '''Read data from <filename>.'''
+  """Read data from <filename>."""
   f = open(filename)
   nb_courses, nb_periods, min_credit, max_credit, nb_prereqs =\
       [int(nb) for nb in f.readline().split()]
   credits = [int(nb) for nb in f.readline().split()]
-  prereq  = [int(nb) for nb in f.readline().split()]
-  prereq  = [(prereq[i * 2],prereq[i * 2 + 1]) for i in range(nb_prereqs)]
-  return (credits ,nb_periods, prereq)
-
+  prereq = [int(nb) for nb in f.readline().split()]
+  prereq = [(prereq[i * 2], prereq[i * 2 + 1]) for i in range(nb_prereqs)]
+  return (credits, nb_periods, prereq)
 
 
 def main(unused_argv):
   #------------------solver and variable declaration-------------
 
-  credits ,nb_periods, prereq = ReadData(FLAGS.data)
+  credits, nb_periods, prereq = ReadData(FLAGS.data)
   nb_courses = len(credits)
 
   solver = pywrapcp.Solver('Balanced Academic Curriculum Problem')
@@ -65,8 +66,8 @@ def main(unused_argv):
   # Bin Packing.
   BinPacking(solver, x, credits, load_vars)
   # Add dependencies.
-  for i,j in prereq:
-      solver.Add(x[i] < x[j])
+  for i, j in prereq:
+    solver.Add(x[i] < x[j])
 
   #----------------Objective-------------------------------
 

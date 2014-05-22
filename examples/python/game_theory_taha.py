@@ -21,13 +21,15 @@
   From Taha, Operations Research (8'th edition), page 528.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 import sys
 from ortools.linear_solver import pywraplp
 
-def main(sol = 'GLPK'):
+
+def main(sol='GLPK'):
 
   # Create the solver.
 
@@ -40,16 +42,13 @@ def main(sol = 'GLPK'):
     solver = pywraplp.Solver('CoinsGridCLP',
                              pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
-
   # data
   rows = 3
   cols = 3
 
   game = [[3.0, -1.0, -3.0],
-          [-2.0,  4.0, -1.0],
-          [-5.0, -6.0,  2.0]
-          ]
-
+          [-2.0, 4.0, -1.0],
+          [-5.0, -6.0, 2.0]]
 
   #
   # declare variables
@@ -58,13 +57,13 @@ def main(sol = 'GLPK'):
   #
   # row player
   #
-  x1 = [solver.NumVar(0, 1, 'x1[%i]' % i )
-                for i in range(rows)]
+  x1 = [solver.NumVar(0, 1, 'x1[%i]' % i)
+        for i in range(rows)]
 
   v = solver.NumVar(-2, 2, 'v')
 
   for i in range(rows):
-    solver.Add(v - solver.Sum([x1[j]*game[j][i] for j in range(cols)]) <= 0)
+    solver.Add(v - solver.Sum([x1[j] * game[j][i] for j in range(cols)]) <= 0)
 
   solver.Add(solver.Sum(x1) == 1)
 
@@ -73,7 +72,7 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'row player:';
+  print 'row player:'
   print 'v = ', solver.Objective().Value()
   print 'Strategies: '
   for i in range(rows):
@@ -81,17 +80,16 @@ def main(sol = 'GLPK'):
   print
   print
 
-
   #
   # For column player:
   #
-  x2 = [solver.NumVar(0, 1, 'x2[%i]' % i )
-                for i in range(cols)]
+  x2 = [solver.NumVar(0, 1, 'x2[%i]' % i)
+        for i in range(cols)]
 
   v2 = solver.NumVar(-2, 2, 'v2')
 
   for i in range(cols):
-    solver.Add(v2 - solver.Sum([x2[j]*game[i][j] for j in range(rows)]) >= 0)
+    solver.Add(v2 - solver.Sum([x2[j] * game[i][j] for j in range(rows)]) >= 0)
 
   solver.Add(solver.Sum(x2) == 1)
 
@@ -100,13 +98,12 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'column player:';
+  print 'column player:'
   print 'v2 = ', solver.Objective().Value()
   print 'Strategies: '
   for i in range(rows):
     print x2[i].SolutionValue(),
   print
-
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'

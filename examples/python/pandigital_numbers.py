@@ -57,110 +57,114 @@
   * SICStus : http://hakank.org/sicstus/pandigital_numbers.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
-import string, sys
+import string
+import sys
 
 from ortools.constraint_solver import pywrapcp
 
 #
 # converts a number (s) <-> an array of integers (t) in the specific base.
 #
+
+
 def toNum(solver, t, s, base):
-    tlen = len(t)
-    solver.Add(s == solver.Sum([(base**(tlen-i-1))*t[i] for i in range(tlen)]))
+  tlen = len(t)
+  solver.Add(
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10, start=1, len1=1, len2=4):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Pandigital numbers')
+  # Create the solver.
+  solver = pywrapcp.Solver("Pandigital numbers")
 
-    #
-    # data
-    #
-    max_d   = base-1
-    x_len   = max_d + 1 - start
-    max_num = base**4-1
+  #
+  # data
+  #
+  max_d = base - 1
+  x_len = max_d + 1 - start
+  max_num = base ** 4 - 1
 
-    #
-    # declare variables
-    #
-    num1 = solver.IntVar(0, max_num, 'num1')
-    num2 = solver.IntVar(0, max_num, 'num2')
-    res  = solver.IntVar(0, max_num, 'res')
+  #
+  # declare variables
+  #
+  num1 = solver.IntVar(0, max_num, "num1")
+  num2 = solver.IntVar(0, max_num, "num2")
+  res = solver.IntVar(0, max_num, "res")
 
-    x = [solver.IntVar(start, max_d, 'x[%i]' % i) for i in range(x_len)]
+  x = [solver.IntVar(start, max_d, "x[%i]" % i) for i in range(x_len)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(x))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(x))
 
-    toNum(solver, [x[i] for i in range(len1)], num1, base)
-    toNum(solver, [x[i] for i in range(len1,len1+len2)], num2, base)
-    toNum(solver, [x[i] for i in range(len1+len2,x_len)], res, base)
+  toNum(solver, [x[i] for i in range(len1)], num1, base)
+  toNum(solver, [x[i] for i in range(len1, len1 + len2)], num2, base)
+  toNum(solver, [x[i] for i in range(len1 + len2, x_len)], res, base)
 
-    solver.Add(num1*num2 == res)
+  solver.Add(num1 * num2 == res)
 
-    # no number must start with 0
-    solver.Add(x[0] > 0)
-    solver.Add(x[len1] > 0)
-    solver.Add(x[len1+len2] > 0)
+  # no number must start with 0
+  solver.Add(x[0] > 0)
+  solver.Add(x[len1] > 0)
+  solver.Add(x[len1 + len2] > 0)
 
-    # symmetry breaking
-    solver.Add(num1 < num2)
+  # symmetry breaking
+  solver.Add(num1 < num2)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.Add(num1)
-    solution.Add(num2)
-    solution.Add(res)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.Add(num1)
+  solution.Add(num2)
+  solution.Add(res)
 
-    db = solver.Phase(x,
-                 solver.INT_VAR_SIMPLE,
-                 solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x,
+                    solver.INT_VAR_SIMPLE,
+                    solver.INT_VALUE_DEFAULT)
 
-    solver.NewSearch(db)
-    num_solutions = 0
-    solutions = []
-    while solver.NextSolution():
-        print_solution([x[i].Value() for i in range(x_len)], len1, len2, x_len)
-        num_solutions += 1
+  solver.NewSearch(db)
+  num_solutions = 0
+  solutions = []
+  while solver.NextSolution():
+    print_solution([x[i].Value() for i in range(x_len)], len1, len2, x_len)
+    num_solutions += 1
 
-    solver.EndSearch()
+  solver.EndSearch()
 
-    if 0 and num_solutions > 0:
-        print
-        print "num_solutions:", num_solutions
-        print "failures:", solver.Failures()
-        print "branches:", solver.Branches()
-        print "WallTime:", solver.WallTime()
-        print
+  if 0 and num_solutions > 0:
+    print
+    print "num_solutions:", num_solutions
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
+    print
 
 
-
-def print_solution(x,len1,len2,x_len):
-    print "".join([str(x[i]) for i in range(len1)]), "*",
-    print "".join([str(x[i]) for i in range(len1,len1+len2)]), "=",
-    print "".join([str(x[i]) for i in range(len1+len2,x_len)])
+def print_solution(x, len1, len2, x_len):
+  print "".join([str(x[i]) for i in range(len1)]), "*",
+  print "".join([str(x[i]) for i in range(len1, len1 + len2)]), "=",
+  print "".join([str(x[i]) for i in range(len1 + len2, x_len)])
 
 
 base = 10
 start = 1
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        base = string.atoi(sys.argv[1])
-    if len(sys.argv) > 2:
-        start = string.atoi(sys.argv[2])
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    base = string.atoi(sys.argv[1])
+  if len(sys.argv) > 2:
+    start = string.atoi(sys.argv[2])
 
-    x_len = base-1 + 1-start
-    for len1 in range(1+(x_len)):
-        for len2 in range(1+(x_len)):
-            if x_len > len1 + len2:
-                main(base, start, len1, len2)
+  x_len = base - 1 + 1 - start
+  for len1 in range(1 + (x_len)):
+    for len2 in range(1 + (x_len)):
+      if x_len > len1 + len2:
+        main(base, start, len1, len2)

@@ -19,7 +19,6 @@
 """
 
 
-
 from google.apputils import app
 from ortools.graph import pywrapgraph
 
@@ -36,7 +35,7 @@ def RunAssignmentOn4x4Matrix():
   expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
   assignment = pywrapgraph.LinearSumAssignment()
-  for source in range (0, num_sources):
+  for source in range(0, num_sources):
     for target in range(0, num_targets):
       assignment.AddArcWithCost(source, target, cost[source][target])
 

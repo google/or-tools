@@ -4,13 +4,15 @@ from ortools.linear_solver import linear_solver2_pb2
 import sys
 import types
 
+
 def Sum(arg):
   if type(arg) is types.GeneratorType:
     arg = [x for x in arg]
-  sum = 0;
+  sum = 0
   for i in arg:
     sum += i
-  print("sum(%s) = %d" % (str(arg), sum))
+  print('sum(%s) = %d' % (str(arg), sum))
+
 
 def test_sum_no_brackets():
   Sum(x for x in range(10) if x % 2 == 0)
@@ -31,6 +33,7 @@ model <
 >
 """
 
+
 def test_proto():
   input_proto = linear_solver2_pb2.MPModelRequest()
   text_format.Merge(text_model, input_proto)
@@ -39,7 +42,7 @@ def test_proto():
   print input_proto
   # For now, create the model from the proto by parsing the proto
   solver.LoadModelFromProto(input_proto.model)
-  solver.EnableOutput();
+  solver.EnableOutput()
   solver.Solve()
   # Fill solution
   solution = linear_solver2_pb2.MPSolutionResponse()

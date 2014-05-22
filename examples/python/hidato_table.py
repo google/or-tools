@@ -101,7 +101,7 @@ def Solve(model):
               [9, 8, 25, 1, 0]]
 
   elif model == 5:
-  # problem 3 (Beginner)
+    # problem 3 (Beginner)
     puzzle = [[0, 26, 0, 0, 0, 18],
               [0, 0, 27, 0, 0, 19],
               [31, 23, 0, 0, 14, 0],
@@ -194,7 +194,7 @@ def PrintMatrix(game):
   rows = len(game)
   cols = len(game[0])
   for i in range(rows):
-    line = ""
+    line = ''
     for j in range(cols):
       if game[i][j] == 0:
         line += '  .'

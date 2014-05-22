@@ -49,7 +49,8 @@
      to about 1 second'
      http://www.hakank.org/constraint_programming_blog/2009/03/comet_nonogram_improved_solvin_1.html
 
-  * 'Comet: regular constraint, a much faster Nonogram with the regular constraint,
+  * 'Comet: regular constraint, a much faster Nonogram with the regular
+  constraint,
      some OPL models, and more'
      http://www.hakank.org/constraint_programming_blog/2009/02/comet_regular_constraint_a_muc_1.html
 
@@ -61,7 +62,8 @@
     Note: nonogram_create_automaton2.mzn is the preferred model
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
@@ -83,12 +85,12 @@ def make_transition_tuples(pattern):
   # this is for handling 0-clues. It generates
   # just the minimal state
   if num_states == 0:
-    tuples.Insert3(1, 0, 1);
+    tuples.Insert3(1, 0, 1)
     return (tuples, 1)
 
   # convert pattern to a 0/1 pattern for easy handling of
   # the states
-  tmp = [0];
+  tmp = [0]
   c = 0
   for pattern_index in range(p_len):
     tmp.extend([1] * pattern[pattern_index])
@@ -153,7 +155,6 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
       for i in range(rows):
         board_label.append(board[i, j])
 
-
   #
   # constraints
   #
@@ -162,7 +163,6 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 
   for j in range(cols):
     check_rule(col_rules[j], [board[i, j] for i in range(rows)])
-
 
   #
   # solution and search
@@ -203,7 +203,6 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   print 'WallTime:', solver.WallTime(), 'ms'
 
 
-
 #
 # Default problem
 #
@@ -213,34 +212,34 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
 rows = 12
 row_rule_len = 3
 row_rules = [
-    [0,0,2],
-    [0,1,2],
-    [0,1,1],
-    [0,0,2],
-    [0,0,1],
-    [0,0,3],
-    [0,0,3],
-    [0,2,2],
-    [0,2,1],
-    [2,2,1],
-    [0,2,3],
-    [0,2,2]
-    ]
+    [0, 0, 2],
+    [0, 1, 2],
+    [0, 1, 1],
+    [0, 0, 2],
+    [0, 0, 1],
+    [0, 0, 3],
+    [0, 0, 3],
+    [0, 2, 2],
+    [0, 2, 1],
+    [2, 2, 1],
+    [0, 2, 3],
+    [0, 2, 2]
+]
 
 cols = 10
 col_rule_len = 2
 col_rules = [
-    [2,1],
-    [1,3],
-    [2,4],
-    [3,4],
-    [0,4],
-    [0,3],
-    [0,3],
-    [0,3],
-    [0,2],
-    [0,2]
-    ]
+    [2, 1],
+    [1, 3],
+    [2, 4],
+    [3, 4],
+    [0, 4],
+    [0, 3],
+    [0, 3],
+    [0, 3],
+    [0, 2],
+    [0, 2]
+]
 
 
 if __name__ == '__main__':

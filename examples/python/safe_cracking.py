@@ -42,7 +42,8 @@
   * Gecode: http://hakank.org/gecode/safe_cracking.cpp
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -50,60 +51,57 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Safe cracking puzzle')
+  # Create the solver.
+  solver = pywrapcp.Solver('Safe cracking puzzle')
 
-    #
-    # data
-    #
-    n = 9
-    digits = range(1,n+1)
+  #
+  # data
+  #
+  n = 9
+  digits = range(1, n + 1)
 
-    #
-    # variables
-    #
+  #
+  # variables
+  #
 
-    LD = [solver.IntVar(digits, 'LD[%i]'%i) for i in range(n)]
-    C1,C2,C3,C4,C5,C6,C7,C8,C9 = LD
+  LD = [solver.IntVar(digits, 'LD[%i]' % i) for i in range(n)]
+  C1, C2, C3, C4, C5, C6, C7, C8, C9 = LD
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(LD))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(LD))
 
-    solver.Add(C4 - C6 == C7)
-    solver.Add(C1 * C2 * C3 == C8 + C9)
-    solver.Add(C2 + C3 + C6 < C8)
-    solver.Add(C9 < C8)
-    for i in range(n):
-        solver.Add(LD[i] != i+1)
+  solver.Add(C4 - C6 == C7)
+  solver.Add(C1 * C2 * C3 == C8 + C9)
+  solver.Add(C2 + C3 + C6 < C8)
+  solver.Add(C9 < C8)
+  for i in range(n):
+    solver.Add(LD[i] != i + 1)
 
+  #
+  # search and result
+  #
+  db = solver.Phase(LD,
+                    solver.INT_VAR_DEFAULT,
+                    solver.INT_VALUE_DEFAULT)
 
-    #
-    # search and result
-    #
-    db = solver.Phase(LD,
-                      solver.INT_VAR_DEFAULT,
-                      solver.INT_VALUE_DEFAULT
-                      )
+  solver.NewSearch(db)
 
-    solver.NewSearch(db)
+  num_solutions = 0
 
+  while solver.NextSolution():
+    num_solutions += 1
+    print 'LD:', [LD[i].Value() for i in range(n)]
 
-    num_solutions = 0
+  solver.EndSearch()
 
-    while solver.NextSolution():
-        num_solutions += 1
-        print 'LD:', [LD[i].Value() for i in range(n)]
-
-    solver.EndSearch()
-
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+  print
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':
-    main()
+  main()

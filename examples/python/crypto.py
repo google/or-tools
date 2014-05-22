@@ -40,7 +40,8 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -48,95 +49,91 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Crypto problem')
+  # Create the solver.
+  solver = pywrapcp.Solver("Crypto problem")
 
-    #
-    # data
-    #
-    num_letters = 26
+  #
+  # data
+  #
+  num_letters = 26
 
-    BALLET     =  45
-    CELLO      =  43
-    CONCERT    =  74
-    FLUTE      =  30
-    FUGUE      =  50
-    GLEE       =  66
-    JAZZ       =  58
-    LYRE       =  47
-    OBOE       =  53
-    OPERA      =  65
-    POLKA      =  59
-    QUARTET    =  50
-    SAXOPHONE  = 134
-    SCALE      =  51
-    SOLO       =  37
-    SONG       =  61
-    SOPRANO    =  82
-    THEME      =  72
-    VIOLIN     = 100
-    WALTZ      =  34
+  BALLET = 45
+  CELLO = 43
+  CONCERT = 74
+  FLUTE = 30
+  FUGUE = 50
+  GLEE = 66
+  JAZZ = 58
+  LYRE = 47
+  OBOE = 53
+  OPERA = 65
+  POLKA = 59
+  QUARTET = 50
+  SAXOPHONE = 134
+  SCALE = 51
+  SOLO = 37
+  SONG = 61
+  SOPRANO = 82
+  THEME = 72
+  VIOLIN = 100
+  WALTZ = 34
 
+  #
+  # variables
+  #
+  LD = [solver.IntVar(1, num_letters, "LD[%i]" % i) for i in range(num_letters)]
+  A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z = LD
 
-    #
-    # variables
-    #
-    LD = [solver.IntVar(1, num_letters, 'LD[%i]' % i) for i in range(num_letters)]
-    A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z = LD
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(LD))
+  solver.Add(B + A + L + L + E + T == BALLET)
+  solver.Add(C + E + L + L + O == CELLO)
+  solver.Add(C + O + N + C + E + R + T == CONCERT)
+  solver.Add(F + L + U + T + E == FLUTE)
+  solver.Add(F + U + G + U + E == FUGUE)
+  solver.Add(G + L + E + E == GLEE)
+  solver.Add(J + A + Z + Z == JAZZ)
+  solver.Add(L + Y + R + E == LYRE)
+  solver.Add(O + B + O + E == OBOE)
+  solver.Add(O + P + E + R + A == OPERA)
+  solver.Add(P + O + L + K + A == POLKA)
+  solver.Add(Q + U + A + R + T + E + T == QUARTET)
+  solver.Add(S + A + X + O + P + H + O + N + E == SAXOPHONE)
+  solver.Add(S + C + A + L + E == SCALE)
+  solver.Add(S + O + L + O == SOLO)
+  solver.Add(S + O + N + G == SONG)
+  solver.Add(S + O + P + R + A + N + O == SOPRANO)
+  solver.Add(T + H + E + M + E == THEME)
+  solver.Add(V + I + O + L + I + N == VIOLIN)
+  solver.Add(W + A + L + T + Z == WALTZ)
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(LD))
-    solver.Add(            B + A + L + L + E + T == BALLET)
-    solver.Add(                C + E + L + L + O == CELLO)
-    solver.Add(        C + O + N + C + E + R + T == CONCERT)
-    solver.Add(                F + L + U + T + E == FLUTE)
-    solver.Add(                F + U + G + U + E == FUGUE)
-    solver.Add(                    G + L + E + E == GLEE)
-    solver.Add(                    J + A + Z + Z == JAZZ)
-    solver.Add(                    L + Y + R + E == LYRE)
-    solver.Add(                    O + B + O + E == OBOE)
-    solver.Add(                O + P + E + R + A == OPERA)
-    solver.Add(                P + O + L + K + A == POLKA)
-    solver.Add(        Q + U + A + R + T + E + T == QUARTET)
-    solver.Add(S + A + X + O + P + H + O + N + E == SAXOPHONE)
-    solver.Add(                S + C + A + L + E == SCALE)
-    solver.Add(                    S + O + L + O == SOLO)
-    solver.Add(                    S + O + N + G == SONG)
-    solver.Add(        S + O + P + R + A + N + O == SOPRANO)
-    solver.Add(                T + H + E + M + E == THEME)
-    solver.Add(            V + I + O + L + I + N == VIOLIN)
-    solver.Add(                W + A + L + T + Z == WALTZ)
+  #
+  # search and result
+  #
+  db = solver.Phase(LD,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.ASSIGN_CENTER_VALUE)
 
+  solver.NewSearch(db)
 
-
-    #
-    # search and result
-    #
-    db = solver.Phase(LD,
-                 solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                 solver.ASSIGN_CENTER_VALUE)
-
-    solver.NewSearch(db)
-
-
-    num_solutions = 0
-    str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    while solver.NextSolution():
-        num_solutions += 1
-        for (letter, val) in [(str[i], LD[i].Value()) for i in range(num_letters)]:
-            print "%s: %i" % (letter, val)
-        print
-
-    solver.EndSearch()
-
+  num_solutions = 0
+  str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  while solver.NextSolution():
+    num_solutions += 1
+    for (letter, val) in [(str[i], LD[i].Value()) for i in range(num_letters)]:
+      print "%s: %i" % (letter, val)
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

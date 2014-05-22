@@ -62,95 +62,96 @@
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
 
 from ortools.constraint_solver import pywrapcp
 
+
 def main(set_partition=1):
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Set partition and set covering')
+  # Create the solver.
+  solver = pywrapcp.Solver("Set partition and set covering")
 
-    #
-    # data
-    #
-    num_alternatives = 10
-    num_objects = 8
+  #
+  # data
+  #
+  num_alternatives = 10
+  num_objects = 8
 
-    # costs for the alternatives
-    costs = [ 19, 16, 18, 13, 15, 19, 15, 17, 16, 15];
+  # costs for the alternatives
+  costs = [19, 16, 18, 13, 15, 19, 15, 17, 16, 15]
 
-    # the alternatives, and their objects
-    a = [
+  # the alternatives, and their objects
+  a = [
       # 1 2 3 4 5 6 7 8    the objects
-        [1,0,0,0,0,1,0,0],  # alternative 1
-        [0,1,0,0,0,1,0,1],  # alternative 2
-        [1,0,0,1,0,0,1,0],  # alternative 3
-        [0,1,1,0,1,0,0,0],  # alternative 4
-        [0,1,0,0,1,0,0,0],  # alternative 5
-        [0,1,1,0,0,0,0,0],  # alternative 6
-        [0,1,1,1,0,0,0,0],  # alternative 7
-        [0,0,0,1,1,0,0,1],  # alternative 8
-        [0,0,1,0,0,1,0,1],  # alternative 9
-        [1,0,0,0,0,1,1,0]   # alternative 10
-        ]
+      [1, 0, 0, 0, 0, 1, 0, 0],  # alternative 1
+      [0, 1, 0, 0, 0, 1, 0, 1],  # alternative 2
+      [1, 0, 0, 1, 0, 0, 1, 0],  # alternative 3
+      [0, 1, 1, 0, 1, 0, 0, 0],  # alternative 4
+      [0, 1, 0, 0, 1, 0, 0, 0],  # alternative 5
+      [0, 1, 1, 0, 0, 0, 0, 0],  # alternative 6
+      [0, 1, 1, 1, 0, 0, 0, 0],  # alternative 7
+      [0, 0, 0, 1, 1, 0, 0, 1],  # alternative 8
+      [0, 0, 1, 0, 0, 1, 0, 1],  # alternative 9
+      [1, 0, 0, 0, 0, 1, 1, 0]   # alternative 10
+  ]
 
-    #
-    # declare variables
-    #
-    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_alternatives)]
+  #
+  # declare variables
+  #
+  x = [solver.IntVar(0, 1, "x[%i]" % i) for i in range(num_alternatives)]
 
-    #
-    # constraints
-    #
+  #
+  # constraints
+  #
 
-    # sum the cost of the choosen alternative,
-    # to be minimized
-    z = solver.ScalProd(x,costs)
+  # sum the cost of the choosen alternative,
+  # to be minimized
+  z = solver.ScalProd(x, costs)
 
-    #
-    for j in range(num_objects):
-        if set_partition == 1:
-          solver.Add(
-              solver.SumGreaterOrEqual([x[i] * a[i][j]
-                                        for i in range(num_alternatives)],
-                                       1))
-        else:
-            solver.Add(
-                solver.SumGreaterOrEqual([x[i] * a[i][j]
-                                          for i in range(num_alternatives)],
-                                         1))
+  #
+  for j in range(num_objects):
+    if set_partition == 1:
+      solver.Add(
+          solver.SumGreaterOrEqual([x[i] * a[i][j]
+                                    for i in range(num_alternatives)],
+                                   1))
+    else:
+      solver.Add(
+          solver.SumGreaterOrEqual([x[i] * a[i][j]
+                                    for i in range(num_alternatives)],
+                                   1))
+
+  objective = solver.Minimize(z, 1)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add(x)
+  solution.AddObjective(z)
+
+  collector = solver.LastSolutionCollector(solution)
+  solver.Solve(solver.Phase([x[i] for i in range(num_alternatives)],
+                            solver.INT_VAR_DEFAULT,
+                            solver.INT_VALUE_DEFAULT),
+               [collector, objective])
+
+  print "z:", collector.ObjectiveValue(0)
+  print "selected alternatives:", [i + 1 for i in range(num_alternatives)
+                                   if collector.Value(0, x[i]) == 1]
+
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-    objective = solver.Minimize(z, 1)
+if __name__ == "__main__":
+  print "Set partition:"
+  main(1)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add(x)
-    solution.AddObjective(z)
-
-    collector = solver.LastSolutionCollector(solution)
-    solver.Solve(solver.Phase([x[i] for i in range(num_alternatives)],
-                              solver.INT_VAR_DEFAULT,
-                              solver.INT_VALUE_DEFAULT),
-                 [collector, objective])
-
-    print "z:", collector.ObjectiveValue(0)
-    print "selected alternatives:", [i + 1 for i in range(num_alternatives)
-                 if collector.Value(0, x[i]) == 1]
-
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-
-
-if __name__ == '__main__':
-    print "Set partition:"
-    main(1)
-
-    print "\nSet covering:"
-    main(0)
+  print "\nSet covering:"
+  main(0)

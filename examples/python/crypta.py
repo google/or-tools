@@ -41,7 +41,8 @@
   * SICStus: http://hakank.org/sicstus/crypta.pl
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
 
 from ortools.constraint_solver import pywrapcp
@@ -49,71 +50,67 @@ from ortools.constraint_solver import pywrapcp
 
 def main():
 
-    # Create the solver.
-    solver = pywrapcp.Solver('Crypta')
+  # Create the solver.
+  solver = pywrapcp.Solver("Crypta")
 
-    #
-    # data
-    #
+  #
+  # data
+  #
 
-    #
-    # variables
-    #
-    LD = [solver.IntVar(0, 9, 'LD[%i]' % i) for i in range(0,10)]
-    A,B,C,D,E,F,G,H,I,J = LD
+  #
+  # variables
+  #
+  LD = [solver.IntVar(0, 9, "LD[%i]" % i) for i in range(0, 10)]
+  A, B, C, D, E, F, G, H, I, J = LD
 
-    Sr1 = solver.IntVar(0, 1, 'Sr1')
-    Sr2 = solver.IntVar(0, 1, 'Sr2')
+  Sr1 = solver.IntVar(0, 1, "Sr1")
+  Sr2 = solver.IntVar(0, 1, "Sr2")
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(LD))
-    solver.Add(B >= 1)
-    solver.Add(D >= 1)
-    solver.Add(G >= 1)
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(LD))
+  solver.Add(B >= 1)
+  solver.Add(D >= 1)
+  solver.Add(G >= 1)
 
-    solver.Add(A+10*E+100*J+1000*B+10000*B+100000*E+1000000*F+
-               E+10*J+100*E+1000*F+10000*G+100000*A+1000000*F
-               == F+10*E+100*E+1000*H+10000*I+100000*F+1000000*B+10000000*Sr1)
+  solver.Add(A + 10 * E + 100 * J + 1000 * B + 10000 * B + 100000 * E + 1000000 * F +
+             E + 10 * J + 100 * E + 1000 * F + 10000 * G + 100000 * A + 1000000 * F
+             == F + 10 * E + 100 * E + 1000 * H + 10000 * I + 100000 * F + 1000000 * B + 10000000 * Sr1)
 
+  solver.Add(C + 10 * F + 100 * H + 1000 * A + 10000 * I + 100000 * I + 1000000 * J +
+             F + 10 * I + 100 * B + 1000 * D + 10000 * I + 100000 * D + 1000000 * C + Sr1
+             == J + 10 * F + 100 * A + 1000 * F + 10000 * H + 100000 * D + 1000000 * D + 10000000 * Sr2)
 
-    solver.Add(C+10*F+100*H+1000*A+10000*I+100000*I+1000000*J+
-               F+10*I+100*B+1000*D+10000*I+100000*D+1000000*C+Sr1
-               == J+10*F+100*A+1000*F+10000*H+100000*D+1000000*D+10000000*Sr2)
+  solver.Add(A + 10 * J + 100 * J + 1000 * I + 10000 * A + 100000 * B +
+             B + 10 * A + 100 * G + 1000 * F + 10000 * H + 100000 * D + Sr2
+             == C + 10 * A + 100 * G + 1000 * E + 10000 * J + 100000 * G)
 
+  #
+  # search and result
+  #
+  db = solver.Phase(LD,
+                    solver.INT_VAR_SIMPLE,
+                    solver.INT_VALUE_SIMPLE)
 
-    solver.Add(A+10*J+100*J+1000*I+10000*A+100000*B+
-               B+10*A+100*G+1000*F+10000*H+100000*D+Sr2
-               == C+10*A+100*G+1000*E+10000*J+100000*G)
+  solver.NewSearch(db)
 
-
-    #
-    # search and result
-    #
-    db = solver.Phase(LD,
-                 solver.INT_VAR_SIMPLE,
-                 solver.INT_VALUE_SIMPLE)
-
-    solver.NewSearch(db)
-
-
-    num_solutions = 0
-    str = "ABCDEFGHIJ"
-    while solver.NextSolution():
-        num_solutions += 1
-        for (letter, val) in [(str[i], LD[i].Value()) for i in range(len(LD))]:
-            print "%s: %i" % (letter, val)
-        print
-
-    solver.EndSearch()
-
+  num_solutions = 0
+  str = "ABCDEFGHIJ"
+  while solver.NextSolution():
+    num_solutions += 1
+    for (letter, val) in [(str[i], LD[i].Value()) for i in range(len(LD))]:
+      print "%s: %i" % (letter, val)
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+  main()

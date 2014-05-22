@@ -13,6 +13,7 @@
 
 from ortools.constraint_solver import pywrapcp
 
+
 def dudeney(n):
   solver = pywrapcp.Solver('Dudeney')
   x = [solver.IntVar(range(10), 'x' + str(i)) for i in range(n)]

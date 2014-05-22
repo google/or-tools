@@ -44,11 +44,10 @@
   * Zinc: http://hakank.org/minizinc/alldifferent_except_0.zinc
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 
 """
-
-
 
 
 from ortools.constraint_solver import pywrapcp
@@ -58,65 +57,67 @@ from ortools.constraint_solver import pywrapcp
 # Thanks to Laurent Perron (Google) for
 # suggestions of improvements.
 #
+
+
 def alldifferent_except_0(solver, a):
-    n = len(a)
-    for i in range(n):
-        for j in range(i):
-            solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
+  n = len(a)
+  for i in range(n):
+    for j in range(i):
+      solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
 
 # more compact version:
+
+
 def alldifferent_except_0_b(solver, a):
-    n = len(a)
-    [solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
-     for i in range(n) for j in range(i)]
-
-
+  n = len(a)
+  [solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
+   for i in range(n) for j in range(i)]
 
 
 def main(unused_argv):
-    # Create the solver.
-    solver = pywrapcp.Solver('Alldifferent except 0')
+  # Create the solver.
+  solver = pywrapcp.Solver("Alldifferent except 0")
 
-    # data
-    n = 7
+  # data
+  n = 7
 
-    # declare variables
-    x = [solver.IntVar(0,n-1, 'x%i' % i) for i in range(n)]
-    # Number of zeros.
-    z = solver.Sum([x[i] == 0 for i in range(n)]).VarWithName('z')
+  # declare variables
+  x = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
+  # Number of zeros.
+  z = solver.Sum([x[i] == 0 for i in range(n)]).VarWithName("z")
 
-    #
-    # constraints
-    #
-    alldifferent_except_0(solver, x)
+  #
+  # constraints
+  #
+  alldifferent_except_0(solver, x)
 
-    # we require 2 0's
-    solver.Add(z == 2)
+  # we require 2 0's
+  solver.Add(z == 2)
 
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([x[i] for i in range(n)])
-    solution.Add(z)
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([x[i] for i in range(n)])
+  solution.Add(z)
 
-    collector = solver.AllSolutionCollector(solution)
-    solver.Solve(solver.Phase([x[i] for i in range(n)],
-                              solver.CHOOSE_FIRST_UNBOUND,
-                              solver.ASSIGN_MIN_VALUE),
-                              [collector])
+  collector = solver.AllSolutionCollector(solution)
+  solver.Solve(solver.Phase([x[i] for i in range(n)],
+                            solver.CHOOSE_FIRST_UNBOUND,
+                            solver.ASSIGN_MIN_VALUE),
+               [collector])
 
-    num_solutions = collector.SolutionCount()
-    for s in range(num_solutions):
-        print "x:", [collector.Value(s, x[i]) for i in range(n)]
-        print "z:", collector.Value(s, z)
-        print
+  num_solutions = collector.SolutionCount()
+  for s in range(num_solutions):
+    print "x:", [collector.Value(s, x[i]) for i in range(n)]
+    print "z:", collector.Value(s, z)
+    print
 
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
-if __name__ == '__main__':
-    main("cp sample")
+if __name__ == "__main__":
+  main("cp sample")

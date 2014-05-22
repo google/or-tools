@@ -22,80 +22,80 @@
   the solutions.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
-  Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
+  Also see my other Google CP Solver models:
+  http://www.hakank.org/google_or_tools/
 """
-import sys, string
+import sys
+import string
 from ortools.constraint_solver import pywrapcp
 
 
 def main(n=8):
-    # Create the solver.
-    solver = pywrapcp.Solver('n-queens')
+  # Create the solver.
+  solver = pywrapcp.Solver("n-queens")
 
-    #
-    # data
-    #
-    # n = 8 # size of board (n x n)
+  #
+  # data
+  #
+  # n = 8 # size of board (n x n)
 
-    # declare variables
-    q = [solver.IntVar(0,n-1, 'x%i' % i) for i in range(n)]
+  # declare variables
+  q = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
 
-    #
-    # constraints
-    #
-    solver.Add(solver.AllDifferent(q))
+  #
+  # constraints
+  #
+  solver.Add(solver.AllDifferent(q))
+  for i in range(n):
+    for j in range(i):
+      solver.Add(q[i] != q[j])
+      solver.Add(q[i] + i != q[j] + j)
+      solver.Add(q[i] - i != q[j] - j)
+
+  # for i in range(n):
+  #     for j in range(i):
+  #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
+
+  # symmetry breaking
+  # solver.Add(q[0] == 0)
+
+  #
+  # solution and search
+  #
+  solution = solver.Assignment()
+  solution.Add([q[i] for i in range(n)])
+
+  # db: DecisionBuilder
+  db = solver.Phase([q[i] for i in range(n)],
+                    # solver.CHOOSE_FIRST_UNBOUND,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+                    solver.ASSIGN_CENTER_VALUE)
+
+  solver.NewSearch(db)
+  num_solutions = 0
+  while solver.NextSolution():
+    qval = [q[i].Value() for i in range(n)]
+    print "q:", qval
     for i in range(n):
-        for j in range(i):
-            solver.Add(q[i] != q[j])
-            solver.Add(q[i] + i != q[j] + j)
-            solver.Add(q[i] - i != q[j] - j)
-
-    # for i in range(n):
-    #     for j in range(i):
-    #         solver.Add(abs(q[i]-q[j]) != abs(i-j))
-
-    # symmetry breaking
-    # solver.Add(q[0] == 0)
-
-
-    #
-    # solution and search
-    #
-    solution = solver.Assignment()
-    solution.Add([q[i] for i in range(n)])
-
-
-    # db: DecisionBuilder
-    db = solver.Phase([q[i] for i in range(n)],
-                      # solver.CHOOSE_FIRST_UNBOUND,
-                      solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                      solver.ASSIGN_CENTER_VALUE)
-
-    solver.NewSearch(db)
-    num_solutions = 0
-    while solver.NextSolution():
-        qval = [q[i].Value() for i in range(n)]
-        print "q:", qval
-        for i in range(n):
-            for j in range(n):
-                if qval[i] == j:
-                    print "Q",
-                else:
-                    print "_",
-            print
-        print
-        num_solutions += 1
-    solver.EndSearch()
-
+      for j in range(n):
+        if qval[i] == j:
+          print "Q",
+        else:
+          print "_",
+      print
     print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    num_solutions += 1
+  solver.EndSearch()
+
+  print
+  print "num_solutions:", num_solutions
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
 
 
 n = 8
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        n = string.atoi(sys.argv[1])
-    main(n)
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    n = string.atoi(sys.argv[1])
+  main(n)
