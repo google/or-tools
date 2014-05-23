@@ -644,7 +644,6 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/graph_export.$O \
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
 	$(OBJ_DIR)/util/stats.$O \
-	$(OBJ_DIR)/util/time_limit.$O \
 	$(OBJ_DIR)/util/xml_helper.$O
 
 $(OBJ_DIR)/util/bitset.$O:$(SRC_DIR)/util/bitset.cc
@@ -661,9 +660,6 @@ $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_fu
 
 $(OBJ_DIR)/util/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
-
-$(OBJ_DIR)/util/time_limit.$O:$(SRC_DIR)/util/time_limit.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/time_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Stime_limit.$O
 
 $(OBJ_DIR)/util/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
@@ -804,11 +800,11 @@ BASE_LIB_OBJS=\
 	$(OBJ_DIR)/base/mutex.$O\
 	$(OBJ_DIR)/base/random.$O\
 	$(OBJ_DIR)/base/recordio.$O\
-	$(OBJ_DIR)/base/threadpool.$O\
 	$(OBJ_DIR)/base/split.$O\
 	$(OBJ_DIR)/base/stringpiece.$O\
 	$(OBJ_DIR)/base/stringprintf.$O\
 	$(OBJ_DIR)/base/sysinfo.$O\
+	$(OBJ_DIR)/base/threadpool.$O\
 	$(OBJ_DIR)/base/timer.$O
 
 $(OBJ_DIR)/base/bitmap.$O:$(SRC_DIR)/base/bitmap.cc
@@ -1243,6 +1239,7 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/boolean_problem.$O\
 	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
 	$(OBJ_DIR)/sat/clause.$O\
+	$(OBJ_DIR)/sat/optimization.$O\
 	$(OBJ_DIR)/sat/pb_constraint.$O\
 	$(OBJ_DIR)/sat/sat_parameters.pb.$O\
 	$(OBJ_DIR)/sat/sat_solver.$O\
@@ -1265,11 +1262,14 @@ $(GEN_DIR)/sat/boolean_problem.pb.h: $(GEN_DIR)/sat/boolean_problem.pb.cc
 $(OBJ_DIR)/sat/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN_DIR)/sat/boolean_problem.pb.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.pb.$O
 
-$(OBJ_DIR)/sat/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
-
 $(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
+
+$(OBJ_DIR)/sat/optimization.$O: $(SRC_DIR)/sat/optimization.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/optimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
+
+$(OBJ_DIR)/sat/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
 
 $(OBJ_DIR)/sat/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sunsat_proof.$O
