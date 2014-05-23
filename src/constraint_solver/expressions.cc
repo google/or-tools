@@ -547,56 +547,15 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       if (variable_->Bound()) {
         VariableBound();
-      } else if (watchers_.Size() <= 16) {
-        // brute force loop for small numbers of watchers.
+      } else if (watchers_.Size() <= 16 ||
+                 variable_->Min() != variable_->OldMin() ||
+                 variable_->Max() != variable_->OldMax()) {
+        // brute force loop for small numbers of watchers, or if the bounds have
+        // changed, which would have required a sort (n log(n)) anyway to take
+        // advantage of.
         ScanWatchers();
         CheckInhibit();
       } else {
-        const int64 min_domain = variable_->Min();
-        const int64 max_domain = variable_->Max();
-        const int64 old_min = variable_->OldMin();
-        const int64 old_max = variable_->OldMax();
-
-        if (old_min != min_domain || old_max != max_domain) {
-          watchers_.SortActive();
-        }
-
-        // This loop keeps the active watchers sorted.
-        if (old_min != min_domain) {
-          // Set watchers below min_domain to 0.
-          while (!watchers_.Empty()) {
-            const int pos = watchers_.start();
-            const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-            if (w.first < min_domain) {
-              w.second->SetValue(0);
-              watchers_.RemoveAt(pos);
-            } else {
-              break;
-            }
-          }
-        }
-
-        if (old_max != max_domain) {
-          // Set watchers above max_domain to 0.
-
-          // Find the first watcher above max domain.
-          int current = watchers_.end() - 1;
-          while (current >= watchers_.start()) {
-            if (watchers_.At(current).first > max_domain) {
-              current--;
-            } else {
-              break;
-            }
-          }
-          // Then erase them in order.
-          for (int pos = current + 1; pos < watchers_.end(); ++pos) {
-            const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-            DCHECK_GT(w.first, max_domain);
-            w.second->SetValue(0);
-            watchers_.RemoveAt(pos);
-          }
-        }
-
         // If there is no bitset, then there are no holes.
         // In that case, the two loops above should have performed all
         // propagation. Otherwise, scan the remaining watchers.
@@ -1043,34 +1002,20 @@ class DomainIntVar : public IntVar {
     }
 
     void ProcessVar() {
-      const int64 min_domain = variable_->Min();
-      const int64 max_domain = variable_->Max();
-      watchers_.SortActive();
-      // This loop keeps the active watchers sorted.
-      while (!watchers_.Empty()) {
-        const int pos = watchers_.start();
+      const int64 var_min = variable_->Min();
+      const int64 var_max = variable_->Max();
+      for (int pos = watchers_.start(); pos < watchers_.end(); ++pos) {
         const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-        if (w.first <= min_domain) {
-          w.second->SetValue(1);
+        const int64 value = w.first;
+        IntVar* const boolvar = w.second;
+
+        if (value <= var_min) {
+          boolvar->SetValue(1);
           watchers_.RemoveAt(pos);
-        } else {
-          break;
+        } else if (value > var_max) {
+          boolvar->SetValue(0);
+          watchers_.RemoveAt(pos);
         }
-      }
-
-      int current = watchers_.end() - 1;
-      while (current >= watchers_.start()) {
-        if (watchers_.At(current).first > max_domain) {
-          current--;
-        } else {
-          break;
-        }
-      }
-
-      for (int pos = current + 1; pos < watchers_.end(); ++pos) {
-        const std::pair<int64, IntVar*>& w = watchers_.At(pos);
-        w.second->SetValue(0);
-        watchers_.RemoveAt(pos);
       }
       if (watchers_.Empty()) {
         var_demon_->inhibit(solver());
