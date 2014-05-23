@@ -38,6 +38,7 @@
 #include "sat/unsat_proof.h"
 #include "util/bitset.h"
 #include "util/stats.h"
+#include "util/time_limit.h"
 #include "base/adjustable_priority_queue.h"
 
 namespace operations_research {
@@ -58,6 +59,7 @@ class SatSolver {
   // value of many heuristics. For instance:
   // - The restart strategy will be reinitialized.
   // - The random seed will be reset to the value given in parameters.
+  // - The time limit will be reset and counted from there.
   void SetParameters(const SatParameters& parameters);
   const SatParameters& parameters() const;
 
@@ -738,6 +740,9 @@ class SatSolver {
 
   // The current pseudo-Boolean conflict used in PB conflict analysis.
   MutableUpperBoundedLinearConstraint pb_conflict_;
+
+  // The solver time limit.
+  std::unique_ptr<TimeLimit> time_limit_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);

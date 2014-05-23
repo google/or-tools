@@ -17,18 +17,12 @@
 #include <string>
 #include <vector>
 
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/strtoint.h"
 #include "base/split.h"
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
-
-DEFINE_bool(
-    max_sat, false,
-    "A cnf file can be both interpreted as a pure SAT or a max-SAT problem. "
-    "If this flag is true, we interpret it as the max-sat version.");
 
 namespace operations_research {
 namespace sat {
@@ -40,7 +34,11 @@ namespace sat {
 // It also support the wcnf input format for partial weighted max-sat problems.
 class SatCnfReader {
  public:
-  SatCnfReader() {}
+  SatCnfReader() : interpret_cnf_as_max_sat_(false) {}
+
+  // If called with true, then a cnf file will be converted to the max-sat
+  // problem: Try to minimize the number of unsatisfiable clauses.
+  void InterpretCnfAsMaxSat(bool v) { interpret_cnf_as_max_sat_ = v; }
 
   // Loads the given cnf filename into the given problem.
   bool Load(const std::string& filename, LinearBooleanProblem* problem) {
@@ -110,7 +108,7 @@ class SatCnfReader {
           hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
           problem->set_type(LinearBooleanProblem::MINIMIZATION);
         } else {
-          problem->set_type(FLAGS_max_sat
+          problem->set_type(interpret_cnf_as_max_sat_
                                 ? LinearBooleanProblem::MINIMIZATION
                                 : LinearBooleanProblem::SATISFIABILITY);
         }
@@ -121,14 +119,16 @@ class SatCnfReader {
       // In the cnf file format, the last words should always be 0.
       DCHECK_EQ("0", words_.back());
       const int size = words_.size() - 1;
-      const int reserved_size = (!is_wcnf_ && FLAGS_max_sat) ? size + 1 : size;
+      const int reserved_size =
+          (!is_wcnf_ && interpret_cnf_as_max_sat_) ? size + 1 : size;
 
       LinearBooleanConstraint* constraint = problem->add_constraints();
       constraint->mutable_literals()->Reserve(reserved_size);
       constraint->mutable_coefficients()->Reserve(reserved_size);
       constraint->set_lower_bound(1);
 
-      int64 weight = (!is_wcnf_ && FLAGS_max_sat) ? 1 : hard_weight_;
+      int64 weight =
+          (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
       for (int i = 0; i < size; ++i) {
         const int64 signed_value = StringPieceAtoi(words_[i]);
         if (i == 0 && is_wcnf_) {
@@ -181,6 +181,8 @@ class SatCnfReader {
       }
     }
   }
+
+  bool interpret_cnf_as_max_sat_;
 
   int num_clauses_;
   int num_variables_;

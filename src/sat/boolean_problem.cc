@@ -31,6 +31,15 @@ DEFINE_string(debug_dump_symmetry_graph_to_file, "",
 namespace operations_research {
 namespace sat {
 
+void ExtractAssignment(const LinearBooleanProblem& problem,
+                       const SatSolver& solver, std::vector<bool>* assignemnt) {
+  assignemnt->clear();
+  for (int i = 0; i < problem.num_variables(); ++i) {
+    assignemnt->push_back(
+        solver.Assignment().IsLiteralTrue(Literal(VariableIndex(i), true)));
+  }
+}
+
 namespace {
 
 // Used by BooleanProblemIsValid() to test that there is no duplicate literals,
@@ -146,11 +155,13 @@ bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
 }
 
 Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
-                                  const VariablesAssignment& assignment) {
+                                  const std::vector<bool>& assignment) {
+  CHECK_EQ(assignment.size(), problem.num_variables());
   Coefficient sum(0);
   const LinearObjective& objective = problem.objective();
   for (int i = 0; i < objective.literals_size(); ++i) {
-    if (assignment.IsLiteralTrue(objective.literals(i))) {
+    const Literal literal(objective.literals(i));
+    if (assignment[literal.Variable().value()] == literal.IsPositive()) {
       sum += objective.coefficients(i);
     }
   }
@@ -158,41 +169,27 @@ Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
 }
 
 bool IsAssignmentValid(const LinearBooleanProblem& problem,
-                       const VariablesAssignment& assignment) {
-  // Check that all variables are assigned.
-  for (int i = 0; i < problem.num_variables(); ++i) {
-    if (!assignment.IsVariableAssigned(VariableIndex(i))) {
-      LOG(WARNING) << "Assignment is not complete";
-      return false;
-    }
-  }
+                       const std::vector<bool>& assignment) {
+  CHECK_EQ(assignment.size(), problem.num_variables());
 
   // Check that all constraints are satisfied.
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     Coefficient sum(0);
     for (int i = 0; i < constraint.literals_size(); ++i) {
-      if (assignment.IsLiteralTrue(constraint.literals(i))) {
+      const Literal literal(constraint.literals(i));
+      if (assignment[literal.Variable().value()] == literal.IsPositive()) {
         sum += constraint.coefficients(i);
       }
     }
-    if (constraint.has_lower_bound() && constraint.has_upper_bound()) {
-      if (sum < constraint.lower_bound() || sum > constraint.upper_bound()) {
-        LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
-                     << constraint.DebugString();
-        return false;
-      }
-    } else if (constraint.has_lower_bound()) {
-      if (sum < constraint.lower_bound()) {
-        LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
-                     << constraint.DebugString();
-        return false;
-      }
-    } else if (constraint.has_upper_bound()) {
-      if (sum > constraint.upper_bound()) {
-        LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
-                     << constraint.DebugString();
-        return false;
-      }
+    if (constraint.has_lower_bound() && sum < constraint.lower_bound()) {
+      LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
+                   << constraint.DebugString();
+      return false;
+    }
+    if (constraint.has_upper_bound() && sum > constraint.upper_bound()) {
+      LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
+                   << constraint.DebugString();
+      return false;
     }
   }
   return true;
@@ -504,8 +501,10 @@ void FindLinearBooleanProblemSymmetries(
   GraphSymmetryFinder symmetry_finder(*graph.get(),
                                       /*graph_is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
-  symmetry_finder.FindSymmetries(&equivalence_classes, generators,
-                                 &factorized_automorphism_group_size);
+  // TODO(user): inject the appropriate time limit here.
+  CHECK_OK(symmetry_finder.FindSymmetries(
+      /*time_limit_seconds=*/std::numeric_limits<double>::infinity(),
+      &equivalence_classes, generators, &factorized_automorphism_group_size));
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had

@@ -21,7 +21,6 @@
 #include "base/logging.h"
 #include "base/sysinfo.h"
 #include "base/join.h"
-#include "util/time_limit.h"
 #include "util/saturated_arithmetic.h"
 #include "base/stl_util.h"
 
@@ -131,6 +130,7 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   trail_.SetNeedFixedLiteralsInReason(parameters.unsat_proof());
   random_.Reset(parameters_.random_seed());
   InitRestart();
+  time_limit_.reset(new TimeLimit(parameters_.max_time_in_seconds()));
 }
 
 std::string SatSolver::Indent() const {
@@ -694,7 +694,6 @@ SatSolver::Status SatSolver::StatusWithLog(Status status) {
 SatSolver::Status SatSolver::SolveInternal(int initial_assumption_level) {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
-  TimeLimit time_limit(parameters_.max_time_in_seconds());
   timer_.Restart();
 
   // This is done this way, so heuristics like the weighted_sign_ one can
@@ -739,7 +738,7 @@ SatSolver::Status SatSolver::SolveInternal(int initial_assumption_level) {
   // Starts search.
   for (;;) {
     // Test if a limit is reached.
-    if (time_limit.LimitReached()) {
+    if (time_limit_ != nullptr && time_limit_->LimitReached()) {
       if (parameters_.log_search_progress()) {
         LOG(INFO) << "The time limit has been reached. Aborting.";
       }
@@ -774,16 +773,17 @@ SatSolver::Status SatSolver::SolveInternal(int initial_assumption_level) {
       next_display = NextMultipleOf(num_failures(), kDisplayFrequency);
     }
 
-    if (trail_.Index() == num_variables_.value()) {  // At a leaf.
-      return StatusWithLog(MODEL_SAT);
-    }
-
     // We need to reapply any assumptions that are not currently applied.
     if (CurrentDecisionLevel() < assumption_level) {
       int unused = 0;
       const Status status = ReapplyDecisionsUpTo(assumption_level - 1, &unused);
       if (status != MODEL_SAT) return StatusWithLog(status);
       assumption_level = CurrentDecisionLevel();
+    }
+
+    // At a leaf?
+    if (trail_.Index() == num_variables_.value()) {
+      return StatusWithLog(MODEL_SAT);
     }
 
     // Trigger the restart policy?
@@ -1303,6 +1303,7 @@ Literal SatSolver::NextBranch() {
     }
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
+    DCHECK(!var_ordering_.IsEmpty());
     var = var_ordering_.Top()->variable;
     while (trail_.Assignment().IsVariableAssigned(var)) {
       var_ordering_.Pop();

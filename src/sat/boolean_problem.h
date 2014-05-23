@@ -20,6 +20,11 @@
 namespace operations_research {
 namespace sat {
 
+// Copies the assignment from the solver into the given Boolean vector. Note
+// that variables with a greater index that the given num_variables are ignored.
+void ExtractAssignment(const LinearBooleanProblem& problem,
+                       const SatSolver& solver, std::vector<bool>* assignment);
+
 // Tests the preconditions of the given problem (as described in the proto) and
 // returns true iff they are all satisfied.
 bool BooleanProblemIsValid(const LinearBooleanProblem& problem);
@@ -41,11 +46,11 @@ bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
 
 // Returns the objective value under the current assignment.
 Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
-                                  const VariablesAssignment& assignment);
+                                  const std::vector<bool>& assignment);
 
 // Checks that an assignment is valid for the given BooleanProblem.
 bool IsAssignmentValid(const LinearBooleanProblem& problem,
-                       const VariablesAssignment& assignment);
+                       const std::vector<bool>& assignment);
 
 // Converts a LinearBooleanProblem to the cnf file format.
 // Note that this only works for pure SAT problems (only clauses), max-sat or

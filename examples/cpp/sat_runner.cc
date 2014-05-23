@@ -18,6 +18,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/strtoint.h"
+#include "base/timer.h"
 #include "base/file.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
@@ -28,6 +29,7 @@
 #include "cpp/sat_cnf_reader.h"
 #include "base/random.h"
 #include "sat/boolean_problem.h"
+#include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "util/time_limit.h"
 #include "algorithms/sparse_permutation.h"
@@ -44,6 +46,10 @@ DEFINE_string(
     "this file. By default it uses the binary format except if the file "
     "extension is '.txt'. If the problem is SAT, a satisfiable assignment is "
     "also writen to the file.");
+
+DEFINE_bool(output_cnf_solution, false,
+            "If true and the problem was solved to optimality, this output "
+            "the solution to stdout in cnf form.\n");
 
 DEFINE_string(
     expected_result, "undefined",
@@ -62,9 +68,11 @@ DEFINE_string(
     upper_bound, "",
     "If not empty, look for a solution with an objective value <= this bound.");
 
-DEFINE_bool(search_optimal, false,
-            "If true, search for the optimal solution. "
-            "The algorithm is currently really basic.");
+DEFINE_bool(fu_malik, false,
+            "If true, search the optimal solution with the Fu & Malik algo.");
+
+DEFINE_bool(linear_scan, false,
+            "If true, search the optimal solution with the linear scan algo.");
 
 DEFINE_int32(randomize, 100,
              "If positive, solve that many times the problem with a random "
@@ -83,35 +91,12 @@ DEFINE_bool(refine_core, false,
 namespace operations_research {
 namespace sat {
 namespace {
+
 // Returns the scaled objective.
 double GetScaledObjective(const LinearBooleanProblem& problem,
                           Coefficient objective) {
   return objective.value() * problem.objective().scaling_factor() +
          problem.objective().offset();
-}
-
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
-  // Random preferred variable order.
-  const google::protobuf::EnumDescriptor* order_d =
-      SatParameters::VariableOrder_descriptor();
-  parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(
-          order_d->value(random->Uniform(order_d->value_count()))->number()));
-
-  // Random polarity initial value.
-  const google::protobuf::EnumDescriptor* polarity_d =
-      SatParameters::Polarity_descriptor();
-  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
-      polarity_d->value(random->Uniform(polarity_d->value_count()))->number()));
-
-  // Other random parameters.
-  parameters->set_use_phase_saving(random->OneIn(2));
-  const std::vector<double> ratios = {0.0, 0.0, 0.0, 0.01, 1.0};
-  parameters->set_random_polarity_ratio(ratios[random->Uniform(ratios.size())]);
-
-  // IMPORTANT: SetParameters() will reinitialize the seed, so we must change
-  // it.
-  parameters->set_random_seed(parameters->random_seed() + 1);
 }
 
 void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
@@ -124,6 +109,9 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
   } else if (HasSuffixString(filename, ".cnf") ||
              HasSuffixString(filename, ".wcnf")) {
     SatCnfReader reader;
+    if (FLAGS_fu_malik || FLAGS_linear_scan) {
+      reader.InterpretCnfAsMaxSat(true);
+    }
     if (!reader.Load(filename, problem)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
@@ -133,118 +121,15 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
 }
 
 std::string SolutionString(const LinearBooleanProblem& problem,
-                      const VariablesAssignment& assignment) {
+                      const std::vector<bool>& assignment) {
   std::string output;
   VariableIndex limit(problem.original_num_variables());
   for (VariableIndex index(0); index < limit; ++index) {
     if (index > 0) output += " ";
-    output += StringPrintf("%d", assignment.GetTrueLiteralForAssignedVariable(
-                                                index).SignedValue());
+    output += StringPrintf(
+        "%d", Literal(index, assignment[index.value()]).SignedValue());
   }
   return output;
-}
-
-void PrintObjective(double objective) {
-  printf("o %lld\n", static_cast<int64>(objective));
-}
-
-int64 SolveWithDifferentParameters(const LinearBooleanProblem& problem,
-                                   SatSolver* solver, TimeLimit* time_limit,
-                                   int num_solve) {
-  MTRandom random("A random seed.");
-  SatParameters parameters = solver->parameters();
-
-  // We start with a low limit (increased on each LIMIT_REACHED).
-  parameters.set_log_search_progress(false);
-  parameters.set_max_number_of_conflicts(10);
-
-  int64 min_seen = std::numeric_limits<int64>::max();
-  int64 max_seen = std::numeric_limits<int64>::min();
-  int64 best = min_seen;
-  for (int i = 0; i < num_solve; ++i) {
-    solver->Backtrack(0);
-    RandomizeDecisionHeuristic(&random, &parameters);
-    parameters.set_max_time_in_seconds(time_limit->GetTimeLeft());
-    solver->SetParameters(parameters);
-    solver->ResetDecisionHeuristic();
-
-    const bool use_obj = random.OneIn(4);
-    if (use_obj) UseObjectiveForSatAssignmentPreference(problem, solver);
-
-    const SatSolver::Status result = solver->Solve();
-    if (result == SatSolver::LIMIT_REACHED) {
-      printf("limit reached\n");
-      parameters.set_max_number_of_conflicts(
-          static_cast<int64>(1.1 * parameters.max_number_of_conflicts()));
-      if (time_limit->LimitReached()) return best;
-      continue;
-    }
-
-    CHECK_EQ(result, SatSolver::MODEL_SAT);
-    CHECK(IsAssignmentValid(problem, solver->Assignment()));
-
-    const Coefficient objective =
-        ComputeObjectiveValue(problem, solver->Assignment());
-    best = std::min(best, objective.value());
-    const int64 scaled_objective =
-        static_cast<int64>(GetScaledObjective(problem, objective));
-    min_seen = std::min(min_seen, scaled_objective);
-    max_seen = std::max(max_seen, scaled_objective);
-
-    printf("objective preference: %s\n", use_obj ? "true" : "false");
-    printf("%s", parameters.DebugString().c_str());
-    printf("  %lld   [%lld, %lld]\n", scaled_objective, min_seen, max_seen);
-  }
-  return best;
-}
-
-// Same as Run() with --solve_optimal, no logging, and an output in the cnf
-// format.
-int RunWithCnfOutputFormat(std::string filename) {
-  SatSolver solver;
-
-  // Read the problem.
-  LinearBooleanProblem problem;
-  LoadBooleanProblem(filename, &problem);
-
-  // Load the problem into the solver.
-  if (!LoadBooleanProblem(problem, &solver)) {
-    LOG(FATAL) << "Couldn't load problem '" << filename << "'.";
-  }
-
-  // This has a big positive impact on most problems.
-  UseObjectiveForSatAssignmentPreference(problem, &solver);
-
-  Coefficient objective = kCoefficientMax;
-  while (true) {
-    const SatSolver::Status result = solver.Solve();
-    if (result == SatSolver::MODEL_UNSAT) {
-      if (objective == kCoefficientMax) {
-        printf("s UNSAT\n");
-      } else {
-        printf("s OPTIMUM FOUND\n");
-        printf("v %s\n", SolutionString(problem, solver.Assignment()).c_str());
-      }
-      break;
-    }
-    if (result != SatSolver::MODEL_SAT) {
-      printf("c LIMIT REACHED\n");
-      break;
-    }
-    CHECK(IsAssignmentValid(problem, solver.Assignment()));
-    const Coefficient old_objective = objective;
-    objective = ComputeObjectiveValue(problem, solver.Assignment());
-    PrintObjective(GetScaledObjective(problem, objective));
-    CHECK_LT(objective, old_objective);
-    solver.Backtrack(0);
-    if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
-                                objective - 1, &solver)) {
-      printf("s OPTIMUM FOUND\n");
-      printf("v %s\n", SolutionString(problem, solver.Assignment()).c_str());
-      break;
-    }
-  }
-  return EXIT_SUCCESS;
 }
 
 // To benefit from the operations_research namespace, we put all the main() code
@@ -254,12 +139,12 @@ int Run() {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
 
+  // Parse the --params flag.
   SatParameters parameters;
   if (!FLAGS_params.empty()) {
     CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_params, &parameters))
         << FLAGS_params;
   }
-  parameters.set_log_search_progress(true);
 
   // Enforce some parameters if we are looking for UNSAT core.
   if (FLAGS_refine_core) {
@@ -275,6 +160,11 @@ int Run() {
   LinearBooleanProblem problem;
   LoadBooleanProblem(FLAGS_input, &problem);
 
+  // Count the time from there.
+  WallTimer wall_timer;
+  UserTimer user_timer;
+  wall_timer.Start();
+  user_timer.Start();
 
   // Load the problem into the solver.
   if (!LoadBooleanProblem(problem, &solver)) {
@@ -295,142 +185,125 @@ int Run() {
     solver.AddSymmetries(&generators);
   }
 
-  // Heuristics to drive the SAT search.
-  UseObjectiveForSatAssignmentPreference(problem, &solver);
-
-  // Basic search for the optimal value by calling multiple times the solver.
-  if (FLAGS_search_optimal &&
-      problem.type() == LinearBooleanProblem::MINIMIZATION) {
-    TimeLimit time_limit(parameters.max_time_in_seconds());
-    Coefficient objective = kCoefficientMax;
-    int old_num_fixed_variables = 0;
-    bool first_time = true;
-    while (true) {
-      if (first_time && FLAGS_randomize > 0) {
-        first_time = false;
-        solver.SetParameters(parameters);
-        objective = SolveWithDifferentParameters(problem, &solver, &time_limit,
-                                                 FLAGS_randomize);
-        solver.SetParameters(parameters);
-        solver.Backtrack(0);
-        solver.ResetDecisionHeuristic();
-        UseObjectiveForSatAssignmentPreference(problem, &solver);
-      } else {
-        const SatSolver::Status result = solver.Solve();
-        if (result == SatSolver::MODEL_UNSAT) {
-          if (objective == kCoefficientMax) {
-            LOG(INFO) << "The problem is UNSAT";
-            break;
-          }
-          LOG(INFO) << "Optimal found!";
-          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
-          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-          break;
-        }
-        if (result != SatSolver::MODEL_SAT) {
-          LOG(INFO) << "Search aborted.";
-          if (objective == kCoefficientMax) {
-            LOG(INFO) << "No solution found!";
-            LOG(INFO) << "Objective = " << kCoefficientMax;
-          } else {
-            LOG(INFO) << "Objective = " << GetScaledObjective(problem,
-                                                              objective);
-          }
-          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-          break;
-        }
-        CHECK(IsAssignmentValid(problem, solver.Assignment()));
-        const Coefficient old_objective = objective;
-        objective = ComputeObjectiveValue(problem, solver.Assignment());
-        PrintObjective(GetScaledObjective(problem, objective));
-        CHECK_LT(objective, old_objective);
-      }
-      solver.Backtrack(0);
-      if (objective != kCoefficientMax) {
-        if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
-                                    objective - 1, &solver)) {
-          LOG(INFO) << "UNSAT (when tightenning the objective constraint).";
-          LOG(INFO) << "Optimal found!";
-          LOG(INFO) << "Objective = " << GetScaledObjective(problem, objective);
-          LOG(INFO) << "Time = " << time_limit.GetElapsedTime();
-          break;
-        }
-      }
-      parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());
-      solver.SetParameters(parameters);
-
+  // Optimize?
+  std::vector<bool> solution;
+  SatSolver::Status result;
+  if (FLAGS_fu_malik || FLAGS_linear_scan) {
+    if (FLAGS_randomize > 0 && FLAGS_linear_scan) {
+      SolveWithRandomParameters(problem, FLAGS_randomize, &solver, &solution,
+                                STDOUT_LOG);
     }
-    return EXIT_SUCCESS;
-  }
-
-  // Solve.
-  const SatSolver::Status result = solver.Solve();
-  if (result == SatSolver::MODEL_SAT) {
-    CHECK(IsAssignmentValid(problem, solver.Assignment()));
-  }
-
-  // Unsat with verification.
-  // Note(user): For now we just compute an UNSAT core and check it.
-  if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
-    std::vector<int> core;
-    solver.ComputeUnsatCore(&core);
-    LOG(INFO) << "UNSAT. Identified a core of " << core.size()
-              << " constraints.";
-
-    // The following block is mainly for testing the UNSAT core feature.
-    if (FLAGS_refine_core) {
-      int old_core_size = core.size();
-      LinearBooleanProblem old_problem;
-      LinearBooleanProblem core_unsat_problem;
-      old_problem.CopyFrom(problem);
-      int i = 1;
-      do {
-        ExtractSubproblem(old_problem, core, &core_unsat_problem);
-        core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
-        old_core_size = core.size();
-        old_problem.CopyFrom(core_unsat_problem);
-        SatSolver new_solver;
-        new_solver.SetParameters(parameters);
-        CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
-        CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT) << "Wrong core!";
-        new_solver.ComputeUnsatCore(&core);
-        LOG(INFO) << "Core #" << i << " checked, next size is " << core.size();
-        ++i;
-      } while (core.size() != old_core_size);
-    }
-  }
-
-  if (!FLAGS_output.empty()) {
+    result = FLAGS_fu_malik
+                 ? SolveWithFuMalik(problem, &solver, &solution, STDOUT_LOG)
+                 : SolveWithLinearScan(problem, &solver, &solution, STDOUT_LOG);
+  } else {
+    // Only solve the decision version.
+    parameters.set_log_search_progress(true);
+    solver.SetParameters(parameters);
+    result = solver.Solve();
     if (result == SatSolver::MODEL_SAT) {
-      StoreAssignment(solver.Assignment(), problem.mutable_assignment());
+      ExtractAssignment(problem, solver, &solution);
+      CHECK(IsAssignmentValid(problem, solution));
     }
-    if (HasSuffixString(FLAGS_output, ".txt")) {
-      file::WriteProtoToASCIIFileOrDie(problem, FLAGS_output);
-    } else {
-      file::WriteProtoToFileOrDie(problem, FLAGS_output);
-    }
-  }
 
-  CHECK(FLAGS_expected_result == "undefined" ||
+    // Unsat with verification.
+    // Note(user): For now we just compute an UNSAT core and check it.
+    if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
+      std::vector<int> core;
+      solver.ComputeUnsatCore(&core);
+      LOG(INFO) << "UNSAT. Identified a core of " << core.size()
+                << " constraints.";
+
+      // The following block is mainly for testing the UNSAT core feature.
+      if (FLAGS_refine_core) {
+        int old_core_size = core.size();
+        LinearBooleanProblem old_problem;
+        LinearBooleanProblem core_unsat_problem;
+        old_problem.CopyFrom(problem);
+        int i = 1;
+        do {
+          ExtractSubproblem(old_problem, core, &core_unsat_problem);
+          core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
+          old_core_size = core.size();
+          old_problem.CopyFrom(core_unsat_problem);
+          SatSolver new_solver;
+          new_solver.SetParameters(parameters);
+          CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
+          CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT) << "Wrong core!";
+          new_solver.ComputeUnsatCore(&core);
+          LOG(INFO) << "Core #" << i << " checked, next size is "
+                    << core.size();
+          ++i;
+        } while (core.size() != old_core_size);
+      }
+    }
+
+    if (!FLAGS_output.empty()) {
+      if (result == SatSolver::MODEL_SAT) {
+        StoreAssignment(solver.Assignment(), problem.mutable_assignment());
+      }
+      if (HasSuffixString(FLAGS_output, ".txt")) {
+        file::WriteProtoToASCIIFileOrDie(problem, FLAGS_output);
+      } else {
+        file::WriteProtoToFileOrDie(problem, FLAGS_output);
+      }
+    }
+
+    CHECK(
+        FLAGS_expected_result == "undefined" ||
         (FLAGS_expected_result == "sat" && result == SatSolver::MODEL_SAT) ||
         (FLAGS_expected_result == "unsat" && result == SatSolver::MODEL_UNSAT));
+  }
+
+  // Print the solution status.
+  if (result == SatSolver::MODEL_SAT) {
+    if (FLAGS_fu_malik || FLAGS_linear_scan) {
+      printf("s OPTIMUM FOUND\n");
+    } else {
+      printf("s SAT\n");
+    }
+  }
+  if (result == SatSolver::MODEL_UNSAT) {
+    printf("s UNSAT\n");
+  }
+
+  // Check the solution if it is non-empty.
+  if (!solution.empty()) {
+    CHECK(IsAssignmentValid(problem, solution));
+    if (FLAGS_output_cnf_solution) {
+      printf("v %s\n", SolutionString(problem, solution).c_str());
+    }
+    if (problem.type() != LinearBooleanProblem::SATISFIABILITY) {
+      const Coefficient objective = ComputeObjectiveValue(problem, solution);
+      printf("c objective: %g\n", GetScaledObjective(problem, objective));
+    }
+  } else {
+    // No solutionof an optimization problem? we output kint64max by convention.
+    if (problem.type() != LinearBooleanProblem::SATISFIABILITY) {
+      printf("c objective: %lld\n", kint64max);
+    }
+  }
+
+  // Print final statistics.
+  printf("c status: %s\n", SatStatusString(result).c_str());
+  printf("c conflicts: %lld\n", solver.num_failures());
+  printf("c branches: %lld\n", solver.num_branches());
+  printf("c propagations: %lld\n", solver.num_propagations());
+  printf("c walltime: %f\n", wall_timer.Get());
+  printf("c usertime: %f\n", user_timer.Get());
   return EXIT_SUCCESS;
 }
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research
 
 static const char kUsage[] =
     "Usage: see flags.\n"
-    "This program solves a given sat problem.";
+    "This program solves a given Boolean linear problem.";
 
 int main(int argc, char** argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
-  if (argc == 2) {
-    printf("c %s\n", argv[1]);
-    return operations_research::sat::RunWithCnfOutputFormat(argv[1]);
-  } else {
-    return operations_research::sat::Run();
-  }
+  return operations_research::sat::Run();
 }
