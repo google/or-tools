@@ -35,6 +35,8 @@ DEFINE_bool(cp_use_compact_table, true,
             "Use compact table constraint when possible.");
 DEFINE_bool(cp_use_small_table, true,
             "Use small compact table constraint when possible.");
+DEFINE_bool(cp_use_sat_table, false,
+            "If true, use a SAT constraint for all table constraints.");
 DEFINE_int32(cp_ac4r_table_threshold, 2048,
              "Above this size, allowed assignment constraints will use the "
              "revised AC-4 implementation of the table constraint.");
@@ -1311,8 +1313,14 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
                                     const IntTupleSet& tuples,
                                     const std::vector<IntVar*>& vars);
 
+Constraint* BuildSatTableConstraint(Solver* solver, const std::vector<IntVar*>& vars,
+                                    const IntTupleSet& tuples);
+
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
+  if (FLAGS_cp_use_sat_table) {
+    return BuildSatTableConstraint(this, vars, tuples);
+  }
   if (FLAGS_cp_use_compact_table && HasCompactDomains(vars)) {
     if (tuples.NumTuples() < kBitsInUint64 && FLAGS_cp_use_small_table) {
       return RevAlloc(
