@@ -409,6 +409,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/pack.$O\
 	$(OBJ_DIR)/constraint_solver/range_cst.$O\
 	$(OBJ_DIR)/constraint_solver/resource.$O\
+	$(OBJ_DIR)/constraint_solver/sat_constraint.$O\
 	$(OBJ_DIR)/constraint_solver/sched_constraints.$O\
 	$(OBJ_DIR)/constraint_solver/sched_expr.$O\
 	$(OBJ_DIR)/constraint_solver/sched_search.$O\
@@ -528,6 +529,9 @@ $(OBJ_DIR)/constraint_solver/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst
 
 $(OBJ_DIR)/constraint_solver/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sresource.$O
+
+$(OBJ_DIR)/constraint_solver/sat_constraint.$O:$(SRC_DIR)/constraint_solver/sat_constraint.cc $(GEN_DIR)/sat/sat_parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssat_constraint.$O
 
 $(OBJ_DIR)/constraint_solver/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_constraints.$O
@@ -798,6 +802,7 @@ BASE_LIB_OBJS=\
 	$(OBJ_DIR)/base/join.$O\
 	$(OBJ_DIR)/base/logging.$O\
 	$(OBJ_DIR)/base/mutex.$O\
+	$(OBJ_DIR)/base/numbers.$O\
 	$(OBJ_DIR)/base/random.$O\
 	$(OBJ_DIR)/base/recordio.$O\
 	$(OBJ_DIR)/base/split.$O\
@@ -819,6 +824,8 @@ $(OBJ_DIR)/base/logging.$O:$(SRC_DIR)/base/logging.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/logging.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Slogging.$O
 $(OBJ_DIR)/base/mutex.$O:$(SRC_DIR)/base/mutex.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/mutex.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Smutex.$O
+$(OBJ_DIR)/base/numbers.$O:$(SRC_DIR)/base/numbers.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/numbers.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Snumbers.$O
 $(OBJ_DIR)/base/join.$O:$(SRC_DIR)/base/join.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/join.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sjoin.$O
 $(OBJ_DIR)/base/random.$O:$(SRC_DIR)/base/random.cc
@@ -1331,6 +1338,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\gflags
 	mkdir temp\\or-tools.$(PORT)\\include\\google
+	mkdir temp\\or-tools.$(PORT)\\include\\graph
 	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\util
 	mkdir temp\\or-tools.$(PORT)\\lib
@@ -1348,6 +1356,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	copy src\\graph\\*.h temp\\or-tools.$(PORT)\\include\\graph
 	copy src\\linear_solver\\*.h temp\\or-tools.$(PORT)\\include\\linear_solver
 	copy src\\gen\\linear_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\linear_solver
+	copy src\\sat\\*.h temp\\or-tools.$(PORT)\\include\\sat
+	copy src\\gen\\sat\\*.pb.h temp\\or-tools.$(PORT)\\include\\sat
 	copy src\\util\\*.h temp\\or-tools.$(PORT)\\include\\util
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
@@ -1366,6 +1376,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)/include/base
 	mkdir temp/or-tools.$(PORT)/include/constraint_solver
 	mkdir temp/or-tools.$(PORT)/include/gflags
+	mkdir temp/or-tools.$(PORT)/include/google
 	mkdir temp/or-tools.$(PORT)/include/graph
 	mkdir temp/or-tools.$(PORT)/include/linear_solver
 	mkdir temp/or-tools.$(PORT)/include/sat
@@ -1394,3 +1405,12 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
+
+# Debug
+printdir:
+	@echo LIB_DIR = $(LIB_DIR)
+	@echo BIN_DIR = $(BIN_DIR)
+	@echo GEN_DIR = $(GEN_DIR)
+	@echo OBJ_DIR = $(OBJ_DIR)
+	@echo SRC_DIR = $(SRC_DIR)
+	@echo EX_DIR  = $(EX_DIR)
