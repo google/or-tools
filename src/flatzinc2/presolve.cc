@@ -314,6 +314,7 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
       var->domain.IntersectWithInterval(1, 1);
     }
     ct->presolve_propagation_done = true;
+    ct->MarkAsInactive();
     return true;
   }
   std::vector<FzIntegerVariable*> fixed_to_true;
