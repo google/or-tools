@@ -23,6 +23,8 @@
 #include "graph/graph.h"
 #include "util/iterators.h"
 #include "util/stats.h"
+#include "util/time_limit.h"
+#include "base/status.h"
 
 namespace operations_research {
 
@@ -79,12 +81,23 @@ class GraphSymmetryFinder {
   // a factorized product of integers (note that the size itself may be as
   // large as N!).
   //
+  // DEADLINE AND PARTIAL COMPLETION:
+  // If the deadline passed as argument is reached, this method will return
+  // quickly (within a few milliseconds). The outputs may be partially filled:
+  // - Each element of "generators", if non-empty, will be a valid permutation.
+  // - "node_equivalence_classes_io" will contain the equivalence classes
+  //   corresponding to the orbits under all the generators in "generators".
+  // - "factorized_automorphism_group_size" will also be incomplete, and
+  //   partially valid: its last element may be undervalued. But all prior
+  //   elements are valid factors of the automorphism group size.
+  //
   // This method is largely based on the following article, published in 2008:
   // "Faster Symmetry Discovery using Sparsity of Symmetries" by Darga, Sakallah
   // and Markov. http://web.eecs.umich.edu/~imarkov/pubs/conf/dac08-sym.pdf.
-  void FindSymmetries(std::vector<int>* node_equivalence_classes_io,
-                      std::vector<std::unique_ptr<SparsePermutation>>* generators,
-                      std::vector<int>* factorized_automorphism_group_size);
+  util::Status FindSymmetries(
+      double time_limit_seconds, std::vector<int>* node_equivalence_classes_io,
+      std::vector<std::unique_ptr<SparsePermutation>>* generators,
+      std::vector<int>* factorized_automorphism_group_size);
 
   // **** Methods below are public FOR TESTING ONLY. ****
 
@@ -128,6 +141,9 @@ class GraphSymmetryFinder {
   std::vector<int> reverse_adj_list_index_;
   BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
       int node) const;
+
+  // Deadline management. Populated upon FindSymmetries().
+  mutable std::unique_ptr<TimeLimit> time_limit_;
 
   // Internal search code used in FindSymmetries(), split out for readability:
   // find one permutation (if it exists) that maps root_node to root_image_node

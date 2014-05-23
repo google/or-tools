@@ -12,6 +12,7 @@ namespace error {
 enum Error {
   INTERNAL = 1,
   INVALID_ARGUMENT = 2,
+  DEADLINE_EXCEEDED = 3,
 };
 }  // namespace error
 
@@ -37,6 +38,9 @@ struct Status {
 };
 
 }  // namespace util
+
+#define CHECK_OK(status) CHECK_EQ("", (status).ToString())
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_STATUS_H_

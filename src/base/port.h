@@ -15,4 +15,7 @@
 #define MUST_USE_RESULT
 #endif
 
+#define PREDICT_FALSE(x) x
+#define PREDICT_TRUE(x) x
+
 #endif  // OR_TOOLS_BASE_PORT_H_

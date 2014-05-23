@@ -291,7 +291,7 @@ bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters
   #else  // _MSC_VER
     int32 pid = 456;
   #endif  // _MSC_VER
-    int64 now = WallTimer::GetTimeInMicroSeconds();
+    int64 now = base::GetCurrentTimeNanos();
     std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
         tid, pid, now, extension.c_str());
     bool no_error_so_far = true;

@@ -15,68 +15,78 @@
 #define OR_TOOLS_BASE_TIMER_H_
 
 #include "base/basictypes.h"
+#include "base/logging.h"
 #include "base/macros.h"
+#include "base/time_support.h"
 
 namespace operations_research {
+
 class WallTimer {
  public:
-  WallTimer();
+  WallTimer() { Reset(); }
+  void Reset() {
+    running_ = false;
+    sum_ = 0;
+  }
+  // Multiple Start() will simply only take into account the last one.
+  void Start() {
+    running_ = true;
+    start_ = base::GetCurrentTimeNanos();
+  }
+  void Restart() {
+    sum_ = 0;
+    Start();
+  }
+  void Stop() {
+    if (running_) {
+      sum_ += base::GetCurrentTimeNanos() - start_;
+      running_ = false;
+    }
+  }
+  double Get() const { return GetNanos() * 1e-9; }
+  int64 GetInMs() const { return GetNanos() / 1000000; }
+  int64 GetInUsec() const { return GetNanos() / 1000; }
 
-  void Start();
-  void Stop();
-  bool Reset();
-  void Restart();
-  bool IsRunning() const;
-  int64 GetInMs() const;
-  double Get() const;
-  static int64 GetTimeInMicroSeconds();
+ protected:
+  int64 GetNanos() const {
+    return running_ ? base::GetCurrentTimeNanos() - start_ + sum_ : sum_;
+  }
 
  private:
-  int64 start_usec_;  // start time in microseconds.
-  int64 sum_usec_;    // sum of time diffs in microseconds.
-  bool has_started_;
-
-  DISALLOW_COPY_AND_ASSIGN(WallTimer);
+  bool running_;
+  int64 start_;
+  int64 sum_;
 };
+
+// This is meant to measure the actual CPU usage time.
+// TODO(user): implement it properly.
+typedef WallTimer UserTimer;
+
+// This is meant to be a ultra-fast interface to the hardware cycle counter,
+// without periodic recalibration, to be even faster than
+// base::GetCurrentTimeNanos().
+// But this current implementation just uses GetCurrentTimeNanos().
+// TODO(user): implement it.
+class CycleTimer : public WallTimer {
+ public:
+  // This actually returns a number of nanoseconds instead of the number
+  // of CPU cycles.
+  int64 GetCycles() const { return GetNanos(); }
+};
+
+// Conversion routines between CycleTimer::GetCycles and actual times.
+class CycleTimerBase {
+ public:
+  static int64 SecondsToCycles(double s) { return static_cast<int64>(s * 1e9); }
+  static double CyclesToSeconds(int64 c) { return c * 1e-9; }
+  static int64 CyclesToMs(int64 c) { return c / 1000000; }
+  static int64 CyclesToUsec(int64 c) { return c / 1000; }
+};
+typedef CycleTimerBase CycleTimerInstance;
 
 // A WallTimer clone meant to support SetClock(), for unit testing. But for now
 // we just use WallTimer directly.
 typedef WallTimer ClockTimer;
-
-// This class is currently using the same counter as the WallTimer class, but
-// is supposed to use the cpu cycle counter.
-// TODO(user): Implement it properly.
-class CycleTimer {
- public:
-  CycleTimer();
-  void Reset();
-  void Start();
-  void Restart();
-  void Stop();
-  int64 GetCycles() const;
-  int64 GetInUsec() const;
-  int64 GetInMs() const;
-
- private:
-  enum State {
-    INIT,
-    STARTED,
-    STOPPED
-  };
-  int64 time_in_us_;
-  State state_;
-};
-
-// As for the CycleTimer, this is not using the real cycle unit, and just
-// assumes one usec per cycle.
-class CycleTimerBase {
- public:
-  static double CyclesToSeconds(int64 cycles) {
-    return static_cast<double>(cycles) / 1000000.0;
-  }
-
-  static int64 UsecToCycles(int64 usec) { return usec; }
-};
 
 class ScopedWallTime {
  public:

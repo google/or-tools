@@ -50,15 +50,17 @@ class DemonProfiler : public PropagationMonitor {
       : PropagationMonitor(solver),
         active_constraint_(nullptr),
         active_demon_(nullptr),
-        start_time_(WallTimer::GetTimeInMicroSeconds()) {}
+        start_time_ns_(base::GetCurrentTimeNanos()) {}
 
   virtual ~DemonProfiler() {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
                                          constraint_map_.end());
   }
 
+  // In microseconds.
+  // TODO(user): rename and return nanoseconds.
   int64 CurrentTime() const {
-    return WallTimer::GetTimeInMicroSeconds() - start_time_;
+    return (base::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
   virtual void BeginConstraintInitialPropagation(Constraint* const constraint) {
@@ -414,7 +416,7 @@ class DemonProfiler : public PropagationMonitor {
  private:
   Constraint* active_constraint_;
   Demon* active_demon_;
-  const int64 start_time_;
+  const int64 start_time_ns_;
   hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
   hash_map<const Demon*, DemonRuns*> demon_map_;
   hash_map<const Constraint*, std::vector<DemonRuns*> > demons_per_constraint_;

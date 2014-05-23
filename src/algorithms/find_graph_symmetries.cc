@@ -13,6 +13,7 @@
 #include "algorithms/find_graph_symmetries.h"
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 
 #include "base/commandlineflags.h"
@@ -96,6 +97,8 @@ GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph, bool is_undirected)
       tmp_node_mask_(NumNodes(), false),
       tmp_degree_(NumNodes(), 0),
       tmp_nodes_with_degree_(NumNodes() + 1) {
+  // Set up an "unlimited" time limit by default.
+  time_limit_.reset(new TimeLimit(std::numeric_limits<double>::infinity()));
   tmp_partition_.Reset(NumNodes());
   if (is_undirected) {
     DCHECK(GraphIsSymmetric(graph));
@@ -338,17 +341,18 @@ void GetAllOtherRepresentativesInSamePartAs(
 }
 }  // namespace
 
-void GraphSymmetryFinder::FindSymmetries(
-    std::vector<int>* node_equivalence_classes_io,
+util::Status GraphSymmetryFinder::FindSymmetries(
+    double time_limit_seconds, std::vector<int>* node_equivalence_classes_io,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     std::vector<int>* factorized_automorphism_group_size) {
   // Initialization.
+  time_limit_.reset(new TimeLimit(time_limit_seconds));
   IF_STATS_ENABLED(stats_.initialization_time.StartTimer());
-  ScopedTimeDistributionUpdater u(&stats_.initialization_time);
+  generators->clear();
+  factorized_automorphism_group_size->clear();
   if (node_equivalence_classes_io->size() != NumNodes()) {
-    LOG(DFATAL) << "GraphSymmetryFinder::FindSymmetries() was given an invalid"
-                << " 'node_equivalence_classes_io' argument.";
-    return;
+    return util::Status(util::error::INVALID_ARGUMENT,
+                        "Invalid 'node_equivalence_classes_io'.");
   }
   DynamicPartition base_partition(*node_equivalence_classes_io);
   // Break all inherent asymmetries in the graph.
@@ -357,13 +361,15 @@ void GraphSymmetryFinder::FindSymmetries(
     RecursivelyRefinePartitionByAdjacency(/*first_unrefined_part_index=*/0,
                                           &base_partition);
   }
+  if (time_limit_->LimitReached()) {
+    return util::Status(util::error::DEADLINE_EXCEEDED,
+                        "During the initial refinement.");
+  }
   VLOG(4) << "Base partition: "
           << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
 
-  generators->clear();
   MergingPartition node_equivalence_classes;
   node_equivalence_classes.Reset(NumNodes());
-  factorized_automorphism_group_size->clear();
   std::vector<std::vector<int>> permutations_displacing_node(NumNodes());
   std::vector<int> potential_root_image_nodes;
   IF_STATS_ENABLED(stats_.initialization_time.StopTimerAndAddElapsedTime());
@@ -412,6 +418,10 @@ void GraphSymmetryFinder::FindSymmetries(
     VLOG(4) << "Invariant dive: invariant node = " << invariant_node
             << "; partition after: "
             << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+    if (time_limit_->LimitReached()) {
+      return util::Status(util::error::DEADLINE_EXCEEDED,
+                          "During the invariant dive.");
+    }
   }
   DenseDoublyLinkedList representatives_sorted_by_index_in_partition(
       base_partition.ElementsInHierarchicalOrder());
@@ -422,6 +432,7 @@ void GraphSymmetryFinder::FindSymmetries(
 
   IF_STATS_ENABLED(stats_.main_search_time.StartTimer());
   while (!invariant_dive_stack.empty()) {
+    if (time_limit_->LimitReached()) break;
     // Backtrack the last step of 1) (the invariant dive).
     IF_STATS_ENABLED(stats_.invariant_unroll_time.StartTimer());
     const int root_node = invariant_dive_stack.back().invariant_node;
@@ -464,6 +475,7 @@ void GraphSymmetryFinder::FindSymmetries(
     // Try to map "root_node" to all of its potential images. For each image,
     // we only care about finding a single compatible permutation, if it exists.
     while (!potential_root_image_nodes.empty()) {
+      if (time_limit_->LimitReached()) break;
       VLOG(4) << "Potential (pruned) images of root node " << root_node
               << " left: [" << strings::Join(potential_root_image_nodes, " ")
               << "].";
@@ -515,6 +527,11 @@ void GraphSymmetryFinder::FindSymmetries(
   node_equivalence_classes.FillEquivalenceClasses(node_equivalence_classes_io);
   IF_STATS_ENABLED(stats_.main_search_time.StopTimerAndAddElapsedTime());
   IF_STATS_ENABLED(LOG(INFO) << "Statistics: " << stats_.StatString());
+  if (time_limit_->LimitReached()) {
+    return util::Status(util::error::DEADLINE_EXCEEDED,
+                        "Some automorphisms were found, but probably not all.");
+  }
+  return util::Status::OK;
 }
 
 namespace {
@@ -599,6 +616,7 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     DistinguishNodeInPartition(root_node, base_partition, &base_singletons);
   }
   while (!search_states_.empty()) {
+    if (time_limit_->LimitReached()) return nullptr;
     // When exploring a SearchState "ss", we're supposed to have:
     // - A base_partition that has already been refined on ss->base_node.
     //   (base_singleton is the list of singletons created on the base
