@@ -44,6 +44,24 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 // equality constraint is between two variables, or by assigning the variable to
 // the constant if one of the term is constant.
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
+  // Transforms (x - y) == 0 into x == y.
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+    ct->Arg(1).type == FzArgument::INT_VALUE &&
+    ct->Arg(1).Value() == 0 && ContainsKey(difference_map_, ct->Arg(0).Var())) {
+
+    FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+    ct->Arg(0).Var()->domain.IntersectWithInterval(0, 0);
+
+    FZVLOG << "  - transform null differences in " << ct->DebugString()
+           << FZENDL;
+    const std::pair<FzIntegerVariable*, FzIntegerVariable*>&  diff =
+        FindOrDie(difference_map_, ct->Arg(0).Var());
+    ct->MutableArg(0)->variables[0] = diff.first;
+    ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+    ct->MutableArg(1)->values.clear();
+    ct->MutableArg(1)->variables.push_back(diff.second);
+    return true;
+  }
   if (ct->Arg(0).IsVariable()) {
     if (ct->Arg(1).HasOneValue()) {
       const int64 value = ct->Arg(1).Value();
@@ -976,7 +994,35 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   return changed;
 }
 
+void FzPresolver::FirstPassModelScan(FzModel* model) {
+  for (FzConstraint* const ct : model->constraints()) {
+    if (ct->active) {
+      if (ct->type == "int_lin_eq" && ct->Arg(2).Value() == 0 &&
+          ct->Arg(0).values.size() == 3 && ct->Arg(0).values[0] == 1 &&
+          ct->Arg(0).values[1] == -1 && ct->Arg(0).values[2] == 1 &&
+          (ct->target_variable == nullptr ||
+           ct->Arg(1).variables[2] == ct->target_variable)) {
+        FZVLOG << "Store difference from " << ct->DebugString() << FZENDL;
+        difference_map_[ct->Arg(1).variables[2]] =
+            std::make_pair(ct->Arg(1).variables[0], ct->Arg(1).variables[1]);
+        if (ct->target_variable == nullptr &&
+            ct->Arg(1).variables[2]->defining_constraint == nullptr) {
+          FZVLOG << "  - inject target variable "
+                 << ct->Arg(1).variables[2]->DebugString() << FZENDL;
+          ct->Arg(1).variables[2]->defining_constraint = ct;
+          ct->target_variable = ct->Arg(1).variables[2];
+          ct->MutableArg(0)->values[0] = -1;
+          ct->MutableArg(0)->values[1] = 1;
+          ct->MutableArg(0)->values[2] = -1;
+        }
+      }
+    }
+  }
+}
+
 bool FzPresolver::Run(FzModel* model) {
+  FirstPassModelScan(model);
+
   bool changed_since_start = false;
   for (;;) {
     bool changed = false;

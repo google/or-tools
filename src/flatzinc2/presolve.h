@@ -84,6 +84,10 @@ class FzPresolver {
   void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
 
  private:
+  // First pass of model scanning. Useful to get information that will
+  // prevent some destructive modifications of the model.
+  void FirstPassModelScan(FzModel* model);
+
   // Returns true iff the model was modified.
   bool PresolveOneConstraint(FzConstraint* ct);
 
@@ -139,6 +143,10 @@ class FzPresolver {
 
   // Stores flatten_map_[z] = a * x + y + b.
   hash_map<const FzIntegerVariable*, FlatteningMapping> flatten_map_;
+
+  // Stores x == (y - z).
+  hash_map<const FzIntegerVariable*,
+           std::pair<FzIntegerVariable*, FzIntegerVariable*> > difference_map_;
 };
 }  // namespace operations_research
 
