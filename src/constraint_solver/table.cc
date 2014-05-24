@@ -42,6 +42,14 @@ DEFINE_int32(cp_ac4r_table_threshold, 2048,
              "revised AC-4 implementation of the table constraint.");
 
 namespace operations_research {
+// External table code.
+Constraint* BuildAc4TableConstraint(Solver* const solver,
+                                    const IntTupleSet& tuples,
+                                    const std::vector<IntVar*>& vars);
+
+Constraint* BuildSatTableConstraint(Solver* solver, const std::vector<IntVar*>& vars,
+                                    const IntTupleSet& tuples);
+
 namespace {
 // ----- Presolve helpers -----
 // TODO(user): Move this out of this file.
@@ -1259,7 +1267,10 @@ class TransitionConstraint : public Constraint {
       tmp_vars.push_back(vars_[var_index]);
       tmp_vars.push_back(states[var_index + 1]);
       // We always build the compact versions of the tables.
-      if (transition_table_.NumTuples() < kBitsInUint64) {
+      if (FLAGS_cp_use_sat_table) {
+        s->AddConstraint(
+            BuildSatTableConstraint(s, tmp_vars, transition_table_));
+      } else if (transition_table_.NumTuples() < kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
       } else {
@@ -1308,13 +1319,6 @@ const int TransitionConstraint::kTransitionTupleSize = 3;
 }  // namespace
 
 // --------- API ----------
-
-Constraint* BuildAc4TableConstraint(Solver* const solver,
-                                    const IntTupleSet& tuples,
-                                    const std::vector<IntVar*>& vars);
-
-Constraint* BuildSatTableConstraint(Solver* solver, const std::vector<IntVar*>& vars,
-                                    const IntTupleSet& tuples);
 
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
