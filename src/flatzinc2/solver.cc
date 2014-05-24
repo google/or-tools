@@ -82,9 +82,13 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   return result;
 }
 
-void FzSolver::SetExtracted(FzIntegerVariable* var, IntExpr* expr) {
-  CHECK(!ContainsKey(extrated_map_, var));
-  extrated_map_[var] = expr;
+void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
+  CHECK(!ContainsKey(extrated_map_, fz_var));
+  if (!expr->IsVar() && !fz_var->domain.is_interval) {
+    FZVLOG << "  - lift to var" << FZENDL;
+    expr = expr->Var();
+  }
+  extrated_map_[fz_var] = expr;
 }
 
 // The format is fixed in the flatzinc specification.
@@ -251,7 +255,7 @@ bool FzSolver::Extract() {
   }
   FZLOG << "  - " << sorted.size() << " constraints created" << FZENDL;
 
-  // Add domain constraints to created extressions.
+  // Add domain constraints to created expressions.
   int domain_constraints = 0;
   for (FzIntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint != nullptr && var->active) {
