@@ -88,6 +88,9 @@ class FzPresolver {
   // prevent some destructive modifications of the model.
   void FirstPassModelScan(FzModel* model);
 
+  // First pass scan helpers.
+  void StoreDifference(FzConstraint* ct);
+
   // Returns true iff the model was modified.
   bool PresolveOneConstraint(FzConstraint* ct);
 
@@ -120,7 +123,7 @@ class FzPresolver {
   bool RemoveAbsFromIntLinReif(FzConstraint* ct);
   bool SimplifyUnaryLinear(FzConstraint* ct);
   bool CheckIntLinReifBounds(FzConstraint* ct);
-  bool MergeAffineVariables(FzConstraint* ct);
+  bool CreateLinearTarget(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);
@@ -147,6 +150,9 @@ class FzPresolver {
   // Stores x == (y - z).
   hash_map<const FzIntegerVariable*,
            std::pair<FzIntegerVariable*, FzIntegerVariable*> > difference_map_;
+
+  // Stores all variables defined in the search annotations.
+  hash_set<FzIntegerVariable*> decision_variables_;
 };
 }  // namespace operations_research
 

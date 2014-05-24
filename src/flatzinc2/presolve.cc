@@ -46,15 +46,15 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   // Transforms (x - y) == 0 into x == y.
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
-    ct->Arg(1).type == FzArgument::INT_VALUE &&
-    ct->Arg(1).Value() == 0 && ContainsKey(difference_map_, ct->Arg(0).Var())) {
+      ct->Arg(1).type == FzArgument::INT_VALUE && ct->Arg(1).Value() == 0 &&
+      ContainsKey(difference_map_, ct->Arg(0).Var())) {
 
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
     ct->Arg(0).Var()->domain.IntersectWithInterval(0, 0);
 
     FZVLOG << "  - transform null differences in " << ct->DebugString()
            << FZENDL;
-    const std::pair<FzIntegerVariable*, FzIntegerVariable*>&  diff =
+    const std::pair<FzIntegerVariable*, FzIntegerVariable*>& diff =
         FindOrDie(difference_map_, ct->Arg(0).Var());
     ct->MutableArg(0)->variables[0] = diff.first;
     ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
@@ -482,15 +482,50 @@ bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
   return false;
 }
 
-bool FzPresolver::MergeAffineVariables(FzConstraint* ct) {
+bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
+  if (ct->target_variable != nullptr) return false;
+
   if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == -1 &&
-      ct->target_variable == nullptr &&
       ct->Arg(1).variables[0]->defining_constraint == nullptr) {
     FZVLOG << "Mark first variable of " << ct->DebugString() << " as target"
            << FZENDL;
     FzIntegerVariable* const var = ct->Arg(1).variables[0];
     var->defining_constraint = ct;
     ct->target_variable = var;
+    return true;
+  }
+  if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[1] == -1 &&
+      ct->Arg(1).variables[1]->defining_constraint == nullptr) {
+    FZVLOG << "Mark second variable of " << ct->DebugString() << " as target"
+           << FZENDL;
+    FzIntegerVariable* const var = ct->Arg(1).variables[1];
+    var->defining_constraint = ct;
+    ct->target_variable = var;
+    return true;
+  }
+
+  // Scan for candidates.
+  std::vector<int> candidate_indices;
+  for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+    if (ct->Arg(0).values[i] != 1 && ct->Arg(0).values[i] != -1) continue;
+    FzIntegerVariable* const candidate = ct->Arg(1).variables[i];
+    if (candidate->defining_constraint != nullptr) continue;
+    if (ContainsKey(decision_variables_, candidate)) continue;
+    candidate_indices.push_back(i);
+  }
+  if (candidate_indices.size() >= 1) {
+    const int index = candidate_indices.front();  // First candidate.
+    FZVLOG << "Create target variable for " << ct->DebugString()
+           << " at position " << index << FZENDL;
+    FzIntegerVariable* const var = ct->Arg(1).variables[index];
+    var->defining_constraint = ct;
+    ct->target_variable = var;
+    if (ct->Arg(0).values[index] == 1) {
+      FZVLOG << "  - multiply constraint by -1" << FZENDL;
+      for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+        ct->MutableArg(0)->values[i] *= -1;
+      }
+    }
     return true;
   }
   return false;
@@ -748,8 +783,8 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->type = "array_int_element";
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
-      ct->MutableArg(1)
-          ->values.push_back(ct->Arg(1).variables[i]->domain.values[0]);
+      ct->MutableArg(1)->values
+          .push_back(ct->Arg(1).variables[i]->domain.values[0]);
     }
     ct->MutableArg(1)->variables.clear();
     return true;
@@ -973,7 +1008,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     changed |= PresolvePropagatePositiveLinear(ct);
   }
   if (id == "int_lin_eq") {
-    changed |= MergeAffineVariables(ct);
+    changed |= CreateLinearTarget(ct);
   }
   if (id == "int_lin_eq") changed |= PresolveStoreMapping(ct);
   if (id == "int_lin_eq_reif") changed |= CheckIntLinReifBounds(ct);
@@ -994,30 +1029,37 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   return changed;
 }
 
-void FzPresolver::FirstPassModelScan(FzModel* model) {
-  for (FzConstraint* const ct : model->constraints()) {
-    if (ct->active) {
-      if (ct->type == "int_lin_eq" && ct->Arg(2).Value() == 0 &&
-          ct->Arg(0).values.size() == 3 && ct->Arg(0).values[0] == 1 &&
-          ct->Arg(0).values[1] == -1 && ct->Arg(0).values[2] == 1 &&
-          (ct->target_variable == nullptr ||
-           ct->Arg(1).variables[2] == ct->target_variable)) {
-        FZVLOG << "Store difference from " << ct->DebugString() << FZENDL;
-        difference_map_[ct->Arg(1).variables[2]] =
-            std::make_pair(ct->Arg(1).variables[0], ct->Arg(1).variables[1]);
-        if (ct->target_variable == nullptr &&
-            ct->Arg(1).variables[2]->defining_constraint == nullptr) {
-          FZVLOG << "  - inject target variable "
-                 << ct->Arg(1).variables[2]->DebugString() << FZENDL;
-          ct->Arg(1).variables[2]->defining_constraint = ct;
-          ct->target_variable = ct->Arg(1).variables[2];
-          ct->MutableArg(0)->values[0] = -1;
-          ct->MutableArg(0)->values[1] = 1;
-          ct->MutableArg(0)->values[2] = -1;
-        }
-      }
+void FzPresolver::StoreDifference(FzConstraint* ct) {
+  if (ct->Arg(2).Value() == 0 && ct->Arg(0).values.size() == 3) {
+    // Looking for a difference var.
+    FzIntegerVariable* difference_var = nullptr;
+    if ((ct->Arg(0).values[0] == 1 && ct->Arg(0).values[1] == -1 &&
+         ct->Arg(0).values[2] == 1) ||
+        (ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
+         ct->Arg(0).values[2] == -1)) {
+      FZVLOG << "Store differences from " << ct->DebugString() << FZENDL;
+      difference_map_[ct->Arg(1).variables[0]] =
+          std::make_pair(ct->Arg(1).variables[2], ct->Arg(1).variables[1]);
+      difference_map_[ct->Arg(1).variables[2]] =
+          std::make_pair(ct->Arg(1).variables[0], ct->Arg(1).variables[1]);
     }
   }
+}
+
+void FzPresolver::FirstPassModelScan(FzModel* model) {
+  for (FzConstraint* const ct : model->constraints()) {
+    if (!ct->active) continue;
+    if (ct->type == "int_lin_eq") {
+      StoreDifference(ct);
+    }
+  }
+
+  // Collect decision variables.
+  std::vector<FzIntegerVariable*> vars;
+  for (const FzAnnotation& ann : model->search_annotations()) {
+    ann.GetAllIntegerVariables(&vars);
+  }
+  decision_variables_.insert(vars.begin(), vars.end());
 }
 
 bool FzPresolver::Run(FzModel* model) {
@@ -1242,8 +1284,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) ||
-         id == "bool_le_reif" || id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.
