@@ -1058,6 +1058,17 @@ void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
   }
 }
 
+bool AreAllExtractedAsVariables(
+    FzSolver* const fzsolver, const std::vector<FzIntegerVariable*>& fz_vars) {
+  for (FzIntegerVariable* const fz_var : fz_vars) {
+    IntExpr* const expr = fzsolver->Extract(fz_var);
+    if (!expr->IsVar()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
@@ -1109,7 +1120,8 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
     }
   } else {
     Constraint* constraint = nullptr;
-    if (size <= 3) {
+    if (size <= 3 &&
+        !AreAllExtractedAsVariables(fzsolver, ct->Arg(1).variables)) {
       IntExpr* left = nullptr;
       IntExpr* right = nullptr;
       ParseShortIntLin(fzsolver, ct, &left, &right);
