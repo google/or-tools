@@ -978,9 +978,11 @@ class MemberCt : public Constraint {
   const std::vector<int64> values_;
 };
 
+// TODO(user): Implement Solver::MakeNotMemberCt().
 class NotMemberCt : public Constraint {
  public:
-  NotMemberCt(Solver* const s, IntVar* const v, const std::vector<int64>& sorted_values)
+  NotMemberCt(Solver* const s, IntVar* const v,
+              const std::vector<int64>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
