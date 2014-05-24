@@ -2253,31 +2253,75 @@ class ExprLinearizer : public ModelParser {
 
 // ----- Factory functions -----
 
-Constraint* MakeScalProdEqualityAux(Solver* const solver,
-                                    const std::vector<IntVar*>& vars,
-                                    const std::vector<int64>& coefficients,
-                                    int64 cst) {
+void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
+                   const std::vector<int64>& pre_coefs, std::vector<IntVar*>* vars,
+                   std::vector<int64>* coefs, int64* constant) {
+  *constant = 0;
+  vars->reserve(pre_vars.size());
+  coefs->reserve(pre_coefs.size());
+  // Try linear scan of the variables to check if there is nothing to do.
+  bool ok = true;
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    IntVar* const v = pre_vars[i];
+    const int64 c = pre_coefs[i];
+    if (v->Bound()) {
+      *constant += c * v->Min();
+    } else if (solver->CastExpression(v) == nullptr) {
+      vars->push_back(v);
+      coefs->push_back(c);
+    } else {
+      ok = false;
+      vars->clear();
+      coefs->clear();
+      break;
+    }
+  }
+  if (!ok) {
+    // Instrospect the variables to simplify the sum.
+    hash_map<IntVar*, int64> map;
+    ExprLinearizer lin(&map);
+    for (int i = 0; i < pre_vars.size(); ++i) {
+      lin.Visit(pre_vars[i], pre_coefs[i]);
+    }
+    *constant = lin.Constant();
+    for (const auto& iter : map) {
+      if (iter.second != 0) {
+        vars->push_back(iter.first);
+        coefs->push_back(iter.second);
+      }
+    }
+  }
+}
+
+Constraint* MakeScalProdEqualityFct(Solver* const solver,
+                                    const std::vector<IntVar*>& pre_vars,
+                                    const std::vector<int64>& pre_coefs, int64 cst) {
+  int64 constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst -= constant;
+
   const int size = vars.size();
-  if (size == 0 || AreAllNull(coefficients)) {
+  if (size == 0 || AreAllNull(coefs)) {
     return cst == 0 ? solver->MakeTrueConstraint()
                     : solver->MakeFalseConstraint();
   }
-  if (AreAllBoundOrNull(vars, coefficients)) {
+  if (AreAllBoundOrNull(vars, coefs)) {
     int64 sum = 0;
     for (int i = 0; i < size; ++i) {
-      sum += coefficients[i] * vars[i]->Min();
+      sum += coefs[i] * vars[i]->Min();
     }
     return sum == cst ? solver->MakeTrueConstraint()
                       : solver->MakeFalseConstraint();
   }
-  if (AreAllOnes(coefficients)) {
+  if (AreAllOnes(coefs)) {
     return solver->MakeSumEquality(vars, cst);
   }
-  if (AreAllBooleans(vars) &&
-      AreAllPositive(coefficients) && size > 2) {
+  if (AreAllBooleans(vars) && AreAllPositive(coefs) && size > 2) {
     // TODO(user) : bench BooleanScalProdEqVar with IntConst.
     return solver->RevAlloc(
-        new PositiveBooleanScalProdEqCst(solver, vars, coefficients, cst));
+        new PositiveBooleanScalProdEqCst(solver, vars, coefs, cst));
   }
 
   // Simplications.
@@ -2285,9 +2329,9 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
   int positives = 0;
   int negatives = 0;
   for (int i = 0; i < size; ++i) {
-    if (coefficients[i] == 0 || vars[i]->Bound()) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
       constants++;
-    } else if (coefficients[i] > 0) {
+    } else if (coefs[i] > 0) {
       positives++;
     } else {
       negatives++;
@@ -2298,12 +2342,12 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
     std::vector<IntVar*> neg_terms;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
-        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
       }
     }
     if (negatives == 1) {
@@ -2327,10 +2371,10 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
     IntExpr* pos_term = nullptr;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_term = solver->MakeProd(vars[i], coefficients[i]);
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
       } else {
         LOG(FATAL) << "Should not be here";
       }
@@ -2340,12 +2384,12 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
     IntExpr* neg_term = nullptr;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_term = solver->MakeProd(vars[i], -coefficients[i]);
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
       }
     }
     return solver->MakeEquality(neg_term, -rhs);
@@ -2353,10 +2397,10 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
     std::vector<IntVar*> pos_terms;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
         LOG(FATAL) << "Should not be here";
       }
@@ -2366,107 +2410,76 @@ Constraint* MakeScalProdEqualityAux(Solver* const solver,
     std::vector<IntVar*> neg_terms;
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
       }
     }
     return solver->MakeSumEquality(neg_terms, -rhs);
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
-    terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }
   return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
 }
 
-Constraint* MakeScalProdEqualityFct(Solver* const solver,
-                                    const std::vector<IntVar*>& pre_vars,
-                                    const std::vector<int64>& pre_coefs,
-                                    int64 rhs) {
+Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       const std::vector<int64>& pre_coefs,
+                                       IntVar* const target) {
   int64 constant = 0;
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
-  vars.reserve(pre_vars.size());
-  coefs.reserve(pre_coefs.size());
-  // Try linear scan of the variables to check if there is nothing to do.
-  bool ok = true;
-  for (int i = 0; i < pre_vars.size(); ++i) {
-    IntVar* const v = pre_vars[i];
-    const int64 c = pre_coefs[i];
-    if (v->Bound()) {
-      constant += c * v->Min();
-    } else if (solver->CastExpression(v) == nullptr) {
-      vars.push_back(v);
-      coefs.push_back(c);
-    } else {
-      ok = false;
-      vars.clear();
-      coefs.clear();
-      break;
-    }
-  }
-  if (!ok) {
-    // Instrospect the variables to simplify the sum.
-    hash_map<IntVar*, int64> map;
-    ExprLinearizer lin(&map);
-    for (int i = 0; i < pre_vars.size(); ++i) {
-      lin.Visit(pre_vars[i], pre_coefs[i]);
-    }
-    constant = lin.Constant();
-    for (const auto& iter : map) {
-      if (iter.second != 0) {
-        vars.push_back(iter.first);
-        coefs.push_back(iter.second);
-      }
-    }
-  }
-  return MakeScalProdEqualityAux(solver, vars, coefs, rhs - constant);
-}
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
 
-Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
-                                       const std::vector<IntVar*>& vars,
-                                       const std::vector<int64>& coefficients,
-                                       IntVar* const target) {
   const int size = vars.size();
-  if (size == 0 || AreAllNull<int64>(coefficients)) {
-    return solver->MakeEquality(target, Zero());
+  if (size == 0 || AreAllNull<int64>(coefs)) {
+    return solver->MakeEquality(target, constant);
   }
-  if (AreAllOnes(coefficients)) {
-    return solver->MakeSumEquality(vars, target);
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumEquality(vars,
+                                   solver->MakeSum(target, -constant)->Var());
   }
-  if (AreAllBooleans(vars) && AreAllPositive<int64>(coefficients)) {
+  if (AreAllBooleans(vars) && AreAllPositive<int64>(coefs)) {
     // TODO(user) : bench BooleanScalProdEqVar with IntConst.
-    return solver->RevAlloc(
-        new PositiveBooleanScalProdEqVar(solver, vars, coefficients, target));
+    return solver->RevAlloc(new PositiveBooleanScalProdEqVar(
+        solver, vars, coefs, solver->MakeSum(target, -constant)->Var()));
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
-    terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }
-  return solver->MakeSumEquality(terms, target);
+  return solver->MakeSumEquality(terms,
+                                 solver->MakeSum(target, -constant)->Var());
 }
 
 Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
-                                          const std::vector<IntVar*>& vars,
-                                          const std::vector<int64>& coefficients,
+                                          const std::vector<IntVar*>& pre_vars,
+                                          const std::vector<int64>& pre_coefs,
                                           int64 cst) {
+  int64 constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst -= constant;
+
   const int size = vars.size();
-  if (size == 0 || AreAllNull<int64>(coefficients)) {
+  if (size == 0 || AreAllNull<int64>(coefs)) {
     return cst <= 0 ? solver->MakeTrueConstraint()
                     : solver->MakeFalseConstraint();
   }
-  if (AreAllOnes(coefficients)) {
+  if (AreAllOnes(coefs)) {
     return solver->MakeSumGreaterOrEqual(vars, cst);
   }
-  if (cst == 1 && AreAllBooleans(vars) && AreAllPositive(coefficients)) {
-    // can move all coefficients to 1.
+  if (cst == 1 && AreAllBooleans(vars) && AreAllPositive(coefs)) {
+    // can move all coefs to 1.
     std::vector<IntVar*> terms;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] > 0) {
+      if (coefs[i] > 0) {
         terms.push_back(vars[i]);
       }
     }
@@ -2474,44 +2487,50 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
-    terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }
   return solver->MakeSumGreaterOrEqual(terms, cst);
 }
 
 Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
-                                       const std::vector<IntVar*>& vars,
-                                       const std::vector<int64>& coefficients,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       const std::vector<int64>& pre_coefs,
                                        int64 upper_bound) {
+  int64 constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  upper_bound -= constant;
+
   const int size = vars.size();
-  if (size == 0 || AreAllNull<int64>(coefficients)) {
+  if (size == 0 || AreAllNull<int64>(coefs)) {
     return upper_bound >= 0 ? solver->MakeTrueConstraint()
                             : solver->MakeFalseConstraint();
   }
   // TODO(user) : compute constant on the fly.
-  if (AreAllBoundOrNull(vars, coefficients)) {
+  if (AreAllBoundOrNull(vars, coefs)) {
     int64 cst = 0;
     for (int i = 0; i < size; ++i) {
-      cst += vars[i]->Min() * coefficients[i];
+      cst += vars[i]->Min() * coefs[i];
     }
     return cst <= upper_bound ? solver->MakeTrueConstraint()
                               : solver->MakeFalseConstraint();
   }
-  if (AreAllOnes(coefficients)) {
+  if (AreAllOnes(coefs)) {
     return solver->MakeSumLessOrEqual(vars, upper_bound);
   }
-  if (AreAllBooleans(vars) && AreAllPositive<int64>(coefficients)) {
-    return solver->RevAlloc(new BooleanScalProdLessConstant(
-        solver, vars, coefficients, upper_bound));
+  if (AreAllBooleans(vars) && AreAllPositive<int64>(coefs)) {
+    return solver->RevAlloc(
+        new BooleanScalProdLessConstant(solver, vars, coefs, upper_bound));
   }
   // Some simplications
   int constants = 0;
   int positives = 0;
   int negatives = 0;
   for (int i = 0; i < size; ++i) {
-    if (coefficients[i] == 0 || vars[i]->Bound()) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
       constants++;
-    } else if (coefficients[i] > 0) {
+    } else if (coefs[i] > 0) {
       positives++;
     } else {
       negatives++;
@@ -2522,12 +2541,12 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     std::vector<IntVar*> neg_terms;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
-        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
       }
     }
     if (negatives == 1) {
@@ -2547,10 +2566,10 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     IntExpr* pos_term = nullptr;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_term = solver->MakeProd(vars[i], coefficients[i]);
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
       } else {
         LOG(FATAL) << "Should not be here";
       }
@@ -2560,12 +2579,12 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     IntExpr* neg_term = nullptr;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_term = solver->MakeProd(vars[i], -coefficients[i]);
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
       }
     }
     return solver->MakeGreaterOrEqual(neg_term, -rhs);
@@ -2573,10 +2592,10 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     std::vector<IntVar*> pos_terms;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
-        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
         LOG(FATAL) << "Should not be here";
       }
@@ -2586,19 +2605,19 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     std::vector<IntVar*> neg_terms;
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
-      if (coefficients[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefficients[i] * vars[i]->Min();
-      } else if (coefficients[i] > 0) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefs[i] * vars[i]->Min();
+      } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
-        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
       }
     }
     return solver->MakeSumGreaterOrEqual(neg_terms, -rhs);
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
-    terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }
   return solver->MakeLessOrEqual(solver->MakeSum(terms), upper_bound);
 }
@@ -2682,7 +2701,7 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
     }
   } else {
     if (AreAllBooleans(vars)) {
-      if (AreAllPositive<int64>(coefs)) {
+      if (AreAllPositive(coefs)) {
         return solver->MakeSum(
             solver->RegisterIntExpr(solver->RevAlloc(
                 new PositiveBooleanScalProd(solver, vars, coefs))),
@@ -2734,40 +2753,7 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
   int64 constant = 0;
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
-  vars.reserve(pre_vars.size());
-  coefs.reserve(pre_coefs.size());
-  // Try linear scan of the variables to check if there is nothing to do.
-  bool ok = true;
-  for (int i = 0; i < pre_vars.size(); ++i) {
-    IntVar* const v = pre_vars[i];
-    const int64 c = pre_coefs[i];
-    if (v->Bound()) {
-      constant += c * v->Min();
-    } else if (solver->CastExpression(v) == nullptr) {
-      vars.push_back(v);
-      coefs.push_back(c);
-    } else {
-      ok = false;
-      vars.clear();
-      coefs.clear();
-      break;
-    }
-  }
-  if (!ok) {
-    // Instrospect the variables to simplify the sum.
-    hash_map<IntVar*, int64> map;
-    ExprLinearizer lin(&map);
-    for (int i = 0; i < pre_vars.size(); ++i) {
-      lin.Visit(pre_vars[i], pre_coefs[i]);
-    }
-    constant = lin.Constant();
-    for (const auto& iter : map) {
-      if (iter.second != 0) {
-        vars.push_back(iter.first);
-        coefs.push_back(iter.second);
-      }
-    }
-  }
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
 
   if (vars.empty()) {
     return solver->MakeIntConst(constant);
