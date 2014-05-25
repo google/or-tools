@@ -1222,7 +1222,21 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
-                            const std::vector<T>& values, IntVar* const boolvar) {
+                              const std::vector<T>& values, IntVar* const boolvar) {
+  // Simplify and filter if expr is a filter.
+  IntExpr* sub = nullptr;
+  int64 coef = 1;
+  if (solver->IsProduct(expr, &sub, &coef) && coef != 0 && coef != 1) {
+    std::vector<int64> new_values;
+    new_values.reserve(values.size());
+    for (const int64 value : values) {
+      if (value % coef == 0) {
+        new_values.push_back(value / coef);
+      }
+    }
+    return BuildIsMemberCt(solver, sub, new_values, boolvar);
+  }
+
   std::set<T> set_of_values(values.begin(), values.end());
   std::vector<int64> filtered_values;
   bool all_values = false;
