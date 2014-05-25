@@ -140,7 +140,41 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   }
-  return false;
+  FzIntegerVariable* const left = ct->Arg(0).Var();
+  const int64 left_min = left->domain.is_interval && left->domain.values.empty()
+                             ? kint64min
+                             : left->domain.values.front();
+  const int64 left_max = left->domain.is_interval && left->domain.values.empty()
+                             ? kint64max
+                             : left->domain.values.back();
+  FzIntegerVariable* const right = ct->Arg(1).Var();
+  const int64 right_min =
+      right->domain.is_interval && right->domain.values.empty()
+          ? kint64min
+          : right->domain.values.front();
+  const int64 right_max =
+      right->domain.is_interval && right->domain.values.empty()
+          ? kint64max
+          : right->domain.values.back();
+  bool modified = false;
+  if (id == "int_le") {
+    left->domain.IntersectWithInterval(kint64min, right_max);
+    right->domain.IntersectWithInterval(left_min, kint64max);
+    modified = left_max > right_max || right_min < left_min;
+  } else if (id == "int_lt") {
+    left->domain.IntersectWithInterval(kint64min, right_max - 1);
+    right->domain.IntersectWithInterval(left_min + 1, kint64max);
+    modified = left_max >= right_max || right_min <= left_min;
+  } else if (id == "int_ge") {
+    left->domain.IntersectWithInterval(right_min, kint64max);
+    right->domain.IntersectWithInterval(kint64min, left_max);
+    modified = right_max > left_max || left_min < right_min;
+  } else if (id == "int_gt") {
+    left->domain.IntersectWithInterval(right_min + 1, kint64max);
+    right->domain.IntersectWithInterval(kint64min, left_max - 1);
+    modified = right_max >= left_max || left_min <= right_min;
+  }
+  return modified;
 }
 
 // A reified constraint is a constraint that has been casted into a boolean
