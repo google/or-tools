@@ -844,10 +844,29 @@ class BetweenCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeBetweenCt(IntExpr* const v, int64 l, int64 u) {
-  CHECK_EQ(this, v->solver());
-  if (v->Min() < l || v->Max() > u) {
-    return RevAlloc(new BetweenCt(this, v, l, u));
+Constraint* Solver::MakeBetweenCt(IntExpr* const e, int64 l, int64 u) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() < l || e->Max() > u) {
+    IntExpr* sub = nullptr;
+    int64 coef = 1;
+    if (IsProduct(e, &sub, &coef)) {
+      if (coef < 0) {
+        const int64 tmp = l;
+        l = -u;
+        u = -tmp;
+        coef *= -1;
+      }
+      if (coef == 0) {
+        return l <= 0 &&  u >= 0 ? MakeTrueConstraint() : MakeFalseConstraint();
+      }
+      if (coef == 1) {
+        return RevAlloc(new BetweenCt(this, e, l, u));
+      } else {
+      return MakeBetweenCt(sub, PosIntDivUp(l, coef), PosIntDivDown(u, coef));
+      }
+    } else {
+      return RevAlloc(new BetweenCt(this, e, l, u));
+    }
   } else {
     return MakeTrueConstraint();
   }
@@ -928,11 +947,35 @@ class IsBetweenCt : public Constraint {
   Demon* demon_;
 };
 }  // namespace
-Constraint* Solver::MakeIsBetweenCt(IntExpr* const v, int64 l, int64 u,
+Constraint* Solver::MakeIsBetweenCt(IntExpr* const e, int64 l, int64 u,
                                     IntVar* const b) {
-  CHECK_EQ(this, v->solver());
+  CHECK_EQ(this, e->solver());
   CHECK_EQ(this, b->solver());
-  return RevAlloc(new IsBetweenCt(this, v, l, u, b));
+  if (e->Min() >= l && e->Max() <= u) {
+    return MakeEquality(b, 1);
+  } else if (e->Min() > u || e->Max() < l) {
+    return MakeEquality(b, Zero());
+  } else {
+    IntExpr* sub = nullptr;
+    int64 coef = 1;
+    if (IsProduct(e, &sub, &coef)) {
+      if (coef < 0) {
+        const int64 tmp = l;
+        l = -u;
+        u = -tmp;
+        coef *= -1;
+      }
+      CHECK_NE(coef, 0);
+      if (coef == 1) {
+        return RevAlloc(new IsBetweenCt(this, e, l, u, b));
+      } else {
+      return MakeIsBetweenCt(
+          sub, PosIntDivUp(l, coef), PosIntDivDown(u, coef), b);
+      }
+    } else {
+      return RevAlloc(new IsBetweenCt(this, e, l, u, b));
+    }
+  }
 }
 
 IntVar* Solver::MakeIsBetweenVar(IntExpr* const v, int64 l, int64 u) {
