@@ -6322,6 +6322,21 @@ IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
   if (r->Bound()) {
     return MakeSum(l, -r->Min());
   }
+  IntExpr* sub_left = nullptr;
+  IntExpr* sub_right = nullptr;
+  int64 left_coef = 1;
+  int64 right_coef = 1;
+  if (IsProduct(l, &sub_left, &left_coef) &&
+      IsProduct(r, &sub_right, &right_coef)) {
+    const int64 abs_gcd =
+        MathUtil::GCD64(std::abs(left_coef), std::abs(right_coef));
+    if (abs_gcd != 0 && abs_gcd != 1) {
+      return MakeProd(MakeDifference(MakeProd(sub_left, left_coef / abs_gcd),
+                                     MakeProd(sub_right, right_coef / abs_gcd)),
+                      abs_gcd);
+    }
+  }
+
   IntExpr* result =
       Cache()->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
   if (result == nullptr) {
