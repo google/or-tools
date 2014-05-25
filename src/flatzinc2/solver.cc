@@ -84,7 +84,11 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
 
 void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
   CHECK(!ContainsKey(extrated_map_, fz_var));
-  if (!expr->IsVar() && !fz_var->domain.is_interval) {
+  if (!expr->IsVar() &&
+      (!fz_var->domain.is_interval ||
+       (!fz_var->domain.values.empty() &&
+        (expr->Min() < fz_var->domain.values[0] ||
+         expr->Max() > fz_var->domain.values[1])))) {
     FZVLOG << "  - lift to var" << FZENDL;
     expr = expr->Var();
   }

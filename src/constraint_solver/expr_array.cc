@@ -2824,24 +2824,26 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
-      IntVar* sum_var = nullptr;
+      IntExpr* sum_expr = nullptr;
       const bool all_booleans = AreAllBooleans(vars);
       if (all_booleans) {
         const std::string name =
             StringPrintf("BooleanSum([%s])", JoinNamePtr(vars, ", ").c_str());
-        sum_var = MakeIntVar(new_min, new_max, name);
-        AddConstraint(RevAlloc(new SumBooleanEqualToVar(this, vars, sum_var)));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SumBooleanEqualToVar(this, vars, sum_expr->Var())));
       } else if (new_min != kint64min && new_max != kint64max) {
-        sum_var = MakeSumFct(this, vars)->Var();
+        sum_expr = MakeSumFct(this, vars);
       } else {
         const std::string name =
             StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
-        sum_var = MakeIntVar(new_min, new_max, name);
-        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SafeSumConstraint(this, vars, sum_expr->Var())));
       }
-      model_cache_->InsertVarArrayExpression(sum_var, vars,
+      model_cache_->InsertVarArrayExpression(sum_expr, vars,
                                              ModelCache::VAR_ARRAY_SUM);
-      return sum_var;
+      return sum_expr;
     }
   }
 }
