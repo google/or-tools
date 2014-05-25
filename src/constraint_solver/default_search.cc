@@ -42,6 +42,8 @@ const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
 const int DefaultPhaseParameters::kDefaultSeed = 0;
 const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
 const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
+const DefaultPhaseParameters::LnsControl
+    DefaultPhaseParameters::kDefaultLnsControl = DefaultPhaseParameters::NO_LNS;
 
 class NoGoodManager;
 
