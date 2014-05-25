@@ -585,7 +585,8 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
 
 // If a scal prod only contains positive constant and variables, then we
 // can propagate an upper bound on all variables.
-bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
+bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct,
+                                                  bool upper) {
   const int64 rhs = ct->Arg(2).Value();
   if (ct->presolve_propagation_done || rhs < 0) {
     return false;
@@ -601,12 +602,28 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct) {
       return false;
     }
   }
-  for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
-    const int64 coef = ct->Arg(0).values[i];
-    if (coef > 0) {
-      FzIntegerVariable* const var = ct->Arg(1).variables[i];
-      var->domain.IntersectWithInterval(0, rhs / coef);
+  if (upper) {
+    FZVLOG << "Bound propagation on " << ct->DebugString() << FZENDL;
+    for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+      const int64 coef = ct->Arg(0).values[i];
+      if (coef > 0) {
+        FzIntegerVariable* const var = ct->Arg(1).variables[i];
+        if (upper) {
+          const int64 bound = rhs / coef;
+          FZVLOG << "  - intersect " << var->DebugString() << " with [0 .. "
+                 << bound << "]" << FZENDL;
+          var->domain.IntersectWithInterval(0, bound);
+        }
+      }
     }
+  } else if (ct->Arg(0).values.size() == 1 && ct->Arg(0).values[0] > 0) {
+    const int64 coef = ct->Arg(0).values[0];
+    FzIntegerVariable* const var = ct->Arg(1).variables[0];
+    const int64 bound = (rhs + coef - 1) / coef;
+    FZVLOG << "  - intersect " << var->DebugString() << " with [" << bound
+           << " .. INT_MAX]" << FZENDL;
+    var->domain.IntersectWithInterval(bound, kint64max);
+    ct->MarkAsInactive();
   }
   ct->presolve_propagation_done = true;
   return true;
@@ -1004,8 +1021,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     changed |= PresolveLinear(ct);
     changed |= SimplifyUnaryLinear(ct);
   }
-  if (id == "int_lin_eq" || id == "int_lin_le") {
-    changed |= PresolvePropagatePositiveLinear(ct);
+  if (id == "int_lin_eq" || id == "int_lin_le" || id == "int_lin_ge") {
+    const bool upper = !(id == "int_lin_ge");
+    changed |= PresolvePropagatePositiveLinear(ct, upper);
   }
   if (id == "int_lin_eq") {
     changed |= CreateLinearTarget(ct);

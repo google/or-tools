@@ -115,7 +115,7 @@ class FzPresolver {
   bool PresolveIntLinGt(FzConstraint* ct);
   bool PresolveIntLinLt(FzConstraint* ct);
   bool PresolveLinear(FzConstraint* ct);
-  bool PresolvePropagatePositiveLinear(FzConstraint* ct);
+  bool PresolvePropagatePositiveLinear(FzConstraint* ct, bool upper);
   bool PresolveStoreMapping(FzConstraint* ct);
   bool PresolveSimplifyElement(FzConstraint* ct);
   bool PresolveSimplifyExprElement(FzConstraint* ct);
