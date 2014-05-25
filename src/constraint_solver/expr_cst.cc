@@ -812,16 +812,21 @@ namespace {
 class BetweenCt : public Constraint {
  public:
   BetweenCt(Solver* const s, IntExpr* const v, int64 l, int64 u)
-      : Constraint(s), expr_(v), min_(l), max_(u) {}
+      : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
   virtual void Post() {
     if (!expr_->IsVar()) {
-      Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
-      expr_->WhenRange(d);
+      demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+      expr_->WhenRange(demon_);
     }
   }
 
-  virtual void InitialPropagate() { expr_->SetRange(min_, max_); }
+  virtual void InitialPropagate() {
+    expr_->SetRange(min_, max_);
+    if (demon_ != nullptr && expr_->Min() >= min_ && expr_->Max() <= max_) {
+      demon_->inhibit(solver());
+    }
+  }
 
   virtual std::string DebugString() const {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
@@ -841,6 +846,7 @@ class BetweenCt : public Constraint {
   IntExpr* const expr_;
   int64 min_;
   int64 max_;
+  Demon* demon_;
 };
 }  // namespace
 
