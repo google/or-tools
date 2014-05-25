@@ -711,6 +711,13 @@ void ExtractIntAbs(FzSolver* fzsolver, FzConstraint* ct) {
     FZVLOG << "  - creating " << ct->Arg(1).DebugString()
            << " := " << target->DebugString() << FZENDL;
     fzsolver->SetExtracted(ct->target_variable, target);
+  } else if (ct->Arg(1).HasOneValue()) {
+    const int64 value = ct->Arg(1).Value();
+    std::vector<int64> values(2);
+    values[0] = -value;
+    values[1] = value;
+    Constraint* const constraint = solver->MakeMemberCt(left, values);
+    AddConstraint(solver, ct, constraint);
   } else {
     IntExpr* const target = fzsolver->GetExpression(ct->Arg(1));
     Constraint* const constraint =
