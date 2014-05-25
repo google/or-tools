@@ -2702,10 +2702,17 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
   } else {
     if (AreAllBooleans(vars)) {
       if (AreAllPositive(coefs)) {
+        if (vars.size() > 8) {
         return solver->MakeSum(
-            solver->RegisterIntExpr(solver->RevAlloc(
-                new PositiveBooleanScalProd(solver, vars, coefs))),
-            constant);
+              solver->RegisterIntExpr(solver->RevAlloc(
+                  new PositiveBooleanScalProd(solver, vars, coefs)))->Var(),
+              constant);
+          } else {
+          return solver->MakeSum(
+              solver->RegisterIntExpr(solver->RevAlloc(
+                  new PositiveBooleanScalProd(solver, vars, coefs))),
+              constant);
+        }
       } else {
         // If some coefficients are non-positive, partition coefficients in two
         // sets, one for the positive coefficients P and one for the negative
