@@ -1107,7 +1107,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
       int64 constant = 0;
       for (int i = 0; i < size; ++i) {
         if (fzvars[i]->domain.IsSingleton()) {
-          constant += coefficients[i] * fzvars[i]->domain.values[0];
+          constant += coefficients[i] * fzvars[i]->Min();
         } else if (fzvars[i] == ct->target_variable) {
           CHECK_EQ(-1, coefficients[i]);
         } else {

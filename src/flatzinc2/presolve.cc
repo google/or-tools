@@ -141,21 +141,11 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     return true;
   }
   FzIntegerVariable* const left = ct->Arg(0).Var();
-  const int64 left_min = left->domain.is_interval && left->domain.values.empty()
-                             ? kint64min
-                             : left->domain.values.front();
-  const int64 left_max = left->domain.is_interval && left->domain.values.empty()
-                             ? kint64max
-                             : left->domain.values.back();
+  const int64 left_min = left->Min();
+  const int64 left_max = left->Max();
   FzIntegerVariable* const right = ct->Arg(1).Var();
-  const int64 right_min =
-      right->domain.is_interval && right->domain.values.empty()
-          ? kint64min
-          : right->domain.values.front();
-  const int64 right_max =
-      right->domain.is_interval && right->domain.values.empty()
-          ? kint64max
-          : right->domain.values.back();
+  const int64 right_min = right->Min();
+  const int64 right_max = right->Max();
   bool modified = false;
   if (id == "int_le") {
     left->domain.IntersectWithInterval(kint64min, right_max);
@@ -308,7 +298,7 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
     if (var->domain.IsSingleton()) {
-      const int64 value = var->domain.values[0];
+      const int64 value = var->Min();
       if (value == 1) {
         fixed_to_true.push_back(var);
       } else {
@@ -374,7 +364,7 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
     if (var->domain.IsSingleton()) {
-      const int64 value = var->domain.values[0];
+      const int64 value = var->Min();
       if (value == 1) {
         fixed_to_true.push_back(var);
       } else {
@@ -470,20 +460,19 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   return false;
 }
 
-void ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
+// Returns false if an overflow occured.
+bool ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
   *lb = 0;
   *ub = 0;
   for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
-    const FzDomain& domain = ct->Arg(1).variables[i]->domain;
+    const FzIntegerVariable* const var = ct->Arg(1).variables[i];
     const int64 coef = ct->Arg(0).values[i];
     if (coef == 0) continue;
-    if (domain.is_interval && domain.values.empty()) {
-      *lb = kint64min;
-      *ub = kint64max;
-      return;
+    if (var->Min() == kint64min || var->Max() == kint64max) {
+      return false;
     }
-    const int64 vmin = domain.values.front();
-    const int64 vmax = domain.values.back();
+    const int64 vmin = var->Min();
+    const int64 vmax = var->Max();
     // TODO(user): use saturated arithmetic.
     if (coef > 0) {
       *lb += vmin * coef;
@@ -493,12 +482,15 @@ void ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
       *ub += vmin * coef;
     }
   }
+  return true;
 }
 
 bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
   int64 lb = 0;
   int64 ub = 0;
-  ComputeLinBounds(ct, &lb, &ub);
+  if (!ComputeLinBounds(ct, &lb, &ub)) {
+    return false;
+  }
   const int64 value = ct->Arg(2).Value();
   if (ct->type == "int_lin_eq_reif") {
     if (value < lb || value > ub) {
@@ -619,8 +611,7 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
 
 // If a scal prod only contains positive constant and variables, then we
 // can propagate an upper bound on all variables.
-bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct,
-                                                  bool upper) {
+bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
   const int64 rhs = ct->Arg(2).Value();
   if (ct->presolve_propagation_done || rhs < 0) {
     return false;
@@ -631,8 +622,7 @@ bool FzPresolver::PresolvePropagatePositiveLinear(FzConstraint* ct,
     }
   }
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    if (!var->domain.is_interval || var->domain.values.empty() ||
-        var->domain.values[0] < 0) {
+    if (var->Min() < 0) {
       return false;
     }
   }
@@ -778,9 +768,9 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     return true;
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
-      index_var->domain.values[1] < ct->Arg(1).values.size()) {
+      index_var->Max() < ct->Arg(1).values.size()) {
     // Reduce array of values.
-    ct->MutableArg(1)->values.resize(index_var->domain.values[1]);
+    ct->MutableArg(1)->values.resize(index_var->Max());
     ct->presolve_propagation_done = false;
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
     return true;
@@ -835,7 +825,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
       ct->MutableArg(1)->values
-          .push_back(ct->Arg(1).variables[i]->domain.values[0]);
+          .push_back(ct->Arg(1).variables[i]->Min());
     }
     ct->MutableArg(1)->variables.clear();
     return true;
@@ -843,7 +833,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
   if (index_var->domain.IsSingleton()) {
     // Arrays are 1 based.
-    const int64 position = index_var->domain.values[0] - 1;
+    const int64 position = index_var->Min() - 1;
     FzIntegerVariable* const expr = ct->Arg(1).variables[position];
     // Index is fixed, rewrite constraint into an equality.
     FZVLOG << "Rewrite " << ct->DebugString() << FZENDL;
@@ -886,9 +876,9 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     return true;
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
-      index_var->domain.values[1] < ct->Arg(1).variables.size()) {
+      index_var->Max() < ct->Arg(1).variables.size()) {
     // Reduce array of variables.
-    ct->MutableArg(1)->variables.resize(index_var->domain.values[1]);
+    ct->MutableArg(1)->variables.resize(index_var->Max());
     ct->presolve_propagation_done = false;
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
     return true;
@@ -948,34 +938,34 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
       }
     } else if (((id == "int_lt_reif" && reverse) ||
                 (id == "int_gt_reif" && !reverse)) &&
-               !var->domain.values.empty()) {  // int_gt
-      if (var->domain.values[0] > value) {
+               !var->Unbound()) {  // int_gt
+      if (var->Min() > value) {
         state = 1;
-      } else if (var->domain.values[1] <= value) {
+      } else if (var->Max() <= value) {
         state = 0;
       }
     } else if (((id == "int_lt_reif" && !reverse) ||
                 (id == "int_gt_reif" && reverse)) &&
-               !var->domain.values.empty()) {  // int_lt
-      if (var->domain.values[1] < value) {
+               !var->Unbound()) {  // int_lt
+      if (var->Max() < value) {
         state = 1;
-      } else if (var->domain.values[0] >= value) {
+      } else if (var->Min() >= value) {
         state = 0;
       }
     } else if (((id == "int_lt_reif" && reverse) ||
                 (id == "int_ge_reif" && !reverse)) &&
-               !var->domain.values.empty()) {  // int_ge
-      if (var->domain.values[0] >= value) {
+               !var->Unbound()) {  // int_ge
+      if (var->Min() >= value) {
         state = 1;
-      } else if (var->domain.values[1] < value) {
+      } else if (var->Max() < value) {
         state = 0;
       }
     } else if (((id == "int_le_reif" && !reverse) ||
                 (id == "int_ge_reif" && reverse)) &&
-               !var->domain.values.empty()) {  // int_le
-      if (var->domain.values[1] <= value) {
+               !var->Unbound()) {  // int_le
+      if (var->Max() <= value) {
         state = 1;
-      } else if (var->domain.values[0] > value) {
+      } else if (var->Min() > value) {
         state = 0;
       }
     }
@@ -1057,7 +1047,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_lin_eq" || id == "int_lin_le" || id == "int_lin_ge") {
     const bool upper = !(id == "int_lin_ge");
-    changed |= PresolvePropagatePositiveLinear(ct, upper);
+    changed |= PropagatePositiveLinear(ct, upper);
   }
   if (id == "int_lin_eq") {
     changed |= CreateLinearTarget(ct);

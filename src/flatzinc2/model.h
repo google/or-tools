@@ -91,6 +91,13 @@ struct FzIntegerVariable {
   //     temporary, the name is chosen arbitrarily between the two names.
   bool Merge(const std::string& other_name, const FzDomain& other_domain,
              FzConstraint* const other_constraint, bool other_temporary);
+  // Returns the min of the domain.
+  int64 Min() const;
+  // Returns the max of the domain.
+  int64 Max() const;
+  // Returns true if the domain is [kint64min..kint64max]
+  bool Unbound() const;
+
   std::string DebugString() const;
 
   std::string name;
