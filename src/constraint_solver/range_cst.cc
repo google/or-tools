@@ -611,7 +611,9 @@ Constraint* Solver::MakeLessOrEqual(IntExpr* const l, IntExpr* const r) {
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
+  if (l == r) {
+    return MakeTrueConstraint();
+  } else if (l->Bound()) {
     return MakeGreaterOrEqual(r, l->Min());
   } else if (r->Bound()) {
     return MakeLessOrEqual(l, r->Min());
@@ -625,7 +627,9 @@ Constraint* Solver::MakeGreaterOrEqual(IntExpr* const l, IntExpr* const r) {
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
+  if (l == r) {
+    return MakeTrueConstraint();
+  } else if (l->Bound()) {
     return MakeLessOrEqual(r, l->Min());
   } else if (r->Bound()) {
     return MakeGreaterOrEqual(l, r->Min());
