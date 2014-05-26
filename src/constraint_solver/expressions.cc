@@ -671,6 +671,7 @@ class DomainIntVar : public IntVar {
     SmallValueWatcher(Solver* const solver, DomainIntVar* const variable)
         : BaseValueWatcher(solver),
           variable_(variable),
+          hole_iterator_(variable_->MakeHoleIterator(true)),
           var_demon_(nullptr),
           offset_(variable->Min()),
           watchers_(variable->Max() - variable->Min() + 1, nullptr),
@@ -793,13 +794,42 @@ class DomainIntVar : public IntVar {
 
     // Scans all the watchers to check and assign them.
     void ScanWatchers() {
-      const int64 min_index = variable_->OldMin() - offset_;
-      const int64 max_index = variable_->OldMax() - offset_;
-      for (int pos = min_index; pos <= max_index; ++pos) {
+      const int64 old_min_index = variable_->OldMin() - offset_;
+      const int64 old_max_index = variable_->OldMax() - offset_;
+      const int64 min_index = variable_->Min() - offset_;
+      const int64 max_index = variable_->Max() - offset_;
+      for (int pos = old_min_index; pos < min_index; ++pos) {
         IntVar* const boolvar = watchers_[pos];
-        if (boolvar != nullptr && !variable_->Contains(offset_ + pos)) {
+        if (boolvar != nullptr) {
           boolvar->SetValue(0);
           RevRemove(pos);
+        }
+      }
+      for (int pos = max_index + 1; pos <= old_max_index; ++pos) {
+        IntVar* const boolvar = watchers_[pos];
+        if (boolvar != nullptr) {
+          boolvar->SetValue(0);
+          RevRemove(pos);
+        }
+      }
+      BitSet* const bitset = variable_->bitset();
+      if (bitset != nullptr) {
+        if (bitset->NumHoles() * 2 < active_watchers_.Value()) {
+          for (const int64 hole : InitAndGetValues(hole_iterator_)) {
+            IntVar* const boolvar = watchers_[hole - offset_];
+            if (boolvar != nullptr) {
+              boolvar->SetValue(0);
+              RevRemove(hole - offset_);
+            }
+          }
+        } else {
+          for (int pos = min_index + 1; pos < max_index; ++pos) {
+            IntVar* const boolvar = watchers_[pos];
+            if (boolvar != nullptr && !variable_->Contains(offset_ + pos)) {
+              boolvar->SetValue(0);
+              RevRemove(pos);
+            }
+          }
         }
       }
     }
@@ -842,6 +872,7 @@ class DomainIntVar : public IntVar {
 
    private:
     DomainIntVar* const variable_;
+    IntVarIterator* const hole_iterator_;
     RevSwitch posted_;
     Demon* var_demon_;
     const int64 offset_;
@@ -1095,7 +1126,7 @@ class DomainIntVar : public IntVar {
       return cache->Var();
     } else {
       if (value_watcher_ == nullptr) {
-        if (Max() - Min() <= 8) {
+        if (Max() - Min() <= 256) {
           solver()->SaveAndSetValue(
               reinterpret_cast<void**>(&value_watcher_),
               reinterpret_cast<void*>(
