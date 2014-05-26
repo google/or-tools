@@ -1325,7 +1325,7 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
 class StartVarIntervalVar : public BaseIntervalVar {
  public:
   StartVarIntervalVar(Solver* const s, IntVar* const start, int64 duration,
-                      IntVar* const performed, const string& name);
+                      IntVar* const performed, const std::string& name);
   virtual ~StartVarIntervalVar() {}
 
   virtual int64 StartMin() const;
@@ -1373,7 +1373,7 @@ class StartVarIntervalVar : public BaseIntervalVar {
     return performed_->OldMin() == performed_->OldMax();
   }
   virtual void WhenPerformedBound(Demon* const d) { performed_->WhenBound(d); }
-  virtual string DebugString() const;
+  virtual std::string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
@@ -1410,7 +1410,7 @@ class StartVarIntervalVar : public BaseIntervalVar {
 StartVarIntervalVar::StartVarIntervalVar(Solver* const s, IntVar* const start,
                                          int64 duration,
                                          IntVar* const performed,
-                                         const string& name)
+                                         const std::string& name)
     : BaseIntervalVar(s, name),
       start_(start),
       duration_(duration),
@@ -1528,7 +1528,7 @@ void StartVarIntervalVar::SetPerformed(bool val) {
   }
 }
 
-string StartVarIntervalVar::DebugString() const {
+std::string StartVarIntervalVar::DebugString() const {
   const std::string& var_name = name();
   if (performed_->Max() == 0) {
     if (!var_name.empty()) {
@@ -1537,7 +1537,7 @@ string StartVarIntervalVar::DebugString() const {
       return "IntervalVar(performed = false)";
     }
   } else {
-    string out;
+    std::string out;
     if (!var_name.empty()) {
       out = var_name + "(start = ";
     } else {
