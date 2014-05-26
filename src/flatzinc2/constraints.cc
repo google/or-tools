@@ -332,13 +332,22 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolNot(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
   if (ct->target_variable != nullptr) {
-    IntExpr* const target = solver->MakeDifference(1, left);
-    FZVLOG << "  - creating " << ct->Arg(1).DebugString()
-           << " := " << target->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, target);
+    if (ct->target_variable == ct->Arg(1).Var()) {
+      IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+      IntExpr* const target = solver->MakeDifference(1, left);
+      FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      IntExpr* const target = solver->MakeDifference(1, right);
+      FZVLOG << "  - creating " << ct->Arg(0).DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    }
   } else {
+    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
     IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
     if (FLAGS_use_sat && AddBoolNot(fzsolver->Sat(), left, right)) {
       FZVLOG << "  - posted to sat" << FZENDL;
@@ -535,6 +544,52 @@ void ExtractCountReif(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
+bool IsHiddenPerformed(FzSolver* fzsolver,
+                       const std::vector<FzIntegerVariable*>& fz_vars) {
+  for (FzIntegerVariable* const fz_var : fz_vars) {
+    IntVar* const var = fzsolver->Extract(fz_var)->Var();
+    if (var->Size() > 2 || (var->Size() == 2 && var->Min() != 0)) {
+      return false;
+    }
+    if (!var->Bound() && var->Max() != 1) {
+      IntExpr* sub = nullptr;
+      int64 coef = 1;
+      if (!fzsolver->solver()->IsProduct(var, &sub, &coef)) {
+        return false;
+      }
+      if (coef != var->Max()) {
+        return false;
+      }
+      CHECK_EQ(1, sub->Max());
+
+    }
+  }
+  return true;
+}
+
+void ExtractPerformedAndDemands(Solver* const solver,
+  const std::vector<IntVar*>& vars,
+  std::vector<IntVar*>* performed,
+  std::vector<int64>* demands) {
+  performed->clear();
+  demands->clear();
+  for (IntVar* const var : vars) {
+    if (var->Bound()) {
+      performed->push_back(solver->MakeIntConst(1));
+      demands->push_back(var->Min());
+    } else if (var->Max() == 1) {
+      performed->push_back(var);
+      demands->push_back(1);
+    } else {
+      IntExpr* sub = nullptr;
+      int64 coef = 1;
+      CHECK(solver->IsProduct(var, &sub, &coef));
+      performed->push_back(sub->Var());
+      demands->push_back(coef);
+    }
+  }
+}
+
 void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<IntVar*> start_variables =
@@ -557,6 +612,31 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
       Constraint* const constraint =
           solver->MakeCumulative(intervals, demands, capacity, "");
+      AddConstraint(solver, ct, constraint);
+    }
+  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
+             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
+             IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
+             ct->Arg(3).HasOneValue()) {
+    const std::vector<int64>& durations = ct->Arg(1).values;
+    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
+
+    std::vector<IntVar*> performed_variables;
+    std::vector<int64> fixed_demands;
+    ExtractPerformedAndDemands(
+      solver, demands, &performed_variables, &fixed_demands);
+    std::vector<IntervalVar*> intervals;
+    solver->MakeFixedDurationIntervalVarArray(start_variables, durations,
+                                              performed_variables, "",
+                                              &intervals);
+    const int64 capacity = ct->Arg(3).Value();
+    if (IsArrayBoolean(fixed_demands) && capacity == 1) {  // Disjunctive.
+      Constraint* const constraint =
+          solver->MakeDisjunctiveConstraint(intervals, "");
+      AddConstraint(solver, ct, constraint);
+    } else {
+      Constraint* const constraint =
+          solver->MakeCumulative(intervals, fixed_demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
   } else {
@@ -2009,7 +2089,7 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractBoolAnd(this, ct);
   } else if (type == "bool_clause") {
     ExtractBoolClause(this, ct);
-  } else if (type == "bool_eq") {
+  } else if (type == "bool_eq" || type == "bool2int") {
     ExtractIntEq(this, ct);
   } else if (type == "bool_eq_reif") {
     ExtractIntEqReif(this, ct);
