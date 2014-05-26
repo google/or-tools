@@ -1320,6 +1320,237 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
   return out;
 }
 
+// ----- StartVarIntervalVar -----
+
+class StartVarIntervalVar : public BaseIntervalVar {
+ public:
+  StartVarIntervalVar(Solver* const s, IntVar* const start, int64 duration,
+                      IntVar* const performed, const string& name);
+  virtual ~StartVarIntervalVar() {}
+
+  virtual int64 StartMin() const;
+  virtual int64 StartMax() const;
+  virtual void SetStartMin(int64 m);
+  virtual void SetStartMax(int64 m);
+  virtual void SetStartRange(int64 mi, int64 ma);
+  virtual int64 OldStartMin() const { return start_->OldMin(); }
+  virtual int64 OldStartMax() const { return start_->OldMax(); }
+  virtual void WhenStartRange(Demon* const d) {
+    if (performed_->Max() == 1) {
+      start_->WhenRange(d);
+    }
+  }
+  virtual void WhenStartBound(Demon* const d) {
+    if (performed_->Max() == 1) {
+      start_->WhenBound(d);
+    }
+  }
+
+  virtual int64 DurationMin() const;
+  virtual int64 DurationMax() const;
+  virtual void SetDurationMin(int64 m);
+  virtual void SetDurationMax(int64 m);
+  virtual void SetDurationRange(int64 mi, int64 ma);
+  virtual int64 OldDurationMin() const { return duration_; }
+  virtual int64 OldDurationMax() const { return duration_; }
+  virtual void WhenDurationRange(Demon* const d) {}
+  virtual void WhenDurationBound(Demon* const d) {}
+
+  virtual int64 EndMin() const;
+  virtual int64 EndMax() const;
+  virtual void SetEndMin(int64 m);
+  virtual void SetEndMax(int64 m);
+  virtual void SetEndRange(int64 mi, int64 ma);
+  virtual int64 OldEndMin() const { return CapAdd(OldStartMin(), duration_); }
+  virtual int64 OldEndMax() const { return CapAdd(OldStartMax(), duration_); }
+  virtual void WhenEndRange(Demon* const d) { WhenStartRange(d); }
+  virtual void WhenEndBound(Demon* const d) { WhenStartBound(d); }
+
+  virtual bool MustBePerformed() const;
+  virtual bool MayBePerformed() const;
+  virtual void SetPerformed(bool val);
+  virtual bool WasPerformedBound() const {
+    return performed_->OldMin() == performed_->OldMax();
+  }
+  virtual void WhenPerformedBound(Demon* const d) { performed_->WhenBound(d); }
+  virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+  }
+
+  virtual IntExpr* StartExpr() { return start_; }
+  virtual IntExpr* DurationExpr() { return solver()->MakeIntConst(duration_); }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeSum(StartExpr(), duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return performed_; }
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return BuildSafeStartExpr(this, unperformed_value);
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return BuildSafeDurationExpr(this, unperformed_value);
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) {
+    return BuildSafeEndExpr(this, unperformed_value);
+  }
+
+  virtual void Process() { LOG(FATAL) << "Should not be here"; }
+
+  virtual void Push() { LOG(FATAL) << "Should not be here"; }
+
+ private:
+  IntVar* const start_;
+  int64 duration_;
+  IntVar* const performed_;
+  Rev<int64> start_min_;
+  Rev<int64> start_max_;
+};
+
+StartVarIntervalVar::StartVarIntervalVar(Solver* const s, IntVar* const start,
+                                         int64 duration,
+                                         IntVar* const performed,
+                                         const string& name)
+    : BaseIntervalVar(s, name),
+      start_(start),
+      duration_(duration),
+      performed_(performed),
+      start_min_(start->Min()),
+      start_max_(start->Max()) {}
+
+int64 StartVarIntervalVar::StartMin() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return std::max(start_->Min(), start_min_.Value());
+}
+
+int64 StartVarIntervalVar::StartMax() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return std::min(start_->Max(), start_max_.Value());
+}
+
+void StartVarIntervalVar::SetStartMin(int64 m) {
+if (performed_->Min() == 1) {
+    start_->SetMin(m);
+  } else {
+    start_min_.SetValue(solver(), std::max(m, start_min_.Value()));
+    if (start_min_.Value() > start_max_.Value()) {
+      performed_->SetValue(0);
+    }
+  }
+}
+
+void StartVarIntervalVar::SetStartMax(int64 m) {
+  if (performed_->Min() == 1) {
+    start_->SetMax(m);
+  } else {
+    start_max_.SetValue(solver(), std::min(m, start_max_.Value()));
+    if (start_min_.Value() > start_max_.Value()) {
+      performed_->SetValue(0);
+    }
+  }
+}
+
+void StartVarIntervalVar::SetStartRange(int64 mi, int64 ma) {
+  if (performed_->Min() == 1) {
+    start_->SetRange(mi, ma);
+  } else {
+    start_min_.SetValue(solver(), std::max(mi, start_min_.Value()));
+    start_max_.SetValue(solver(), std::min(ma, start_max_.Value()));
+    if (start_min_.Value() > start_max_.Value()) {
+      performed_->SetValue(0);
+    }
+  }
+}
+
+int64 StartVarIntervalVar::DurationMin() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return duration_;
+}
+
+int64 StartVarIntervalVar::DurationMax() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return duration_;
+}
+
+void StartVarIntervalVar::SetDurationMin(int64 m) {
+  if (m > duration_) {
+    SetPerformed(false);
+  }
+}
+
+void StartVarIntervalVar::SetDurationMax(int64 m) {
+  if (m < duration_) {
+    SetPerformed(false);
+  }
+}
+
+void StartVarIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+  if (mi > duration_ || ma < duration_ || mi > ma) {
+    SetPerformed(false);
+  }
+}
+
+int64 StartVarIntervalVar::EndMin() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return CapAdd(StartMin(), duration_);
+}
+
+int64 StartVarIntervalVar::EndMax() const {
+  CHECK_EQ(performed_->Max(), 1);
+  return CapAdd(StartMax(), duration_);
+}
+
+void StartVarIntervalVar::SetEndMin(int64 m) {
+  SetStartMin(CapSub(m, duration_));
+}
+
+void StartVarIntervalVar::SetEndMax(int64 m) {
+  SetStartMax(CapSub(m, duration_));
+}
+
+void StartVarIntervalVar::SetEndRange(int64 mi, int64 ma) {
+  SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
+}
+
+bool StartVarIntervalVar::MustBePerformed() const {
+  return (performed_->Min() == 1);
+}
+
+bool StartVarIntervalVar::MayBePerformed() const {
+  return (performed_->Max() == 1);
+}
+
+void StartVarIntervalVar::SetPerformed(bool val) {
+  const bool was_bound = performed_->Bound();
+  performed_->SetValue(val);
+  if (val && !was_bound) {
+    start_->SetRange(start_min_.Value(), start_max_.Value());
+  }
+}
+
+string StartVarIntervalVar::DebugString() const {
+  const std::string& var_name = name();
+  if (performed_->Max() == 0) {
+    if (!var_name.empty()) {
+      return StringPrintf("%s(performed = false)", var_name.c_str());
+    } else {
+      return "IntervalVar(performed = false)";
+    }
+  } else {
+    string out;
+    if (!var_name.empty()) {
+      out = var_name + "(start = ";
+    } else {
+      out = "IntervalVar(start = ";
+    }
+    StringAppendF(&out, "%s, duration = %" GG_LL_FORMAT "d, performed = %s)",
+                  start_->DebugString().c_str(), duration_,
+                  performed_->DebugString().c_str());
+    return out;
+  }
+}
+
+
 // ----- FixedInterval -----
 
 class FixedInterval : public IntervalVar {
@@ -1997,6 +2228,25 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
       new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
 }
 
+  // Creates an interval var with a fixed duration, and performed var.
+  // The duration must be greater than 0.
+IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* const start_variable,
+                                                  int64 duration,
+                                                  IntVar* const performed_variable,
+                                                  const std::string& name) {
+  CHECK(start_variable != nullptr);
+  CHECK(performed_variable != nullptr);
+  CHECK_GE(duration, 0);
+  if (!performed_variable->Bound()) {
+    return RegisterIntervalVar(RevAlloc(
+      new StartVarIntervalVar(this, start_variable, duration, performed_variable, name)));
+  } else if (performed_variable->Min() == 1) {
+    return RegisterIntervalVar(RevAlloc(
+        new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
+  }
+  return nullptr;
+}
+
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, int64 duration, const std::string& name,
     std::vector<IntervalVar*>* array) {
@@ -2009,8 +2259,6 @@ void Solver::MakeFixedDurationIntervalVarArray(
   }
 }
 
-// This method fills the vector with interval variables built with
-// the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, const std::vector<int64>& durations,
     const std::string& name, std::vector<IntervalVar*>* array) {
@@ -2034,6 +2282,36 @@ void Solver::MakeFixedDurationIntervalVarArray(
     const std::string var_name = StringPrintf("%s%i", name.c_str(), i);
     array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
                                                   durations[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    const std::vector<int>& durations,
+    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = StringPrintf("%s%i", name.c_str(), i);
+    array->push_back(
+        MakeFixedDurationIntervalVar(start_variables[i], durations[i],
+                                     performed_variables[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    const std::vector<int64>& durations,
+    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = StringPrintf("%s%i", name.c_str(), i);
+    array->push_back(
+        MakeFixedDurationIntervalVar(start_variables[i], durations[i],
+                                     performed_variables[i], var_name));
   }
 }
 

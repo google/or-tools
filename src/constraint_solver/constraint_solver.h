@@ -1796,6 +1796,14 @@ class Solver {
   IntervalVar* MakeFixedDurationIntervalVar(IntVar* const start_variable,
                                             int64 duration, const std::string& name);
 
+  // Creates an interval var with a fixed duration, and performed var.
+  // The duration must be greater than 0.
+  IntervalVar* MakeFixedDurationIntervalVar(IntVar* const start_variable,
+                                            int64 duration,
+                                            IntVar* const performed_var,
+                                            const std::string& name);
+
+
   // This method fills the vector with 'count' interval var built with
   // the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
@@ -1812,6 +1820,22 @@ class Solver {
   // the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
                                          const std::vector<int>& durations,
+                                         const std::string& name,
+                                         std::vector<IntervalVar*>* const array);
+
+  // This method fills the vector with interval variables built with
+  // the corresponding start and performed variables.
+  void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
+                                         const std::vector<int64>& durations,
+                                         const std::vector<IntVar*>& performed_variables,
+                                         const std::string& name,
+                                         std::vector<IntervalVar*>* const array);
+
+  // This method fills the vector with interval variables built with
+  // the corresponding start and performed variables.
+  void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
+                                         const std::vector<int>& durations,
+                                         const std::vector<IntVar*>& performed_variables,
                                          const std::string& name,
                                          std::vector<IntervalVar*>* const array);
 
