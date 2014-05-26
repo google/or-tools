@@ -636,12 +636,12 @@ class RankedPropagator : public Constraint {
   RankedPropagator(Solver* const solver, const std::vector<IntVar*>& nexts,
                    const std::vector<IntervalVar*>& intervals,
                    const std::vector<IntVar*>& slacks,
-                   Solver::IndexEvaluator2* const transition_time)
+                   DisjunctiveConstraint* const disjunctive)
       : Constraint(solver),
         nexts_(nexts),
         intervals_(intervals),
         slacks_(slacks),
-        transition_time_(transition_time),
+        disjunctive_(disjunctive),
         partial_sequence_(intervals.size()),
         previous_(intervals.size() + 2, 0) {}
 
@@ -818,9 +818,7 @@ class RankedPropagator : public Constraint {
     const int before_index = partial_sequence_[before];
     const int after_index = partial_sequence_[after];
 
-    return transition_time_ != nullptr
-               ? transition_time_->Run(before_index, after_index)
-               : 0;
+    return disjunctive_->TransitionTime(before_index, after_index);
   }
 
   virtual std::string DebugString() const {
@@ -840,7 +838,7 @@ class RankedPropagator : public Constraint {
   std::vector<IntVar*> nexts_;
   std::vector<IntervalVar*> intervals_;
   std::vector<IntVar*> slacks_;
-  Solver::IndexEvaluator2* const transition_time_;
+  DisjunctiveConstraint* const disjunctive_;
   RevPartialSequence partial_sequence_;
   std::vector<int> previous_;
 };
@@ -999,7 +997,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
     std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
     s->AddConstraint(s->RevAlloc(new RankedPropagator(
-        s, nexts_, intervals_, short_slacks, transition_time_.get())));
+        s, nexts_, intervals_, short_slacks, this)));
   }
 
   SequenceVar* sequence_var_;

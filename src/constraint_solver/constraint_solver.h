@@ -5081,11 +5081,17 @@ class DisjunctiveConstraint : public Constraint {
   // least transit_evaluator->Run(a, b). This evaluator must always returns
   // a positive or null value.
   // This method takes ownership of the evaluator.
-  virtual void SetTransitionTime(Solver::IndexEvaluator2* transit_evaluator) {
+  void SetTransitionTime(Solver::IndexEvaluator2* transit_evaluator) {
     transition_time_.reset(transit_evaluator);
     if (transition_time_.get() != nullptr) {
       transition_time_->CheckIsRepeatable();
     }
+  }
+
+  int64 TransitionTime(int before_index, int after_index) {
+    return transition_time_ != nullptr
+        ? transition_time_->Run(before_index, after_index)
+        : 0;
   }
 
 #if !defined(SWIG)
