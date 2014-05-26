@@ -1132,6 +1132,19 @@ bool FzPresolver::Run(FzModel* model) {
   FirstPassModelScan(model);
 
   bool changed_since_start = false;
+  // Let's presolve the bool2int predicates first.
+  for (FzConstraint* const ct : model->constraints()) {
+    if (ct->active && ct->type == "bool2int") {
+      changed_since_start |= PresolveBool2Int(ct);
+    }
+  }
+  if (!var_representative_map_.empty()) {
+    // Some new substitutions were introduced. Let's process them.
+    SubstituteEverywhere(model);
+    var_representative_map_.clear();
+  }
+
+  // Apply the rest of the presolve rules.
   for (;;) {
     bool changed = false;
     var_representative_map_.clear();

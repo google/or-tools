@@ -1550,7 +1550,6 @@ string StartVarIntervalVar::DebugString() const {
   }
 }
 
-
 // ----- FixedInterval -----
 
 class FixedInterval : public IntervalVar {
