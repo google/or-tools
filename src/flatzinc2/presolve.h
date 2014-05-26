@@ -124,6 +124,7 @@ class FzPresolver {
   bool SimplifyUnaryLinear(FzConstraint* ct);
   bool CheckIntLinReifBounds(FzConstraint* ct);
   bool CreateLinearTarget(FzConstraint* ct);
+  bool PresolveBoolNot(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);

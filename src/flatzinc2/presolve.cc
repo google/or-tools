@@ -114,13 +114,13 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
   if (ct->Arg(0).IsVariable() && ct->Arg(1).HasOneValue()) {
     FzIntegerVariable* const var = ct->Arg(0).Var();
     const int64 value = ct->Arg(1).Value();
-    if (id == "int_le") {
+    if (id == "int_le" || id == "bool_le") {
       var->domain.IntersectWithInterval(kint64min, value);
-    } else if (id == "int_lt") {
+    } else if (id == "int_lt" || id == "bool_lt") {
       var->domain.IntersectWithInterval(kint64min, value - 1);
-    } else if (id == "int_ge") {
+    } else if (id == "int_ge" || id == "bool_ge") {
       var->domain.IntersectWithInterval(value, kint64max);
-    } else if (id == "int_gt") {
+    } else if (id == "int_gt" || id == "bool_gt") {
       var->domain.IntersectWithInterval(value + 1, kint64max);
     }
     ct->MarkAsInactive();
@@ -128,13 +128,13 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
   } else if (ct->Arg(0).HasOneValue() && ct->Arg(1).IsVariable()) {
     FzIntegerVariable* const var = ct->Arg(1).Var();
     const int64 value = ct->Arg(0).Value();
-    if (id == "int_le") {
+    if (id == "int_le" || id == "bool_le") {
       var->domain.IntersectWithInterval(value, kint64max);
-    } else if (id == "int_lt") {
+    } else if (id == "int_lt" || id == "bool_lt") {
       var->domain.IntersectWithInterval(value + 1, kint64max);
-    } else if (id == "int_ge") {
+    } else if (id == "int_ge" || id == "bool_ge") {
       var->domain.IntersectWithInterval(kint64min, value);
-    } else if (id == "int_gt") {
+    } else if (id == "int_gt" || id == "bool_gt") {
       var->domain.IntersectWithInterval(kint64min, value - 1);
     }
     ct->MarkAsInactive();
@@ -147,19 +147,19 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
   const int64 right_min = right->Min();
   const int64 right_max = right->Max();
   bool modified = false;
-  if (id == "int_le") {
+  if (id == "int_le" || id == "bool_le") {
     left->domain.IntersectWithInterval(kint64min, right_max);
     right->domain.IntersectWithInterval(left_min, kint64max);
     modified = left_max > right_max || right_min < left_min;
-  } else if (id == "int_lt") {
+  } else if (id == "int_lt" || id == "bool_gt") {
     left->domain.IntersectWithInterval(kint64min, right_max - 1);
     right->domain.IntersectWithInterval(left_min + 1, kint64max);
     modified = left_max >= right_max || right_min <= left_min;
-  } else if (id == "int_ge") {
+  } else if (id == "int_ge" || id == "bool_ge") {
     left->domain.IntersectWithInterval(right_min, kint64max);
     right->domain.IntersectWithInterval(kint64min, left_max);
     modified = right_max > left_max || left_min < right_min;
-  } else if (id == "int_gt") {
+  } else if (id == "int_gt" || id == "bool_gt") {
     left->domain.IntersectWithInterval(right_min + 1, kint64max);
     right->domain.IntersectWithInterval(kint64min, left_max - 1);
     modified = right_max >= left_max || left_min <= right_min;
@@ -998,6 +998,25 @@ bool FzPresolver::RemoveAbsFromIntLinReif(FzConstraint* ct) {
   }
 }
 
+bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
+  if (ct->target_variable == nullptr &&
+      ct->Arg(0).Var()->defining_constraint == nullptr) {
+    FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
+    FzIntegerVariable* const var = ct->Arg(0).Var();
+    ct->target_variable = var;
+    var->defining_constraint = ct;
+    return true;
+  } else if (ct->target_variable == nullptr &&
+             ct->Arg(1).Var()->defining_constraint == nullptr) {
+    FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
+    FzIntegerVariable* const var = ct->Arg(1).Var();
+    ct->target_variable = var;
+    var->defining_constraint = ct;
+    return true;
+  }
+  return false;
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -1009,7 +1028,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     changed = true;
   }
   if (id == "bool2int") changed |= PresolveBool2Int(ct);
-  if (id == "int_le" || id == "int_lt" || id == "int_ge" || id == "int_gt") {
+  if (id == "int_le" || id == "int_lt" || id == "int_ge" || id == "int_gt" ||
+      id == "bool_le" || id == "bool_lt" || id == "bool_ge" ||
+      id == "bool_gt") {
     changed |= PresolveInequalities(ct);
   }
   if (id == "int_abs" && !ContainsKey(abs_map_, ct->Arg(1).Var())) {
@@ -1036,6 +1057,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "array_bool_or") changed |= PresolveArrayBoolOr(ct);
   if (id == "bool_eq_reif" || id == "bool_ne_reif") {
     changed |= PresolveBoolEqNeReif(ct);
+  }
+  if (id == "bool_not") {
+    changed |= PresolveBoolNot(ct);
   }
   if (id == "int_div") changed |= PresolveIntDiv(ct);
   if (id == "int_times") changed |= PresolveIntTimes(ct);
