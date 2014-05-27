@@ -238,7 +238,9 @@ bool FzSolver::Extract() {
     if (!ctio->required.empty()) {
       // Recovery.
       FzIntegerVariable* fz_var = nullptr;
-      if(ctio->ct->target_variable != nullptr) {
+      if (ctio->required.size() == 1) {
+        fz_var = *ctio->required.begin();  // Pick the only one.
+      } else if (ctio->ct->target_variable != nullptr) {
         // We prefer to remove the target variable of the constraint.
         fz_var = ctio->ct->target_variable;
       } else {
