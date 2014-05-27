@@ -425,6 +425,7 @@ var_or_value:
     *ok = false;
   }
 }
+
 int_domain:
   BOOL { $$ = FzDomain::Interval(0, 1); }
 | INT { $$ = FzDomain::AllInt64(); }
@@ -472,9 +473,9 @@ const_literal:
 
 const_literals:
   const_literals ',' const_literal {
-    $$.clear();
-    $$.swap($1);
-    $$.push_back($3);
+  $$.clear();
+  $$.swap($1);
+  $$.push_back($3);
 }
 | const_literal { $$.clear(); $$.push_back($1); }
 
@@ -566,46 +567,31 @@ argument:
     }
   }
 }
-| '[' arguments ']' {
-  const std::vector<FzArgument>& arguments = $2;
-  // Infer the type of the array from a quick scan of its
-  // elements. All the elements should have the same type anyway,
-  // except INT_VALUE which can be mixed with INT_VAR_REF.
-  FzArgument::Type type = FzArgument::INT_VALUE;
+| '[' var_or_value_array ']' {
+  const std::vector<VariableRefOrValue>& arguments = $2;
+  bool has_variables = false;
   for (int i = 0; i < arguments.size(); ++i) {
-    if (arguments[i].type != FzArgument::INT_VALUE) {
-      type = arguments[i].type;
+    if (arguments[i].variable != nullptr) {
+      has_variables = true;
       break;
     }
   }
-  switch (type) {
-    case FzArgument::INT_VALUE: {
-      std::vector<int64> values(arguments.size());
-      for (int i = 0; i < arguments.size(); ++i) {
-        CHECK_EQ(FzArgument::INT_VALUE, arguments[i].type);
-        values[i] = arguments[i].Value();
+  if (has_variables) {
+    $$ = FzArgument::IntVarRefArray(std::vector<FzIntegerVariable*>());
+    $$.variables.reserve($2.size());
+    for (const VariableRefOrValue& arg : arguments) {
+      if (arg.variable != nullptr) {
+         $$.variables.push_back(arg.variable);
+      } else {
+         $$.variables.push_back(FzIntegerVariable::Constant(arg.value));
       }
-      $$ = FzArgument::IntegerList(values);
-      break;
     }
-    case FzArgument::INT_VAR_REF: {
-      std::vector<FzIntegerVariable*> vars(arguments.size());
-      for (int i = 0; i < arguments.size(); ++i) {
-        if (arguments[i].type == FzArgument::INT_VAR_REF) {
-           CHECK(arguments[i].variables[0] != nullptr);
-           vars[i] = arguments[i].variables[0];
-        } else if (FzArgument::INT_VALUE == arguments[i].type) {
-           vars[i] = FzIntegerVariable::Constant(arguments[i].Value());
-        } else {
-          LOG(FATAL) << "Unsupported parameter type: " << type;
-        }
-      }
-      $$ = FzArgument::IntVarRefArray(vars);
-      break;
-    }
-    default: {
-      LOG(FATAL) << "Unsupported array type " << type << ". Array: "
-                 << JoinDebugString(arguments, ", ");
+  } else {
+    $$ = FzArgument::IntegerList(std::vector<int64>());
+    $$.values.reserve($2.size());
+    for (const VariableRefOrValue& arg : arguments) {
+      DCHECK(arg.variable == nullptr);
+      $$.values.push_back(arg.value);
     }
   }
 }
