@@ -2631,6 +2631,7 @@ class SubCstIntVar : public IntVar {
   virtual int64 OldMin() const { return CapSub(cst_, var_->OldMax()); }
   virtual int64 OldMax() const { return CapSub(cst_, var_->OldMin()); }
   virtual std::string DebugString() const;
+  virtual std::string name() const;
   virtual int VarType() const { return CST_SUB_VAR; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -2709,6 +2710,19 @@ std::string SubCstIntVar::DebugString() const {
                         var_->DebugString().c_str());
   }
 }
+
+std::string SubCstIntVar::name() const {
+  if (solver()->HasName(this)) {
+    return PropagationBaseObject::name();
+  } else if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
+    return StringPrintf("Not(%s)", var_->name().c_str());
+  } else {
+    return StringPrintf("(%" GG_LL_FORMAT "d - %s)", cst_,
+                        var_->name().c_str());
+  }
+}
+
+
 
 // -x variable, optimized case
 
