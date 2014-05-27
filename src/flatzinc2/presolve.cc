@@ -529,56 +529,6 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
     ct->target_variable = var;
     return true;
   }
-
-  // Recognizes patterns.
-  int positives = 0;
-  int ones = 0;
-  int one_index = -1;
-  int negatives = 0;
-  int minus_ones = 0;
-  int minus_one_index = -1;
-  int nulls = 0;
-  const int size = ct->Arg(0).values.size();
-  for (int i = 0; i < size; ++i) {
-    const int64 value = ct->Arg(0).values[i];
-    if (value > 0) {
-      positives++;
-      if (value == 1) {
-        ones++;
-        one_index = i;
-      }
-    } else if (value == 0) {
-      nulls++;
-    } else {
-      negatives++;
-      if (value == -1) {
-        minus_ones++;
-        minus_one_index = i;
-      }
-    }
-  }
-  int candidate = -1;
-  if (ones == 1 && negatives == size - 1) {
-    candidate = one_index;
-  } else if (minus_ones == 1 && positives == size - 1) {
-    candidate = minus_one_index;
-  }
-  if (candidate != -1 && ct->target_variable == nullptr &&
-      ct->Arg(1).variables[candidate]->defining_constraint == nullptr) {
-    FZVLOG << "Create target variable for " << ct->DebugString()
-           << " at position " << candidate << FZENDL;
-    FzIntegerVariable* const var = ct->Arg(1).variables[candidate];
-    var->defining_constraint = ct;
-    ct->target_variable = var;
-    if (ct->Arg(0).values[candidate] == 1) {
-      FZVLOG << "  - multiply constraint by -1" << FZENDL;
-      for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
-        ct->MutableArg(0)->values[i] *= -1;
-      }
-      ct->MutableArg(2)->values[0] *= -1;
-    }
-    return true;
-  }
   return false;
 }
 
