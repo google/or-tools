@@ -23,6 +23,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/threadpool.h"
+#include "base/timer.h"
 #include "flatzinc2/model.h"
 #include "flatzinc2/parser.h"
 #include "flatzinc2/presolve.h"
@@ -52,6 +53,8 @@ using operations_research::ThreadPool;
 namespace operations_research {
 void Run(const std::string& filename, const FzSolverParameters& parameters,
          FzParallelSupportInterface* parallel_support) {
+  WallTimer timer;
+  timer.Start();
   std::string problem_name(filename);
   problem_name.resize(problem_name.size() - 4);
   size_t found = problem_name.find_last_of("/\\");
@@ -60,10 +63,16 @@ void Run(const std::string& filename, const FzSolverParameters& parameters,
   }
   FzModel model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
+  FZLOG << "File " << filename << " parsed in " << timer.GetInMs() << " ms"
+        << FZENDL;
   FzPresolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
   if (FLAGS_presolve) {
+    FZLOG << "Presolve model" << FZENDL;
+    timer.Reset();
+    timer.Start();
     presolve.Run(&model);
+    FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }
   FzModelStatistics stats(model);
   stats.PrintStatistics();

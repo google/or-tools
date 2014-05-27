@@ -229,7 +229,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
   FZLOG << "  - using search annotations" << std::endl;
   hash_set<IntVar*> added;
   for (const FzAnnotation& ann : flat_annotations) {
-    FZVLOG << "Parse " << ann.DebugString() << FZENDL;
+    FZLOG << "  - parse " << ann.DebugString() << FZENDL;
     if (ann.IsFunctionCallWithIdentifier("int_search")) {
       const std::vector<FzAnnotation>& args = ann.annotations;
       const FzAnnotation& vars = args[0];
@@ -498,7 +498,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
   AddCompletionDecisionBuilders(defined_variables, active_variables, &builders);
   // Reporting
   for (DecisionBuilder* const db : builders) {
-    FZLOG << "  - adding decision builder = " << db->DebugString() << FZENDL;
+    FZVLOG << "  - adding decision builder = " << db->DebugString() << FZENDL;
   }
   return solver()->Compose(builders);
 }
