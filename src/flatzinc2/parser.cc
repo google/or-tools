@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <cstdio>
+#include "base/file.h"
+#include "base/timer.h"
 #include "flatzinc2/parser.h"
 #include "flatzinc2/parser.tab.hh"
 
@@ -28,6 +30,8 @@ extern yy_buffer_state* orfz__scan_bytes(const char* input, size_t size,
                                          void* scanner);
 extern void orfz__delete_buffer(yy_buffer_state* b, void* scanner);
 
+DECLARE_bool(fz_verbose);
+
 namespace operations_research {
 // ----- public parsing API -----
 
@@ -38,6 +42,8 @@ bool ParseFlatzincFile(const std::string& filename, FzModel* const model) {
     LOG(INFO) << "Could not open file " << filename;
     return false;
   }
+  WallTimer timer;
+  timer.Start();
   FzParserContext context;
   bool ok = true;
   void* scanner = nullptr;
@@ -50,6 +56,8 @@ bool ParseFlatzincFile(const std::string& filename, FzModel* const model) {
     orfz_lex_destroy(scanner);
   }
   fclose(input);
+  FZVLOG << "Model " << filename << " parsed in " << timer.GetInMs() << " ms"
+         << FZENDL;
   return ok;
 }
 
