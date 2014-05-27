@@ -235,6 +235,25 @@ bool FzSolver::Extract() {
       std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
     }
     ConstraintWithIo* const ctio = to_sort.back();
+    if (!ctio->required.empty()) {
+      // Recovery.
+      FzIntegerVariable* fz_var = nullptr;
+      if(ctio->ct->target_variable != nullptr) {
+        // We prefer to remove the target variable of the constraint.
+        fz_var = ctio->ct->target_variable;
+      } else {
+        fz_var = *ctio->required.begin();  // Pick one.
+      }
+      ctio->ct->target_variable = nullptr;
+      fz_var->defining_constraint = nullptr;
+      if (fz_var != nullptr && ContainsKey(dependencies, fz_var)) {
+        FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
+        for (ConstraintWithIo* const to_clean : dependencies[fz_var]) {
+          to_clean->required.erase(fz_var);
+        }
+      }
+      continue;
+    }
     to_sort.pop_back();
     FZDLOG << "Pop " << ctio->ct->DebugString() << FZENDL;
     CHECK(ctio->required.empty());
