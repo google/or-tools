@@ -1186,10 +1186,10 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
       std::vector<IntVar*> variables;
       int64 constant = 0;
       for (int i = 0; i < size; ++i) {
-        if (fzvars[i]->domain.IsSingleton()) {
-          constant += coefficients[i] * fzvars[i]->Min();
-        } else if (fzvars[i] == ct->target_variable) {
+         if (fzvars[i] == ct->target_variable) {
           CHECK_EQ(-1, coefficients[i]);
+        } else if (fzvars[i]->domain.IsSingleton()) {
+          constant += coefficients[i] * fzvars[i]->Min();
         } else {
           const int64 coef = coefficients[i];
           IntVar* const var = fzsolver->Extract(fzvars[i])->Var();
