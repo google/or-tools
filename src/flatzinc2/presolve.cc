@@ -577,7 +577,6 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
       }
       ct->MutableArg(2)->values[0] *= -1;
     }
-    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
