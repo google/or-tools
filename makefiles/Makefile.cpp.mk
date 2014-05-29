@@ -810,7 +810,8 @@ BASE_LIB_OBJS=\
 	$(OBJ_DIR)/base/stringprintf.$O\
 	$(OBJ_DIR)/base/sysinfo.$O\
 	$(OBJ_DIR)/base/threadpool.$O\
-	$(OBJ_DIR)/base/timer.$O
+	$(OBJ_DIR)/base/timer.$O \
+  $(OBJ_DIR)/base/time_support.$O
 
 $(OBJ_DIR)/base/bitmap.$O:$(SRC_DIR)/base/bitmap.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/bitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sbitmap.$O
@@ -844,6 +845,8 @@ $(OBJ_DIR)/base/sysinfo.$O:$(SRC_DIR)/base/sysinfo.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/sysinfo.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Ssysinfo.$O
 $(OBJ_DIR)/base/timer.$O:$(SRC_DIR)/base/timer.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stimer.$O
+$(OBJ_DIR)/base/time_support.$O:$(SRC_DIR)/base/time_support.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/time_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stime_support.$O
 
 $(LIB_DIR)/$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX): $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX) $(BASE_LIB_OBJS)
