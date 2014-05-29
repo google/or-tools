@@ -67,8 +67,8 @@ class RunningMax {
 // small, without aborting too early.
 class TimeLimit {
  public:
-  static constexpr double kSafetyBufferSeconds = 1e-4;
-  static constexpr int kHistorySize = 100;
+  static const double kSafetyBufferSeconds;
+  static const int kHistorySize;
 
   // Takes the wanted time limit in seconds (relative to "now", and based on the
   // wall time). If limit_in_seconds is infinity, then LimitReached() will

@@ -65,6 +65,9 @@ double RunningMax::GetCurrentMax() {
   return values_[max_index_];
 }
 
+const double TimeLimit::kSafetyBufferSeconds = 1e-4;
+const int TimeLimit::kHistorySize = 100;
+
 TimeLimit::TimeLimit(double limit_in_seconds)
     : timer_(), last_(0.0), limit_(0.0), running_max_(kValues) {
   timer_.Start();

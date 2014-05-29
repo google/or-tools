@@ -2406,7 +2406,7 @@ inline int64 MaxVarArray(const std::vector<IntVar*>& vars) {
   DCHECK(!vars.empty());
   int64 result = kint64min;
   for (int i = 0; i < vars.size(); ++i) {
-    result = std::max(result, vars[i]->Max());
+    result = std::max<int64>(result, vars[i]->Max());
   }
   return result;
 }
@@ -2415,7 +2415,7 @@ inline int64 MinVarArray(const std::vector<IntVar*>& vars) {
   DCHECK(!vars.empty());
   int64 result = kint64max;
   for (int i = 0; i < vars.size(); ++i) {
-    result = std::min(result, vars[i]->Min());
+    result = std::min<int64>(result, vars[i]->Min());
   }
   return result;
 }
