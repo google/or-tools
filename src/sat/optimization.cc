@@ -295,7 +295,7 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
 
     const SatSolver::Status result = solver->Solve();
     if (result == SatSolver::MODEL_UNSAT) return SatSolver::MODEL_UNSAT;
-    if (result == SatSolver::SatSolver::LIMIT_REACHED) {
+    if (result == SatSolver::LIMIT_REACHED) {
       parameters.set_max_number_of_conflicts(
           static_cast<int64>(1.1 * parameters.max_number_of_conflicts()));
       if (time_limit.LimitReached()) return SatSolver::LIMIT_REACHED;
@@ -325,7 +325,7 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
   parameters = initial_parameters;
   parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());
   solver->SetParameters(parameters);
-  return SatSolver::SatSolver::LIMIT_REACHED;
+  return SatSolver::LIMIT_REACHED;
 }
 
 SatSolver::Status SolveWithLinearScan(const LinearBooleanProblem& problem,
@@ -359,7 +359,7 @@ SatSolver::Status SolveWithLinearScan(const LinearBooleanProblem& problem,
       if (objective == kCoefficientMax) return SatSolver::MODEL_UNSAT;
       return SatSolver::MODEL_SAT;
     }
-    if (result == SatSolver::SatSolver::LIMIT_REACHED) {
+    if (result == SatSolver::LIMIT_REACHED) {
       return SatSolver::LIMIT_REACHED;
     }
 
