@@ -3869,10 +3869,10 @@ class InitAndGetValues {
   struct Iterator {
     // These are the only way to construct an Iterator.
     static Iterator Begin(IntVarIterator* it) {
-      return {it, /*is_end=*/false};
+      return Iterator(it, /*is_end=*/false);
     }
     static Iterator End(IntVarIterator* it) {
-      return {it, /*is_end=*/true};
+      return Iterator(it, /*is_end=*/true);
     }
 
     int64 operator*() const {

@@ -51,6 +51,7 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
+#include <algorithm>
 #include <math.h>
 #include <stddef.h>
 #include "base/hash.h"
