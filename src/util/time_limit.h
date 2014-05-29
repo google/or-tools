@@ -13,6 +13,7 @@
 #ifndef OR_TOOLS_UTIL_TIME_LIMIT_H_
 #define OR_TOOLS_UTIL_TIME_LIMIT_H_
 
+#include <algorithm>
 #include <cstdlib>
 #include <limits>
 #include <vector>
