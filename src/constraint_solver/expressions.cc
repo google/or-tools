@@ -7278,7 +7278,9 @@ void IntVar::SetValues(const std::vector<int64>& values) {
           const int64 l = std::min(values[0], values[1]);
           const int64 u = std::max(values[0], values[1]);
           SetRange(l, u);
-          RemoveInterval(l + 1, u - 1);
+          if (u > l + 1) {
+            RemoveInterval(l + 1, u - 1);
+          }
         } else {
           SetValue(values[0]);
         }
