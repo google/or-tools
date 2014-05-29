@@ -57,7 +57,11 @@ bool safe_strtod(const std::string& str, double* value) {
 bool safe_strto64(const std::string& str, int64* value) {
   if (str.empty()) return false;
   char* endptr;
+#if defined(_MSV_VER) 
+  *value = _strtoll(str.c_str(), &endptr, /*base=*/10);  // NOLINT
+#else
   *value = strtoll(str.c_str(), &endptr, /*base=*/10);  // NOLINT
+#endif
   return *endptr == '\0' && str[0] != '\0';
 }
 }  // namespace operations_research
