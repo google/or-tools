@@ -114,8 +114,8 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
         values.push_back(v);
       }
     }
-    if (values.back() - values.front() == values.size() + 1 &&
-        values.size() > 2) {
+    if (values.back() - values.front() == values.size() - 1 &&
+        values.size() >= 2) {
       // Contiguous case.
       const int64 last = values.back();
       values.resize(2);
