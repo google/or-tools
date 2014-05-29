@@ -974,7 +974,19 @@ bool FzPresolver::RemoveAbsFromIntLinReif(FzConstraint* ct) {
 }
 
 bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
-  if (ct->target_variable == nullptr &&
+  if (ct->Arg(0).HasOneValue() && ct->Arg(1).IsVariable()) {
+    const int64 value = ct->Arg(0).Value() == 0;
+    FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+    ct->Arg(1).Var()->domain.IntersectWithInterval(value, value);
+    ct->MarkAsInactive();
+    return true;
+  } else if (ct->Arg(1).HasOneValue() && ct->Arg(0).IsVariable()) {
+    const int64 value = ct->Arg(1).Value() == 0;
+    FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+    ct->Arg(0).Var()->domain.IntersectWithInterval(value, value);
+    ct->MarkAsInactive();
+    return true;
+  } else if (ct->target_variable == nullptr &&
       ct->Arg(0).Var()->defining_constraint == nullptr) {
     FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
     FzIntegerVariable* const var = ct->Arg(0).Var();
