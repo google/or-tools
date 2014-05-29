@@ -116,10 +116,12 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
     }
     if (values.back() - values.front() == values.size() - 1 &&
         values.size() >= 2) {
-      // Contiguous case.
-      const int64 last = values.back();
-      values.resize(2);
-      values[1] = last;
+      if (values.size() > 2) {
+        // Contiguous case.
+        const int64 last = values.back();
+        values.resize(2);
+        values[1] = last;
+      }
     } else {
       is_interval = false;
     }
