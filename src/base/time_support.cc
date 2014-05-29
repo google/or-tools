@@ -11,11 +11,8 @@
 #include <ctime>
 
 namespace operations_research {
-
-// ############## Inline implementations below ###############
-
 namespace base {
-inline int64 GetCurrentTimeNanos() {
+int64 GetCurrentTimeNanos() {
 #if defined(_MSC_VER)
   const int64 kSecInNanoSeconds = 1000000000LL;
   LARGE_INTEGER now;
