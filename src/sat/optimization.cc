@@ -93,7 +93,7 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
     // We want to minimize the cost when this literal is true.
     const Literal min_literal =
         unique_objective_coeff > 0 ? literal.Negated() : literal;
-    blocking_clauses.push_back({min_literal});
+    blocking_clauses.push_back(std::vector<Literal>(1, min_literal));
 
     // Note that initialy, we do not create any extra variables.
     assumptions.push_back(min_literal);
@@ -200,17 +200,33 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
         } else {
           // a false & b false => previous assumptions (which was false).
           const Literal old_a = assumptions[index];
-          ok &= solver->AddProblemClause({a, b, old_a});
+	  std::vector<Literal> vec;
+	  vec.push_back(a);
+	  vec.push_back(b);
+	  vec.push_back(old_a);
+          ok &= solver->AddProblemClause(vec);
 
           // Also add the two implications a => x and b => x where x is the
           // negation of the previous assumption variable.
-          ok &= solver->AddProblemClause({a.Negated(), old_a.Negated()});
-          ok &= solver->AddProblemClause({b.Negated(), old_a.Negated()});
+	  vec.clear();
+	  vec.push_back(a.Negated());
+	  vec.push_back(old_a.Negated());
+          ok &= solver->AddProblemClause(vec);
+	  vec.clear();
+	  vec.push_back(b.Negated());
+	  vec.push_back(old_a.Negated());
+          ok &= solver->AddProblemClause(vec);
 
           // TODO(user): Also add the exclusion between a and b?
           if (false) {
-            ok &= solver->AddProblemClause({a.Negated(), b.Negated()});
-            ok &= solver->AddProblemClause({b.Negated(), a.Negated()});
+	    vec.clear();
+	    vec.push_back(a.Negated());
+	    vec.push_back(b.Negated());
+            ok &= solver->AddProblemClause(vec);
+	    vec.clear();
+	    vec.push_back(b.Negated());
+	    vec.push_back(a.Negated());
+            ok &= solver->AddProblemClause(vec);
           }
         }
 
@@ -256,7 +272,12 @@ void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
 
   // Other random parameters.
   parameters->set_use_phase_saving(random->OneIn(2));
-  const std::vector<double> ratios = {0.0, 0.0, 0.0, 0.01, 1.0};
+  std::vector<double> ratios;
+  ratios.push_back(0.0);
+  ratios.push_back(0.0);
+  ratios.push_back(0.0);
+  ratios.push_back(0.01);
+  ratios.push_back(1.0);
   parameters->set_random_polarity_ratio(ratios[random->Uniform(ratios.size())]);
 
   // IMPORTANT: SetParameters() will reinitialize the seed, so we must change
