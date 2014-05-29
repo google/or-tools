@@ -97,6 +97,7 @@ void BooleanVar::RemoveValue(int64 v) {
 }
 
 void BooleanVar::RemoveInterval(int64 l, int64 u) {
+  if (u < l) return;
   if (l <= 0 && u >= 1) {
     solver()->Fail();
   } else if (l == 1) {
