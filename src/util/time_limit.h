@@ -27,7 +27,7 @@ namespace operations_research {
 
 // Simple class to compute efficiently the maximum over a fixed size window
 // of a numeric stream. This works in constant average amortized time.
-template <class Number = double>
+template <class Number>
 class RunningMax {
  public:
   // Takes the size of the running window. The size must be positive.
