@@ -648,6 +648,7 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/graph_export.$O \
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
 	$(OBJ_DIR)/util/stats.$O \
+	$(OBJ_DIR)/util/time_limit.$O \
 	$(OBJ_DIR)/util/xml_helper.$O
 
 $(OBJ_DIR)/util/bitset.$O:$(SRC_DIR)/util/bitset.cc
@@ -664,6 +665,9 @@ $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_fu
 
 $(OBJ_DIR)/util/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
+
+$(OBJ_DIR)/util/time_limit.$O:$(SRC_DIR)/util/time_limit.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/time_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Stime_limit.$O
 
 $(OBJ_DIR)/util/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
@@ -811,7 +815,7 @@ BASE_LIB_OBJS=\
 	$(OBJ_DIR)/base/sysinfo.$O\
 	$(OBJ_DIR)/base/threadpool.$O\
 	$(OBJ_DIR)/base/timer.$O \
-  $(OBJ_DIR)/base/time_support.$O
+	$(OBJ_DIR)/base/time_support.$O
 
 $(OBJ_DIR)/base/bitmap.$O:$(SRC_DIR)/base/bitmap.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/bitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sbitmap.$O
