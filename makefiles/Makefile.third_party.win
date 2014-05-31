@@ -7,6 +7,7 @@ CBC_TAG = 2.8.7
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
 SWIG_TAG = 2.0.11
+BISON_FLEX_TAG = 2.5.2
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.53.tar.gz
@@ -307,6 +308,18 @@ ifeq ("$(VisualStudioVersion)", "12.0")
 	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
 	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
 endif
+
+# Install bison and flex in one package.
+install_bison: dependencies\install\bin\win_bison.exe
+
+dependencies\install\bin\win_flex.exe: dependencies\install\bin\win_bison.exe
+
+dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\unzip -d dependencies/install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\touch.exe dependencies\install\bin/win_bison.exe
+
+dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
+	tools\wget -P dependencies\archives http://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
 
 # Clean everything.
 clean_third_party:

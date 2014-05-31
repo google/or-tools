@@ -35,8 +35,8 @@ MKDIR = md
 COPY = copy
 TOUCH = tools\touch.exe
 SED = tools\sed.exe
-BISON = tools\bison.exe
-FLEX = tools\flex.exe
+BISON = dependencies\install\bin\win_bison.exe
+FLEX = dependencies\install\bin\win_flex.exe
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG

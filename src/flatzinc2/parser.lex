@@ -13,6 +13,11 @@
 #include "base/strtoint.h"
 #include "flatzinc2/parser.tab.hh"
 using operations_research::atoi64;
+#if defined(_MSC_VER)
+#define YY_NO_UNISTD_H
+#include "io.h"
+#define isatty _isatty
+#endif
 %}
 
 /* Rules that parse the bottom-line string tokens of a .fz file and

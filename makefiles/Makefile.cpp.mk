@@ -900,10 +900,10 @@ FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/flatzinc/parser.$O\
 	$(OBJ_DIR)/flatzinc/registry.$O
 
-$(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.lex
+$(GEN_DIR)/flatzinc/flatzinc.yy.cc: $(SRC_DIR)/flatzinc/flatzinc.lex $(FLEX)
 	$(FLEX) -o$(GEN_DIR)/flatzinc/flatzinc.yy.cc $(SRC_DIR)/flatzinc/flatzinc.lex
 
-$(GEN_DIR)/flatzinc/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy
+$(GEN_DIR)/flatzinc/flatzinc.tab.cc: $(SRC_DIR)/flatzinc/flatzinc.yy $(BISON)
 	$(BISON) -t -o $(GEN_DIR)/flatzinc/flatzinc.tab.cc -d $<
 
 $(GEN_DIR)/flatzinc/flatzinc.tab.hh: $(GEN_DIR)/flatzinc/flatzinc.tab.cc
