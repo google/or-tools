@@ -685,7 +685,8 @@ class DomainIntVar : public IntVar {
     virtual ~DenseValueWatcher() {}
 
     virtual IntVar* GetOrMakeValueWatcher(int64 value) {
-      if (value < offset_ || value >= offset_ + watchers_.size()) {
+      const int64 var_max = offset_ + watchers_.size() - 1;  // Bad cast.
+      if (value < offset_ || value > var_max) {
         return solver()->MakeIntConst(0);
       }
       const int index = value - offset_;
