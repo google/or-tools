@@ -10,9 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#include "flatzinc2/presolve.h"
+
+#include <algorithm>
+
 #include "base/map_util.h"
 #include "base/strutil.h"
-#include "flatzinc2/presolve.h"
 
 DECLARE_bool(logging);
 DECLARE_bool(fz_verbose);
@@ -534,6 +537,32 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
 
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
+  if (!ct->Arg(0).HasOneValue()) {
+    const int64 target_min =
+        ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Min();
+    const int64 target_max =
+        ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Max();
+
+    int64 current_index = ct->Arg(1).values.size();
+    current_index = std::min(ct->Arg(0).Var()->Max(), current_index);
+
+    while (current_index >= 1) {
+      const int64 value = ct->Arg(1).values[current_index - 1];
+      if (value < target_min || value > target_max) {
+        current_index--;
+      } else {
+        break;
+      }
+    }
+    if (current_index < ct->Arg(0).Var()->Max()) {
+      FZVLOG << "Filter index of " << ct->DebugString() << " to [1 .. "
+             << current_index << "]" << FZENDL;
+      ct->Arg(0).Var()->domain.IntersectWithInterval(1, current_index);
+      FZVLOG << "  - reduce array to size " << current_index << FZENDL;
+      ct->MutableArg(1)->values.resize(current_index);
+      return true;
+    }
+  }
   if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
     IntersectDomainWithIntArgument(&ct->Arg(2).Var()->domain, ct->Arg(1));
@@ -709,6 +738,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     // Rewrite constraint.
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     ct->MutableArg(0)->variables[0] = mapping.variable;
+    ct->Arg(0).variables[0]->domain.IntersectWithInterval(1, new_values.size());
     // TODO(user): Encapsulate argument setters.
     ct->MutableArg(1)->values.swap(new_values);
     if (ct->Arg(1).values.size() == 1) {
