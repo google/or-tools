@@ -319,8 +319,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(
-        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
+    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
+                            ->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -568,9 +568,9 @@ bool IsHiddenPerformed(FzSolver* fzsolver,
 }
 
 void ExtractPerformedAndDemands(Solver* const solver,
-  const std::vector<IntVar*>& vars,
-  std::vector<IntVar*>* performed,
-  std::vector<int64>* demands) {
+                                const std::vector<IntVar*>& vars,
+                                std::vector<IntVar*>* performed,
+                                std::vector<int64>* demands) {
   performed->clear();
   demands->clear();
   for (IntVar* const var : vars) {
@@ -623,12 +623,11 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
     std::vector<IntVar*> performed_variables;
     std::vector<int64> fixed_demands;
-    ExtractPerformedAndDemands(
-      solver, demands, &performed_variables, &fixed_demands);
+    ExtractPerformedAndDemands(solver, demands, &performed_variables,
+                               &fixed_demands);
     std::vector<IntervalVar*> intervals;
-    solver->MakeFixedDurationIntervalVarArray(start_variables, durations,
-                                              performed_variables, "",
-                                              &intervals);
+    solver->MakeFixedDurationIntervalVarArray(
+        start_variables, durations, performed_variables, "", &intervals);
     const int64 capacity = ct->Arg(3).Value();
     if (IsArrayBoolean(fixed_demands) && capacity == 1) {  // Disjunctive.
       Constraint* const constraint =
@@ -641,7 +640,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
     }
   } else {
     // Everything is variable.
-    const std::vector<IntVar*> durations = fzsolver->GetVariableArray(ct->Arg(1));
+    const std::vector<IntVar*> durations =
+        fzsolver->GetVariableArray(ct->Arg(1));
     const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
     IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
     if (AreAllBound(durations) && AreAllBound(demands) && capacity->Bound()) {
@@ -681,8 +681,10 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables =
+      fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
     const std::vector<int64>& x_sizes = ct->Arg(2).values;
@@ -872,18 +874,47 @@ void ExtractIntEqReif(FzSolver* fzsolver, FzConstraint* ct) {
   IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
   if (ct->target_variable != nullptr) {
     CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsEqualCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsEqualVar(left, fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
+    if (ct->Arg(1).HasOneValue()) {
+      IntVar* const boolvar =
+          solver->MakeIsEqualCstVar(left, ct->Arg(1).Value());
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      IntVar* tmp_var = nullptr;
+      bool tmp_neg = 0;
+      bool success = false;
+      if (FLAGS_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
+          solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {
+        // Try to post to sat.
+        IntVar* const boolvar = solver->MakeBoolVar();
+        if (AddIntEqReif(fzsolver->Sat(), left, right, boolvar)) {
+          FZVLOG << "  - posted to sat" << FZENDL;
+          FZVLOG << "  - creating " << ct->target_variable->DebugString()
+                 << " := " << boolvar->DebugString() << FZENDL;
+          fzsolver->SetExtracted(ct->target_variable, boolvar);
+          success = true;
+        }
+      }
+      if (!success) {
+        IntVar* const boolvar =
+            solver->MakeIsEqualVar(left, fzsolver->GetExpression(ct->Arg(1)));
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    }
   } else {
     IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
     IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint = solver->MakeIsEqualCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
+    if (FLAGS_use_sat && AddIntEqReif(fzsolver->Sat(), left, right, boolvar)) {
+      FZVLOG << "  - posted to sat" << FZENDL;
+    } else {
+      Constraint* const constraint =
+          solver->MakeIsEqualCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
   }
 }
 
@@ -1122,7 +1153,8 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
+                     int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1186,7 +1218,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
       std::vector<IntVar*> variables;
       int64 constant = 0;
       for (int i = 0; i < size; ++i) {
-         if (fzvars[i] == ct->target_variable) {
+        if (fzvars[i] == ct->target_variable) {
           CHECK_EQ(-1, coefficients[i]);
         } else if (fzvars[i]->domain.IsSingleton()) {
           constant += coefficients[i] * fzvars[i]->Min();
@@ -1699,20 +1731,47 @@ void ExtractIntNeReif(FzSolver* fzsolver, FzConstraint* ct) {
   IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
   if (ct->target_variable != nullptr) {
     CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsDifferentCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsDifferentVar(left,
-                                         fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
+    if (ct->Arg(1).HasOneValue()) {
+      IntVar* const boolvar =
+          solver->MakeIsDifferentCstVar(left, ct->Arg(1).Value());
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << boolvar->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, boolvar);
+    } else {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      IntVar* tmp_var = nullptr;
+      bool tmp_neg = 0;
+      bool success = false;
+      if (FLAGS_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
+          solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {
+        // Try to post to sat.
+        IntVar* const boolvar = solver->MakeBoolVar();
+        if (AddIntNeReif(fzsolver->Sat(), left, right, boolvar)) {
+          FZVLOG << "  - posted to sat" << FZENDL;
+          FZVLOG << "  - creating " << ct->target_variable->DebugString()
+                 << " := " << boolvar->DebugString() << FZENDL;
+          fzsolver->SetExtracted(ct->target_variable, boolvar);
+          success = true;
+        }
+      }
+      if (!success) {
+        IntVar* const boolvar = solver->MakeIsDifferentVar(
+            left, fzsolver->GetExpression(ct->Arg(1)));
+        FZVLOG << "  - creating " << ct->target_variable->DebugString()
+               << " := " << boolvar->DebugString() << FZENDL;
+        fzsolver->SetExtracted(ct->target_variable, boolvar);
+      }
+    }
   } else {
     IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
     IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint =
-        solver->MakeIsDifferentCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
+    if (FLAGS_use_sat && AddIntEqReif(fzsolver->Sat(), left, right, boolvar)) {
+      FZVLOG << "  - posted to sat" << FZENDL;
+    } else {
+      Constraint* const constraint =
+          solver->MakeIsDifferentCt(left, right, boolvar);
+      AddConstraint(solver, ct, constraint);
+    }
   }
 }
 

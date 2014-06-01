@@ -63,6 +63,11 @@ bool AddAtMostNMinusOne(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
 bool AddArrayXor(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
+bool AddIntEqReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                  IntExpr* target);
+bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                  IntExpr* target);
+
 void DeclareVariable(SatPropagator* sat, IntVar* var);
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_

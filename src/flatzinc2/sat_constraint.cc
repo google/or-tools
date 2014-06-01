@@ -828,6 +828,38 @@ bool AddArrayXor(SatPropagator* sat, const std::vector<IntVar*>& vars) {
   return false;
 }
 
+bool AddIntEqReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                  IntExpr* target) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
+    return false;
+  }
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = sat->Literal(right);
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(left_literal, right_literal, target_literal);
+  sat->AddClause(Negated(left_literal), Negated(right_literal), target_literal);
+  sat->AddClause(Negated(left_literal), right_literal, Negated(target_literal));
+  sat->AddClause(left_literal, Negated(right_literal), Negated(target_literal));
+  return true;
+}
+
+bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
+                  IntExpr* target) {
+  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
+      !sat->IsExpressionBoolean(target)) {
+    return false;
+  }
+  Sat::Literal left_literal = sat->Literal(left);
+  Sat::Literal right_literal = Negated(sat->Literal(right));
+  Sat::Literal target_literal = sat->Literal(target);
+  sat->AddClause(left_literal, right_literal, target_literal);
+  sat->AddClause(Negated(left_literal), Negated(right_literal), target_literal);
+  sat->AddClause(Negated(left_literal), right_literal, Negated(target_literal));
+  sat->AddClause(left_literal, Negated(right_literal), Negated(target_literal));
+  return true;
+}
+
 SatPropagator* MakeSatPropagator(Solver* solver) {
   return solver->RevAlloc(new SatPropagator(solver));
 }

@@ -1004,6 +1004,34 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
   return false;
 }
 
+bool IsBoolean(FzIntegerVariable* var) {
+  return var->Min() == 0 && var->Max() == 1;
+}
+
+bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
+  if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == 1 &&
+      ct->Arg(0).values[1] == 1 && ct->Arg(2).Value() == 1 &&
+      IsBoolean(ct->Arg(1).variables[0]) &&
+      IsBoolean(ct->Arg(1).variables[1])) {
+    FZVLOG << "Rewrite " << ct->DebugString() << " to bool_ne_reif" << FZENDL;
+    FzIntegerVariable* const left = ct->Arg(1).variables[0];
+    FzIntegerVariable* const right = ct->Arg(1).variables[1];
+    ct->type = "bool_ne_reif";
+    ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+    ct->MutableArg(0)->values.clear();
+    ct->MutableArg(0)->variables.push_back(left);
+    ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+    ct->MutableArg(1)->variables.clear();
+    ct->MutableArg(1)->variables.push_back(right);
+    ct->MutableArg(2)->type = FzArgument::INT_VAR_REF;
+    ct->MutableArg(2)->values.clear();
+    ct->MutableArg(2)->variables.push_back(ct->Arg(3).Var());
+    ct->arguments.pop_back();
+    FZVLOG << " -> " << ct->DebugString() << FZENDL;
+  }
+  return false;
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -1065,6 +1093,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "int_lin_eq") changed |= PresolveStoreMapping(ct);
   if (id == "int_lin_eq_reif") changed |= CheckIntLinReifBounds(ct);
+  if (id == "int_lin_eq_reif") changed |= SimplifyIntLinEqReif(ct);
   if (id == "array_int_element") {
     changed |= PresolveSimplifyElement(ct);
   }
