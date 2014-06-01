@@ -492,8 +492,10 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
     return cache;
   } else {
     IntExpr* result = nullptr;
-    // Is Array increasing
-    if (IsIncreasingContiguous(values)) {
+    if (values.size() == 2 && index->Min() == 0 && index->Max() == 1) {
+      result = solver->MakeSum(solver->MakeProd(index, values[1] - values[0]),
+                               values[0]);
+    } else if (IsIncreasingContiguous(values)) {
       result = solver->MakeSum(index, values[0]);
     } else if (IsIncreasing(values)) {
       result = solver->RegisterIntExpr(solver->RevAlloc(
