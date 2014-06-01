@@ -799,8 +799,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     ct->type = "array_int_element";
     ct->MutableArg(1)->type = FzArgument::INT_LIST;
     for (int i = 0; i < ct->Arg(1).variables.size(); ++i) {
-      ct->MutableArg(1)->values
-          .push_back(ct->Arg(1).variables[i]->Min());
+      ct->MutableArg(1)->values.push_back(ct->Arg(1).variables[i]->Min());
     }
     ct->MutableArg(1)->variables.clear();
     return true;
@@ -987,7 +986,7 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   } else if (ct->target_variable == nullptr &&
-      ct->Arg(0).Var()->defining_constraint == nullptr) {
+             ct->Arg(0).Var()->defining_constraint == nullptr) {
     FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
     FzIntegerVariable* const var = ct->Arg(0).Var();
     ct->target_variable = var;
@@ -1004,30 +1003,94 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
   return false;
 }
 
-bool IsBoolean(FzIntegerVariable* var) {
+bool IsBooleanVar(FzIntegerVariable* var) {
   return var->Min() == 0 && var->Max() == 1;
 }
 
+bool IsBooleanValue(int64 value) { return value == 0 || value == 1; }
+
 bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
   if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == 1 &&
-      ct->Arg(0).values[1] == 1 && ct->Arg(2).Value() == 1 &&
-      IsBoolean(ct->Arg(1).variables[0]) &&
-      IsBoolean(ct->Arg(1).variables[1])) {
-    FZVLOG << "Rewrite " << ct->DebugString() << " to bool_ne_reif" << FZENDL;
+      ct->Arg(0).values[1] == 1 && ct->Arg(2).Value() == 1) {
     FzIntegerVariable* const left = ct->Arg(1).variables[0];
     FzIntegerVariable* const right = ct->Arg(1).variables[1];
-    ct->type = "bool_ne_reif";
-    ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
-    ct->MutableArg(0)->values.clear();
-    ct->MutableArg(0)->variables.push_back(left);
-    ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
-    ct->MutableArg(1)->variables.clear();
-    ct->MutableArg(1)->variables.push_back(right);
-    ct->MutableArg(2)->type = FzArgument::INT_VAR_REF;
-    ct->MutableArg(2)->values.clear();
-    ct->MutableArg(2)->variables.push_back(ct->Arg(3).Var());
-    ct->arguments.pop_back();
-    FZVLOG << " -> " << ct->DebugString() << FZENDL;
+    FzIntegerVariable* const target = ct->Arg(3).Var();
+    if (IsBooleanVar(ct->Arg(1).variables[0]) &&
+        IsBooleanVar(ct->Arg(1).variables[1])) {
+      FZVLOG << "Rewrite " << ct->DebugString() << " to bool_ne_reif" << FZENDL;
+      ct->type = "bool_ne_reif";
+      ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+      ct->MutableArg(0)->values.clear();
+      ct->MutableArg(0)->variables.push_back(left);
+      ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+      ct->MutableArg(1)->variables.clear();
+      ct->MutableArg(1)->variables.push_back(right);
+      ct->MutableArg(2)->type = FzArgument::INT_VAR_REF;
+      ct->MutableArg(2)->values.clear();
+      ct->MutableArg(2)->variables.push_back(target);
+      ct->arguments.pop_back();
+      FZVLOG << " -> " << ct->DebugString() << FZENDL;
+      return true;
+    }
+    if (IsBooleanVar(right) && left->HasOneValue() &&
+        IsBooleanValue(left->Min())) {
+      if (left->Min() == 0) {
+        FZVLOG << "Rewrite " << ct->DebugString() << " to bool_eq" << FZENDL;
+        ct->type = "bool_eq";
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(0)->values.clear();
+        ct->MutableArg(0)->variables.push_back(right);
+        ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->variables.clear();
+        ct->MutableArg(1)->variables.push_back(target);
+        ct->arguments.pop_back();
+        ct->arguments.pop_back();
+        FZVLOG << " -> " << ct->DebugString() << FZENDL;
+        return true;
+      } else {
+        FZVLOG << "Rewrite " << ct->DebugString() << " to bool_not" << FZENDL;
+        ct->type = "bool_not";
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(0)->values.clear();
+        ct->MutableArg(0)->variables.push_back(right);
+        ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->variables.clear();
+        ct->MutableArg(1)->variables.push_back(target);
+        ct->arguments.pop_back();
+        ct->arguments.pop_back();
+        FZVLOG << " -> " << ct->DebugString() << FZENDL;
+        return true;
+      }
+    } else if (IsBooleanVar(left) && right->HasOneValue() &&
+               IsBooleanValue(right->Min())) {
+      if (right->Min() == 0) {
+        FZVLOG << "Rewrite " << ct->DebugString() << " to bool_eq" << FZENDL;
+        ct->type = "bool_eq";
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(0)->values.clear();
+        ct->MutableArg(0)->variables.push_back(left);
+        ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->variables.clear();
+        ct->MutableArg(1)->variables.push_back(target);
+        ct->arguments.pop_back();
+        ct->arguments.pop_back();
+        FZVLOG << " -> " << ct->DebugString() << FZENDL;
+        return true;
+      } else {
+        FZVLOG << "Rewrite " << ct->DebugString() << " to bool_not" << FZENDL;
+        ct->type = "bool_not";
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(0)->values.clear();
+        ct->MutableArg(0)->variables.push_back(left);
+        ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->variables.clear();
+        ct->MutableArg(1)->variables.push_back(target);
+        ct->arguments.pop_back();
+        ct->arguments.pop_back();
+        FZVLOG << " -> " << ct->DebugString() << FZENDL;
+        return true;
+      }
+    }
   }
   return false;
 }

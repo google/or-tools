@@ -91,6 +91,8 @@ struct FzIntegerVariable {
   //     temporary, the name is chosen arbitrarily between the two names.
   bool Merge(const std::string& other_name, const FzDomain& other_domain,
              FzConstraint* const other_constraint, bool other_temporary);
+  // Returns true if the domain has one value.
+  bool HasOneValue() const;
   // Returns the min of the domain.
   int64 Min() const;
   // Returns the max of the domain.

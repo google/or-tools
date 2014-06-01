@@ -342,6 +342,10 @@ bool FzIntegerVariable::Unbound() const {
           (domain.values[0] == kint64min && domain.values[1] == kint64max));
 }
 
+bool FzIntegerVariable::HasOneValue() const {
+  return domain.IsSingleton();
+}
+
 std::string FzIntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
     return StringPrintf("% " GG_LL_FORMAT "d", domain.values.back());
