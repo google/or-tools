@@ -151,7 +151,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     left->domain.IntersectWithInterval(kint64min, right_max);
     right->domain.IntersectWithInterval(left_min, kint64max);
     modified = left_max > right_max || right_min < left_min;
-  } else if (id == "int_lt" || id == "bool_gt") {
+  } else if (id == "int_lt" || id == "bool_lt") {
     left->domain.IntersectWithInterval(kint64min, right_max - 1);
     right->domain.IntersectWithInterval(left_min + 1, kint64max);
     modified = left_max >= right_max || right_min <= left_min;
