@@ -718,39 +718,56 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
   if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const FzDomain& domain = mapping.variable->domain;
-    if ((domain.is_interval && domain.values.empty()) ||
-        domain.values[0] != 1 || mapping.offset + mapping.coefficient <= 0) {
+    if (domain.is_interval && domain.values.empty()) {
       // Invalid case. Ignore it.
       return false;
     }
-    const std::vector<int64>& values = ct->Arg(1).values;
-    std::vector<int64> new_values;
-    for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
-      const int64 index = i * mapping.coefficient + mapping.offset - 1;
-      if (index < 0) {
-        return false;
+    if (domain.values[0] == 0 && mapping.coefficient == 1 &&
+        mapping.offset > 1 && index_var->domain.is_interval) {
+      FZVLOG << "Reduce " << ct->DebugString() << FZENDL;
+      // Simple translation
+      const int offset = mapping.offset - 1;
+      const int size = ct->Arg(1).values.size();
+      for (int i = 0; i < size - offset; ++i) {
+        ct->MutableArg(1)->values[i] = ct->Arg(1).values[i + offset];
       }
-      if (index > values.size()) {
-        break;
+      ct->MutableArg(1)->values.resize(size - offset);
+      affine_map_[index_var].constraint->MutableArg(2)->values[0] = -1;
+      affine_map_[index_var].offset = 1;
+      index_var->domain.values[0] -= offset;
+      index_var->domain.values[1] -= offset;
+      return true;
+    } else if (mapping.offset + mapping.coefficient > 0 &&
+               domain.values[0] == 1) {
+      const std::vector<int64>& values = ct->Arg(1).values;
+      std::vector<int64> new_values;
+      for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
+        const int64 index = i * mapping.coefficient + mapping.offset - 1;
+        if (index < 0) {
+          return false;
+        }
+        if (index > values.size()) {
+          break;
+        }
+        new_values.push_back(values[index]);
       }
-      new_values.push_back(values[index]);
+      // Rewrite constraint.
+      FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+      ct->MutableArg(0)->variables[0] = mapping.variable;
+      ct->Arg(0).variables[0]->domain.IntersectWithInterval(1, new_values.size());
+      // TODO(user): Encapsulate argument setters.
+      ct->MutableArg(1)->values.swap(new_values);
+      if (ct->Arg(1).values.size() == 1) {
+        ct->MutableArg(1)->type = FzArgument::INT_VALUE;
+      }
+      // Reset propagate flag.
+      ct->presolve_propagation_done = false;
+      // Mark old index var and affine constraint as presolved out.
+      mapping.constraint->MarkAsInactive();
+      index_var->active = false;
+      FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+      return true;
     }
-    // Rewrite constraint.
-    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
-    ct->MutableArg(0)->variables[0] = mapping.variable;
-    ct->Arg(0).variables[0]->domain.IntersectWithInterval(1, new_values.size());
-    // TODO(user): Encapsulate argument setters.
-    ct->MutableArg(1)->values.swap(new_values);
-    if (ct->Arg(1).values.size() == 1) {
-      ct->MutableArg(1)->type = FzArgument::INT_VALUE;
-    }
-    // Reset propagate flag.
-    ct->presolve_propagation_done = false;
-    // Mark old index var and affine constraint as presolved out.
-    mapping.constraint->MarkAsInactive();
-    index_var->active = false;
-    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
-    return true;
   }
   if (ContainsKey(flatten_map_, index_var)) {
     FZVLOG << "Rewrite " << ct->DebugString() << " as a 2d element" << FZENDL;
