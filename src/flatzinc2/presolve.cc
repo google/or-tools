@@ -537,30 +537,32 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
 
 // If x = A[y], with A an integer array, then the domain of x is included in A.
 bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
-  if (!ct->Arg(0).HasOneValue()) {
-    const int64 target_min =
-        ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Min();
-    const int64 target_max =
-        ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Max();
+  if (ct->Arg(0).variables.size() == 1) {
+    if (!ct->Arg(0).HasOneValue()) {
+      const int64 target_min =
+          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Min();
+      const int64 target_max =
+          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value() : ct->Arg(2).Var()->Max();
 
-    int64 current_index = ct->Arg(1).values.size();
-    current_index = std::min(ct->Arg(0).Var()->Max(), current_index);
+      int64 current_index = ct->Arg(1).values.size();
+      current_index = std::min(ct->Arg(0).Var()->Max(), current_index);
 
-    while (current_index >= 1) {
-      const int64 value = ct->Arg(1).values[current_index - 1];
-      if (value < target_min || value > target_max) {
-        current_index--;
-      } else {
-        break;
+      while (current_index >= 1) {
+        const int64 value = ct->Arg(1).values[current_index - 1];
+        if (value < target_min || value > target_max) {
+          current_index--;
+        } else {
+          break;
+        }
       }
-    }
-    if (current_index < ct->Arg(0).Var()->Max()) {
-      FZVLOG << "Filter index of " << ct->DebugString() << " to [1 .. "
-             << current_index << "]" << FZENDL;
-      ct->Arg(0).Var()->domain.IntersectWithInterval(1, current_index);
-      FZVLOG << "  - reduce array to size " << current_index << FZENDL;
-      ct->MutableArg(1)->values.resize(current_index);
-      return true;
+      if (current_index < ct->Arg(0).Var()->Max()) {
+        FZVLOG << "Filter index of " << ct->DebugString() << " to [1 .. "
+               << current_index << "]" << FZENDL;
+        ct->Arg(0).Var()->domain.IntersectWithInterval(1, current_index);
+        FZVLOG << "  - reduce array to size " << current_index << FZENDL;
+        ct->MutableArg(1)->values.resize(current_index);
+        return true;
+      }
     }
   }
   if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
