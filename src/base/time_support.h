@@ -4,6 +4,8 @@
 #include "base/integral_types.h"
 
 namespace operations_research {
+namespace base {
+
 // Ideally, this should be a super-fast implementation that isn't too
 // unreliable:
 // - It shouldn't take more than a few nanoseconds per call, on average.
@@ -18,12 +20,11 @@ namespace operations_research {
 // coupled with automatic, periodic recalibration with the (reliable, but slow)
 // system timer to avoid drifts. See
 // http://en.wikipedia.org/wiki/Time_Stamp_Counter#Use.
-namespace base {
 int64 GetCurrentTimeNanos();
-}  // namespace base
 
 inline double WallTime_Now() { return base::GetCurrentTimeNanos() * 1e-9; }
-}
 
+}  // namespace base
+}  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_TIME_SUPPORT_H_

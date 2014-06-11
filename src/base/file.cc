@@ -27,6 +27,7 @@
 #include "base/file.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "base/join.h"
 
 namespace operations_research {
 
@@ -130,34 +131,30 @@ bool File::Open() const { return f_ != NULL; }
 void File::Init() {}
 
 namespace file {
-Status SetContents(const std::string& filename, const std::string& contents, int flags) {
-  if (flags != Defaults()) {
-    LOG(DFATAL) << "file::SetContents() with unsupported flags=" << flags;
-    return Status(false);
+util::Status GetContents(const std::string& filename, std::string* output, int flags) {
+  if (flags == Defaults()) {
+    File* file = File::Open(filename, "r");
+    if (file != NULL) {
+      const int64 size = file->Size();
+      if (file->ReadToString(output, size) == size) return util::Status::OK;
+    }
   }
-  File* file = File::Open(filename, "w");
-  if (file == NULL) return Status(false);
-  return Status(file->WriteString(contents) == contents.size());
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not read '", filename, "'"));
 }
 
-Status GetContents(const std::string& filename, std::string* output, int flags) {
-  if (flags != Defaults()) {
-    LOG(DFATAL) << "file::GetContents() with unsupported flags=" << flags;
-    return Status(false);
+util::Status WriteString(File* file, const std::string& contents, int flags) {
+  if (flags == Defaults() && file != NULL &&
+      file->Write(contents.c_str(), contents.size()) == contents.size()) {
+    return util::Status::OK;
   }
-  File* file = File::Open(filename, "r");
-  if (file == NULL) return Status(false);
-  int64 size = file->Size();
-  return Status(size == file->ReadToString(output, size));
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-Status WriteString(File* file, const std::string& contents, int flags) {
-  if (flags != Defaults()) {
-    LOG(DFATAL) << "file::WriteString() with unsupported flags=" << flags;
-    return Status(false);
-  }
-  return Status(file->Write(contents.c_str(), contents.size())
-                == contents.size() );
+util::Status SetContents(const std::string& filename, const std::string& contents,
+                         int flags) {
+  return WriteString(File::Open(filename, "w"), contents, flags);
 }
 
 bool ReadFileToString(const std::string& file_name, std::string* output) {

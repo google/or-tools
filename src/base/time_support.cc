@@ -12,6 +12,7 @@
 
 namespace operations_research {
 namespace base {
+
 int64 GetCurrentTimeNanos() {
 #if defined(_MSC_VER)
   const int64 kSecInNanoSeconds = 1000000000LL;
@@ -33,6 +34,6 @@ int64 GetCurrentTimeNanos() {
   return current.tv_sec * kSecondInNanoSeconds + current.tv_nsec;
 #endif
 }
-}  // namespace base
 
+}  // namespace base
 }  // namespace operations_research

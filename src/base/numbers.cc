@@ -17,13 +17,15 @@
 #include <cstdlib>
 
 namespace operations_research {
+
+#ifdef _MSC_VER
+#define strtof strtod
+#define strtoll _strtoi64
+#endif  // _MSC_VER
+
 bool safe_strtof(const char* str, float* value) {
   char* endptr;
-#ifdef _MSC_VER  // has no strtof()
-  *value = strtod(str, &endptr);
-#else
   *value = strtof(str, &endptr);
-#endif
   if (endptr != str) {
     while (isspace(*endptr)) ++endptr;
   }
@@ -57,11 +59,11 @@ bool safe_strtod(const std::string& str, double* value) {
 bool safe_strto64(const std::string& str, int64* value) {
   if (str.empty()) return false;
   char* endptr;
-#if defined(_MSC_VER) 
-  *value = _strtoi64(str.c_str(), &endptr, /*base=*/10);  // NOLINT
-#else
   *value = strtoll(str.c_str(), &endptr, /*base=*/10);  // NOLINT
-#endif
   return *endptr == '\0' && str[0] != '\0';
 }
+
+#undef strtof
+#undef strtoll
+
 }  // namespace operations_research

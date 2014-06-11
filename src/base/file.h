@@ -24,6 +24,7 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/io/tokenizer.h"
+#include "base/status.h"
 
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.
@@ -110,31 +111,13 @@ class File {
 };
 
 namespace file {
-// A trivial wrapper around a boolean, with a ok() accessor.
-class Status {
- public:
-  explicit Status(bool ok) : ok_(ok) {}
-  bool ok() const { return ok_; }
-  bool CheckSuccess() const { return ok_; }
-  void IgnoreError() const {}
-
- private:
-  const bool ok_;
-};
-
 inline int Defaults() { return 0xBABA; }
 
-// A reduced version of the file::SetContents() function, which as of 2013-04
-// can only be used with flags = file::Defaults().
-Status SetContents(const std::string& filename, const std::string& contents, int flags);
-
-// A reduced version of the file::GetContents() function, which as of 2013-09
-// can only be used with flags = file::Defaults().
-Status GetContents(const std::string& filename, std::string* output, int flags);
-
-// A reduced version of the file::WriteString() function which as of 2014-04 can
-// only be used with flags = file::Defaults().
-Status WriteString(File* file, const std::string& contents, int flags);
+// As of 2014-06, these methods can only be used with flags = file::Defaults().
+util::Status SetContents(const std::string& filename, const std::string& contents,
+                         int flags);
+util::Status GetContents(const std::string& filename, std::string* output, int flags);
+util::Status WriteString(File* file, const std::string& contents, int flags);
 
 bool ReadFileToString(const std::string& file_name, std::string* output);
 bool WriteStringToFile(const std::string& data, const std::string& file_name);

@@ -49,6 +49,8 @@ struct AlphaNum {
       : piece(digits, NumToBuffer(i32, digits) - &digits[0]) {}
   AlphaNum(uint32 u32)  // NOLINT(runtime/explicit)
       : piece(digits, NumToBuffer(u32, digits) - &digits[0]) {}
+  AlphaNum(unsigned long ul)  // NOLINT
+      : piece(digits, NumToBuffer(ul, digits) - &digits[0]) {}
   AlphaNum(int64 i64)  // NOLINT(runtime/explicit)
       : piece(digits, NumToBuffer(i64, digits) - &digits[0]) {}
   AlphaNum(uint64 u64)  // NOLINT(runtime/explicit)
