@@ -82,26 +82,12 @@ message MPVariableProto {
 // - Can form the infinite interval: lower_bound = -infinity and
 //   upper_bound = +infinity. The constraint is free.
 message MPConstraintProto {
-  // Linear terms involved in this constraint.
-  //
   // var_index[i] is the variable index (w.r.t. to "variable" field of
   // MPModelProto) of the i-th linear term involved in this constraint, and
   // coefficient[i] is its coefficient. Only the terms with non-zero
   // coefficients need to appear. var_index may not contain duplicates.
-  //
-  // IMPORTANT: Until November 30, 2013, clients must fill both these fields
-  // and the legacy fields "linear_term" below.
   repeated int32 var_index = 6 [packed = true];
   repeated double coefficient = 7 [packed = true];  // Must be finite.
-
-  // LEGACY: linear_term contain the same information as the var_index and
-  // coefficient fields above and should be filled until November 30, 2013.
-  // Don't use them after that. They will be removed in Q4 2013.
-  message UnaryTerm {
-    optional int32 var_index = 1;
-    optional double coefficient = 2 [default = 1.0];  // Must be finite.
-  }
-  repeated UnaryTerm linear_term = 1;
 
   // lower_bound must be <= upper_bound.
   optional double lower_bound = 2 [default = -inf];

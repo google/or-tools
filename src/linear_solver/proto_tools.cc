@@ -25,6 +25,7 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "base/strutil.h"
+#include "base/status.h"
 
 using google::protobuf::Descriptor;
 using google::protobuf::FieldDescriptor;
@@ -35,7 +36,7 @@ namespace operations_research {
 
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
   std::string data;
-  file::GetContents(file_name, &data, file::Defaults()).CheckSuccess();
+  CHECK_OK(file::GetContents(file_name, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
   // Try binary format first, then text format, then give up.
   if (proto->ParseFromString(data)) return true;
