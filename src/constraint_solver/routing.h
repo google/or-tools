@@ -170,6 +170,8 @@
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "base/adjustable_priority_queue-inl.h"
+#include "base/adjustable_priority_queue.h"
 
 
 namespace operations_research {
@@ -1591,7 +1593,8 @@ class CheapestInsertionFilteredDecisionBuilder
  public:
   // Takes ownership of evaluator.
   CheapestInsertionFilteredDecisionBuilder(
-      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      RoutingModel* model,
+      ResultCallback3<int64, int64, int64, int64>* evaluator,
       const std::vector<LocalSearchFilter*>& filters);
   virtual ~CheapestInsertionFilteredDecisionBuilder() {}
 
@@ -1607,42 +1610,101 @@ class CheapestInsertionFilteredDecisionBuilder
   // starting at node 'start' and adds them to 'valued_position', a list of
   // unsorted pairs of (cost, position to insert the node).
   void AppendEvaluatedPositionsAfter(int64 node_to_insert, int64 start,
-                                     int64 next_after_start,
+                                     int64 next_after_start, int64 vehicle,
                                      std::vector<ValuedPosition>* valued_positions);
 
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+  std::unique_ptr<ResultCallback3<int64, int64, int64, int64> > evaluator_;
 };
 
-// Filtered-base decision builder which builds a solution by inserting
-// nodes at their cheapest position. The cost of a position is computed
-// an arc-based cost callback. The node selected for insertion is the one
-// which minimizes insertion cost.
+// Filter-based decision builder which builds a solution by inserting
+// nodes at their cheapest position on any route; potentially several routes can
+// be built in parallel. The cost of a position is computed from an arc-based
+// cost callback. The node selected for insertion is the one which minimizes
+// insertion cost.
 class GlobalCheapestInsertionFilteredDecisionBuilder
     : public CheapestInsertionFilteredDecisionBuilder {
  public:
   // Takes ownership of evaluator.
   GlobalCheapestInsertionFilteredDecisionBuilder(
-      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      RoutingModel* model,
+      ResultCallback3<int64, int64, int64, int64>* evaluator,
       const std::vector<LocalSearchFilter*>& filters);
   virtual ~GlobalCheapestInsertionFilteredDecisionBuilder() {}
   virtual bool BuildSolution();
 
  private:
-  typedef std::pair<int64, int64> InsertionPosition;
-  // Computes the possible insertion positions for all non-inserted nodes and
-  // sorts them according to the current cost evaluator.
-  // Each InsertionPosition of the output represents an already performed node,
-  // followed by a non-inserted node that should be set as the "Next" of the
-  // former.
-  void ComputeEvaluatorSortedPositions(
-      std::vector<InsertionPosition>* sorted_positions);
-  // Same as above but limited to pickup and delivery pairs. Each pair of
-  // InsertionPosition applies respectively to a pickup and its delivery.
-  void ComputeEvaluatorSortedPositionPairs(
-      std::vector<std::pair<InsertionPosition, InsertionPosition> >* sorted_positions);
+  class PairEntry;
+  class NodeEntry;
+  typedef hash_set<PairEntry*> PairEntries;
+  typedef hash_set<NodeEntry*> NodeEntries;
+
+  // Inserts all non-inserted pickup and delivery pairs. Maintains a priority
+  // queue of possible pair insertions, which is incrementally updated when a
+  // pair insertion is committed. Incrementality is obtained by updating pair
+  // insertion positions on the four newly modified route arcs: after the pickup
+  // insertion position, after the pickup position, after the delivery insertion
+  // position and after the delivery position.
+  void InsertPairs();
+  // Inserts all non-inserted individual nodes. Maintains a priority queue of
+  // possible insertions, which is incrementally updated when an insertion is
+  // committed. Incrementality is obtained by updating insertion positions on
+  // the two newly modified route arcs: after the node insertion position and
+  // after the node position.
+  void InsertNodes();
+  // Initializes the priority queue and the pair entries with the current state
+  // of the solution.
+  void InitializePairPositions(
+      AdjustablePriorityQueue<PairEntry>* priority_queue,
+      std::vector<PairEntries>* pickup_to_entries,
+      std::vector<PairEntries>* delivery_to_entries);
+  // Updates all pair entries inserting a node after node "insert_after" and
+  // updates the priority queue accordingly.
+  void UpdatePairPositions(int vehicle, int64 insert_after,
+                           AdjustablePriorityQueue<PairEntry>* priority_queue,
+                           std::vector<PairEntries>* pickup_to_entries,
+                           std::vector<PairEntries>* delivery_to_entries) {
+    UpdatePickupPositions(vehicle, insert_after, priority_queue,
+                          pickup_to_entries, delivery_to_entries);
+    UpdateDeliveryPositions(vehicle, insert_after, priority_queue,
+                            pickup_to_entries, delivery_to_entries);
+  }
+  // Updates all pair entries inserting their pickup node after node
+  // "insert_after" and updates the priority queue accordingly.
+  void UpdatePickupPositions(int vehicle, int64 pickup_insert_after,
+                             AdjustablePriorityQueue<PairEntry>* priority_queue,
+                             std::vector<PairEntries>* pickup_to_entries,
+                             std::vector<PairEntries>* delivery_to_entries);
+  // Updates all pair entries inserting their delivery node after node
+  // "insert_after" and updates the priority queue accordingly.
+  void UpdateDeliveryPositions(
+      int vehicle, int64 delivery_insert_after,
+      AdjustablePriorityQueue<PairEntry>* priority_queue,
+      std::vector<PairEntries>* pickup_to_entries,
+      std::vector<PairEntries>* delivery_to_entries);
+  // Deletes an entry, removing it from the priority queue and the appropriate
+  // pickup and delivery entry sets.
+  void DeletePairEntry(PairEntry* entry,
+                       AdjustablePriorityQueue<PairEntry>* priority_queue,
+                       std::vector<PairEntries>* pickup_to_entries,
+                       std::vector<PairEntries>* delivery_to_entries);
+  // Initializes the priority queue and the node entries with the current state
+  // of the solution.
+  void InitializePositions(
+      AdjustablePriorityQueue<NodeEntry>* priority_queue,
+      std::vector<NodeEntries>* position_to_node_entries);
+  // Updates all node entries inserting a node after node "insert_after" and
+  // updates the priority queue accordingly.
+  void UpdatePositions(int vehicle, int64 insert_after,
+                       AdjustablePriorityQueue<NodeEntry>* priority_queue,
+                       std::vector<NodeEntries>* node_entries);
+  // Deletes an entry, removing it from the priority queue and the appropriate
+  // node entry sets.
+  void DeleteNodeEntry(NodeEntry* entry,
+                       AdjustablePriorityQueue<NodeEntry>* priority_queue,
+                       std::vector<NodeEntries>* node_entries);
 };
 
-// Filtered-base decision builder which builds a solution by inserting
+// Filter-base decision builder which builds a solution by inserting
 // nodes at their cheapest position. The cost of a position is computed
 // an arc-based cost callback. Node selected for insertion are considered in
 // the order they were created in the model.
@@ -1651,7 +1713,8 @@ class LocalCheapestInsertionFilteredDecisionBuilder
  public:
   // Takes ownership of evaluator.
   LocalCheapestInsertionFilteredDecisionBuilder(
-      RoutingModel* model, ResultCallback2<int64, int64, int64>* evaluator,
+      RoutingModel* model,
+      ResultCallback3<int64, int64, int64, int64>* evaluator,
       const std::vector<LocalSearchFilter*>& filters);
   virtual ~LocalCheapestInsertionFilteredDecisionBuilder() {}
   virtual bool BuildSolution();
@@ -1737,6 +1800,58 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
   virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts);
 
   std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
+};
+
+// Filter-based decision builder which builds a solution by using
+// Clarke & Wright's Savings heuristic. For each pair of nodes, the savings
+// value is the difference between the cost of two routes visiting one node each
+// and one route visiting both nodes. Routes are built sequentially, each route
+// being initialized from the pair with the best avalaible savings value then
+// extended by selecting the nodes with best savings on both ends of the partial
+// route.
+// Cost is based on the arc cost function of the routing model and cost classes
+// are taken into account.
+class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
+ public:
+  // If savings_neighbors > 0 then for each node only its 'saving_neighbors'
+  // neighbors leading to the smallest arc costs are considered.
+  SavingsFilteredDecisionBuilder(
+      RoutingModel* model, int64 saving_neighbors,
+      const std::vector<LocalSearchFilter*>& filters);
+  virtual ~SavingsFilteredDecisionBuilder() {}
+  virtual bool BuildSolution();
+
+ private:
+  typedef std::pair</*saving*/ int64, /*saving index*/ int64> Saving;
+
+  // Computes saving values for all node pairs and vehicle cost classes. The
+  // saving index attached to each saving value is an index used to
+  // store and recover the node pair to which the value is linked (cf. the
+  // index conversion methods below).
+  std::vector<Saving> ComputeSavings() const;
+  // Builds a saving from a saving value, a cost class and two nodes.
+  Saving BuildSaving(int64 saving, int cost_class, int before_node,
+                     int after_node) const {
+    return std::make_pair(
+        saving, cost_class * size_squared_ + before_node * Size() + after_node);
+  }
+  // Returns the cost class from a saving.
+  int64 GetCostClassFromSaving(const Saving& saving) const {
+    return saving.second / size_squared_;
+  }
+  // Returns the "before node" from a saving.
+  int64 GetBeforeNodeFromSaving(const Saving& saving) const {
+    return (saving.second % size_squared_) / Size();
+  }
+  // Returns the "after node" from a saving.
+  int64 GetAfterNodeFromSaving(const Saving& saving) const {
+    return (saving.second % size_squared_) % Size();
+  }
+  // Returns the saving value from a saving.
+  int64 GetSavingValue(const Saving& saving) const { return saving.first; }
+
+  const int64 saving_neighbors_;
+  int64 size_squared_;
 };
 
 // Routing filters

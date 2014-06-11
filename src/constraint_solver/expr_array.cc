@@ -1988,8 +1988,8 @@ class PositiveBooleanScalProdEqCst : public Constraint {
 
 class ExprLinearizer : public ModelParser {
  public:
-  ExprLinearizer(hash_map<IntVar*, int64>* const map)
-      : map_(map), constant_(0) {}
+  ExprLinearizer(hash_map<IntVar*, int64>* const variables_to_coefficients)
+      : variables_to_coefficients_(variables_to_coefficients), constant_(0) {}
 
   virtual ~ExprLinearizer() {}
 
@@ -2226,7 +2226,8 @@ class ExprLinearizer : public ModelParser {
   }
 
   void RegisterExpression(const IntExpr* const expr, int64 coef) {
-    (*map_)[const_cast<IntExpr*>(expr)->Var()] += coef * multipliers_.back();
+    (*variables_to_coefficients_)[const_cast<IntExpr*>(expr)->Var()] +=
+        coef * multipliers_.back();
   }
 
   void AddConstant(int64 constant) {
@@ -2245,7 +2246,7 @@ class ExprLinearizer : public ModelParser {
 
   // We do need a IntVar* as key, and not const IntVar*, because clients of this
   // class typically iterate over the map keys and use them as mutable IntVar*.
-  hash_map<IntVar*, int64>* const map_;
+  hash_map<IntVar*, int64>* const variables_to_coefficients_;
   std::vector<int64> multipliers_;
   int64 constant_;
 };
@@ -2256,38 +2257,42 @@ class ExprLinearizer : public ModelParser {
 void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
                    const std::vector<int64>& pre_coefs, std::vector<IntVar*>* vars,
                    std::vector<int64>* coefs, int64* constant) {
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
+  CHECK(coefs != nullptr);
+  CHECK(constant != nullptr);
   *constant = 0;
   vars->reserve(pre_vars.size());
   coefs->reserve(pre_coefs.size());
   // Try linear scan of the variables to check if there is nothing to do.
-  bool ok = true;
+  bool need_linearization = false;
   for (int i = 0; i < pre_vars.size(); ++i) {
-    IntVar* const v = pre_vars[i];
-    const int64 c = pre_coefs[i];
-    if (v->Bound()) {
-      *constant += c * v->Min();
-    } else if (solver->CastExpression(v) == nullptr) {
-      vars->push_back(v);
-      coefs->push_back(c);
+    IntVar* const variable = pre_vars[i];
+    const int64 coefficient = pre_coefs[i];
+    if (variable->Bound()) {
+      *constant += coefficient * variable->Min();
+    } else if (solver->CastExpression(variable) == nullptr) {
+      vars->push_back(variable);
+      coefs->push_back(coefficient);
     } else {
-      ok = false;
+      need_linearization = true;
       vars->clear();
       coefs->clear();
       break;
     }
   }
-  if (!ok) {
+  if (need_linearization) {
     // Instrospect the variables to simplify the sum.
-    hash_map<IntVar*, int64> map;
-    ExprLinearizer lin(&map);
+    hash_map<IntVar*, int64> variables_to_coefficients;
+    ExprLinearizer linearizer(&variables_to_coefficients);
     for (int i = 0; i < pre_vars.size(); ++i) {
-      lin.Visit(pre_vars[i], pre_coefs[i]);
+      linearizer.Visit(pre_vars[i], pre_coefs[i]);
     }
-    *constant = lin.Constant();
-    for (const auto& iter : map) {
-      if (iter.second != 0) {
-        vars->push_back(iter.first);
-        coefs->push_back(iter.second);
+    *constant = linearizer.Constant();
+    for (const auto& variable_to_coefficient : variables_to_coefficients) {
+      if (variable_to_coefficient.second != 0) {
+        vars->push_back(variable_to_coefficient.first);
+        coefs->push_back(variable_to_coefficient.second);
       }
     }
   }
@@ -2703,11 +2708,12 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
     if (AreAllBooleans(vars)) {
       if (AreAllPositive(coefs)) {
         if (vars.size() > 8) {
-        return solver->MakeSum(
-              solver->RegisterIntExpr(solver->RevAlloc(
-                  new PositiveBooleanScalProd(solver, vars, coefs)))->Var(),
+          return solver->MakeSum(
+              solver->RegisterIntExpr(
+                          solver->RevAlloc(new PositiveBooleanScalProd(
+                              solver, vars, coefs)))->Var(),
               constant);
-          } else {
+        } else {
           return solver->MakeSum(
               solver->RegisterIntExpr(solver->RevAlloc(
                   new PositiveBooleanScalProd(solver, vars, coefs))),
@@ -2787,18 +2793,18 @@ IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
 }
 
 IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
-  hash_map<IntVar*, int64> map;
-  ExprLinearizer lin(&map);
+  hash_map<IntVar*, int64> variables_to_coefficients;
+  ExprLinearizer linearizer(&variables_to_coefficients);
   for (int i = 0; i < pre_vars.size(); ++i) {
-    lin.Visit(pre_vars[i], 1);
+    linearizer.Visit(pre_vars[i], 1);
   }
-  const int64 constant = lin.Constant();
+  const int64 constant = linearizer.Constant();
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
-  for (const auto& iter : map) {
-    if (iter.second != 0) {
-      vars.push_back(iter.first);
-      coefs.push_back(iter.second);
+  for (const auto& variable_to_coefficient : variables_to_coefficients) {
+    if (variable_to_coefficient.second != 0) {
+      vars.push_back(variable_to_coefficient.first);
+      coefs.push_back(variable_to_coefficient.second);
     }
   }
   return MakeScalProdAux(solver, vars, coefs, constant);

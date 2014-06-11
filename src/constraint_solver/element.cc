@@ -492,7 +492,11 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
     return cache;
   } else {
     IntExpr* result = nullptr;
-    if (values.size() == 2 && index->Min() == 0 && index->Max() == 1) {
+    if (values.size() >= 2 && index->Min() == 0 && index->Max() == 1) {
+      result = solver->MakeSum(solver->MakeProd(index, values[1] - values[0]),
+                               values[0]);
+    } else if (values.size() == 2 && index->Contains(0) && index->Contains(1)) {
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, 1));
       result = solver->MakeSum(solver->MakeProd(index, values[1] - values[0]),
                                values[0]);
     } else if (IsIncreasingContiguous(values)) {

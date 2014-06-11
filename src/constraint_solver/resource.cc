@@ -996,8 +996,8 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         NewPermanentCallback(this, &FullDisjunctiveConstraint::Distance)));
 
     std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
-    s->AddConstraint(s->RevAlloc(new RankedPropagator(
-        s, nexts_, intervals_, short_slacks, this)));
+    s->AddConstraint(s->RevAlloc(
+        new RankedPropagator(s, nexts_, intervals_, short_slacks, this)));
   }
 
   SequenceVar* sequence_var_;

@@ -1425,7 +1425,7 @@ Solver::Solver(const std::string& name, const SolverParameters& parameters)
       additional_constraint_index_(0),
       propagation_monitor_(BuildTrace(this)),
       print_trace_(nullptr),
-      anonymous_variable_index_(0) ,
+      anonymous_variable_index_(0),
       should_fail_(false) {
   Init();
 }
@@ -2467,9 +2467,7 @@ void Solver::Fail() {
   searches_.back()->JumpBack();
 }
 
-void Solver::ShouldFail() {
-  should_fail_ = true;
-}
+void Solver::ShouldFail() { should_fail_ = true; }
 
 void Solver::CheckFail() {
   if (should_fail_) {

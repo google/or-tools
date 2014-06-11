@@ -1200,7 +1200,7 @@ bool HasCompactDomains(const std::vector<IntVar*>& vars) {
       sum_of_spans += var->Max() - var->Min() + 1;
     }
   }
-  return sum_of_spans < 512 * sum_of_sizes;
+  return sum_of_spans < 4 * sum_of_sizes;
 }
 
 // ---------- Deterministic Finite Automaton ----------

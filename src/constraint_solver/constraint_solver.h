@@ -5114,8 +5114,8 @@ class DisjunctiveConstraint : public Constraint {
 
   int64 TransitionTime(int before_index, int after_index) {
     return transition_time_ != nullptr
-        ? transition_time_->Run(before_index, after_index)
-        : 0;
+               ? transition_time_->Run(before_index, after_index)
+               : 0;
   }
 
 #if !defined(SWIG)

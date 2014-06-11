@@ -335,8 +335,8 @@ class RangeBipartiteMatching {
   Solver* const solver_;
   const int size_;
   std::unique_ptr<Interval[]> intervals_;
-  std::unique_ptr<Interval * []> min_sorted_;
-  std::unique_ptr<Interval * []> max_sorted_;
+  std::unique_ptr<Interval* []> min_sorted_;
+  std::unique_ptr<Interval* []> max_sorted_;
   // bounds_[1..active_size_] hold set of min & max in the n intervals_
   // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
   std::unique_ptr<int64[]> bounds_;

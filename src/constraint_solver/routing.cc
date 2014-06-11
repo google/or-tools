@@ -3948,7 +3948,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
       [ROUTING_GLOBAL_CHEAPEST_INSERTION] =
           solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
               this,
-              NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
+              NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
               GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_INSERTION] =
       first_solution_filtered_decision_builders_
@@ -3956,18 +3956,28 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
   // Local cheapest insertion
   first_solution_filtered_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
       solver_->RevAlloc(new LocalCheapestInsertionFilteredDecisionBuilder(
-          this, NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
+          this, NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
           GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
       first_solution_filtered_decision_builders_
           [ROUTING_LOCAL_CHEAPEST_INSERTION];
   // Savings
-  first_solution_decision_builders_[ROUTING_SAVINGS] =
-      solver_->RevAlloc(new SavingsBuilder(this, true));
-  DecisionBuilder* savings_builder =
-      solver_->RevAlloc(new SavingsBuilder(this, false));
-  first_solution_decision_builders_[ROUTING_SAVINGS] = solver_->Try(
-      savings_builder, first_solution_decision_builders_[ROUTING_SAVINGS]);
+  if (FLAGS_routing_use_filtered_first_solutions) {
+    first_solution_filtered_decision_builders_[ROUTING_SAVINGS] =
+        solver_->RevAlloc(new SavingsFilteredDecisionBuilder(
+            this, FLAGS_savings_filter_neighbors,
+            GetOrCreateFeasibilityFilters()));
+    first_solution_decision_builders_[ROUTING_SAVINGS] = solver_->Try(
+        first_solution_filtered_decision_builders_[ROUTING_SAVINGS],
+        solver_->RevAlloc(new SavingsBuilder(this, true)));
+  } else {
+    first_solution_decision_builders_[ROUTING_SAVINGS] =
+        solver_->RevAlloc(new SavingsBuilder(this, true));
+    DecisionBuilder* savings_builder =
+        solver_->RevAlloc(new SavingsBuilder(this, false));
+    first_solution_decision_builders_[ROUTING_SAVINGS] = solver_->Try(
+        savings_builder, first_solution_decision_builders_[ROUTING_SAVINGS]);
+  }
   // Sweep
   first_solution_decision_builders_[ROUTING_SWEEP] =
       solver_->RevAlloc(new SweepBuilder(this, true));

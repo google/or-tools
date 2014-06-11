@@ -52,8 +52,8 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
 #include <algorithm>
-#include <math.h>
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <string>
@@ -829,7 +829,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
   }
   virtual bool IsIncremental() const { return false; }
   int Size() const { return vars_.size(); }
-  // Returns the value in the current assignment of the variable of given index.
+// Returns the value in the current assignment of the variable of given index.
 #if !defined(SWIGCSHARP) || !defined(SWIG)
   const Val& Value(int64 index) const {
     DCHECK_LT(index, vars_.size());
@@ -900,15 +900,21 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     }
   }
 
+
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // VarLocalSearchOperator::Start explicitly.
   virtual void OnStart() {}
+
+  // OnStart() should really be protected, but then SWIG doesn't see it. So we
+  // make it public, but only subclasses should access to it (to override it).
+  protected:
+
+
   void MarkChange(int64 index) {
     delta_changes_.Set(index);
     changes_.Set(index);
   }
- protected:
 
   std::vector<V*> vars_;
   std::vector<Val> values_;
@@ -2406,6 +2412,7 @@ inline int64 MaxVarArray(const std::vector<IntVar*>& vars) {
   DCHECK(!vars.empty());
   int64 result = kint64min;
   for (int i = 0; i < vars.size(); ++i) {
+    // The std::max<int64> is needed for compilation on MSVC.
     result = std::max<int64>(result, vars[i]->Max());
   }
   return result;
@@ -2415,6 +2422,7 @@ inline int64 MinVarArray(const std::vector<IntVar*>& vars) {
   DCHECK(!vars.empty());
   int64 result = kint64max;
   for (int i = 0; i < vars.size(); ++i) {
+    // The std::min<int64> is needed for compilation on MSVC.
     result = std::min<int64>(result, vars[i]->Min());
   }
   return result;

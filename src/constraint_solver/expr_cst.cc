@@ -823,7 +823,10 @@ class BetweenCt : public Constraint {
 
   virtual void InitialPropagate() {
     expr_->SetRange(min_, max_);
-    if (demon_ != nullptr && expr_->Min() >= min_ && expr_->Max() <= max_) {
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
+    if (demon_ != nullptr && emin >= min_ && emax <= max_) {
       demon_->inhibit(solver());
     }
   }
@@ -852,7 +855,13 @@ class BetweenCt : public Constraint {
 
 Constraint* Solver::MakeBetweenCt(IntExpr* const e, int64 l, int64 u) {
   CHECK_EQ(this, e->solver());
-  if (e->Min() < l || e->Max() > u) {
+  int64 emin = 0;
+  int64 emax = 0;
+  e->Range(&emin, &emax);
+  if (emax < l || emin > u) {
+    return MakeFalseConstraint();
+  }
+  if (emin < l || emax > u) {
     IntExpr* sub = nullptr;
     int64 coef = 1;
     if (IsProduct(e, &sub, &coef)) {
@@ -860,16 +869,11 @@ Constraint* Solver::MakeBetweenCt(IntExpr* const e, int64 l, int64 u) {
         const int64 tmp = l;
         l = -u;
         u = -tmp;
-        coef *= -1;
+        coef = -coef;
       }
-      if (coef == 0) {
-        return l <= 0 &&  u >= 0 ? MakeTrueConstraint() : MakeFalseConstraint();
-      }
-      if (coef == 1) {
-        return RevAlloc(new BetweenCt(this, e, l, u));
-      } else {
+      CHECK_NE(coef, 0);
+      CHECK_NE(coef, 1);
       return MakeBetweenCt(sub, PosIntDivUp(l, coef), PosIntDivDown(u, coef));
-      }
     } else {
       return RevAlloc(new BetweenCt(this, e, l, u));
     }
@@ -969,14 +973,14 @@ Constraint* Solver::MakeIsBetweenCt(IntExpr* const e, int64 l, int64 u,
         const int64 tmp = l;
         l = -u;
         u = -tmp;
-        coef *= -1;
+        coef = -coef;
       }
       CHECK_NE(coef, 0);
       if (coef == 1) {
         return RevAlloc(new IsBetweenCt(this, e, l, u, b));
       } else {
-      return MakeIsBetweenCt(
-          sub, PosIntDivUp(l, coef), PosIntDivDown(u, coef), b);
+        return MakeIsBetweenCt(sub, PosIntDivUp(l, coef),
+                               PosIntDivDown(u, coef), b);
       }
     } else {
       return RevAlloc(new IsBetweenCt(this, e, l, u, b));
@@ -1228,8 +1232,8 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
-                              const std::vector<T>& values, IntVar* const boolvar) {
-  // Simplify and filter if expr is a filter.
+                            const std::vector<T>& values, IntVar* const boolvar) {
+  // Simplify and filter if expr is a product.
   IntExpr* sub = nullptr;
   int64 coef = 1;
   if (solver->IsProduct(expr, &sub, &coef) && coef != 0 && coef != 1) {
