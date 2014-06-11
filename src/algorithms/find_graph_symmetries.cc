@@ -195,13 +195,14 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
   //
   // Thus, the following loop really does the full recursive refinement as
   // advertised.
-  std::vector<bool> adj(2);
-  adj[0] = true;
-  adj[1] = false;
+  std::vector<bool> adjacency_directions(1, /*outgoing=*/true);
+  if (!reverse_adj_list_index_.empty()) {
+    adjacency_directions.push_back(false);  // Also look at incoming arcs.
+  }
   for (int part_index = first_unrefined_part_index;
        part_index < partition->NumParts();  // Moving target!
        ++part_index) {
-    for (const bool outgoing_adjacency : adj) {
+    for (const bool outgoing_adjacency : adjacency_directions) {
       // Count the aggregated degree of all nodes, only looking at arcs that
       // come from/to the current part.
       if (outgoing_adjacency) {
@@ -232,7 +233,6 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
         partition->Refine(tmp_nodes_with_degree_[degree]);
         tmp_nodes_with_degree_[degree].clear();  // To clean up after us.
       }
-      if (outgoing_adjacency && reverse_adj_list_index_.empty()) break;
     }
   }
 }
