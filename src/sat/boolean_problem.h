@@ -70,8 +70,6 @@ void ExtractSubproblem(const LinearBooleanProblem& problem,
 
 // Modifies the given LinearBooleanProblem so that all the literals appearing
 // inside are positive.
-//
-// TODO(user): Also do that on the objective literals + tests.
 void MakeAllLiteralsPositive(LinearBooleanProblem* problem);
 
 // Returns a list of generators of the symmetry group of the given problem. Each

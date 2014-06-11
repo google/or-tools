@@ -96,6 +96,10 @@ message SatParameters {
   // Deletes this ratio of clauses during each cleanup.
   optional double clause_cleanup_ratio = 13 [default = 0.5];
 
+  // Same as for the clauses, but for the learned pseudo-Boolean constraints.
+  optional double pb_cleanup_increment = 46 [default = 200];
+  optional double pb_cleanup_ratio = 47 [default = 0.5];
+
   // Variable activity parameters.
   //
   // Each time a conflict is found, the activities of some variables are
@@ -196,10 +200,26 @@ message SatParameters {
   // down the solver a bit.
   optional bool unsat_proof = 42 [default = false];
 
-  // Highly experimental!
   // Whether to use pseudo-Boolean resolution to analyze a conflict. Note that
   // this option only make sense if your problem is modelized using
   // pseudo-Boolean constraints. If you only have clauses, this shouldn't change
   // anything (except slow the solver down).
   optional bool use_pb_resolution = 43 [default = false];
+
+  // A different algorithm during PB resolution. It minimizes the number of
+  // calls to ReduceCoefficients() which can be time consuming. However, the
+  // search space will be different and if the coefficients are large, this may
+  // lead to integer overflows that could otherwise be prevented.
+  optional bool minimize_reduction_during_pb_resolution = 48 [default = false];
+
+  // Whether or not the assumption levels are taken into account during the LBD
+  // computation. According to the reference below, not counting them improves
+  // the solver in some situation. Note that this only impact solves under
+  // assumptions.
+  //
+  // Gilles Audemard, Jean-Marie Lagniez, Laurent Simon, "Improving Glucose for
+  // Incremental SAT Solving with Assumptions: Application to MUS Extraction"
+  // Theory and Applications of Satisfiability Testing – SAT 2013, Lecture Notes
+  // in Computer Science Volume 7962, 2013, pp 309-317.
+  optional bool count_assumption_levels_in_lbd = 49 [default = true];
 }

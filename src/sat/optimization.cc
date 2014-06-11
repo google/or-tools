@@ -46,6 +46,163 @@ std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
   return StringPrintf("o %lld", static_cast<int64>(scaled_objective));
 }
 
+struct LiteralWithCoreIndex {
+  LiteralWithCoreIndex(Literal l, int i) : literal(l), core_index(i) {}
+  Literal literal;
+  int core_index;
+};
+
+// Deletes the given indices from a vector. The given indices must be sorted in
+// increasing order. The order of the non-deleted entries in the vector is
+// preserved.
+template <typename Vector>
+void DeleteVectorIndices(const std::vector<int> indices, Vector* v) {
+  int new_size = 0;
+  int indices_index = 0;
+  for (int i = 0; i < v->size(); ++i) {
+    if (indices_index < indices.size() && i == indices[indices_index]) {
+      ++indices_index;
+    } else {
+      (*v)[new_size] = (*v)[i];
+      ++new_size;
+    }
+  }
+  v->resize(new_size);
+}
+
+// In the Fu & Malik algorithm (or in WPM1), when two cores overlap, we
+// artifically introduce symmetries. More precisely:
+//
+// The picture below shows two cores with index 0 and 1, with one blocking
+// variable per '-' and with the variables ordered from left to right (by their
+// assumptions index). The blocking variables will be the one added to "relax"
+// the core for the next iteration.
+//
+// 1: -------------------------------
+// 0:                     ------------------------------------
+//
+// The 2 following assignment of the blocking variables are equivalent.
+// Remember that exactly one blocking variable per core must be assigned to 1.
+//
+// 1: ----------------------1--------
+// 0:                    --------1---------------------------
+//
+// and
+//
+// 1: ---------------------------1---
+// 0:                    ---1--------------------------------
+//
+// This class allows to add binary constraints excluding the second possibility.
+// Basically, each time a new core is added, if two of its blocking variables
+// (b1, b2) have the same assumption index of two blocking variables from
+// another core (c1, c2), then we forbid the assignment c1 true and b2 true.
+//
+// Reference: C Ansótegui, ML Bonet, J Levy, "Sat-based maxsat algorithms",
+// Artificial Intelligence, 2013 - Elsevier.
+class FuMalikSymmetryBreaker {
+ public:
+  FuMalikSymmetryBreaker() {}
+
+  // Must be called before a new core is processed.
+  void StartResolvingNewCore(int new_core_index) {
+    literal_by_core_.resize(new_core_index);
+    for (int i = 0; i < new_core_index; ++i) {
+      literal_by_core_[i].clear();
+    }
+  }
+
+  // This should be called for each blocking literal b of the new core. The
+  // assumption_index identify the soft clause associated to the given blocking
+  // literal. Note that between two StartResolvingNewCore() calls,
+  // ProcessLiteral() is assumed to be called with different assumption_index.
+  //
+  // Changing the order of the calls will not change the correctness, but will
+  // change the symmetry-breaking clause produced.
+  //
+  // Returns a set of literals which can't be true at the same time as b (under
+  // symmetry breaking).
+  std::vector<Literal> ProcessLiteral(int assumption_index, Literal b) {
+    if (assumption_index >= info_by_assumption_index_.size()) {
+      info_by_assumption_index_.resize(assumption_index + 1);
+    }
+
+    // Compute the function result.
+    // info_by_assumption_index_[assumption_index] will contain all the pairs
+    // (blocking_literal, core) of the previous resolved cores at the same
+    // assumption index as b.
+    std::vector<Literal> result;
+    for (LiteralWithCoreIndex data :
+         info_by_assumption_index_[assumption_index]) {
+      // literal_by_core_ will contain all the blocking literal of a given core
+      // with an assumption_index that was used in one of the ProcessLiteral()
+      // calls since the last StartResolvingNewCore().
+      //
+      // Note that there can be only one such literal by core, so we will not
+      // add duplicates.
+      result.insert(result.end(), literal_by_core_[data.core_index].begin(),
+                    literal_by_core_[data.core_index].end());
+    }
+
+    // Update the internal data structure.
+    for (LiteralWithCoreIndex data :
+         info_by_assumption_index_[assumption_index]) {
+      literal_by_core_[data.core_index].push_back(data.literal);
+    }
+    info_by_assumption_index_[assumption_index].push_back(
+        LiteralWithCoreIndex(b, literal_by_core_.size()));
+    return result;
+  }
+
+  // Deletes the given assumption indices.
+  void DeleteIndices(const std::vector<int>& indices) {
+    DeleteVectorIndices(indices, &info_by_assumption_index_);
+  }
+
+  // This is only used in WPM1 to forget all the information related to a given
+  // assumption_index.
+  void ClearInfo(int assumption_index) {
+    CHECK_LE(assumption_index, info_by_assumption_index_.size());
+    info_by_assumption_index_[assumption_index].clear();
+  }
+
+  // This is only used in WPM1 when a new assumption_index is created.
+  void AddInfo(int assumption_index, Literal b) {
+    CHECK_GE(assumption_index, info_by_assumption_index_.size());
+    info_by_assumption_index_.resize(assumption_index + 1);
+    info_by_assumption_index_[assumption_index].push_back(
+        LiteralWithCoreIndex(b, literal_by_core_.size()));
+  }
+
+ private:
+  std::vector<std::vector<LiteralWithCoreIndex>> info_by_assumption_index_;
+  std::vector<std::vector<Literal>> literal_by_core_;
+
+  DISALLOW_COPY_AND_ASSIGN(FuMalikSymmetryBreaker);
+};
+
+// Minimize the given UNSAT core with a really simple heuristic.
+// The idea is to remove literals that are consequences of others in the core.
+// We already know that in the initial order, no literal is propagated by the
+// one before it, so we just look for propagation in the reverse order.
+void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
+  std::vector<Literal> temp = *core;
+  reverse(temp.begin(), temp.end());
+  solver->Backtrack(0);
+
+  // Note that this Solve() is really fast, since the solver should detect that
+  // the assumptions are unsat with unit propagation only. This is just a
+  // convenient way to remove assumptions that are propagated by the one before
+  // them.
+  CHECK_EQ(solver->ResetAndSolveWithGivenAssumptions(temp),
+           SatSolver::ASSUMPTIONS_UNSAT);
+  temp = solver->GetLastIncompatibleDecisions();
+  if (temp.size() < core->size()) {
+    LOG(INFO) << "old core size " << core->size();
+    std::reverse(temp.begin(), temp.end());
+    *core = temp;
+  }
+}
+
 }  // namespace
 
 // This algorithm works by exploiting the unsat core returned by the SAT solver
@@ -53,10 +210,11 @@ std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
 // where all the objective variables are set to their value with minimal cost,
 // and relax in each step some of these fixed variables until the problem
 // becomes satisfiable.
-SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution,
-                                   LogBehavior log) {
+SatSolver::Status SolveWithFuMalik(LogBehavior log,
+                                   const LinearBooleanProblem& problem,
+                                   SatSolver* solver, std::vector<bool>* solution) {
   Logger logger(log);
+  FuMalikSymmetryBreaker symmetry;
   CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
 
   // blocking_clauses will contains a set of clauses that are currently added to
@@ -84,15 +242,15 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
   // Initialize blocking_clauses and assumptions.
   const LinearObjective& objective = problem.objective();
   CHECK_GT(objective.coefficients_size(), 0);
-  const Coefficient unique_objective_coeff(objective.coefficients(0));
+  const Coefficient unique_objective_coeff(std::abs(objective.coefficients(0)));
   for (int i = 0; i < objective.literals_size(); ++i) {
-    CHECK_EQ(objective.coefficients(i), unique_objective_coeff)
+    CHECK_EQ(std::abs(objective.coefficients(i)), unique_objective_coeff)
         << "The basic Fu & Malik algorithm needs constant objective coeffs.";
     const Literal literal(objective.literals(i));
 
     // We want to minimize the cost when this literal is true.
     const Literal min_literal =
-        unique_objective_coeff > 0 ? literal.Negated() : literal;
+        objective.coefficients(i) > 0 ? literal.Negated() : literal;
     blocking_clauses.push_back(std::vector<Literal>(1, min_literal));
 
     // Note that initialy, we do not create any extra variables.
@@ -100,7 +258,9 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
   }
 
   // Print the number of variable with a non-zero cost.
-  logger.Log(StringPrintf("c #weigths:%zu", assumptions.size()));
+  logger.Log(StringPrintf("c #weigths:%zu #vars:%d #constraints:%d",
+                          assumptions.size(), problem.num_variables(),
+                          problem.constraints_size()));
 
   // Starts the algorithm. Each loop will solve the problem under the given
   // assumptions, and if unsat, will relax exactly one of the objective
@@ -124,7 +284,8 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
     // variable appearing in the core. Moreover, we will only relax as little
     // as possible (to not miss the optimal), so we will enforce that the sum
     // of the b_i is exactly one.
-    const std::vector<Literal> core = solver->GetLastIncompatibleDecisions();
+    std::vector<Literal> core = solver->GetLastIncompatibleDecisions();
+    MinimizeCore(solver, &core);
     solver->Backtrack(0);
 
     // Print the search progress.
@@ -139,9 +300,7 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
           assumptions.begin();
       CHECK_LT(index, assumptions.size());
 
-      // Fix it. We also fix all the associated blocking variables if any. Note
-      // that if blocking_clauses[index] contains just one variable, it will be
-      // fixed twice, but that is ok.
+      // Fix it. We also fix all the associated blocking variables if any.
       if (!solver->AddUnitClause(core[0].Negated()))
         return SatSolver::MODEL_UNSAT;
       for (Literal b : blocking_clauses[index]) {
@@ -149,12 +308,23 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
       }
 
       // Erase this entry from the current "objective"
-      assumptions.erase(assumptions.begin() + index);
-      blocking_clauses.erase(blocking_clauses.begin() + index);
+      std::vector<int> to_delete(1, index);
+      DeleteVectorIndices(to_delete, &assumptions);
+      DeleteVectorIndices(to_delete, &blocking_clauses);
+      symmetry.DeleteIndices(to_delete);
     } else {
+      symmetry.StartResolvingNewCore(iter);
+
       // We will add 2 * |core.size()| variables.
       const int old_num_variables = solver->NumVariables();
-      solver->SetNumVariables(old_num_variables + 2 * core.size());
+      if (core.size() == 2) {
+        // Special case. If core.size() == 2, we can use only one blocking
+        // variable (the other one beeing its negation). This actually do happen
+        // quite often in practice, so it is worth it.
+        solver->SetNumVariables(old_num_variables + 3);
+      } else {
+        solver->SetNumVariables(old_num_variables + 2 * core.size());
+      }
 
       // Temporary vectors for the constraint (sum new blocking variable == 1).
       std::vector<LiteralWithCoeff> at_most_one_constraint;
@@ -176,59 +346,37 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
         CHECK_LT(index, assumptions.size());
 
         // The new blocking and assumption variables for this core entry.
-        const Literal b(VariableIndex(old_num_variables + i), true);
-        const Literal a(VariableIndex(old_num_variables + core.size() + i),
-                        true);
-
-        // There are two ways to encode the algorithm in SAT.
-        // TODO(user): The first algo seems better, but experiment more.
-        if (true) {
-          // First, fix the old "assumption" variable to false, which has the
-          // effect of deleting the old clause from the solver.
-          if (assumptions[index].Variable() >= problem.num_variables()) {
-            CHECK(solver->AddUnitClause(assumptions[index].Negated()));
-          }
-
-          // Add the new blocking variable.
-          blocking_clauses[index].push_back(b);
-
-          // Add the new clause to the solver. Temporary including the
-          // assumption, but removing it right afterwards.
-          blocking_clauses[index].push_back(a);
-          ok &= solver->AddProblemClause(blocking_clauses[index]);
-          blocking_clauses[index].pop_back();
-        } else {
-          // a false & b false => previous assumptions (which was false).
-          const Literal old_a = assumptions[index];
-	  std::vector<Literal> vec;
-	  vec.push_back(a);
-	  vec.push_back(b);
-	  vec.push_back(old_a);
-          ok &= solver->AddProblemClause(vec);
-
-          // Also add the two implications a => x and b => x where x is the
-          // negation of the previous assumption variable.
-	  vec.clear();
-	  vec.push_back(a.Negated());
-	  vec.push_back(old_a.Negated());
-          ok &= solver->AddProblemClause(vec);
-	  vec.clear();
-	  vec.push_back(b.Negated());
-	  vec.push_back(old_a.Negated());
-          ok &= solver->AddProblemClause(vec);
-
-          // TODO(user): Also add the exclusion between a and b?
-          if (false) {
-	    vec.clear();
-	    vec.push_back(a.Negated());
-	    vec.push_back(b.Negated());
-            ok &= solver->AddProblemClause(vec);
-	    vec.clear();
-	    vec.push_back(b.Negated());
-	    vec.push_back(a.Negated());
-            ok &= solver->AddProblemClause(vec);
-          }
+        const Literal a(VariableIndex(old_num_variables + i), true);
+        Literal b(VariableIndex(old_num_variables + core.size() + i), true);
+        if (core.size() == 2) {
+          b = Literal(VariableIndex(old_num_variables + 2), true);
+          if (i == 1) b = b.Negated();
         }
+
+        // Symmetry breaking clauses.
+        for (Literal l : symmetry.ProcessLiteral(index, b)) {
+          ok &= solver->AddBinaryClause(l.Negated(), b.Negated());
+        }
+
+        // Note(user): There is more than one way to encode the algorithm in
+        // SAT. Here we "delete" the old blocking clause and add a new one. In
+        // the WPM1 algorithm below, the blocking clause is decomposed into
+        // 3-SAT and we don't need to delete anything.
+
+        // First, fix the old "assumption" variable to false, which has the
+        // effect of deleting the old clause from the solver.
+        if (assumptions[index].Variable() >= problem.num_variables()) {
+          CHECK(solver->AddUnitClause(assumptions[index].Negated()));
+        }
+
+        // Add the new blocking variable.
+        blocking_clauses[index].push_back(b);
+
+        // Add the new clause to the solver. Temporary including the
+        // assumption, but removing it right afterwards.
+        blocking_clauses[index].push_back(a);
+        ok &= solver->AddProblemClause(blocking_clauses[index]);
+        blocking_clauses[index].pop_back();
 
         // For the "== 1" constraint on the blocking literals.
         at_most_one_constraint.push_back(LiteralWithCoeff(b, 1.0));
@@ -256,6 +404,302 @@ SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
   }
 }
 
+SatSolver::Status SolveWithWPM1(LogBehavior log,
+                                const LinearBooleanProblem& problem,
+                                SatSolver* solver, std::vector<bool>* solution) {
+  Logger logger(log);
+  FuMalikSymmetryBreaker symmetry;
+  CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
+
+  // The curent lower_bound on the cost.
+  // It will be correct after the initialization.
+  Coefficient lower_bound(problem.objective().offset());
+  Coefficient upper_bound(kint64max);
+
+  // The assumption literals and their associated cost.
+  std::vector<Literal> assumptions;
+  std::vector<Coefficient> costs;
+  std::vector<Literal> reference;
+
+  // Initialization.
+  const LinearObjective& objective = problem.objective();
+  CHECK_GT(objective.coefficients_size(), 0);
+  for (int i = 0; i < objective.literals_size(); ++i) {
+    const Literal literal(objective.literals(i));
+    const Coefficient coeff(objective.coefficients(i));
+
+    // We want to minimize the cost when the assumption is true.
+    // Note that initially, we do not create any extra variables.
+    if (coeff > 0) {
+      assumptions.push_back(literal.Negated());
+      costs.push_back(coeff);
+    } else {
+      assumptions.push_back(literal);
+      costs.push_back(-coeff);
+      lower_bound += coeff;
+    }
+  }
+  reference = assumptions;
+
+  // This is used by the "stratified" approach.
+  Coefficient stratified_lower_bound =
+      *std::max_element(costs.begin(), costs.end());
+
+  // Print the number of variables with a non-zero cost.
+  logger.Log(StringPrintf("c #weigths:%zu #vars:%d #constraints:%d",
+                          assumptions.size(), problem.num_variables(),
+                          problem.constraints_size()));
+
+  for (int iter = 0;; ++iter) {
+    // This is called "hardening" in the literature.
+    // Basically, we know that there is only hardening_threshold weight left
+    // to distribute, so any assumption with a greater cost than this can never
+    // be false. We fix it instead of treating it as an assumption.
+    solver->Backtrack(0);
+    const Coefficient hardening_threshold = upper_bound - lower_bound;
+    CHECK_GE(hardening_threshold, 0);
+    std::vector<int> to_delete;
+    int num_above_threshold = 0;
+    for (int i = 0; i < assumptions.size(); ++i) {
+      if (costs[i] > hardening_threshold) {
+        if (!solver->AddUnitClause(assumptions[i])) {
+          return SatSolver::MODEL_UNSAT;
+        }
+        to_delete.push_back(i);
+        ++num_above_threshold;
+      } else {
+        // This impact the stratification heuristic.
+        if (solver->Assignment().IsLiteralTrue(assumptions[i])) {
+          to_delete.push_back(i);
+        }
+      }
+    }
+    if (!to_delete.empty()) {
+      logger.Log(StringPrintf("c fixed %zu assumptions, %d with cost > %lld",
+                              to_delete.size(), num_above_threshold,
+                              hardening_threshold.value()));
+      DeleteVectorIndices(to_delete, &assumptions);
+      DeleteVectorIndices(to_delete, &costs);
+      DeleteVectorIndices(to_delete, &reference);
+      symmetry.DeleteIndices(to_delete);
+    }
+
+    // This is the "stratification" part.
+    // Extract the assumptions with a cost >= stratified_lower_bound.
+    std::vector<Literal> assumptions_subset;
+    for (int i = 0; i < assumptions.size(); ++i) {
+      if (costs[i] >= stratified_lower_bound) {
+        assumptions_subset.push_back(assumptions[i]);
+      }
+    }
+
+    const SatSolver::Status result =
+        solver->ResetAndSolveWithGivenAssumptions(assumptions_subset);
+    if (result == SatSolver::MODEL_SAT) {
+      // If not all assumptions where taken, continue with a lower stratified
+      // bound. Otherwise we have an optimal solution!
+      //
+      // TODO(user): Try more advanced variant where the bound is lowered by
+      // more than this minimal amount.
+      const Coefficient old_lower_bound = stratified_lower_bound;
+      for (Coefficient cost : costs) {
+        if (cost < old_lower_bound) {
+          if (stratified_lower_bound == old_lower_bound ||
+              cost > stratified_lower_bound) {
+            stratified_lower_bound = cost;
+          }
+        }
+      }
+
+      ExtractAssignment(problem, *solver, solution);
+      DCHECK(IsAssignmentValid(problem, *solution));
+      Coefficient objective = ComputeObjectiveValue(problem, *solution);
+      if (objective + problem.objective().offset() < upper_bound) {
+        logger.Log(CnfObjectiveLine(problem, objective));
+        upper_bound = objective + problem.objective().offset();
+      }
+
+      if (stratified_lower_bound < old_lower_bound) continue;
+      return SatSolver::MODEL_SAT;
+    }
+    if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
+
+    // The interesting case: we have an unsat core.
+    //
+    // We need to add new "blocking" variables b_i for all the objective
+    // variables appearing in the core. Moreover, we will only relax as little
+    // as possible (to not miss the optimal), so we will enforce that the sum
+    // of the b_i is exactly one.
+    std::vector<Literal> core = solver->GetLastIncompatibleDecisions();
+    MinimizeCore(solver, &core);
+    solver->Backtrack(0);
+
+    // Compute the min cost of all the assertions in the core.
+    // The lower bound will be updated by that much.
+    Coefficient min_cost = kCoefficientMax;
+    {
+      int index = 0;
+      for (int i = 0; i < core.size(); ++i) {
+        index =
+            std::find(assumptions.begin() + index, assumptions.end(), core[i]) -
+            assumptions.begin();
+        CHECK_LT(index, assumptions.size());
+        min_cost = std::min(min_cost, costs[index]);
+      }
+    }
+    lower_bound += min_cost;
+
+    // Print the search progress.
+    logger.Log(
+        StringPrintf("c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld",
+                     iter, core.size(), lower_bound.value(), min_cost.value(),
+                     stratified_lower_bound.value()));
+
+    // This simple line helps a lot on the packup-wpms instances!
+    //
+    // TODO(user): That was because of a bug before in the way
+    // stratified_lower_bound was decremented, not sure it helps that much now.
+    if (min_cost > stratified_lower_bound) {
+      stratified_lower_bound = min_cost;
+    }
+
+    // Special case for a singleton core.
+    if (core.size() == 1) {
+      // Find the index of the "objective" variable that need to be fixed in
+      // its "costly" state.
+      const int index =
+          std::find(assumptions.begin(), assumptions.end(), core[0]) -
+          assumptions.begin();
+      CHECK_LT(index, assumptions.size());
+
+      // Fix it.
+      if (!solver->AddUnitClause(core[0].Negated())) {
+        return SatSolver::MODEL_UNSAT;
+      }
+
+      // Erase this entry from the current "objective".
+      std::vector<int> to_delete(1, index);
+      DeleteVectorIndices(to_delete, &assumptions);
+      DeleteVectorIndices(to_delete, &costs);
+      DeleteVectorIndices(to_delete, &reference);
+      symmetry.DeleteIndices(to_delete);
+    } else {
+      symmetry.StartResolvingNewCore(iter);
+
+      // We will add 2 * |core.size()| variables.
+      const int old_num_variables = solver->NumVariables();
+      if (core.size() == 2) {
+        // Special case. If core.size() == 2, we can use only one blocking
+        // variable (the other one beeing its negation). This actually do happen
+        // quite often in practice, so it is worth it.
+        solver->SetNumVariables(old_num_variables + 3);
+      } else {
+        solver->SetNumVariables(old_num_variables + 2 * core.size());
+      }
+
+      // Temporary vectors for the constraint (sum new blocking variable == 1).
+      std::vector<LiteralWithCoeff> at_most_one_constraint;
+      std::vector<Literal> at_least_one_constraint;
+
+      // This will be set to false if the problem becomes unsat while adding a
+      // new clause. This is unlikely, but may be possible.
+      bool ok = true;
+
+      // Loop over the core.
+      int index = 0;
+      for (int i = 0; i < core.size(); ++i) {
+        // Since the assumptions appear in order in the core, we can find the
+        // relevant "objective" variable efficiently with a simple linear scan
+        // in the assumptions vector (done with index).
+        index =
+            std::find(assumptions.begin() + index, assumptions.end(), core[i]) -
+            assumptions.begin();
+        CHECK_LT(index, assumptions.size());
+
+        // The new blocking and assumption variables for this core entry.
+        const Literal a(VariableIndex(old_num_variables + i), true);
+        Literal b(VariableIndex(old_num_variables + core.size() + i), true);
+        if (core.size() == 2) {
+          b = Literal(VariableIndex(old_num_variables + 2), true);
+          if (i == 1) b = b.Negated();
+        }
+
+        // a false & b false => previous assumptions (which was false).
+        const Literal old_a = assumptions[index];
+        ok &= solver->AddTernaryClause(a, b, old_a);
+
+        // Optional. Also add the two implications a => x and b => x where x is
+        // the negation of the previous assumption variable.
+        ok &= solver->AddBinaryClause(a.Negated(), old_a.Negated());
+        ok &= solver->AddBinaryClause(b.Negated(), old_a.Negated());
+
+        // Optional. Also add the implication a => not(b).
+        ok &= solver->AddBinaryClause(a.Negated(), b.Negated());
+
+        // This is the difference with the Fu & Malik algorithm.
+        // If the soft clause protected by old_a has a cost greater than
+        // min_cost then:
+        // - its cost is disminished by min_cost.
+        // - an identical clause with cost min_cost is artifically added to
+        //   the problem.
+        CHECK_GE(costs[index], min_cost);
+        if (costs[index] == min_cost) {
+          // The new assumption variable replaces the old one.
+          assumptions[index] = a.Negated();
+
+          // Symmetry breaking clauses.
+          for (Literal l : symmetry.ProcessLiteral(index, b)) {
+            ok &= solver->AddBinaryClause(l.Negated(), b.Negated());
+          }
+        } else {
+          // Since the cost of the given index changes, we need to start a new
+          // "equivalence" class for the symmetry breaking algo and clear the
+          // old one.
+          symmetry.AddInfo(assumptions.size(), b);
+          symmetry.ClearInfo(index);
+
+          // Reduce the cost of the old assumption.
+          costs[index] -= min_cost;
+
+          // We add the new assumption with a cost of min_cost.
+          //
+          // Note(user): I think it is nice that these are added after old_a
+          // because assuming old_a will implies all the derived assumptions to
+          // true, and thus they will never appear in a core until old_a is not
+          // an assumption anymore.
+          assumptions.push_back(a.Negated());
+          costs.push_back(min_cost);
+          reference.push_back(reference[index]);
+        }
+
+        // For the "<= 1" constraint on the blocking literals.
+        // Note(user): we don't add the ">= 1" side because it is not needed for
+        // the correctness and it doesn't seems to help.
+        at_most_one_constraint.push_back(LiteralWithCoeff(b, 1.0));
+
+        // Because we have a core, we know that at least one of the initial
+        // problem variables must be true. This seems to help a bit.
+        //
+        // TODO(user): Experiment more.
+        at_least_one_constraint.push_back(reference[index].Negated());
+      }
+
+      // Add the "<= 1" side of the "== 1" constraint.
+      ok &= solver->AddLinearConstraint(false, Coefficient(0), true,
+                                        Coefficient(1.0),
+                                        &at_most_one_constraint);
+
+      // Optional. Add the ">= 1" constraint on the initial problem variables.
+      ok &= solver->AddProblemClause(at_least_one_constraint);
+
+      if (!ok) {
+        LOG(INFO) << "Unsat while adding a clause.";
+        return SatSolver::MODEL_UNSAT;
+      }
+    }
+  }
+}
+
 void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
   // Random preferred variable order.
   const google::protobuf::EnumDescriptor* order_d =
@@ -272,23 +716,14 @@ void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
 
   // Other random parameters.
   parameters->set_use_phase_saving(random->OneIn(2));
-  std::vector<double> ratios;
-  ratios.push_back(0.0);
-  ratios.push_back(0.0);
-  ratios.push_back(0.0);
-  ratios.push_back(0.01);
-  ratios.push_back(1.0);
-  parameters->set_random_polarity_ratio(ratios[random->Uniform(ratios.size())]);
-
-  // IMPORTANT: SetParameters() will reinitialize the seed, so we must change
-  // it.
-  parameters->set_random_seed(parameters->random_seed() + 1);
+  parameters->set_random_polarity_ratio(random->OneIn(2) ? 0.01 : 0.0);
+  parameters->set_random_branches_ratio(random->OneIn(2) ? 0.01 : 0.0);
 }
 
-SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
+SatSolver::Status SolveWithRandomParameters(LogBehavior log,
+                                            const LinearBooleanProblem& problem,
                                             int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution,
-                                            LogBehavior log) {
+                                            std::vector<bool>* solution) {
   Logger logger(log);
   CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
   const SatParameters initial_parameters = solver->parameters();
@@ -297,9 +732,10 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
   SatParameters parameters = initial_parameters;
   TimeLimit time_limit(parameters.max_time_in_seconds());
 
-  // We start with a low limit (increased on each SatSolver::LIMIT_REACHED).
+  // We start with a low conflict limit and increase it until we are able to
+  // solve the problem at least once. After this, the limit stays the same.
+  int max_number_of_conflicts = 5;
   parameters.set_log_search_progress(false);
-  parameters.set_max_number_of_conflicts(10);
 
   Coefficient min_seen(std::numeric_limits<int64>::max());
   Coefficient max_seen(std::numeric_limits<int64>::min());
@@ -307,7 +743,10 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
   for (int i = 0; i < num_times; ++i) {
     solver->Backtrack(0);
     RandomizeDecisionHeuristic(&random, &parameters);
+
+    parameters.set_max_number_of_conflicts(max_number_of_conflicts);
     parameters.set_max_time_in_seconds(time_limit.GetTimeLeft());
+    parameters.set_random_seed(i);
     solver->SetParameters(parameters);
     solver->ResetDecisionHeuristic();
 
@@ -315,10 +754,16 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
     if (use_obj) UseObjectiveForSatAssignmentPreference(problem, solver);
 
     const SatSolver::Status result = solver->Solve();
-    if (result == SatSolver::MODEL_UNSAT) return SatSolver::MODEL_UNSAT;
+    if (result == SatSolver::MODEL_UNSAT) {
+      // If the problem is UNSAT after we over-constrained the objective, then
+      // we found an optimal solution, otherwise, even the decision problem is
+      // UNSAT.
+      if (best == kCoefficientMax) return SatSolver::MODEL_UNSAT;
+      return SatSolver::MODEL_SAT;
+    }
     if (result == SatSolver::LIMIT_REACHED) {
-      parameters.set_max_number_of_conflicts(
-          static_cast<int64>(1.1 * parameters.max_number_of_conflicts()));
+      // We augment the number of conflict until we have one feasible solution.
+      if (best == kCoefficientMax) ++max_number_of_conflicts;
       if (time_limit.LimitReached()) return SatSolver::LIMIT_REACHED;
       continue;
     }
@@ -332,6 +777,13 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
       *solution = candidate;
       best = objective;
       logger.Log(CnfObjectiveLine(problem, objective));
+
+      // Overconstrain the objective.
+      solver->Backtrack(0);
+      if (!AddObjectiveConstraint(problem, false, Coefficient(0), true,
+                                  objective - 1, solver)) {
+        return SatSolver::MODEL_SAT;
+      }
     }
     min_seen = std::min(min_seen, objective);
     max_seen = std::max(max_seen, objective);
@@ -349,9 +801,10 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
   return SatSolver::LIMIT_REACHED;
 }
 
-SatSolver::Status SolveWithLinearScan(const LinearBooleanProblem& problem,
-                                      SatSolver* solver, std::vector<bool>* solution,
-                                      LogBehavior log) {
+SatSolver::Status SolveWithLinearScan(LogBehavior log,
+                                      const LinearBooleanProblem& problem,
+                                      SatSolver* solver,
+                                      std::vector<bool>* solution) {
   Logger logger(log);
   CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
 

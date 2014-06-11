@@ -385,6 +385,16 @@ class Trail {
     info_[var].resolution_node = node;
   }
 
+  // Print the current literals on the trail.
+  std::string DebugString() {
+    std::string result;
+    for (int i = 0; i < trail_index_; ++i) {
+      if (!result.empty()) result += " ";
+      result += trail_[i].DebugString();
+    }
+    return result;
+  }
+
  private:
   int64 num_enqueues_;
   int trail_index_;

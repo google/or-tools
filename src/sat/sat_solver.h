@@ -76,8 +76,17 @@ class SatSolver {
   // Returns false if the problem is detected to be UNSAT.
   bool AddUnitClause(Literal true_literal);
 
+  // Same as AddProblemClause() below, but for small clauses.
+  //
+  // TODO(user): Remove this and AddUnitClause() when initializer lists can be
+  // used in the open-source code like in AddClause({a, b}).
+  bool AddBinaryClause(Literal a, Literal b);
+  bool AddTernaryClause(Literal a, Literal b, Literal c);
+
   // Adds a clause to the problem. Returns false if the problem is detected to
   // be UNSAT.
+  //
+  // TODO(user): Rename this to AddClause().
   bool AddProblemClause(const std::vector<Literal>& literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
@@ -232,6 +241,9 @@ class SatSolver {
   // In any case, the new decisions stack will be the largest valid "prefix"
   // of the old stack. Note that decisions that are now consequence of the ones
   // before them will no longer be decisions.
+  //
+  // Note(user): This function can be called with an already assigned literal,
+  // in which case, it will just do nothing.
   int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
 
   // Tries to enqueue the given decision and performs the propagation.
@@ -264,7 +276,21 @@ class SatSolver {
   int64 num_failures() const;
   int64 num_propagations() const;
 
+  // Only used for debugging. Save the current assignment in debug_assignment_.
+  // The idea is that if we know that a given assignment is satisfiable, then
+  // all the learned clauses or PB constraints must be satisfiable by it. In
+  // debug mode, and after this is called, all the learned clauses are tested to
+  // satisfy this saved assignement.
+  void SaveDebugAssignment();
+
  private:
+  // See SaveDebugAssignment(). Note that these functions only consider the
+  // variables at the time the debug_assignment_ was saved. If new variables
+  // where added since that time, they will be considered unassigned.
+  bool ClauseIsValidUnderDebugAssignement(const std::vector<Literal>& clause) const;
+  bool PBConstraintIsValidUnderDebugAssignment(
+      const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
+
   // Logs the given status if parameters_.log_search_progress() is true.
   // Also returns it.
   Status StatusWithLog(Status status);
@@ -322,8 +348,12 @@ class SatSolver {
   // - The conflict propagates it to not(l)
   // The goal of the operation is to combine the two constraints in order to
   // have a new conflict at a lower trail_index.
-  void ResolvePBConflict(VariableIndex var,
-                         MutableUpperBoundedLinearConstraint* conflict);
+  //
+  // Returns true if the reason for var was a normal clause. In this case,
+  // the *slack is updated to its new value.
+  bool ResolvePBConflict(VariableIndex var,
+                         MutableUpperBoundedLinearConstraint* conflict,
+                         Coefficient* slack);
 
   // Returns true if the clause is the reason for an assigned variable or was
   // the reason the last time a variable was assigned.
@@ -426,7 +456,7 @@ class SatSolver {
   // time ResolvePBConflict() on the current conflict until we have a conflict
   // that allow us to propagate more at a lower decision level. This level
   // is the one returned in backjump_level.
-  void ComputePBConflict(int max_trail_index,
+  void ComputePBConflict(int max_trail_index, Coefficient initial_slack,
                          MutableUpperBoundedLinearConstraint* conflict,
                          int* backjump_level);
 
@@ -549,12 +579,18 @@ class SatSolver {
   // The solver trail.
   Trail trail_;
 
+  // Used for debugging only. See SaveDebugAssignment().
+  VariablesAssignment debug_assignment_;
+
   // The stack of decisions taken by the solver. They are stored in [0,
   // current_decision_level_). The vector is of size num_variables_ so it can
   // store all the decisions. This is done this way because in some situation we
   // need to remember the previously taken decisions after a backtrack.
   int current_decision_level_;
   std::vector<Decision> decisions_;
+
+  // The assumption level. See SolveWithAssumptions().
+  int assumption_level_;
 
   // The index of the first non-propagated literal on the trail. The first index
   // is for non-binary clauses propagation and the second index is for binary

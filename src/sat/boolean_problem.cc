@@ -219,12 +219,23 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
   int64 hard_weigth = 1;
   if (is_wcnf) {
     int i = 0;
-    for (const int64 weight : objective.coefficients()) {
-      CHECK_GT(weight, 0);  // Assumption.
+    for (int64 weight : objective.coefficients()) {
+      CHECK_NE(weight, 0);
+      int signed_literal = objective.literals(i);
+
+      // There is no direct support for an objective offset in the wcnf format.
+      // So this is not a perfect translation of the objective. It is however
+      // possible to achieve the same effect by adding a new variable x, and two
+      // soft clauses: x with weight offset, and -x with weight offset.
+      //
+      // TODO(user): implement this trick.
+      if (weight < 0) {
+        signed_literal = -signed_literal;
+        weight = -weight;
+      }
       literal_to_weight[objective.literals(i)] = weight;
-      if (Literal(objective.literals(i)).Variable() < first_slack_variable) {
-        non_slack_objective.push_back(
-            std::make_pair(objective.literals(i), weight));
+      if (Literal(signed_literal).Variable() < first_slack_variable) {
+        non_slack_objective.push_back(std::make_pair(signed_literal, weight));
       }
       hard_weigth += weight;
       ++i;
@@ -447,6 +458,21 @@ Graph* GenerateGraphForSymmetryDetection(
 }
 
 void MakeAllLiteralsPositive(LinearBooleanProblem* problem) {
+  // Objective.
+  LinearObjective* mutable_objective = problem->mutable_objective();
+  int64 objective_offset = 0;
+  for (int i = 0; i < mutable_objective->literals_size(); ++i) {
+    const int signed_literal = mutable_objective->literals(i);
+    if (signed_literal < 0) {
+      const int64 coefficient = mutable_objective->coefficients(i);
+      mutable_objective->set_literals(i, -signed_literal);
+      mutable_objective->set_coefficients(i, -coefficient);
+      objective_offset += coefficient;
+    }
+  }
+  mutable_objective->set_offset(mutable_objective->offset() + objective_offset);
+
+  // Constraints.
   for (LinearBooleanConstraint& constraint :
        *(problem->mutable_constraints())) {
     int64 sum = 0;

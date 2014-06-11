@@ -16,6 +16,7 @@
 #include <deque>
 #include <limits>
 #include "sat/sat_base.h"
+#include "sat/sat_parameters.pb.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -172,9 +173,34 @@ class MutableUpperBoundedLinearConstraint {
   // Not that this operation also change the original rhs of the constraint.
   void ReduceCoefficients();
 
+  // Same as ReduceCoefficients() but only consider the coefficient of the given
+  // variable.
+  void ReduceGivenCoefficient(VariableIndex var) {
+    const Coefficient bound = max_sum_ - rhs_;
+    const Coefficient diff = GetCoefficient(var) - bound;
+    if (diff > 0) {
+      rhs_ -= diff;
+      max_sum_ -= diff;
+      terms_[var] = (terms_[var] > 0) ? bound : -bound;
+    }
+  }
+
   // Compute the constraint slack assuming that only the variables with index <
   // trail_index are assigned.
-  Coefficient ComputeSlackForTrailPrefix(const Trail& trail, int trail_index);
+  Coefficient ComputeSlackForTrailPrefix(const Trail& trail,
+                                         int trail_index) const;
+
+  // Same as ReduceCoefficients() followed by ComputeSlackForTrailPrefix(). It
+  // allows to loop only once over all the terms of the constraint instead of
+  // doing it twice. This helps since doing that can be the main bottleneck.
+  //
+  // Note that this function assumes that the returned slack will be negative.
+  // This allow to DCHECK some assumptions on what coefficients can be reduced
+  // or not.
+  //
+  // TODO(user): Ideally the slack should be maitainable incrementally.
+  Coefficient ReduceCoefficientsAndComputeSlackForTrailPrefix(
+      const Trail& trail, int trail_index);
 
   // Relaxes the constraint so that:
   // - ComputeSlackForTrailPrefix(trail, trail_index) == target;
@@ -198,17 +224,19 @@ class MutableUpperBoundedLinearConstraint {
   // P1 <= rhs_ - slack <= rhs_ - diff is always true. If at least one of the
   // P2' variable is true, then P2 >= P2' + diff and we have
   // P1 + P2' + diff <= P1 + P2 <= rhs_.
-  void ReduceSlackTo(const Trail& trail, int trail_index, Coefficient target);
+  void ReduceSlackTo(const Trail& trail, int trail_index,
+                     Coefficient initial_slack, Coefficient target);
 
   // Copies this constraint into a std::vector<LiteralWithCoeff> representation.
   void CopyIntoVector(std::vector<LiteralWithCoeff>* output);
 
-  // Adds a positive value to this constraint Rhs().
+  // Adds a non-negative value to this constraint Rhs().
   void AddToRhs(Coefficient value) {
-    CHECK_GT(value, 0);
+    CHECK_GE(value, 0);
     rhs_ += value;
   }
   Coefficient Rhs() const { return rhs_; }
+  Coefficient MaxSum() const { return max_sum_; }
 
   // Adds a term to this constraint. This is in the .h for efficiency.
   // The encoding used internally is described below in the terms_ comment.
@@ -217,21 +245,29 @@ class MutableUpperBoundedLinearConstraint {
     const VariableIndex var = literal.Variable();
     const Coefficient term_encoding = literal.IsPositive() ? coeff : -coeff;
     if (literal != GetLiteral(var)) {
-      // The two terms are of opposite sign.
+      // The two terms are of opposite sign, a "cancelation" happens.
       // We need to change the encoding of the lower magnitude term.
       // - If term > 0, term . x       -> term . (x - 1) + term
       // - If term < 0, term . (x - 1) -> term . x       - term
       // In both cases, rhs -= abs(term).
-      const Coefficient old_rhs = rhs_;
-      rhs_ -= std::min(AbsCoefficient(term_encoding), AbsCoefficient(terms_[var]));
-      CHECK_LE(rhs_, old_rhs) << "Overflow!";
+      rhs_ -= std::min(coeff, AbsCoefficient(terms_[var]));
+      max_sum_ += AbsCoefficient(term_encoding + terms_[var]) -
+                  AbsCoefficient(terms_[var]);
     } else {
       // Both terms are of the same sign (or terms_[var] is zero).
-      // We test for overflow.
-      CHECK_EQ(term_encoding > 0, terms_[var] + term_encoding > 0);
+      max_sum_ += coeff;
     }
+    CHECK_GE(max_sum_, 0) << "Overflow";
     terms_[var] += term_encoding;
     non_zeros_.Set(var);
+  }
+
+  // Returns the "cancelation" amount of AddTerm(literal, coeff).
+  Coefficient CancelationAmount(Literal literal, Coefficient coeff) const {
+    DCHECK_GT(coeff, 0);
+    const VariableIndex var = literal.Variable();
+    if (literal == GetLiteral(var)) return Coefficient(0);
+    return std::min(coeff, AbsCoefficient(terms_[var]));
   }
 
   // Returns a set of positions that contains all the non-zeros terms of the
@@ -246,6 +282,9 @@ class MutableUpperBoundedLinearConstraint {
  private:
   Coefficient AbsCoefficient(Coefficient a) const { return a > 0 ? a : -a; }
 
+  // Only used for DCHECK_EQ(max_sum_, ComputeMaxSum());
+  Coefficient ComputeMaxSum() const;
+
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
@@ -253,6 +292,10 @@ class MutableUpperBoundedLinearConstraint {
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
+
+  // The constraint maximum sum (i.e. sum of the absolute term coefficients).
+  // Note that checking the integer overflow on this sum is enough.
+  Coefficient max_sum_;
 
   // Contains the possibly non-zeros terms_ value.
   SparseBitset<VariableIndex> non_zeros_;
@@ -309,7 +352,7 @@ class UpperBoundedLinearConstraint {
   // Propagate(). Each time a literal in unassigned, the threshold value must
   // have been increased by its coefficient. This update the threshold to its
   // new value.
-  void Untrail(Coefficient* threshold);
+  void Untrail(Coefficient* threshold, int trail_index);
 
   // Provided that the literal with given source_trail_index was the one that
   // propagated the conflict or the literal we wants to explain, then this will
@@ -332,7 +375,8 @@ class UpperBoundedLinearConstraint {
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is
   // that here the reason for var is *this.
   void ResolvePBConflict(const Trail& trail, VariableIndex var,
-                         MutableUpperBoundedLinearConstraint* conflict);
+                         MutableUpperBoundedLinearConstraint* conflict,
+                         Coefficient* conflict_slack);
 
   // Adds this pb constraint into the given mutable one.
   //
@@ -341,12 +385,36 @@ class UpperBoundedLinearConstraint {
   // MutableUpperBoundedLinearConstraint.
   void AddToConflict(MutableUpperBoundedLinearConstraint* conflict);
 
+  // Compute the sum of the "cancelation" in AddTerm() if *this is added to
+  // the given conflict. The sum doesn't take into account literal assigned with
+  // a trail index smaller than the given one.
+  //
+  // Note(user): Currently, this is only used in DCHECKs.
+  Coefficient ComputeCancelation(
+      const Trail& trail, int trail_index,
+      const MutableUpperBoundedLinearConstraint& conflict);
+
   // Returns the resolution node associated to this constraint. Note that it can
   // be nullptr if the solver is not configured to compute the reason for an
   // unsatisfiable problem or if this constraint is not relevant for the current
   // core computation.
   ResolutionNode* ResolutionNodePointer() const { return node_; }
   void ChangeResolutionNode(ResolutionNode* node) { node_ = node; }
+
+  // API to mark a constraint for deletion before actually deleting it.
+  void MarkForDeletion() { is_marked_for_deletion_ = true; }
+  bool is_marked_for_deletion() const { return is_marked_for_deletion_; }
+
+  // Only learned constraint are considered for deletion during the constraint
+  // cleanup phase. We also can't delete variables used as a reason.
+  void set_is_learned(bool is_learned) { is_learned_ = is_learned; }
+  bool is_learned() const { return is_learned_; }
+  bool is_used_as_a_reason() const { return first_reason_trail_index_ != -1; }
+
+  // Activity of the constraint. Only low activity constraint will be deleted
+  // during the constraint cleanup phase.
+  void set_activity(double activity) { activity_ = activity; }
+  double activity() const { return activity_; }
 
  private:
   Coefficient GetSlackFromThreshold(Coefficient threshold) {
@@ -357,9 +425,16 @@ class UpperBoundedLinearConstraint {
     already_propagated_end_ = starts_[index_ + 1];
   }
 
+  // Constraint management fields.
+  // TODO(user): Rearrange and specify bit size to minimize memory usage.
+  bool is_marked_for_deletion_;
+  bool is_learned_;
+  int first_reason_trail_index_;
+  double activity_;
+
+  // Constraint propagation fields.
   int index_;
   int already_propagated_end_;
-  Coefficient rhs_;
 
   // In the internal representation, we merge the terms with the same
   // coefficient.
@@ -371,7 +446,9 @@ class UpperBoundedLinearConstraint {
   std::vector<Coefficient> coeffs_;
   std::vector<int> starts_;
   std::vector<Literal> literals_;
+  Coefficient rhs_;
 
+  // This is only used for UNSAT core computation.
   ResolutionNode* node_;
 };
 
@@ -383,6 +460,8 @@ class PbConstraints {
       : trail_(trail),
         propagation_trail_index_(0),
         conflicting_constraint_index_(-1),
+        num_learned_constraint_before_cleanup_(0),
+        constraint_activity_increment_(1.0),
         stats_("PbConstraints"),
         num_constraint_lookups_(0),
         num_threshold_updates_(0) {}
@@ -397,6 +476,11 @@ class PbConstraints {
   // Changes the number of variables.
   void Resize(int num_variables) { to_update_.resize(num_variables << 1); }
 
+  // Parameters management.
+  void SetParameters(const SatParameters& parameters) {
+    parameters_ = parameters;
+  }
+
   // Adds a constraint in canonical form to the set of managed constraints.
   //
   // There are some preconditions, and the function will return false if they
@@ -409,6 +493,13 @@ class PbConstraints {
   // same as the one we are trying to add.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
                      ResolutionNode* node);
+
+  // Same as AddConstraint(), but also marks the added constraint as learned
+  // so that it can be deleted during the constraint cleanup phase.
+  bool AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
+                            Coefficient rhs, ResolutionNode* node);
+
+  // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
 
   // If some literals enqueued on the trail haven't been processed by this class
@@ -444,14 +535,42 @@ class PbConstraints {
   void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
   UpperBoundedLinearConstraint* ConflictingConstraint() {
     if (conflicting_constraint_index_ == -1) return nullptr;
-    return &(constraints_[conflicting_constraint_index_.value()]);
+    return constraints_[conflicting_constraint_index_.value()].get();
+  }
+
+  // Activity update functions.
+  // TODO(user): Remove duplication with other activity update functions.
+  void BumpActivity(UpperBoundedLinearConstraint* constraint);
+  void RescaleActivities(double scaling_factor);
+  void UpdateActivityIncrement();
+
+  // Only used for testing.
+  void DeleteConstraint(int index) {
+    constraints_[index]->MarkForDeletion();
+    DeleteConstraintMarkedForDeletion();
   }
 
  private:
+  // Same function as the clause related one is SatSolver().
+  // TODO(user): Remove duplication.
+  void ComputeNewLearnedConstraintLimit();
+  void DeleteSomeLearnedConstraintIfNeeded();
+
+  // Deletes all the UpperBoundedLinearConstraint for which
+  // is_marked_for_deletion() is true. This is relatively slow in O(number of
+  // terms in all constraints).
+  void DeleteConstraintMarkedForDeletion();
+
   // Each constraint managed by this class is associated with an index.
   // The set of indices is always [0, num_constraints_).
+  //
+  // Note(user): this complicate things during deletion, but the propagation is
+  // about two times faster with this implementation than one with direct
+  // pointer to an UpperBoundedLinearConstraint. The main reason for this is
+  // probably that the thresholds_ vector is a lot more efficient cache-wise.
   DEFINE_INT_TYPE(ConstraintIndex, int32);
   struct ConstraintIndexWithCoeff {
+    ConstraintIndexWithCoeff() {}  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)
         : need_untrail_inspection(n), index(i), coefficient(c) {}
     bool need_untrail_inspection;
@@ -470,9 +589,8 @@ class PbConstraints {
   // Temporary vector to hold the last conflict of a pseudo-Boolean propagation.
   mutable std::vector<Literal> conflict_scratchpad_;
 
-  // We use a dequeue to store the pseudo-Boolean constraint because we want
-  // pointers to its elements to be still valid after more push_back().
-  std::deque<UpperBoundedLinearConstraint> constraints_;
+  // The set of all pseudo-boolean constraint managed by this class.
+  std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
   // The current value of the threshold for each constraints.
   ITIVector<ConstraintIndex, Coefficient> thresholds_;
@@ -487,6 +605,14 @@ class PbConstraints {
   // Last conflicting PB constraint index. This is reset to -1 when
   // ClearConflictingConstraint() is called.
   ConstraintIndex conflicting_constraint_index_;
+
+  // Used for the constraint cleaning policy.
+  int target_number_of_learned_constraint_;
+  int num_learned_constraint_before_cleanup_;
+  double constraint_activity_increment_;
+
+  // Algorithm parameters.
+  SatParameters parameters_;
 
   // Some statistics.
   mutable StatsGroup stats_;

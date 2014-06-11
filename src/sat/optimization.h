@@ -52,18 +52,30 @@ enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
 //
 // TODO(user): double-check the correctness if the objective coefficients are
 // negative.
-SatSolver::Status SolveWithFuMalik(const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution,
-                                   LogBehavior log);
+SatSolver::Status SolveWithFuMalik(LogBehavior log,
+                                   const LinearBooleanProblem& problem,
+                                   SatSolver* solver, std::vector<bool>* solution);
+
+// The WPM1 algorithm is a generalization of the Fu & Malik algorithm to
+// weighted problems. Note that if all objective weights are the same, this is
+// almost the same as SolveWithFuMalik() but the encoding of the constraints is
+// slightly different.
+//
+// Ansotegui, C., Bonet, M.L., Levy, J.: Solving (weighted) partial MaxSAT
+// through satisﬁability testing. In: Proc. of the 12th Int. Conf. on Theory and
+// Applications of Satisﬁability Testing (SAT’09). pp. 427–440 (2009)
+SatSolver::Status SolveWithWPM1(LogBehavior log,
+                                const LinearBooleanProblem& problem,
+                                SatSolver* solver, std::vector<bool>* solution);
 
 // Solves num_times the decision version of the given problem with different
 // random parameters. Keep the best solution (regarding the objective) and
 // returns it in solution. The problem is assumed to be already loaded into the
 // given solver.
-SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
+SatSolver::Status SolveWithRandomParameters(LogBehavior log,
+                                            const LinearBooleanProblem& problem,
                                             int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution,
-                                            LogBehavior log);
+                                            std::vector<bool>* solution);
 
 // Starts by solving the decision version of the given LinearBooleanProblem and
 // then simply add a constraint to find a lower objective that the current best
@@ -72,9 +84,10 @@ SatSolver::Status SolveWithRandomParameters(const LinearBooleanProblem& problem,
 // The problem is assumed to be already loaded into the given solver. If
 // solution is initially a feasible solution, the search will starts from there.
 // solution will be updated with the best solution found so far.
-SatSolver::Status SolveWithLinearScan(const LinearBooleanProblem& problem,
-                                      SatSolver* solver, std::vector<bool>* solution,
-                                      LogBehavior log);
+SatSolver::Status SolveWithLinearScan(LogBehavior log,
+                                      const LinearBooleanProblem& problem,
+                                      SatSolver* solver,
+                                      std::vector<bool>* solution);
 
 }  // namespace sat
 }  // namespace operations_research
