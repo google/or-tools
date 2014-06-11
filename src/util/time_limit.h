@@ -18,16 +18,22 @@
 #include <limits>
 #include <vector>
 
+#include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/port.h"
+#include "base/timer.h"
 #include "base/time_support.h"
+
+// Enables to change the behavior of the TimeLimit class to use "usertime"
+// instead of walltime. This is mainly useful for benchmarks.
+DECLARE_bool(time_limit_use_usertime);
 
 namespace operations_research {
 
 // Simple class to compute efficiently the maximum over a fixed size window
 // of a numeric stream. This works in constant average amortized time.
-template <class Number>
+template <class Number = double>
 class RunningMax {
  public:
   // Takes the size of the running window. The size must be positive.
@@ -68,8 +74,8 @@ class RunningMax {
 // small, without aborting too early.
 class TimeLimit {
  public:
-  static const double kSafetyBufferSeconds;
-  static const int kHistorySize;
+  static const double kSafetyBufferSeconds;  // See the .cc for the value.
+  static const int kHistorySize = 100;
 
   // Takes the wanted time limit in seconds (relative to "now", and based on the
   // wall time). If limit_in_seconds is infinity, then LimitReached() will
@@ -90,6 +96,8 @@ class TimeLimit {
   //
   // If the TimeLimit was constructed with "infinity" as the limit, this will
   // always return infinity.
+  //
+  // Note that this function is not optimized for speed as LimitReached() is.
   double GetTimeLeft() const;
 
   // Returns the time elapsed in seconds since the construction of this object.
@@ -103,6 +111,10 @@ class TimeLimit {
   int64 limit_ns_;  // Not const! See the code of LimitReached().
   const int64 safety_buffer_ns_;
   RunningMax<int64> running_max_;
+
+  // Only used when FLAGS_time_limit_use_usertime is true.
+  UserTimer user_timer_;
+  double limit_in_seconds_;
 
   DISALLOW_COPY_AND_ASSIGN(TimeLimit);
 };
@@ -167,13 +179,29 @@ inline TimeLimit::TimeLimit(double limit_in_seconds)
                     ? kint64max
                     : static_cast<int64>(limit_in_seconds * 1e9) + start_ns_),
       safety_buffer_ns_(static_cast<int64>(kSafetyBufferSeconds * 1e9)),
-      running_max_(kHistorySize) {}
+      running_max_(kHistorySize) {
+  if (FLAGS_time_limit_use_usertime) {
+    user_timer_.Start();
+    limit_in_seconds_ = limit_in_seconds;
+  }
+}
 
 inline bool TimeLimit::LimitReached() {
   const int64 current_ns = base::GetCurrentTimeNanos();
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
+    if (FLAGS_time_limit_use_usertime) {
+      // To avoid making many system calls, we only check the user time when
+      // the "absolute" time limit has been reached. Note that the user time
+      // should advance more slowly, so this is correct.
+      const double time_left_s = limit_in_seconds_ - user_timer_.Get();
+      if (time_left_s > kSafetyBufferSeconds) {
+        limit_ns_ = static_cast<int64>(time_left_s * 1e9) + last_ns_;
+        return false;
+      }
+    }
+
     // To ensure that future calls to LimitReached() will return true.
     limit_ns_ = 0;
     return true;
@@ -185,7 +213,11 @@ inline double TimeLimit::GetTimeLeft() const {
   if (limit_ns_ == kint64max) return std::numeric_limits<double>::infinity();
   const int64 delta_ns = limit_ns_ - base::GetCurrentTimeNanos();
   if (delta_ns < 0) return 0.0;
-  return delta_ns * 1e-9;
+  if (FLAGS_time_limit_use_usertime) {
+    return std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);
+  } else {
+    return delta_ns * 1e-9;
+  }
 }
 
 }  // namespace operations_research

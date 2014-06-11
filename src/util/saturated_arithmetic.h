@@ -52,18 +52,46 @@ inline bool AddUnderflows(int64 left, int64 right) {
   return right < 0 && left < kint64min - right;
 }
 
-inline int64 CapAdd(int64 x, int64 y) {
+// Returns kint64max if x >= 0 and kint64min if x < 0.
+inline int64 CapWithSignOf(int64 x) {
+  // sign_bit is 1 when x < 0, 0 otherwise.
+  const int64 sign_bit = static_cast<uint64>(x) >> 63;
+  // return kint64max if x >= 0 or kint64max + 1 (== kint64min) if x < 0.
+  return sign_bit + kint64max;
+}
+
+inline int64 CapAddGeneric(int64 x, int64 y) {
   const int64 result = x + y;
   // Overflow cannot occur if operands have different signs.
   // It can only occur if sign(x) == sign(y) and sign(result) != sign(x),
   // which is equivalent to: sign(x) != sign(result) && sign(y) != sign(result).
   // This is captured when 'negative_if_overflow' below is negative.
   const int64 negative_if_overflow = (x ^ result) & (y ^ result);
-  // sign_bit is 1 when x < 0, 0 otherwise.
-  const int64 sign_bit = static_cast<uint64>(x) >> 63;
-  // cap = kint64max if x >= 0 and cap = kint64max + 1 (== kint64min) if x < 0.
-  const int64 cap = sign_bit + kint64max;
-  return negative_if_overflow < 0 ? cap : result;
+  return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
+}
+
+#if defined(__GNUC__) && defined(ARCH_K8)
+// TODO(user): port this to other architectures.
+inline int64 CapAddFast(int64 x, int64 y) {
+  const int64 cap = CapWithSignOf(x);
+  int64 result;
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\t"   "movq %[x],%[result]"
+      "\n\t" "addq %[y],%[result]"
+      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
+      : [result] "=r&"(result)  // Output: don't use an input register ('&').
+      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : "cc"  /* Clobbered registers */  );
+  return result;
+}
+#endif
+
+inline int64 CapAdd(int64 x, int64 y) {
+#if defined(__GNUC__) && defined(ARCH_K8)
+  return CapAddFast(x, y);
+#else
+  return CapAddGeneric(x, y);
+#endif
 }
 
 inline bool SubOverflows(int64 left, int64 right) {
@@ -74,14 +102,36 @@ inline bool SubUnderflows(int64 left, int64 right) {
   return right > 0 && left < kint64min + right;
 }
 
-inline int64 CapSub(int64 x, int64 y) {
+inline int64 CapSubGeneric(int64 x, int64 y) {
   const int64 result = x - y;
   // This is the same reasoning as for CapAdd. We have x = result + y.
   // The formula is the same, with 'x' and result exchanged.
   const int64 negative_if_overflow = (x ^ result) & (x ^ y);
-  const int64 sign_bit = static_cast<uint64>(x) >> 63;
-  const int64 cap = sign_bit + kint64max;
-  return negative_if_overflow < 0 ? cap : result;
+  return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
+}
+
+#if defined(__GNUC__) && defined(ARCH_K8)
+// TODO(user): port this to other architectures.
+inline int64 CapSubFast(int64 x, int64 y) {
+  const int64 cap = CapWithSignOf(x);
+  int64 result;
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\t"   "movq %[x],%[result]"
+      "\n\t" "subq %[y],%[result]"
+      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
+      : [result] "=r&"(result)  // Output: don't use an input register ('&').
+      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : "cc"  /* Clobbered registers */  );
+  return result;
+}
+#endif
+
+inline int64 CapSub(int64 x, int64 y) {
+#if defined(__GNUC__) && defined(ARCH_K8)
+  return CapSubFast(x, y);
+#else
+  return CapSubGeneric(x, y);
+#endif
 }
 
 inline int64 CapOpp(int64 v) {
@@ -89,27 +139,7 @@ inline int64 CapOpp(int64 v) {
   return v == kint64min ? kint64max : -v;
 }
 
-inline int64 CapProd(int64 left, int64 right) {
-#if defined(__GNUC__) && defined(ARCH_K8)
-  // sign_bit will be 1 iff left and right have opposite signs.
-  const int64 sign_bit = static_cast<uint64>(left ^ right) >> 63;
-  // cap is thus kint64max if left and right have the same sign, and kint64min
-  // if left and right have opposite signs.
-  const int64 cap = sign_bit + kint64max;
-  int64 result;
-  // Here, we use the fact that imul of two signed 64-integers returns a 128-bit
-  // result -- we care about the lower 64 bits. More importantly, imul also sets
-  // the carry flag if 64 bits were not enough.
-  // We then use cmovc to return cap if the carry was set.
-  asm(       "movq %1,%%rax"
-      "\n\t" "imulq %2"
-      "\n\t" "cmovc %3,%%rax"
-      "\n\t" "movq %%rax,%0"
-      : "=r"(result)
-      : "r"(left), "r"(right), "r"(cap)
-      : "%rax", "%rdx" );
-  return result;
-#else
+inline int64 CapProdGeneric(int64 left, int64 right) {
   if (left == 0 || right == 0) {
     return 0;
   }
@@ -135,6 +165,38 @@ inline int64 CapProd(int64 left, int64 right) {
     } /* end if left and right are non-positive */
   }   /* end if left is non-positive */
   return left * right;
+}
+
+#if defined(__GNUC__) && defined(ARCH_K8)
+// TODO(user): port this to other architectures.
+inline int64 CapProdFast(int64 x, int64 y) {
+  // cap = kint64max if x and y have the same sign, cap = kint64min
+  // otherwise.
+  const int64 cap = CapWithSignOf(x ^ y);
+  int64 result;
+  // Here, we use the fact that imul of two signed 64-integers returns a 128-bit
+  // result -- we care about the lower 64 bits. More importantly, imul also sets
+  // the carry flag if 64 bits were not enough.
+  // We then use cmovc to return cap if the carry was set.
+  // TODO(user): remove the two 'movq' by setting the right constraints on
+  // input and output registers.
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\t"   "movq %[x],%%rax"
+      "\n\t" "imulq %[y]"
+      "\n\t" "cmovc %[cap],%%rax"  // Conditional move if carry.
+      "\n\t" "movq %%rax,%[result]"
+      : [result] "=r&"(result)  // Output: don't use an input register ('&').
+      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : "cc", "%rax", "%rdx" /* Clobbered registers */);
+  return result;
+}
+#endif
+
+inline int64 CapProd(int64 x, int64 y) {
+#if defined(__GNUC__) && defined(ARCH_K8)
+  return CapProdFast(x, y);
+#else
+  return CapProdGeneric(x, y);
 #endif
 }
 

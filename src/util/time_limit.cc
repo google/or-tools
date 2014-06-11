@@ -12,10 +12,12 @@
 // limitations under the License.
 #include "util/time_limit.h"
 
-#include <algorithm>
-#include <limits>
+DEFINE_bool(time_limit_use_usertime, false,
+            "If true, rely on the user time in the TimeLimit class. This is "
+            "only recommended for benchmarking on a non-isolated environment.");
 
 namespace operations_research {
+// static constants.
 const double TimeLimit::kSafetyBufferSeconds = 1e-4;
-const int TimeLimit::kHistorySize = 100;
+const int TimeLimit::kHistorySize;
 }  // namespace operations_research
