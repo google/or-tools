@@ -17,12 +17,17 @@
 #include <string>
 #include <vector>
 
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/strtoint.h"
 #include "base/split.h"
 #include "sat/boolean_problem.pb.h"
 #include "util/filelineiter.h"
+
+DEFINE_bool(wcnf_use_strong_slack, true,
+            "If true, when we add a slack variable to reify a soft clause, we "
+            "enforce the fact that when it is true, the clause must be false.");
 
 namespace operations_research {
 namespace sat {
@@ -42,6 +47,8 @@ class SatCnfReader {
 
   // Loads the given cnf filename into the given problem.
   bool Load(const std::string& filename, LinearBooleanProblem* problem) {
+    positive_literal_to_weight_.clear();
+    objective_offset_ = 0;
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
     is_wcnf_ = false;
@@ -50,6 +57,7 @@ class SatCnfReader {
     num_skipped_soft_clauses_ = 0;
     num_singleton_soft_clauses_ = 0;
     num_slack_variables_ = 0;
+    num_slack_binary_clauses_ = 0;
 
     int num_lines = 0;
     for (const std::string& line : FileLines(filename)) {
@@ -62,7 +70,19 @@ class SatCnfReader {
     problem->set_original_num_variables(num_variables_);
     problem->set_num_variables(num_variables_ + num_slack_variables_);
 
-    if (num_clauses_ !=
+    // Fill the LinearBooleanProblem objective.
+    if (!positive_literal_to_weight_.empty()) {
+      LinearObjective* objective = problem->mutable_objective();
+      for (const std::pair<int, int64> p : positive_literal_to_weight_) {
+        if (p.second != 0) {
+          objective->add_literals(p.first);
+          objective->add_coefficients(p.second);
+        }
+      }
+      objective->set_offset(objective_offset_);
+    }
+
+    if (num_clauses_ + num_slack_binary_clauses_ !=
         problem->constraints_size() + num_singleton_soft_clauses_ +
             num_skipped_soft_clauses_) {
       LOG(ERROR) << "Wrong number of clauses.";
@@ -151,15 +171,14 @@ class SatCnfReader {
           // linear objective introduces many singleton soft clauses. Because we
           // natively work with a linear objective, we can just put the cost on
           // the unique variable of such clause and remove the clause.
-          //
-          // TODO(user): If many singleton clauses with the same variable
-          // appear, we will create duplicate entry in the objective which is
-          // not supported (and is checked by BooleanProblemIsValid()). If we do
-          // encounter this case in practice, fix this.
           ++num_singleton_soft_clauses_;
-          LinearObjective* objective = problem->mutable_objective();
-          objective->add_literals(-constraint->literals(0));
-          objective->add_coefficients(weight);
+          const int literal = -constraint->literals(0);
+          if (literal > 0) {
+            positive_literal_to_weight_[literal] += weight;
+          } else {
+            positive_literal_to_weight_[-literal] -= weight;
+            objective_offset_ += weight;
+          }
           problem->mutable_constraints()->RemoveLast();
         } else {
           // The +1 is because a positive literal is the same as the 1-based
@@ -168,11 +187,28 @@ class SatCnfReader {
           ++num_slack_variables_;
           constraint->add_literals(slack_literal);
           constraint->add_coefficients(1);
-
-          LinearObjective* objective = problem->mutable_objective();
-          objective->add_literals(slack_literal);
-          objective->add_coefficients(weight);
           DCHECK_EQ(constraint->literals_size(), reserved_size);
+
+          if (slack_literal > 0) {
+            positive_literal_to_weight_[slack_literal] += weight;
+          } else {
+            positive_literal_to_weight_[-slack_literal] -= weight;
+            objective_offset_ += weight;
+          }
+
+          if (FLAGS_wcnf_use_strong_slack) {
+            // Add the binary implications slack_literal true => all the other
+            // clause literals are false.
+            for (int i = 0; i + 1 < constraint->literals_size(); ++i) {
+              LinearBooleanConstraint* bc = problem->add_constraints();
+              bc->set_lower_bound(1);
+              bc->add_literals(-slack_literal);
+              bc->add_literals(-constraint->literals(i));
+              bc->add_coefficients(1);
+              bc->add_coefficients(1);
+              ++num_slack_binary_clauses_;
+            }
+          }
         }
       } else {
         // If wcnf is true, we currently reserve one more literals than needed
@@ -190,6 +226,11 @@ class SatCnfReader {
   // Temporary storage for ProcessNewLine().
   std::vector<StringPiece> words_;
 
+  // We stores the objective in a map because we want the variables to appear
+  // only once in the LinearObjective proto.
+  std::map<int, int64> positive_literal_to_weight_;
+  int64 objective_offset_;
+
   // Used for the wcnf format.
   bool is_wcnf_;
   // Some files have text after %. This indicates if we have seen the '%'.
@@ -199,6 +240,7 @@ class SatCnfReader {
   int num_slack_variables_;
   int num_skipped_soft_clauses_;
   int num_singleton_soft_clauses_;
+  int num_slack_binary_clauses_;
 
   DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };

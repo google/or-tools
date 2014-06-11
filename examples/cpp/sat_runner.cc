@@ -71,10 +71,13 @@ DEFINE_string(
 DEFINE_bool(fu_malik, false,
             "If true, search the optimal solution with the Fu & Malik algo.");
 
+DEFINE_bool(wpm1, false,
+            "If true, search the optimal solution with the WPM1 algo.");
+
 DEFINE_bool(linear_scan, false,
             "If true, search the optimal solution with the linear scan algo.");
 
-DEFINE_int32(randomize, 100,
+DEFINE_int32(randomize, 500,
              "If positive, solve that many times the problem with a random "
              "decision heuristic before trying to optimize it.");
 
@@ -109,7 +112,7 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
   } else if (HasSuffixString(filename, ".cnf") ||
              HasSuffixString(filename, ".wcnf")) {
     SatCnfReader reader;
-    if (FLAGS_fu_malik || FLAGS_linear_scan) {
+    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
       reader.InterpretCnfAsMaxSat(true);
     }
     if (!reader.Load(filename, problem)) {
@@ -135,14 +138,17 @@ std::string SolutionString(const LinearBooleanProblem& problem,
 // To benefit from the operations_research namespace, we put all the main() code
 // here.
 int Run() {
+  SatParameters parameters;
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
 
+  // In the algorithms below, this seems like a good parameter.
+  parameters.set_count_assumption_levels_in_lbd(false);
+
   // Parse the --params flag.
-  SatParameters parameters;
   if (!FLAGS_params.empty()) {
-    CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_params, &parameters))
+    CHECK(google::protobuf::TextFormat::MergeFromString(FLAGS_params, &parameters))
         << FLAGS_params;
   }
 
@@ -187,15 +193,20 @@ int Run() {
 
   // Optimize?
   std::vector<bool> solution;
-  SatSolver::Status result;
-  if (FLAGS_fu_malik || FLAGS_linear_scan) {
+  SatSolver::Status result = SatSolver::LIMIT_REACHED;
+  if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
     if (FLAGS_randomize > 0 && FLAGS_linear_scan) {
-      SolveWithRandomParameters(problem, FLAGS_randomize, &solver, &solution,
-                                STDOUT_LOG);
+      result = SolveWithRandomParameters(STDOUT_LOG, problem, FLAGS_randomize,
+                                         &solver, &solution);
     }
-    result = FLAGS_fu_malik
-                 ? SolveWithFuMalik(problem, &solver, &solution, STDOUT_LOG)
-                 : SolveWithLinearScan(problem, &solver, &solution, STDOUT_LOG);
+    if (result == SatSolver::LIMIT_REACHED) {
+      result = FLAGS_fu_malik
+                   ? SolveWithFuMalik(STDOUT_LOG, problem, &solver, &solution)
+                   : FLAGS_wpm1 ? SolveWithWPM1(STDOUT_LOG, problem, &solver,
+                                                &solution)
+                                : SolveWithLinearScan(STDOUT_LOG, problem,
+                                                      &solver, &solution);
+    }
   } else {
     // Only solve the decision version.
     parameters.set_log_search_progress(true);
@@ -275,7 +286,7 @@ int Run() {
     }
     if (problem.type() != LinearBooleanProblem::SATISFIABILITY) {
       const Coefficient objective = ComputeObjectiveValue(problem, solution);
-      printf("c objective: %g\n", GetScaledObjective(problem, objective));
+      printf("c objective: %.16g\n", GetScaledObjective(problem, objective));
     }
   } else {
     // No solutionof an optimization problem? we output kint64max by convention.
