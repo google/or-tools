@@ -1141,7 +1141,7 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
     DCHECK(Ok());
     index_ = graph_->next_[index_];
   }
-  bool operator!=(const ListGraph<
+  bool operator!=(const typename ListGraph<
       NodeIndexType, ArcIndexType>::OutgoingHeadIterator& other) const {
     return index_ != other.index_;
   }
@@ -1550,7 +1550,7 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
     DCHECK(Ok());
     index_ = graph_->next_[index_];
   }
-  bool operator!=(const ReverseArcListGraph<
+  bool operator!=(const typename ReverseArcListGraph<
       NodeIndexType, ArcIndexType>::OutgoingHeadIterator& other) const {
     return index_ != other.index_;
   }

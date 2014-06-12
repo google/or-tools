@@ -19,5 +19,5 @@ DEFINE_bool(time_limit_use_usertime, false,
 namespace operations_research {
 // static constants.
 const double TimeLimit::kSafetyBufferSeconds = 1e-4;
-const int TimeLimit::kHistorySize;
+const int TimeLimit::kHistorySize = 100;
 }  // namespace operations_research
