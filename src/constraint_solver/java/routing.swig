@@ -87,11 +87,24 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 %}
 
-class NodeEvaluator2 {
+class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  virtual ~NodeEvaluator2();
+  NodeEvaluator2() : used_as_permanent_handler_(false) {}
   virtual int64 run(int i, int j) = 0;
-  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback();
+  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+  virtual ~NodeEvaluator2() {}
+
+ private:
+  virtual bool IsRepeatable() const { return true; }
+  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
+                    operations_research::RoutingModel::NodeIndex j) {
+    return run(i.value(), j.value());
+  }
+  bool used_as_permanent_handler_;
 };
 
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
@@ -100,18 +113,18 @@ class NodeEvaluator2 {
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
     int64 capacity,
-    const string& name);
+    const std::string& name);
 
 %ignore operations_research::RoutingModel::AddMatrixDimension(
     const int64* const* values,
     int64 capacity,
-    const string& name);
+    const std::string& name);
 
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
-                          const string& name) {
+                          const std::string& name) {
     DCHECK_EQ(values.size(), self->nodes());
     self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
