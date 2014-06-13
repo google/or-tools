@@ -154,6 +154,47 @@ def test_failing_constraint():
   db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
   solver.Solve(db)
 
+def test_domain_iterator():
+  print 'test_domain_iterator'
+  solver = pywrapcp.Solver('test_domain_iterator')
+  x = solver.IntVar([1, 2, 4, 6], 'x')
+  for i in x.DomainIterator():
+    print i
+
+
+class WatchDomain(pywrapcp.PyDemon):
+
+  def __init__(self, x):
+    pywrapcp.Demon.__init__(self)
+    self._x = x
+
+  def Run(self, solver):
+    for i in self._x.HoleIterator():
+      print 'Removed %d' % i
+
+
+class HoleConstraintTest(pywrapcp.PyConstraint):
+
+  def __init__(self, solver, x):
+    pywrapcp.Constraint.__init__(self, solver)
+    self._x = x
+
+  def Post(self):
+    self._demon = WatchDomain(self._x)
+    self._x.WhenDomain(self._demon)
+
+  def InitialPropagate(self):
+    self._x.RemoveValue(5)
+
+def test_hole_iterator():
+  print 'test_hole_iterator'
+  solver = pywrapcp.Solver('test export')
+  x = solver.IntVar(1, 10, 'x')
+  myct = HoleConstraintTest(solver, x)
+  solver.Add(myct)
+  db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  solver.Solve(db)
+
 
 def main():
   test_member()
@@ -165,6 +206,8 @@ def main():
   test_demon()
   test_failing_constraint()
   test_constraint()
+  test_domain_iterator()
+  test_hole_iterator()
 
 
 if __name__ == '__main__':

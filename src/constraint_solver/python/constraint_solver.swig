@@ -821,6 +821,9 @@ static void SetPythonFlags(bool trace_propagation,
                         DecisionBuilder* const db3,
                         DecisionBuilder* const db4);
 
+%rename (DomainIteratorAux) IntVar::MakeDomainIterator;
+%rename (HoleIteratorAux) IntVar::MakeHoleIterator;
+
 // Add arithmetic operators to integer expressions.
 %extend IntExpr {
   IntExpr* __add__(IntExpr* other) {
@@ -1063,6 +1066,32 @@ static void SetPythonFlags(bool trace_propagation,
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
+  }
+}
+
+%extend IntVarIterator {
+  %pythoncode {
+  def __iter__(self):
+    self.Init()
+    return self
+
+  def next(self):
+    if self.Ok():
+      result = self.Value()
+      self.Next()
+      return result
+    else:
+      raise StopIteration()
+  }
+}
+
+%extend IntVar {
+  %pythoncode {
+  def DomainIterator(self):
+    return iter(self.DomainIteratorAux(False))
+
+  def HoleIterator(self):
+    return iter(self.HoleIteratorAux(False))
   }
 }
 
