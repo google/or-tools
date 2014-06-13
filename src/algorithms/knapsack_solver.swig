@@ -18,18 +18,4 @@
 #include "algorithms/knapsack_solver.h"
 %}
 
-#if defined(SWIGJAVA)
-%rename (bestSolutionContains) operations_research::KnapsackSolver::BestSolutionContains;
-%rename (getName) operations_research::KnapsackSolver::GetName;
-%rename (init) operations_research::KnapsackSolver::Init;
-%rename (solve) operations_research::KnapsackSolver::Solve;
-%rename (useReduction) operations_research::KnapsackSolver::use_reduction;
-%rename (setUseReduction) operations_research::KnapsackSolver::set_use_reduction;
-#endif  // SWIGJAVA
-
-#if defined(SWIGCSHARP)
-%rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
-%rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
-#endif  // SWIGCSHARP
-
 %include "algorithms/knapsack_solver.h"
