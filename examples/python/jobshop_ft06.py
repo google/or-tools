@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """This model implements a simple jobshop named ft06.
 
@@ -22,6 +21,7 @@ machine is task dependent.
 The objective is to minimize the maximum completion time of all
 jobs. This is called the makespan.
 """
+
 
 
 from google.apputils import app

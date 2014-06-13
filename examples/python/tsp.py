@@ -102,9 +102,9 @@ def main(_):
     matrix = RandomMatrix(FLAGS.tsp_size)
     matrix_callback = matrix.Distance
     if FLAGS.tsp_use_random_matrix:
-      routing.SetCost(matrix_callback)
+      routing.SetArcCostEvaluatorOfAllVehicles(matrix_callback)
     else:
-      routing.SetCost(Distance)
+      routing.SetArcCostEvaluatorOfAllVehicles(Distance)
     # Forbid node connections (randomly).
     rand = random.Random()
     rand.seed(FLAGS.tsp_random_seed)

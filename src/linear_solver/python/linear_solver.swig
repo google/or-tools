@@ -12,7 +12,8 @@
 // limitations under the License.
 
 %include base/base.swig
-%include util/data.swig
+%include util/python/data.swig
+
 // Swig doesn't like module initializers.
 #define DECLARE_MODULE_INITIALIZER(x);
 
@@ -441,30 +442,32 @@ class LinearConstraint(object):
       return self.Constraint(*args)
 
     def Minimize(self, expr):
-      self.Objective().Clear()
-      self.Objective().SetMinimization()
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMinimization()
       coeffs = {}
       offset = expr.Visit(coeffs)
-      self.Objective().SetOffset(offset)
+      objective.AddOffset(offset)
       if sys.version_info[0] >= 3: # Python 3
         for v, c, in coeffs.items():
-          self.Objective().SetCoefficient(v, float(c))
+          objective.SetCoefficient(v, float(c))
       else:
         for v, c, in coeffs.iteritems():
-          self.Objective().SetCoefficient(v, float(c))
+          objective.SetCoefficient(v, float(c))
 
     def Maximize(self, expr):
-      self.Objective().Clear()
-      self.Objective().SetMaximization()
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMaximization()
       coeffs = {}
       offset = expr.Visit(coeffs)
-      self.Objective().SetOffset(offset)
+      objective.AddOffset(offset)
       if sys.version_info[0] >= 3: # Python 3
         for v, c, in coeffs.items():
-          self.Objective().SetCoefficient(v, float(c))
+          objective.SetCoefficient(v, float(c))
       else:
         for v, c, in coeffs.iteritems():
-          self.Objective().SetCoefficient(v, float(c))
+          objective.SetCoefficient(v, float(c))
   }
 }
 

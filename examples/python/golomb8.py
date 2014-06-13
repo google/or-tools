@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """This is the Golomb ruler problem.
 
@@ -21,6 +20,7 @@ The idea is to put marks on a rule such that all differences
 between all marks are all different. The objective is to minimize the length
 of the rule.
 """
+
 
 
 from google.apputils import app

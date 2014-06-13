@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-%include util/data.swig
+%include util/python/data.swig
 
 // Include the file we want to wrap a first time.
 %{

@@ -1,20 +1,140 @@
-// Copyright 2010-2013 Google
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include exception.i
-%include util/callback.swig
-%include util/data.swig
-%include util/util.swig
+%include util/python/data.swig
+%include util/python/tuple_set.swig
+
+// ----- Callback Wrapping -----
+%{
+#include "base/callback.h"  // TODO(user): switch to std::function
+%}
+namespace operations_research {
+%{
+static string PyCallbackString(PyObject* pyfunc) {
+   string result;
+   PyObject* arglist = Py_BuildValue("()");
+   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+   Py_DECREF(arglist);
+   if (pyresult) {
+     result = PyString_AsString(pyresult);
+     Py_DECREF(pyresult);
+   }
+   return result;
+}
+%}
+
+%typemap(in) ResultCallback<string>* {
+  if (!PyCallable_Check($input)) {
+      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+      SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallbackString, $input);
+}
+
+%{
+static int64 PyCallback1Int64Int64(PyObject* pyfunc, int64 i) {
+   int64 result = 0;
+   // Cast to int needed, no int64 support
+   // () needed to force creation of one-element tuple
+   PyObject* arglist = Py_BuildValue("(l)", static_cast<int>(i));
+   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+   Py_DECREF(arglist);
+   if (pyresult) {
+     result = PyInt_AsLong(pyresult);
+   }
+   Py_XDECREF(pyresult);
+   return result;
+}
+%}
+
+%typemap(in) ResultCallback1<int64, int64>* {
+  if (!PyCallable_Check($input)) {
+      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+      SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallback1Int64Int64, $input);
+}
+
+%{
+static int64 PyCallback2Int64Int64Int64(PyObject* pyfunc, int64 i, int64 j) {
+   int64 result = 0;
+   // Cast to int needed, no int64 support
+   PyObject* arglist = Py_BuildValue("ll",
+                                     static_cast<int>(i),
+                                     static_cast<int>(j));
+   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+   Py_DECREF(arglist);
+   if (pyresult) {
+     result = PyInt_AsLong(pyresult);
+   }
+   Py_XDECREF(pyresult);
+   return result;
+}
+%}
+
+%typemap(in) ResultCallback2<int64, int64, int64>* {
+  if (!PyCallable_Check($input)) {
+      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+      SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallback2Int64Int64Int64, $input);
+}
+
+%{
+  static int64 PyCallback3Int64Int64Int64Int64(PyObject* pyfunc,
+                                               int64 i, int64 j, int64 k) {
+   int64 result = 0;
+   // Cast to int needed, no int64 support
+   PyObject* arglist = Py_BuildValue("lll",
+                                     static_cast<int>(i),
+                                     static_cast<int>(j),
+                                     static_cast<int>(k));
+   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+   Py_DECREF(arglist);
+   if (pyresult) {
+     result = PyInt_AsLong(pyresult);
+   }
+   Py_XDECREF(pyresult);
+   return result;
+}
+%}
+
+%typemap(in) ResultCallback3<int64, int64, int64, int64>* {
+  if (!PyCallable_Check($input)) {
+      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+      SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallback3Int64Int64Int64Int64, $input);
+}
+
+%{
+static bool PyCallbackBool(PyObject* pyfunc) {
+   bool result = false;
+   // "()" needed to force creation of empty argument list
+   PyObject* arglist = Py_BuildValue("()");
+   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+   Py_DECREF(arglist);
+   if (pyresult) {
+     // no PyBool_AsBool so do this instead:
+     if (pyresult == Py_True) {
+       result = true;
+     } else {
+       result = false;
+     }
+   }
+   Py_XDECREF(pyresult);
+   return result;
+}
+%}
+
+%typemap(in) ResultCallback<bool>* {
+  if (!PyCallable_Check($input)) {
+      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+      SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallbackBool, $input);
+}
+}  // namespace operations_research
 
 %module(directors="1") operations_research
 
@@ -238,26 +358,26 @@ class PyLNS : public operations_research::BaseLNS {
 
 namespace operations_research {
 %pythoncode {
-import gflags
+import gflags as flags
 import ortools.constraint_solver.assignment_pb2
 import ortools.constraint_solver.model_pb2
 import ortools.constraint_solver.search_limit_pb2
 
-FLAGS = gflags.FLAGS
-gflags.DEFINE_boolean('cp_trace_propagation', False,
-                      'trace all propagation events.')
-gflags.DEFINE_boolean('cp_trace_search', False,
-                      'trace all search events.')
-gflags.DEFINE_boolean('cp_print_model', False,
-                      'prints the model before solving it.')
-gflags.DEFINE_boolean('cp_model_stats', False,
-                      'displays model statistics before solving it.')
-gflags.DEFINE_string('cp_export_file', '',
-                     'exports model to file using CPModelProto.')
-gflags.DEFINE_boolean('cp_no_solve', False,
-                      'force failures at the beginning of a search.')
-gflags.DEFINE_string('cp_profile_file', '',
-                     'exports profiling overview to file.')
+FLAGS = flags.FLAGS
+flags.DEFINE_boolean('cp_trace_propagation', False,
+                     'trace all propagation events.')
+flags.DEFINE_boolean('cp_trace_search', False,
+                     'trace all search events.')
+flags.DEFINE_boolean('cp_print_model', False,
+                     'prints the model before solving it.')
+flags.DEFINE_boolean('cp_model_stats', False,
+                     'displays model statistics before solving it.')
+flags.DEFINE_string('cp_export_file', '',
+                    'exports model to file using CPModelProto.')
+flags.DEFINE_boolean('cp_no_solve', False,
+                     'force failures at the beginning of a search.')
+flags.DEFINE_string('cp_profile_file', '',
+                    'exports profiling overview to file.')
 }
 }  // namespace operations_research
 
@@ -957,8 +1077,11 @@ static void SetPythonFlags(bool trace_propagation,
 }
 }  // namespace operations_research
 
-// Protect from failure. Since the code is very similar in Python, Java and C#
-// we use the same block.
+// ############ BEGIN DUPLICATED CODE BLOCK ############
+// IMPORTANT: keep this code block in sync with the .swig
+// files in ../java and ../csharp.
+
+// Protect from failure.
 %define PROTECT_FROM_FAILURE(Method, GetSolver)
 %exception Method {
   operations_research::Solver* const solver = GetSolver;
@@ -1001,6 +1124,8 @@ PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const ct), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #undef PROTECT_FROM_FAILURE
 }  // namespace operations_research
+
+// ############ END DUPLICATED CODE BLOCK ############
 
 // Wrap cp includes
 %include constraint_solver/constraint_solver.h

@@ -34,6 +34,7 @@ from ortools.constraint_solver import pywrapcp
 FLAGS = gflags.FLAGS
 
 
+# pylint: disable=too-many-statements
 def main(unused_argv):
   # Create the solver.
   solver = pywrapcp.Solver('simple meeting scheduler')
@@ -145,6 +146,7 @@ def main(unused_argv):
                                          for p in all_people]))
   # Mandatory persons.
   for p in all_mandatory_people:
+    # pylint: disable=g-explicit-bool-comparison
     solver.Add(all_people_presence[p] == True)
 
   # All copies are in sync with the original meeting.

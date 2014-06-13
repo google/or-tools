@@ -15,6 +15,7 @@
 
 %{
 #include <vector>
+#include "base/integral_types.h"
 using std::string;
 %}
 

@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """Magic sequence problem.
 
@@ -19,6 +18,7 @@ occurrences of i in this sequence is equal to the value of the ith number.
 It uses an aggregated formulation of the count expression called
 distribute().
 """
+
 
 
 from google.apputils import app
