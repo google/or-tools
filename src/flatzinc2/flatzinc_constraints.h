@@ -46,15 +46,17 @@ Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables, int64 range_min,
-                             int64 range_max, IntVar* target);
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target);
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables, int64 value,
-                               IntVar* target);
+                               const std::vector<IntVar*>& variables,
+                               int64 value, IntVar* target);
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables, int64 range_min,
-                           int64 range_max);
-}  // namespace operations_research
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max);
+IntervalVar* MakeIntervalStartPerformed(Solver* solver, IntVar* start,
+                                        int64 duration, IntVar* performed);
+}       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_
