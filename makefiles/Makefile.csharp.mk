@@ -48,10 +48,10 @@ clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools*.netmodule
-	-$(DEL) $(GEN_DIR)$Slinear_solver$Scsharp$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sconstraint_solver$Scsharp$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Salgorithms$Scsharp$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sgraph$Scsharp$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Slinear_solver$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Salgorithms$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sgraph$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
