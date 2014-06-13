@@ -531,15 +531,7 @@ argument:
   } else {
     CHECK(ContainsKey(context->domain_map, id)) << "Unknown identifier: " << id;
     const FzDomain& d = FindOrDie(context->domain_map, id);
-    if (d.is_interval) {
-      if (d.values.empty()) {
-        $$ = FzArgument::Interval(kint64min, kint64max);
-      } else {
-        $$ = FzArgument::Interval(d.values[0], d.values[1]);
-      }
-    } else {
-      $$ = FzArgument::IntegerList(d.values);
-    }
+    $$ = FzArgument::FromDomain(d);
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
@@ -547,7 +539,7 @@ argument:
   const int64 index = $3;
   if (ContainsKey(context->integer_array_map, id)) {
     $$ = FzArgument::IntegerValue(
-    FzLookup(FindOrDie(context->integer_array_map, id), index));
+        FzLookup(FindOrDie(context->integer_array_map, id), index));
   } else if (ContainsKey(context->variable_array_map, id)) {
     $$ = FzArgument::IntVarRef(
         FzLookup(FindOrDie(context->variable_array_map, id), index));
@@ -556,15 +548,7 @@ argument:
         << "Unknown identifier: " << id;
     const FzDomain& d =
         FzLookup(FindOrDie(context->domain_array_map, id), index);
-    if (d.is_interval) {
-      if (d.values.empty()) {
-        $$ = FzArgument::Interval(kint64min, kint64max);
-      } else {
-        $$ = FzArgument::Interval(d.values[0], d.values[1]);
-      }
-    } else {
-      $$ = FzArgument::IntegerList(d.values);
-    }
+    $$ = FzArgument::FromDomain(d);
   }
 }
 | '[' var_or_value_array ']' {
@@ -649,11 +633,11 @@ solve:
 }
 | SOLVE annotations MINIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Minimize($4.variables[0], $2);
+  model->Minimize($4.Var(), $2);
 }
 | SOLVE annotations MAXIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Maximize($4.variables[0], $2);
+  model->Maximize($4.Var(), $2);
 }
 
 %%

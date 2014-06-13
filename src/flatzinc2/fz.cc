@@ -44,7 +44,7 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 DEFINE_bool(presolve, true, "Use presolve.");
 
-DECLARE_bool(logging);
+DECLARE_bool(fz_logging);
 DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
 
@@ -93,7 +93,7 @@ void SequentialRun(const std::string& filename) {
   parameters.restart_log_size = FLAGS_restart_log_size;
   parameters.threads = FLAGS_workers;
   parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.use_log = FLAGS_logging;
+  parameters.use_log = FLAGS_fz_logging;
   parameters.verbose_impact = FLAGS_verbose_impact;
   parameters.worker_id = -1;
   parameters.search_type =
@@ -175,8 +175,8 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char free_param[] = "--free";
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
-  char logging_param[] = "--logging";
-  char verbose_param[] = "--fz_verbose";
+  char logging_param[] = "--fz_logging";
+   char verbose_param[] = "--fz_verbose";
   char debug_param[] = "--fz_debug";
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
@@ -195,11 +195,11 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = logging_param;
     }
     if (strcmp((*argv)[i], "-v") == 0) {
-      (*argv)[i] = verbose_param;
-    }
-    if (strcmp((*argv)[i], "-d") == 0) {
-      (*argv)[i] = debug_param;
-    }
+          (*argv)[i] = verbose_param;
+        }
+        if (strcmp((*argv)[i], "-d") == 0) {
+          (*argv)[i] = debug_param;
+        }
   }
   google::ParseCommandLineFlags( argc, argv, true);
   // Fix the number of solutions.

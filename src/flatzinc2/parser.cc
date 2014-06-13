@@ -36,7 +36,7 @@ bool ParseFlatzincFile(const std::string& filename, FzModel* const model) {
   // Init.
   FILE* const input = fopen(filename.c_str(), "r");
   if (input == nullptr) {
-    LOG(INFO) << "Could not open file " << filename;
+    LOG(INFO) << "Could not open file '" << filename << "'";
     return false;
   }
   FzParserContext context;

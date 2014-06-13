@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_STL_UTIL_H_
 #define OR_TOOLS_BASE_STL_UTIL_H_
 
+#include <algorithm>
 #include <string>
 
 namespace operations_research {
@@ -93,7 +94,6 @@ void STLDeleteElements(T* container) {
 // Given an STL container consisting of (key, value) pairs, STLDeleteValues
 // deletes all the "value" components and clears the container.  Does nothing
 // in the case it's given a NULL pointer.
-
 template <class T>
 void STLDeleteValues(T* v) {
   if (!v) return;
@@ -108,6 +108,12 @@ void STLClearObject(T* obj) {
   T tmp;
   tmp.swap(*obj);
   obj->reserve(0);
+}
+
+template <typename T>
+inline void STLSortAndRemoveDuplicates(T* v) {
+  std::sort(v->begin(), v->end());
+  v->erase(std::unique(v->begin(), v->end()), v->end());
 }
 
 }  // namespace operations_research

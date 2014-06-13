@@ -26,7 +26,7 @@ DEFINE_string(file, "", "Input file in the flatzinc format.");
 DEFINE_bool(print, false, "Print model.");
 DEFINE_bool(presolve, false, "Presolve loaded file.");
 DEFINE_bool(statistics, false, "Print model statistics");
-DECLARE_bool(logging);
+DECLARE_bool(fz_logging);
 
 namespace operations_research {
 void ParseFile(const std::string& filename, bool presolve) {

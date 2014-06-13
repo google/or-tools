@@ -259,8 +259,7 @@ void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
   const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
   const int64 imin = std::max(index->Min(), 1LL);
-  const int64 imax =
-      std::min(index->Max(), static_cast<int64>(vars.size()) + 1LL);
+  const int64 imax = std::min(index->Max(), static_cast<int64>(vars.size()) + 1LL);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
   const int64 size = imax - imin + 1;
   std::vector<IntVar*> var_array(size);
@@ -319,8 +318,8 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
-                            ->Var());
+    variables.push_back(
+        solver->MakeDifference(1, fzsolver->Extract(var)->Var())->Var());
   }
   if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
     FZVLOG << "  - posted to sat";
@@ -561,7 +560,6 @@ bool IsHiddenPerformed(FzSolver* fzsolver,
         return false;
       }
       CHECK_EQ(1, sub->Max());
-
     }
   }
   return true;
@@ -681,10 +679,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
     const std::vector<int64>& x_sizes = ct->Arg(2).values;
@@ -1153,8 +1149,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
-                     int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1177,8 +1172,8 @@ void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(
-    FzSolver* const fzsolver, const std::vector<FzIntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(FzSolver* const fzsolver,
+                                const std::vector<FzIntegerVariable*>& fz_vars) {
   for (FzIntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = fzsolver->Extract(fz_var);
     if (!expr->IsVar()) {

@@ -31,7 +31,7 @@ class FzIntegerVariable;
 
 #define FZENDL std::endl
 #define FZLOG \
-  if (FLAGS_logging) std::cout << "%% "
+  if (FLAGS_fz_logging) std::cout << "%% "
 
 #define FZVLOG \
   if (FLAGS_fz_verbose) std::cout << "%%%% "
@@ -98,7 +98,7 @@ struct FzIntegerVariable {
   // Returns the max of the domain.
   int64 Max() const;
   // Returns true if the domain is [kint64min..kint64max]
-  bool Unbound() const;
+  bool IsAllInt64() const;
 
   std::string DebugString() const;
 
@@ -142,6 +142,7 @@ struct FzArgument {
   static FzArgument IntVarRef(FzIntegerVariable* const var);
   static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
   static FzArgument VoidArgument();
+  static FzArgument FromDomain(const FzDomain& domain);
 
   std::string DebugString() const;
 
@@ -156,8 +157,7 @@ struct FzArgument {
   // Returns true if the argument has only one value (single value, or variable
   // with a singleton domain).
   bool HasOneValue() const;
-  // Returns the value of the argument. HasOneValue() must have returned true
-  // for this method to succeed.
+  // Returns the value of the argument. Does DCHECK(HasOneValue()).
   int64 Value() const;
   // Returns the variable inside the argument, or nullptr if there is no
   // variable.
@@ -210,8 +210,7 @@ struct FzConstraint {
   // Cleans the field target_variable, as well as the field defining_constraint
   // on the target_variable.
   void RemoveTargetVariable();
-  // TODO(user): expose a const FzArgument& Arg(int arg_pos) API; and move
-  // these shortcut to the model; or possibly to FzArgument
+
   const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }
   FzArgument* MutableArg(int arg_pos) { return &arguments[arg_pos]; }
 };

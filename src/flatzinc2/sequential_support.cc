@@ -20,7 +20,7 @@
 #include "flatzinc2/model.h"
 #include "flatzinc2/search.h"
 
-DECLARE_bool(logging);
+DECLARE_bool(fz_logging);
 
 namespace operations_research {
 namespace {

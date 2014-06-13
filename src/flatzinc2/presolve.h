@@ -21,46 +21,6 @@
 #include "flatzinc2/model.h"
 
 namespace operations_research {
-// This struct stores the affine mapping of one variable:
-// it represents var * coefficient + offset. It also stores the constraint that
-// defines this mapping.
-struct AffineMapping {
-  FzIntegerVariable* variable;
-  int64 coefficient;
-  int64 offset;
-  FzConstraint* constraint;
-
-  AffineMapping()
-      : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-  AffineMapping(FzIntegerVariable* v, int64 c, int64 o, FzConstraint* ct)
-      : variable(v), coefficient(c), offset(o), constraint(ct) {}
-};
-
-// This struct stores the flattening mapping of two variables onto
-// one: it represents var1 * coefficient + var2 + offset. It also
-// stores the constraint that defines this mapping.
-struct FlatteningMapping {
-  FzIntegerVariable* variable1;
-  int64 coefficient;
-  FzIntegerVariable* variable2;
-  int64 offset;
-  FzConstraint* constraint;
-
-  FlatteningMapping()
-      : variable1(nullptr),
-        coefficient(0),
-        variable2(nullptr),
-        offset(0),
-        constraint(nullptr) {}
-  FlatteningMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
-                    int64 o, FzConstraint* ct)
-      : variable1(v1),
-        coefficient(c),
-        variable2(v2),
-        offset(o),
-        constraint(ct) {}
-};
-
 // The FzPresolver "pre-solves" a FzModel by applying some iterative
 // transformations to it, which may simplify and/or reduce the model.
 class FzPresolver {
@@ -76,7 +36,10 @@ class FzPresolver {
   //
   // This method returns true iff some transformations were applied to the
   // model.
+  // TODO(user): Returns the number of rules applied instead.
   bool Run(FzModel* model);
+
+  // TODO(user): Error direct reporting of unfeasible models.
 
   // Cleans the model for the CP solver.
   // In particular, it knows about the sat connection and will remove the link
@@ -84,6 +47,46 @@ class FzPresolver {
   void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
 
  private:
+  // This struct stores the affine mapping of one variable:
+  // it represents new_var = var * coefficient + offset. It also stores the
+  // constraint that defines this mapping.
+  struct AffineMapping {
+    FzIntegerVariable* variable;
+    int64 coefficient;
+    int64 offset;
+    FzConstraint* constraint;
+
+    AffineMapping()
+        : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
+    AffineMapping(FzIntegerVariable* v, int64 c, int64 o, FzConstraint* ct)
+        : variable(v), coefficient(c), offset(o), constraint(ct) {}
+  };
+
+  // This struct stores the flattening mapping of two variables onto
+  // one: it represents new_var = var1 * coefficient + var2 + offset. It also
+  // stores the constraint that defines this mapping.
+  struct FlatteningMapping {
+    FzIntegerVariable* variable1;
+    int64 coefficient;
+    FzIntegerVariable* variable2;
+    int64 offset;
+    FzConstraint* constraint;
+
+    FlatteningMapping()
+        : variable1(nullptr),
+          coefficient(0),
+          variable2(nullptr),
+          offset(0),
+          constraint(nullptr) {}
+    FlatteningMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
+                      int64 o, FzConstraint* ct)
+        : variable1(v1),
+          coefficient(c),
+          variable2(v2),
+          offset(o),
+          constraint(ct) {}
+  };
+
   // First pass of model scanning. Useful to get information that will
   // prevent some destructive modifications of the model.
   void FirstPassModelScan(FzModel* model);
@@ -128,7 +131,7 @@ class FzPresolver {
   bool SimplifyIntLinEqReif(FzConstraint* ct);
 
   // Helpers.
-  void IntersectDomainWithIntArgument(FzDomain* domain, const FzArgument& arg);
+  void IntersectDomainWith(FzDomain* domain, const FzArgument& arg);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

@@ -20,12 +20,13 @@
 #include "base/stl_util.h"
 #include "flatzinc2/model.h"
 
-DEFINE_bool(logging, false,
+DEFINE_bool(fz_logging, false,
             "Print logging information from the flatzinc interpreter.");
 DEFINE_bool(fz_verbose, false,
             "Print verbose logging information from the flatzinc interpreter.");
 DEFINE_bool(fz_debug, false,
             "Print debug logging information from the flatzinc interpreter.");
+
 
 namespace operations_research {
 // ----- FzDomain -----
@@ -107,14 +108,12 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
   if (is_interval) {
     const int64 dmin = values.empty() ? kint64min : values[0];
     const int64 dmax = values.empty() ? kint64max : values[1];
-    std::set<int64> vset(ovalues.begin(), ovalues.end());
     values.clear();
-    for (const int64 v : vset) {
-      if (v >= dmin && v <= dmax) {
-        values.push_back(v);
-      }
-    }
-    if (values.back() - values.front() == values.size() - 1 &&
+    for (const int64 v : ovalues)
+      if (v >= dmin && v <= dmax) values.push_back(v);
+    STLSortAndRemoveDuplicates(&values);
+    if (!values.empty() &&
+        values.back() - values.front() == values.size() - 1 &&
         values.size() >= 2) {
       if (values.size() > 2) {
         // Contiguous case.
@@ -123,6 +122,7 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
         values[1] = last;
       }
     } else {
+      // This also covers and invalid (empty) domain.
       is_interval = false;
     }
   } else {
@@ -231,8 +231,7 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(
-    const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.variables = vars;
@@ -243,6 +242,18 @@ FzArgument FzArgument::VoidArgument() {
   FzArgument result;
   result.type = VOID_ARGUMENT;
   return result;
+}
+
+FzArgument FzArgument::FromDomain(const FzDomain& domain) {
+  if (domain.is_interval) {
+    if (domain.values.empty()) {
+      return FzArgument::Interval(kint64min, kint64max);
+    } else {
+      return FzArgument::Interval(domain.values[0], domain.values[1]);
+    }
+  } else {
+    return FzArgument::IntegerList(domain.values);
+  }
 }
 
 std::string FzArgument::DebugString() const {
@@ -272,19 +283,23 @@ std::string FzArgument::DebugString() const {
 bool FzArgument::IsVariable() const { return type == INT_VAR_REF; }
 
 bool FzArgument::HasOneValue() const {
-  return (type == INT_VALUE ||
+  return (type == INT_VALUE || (type == INT_LIST && values.size() == 1) ||
+          (type == INT_INTERVAL && values[0] == values[1]) ||
           (type == INT_VAR_REF && variables[0]->domain.IsSingleton()));
 }
 
 int64 FzArgument::Value() const {
+  DCHECK(HasOneValue()) << "Value() called on unbound FzArgument: "
+                        << DebugString();
   switch (type) {
     case INT_VALUE:
+    case INT_INTERVAL:
+    case INT_LIST:
       return values[0];
-    case INT_VAR_REF: { return variables[0]->domain.values[0]; }
-    default: {
-      LOG(FATAL) << "Wrong Value() on " << DebugString();
-      return 0;
+    case INT_VAR_REF: {
+      return variables[0]->domain.values[0];
     }
+    default: { return 0; }  // Should fail anyway.
   }
 }
 
@@ -302,8 +317,7 @@ FzIntegerVariable::FzIntegerVariable(const std::string& name_,
       temporary(temporary_),
       active(true) {
   if (!domain.is_interval) {
-    std::sort(domain.values.begin(), domain.values.end());
-    // TODO(user): Remove duplicate values.
+    STLSortAndRemoveDuplicates(&domain.values);
   }
 }
 
@@ -336,15 +350,13 @@ int64 FzIntegerVariable::Max() const {
                                                      : domain.values.back();
 }
 
-bool FzIntegerVariable::Unbound() const {
+bool FzIntegerVariable::IsAllInt64() const {
   return domain.is_interval &&
          (domain.values.empty() ||
           (domain.values[0] == kint64min && domain.values[1] == kint64max));
 }
 
-bool FzIntegerVariable::HasOneValue() const {
-  return domain.IsSingleton();
-}
+bool FzIntegerVariable::HasOneValue() const { return domain.IsSingleton(); }
 
 std::string FzIntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
@@ -400,8 +412,7 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(
-    const std::vector<FzAnnotation>& list) {
+FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -472,7 +483,9 @@ std::string FzAnnotation::DebugString() const {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
     }
-    case IDENTIFIER: { return id; }
+    case IDENTIFIER: {
+      return id;
+    }
     case FUNCTION_CALL: {
       return StringPrintf("%s(%s)", id.c_str(),
                           JoinDebugString(annotations, ", ").c_str());
@@ -481,7 +494,9 @@ std::string FzAnnotation::DebugString() const {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
     }
-    case INT_VAR_REF: { return variables.front()->name; }
+    case INT_VAR_REF: {
+      return variables.front()->name;
+    }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -550,8 +565,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments,
-                            bool is_domain, FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments, bool is_domain,
+                            FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);

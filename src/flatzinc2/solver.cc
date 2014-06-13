@@ -21,7 +21,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "util/string_array.h"
 
-DECLARE_bool(logging);
+DECLARE_bool(fz_logging);
 DECLARE_bool(fz_verbose);
 DECLARE_bool(fz_debug);
 DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
@@ -68,7 +68,7 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   }
   if (var->domain.IsSingleton()) {
     result = solver_.MakeIntConst(var->domain.values.back());
-  } else if (var->Unbound()) {
+  } else if (var->IsAllInt64()) {
     result = solver_.MakeIntVar(kint32min, kint32max, var->name);
   } else if (var->domain.is_interval) {
     result = solver_.MakeIntVar(var->Min(), var->Max(), var->name);
