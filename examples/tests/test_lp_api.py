@@ -25,10 +25,10 @@ model <
   variable < lower_bound:1 upper_bound:10 objective_coefficient:2 >
   variable < lower_bound:1 upper_bound:10 objective_coefficient:1 >
   constraint < lower_bound:-10000 upper_bound:4
-    var_index:0 coefficient:1
-    var_index:1 coefficient:2
-    linear_term < var_index:0 coefficient:1 >
-    linear_term < var_index:1 coefficient:2 >
+    var_index:0
+    var_index:1
+    coefficient:1
+    coefficient:2
   >
 >
 """
