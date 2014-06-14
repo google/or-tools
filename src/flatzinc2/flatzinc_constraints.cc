@@ -889,7 +889,7 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
 
 IntervalVar* MakeIntervalStartPerformed(Solver* solver, IntVar* start,
                                         int64 duration, IntVar* performed) {
-  const string& name = start->name();
+  const std::string& name = start->name();
   if (performed->Min() == 1) {
     return solver->MakeFixedDurationIntervalVar(start, duration, name);
   } else if (performed->Max() == 0) {
