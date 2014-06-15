@@ -12,7 +12,6 @@ class OneVarLns(pywrapcp.PyLns):
 
   def InitFragments(self):
     self.__index = 0
-    print 'OneVarLns::InitFragments'
 
   def NextFragment(self):
     if self.__index < self.Size():
@@ -20,6 +19,29 @@ class OneVarLns(pywrapcp.PyLns):
       return [self.__index - 1]
     else:
       return []
+
+
+class MoveOneVar(pywrapcp.IntVarLocalSearchOperator):
+  """Move one var up or down."""
+
+  def __init__(self, vars):
+    pywrapcp.IntVarLocalSearchOperator.__init__(self, vars)
+    self.__index = 0
+    self.__up = False
+
+  def OneNeighbor(self):
+    current_value = OldValue(self.__index)
+    if self.__up:
+      self.SetValue(self.__index, current_value + 1)
+      self.__index = (self.__index + 1) % self.Size()
+    else:
+      SetValue(self.__index, current_value - 1)
+    self.__up = not self.__up
+    return True
+
+  def OnStart(self):
+    pass
+
 
 
 def Solve(type):
@@ -35,6 +57,11 @@ def Solve(type):
     one_var_lns = OneVarLns(vars)
     ls_params = solver.LocalSearchPhaseParameters(one_var_lns, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
+  elif type == 1:  # LS
+    print 'Local Search'
+    move_one_var = MoveOneVar(vars)
+    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db)
+    ls = solver.LocalSearchPhase(vars, db, ls_params)
 
   collector = solver.LastSolutionCollector()
   collector.Add(vars)
@@ -46,6 +73,7 @@ def Solve(type):
 
 def main(_):
   Solve(0)
+  Solve(1)
 
 
 if __name__ == '__main__':
