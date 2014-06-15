@@ -141,6 +141,12 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %feature("director") operations_research::SearchMonitor;
 %feature("director") operations_research::Constraint;
 %feature("director") operations_research::Demon;
+%feature("director") operations_research::BaseLNS;
+%feature("director") operations_research::LocalSearchOperator;
+%feature("director") operations_research::PathOperator;
+%feature("director") operations_research::IntVarLocalSearchOperator;
+%feature("director") operations_research::SequenceVarLocalSearchOperator;
+%feature("director") operations_research::IntVarLocalSearchFilter;
 
 // We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
 // the recommended replacement $descriptor(...) is only available within
@@ -385,7 +391,7 @@ flags.DEFINE_string('cp_profile_file', '',
 %rename (InitialPropagateWrapper)
     operations_research::Constraint::InitialPropagate;
 %rename (RunWrapper) operations_research::Demon::Run;
-
+%rename (NextFragmentWrapper) operations_research::BaseLNS::NextFragment;
 
 // Rename rules on SolutionCollector.
 %rename (Branches) operations_research::SolutionCollector::branches;
@@ -1183,8 +1189,9 @@ class PyDecisionBuilder(object):
 
 
 class PyConstraint(Constraint):
+
   def __init__(self, solver):
-    pywrapcp.Constraint.__init__(self, solver)
+    Constraint.__init__(self, solver)
 
   def InitialPropagateWrapper(self):
     try:
@@ -1197,8 +1204,9 @@ class PyConstraint(Constraint):
 
 
 class PyDemon(Demon):
+
   def __init__(self):
-    pywrapcp.Demon.__init__(self)
+    Demon.__init__(self)
 
   def RunWrapper(self, solver):
     try:
@@ -1209,4 +1217,29 @@ class PyDemon(Demon):
   def DebugString(self):
     return "PyDemon"
 
+
+class PyLns(BaseLNS):
+
+  def __init__(self, vars):
+    BaseLNS.__init__(self, vars)
+
+  def NextFragment(self):
+    print 'in PyLns.NextFragment'
+    return []
+
+  def InitFragments(self):
+    print 'in PyLns.InitFragments'
+    pass
+
+  def NextFragmentWrapper(self, fragment):
+    print 'in PyLns.NextFragmentWrapper'
+    print 'in NextFragmentWrapper'
+    fragment.clear()
+    f = self.NextFragment()
+    if not f:
+      return False
+    else:
+      for v in f:
+        fragment.push_back(v)
+      return True
 }
