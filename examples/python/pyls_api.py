@@ -55,9 +55,23 @@ class SumFilter(pywrapcp.IntVarLocalSearchFilter):
 
   def OnSynchronize(self, delta):
     self.__sum = sum(self.Value(index) for index in range(self.Size()))
-      
+
   def Accept(self, delta, _):
-    return True
+    solution_delta = delta.IntVarContainer()
+    solution_delta_size = solution_delta.Size()
+    for i in range(solution_delta_size):
+      if not solution_delta.Element(i).Activated():
+        return True
+
+    new_sum = self.__sum
+    for i in range(solution_delta_size):
+      element = solution_delta.Element(index)
+      touched_var = self.FindIndex(element.Var())
+      old_value = self.Value(touched_var)
+      new_value = element.Value()
+      new_sum += new_value - old_value
+
+    return new_sum < self.__sum
 
   def IsIncremental(self):
     return False
@@ -85,7 +99,7 @@ def Solve(type):
     print 'Local Search with Filter'
     move_one_var = MoveOneVar(vars)
     sum_filter = SumFilter(vars)
-    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db, None, 
+    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db, None,
                                                   [sum_filter])
     ls = solver.LocalSearchPhase(vars, db, ls_params)
 
