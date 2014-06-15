@@ -41,7 +41,7 @@ def Solve(type):
   collector.AddObjective(sum_var)
   log = solver.SearchLog(1000, obj)
   solver.Solve(ls, [collector, obj, log])
-  print 'Objective value = %d' % collector.ObjectiveValue()
+  print 'Objective value = %d' % collector.ObjectiveValue(0)
 
 
 def main(_):

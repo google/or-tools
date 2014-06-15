@@ -142,6 +142,11 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %feature("director") operations_research::Constraint;
 %feature("director") operations_research::Demon;
 %feature("director") operations_research::BaseLNS;
+%feature("nodirector") operations_research::BaseLNS::Start;
+%feature("nodirector") operations_research::BaseLNS::OnStart;
+%feature("nodirector") operations_research::BaseLNS::MakeNextNeighbor;
+%feature("nodirector") operations_research::BaseLNS::MakeOneNeighbor;
+%feature("nodirector") operations_research::BaseLNS::IsIncremental;
 %feature("director") operations_research::LocalSearchOperator;
 %feature("director") operations_research::PathOperator;
 %feature("director") operations_research::IntVarLocalSearchOperator;
@@ -1224,16 +1229,12 @@ class PyLns(BaseLNS):
     BaseLNS.__init__(self, vars)
 
   def NextFragment(self):
-    print 'in PyLns.NextFragment'
     return []
 
   def InitFragments(self):
-    print 'in PyLns.InitFragments'
     pass
 
   def NextFragmentWrapper(self, fragment):
-    print 'in PyLns.NextFragmentWrapper'
-    print 'in NextFragmentWrapper'
     fragment.clear()
     f = self.NextFragment()
     if not f:
@@ -1243,3 +1244,5 @@ class PyLns(BaseLNS):
         fragment.push_back(v)
       return True
 }
+
+%template(IntVector) std::vector<int>;
