@@ -30,18 +30,37 @@ class MoveOneVar(pywrapcp.IntVarLocalSearchOperator):
     self.__up = False
 
   def OneNeighbor(self):
-    current_value = OldValue(self.__index)
+    current_value = self.OldValue(self.__index)
     if self.__up:
       self.SetValue(self.__index, current_value + 1)
       self.__index = (self.__index + 1) % self.Size()
     else:
-      SetValue(self.__index, current_value - 1)
+      self.SetValue(self.__index, current_value - 1)
     self.__up = not self.__up
     return True
 
   def OnStart(self):
     pass
 
+  def IsIncremental(self):
+    return False
+
+
+class SumFilter(pywrapcp.IntVarLocalSearchFilter):
+  """Filter to speed up LS computation."""
+
+  def __init__(self, vars):
+    pywrapcp.IntVarLocalSearchFilter.__init__(self, vars)
+    self.__sum = 0
+
+  def OnSynchronize(self, delta):
+    self.__sum = sum(self.Value(index) for index in range(self.Size()))
+      
+  def Accept(self, delta, _):
+    return True
+
+  def IsIncremental(self):
+    return False
 
 
 def Solve(type):
@@ -62,6 +81,13 @@ def Solve(type):
     move_one_var = MoveOneVar(vars)
     ls_params = solver.LocalSearchPhaseParameters(move_one_var, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
+  else:
+    print 'Local Search with Filter'
+    move_one_var = MoveOneVar(vars)
+    sum_filter = SumFilter(vars)
+    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db, None, 
+                                                  [sum_filter])
+    ls = solver.LocalSearchPhase(vars, db, ls_params)
 
   collector = solver.LastSolutionCollector()
   collector.Add(vars)
@@ -74,6 +100,7 @@ def Solve(type):
 def main(_):
   Solve(0)
   Solve(1)
+  Solve(2)
 
 
 if __name__ == '__main__':

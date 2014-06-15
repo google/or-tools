@@ -150,8 +150,12 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %feature("director") operations_research::LocalSearchOperator;
 %feature("director") operations_research::PathOperator;
 %feature("director") operations_research::IntVarLocalSearchOperator;
+%feature("nodirector") operations_research::IntVarLocalSearchOperator::Start;
+%feature("nodirector") operations_research::IntVarLocalSearchOperator::MakeNextNeighbor;
 %feature("director") operations_research::SequenceVarLocalSearchOperator;
+%feature("nodirector") operations_research::SequenceVarLocalSearchOperator::Start;
 %feature("director") operations_research::IntVarLocalSearchFilter;
+%feature("nodirector") operations_research::IntVarLocalSearchFilter::Start;
 
 // We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
 // the recommended replacement $descriptor(...) is only available within
