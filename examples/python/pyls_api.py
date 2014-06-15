@@ -65,8 +65,9 @@ class SumFilter(pywrapcp.IntVarLocalSearchFilter):
 
     new_sum = self.__sum
     for i in range(solution_delta_size):
-      element = solution_delta.Element(index)
-      touched_var = self.FindIndex(element.Var())
+      element = solution_delta.Element(i)
+      int_var = element.Var()
+      touched_var = self.IndexFromVar(int_var)
       old_value = self.Value(touched_var)
       new_value = element.Value()
       new_sum += new_value - old_value

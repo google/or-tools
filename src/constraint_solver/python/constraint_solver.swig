@@ -156,7 +156,6 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %feature("nodirector") operations_research::SequenceVarLocalSearchOperator::Start;
 %feature("director") operations_research::IntVarLocalSearchFilter;
 %feature("nodirector") operations_research::IntVarLocalSearchFilter::Start;
-%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 
 // We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
 // the recommended replacement $descriptor(...) is only available within
@@ -1122,8 +1121,8 @@ static void SetPythonFlags(bool trace_propagation,
 }
 
 %extend IntVarLocalSearchFilter {
-  int FindIndex(IntVar* const var) {
-    index = -1;
+  int64 IndexFromVar(IntVar* const var) const {
+    int64 index = -1;
     self->FindIndex(var, &index);
     return index;
   }
