@@ -196,6 +196,41 @@ def test_hole_iterator():
   solver.Solve(db)
 
 
+class BinarySum(pywrapcp.PyConstraint):
+
+  def __init__(self, solver, x, y, z):
+    pywrapcp.Constraint.__init__(self, solver)
+    self._x = x
+    self._y = y
+    self._z = z
+
+  def Post(self):
+    self._demon = InitialPropagateDemon(self)
+    self._x.WhenRange(self._demon)
+    self._y.WhenRange(self._demon)
+    self._z.WhenRange(self._demon)
+
+  def InitialPropagate(self):
+    self._z.SetRange(self._x.Min() + self._y.Min(), self._x.Max() + self._y.Max())
+    self._x.SetRange(self._z.Min() - self._y.Max(), self._z.Max() - self._y.Min())
+    self._y.SetRange(self._z.Min() - self._x.Max(), self._z.Max() - self._x.Min())
+
+def test_sum_constraint():
+  print 'test_sum_constraint'
+  solver = pywrapcp.Solver('test_sum_constraint')
+  x = solver.IntVar(1, 5, 'x')
+  y = solver.IntVar(1, 5, 'y')
+  z = solver.IntVar(1, 5, 'z')
+  binary_sum = BinarySum(solver, x, y, z)
+  solver.Add(binary_sum)
+  db = solver.Phase([x, y, z], solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+  solver.NewSearch(db)
+  while solver.NextSolution():
+    print '%d + %d == %d' % (x.Value(), y.Value(), z.Value())
+  solver.EndSearch()
+
+
 def main():
   test_member()
   test_sparse_var()
@@ -208,6 +243,7 @@ def main():
   test_constraint()
   test_domain_iterator()
   test_hole_iterator()
+  test_sum_constraint()
 
 
 if __name__ == '__main__':
