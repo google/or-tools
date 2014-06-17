@@ -147,21 +147,20 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 class SteelRandomLns(pywrapcp.PyLns):
   """Random LNS for Steel."""
 
-  def __init__(self, x, rand, size):
+  def __init__(self, x, rand, lns_size):
     pywrapcp.PyLns.__init__(self, x)
     self.__random = rand
-    self.__size = size
+    self.__size = len(x)
+    self.__lns_size = lns_size
 
   def InitFragments(self):
     pass
 
   def NextFragment(self):
     fragment = []
-
-    while len(fragment) < self.__size:
-      index = self.__random.randint(0, values.Size() - 1)
-      fragment.append(index)
-
+    while len(fragment) < self.__lns_size:
+      pos = self.__random.randint(0, self.__size - 1)
+      fragment.append(pos)
     return fragment
 
 # ----------- Main Function -----------
