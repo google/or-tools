@@ -20,6 +20,8 @@ FLAGS = gflags.FLAGS
 
 gflags.DEFINE_string('data', 'data/steel_mill/steel_mill_slab.txt',
                      'path to data file')
+gflags.DEFINE_integer('time_limit', 20000, 'global time limit')
+
 
 #----------------helper for binpacking posting----------------
 
@@ -161,7 +163,8 @@ def main(unused_argv):
 
   db = SteelDecisionBuilder(x, nb_slabs, weights, loss, load_vars)
   search_log = solver.SearchLog(100000, objective_var)
-  solver.NewSearch(db, [objective, search_log])
+  global_limit = solver.TimeLimit(FLAGS.time_limit)
+  solver.NewSearch(db, [objective, search_log, global_limit])
   while solver.NextSolution():
     print 'Objective:', objective_var.Value(),\
         'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
