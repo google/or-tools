@@ -29,6 +29,7 @@ gflags.DEFINE_integer('lns_random_seed', 0, 'seed for the lns random generator')
 gflags.DEFINE_integer('lns_fail_limit',
                       30,
                       'fail limit when exploring fragments')
+gflags.DEFINE_integer('time_limit', 20000, 'global time limit')
 
 
 # ---------- helper for binpacking posting ----------
@@ -209,10 +210,7 @@ def main(unused_argv):
                           solver.CHOOSE_RANDOM,
                           solver.ASSIGN_MIN_VALUE)
   # The most important aspect is to limit the time exploring each fragment.
-  inner_limit = solver.Limit(2000000000,
-                             2000000000,
-                             FLAGS.lns_fail_limit,
-                             2000000000)
+  inner_limit = solver.FailuresLimit(FLAGS.lns_fail_limit)
   continuation_db = solver.SolveOnce(inner_db, inner_limit)
 
   # Now, we create the LNS objects.
@@ -228,11 +226,12 @@ def main(unused_argv):
       local_search_operator, continuation_db)
   local_search_db = solver.LocalSearchPhase(first_solution,
                                             local_search_parameters)
+  global_limit = solver.TimeLimit(FLAGS.time_limit)
 
   print 'using LNS to improve the initial solution'
 
   search_log = solver.SearchLog(100000, objective_var)
-  solver.NewSearch(local_search_db, [objective, search_log])
+  solver.NewSearch(local_search_db, [objective, search_log, global_limit])
   while solver.NextSolution():
     print 'Objective:', objective_var.Value(),\
         'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
