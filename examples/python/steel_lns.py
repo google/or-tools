@@ -150,7 +150,6 @@ class SteelRandomLns(pywrapcp.PyLns):
   def __init__(self, x, rand, lns_size):
     pywrapcp.PyLns.__init__(self, x)
     self.__random = rand
-    self.__size = len(x)
     self.__lns_size = lns_size
 
   def InitFragments(self):
@@ -159,7 +158,7 @@ class SteelRandomLns(pywrapcp.PyLns):
   def NextFragment(self):
     fragment = []
     while len(fragment) < self.__lns_size:
-      pos = self.__random.randint(0, self.__size - 1)
+      pos = self.__random.randint(0, self.Size() - 1)
       fragment.append(pos)
     return fragment
 
