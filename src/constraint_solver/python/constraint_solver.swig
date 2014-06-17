@@ -179,6 +179,7 @@ DECLARE_bool(cp_model_stats);
 DECLARE_string(cp_export_file);
 DECLARE_bool(cp_no_solve);
 DECLARE_string(cp_profile_file);
+DECLARE_bool(log_prefix);
 
 struct FailureProtect {
   jmp_buf exception_buffer;
@@ -393,6 +394,7 @@ flags.DEFINE_boolean('cp_no_solve', False,
                      'force failures at the beginning of a search.')
 flags.DEFINE_string('cp_profile_file', '',
                     'exports profiling overview to file.')
+flags.DEFINE_boolean('log_prefix', False, 'use log prefix.')
 }
 }  // namespace operations_research
 
@@ -658,7 +660,8 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
                               FLAGS.cp_model_stats,
                               FLAGS.cp_export_file,
                               FLAGS.cp_no_solve,
-                              FLAGS.cp_profile_file)
+                              FLAGS.cp_profile_file,
+                              FLAGS.log_prefix)
 %}
 
 
@@ -669,7 +672,8 @@ static void SetPythonFlags(bool trace_propagation,
                              bool model_stats,
                              const std::string& export_file,
                              bool no_solve,
-                             const std::string& profile_file) {
+                             const std::string& profile_file,
+                             bool log_prefix) {
     FLAGS_cp_trace_propagation = trace_propagation;
     FLAGS_cp_trace_search = trace_search;
     FLAGS_cp_print_model = print_model;
@@ -677,6 +681,7 @@ static void SetPythonFlags(bool trace_propagation,
     FLAGS_cp_export_file = export_file;
     FLAGS_cp_no_solve = no_solve;
     FLAGS_cp_profile_file = profile_file;
+    FLAGS_log_prefix = log_prefix;
   }
 
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
