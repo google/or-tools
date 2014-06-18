@@ -432,7 +432,9 @@ void Solve(const std::string& filename, const std::string& solution_file) {
   data.Load(filename);
 
   std::vector<int> solution;
-  LoadSolution(solution_file, &solution);
+  if (!solution_file.empty()) {
+    LoadSolution(solution_file, &solution);
+  }
 
   LOG(INFO) << "  - " << data.num_periods() << " periods";
   LOG(INFO) << "  - " << data.num_products() << " products";
