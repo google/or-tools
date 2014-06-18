@@ -978,6 +978,9 @@ $(OBJ_DIR)/flatzinc2/constraints.$O:$(SRC_DIR)/flatzinc2/constraints.cc $(SRC_DI
 $(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc2/flatzinc_constraints.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sflatzinc_constraints.$O
 
+$(OBJ_DIR)/flatzinc2/flatzinc_resource.$O:$(SRC_DIR)/flatzinc2/flatzinc_resource.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sflatzinc_resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sflatzinc_resource.$O
+
 $(OBJ_DIR)/flatzinc2/model.$O:$(SRC_DIR)/flatzinc2/model.cc $(SRC_DIR)/flatzinc2/model.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Smodel.$O
 
@@ -1046,6 +1049,12 @@ $(BIN_DIR)/dimacs_assignment$E: $(DYNAMIC_DIMACS_DEPS) $(OBJ_DIR)/dimacs_assignm
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DYNAMIC_DIMACS_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
 
 # Pure CP and Routing Examples
+
+$(OBJ_DIR)/acp_challenge.$O:$(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge.$O
+
+$(BIN_DIR)/acp_challenge$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/acp_challenge.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
 
 $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)$(OBJ_DIR)$Scostas_array.$O
