@@ -51,7 +51,11 @@
 
 DEFINE_string(input, "", "");
 DEFINE_int32(lns_size, 10, "lns size");
+DEFINE_int32(lns_intervals, 4, "lns num of intervals");
+DEFINE_int32(lns_seed, 0, "lns seed");
 DEFINE_int32(lns_limit, 30, "Limit the number of failures of the lns loop.");
+DEFINE_string(solution, "", "Solution file");
+DEFINE_int32(time_limit, 0, "Time limit");
 
 DECLARE_bool(log_prefix);
 
@@ -145,6 +149,68 @@ class AcpData {
   int state_;
 };
 
+class RandomIntervalLns : public BaseLNS {
+ public:
+  RandomIntervalLns(const std::vector<IntVar*>& vars,
+                    int number_of_variables, int number_of_intervals,
+                    int32 seed)
+      : BaseLNS(vars),
+        rand_(seed),
+        number_of_variables_(number_of_variables),
+        number_of_intervals_(number_of_intervals) {
+    CHECK_GT(number_of_variables_, 0);
+    CHECK_LE(number_of_variables_, Size());
+    CHECK_GT(number_of_intervals_, 0);
+    CHECK_LE(number_of_intervals_, Size());
+  }
+
+  ~RandomIntervalLns() {}
+
+  virtual void InitFragments() { state_ = 0; }
+
+  virtual bool NextFragment(std::vector<int>* fragment) {
+    switch (state_) {
+      case 0: {
+        if (rand_.Uniform(2) == 0) {
+          for (int i = 0; i < number_of_intervals_; ++i) {
+            const int start = rand_.Uniform(Size() - number_of_variables_);
+            for (int pos = start; pos < start + number_of_variables_; ++pos) {
+              fragment->push_back(pos);
+            }
+          }
+        }
+        break;
+      }
+      case 1: {
+        for (int i = 0; i < number_of_variables_ * number_of_intervals_; ++i) {
+          const int pos = rand_.Uniform(Size());
+          fragment->push_back(pos);
+        }
+        break;
+      }
+      case 2: {
+        const int length = number_of_intervals_ * number_of_variables_;
+        const int start = rand_.Uniform(Size() - length);
+        for (int pos = start; pos < start + length; ++pos) {
+          fragment->push_back(pos);
+        }
+        break;
+      }
+    }
+    state_++;
+    state_ = state_ % 3;
+    return true;
+  }
+
+  virtual std::string DebugString() const { return "RandomIntervalLns"; }
+
+ private:
+  ACMRandom rand_;
+  const int number_of_variables_;
+  const int number_of_intervals_;
+  int state_;
+};
+
 class Swap : public IntVarLocalSearchOperator {
  public:
   explicit Swap(const std::vector<IntVar*>& variables)
@@ -160,8 +226,8 @@ class Swap : public IntVarLocalSearchOperator {
     const int size = Size();
     index2_++;
     if (index2_ == size) {
-      index2_ = 0;
       index1_++;
+      index2_ = index1_ + 1;
     }
     if (index1_ == size - 1) {
       return false;
@@ -177,6 +243,68 @@ class Swap : public IntVarLocalSearchOperator {
     index2_ = 0;
   }
 
+  int index1_;
+  int index2_;
+};
+
+class Insert : public IntVarLocalSearchOperator {
+ public:
+  explicit Insert(const std::vector<IntVar*>& variables, int num_items)
+      : IntVarLocalSearchOperator(variables),
+        num_items_(num_items),
+        index1_(0),
+        index2_(0) {}
+
+  virtual ~Insert() {}
+
+ protected:
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeOneNeighbor() {
+    if (!Increment()) {
+      return false;
+    }
+    const int64 value = OldValue(index1_);
+    if (index1_ < index2_) {
+      // Push down
+      for (int i = index1_; i < index2_ - 1; ++i) {
+        SetValue(i, OldValue(i + 1));
+      }
+    } else {
+      for (int i = index1_; i > index2_ + 1; --i) {
+        SetValue(i, OldValue(i - 1));
+      }
+    }
+    SetValue(index2_, value);
+    return true;
+  }
+
+ private:
+  bool IsProduct(int value) {
+    return value >= 0 && value < num_items_;
+  }
+
+  bool Increment() {
+    const int size = Size();
+    index2_++;
+    if (index2_ == index1_) {
+      index2_++;
+    }
+    if (index2_ >= size) {
+      index2_ = 0;
+      index1_++;
+    }
+    if (index1_ == size - 1) {
+      return false;
+    }
+    return true;
+  }
+
+  virtual void OnStart() {
+    index1_ = 0;
+    index2_ = 0;
+  }
+
+  const int num_items_;
   int index1_;
   int index2_;
 };
@@ -203,7 +331,7 @@ class Filter : public IntVarLocalSearchFilter {
     for (int i = 0; i < Size(); ++i) {
       const int value = Value(i);
       tmp_solution_[i] = value;
-      if (value != -1) {
+      if (value < item_to_product_.size()) {
         current_position_[value] = i;
       }
     }
@@ -232,8 +360,46 @@ class Filter : public IntVarLocalSearchFilter {
     return new_cost < current_cost_;
   }
 
-  int Evaluate() const {
-    return 0;
+  int ItemToProduct(int item) const {
+    return item >= transitions_.size() ? -1 : item;
+  }
+
+  int Evaluate() {
+    // Update position of items.
+    for (int i = 0; i < Size(); ++i) {
+      const int value = tmp_solution_[i];
+      if (value < item_to_product_.size()) {
+        current_position_[value] = i;
+      }
+    }
+    // Check precedences and due dates.
+    for (int i = 0; i < item_to_product_.size() - 1; ++i) {
+      if (item_to_product_[i] == item_to_product_[i + 1] &&
+          (current_position_[i] > current_position_[i + 1] ||
+           current_position_[i] > due_dates_[i])) {
+        return kint32max;
+      }
+    }
+    // Compute inventory cost.
+    int earliness_cost = 0;
+    for (int i = 0; i < item_to_product_.size(); ++i) {
+      earliness_cost += due_dates_[i] - current_position_[i];
+    }
+    earliness_cost *= inventory_cost_;
+
+    // Compute transition cost.
+    int previous = -1;
+    int transition_cost = 0;
+    for (int value : tmp_solution_) {
+      const int product = ItemToProduct(value);
+      if (previous != -1  && product != -1 && previous != product) {
+        transition_cost += transitions_[previous][product];
+      }
+      if (product != -1) {
+        previous = product;
+      }
+    }
+    return earliness_cost + transition_cost;
   }
 
  private:
@@ -246,10 +412,28 @@ class Filter : public IntVarLocalSearchFilter {
   int current_cost_;
 };
 
-void Solve(const string& filename) {
+void LoadSolution(const std::string& filename, std::vector<int>* vec) {
+  File* const file = File::OpenOrDie(filename, "r");
+  std::string line;
+  file->ReadToString(&line, 10000);
+  const std::vector<std::string> words =
+      strings::Split(line, " ", strings::SkipEmpty());
+  LOG(INFO) << "Solution file has " << words.size() << " entries";
+  vec->clear();
+  for (const std::string& word : words) {
+    vec->push_back(atoi32(word));
+  }
+  LOG(INFO) << "  - loaded " << strings::Join(*vec, " ");
+}
+
+void Solve(const std::string& filename, const std::string& solution_file) {
   LOG(INFO) << "Load " << filename;
   AcpData data;
   data.Load(filename);
+
+  std::vector<int> solution;
+  LoadSolution(solution_file, &solution);
+
   LOG(INFO) << "  - " << data.num_periods() << " periods";
   LOG(INFO) << "  - " << data.num_products() << " products";
   LOG(INFO) << "  - earliness cost is " << data.inventory_cost();
@@ -261,7 +445,7 @@ void Solve(const string& filename) {
 
   LOG(INFO) << "  - " << num_items << " items";
   const int num_residuals = data.num_periods() - num_items;
-  LOG(INFO) << "  - " << num_residuals << " non act`ive periods";
+  LOG(INFO) << "  - " << num_residuals << " non active periods";
 
   std::vector<int> item_to_product;
   for (int i = 0; i < data.num_products(); ++i) {
@@ -273,7 +457,7 @@ void Solve(const string& filename) {
   LOG(INFO) << "Build model";
   int max_cost = 0;
   IntTupleSet transition_cost_tuples(5);
-  vector<int> tuple(5);
+  std::vector<int> tuple(5);
   for (int i = 0; i < data.num_products(); ++i) {
     for (int j = 0; j < data.num_products(); ++j) {
       const int cost = data.transitions()[i][j];
@@ -350,6 +534,8 @@ void Solve(const string& filename) {
       }
       inventory_costs.push_back(
           solver.MakeDifference(due_date, delivery)->Var());
+      deliveries.push_back(delivery);
+      due_dates.push_back(due_date);
     }
   }
   for (int i = 0; i < num_residuals; ++i) {
@@ -407,29 +593,51 @@ void Solve(const string& filename) {
   DecisionBuilder* const random_db =
       solver.MakePhase(items,
                        Solver::CHOOSE_RANDOM,
-                       Solver::ASSIGN_RANDOM_VALUE);
+                       Solver::ASSIGN_MIN_VALUE);
   SearchLimit* const lns_limit = solver.MakeFailuresLimit(FLAGS_lns_limit);
   DecisionBuilder* const inner_db = solver.MakeSolveOnce(random_db, lns_limit);
 
   LocalSearchOperator* swap = solver.RevAlloc(new Swap(items));
-  LocalSearchOperator* random_lns = solver.MakeRandomLNSOperator(items, 10);
+  LocalSearchOperator* insert = solver.RevAlloc(new Insert(items, num_items));
+  LocalSearchOperator* random_lns =
+      solver.RevAlloc(new RandomIntervalLns(items, FLAGS_lns_size,
+                                            FLAGS_lns_intervals,
+                                            FLAGS_lns_seed));
   std::vector<LocalSearchOperator*> operators;
-  //  operators.push_back(swap);
+  operators.push_back(swap);
+  operators.push_back(insert);
   operators.push_back(random_lns);
 
   LocalSearchOperator* const moves =
       solver.ConcatenateOperators(operators);
 
   std::vector<LocalSearchFilter*> filters;
-  // filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
-  //                                              due_dates, data.transitions(),
-  //                                              data.inventory_cost())));
+  filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
+                                               due_dates, data.transitions(),
+                                               data.inventory_cost())));
 
   LocalSearchPhaseParameters* const ls_params =
       solver.MakeLocalSearchPhaseParameters(moves, inner_db, nullptr, filters);
 
-  DecisionBuilder* const ls_db =
-      solver.MakeLocalSearchPhase(items, db, ls_params);
+
+  DecisionBuilder* ls_db = nullptr;
+  if (solution.empty()) {
+    ls_db =  solver.MakeLocalSearchPhase(items, db, ls_params);
+  } else {
+    vector<int> offsets(data.num_products() + 1, 0);
+    for (int i = 0; i < data.num_products(); ++i) {
+      offsets[i + 1] = offsets[i] + data.due_dates_per_product()[i].size();
+    }
+    Assignment* const solution_assignment = solver.MakeAssignment();
+    for (int i = 0; i < items.size(); ++i) {
+      IntVar* const item = items[i];
+      const int value = solution[i] == -1 ? data.num_products() : solution[i];
+      const int item_value = offsets[value]++;
+      solution_assignment->Add(item);
+      solution_assignment->SetRange(item, value, item_value);
+    }
+    ls_db =  solver.MakeLocalSearchPhase(solution_assignment, ls_params);
+  }
 
   solver.NewSearch(ls_db, objective, log);
   while (solver.NextSolution()) {
@@ -468,5 +676,5 @@ int main(int argc, char** argv) {
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
-  operations_research::Solve(FLAGS_input);
+  operations_research::Solve(FLAGS_input, FLAGS_solution);
 }
