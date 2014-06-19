@@ -18,9 +18,11 @@
 #include "base/commandlineflags.h"
 #include "base/file.h"
 #include "base/filelinereader.h"
+#include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/split.h"
+#include "base/map_util.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
 #include "constraint_solver/constraint_solver.h"
@@ -53,9 +55,14 @@ DEFINE_string(input, "", "");
 DEFINE_int32(lns_size, 10, "lns size");
 DEFINE_int32(lns_intervals, 4, "lns num of intervals");
 DEFINE_int32(lns_seed, 0, "lns seed");
+DEFINE_int32(ls_swaps, 10, "ls swaps");
+DEFINE_int32(ls_rounds, 1000000, "ls rounds");
+DEFINE_int32(ls_seed, 0, "ls seed");
+DEFINE_int32(lns_product, 3, "lns product");
 DEFINE_int32(lns_limit, 30, "Limit the number of failures of the lns loop.");
 DEFINE_string(solution, "", "Solution file");
 DEFINE_int32(time_limit, 0, "Time limit");
+DEFINE_bool(use_lns, true, "Use LNS");
 
 DECLARE_bool(log_prefix);
 
@@ -152,12 +159,15 @@ class AcpData {
 class RandomIntervalLns : public BaseLNS {
  public:
   RandomIntervalLns(const std::vector<IntVar*>& vars,
+                    const std::vector<int> item_to_product,
                     int number_of_variables, int number_of_intervals,
-                    int32 seed)
+                    int32 seed, int num_product)
       : BaseLNS(vars),
+        item_to_product_(item_to_product),
         rand_(seed),
         number_of_variables_(number_of_variables),
-        number_of_intervals_(number_of_intervals) {
+        number_of_intervals_(number_of_intervals),
+        num_product_(num_product)  {
     CHECK_GT(number_of_variables_, 0);
     CHECK_LE(number_of_variables_, Size());
     CHECK_GT(number_of_intervals_, 0);
@@ -171,12 +181,10 @@ class RandomIntervalLns : public BaseLNS {
   virtual bool NextFragment(std::vector<int>* fragment) {
     switch (state_) {
       case 0: {
-        if (rand_.Uniform(2) == 0) {
-          for (int i = 0; i < number_of_intervals_; ++i) {
-            const int start = rand_.Uniform(Size() - number_of_variables_);
-            for (int pos = start; pos < start + number_of_variables_; ++pos) {
-              fragment->push_back(pos);
-            }
+        for (int i = 0; i < number_of_intervals_; ++i) {
+          const int start = rand_.Uniform(Size() - number_of_variables_);
+          for (int pos = start; pos < start + number_of_variables_; ++pos) {
+            fragment->push_back(pos);
           }
         }
         break;
@@ -196,18 +204,32 @@ class RandomIntervalLns : public BaseLNS {
         }
         break;
       }
+      case 3: {
+        hash_set<int> to_release;
+        while (to_release.size() < num_product_) {
+          to_release.insert(rand_.Uniform(item_to_product_.back() + 1));
+        }
+        for (int i = 0; i < Size(); ++i) {
+          if (ContainsKey(to_release, item_to_product_[Value(i)])) {
+            fragment->push_back(i);
+          }
+        }
+        break;
+      }
     }
     state_++;
-    state_ = state_ % 3;
+    state_ = state_ % 4;
     return true;
   }
 
   virtual std::string DebugString() const { return "RandomIntervalLns"; }
 
  private:
+  const std::vector<int> item_to_product_;
   ACMRandom rand_;
   const int number_of_variables_;
   const int number_of_intervals_;
+  const int num_product_;
   int state_;
 };
 
@@ -247,6 +269,47 @@ class Swap : public IntVarLocalSearchOperator {
   int index2_;
 };
 
+class NRandomSwaps : public IntVarLocalSearchOperator {
+ public:
+  explicit NRandomSwaps(const std::vector<IntVar*>& variables,
+                        int num_swaps,
+                        int num_rounds,
+                        int ls_seed)
+      : IntVarLocalSearchOperator(variables),
+        num_swaps_(num_swaps),
+        num_rounds_(num_rounds),
+        rand_(ls_seed) {}
+
+  virtual ~NRandomSwaps() {}
+
+ protected:
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeOneNeighbor() {
+    const int num_swaps = rand_.Uniform(num_swaps_ - 1) + 2;
+    for (int i = 0; i < num_swaps; ++i) {
+      const int index1 = rand_.Uniform(Size());
+      const int index2 = rand_.Uniform(Size());
+      SetValue(index1, OldValue(index2));
+      SetValue(index2, OldValue(index1));
+    }
+    round_++;
+    if (round_++ > num_rounds_) {
+      return false;
+    }
+    return true;
+  }
+
+ private:
+  virtual void OnStart() {
+    round_ = 0;
+  }
+
+  const int num_swaps_;
+  const int num_rounds_;
+  ACMRandom rand_;
+  int round_;
+};
+
 class Insert : public IntVarLocalSearchOperator {
  public:
   explicit Insert(const std::vector<IntVar*>& variables, int num_items)
@@ -279,10 +342,6 @@ class Insert : public IntVarLocalSearchOperator {
   }
 
  private:
-  bool IsProduct(int value) {
-    return value >= 0 && value < num_items_;
-  }
-
   bool Increment() {
     const int size = Size();
     index2_++;
@@ -307,6 +366,97 @@ class Insert : public IntVarLocalSearchOperator {
   const int num_items_;
   int index1_;
   int index2_;
+};
+
+class SmartInsert : public IntVarLocalSearchOperator {
+ public:
+  explicit SmartInsert(const std::vector<IntVar*>& variables, int num_items)
+      : IntVarLocalSearchOperator(variables),
+        num_items_(num_items),
+        index1_(0),
+        index2_(0),
+        up_(true) {}
+
+  virtual ~SmartInsert() {}
+
+ protected:
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeOneNeighbor() {
+    if (!Increment()) {
+      return false;
+    }
+    const int64 value = OldValue(index1_);
+    if (up_) {
+      // find next hole up from index1_.
+      int hole = index1_;
+      while (hole < Size() && IsProduct(OldValue(hole))) {
+        hole++;
+      }
+      if (hole == Size()) {
+        return true;  // Invalid move.
+      }
+      const int hole_value = OldValue(hole);
+      for (int i = hole; i > index1_ + 1; --i) {
+        SetValue(i, OldValue(i - 1));
+      }
+      SetValue(index1_, OldValue(index2_));
+      SetValue(index2_, hole_value);
+    } else {
+      // find next hole down from index1_.
+      int hole = index1_;
+      while (hole >= 0 && IsProduct(OldValue(hole))) {
+        hole--;
+      }
+      if (hole == -1) {
+        return true;  // Invalid move.
+      }
+      // Push down
+      const int hole_value = OldValue(hole);
+      for (int i = hole; i < index1_ - 1; ++i) {
+        SetValue(i, OldValue(i + 1));
+      }
+      SetValue(index1_, OldValue(index2_));
+      SetValue(index2_, hole_value);
+    }
+    return true;
+  }
+
+ private:
+  bool IsProduct(int value) {
+    return value >= 0 && value < num_items_;
+  }
+
+  bool Increment() {
+    if (!up_) {
+      up_ = true;
+      return true;
+    }
+    const int size = Size();
+    index2_++;
+    if (index2_ == index1_) {
+      index2_++;
+    }
+    if (index2_ >= size) {
+      index2_ = 0;
+      index1_++;
+    }
+    if (index1_ == size - 1) {
+      return false;
+    }
+    up_ = false;
+    return true;
+  }
+
+  virtual void OnStart() {
+    index1_ = 0;
+    index2_ = 0;
+    up_ = true;
+  }
+
+  const int num_items_;
+  int index1_;
+  int index2_;
+  bool up_;
 };
 
 class Filter : public IntVarLocalSearchFilter {
@@ -531,9 +681,9 @@ void Solve(const std::string& filename, const std::string& solution_file) {
       const int due_date = data.due_dates_per_product()[i][j];
       IntVar* const delivery =
           solver.MakeIntVar(0, due_date, StringPrintf("delivery_%d_%d", i, j));
-      if (j > 0) {  // Order deliveries of the same product.
-        solver.AddConstraint(solver.MakeLess(deliveries.back(), delivery));
-      }
+      // if (j > 0) {  // Order deliveries of the same product.
+      //   solver.AddConstraint(solver.MakeLess(deliveries.back(), delivery));
+      // }
       inventory_costs.push_back(
           solver.MakeDifference(due_date, delivery)->Var());
       deliveries.push_back(delivery);
@@ -594,24 +744,36 @@ void Solve(const std::string& filename, const std::string& solution_file) {
 
   DecisionBuilder* const random_db =
       solver.MakePhase(items,
-                       Solver::CHOOSE_RANDOM,
-                       Solver::ASSIGN_MIN_VALUE);
+                       Solver::CHOOSE_MIN_SIZE,
+                       Solver::ASSIGN_RANDOM_VALUE);
   SearchLimit* const lns_limit = solver.MakeFailuresLimit(FLAGS_lns_limit);
   DecisionBuilder* const inner_db = solver.MakeSolveOnce(random_db, lns_limit);
 
   LocalSearchOperator* swap = solver.RevAlloc(new Swap(items));
   LocalSearchOperator* insert = solver.RevAlloc(new Insert(items, num_items));
+  LocalSearchOperator* smart_insert =
+      solver.RevAlloc(new SmartInsert(items, num_items));
+  LocalSearchOperator* random_swap =
+      solver.RevAlloc(new NRandomSwaps(
+          items, FLAGS_ls_swaps, FLAGS_ls_rounds, FLAGS_ls_seed));
   LocalSearchOperator* random_lns =
-      solver.RevAlloc(new RandomIntervalLns(items, FLAGS_lns_size,
+      solver.RevAlloc(new RandomIntervalLns(items,
+                                            item_to_product,
+                                            FLAGS_lns_size,
                                             FLAGS_lns_intervals,
-                                            FLAGS_lns_seed));
+                                            FLAGS_lns_seed,
+                                            FLAGS_lns_product));
   std::vector<LocalSearchOperator*> operators;
   operators.push_back(swap);
+  operators.push_back(smart_insert);
   operators.push_back(insert);
-  operators.push_back(random_lns);
+  operators.push_back(random_swap);
+  if (FLAGS_use_lns) {
+    operators.push_back(random_lns);
+  }
 
   LocalSearchOperator* const moves =
-      solver.ConcatenateOperators(operators);
+      solver.ConcatenateOperators(operators, true);
 
   std::vector<LocalSearchFilter*> filters;
   filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
