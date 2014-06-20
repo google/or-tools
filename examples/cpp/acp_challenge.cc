@@ -558,13 +558,9 @@ class Filter : public IntVarLocalSearchFilter {
         SetTmpSolution(touched_var, value);
       }
     }
-    if (FLAGS_use_tabu) {
-      return true;
-    } else {
-      const int new_cost = Evaluate();
-      Backtrack();
-      return new_cost < current_cost_;
-    }
+    const int new_cost = FLAGS_use_tabu ? -1 : Evaluate();
+    Backtrack();
+    return new_cost < current_cost_;
   }
 
   void SetTmpSolution(int index, int value) {
@@ -609,9 +605,8 @@ class Filter : public IntVarLocalSearchFilter {
   const std::vector<std::vector<int>> transitions_;
   const int inventory_cost_;
   std::vector<int> tmp_solution_;
-  int current_cost_;
   std::vector<int> touched_tmp_solution_;
-  std::vector<int> touched_current_position_;
+  int current_cost_;
 };
 
 void LoadSolution(const std::string& filename, std::vector<int>* vec) {
