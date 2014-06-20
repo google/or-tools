@@ -554,10 +554,11 @@ class Filter : public IntVarLocalSearchFilter {
         Backtrack();
         return false;
       }
-      SetTmpSolution(touched_var, value);
+      if (!FLAGS_use_tabu) {  // We do not evaluate the cost.
+        SetTmpSolution(touched_var, value);
+      }
     }
     if (FLAGS_use_tabu) {
-      Backtrack();
       return true;
     } else {
       const int new_cost = Evaluate();
