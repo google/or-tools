@@ -52,7 +52,7 @@
 */
 
 DEFINE_string(input, "", "");
-DEFINE_int32(lns_size, 10, "lns size");
+DEFINE_int32(lns_size, 6, "lns size");
 DEFINE_int32(lns_intervals, 4, "lns num of intervals");
 DEFINE_int32(lns_seed, 0, "lns seed");
 DEFINE_int32(ls_swaps, 10, "ls swaps");
@@ -63,6 +63,10 @@ DEFINE_int32(lns_limit, 30, "Limit the number of failures of the lns loop.");
 DEFINE_string(solution, "", "Solution file");
 DEFINE_int32(time_limit, 0, "Time limit");
 DEFINE_bool(use_lns, true, "Use LNS");
+DEFINE_bool(use_filter, true, "Use LS filter");
+DEFINE_bool(use_tabu, false, "Use tabu search");
+DEFINE_int32(tabu_size, 10, "tabu size");
+DEFINE_double(tabu_factor, 0.6, "tabu factor");
 
 DECLARE_bool(log_prefix);
 
@@ -269,6 +273,43 @@ class Swap : public IntVarLocalSearchOperator {
   int index2_;
 };
 
+class Reverse : public IntVarLocalSearchOperator {
+ public:
+  explicit Reverse(const std::vector<IntVar*>& variables)
+      : IntVarLocalSearchOperator(variables),
+        start_(-1),
+        len_(3) {}
+
+  virtual ~Reverse() {}
+
+ protected:
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeOneNeighbor() {
+    const int size = Size();
+    start_++;
+    if (start_ + len_ >= size) {
+      len_++;
+      start_ = 0;
+    }
+    if (len_ >= 20) {
+      return false;
+    }
+    for (int i = 0; i < len_; ++i) {
+      SetValue(start_ + len_ - i - 1,  OldValue(start_ + i));
+    }
+    return true;
+  }
+
+ private:
+  virtual void OnStart() {
+    start_ = -1;
+    len_ = 3;
+  }
+
+  int start_;
+  int len_;
+};
+
 class NRandomSwaps : public IntVarLocalSearchOperator {
  public:
   explicit NRandomSwaps(const std::vector<IntVar*>& variables,
@@ -286,14 +327,22 @@ class NRandomSwaps : public IntVarLocalSearchOperator {
   // Make a neighbor assigning one variable to its target value.
   virtual bool MakeOneNeighbor() {
     const int num_swaps = rand_.Uniform(num_swaps_ - 1) + 2;
+    hash_set<int> inserted;
     for (int i = 0; i < num_swaps; ++i) {
-      const int index1 = rand_.Uniform(Size());
-      const int index2 = rand_.Uniform(Size());
+      int index1 = rand_.Uniform(Size());
+      while (ContainsKey(inserted, index1)) {
+        index1 = rand_.Uniform(Size());
+      }
+      inserted.insert(index1);
+      int index2 = rand_.Uniform(Size());
+      while (ContainsKey(inserted, index2)) {
+        index2 = rand_.Uniform(Size());
+      }
+      inserted.insert(index2);
       SetValue(index1, OldValue(index2));
       SetValue(index2, OldValue(index1));
     }
-    round_++;
-    if (round_++ > num_rounds_) {
+    if (++round_ > num_rounds_) {
       return false;
     }
     return true;
@@ -329,11 +378,11 @@ class Insert : public IntVarLocalSearchOperator {
     const int64 value = OldValue(index1_);
     if (index1_ < index2_) {
       // Push down
-      for (int i = index1_; i < index2_ - 1; ++i) {
+      for (int i = index1_; i < index2_; ++i) {
         SetValue(i, OldValue(i + 1));
       }
     } else {
-      for (int i = index1_; i > index2_ + 1; --i) {
+      for (int i = index1_; i > index2_; --i) {
         SetValue(i, OldValue(i - 1));
       }
     }
@@ -407,12 +456,12 @@ class SmartInsert : public IntVarLocalSearchOperator {
       while (hole >= 0 && IsProduct(OldValue(hole))) {
         hole--;
       }
-      if (hole == -1) {
+      if (hole == -1 || (index2_ >= hole && index2_ <= index1_)) {
         return true;  // Invalid move.
       }
       // Push down
       const int hole_value = OldValue(hole);
-      for (int i = hole; i < index1_ - 1; ++i) {
+      for (int i = hole; i < index1_; ++i) {
         SetValue(i, OldValue(i + 1));
       }
       SetValue(index1_, OldValue(index2_));
@@ -472,7 +521,6 @@ class Filter : public IntVarLocalSearchFilter {
         transitions_(transitions),
         inventory_cost_(inventory_cost),
         tmp_solution_(vars.size()),
-        current_position_(item_to_product.size()),
         current_cost_(0) {}
 
   virtual ~Filter() {}
@@ -481,9 +529,6 @@ class Filter : public IntVarLocalSearchFilter {
     for (int i = 0; i < Size(); ++i) {
       const int value = Value(i);
       tmp_solution_[i] = value;
-      if (value < item_to_product_.size()) {
-        current_position_[value] = i;
-      }
     }
     current_cost_ = Evaluate();
   }
@@ -492,64 +537,69 @@ class Filter : public IntVarLocalSearchFilter {
                       const Assignment* unused_deltadelta) {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
-    for (int i = 0; i < Size(); ++i) {
-      tmp_solution_[i] = Value(i);
-    }
+
+    // Check for LNS.
     for (int i = 0; i < solution_delta_size; ++i) {
       if (!solution_delta.Element(i).Activated()) {
         return true;
       }
     }
+
+    // Compute delta.
     for (int index = 0; index < solution_delta_size; ++index) {
       int64 touched_var = -1;
       FindIndex(solution_delta.Element(index).Var(), &touched_var);
-      const int64 new_value = solution_delta.Element(index).Value();
-      tmp_solution_[touched_var] = new_value;
+      const int64 value = solution_delta.Element(index).Value();
+      if (value < item_to_product_.size() && touched_var > due_dates_[value]) {
+        Backtrack();
+        return false;
+      }
+      SetTmpSolution(touched_var, value);
     }
-    const int new_cost = Evaluate();
-    return new_cost < current_cost_;
+    if (FLAGS_use_tabu) {
+      Backtrack();
+      return true;
+    } else {
+      const int new_cost = Evaluate();
+      Backtrack();
+      return new_cost < current_cost_;
+    }
+  }
+
+  void SetTmpSolution(int index, int value) {
+    touched_tmp_solution_.push_back(index);
+    tmp_solution_[index] = value;
+  }
+
+  void Backtrack() {
+    for (const int i : touched_tmp_solution_) {
+      tmp_solution_[i] = Value(i);
+    }
+    touched_tmp_solution_.clear();
   }
 
   int ItemToProduct(int item) const {
-    return item >= transitions_.size() ? -1 : item;
+    return item >= item_to_product_.size() ? -1 : item_to_product_[item];
   }
 
   int Evaluate() {
-    // Update position of items.
-    for (int i = 0; i < Size(); ++i) {
-      const int value = tmp_solution_[i];
-      if (value < item_to_product_.size()) {
-        current_position_[value] = i;
-      }
-    }
-    // Check precedences and due dates.
-    for (int i = 0; i < item_to_product_.size() - 1; ++i) {
-      if (item_to_product_[i] == item_to_product_[i + 1] &&
-          (current_position_[i] > current_position_[i + 1] ||
-           current_position_[i] > due_dates_[i])) {
-        return kint32max;
-      }
-    }
-    // Compute inventory cost.
-    int earliness_cost = 0;
-    for (int i = 0; i < item_to_product_.size(); ++i) {
-      earliness_cost += due_dates_[i] - current_position_[i];
-    }
-    earliness_cost *= inventory_cost_;
-
-    // Compute transition cost.
+    // Compute costs.
     int previous = -1;
     int transition_cost = 0;
-    for (int value : tmp_solution_) {
-      const int product = ItemToProduct(value);
+    int earliness_cost = 0;
+
+    for (int i = 0; i < tmp_solution_.size(); ++i) {
+      const int item = tmp_solution_[i];
+      const int product = ItemToProduct(item);
       if (previous != -1  && product != -1 && previous != product) {
         transition_cost += transitions_[previous][product];
       }
       if (product != -1) {
         previous = product;
+        earliness_cost += due_dates_[item] - i;
       }
     }
-    return earliness_cost + transition_cost;
+    return earliness_cost * inventory_cost_ + transition_cost;
   }
 
  private:
@@ -558,8 +608,9 @@ class Filter : public IntVarLocalSearchFilter {
   const std::vector<std::vector<int>> transitions_;
   const int inventory_cost_;
   std::vector<int> tmp_solution_;
-  std::vector<int> current_position_;
   int current_cost_;
+  std::vector<int> touched_tmp_solution_;
+  std::vector<int> touched_current_position_;
 };
 
 void LoadSolution(const std::string& filename, std::vector<int>* vec) {
@@ -729,14 +780,41 @@ void Solve(const std::string& filename, const std::string& solution_file) {
       solver.MakeGreaterOrEqual(solver.MakeIsEqualCstVar(states[0], -1),
                                 solver.MakeIsEqualCstVar(products[0], -1)));
 
+  // Redundant due date constraints on non variables.
+  hash_set<int> due_date_set(due_dates.begin(), due_dates.end());
+  for (const int due_date : due_date_set) {
+    std::vector<IntVar*> outside;
+    int inside_count = 0;
+    for (int i = 0; i < due_dates.size(); ++i) {
+      const int local_due_date = due_dates[i];
+      if (local_due_date <= due_date) {
+        inside_count++;
+      } else {
+        outside.push_back(
+            solver.MakeIsLessOrEqualCstVar(deliveries[i], due_date));
+      }
+    }
+    for (int i = due_dates.size(); i < deliveries.size(); ++i) {
+      outside.push_back(
+          solver.MakeIsLessOrEqualCstVar(deliveries[i], due_date));
+    }
+    const int slack = due_date - inside_count + 1;
+    CHECK_EQ(inside_count + outside.size(), data.num_periods());
+    Constraint* const ct = solver.MakeSumLessOrEqual(outside, slack);
+    solver.AddConstraint(ct);
+  }
+
   // Create objective.
   IntVar* const objective_var =
       solver.MakeSum(solver.MakeProd(solver.MakeSum(inventory_costs),
                                      data.inventory_cost()),
                      solver.MakeSum(transition_costs))->Var();
-  OptimizeVar* const objective = solver.MakeMinimize(objective_var, 1);
+  SearchMonitor* const  objective = FLAGS_use_tabu ?
+      solver.MakeTabuSearch(false, objective_var, 1, items, FLAGS_tabu_size,
+                            FLAGS_tabu_size, FLAGS_tabu_factor) :
+      solver.MakeMinimize(objective_var, 1);
   // Create search monitors.
-  SearchMonitor* const log = solver.MakeSearchLog(1000000, objective);
+  SearchMonitor* const log = solver.MakeSearchLog(1000000, objective_var);
 
   DecisionBuilder* const db = solver.MakePhase(items,
                                                Solver::CHOOSE_MIN_SIZE,
@@ -744,12 +822,13 @@ void Solve(const std::string& filename, const std::string& solution_file) {
 
   DecisionBuilder* const random_db =
       solver.MakePhase(items,
-                       Solver::CHOOSE_MIN_SIZE,
+                       Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_RANDOM_VALUE);
   SearchLimit* const lns_limit = solver.MakeFailuresLimit(FLAGS_lns_limit);
   DecisionBuilder* const inner_db = solver.MakeSolveOnce(random_db, lns_limit);
 
   LocalSearchOperator* swap = solver.RevAlloc(new Swap(items));
+  LocalSearchOperator* reverse = solver.RevAlloc(new Reverse(items));
   LocalSearchOperator* insert = solver.RevAlloc(new Insert(items, num_items));
   LocalSearchOperator* smart_insert =
       solver.RevAlloc(new SmartInsert(items, num_items));
@@ -765,10 +844,11 @@ void Solve(const std::string& filename, const std::string& solution_file) {
                                             FLAGS_lns_product));
   std::vector<LocalSearchOperator*> operators;
   operators.push_back(swap);
+  operators.push_back(reverse);
   operators.push_back(smart_insert);
   operators.push_back(insert);
   operators.push_back(random_swap);
-  if (FLAGS_use_lns) {
+  if (FLAGS_use_lns && !FLAGS_use_tabu) {
     operators.push_back(random_lns);
   }
 
@@ -776,9 +856,11 @@ void Solve(const std::string& filename, const std::string& solution_file) {
       solver.ConcatenateOperators(operators, true);
 
   std::vector<LocalSearchFilter*> filters;
-  filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
-                                               due_dates, data.transitions(),
-                                               data.inventory_cost())));
+  if (FLAGS_use_filter) {
+    filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
+                                                 due_dates, data.transitions(),
+                                                 data.inventory_cost())));
+  }
 
   LocalSearchPhaseParameters* const ls_params =
       solver.MakeLocalSearchPhaseParameters(moves, inner_db, nullptr, filters);
