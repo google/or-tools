@@ -9,11 +9,10 @@ GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
 CBC_TAG = 2.8.9
-# 2.0.11
-# SWIG_TAG = 17741
-# 2.0.12
+# SWIG 2.0.12
 SWIG_TAG = 18238
-# 20773 is swig 3.0.3
+# SWIG 3.0.3
+# SWIG_TAG = 20773
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
