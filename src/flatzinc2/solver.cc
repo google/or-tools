@@ -317,11 +317,13 @@ bool FzSolver::Extract() {
 // ----- Alldiff info support -----
 
 void FzSolver::StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs) {
-  std::vector<FzIntegerVariable*> local(diffs);
-  std::sort(local.begin(), local.end());
-  FZVLOG << "Store AllDifferent info for [" << JoinDebugStringPtr(diffs, ", ")
-         << "]" << FZENDL;
-  alldiffs_[local.front()].push_back(local);
+  if (!diffs.empty()) {
+    std::vector<FzIntegerVariable*> local(diffs);
+    std::sort(local.begin(), local.end());
+    FZVLOG << "Store AllDifferent info for [" << JoinDebugStringPtr(diffs, ", ")
+           << "]" << FZENDL;
+    alldiffs_[local.front()].push_back(local);
+  }
 }
 
 namespace {
