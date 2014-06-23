@@ -67,6 +67,8 @@ DEFINE_bool(use_filter, true, "Use LS filter");
 DEFINE_bool(use_tabu, false, "Use tabu search");
 DEFINE_int32(tabu_size, 10, "tabu size");
 DEFINE_double(tabu_factor, 0.6, "tabu factor");
+DEFINE_bool(use_sa, false, "Use simulated annealing");
+DEFINE_int32(sa_temperature, 20, "Simulated annealing temperature");
 
 DECLARE_bool(log_prefix);
 
@@ -554,11 +556,11 @@ class Filter : public IntVarLocalSearchFilter {
         Backtrack();
         return false;
       }
-      if (!FLAGS_use_tabu) {  // We do not evaluate the cost.
+      if (!FLAGS_use_tabu && !FLAGS_use_sa) {  // We do not evaluate the cost.
         SetTmpSolution(touched_var, value);
       }
     }
-    const int new_cost = FLAGS_use_tabu ? -1 : Evaluate();
+    const int new_cost = FLAGS_use_tabu || FLAGS_use_sa ? -1 : Evaluate();
     Backtrack();
     return new_cost < current_cost_;
   }
@@ -808,7 +810,10 @@ void Solve(const std::string& filename, const std::string& solution_file) {
   SearchMonitor* const  objective = FLAGS_use_tabu ?
       solver.MakeTabuSearch(false, objective_var, 1, items, FLAGS_tabu_size,
                             FLAGS_tabu_size, FLAGS_tabu_factor) :
-      solver.MakeMinimize(objective_var, 1);
+      (FLAGS_use_sa ?
+       solver.MakeSimulatedAnnealing(false, objective_var, 1,
+                                     FLAGS_sa_temperature) :
+       solver.MakeMinimize(objective_var, 1));
   // Create search monitors.
   SearchMonitor* const log = solver.MakeSearchLog(1000000, objective_var);
 
@@ -844,7 +849,7 @@ void Solve(const std::string& filename, const std::string& solution_file) {
   operators.push_back(smart_insert);
   operators.push_back(insert);
   operators.push_back(random_swap);
-  if (FLAGS_use_lns && !FLAGS_use_tabu) {
+  if (FLAGS_use_lns && !FLAGS_use_tabu && !FLAGS_use_sa) {
     operators.push_back(random_lns);
   }
 
