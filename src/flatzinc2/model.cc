@@ -477,6 +477,15 @@ FzAnnotation FzAnnotation::VariableList(
   return result;
 }
 
+FzAnnotation FzAnnotation::String(const std::string& str) {
+  FzAnnotation result;
+  result.type = STRING_VALUE;
+  result.interval_min = 0;
+  result.interval_max = 0;
+  result.string_value_ = str;
+  return result;
+}
+
 void FzAnnotation::GetAllIntegerVariables(
     std::vector<FzIntegerVariable*>* const vars) const {
   for (const FzAnnotation& ann : annotations) {
@@ -516,6 +525,9 @@ std::string FzAnnotation::DebugString() const {
         result.append(i != variables.size() - 1 ? ", " : "]");
       }
       return result;
+    }
+    case STRING_VALUE: {
+      return StringPrintf("\"%s\"", string_value_.c_str());
     }
   }
 }

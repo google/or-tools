@@ -228,6 +228,7 @@ struct FzAnnotation {
     INTERVAL,
     INT_VAR_REF,
     INT_VAR_REF_ARRAY,
+    STRING_VALUE,
   };
 
   static FzAnnotation Empty();
@@ -239,6 +240,7 @@ struct FzAnnotation {
   static FzAnnotation IntegerValue(int64 value);
   static FzAnnotation Variable(FzIntegerVariable* const var);
   static FzAnnotation VariableList(const std::vector<FzIntegerVariable*>& vars);
+  static FzAnnotation String(const std::string& str);
 
   std::string DebugString() const;
   bool IsFunctionCallWithIdentifier(const std::string& identifier) const {
@@ -255,6 +257,7 @@ struct FzAnnotation {
   std::string id;
   std::vector<FzAnnotation> annotations;
   std::vector<FzIntegerVariable*> variables;
+  std::string string_value_;
 };
 
 // Information on what should be displayed when a solution is found.

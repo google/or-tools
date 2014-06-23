@@ -603,6 +603,7 @@ annotation_arguments:  // Cannot be empty.
 annotation:
   IVALUE DOTDOT IVALUE { $$ = FzAnnotation::Interval($1, $3); }
 | IVALUE { $$ = FzAnnotation::IntegerValue($1); }
+| SVALUE { $$ = FzAnnotation::String($1); }
 | IDENTIFIER {
   const std::string& id = $1;
   if (ContainsKey(context->variable_map, id)) {
