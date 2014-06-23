@@ -586,11 +586,13 @@ void FzSolver::Solve(FzSolverParameters p,
   const int64 build_time = solver()->wall_time();
   solver()->NewSearch(db, monitors);
   while (solver()->NextSolution()) {
-    if (!model_.output().empty() && !parallel_support->ShouldFinish()) {
+    if (!parallel_support->ShouldFinish()) {
       solution_string.clear();
-      for (const FzOnSolutionOutput& output : model_.output()) {
-        solution_string.append(SolutionString(output));
-        solution_string.append("\n");
+      if (!model_.output().empty()) {
+        for (const FzOnSolutionOutput& output : model_.output()) {
+          solution_string.append(SolutionString(output));
+          solution_string.append("\n");
+        }
       }
       solution_string.append("----------");
       if (model_.objective() != nullptr) {
