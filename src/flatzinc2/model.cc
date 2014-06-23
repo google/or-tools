@@ -64,6 +64,8 @@ void FzDomain::IntersectWithFzDomain(const FzDomain& other) {
     if (!other.values.empty()) {
       IntersectWithInterval(other.values[0], other.values[1]);
       return;
+    } else {  // nothing to do.
+      return;
     }
   } else if (is_interval) {
     is_interval = false;  // Other is not an interval.
