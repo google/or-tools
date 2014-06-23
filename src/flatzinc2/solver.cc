@@ -71,7 +71,9 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   } else if (var->IsAllInt64()) {
     result = solver_.MakeIntVar(kint32min, kint32max, var->name);
   } else if (var->domain.is_interval) {
-    result = solver_.MakeIntVar(var->Min(), var->Max(), var->name);
+    result = solver_.MakeIntVar(std::max<int64>(var->Min(), kint32min),
+                                std::min<int64>(var->Max(), kint32max),
+                                var->name);
   } else {
     result = solver_.MakeIntVar(var->domain.values, var->name);
   }
