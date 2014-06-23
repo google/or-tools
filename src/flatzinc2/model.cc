@@ -451,6 +451,13 @@ FzAnnotation FzAnnotation::Interval(int64 interval_min, int64 interval_max) {
   return result;
 }
 
+FzAnnotation FzAnnotation::IntegerValue(int64 value) {
+  FzAnnotation result;
+  result.type = INT_VALUE;
+  result.interval_min = value;
+  return result;
+}
+
 FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
   FzAnnotation result;
   result.type = INT_VAR_REF;
@@ -495,6 +502,9 @@ std::string FzAnnotation::DebugString() const {
     case INTERVAL: {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
+    }
+    case INT_VALUE: {
+      return StringPrintf("%" GG_LL_FORMAT "d", interval_min);
     }
     case INT_VAR_REF: {
       return variables.front()->name;

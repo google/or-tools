@@ -224,6 +224,7 @@ struct FzAnnotation {
     ANNOTATION_LIST,
     IDENTIFIER,
     FUNCTION_CALL,
+    INT_VALUE,
     INTERVAL,
     INT_VAR_REF,
     INT_VAR_REF_ARRAY,
@@ -235,6 +236,7 @@ struct FzAnnotation {
   static FzAnnotation FunctionCall(const std::string& id,
                                    const std::vector<FzAnnotation>& args);
   static FzAnnotation Interval(int64 interval_min, int64 interval_max);
+  static FzAnnotation IntegerValue(int64 value);
   static FzAnnotation Variable(FzIntegerVariable* const var);
   static FzAnnotation VariableList(const std::vector<FzIntegerVariable*>& vars);
 
