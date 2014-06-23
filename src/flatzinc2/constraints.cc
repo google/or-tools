@@ -410,22 +410,36 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
 std::vector<IntVar*> BuildCount(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> tmp_sum;
-  if (ct->Arg(1).HasOneValue()) {
-    const int64 value = ct->Arg(1).Value();
-    for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
-      IntVar* const var =
-          solver->MakeIsEqualCstVar(fzsolver->Extract(fzvar), value);
-      if (var->Max() == 1) {
-        tmp_sum.push_back(var);
+  if (ct->Arg(0).variables.empty()) {
+    if (ct->Arg(1).HasOneValue()) {
+      const int64 value = ct->Arg(1).Value();
+      for (const int64 v : ct->Arg(0).values) {
+        if (v == value) {
+          tmp_sum.push_back(solver->MakeIntConst(1));
+        }
       }
+    } else {
+      IntVar* const count_var = fzsolver->GetExpression(ct->Arg(1))->Var();
+      tmp_sum.push_back(solver->MakeIsMemberVar(count_var, ct->Arg(0).values));
     }
   } else {
-    IntVar* const value = fzsolver->GetExpression(ct->Arg(1))->Var();
-    for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
-      IntVar* const var =
-          solver->MakeIsEqualVar(fzsolver->Extract(fzvar), value);
-      if (var->Max() == 1) {
-        tmp_sum.push_back(var);
+    if (ct->Arg(1).HasOneValue()) {
+      const int64 value = ct->Arg(1).Value();
+      for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+        IntVar* const var =
+            solver->MakeIsEqualCstVar(fzsolver->Extract(fzvar), value);
+        if (var->Max() == 1) {
+          tmp_sum.push_back(var);
+        }
+      }
+    } else {
+      IntVar* const value = fzsolver->GetExpression(ct->Arg(1))->Var();
+      for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
+        IntVar* const var =
+            solver->MakeIsEqualVar(fzsolver->Extract(fzvar), value);
+        if (var->Max() == 1) {
+          tmp_sum.push_back(var);
+        }
       }
     }
   }
@@ -612,7 +626,6 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
           solver->MakeCumulative(intervals, demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
-#if 0
   } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
              ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
              IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
@@ -639,7 +652,13 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
           solver->MakeCumulative(intervals, fixed_demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
-#endif
+    const std::vector<IntVar*> variable_durations =
+        fzsolver->GetVariableArray(ct->Arg(1));
+    IntVar* const vcapacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+    Constraint* const constraint2 = MakeVariableCumulative(
+        solver, start_variables, variable_durations, demands, vcapacity);
+    AddConstraint(solver, ct, constraint2);
+
   } else {
     // Everything is variable.
     const std::vector<IntVar*> durations =
