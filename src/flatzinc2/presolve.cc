@@ -977,6 +977,20 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     // TODO(user): Check if presolve is valid.
     return true;
   }
+  if (index_var->domain.IsSingleton()) {
+    FZVLOG << "Rewrite " << ct->DebugString() << FZENDL;
+    const int64 index = index_var->domain.values[0] - 1;
+    const int64 value = ct->Arg(1).values[index];
+    // Rewrite as equality.
+    ct->type = "int_eq";
+    ct->MutableArg(0)->variables.clear();
+    ct->MutableArg(0)->values.push_back(value);
+    ct->MutableArg(0)->type = FzArgument::INT_VALUE;
+    *ct->MutableArg(1) = ct->Arg(2);
+    ct->arguments.pop_back();
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+    return true;
+  }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
       index_var->Max() < ct->Arg(1).values.size()) {
     // Reduce array of values.
