@@ -201,7 +201,7 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
     const std::vector<int64>& values = ct->Arg(1).values;
     const int64 imin = std::max(index->Min(), 1LL);
     const int64 imax =
-        std::min(index->Max(), static_cast<int64>(values.size()) + 1LL);
+        std::min(index->Max(), static_cast<int64>(values.size()));
     IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
     const int64 size = imax - imin + 1;
     std::vector<int64> coefficients(size);
@@ -259,7 +259,7 @@ void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
   const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
   const int64 imin = std::max(index->Min(), 1LL);
-  const int64 imax = std::min(index->Max(), static_cast<int64>(vars.size()) + 1LL);
+  const int64 imax = std::min(index->Max(), static_cast<int64>(vars.size()));
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
   const int64 size = imax - imin + 1;
   std::vector<IntVar*> var_array(size);
@@ -1141,6 +1141,10 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
         *left =
             solver->MakeSum(solver->MakeProd(e2, c2), solver->MakeProd(e3, c3));
         *right = solver->MakeSum(solver->MakeProd(e1, -c1), rhs);
+      } else if (c1 > 0 && c2 < 0 && c3 < 0) {
+        *left = solver->MakeSum(solver->MakeProd(e1, c1), rhs);
+        *right = solver->MakeSum(solver->MakeProd(e2, -c2),
+                                 solver->MakeProd(e3, -c3));
       } else if (c1 > 0 && c2 < 0 && c3 > 0) {
         *left =
             solver->MakeSum(solver->MakeProd(e1, c1), solver->MakeProd(e3, c3));
