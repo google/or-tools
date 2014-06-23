@@ -953,6 +953,7 @@ endif
 FLATZINC2_LIB_OBJS=\
 	$(OBJ_DIR)/flatzinc2/constraints.$O\
 	$(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O\
+	$(OBJ_DIR)/flatzinc2/flatzinc_resource.$O\
 	$(OBJ_DIR)/flatzinc2/model.$O\
 	$(OBJ_DIR)/flatzinc2/parallel_support.$O\
 	$(OBJ_DIR)/flatzinc2/parser.$O\
@@ -1055,6 +1056,12 @@ $(OBJ_DIR)/acp_challenge.$O:$(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/constraint
 
 $(BIN_DIR)/acp_challenge$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/acp_challenge.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
+
+$(OBJ_DIR)/acp_challenge_routing.$O:$(EX_DIR)/cpp/acp_challenge_routing.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge_routing.$O
+
+$(BIN_DIR)/acp_challenge_routing$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/acp_challenge_routing.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
 
 $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)$(OBJ_DIR)$Scostas_array.$O
