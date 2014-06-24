@@ -13,6 +13,8 @@
 #include "flatzinc2/presolve.h"
 
 #include <algorithm>
+#include <hash_map>
+#include <hash_set>
 
 #include "base/map_util.h"
 #include "base/strutil.h"
@@ -1846,11 +1848,21 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   FzConstraint* start = nullptr;
   std::vector<FzIntegerVariable*> chain;
   std::vector<FzIntegerVariable*> carry_over;
+  hash_map<const FzIntegerVariable*,
+           hash_set<const FzConstraint*>> var_to_constraint;
+  for (FzConstraint* const ct : model->constraints()) {
+    for (const FzArgument& arg : ct->arguments) {
+      for (FzIntegerVariable* const var : arg.variables) {
+        var_to_constraint[var].insert(ct);
+      }
+    }
+  }
   for (FzConstraint* const ct : model->constraints()) {
     if (start == nullptr) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
     } else if (ct->type == start->type &&
-               ct->Arg(1).Var() == carry_over.back()) {
+               ct->Arg(1).Var() == carry_over.back() &&
+               var_to_constraint[ct->Arg(2).Var()].size() <= 2) {
       chain.push_back(ct->Arg(0).Var());
       carry_over.push_back(ct->Arg(2).Var());
       ct->active = false;
