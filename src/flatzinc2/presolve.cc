@@ -22,6 +22,14 @@ DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 
+namespace {
+bool IsBooleanVar(FzIntegerVariable* var) {
+  return var->Min() == 0 && var->Max() == 1;
+}
+
+bool IsBooleanValue(int64 value) { return value == 0 || value == 1; }
+}  // namespace
+
 // For the author's reference, here is an indicative list of presolve rules
 // that
 // should eventually be implemented.
@@ -578,6 +586,36 @@ bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
   CHECK_EQ(FzArgument::INT_VALUE, ct->Arg(2).type);
   ct->MutableArg(2)->values[0]--;
   ct->type = "int_lin_le";
+  return true;
+}
+
+// Input: int_lin_le([-k, 1, 1, .., 1], [b, b1, .., bn], 0) with k >= n
+// Output: array_bool_or([b1, .., bn], k)
+
+bool FzPresolver::FindHiddenArrayBoolOr(FzConstraint* ct) {
+  if (ct->Arg(2).Value() != 0 ||
+      ct->Arg(0).values[0] > -(ct->Arg(0).values.size() - 1) ||
+      !IsBooleanVar(ct->Arg(1).variables[0])) {
+    return false;
+  }
+  for (int i = 1; i < ct->Arg(0).values.size(); ++i) {
+    if (!IsBooleanValue(ct->Arg(0).values[i]) ||
+        !IsBooleanVar(ct->Arg(1).variables[i])) {
+      return false;
+    }
+  }
+  FZVLOG << "Rewrite " << ct->DebugString() << " into array_bool_or" << FZENDL;
+  ct->type = "array_bool_or";
+  ct->MutableArg(0)->values.clear();
+  ct->MutableArg(0)->type = FzArgument::INT_VAR_REF_ARRAY;
+  ct->MutableArg(0)->variables.resize(ct->Arg(1).variables.size() - 1);
+  for (int i = 0; i < ct->Arg(1).variables.size() - 1; ++i) {
+    ct->MutableArg(0)->variables[i] = ct->Arg(1).variables[i + 1];
+  }
+  ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+  ct->MutableArg(1)->variables.resize(1);
+  ct->arguments.pop_back();
+  FZVLOG << "  -> " << ct->DebugString() << FZENDL;
   return true;
 }
 
@@ -1293,12 +1331,6 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
   return false;
 }
 
-bool IsBooleanVar(FzIntegerVariable* var) {
-  return var->Min() == 0 && var->Max() == 1;
-}
-
-bool IsBooleanValue(int64 value) { return value == 0 || value == 1; }
-
 // Simplify boolean formula: int_lin_eq
 //
 // Rule 1:
@@ -1472,6 +1504,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "bool_not") {
     changed |= PresolveBoolNot(ct);
+  }
+  if (id == "int_lin_le") {
+    changed |= FindHiddenArrayBoolOr(ct);
   }
   if (id == "int_div") changed |= PresolveIntDiv(ct);
   if (id == "int_times") changed |= PresolveIntTimes(ct);
