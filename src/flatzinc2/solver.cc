@@ -248,7 +248,7 @@ bool FzSolver::Extract() {
       } else {
         fz_var = *ctio->required.begin();  // Pick one.
       }
-      ctio->ct->target_variable = nullptr;
+      fz_var->defining_constraint->target_variable = nullptr;
       fz_var->defining_constraint = nullptr;
       if (fz_var != nullptr && ContainsKey(dependencies, fz_var)) {
         FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
