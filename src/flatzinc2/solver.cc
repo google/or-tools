@@ -92,16 +92,35 @@ void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
   extrated_map_[fz_var] = expr;
 }
 
+int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
+  IntExpr* const result = FindPtrOrNull(extrated_map_, var);
+  if (result != nullptr) {
+    if (result->IsVar()) {
+      return result->Var()->Value();
+    } else {
+      int64 emin = 0;
+      int64 emax = 0;
+      result->Range(&emin, &emax);
+      CHECK_EQ(emin, emax) << "Expression " << result->DebugString()
+                           << " is not fixed to a single value at a solution";
+      return emin;
+    }
+  } else {
+    CHECK(var->domain.IsSingleton());
+    return var->domain.values[0];
+  }
+}
+
 // The format is fixed in the flatzinc specification.
 std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
   if (output.variable != nullptr) {
+    const int64 value = SolutionValue(output.variable);
     if (output.is_boolean) {
       return StringPrintf("%s = %s;", output.name.c_str(),
-                          Extract(output.variable)->Var()->Value() == 1 ?
-                          "true" : "false");
+                          value == 1 ? "true" : "false");
     } else {
-      return StringPrintf("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
-                          Extract(output.variable)->Var()->Value());
+      return StringPrintf(
+          "%s = %" GG_LL_FORMAT "d;", output.name.c_str(), value);
     }
   } else {
     const int bound_size = output.bounds.size();
@@ -114,7 +133,7 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
-      const int64 value = Extract(output.flat_variables[i])->Var()->Value();
+      const int64 value = SolutionValue(output.flat_variables[i]);
       if (output.is_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {

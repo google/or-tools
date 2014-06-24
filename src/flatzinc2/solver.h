@@ -51,6 +51,8 @@ class FzSolver {
   // Output support.
   std::string SolutionString(const FzOnSolutionOutput& output);
 
+  int64 SolutionValue(FzIntegerVariable* var);
+
   // Returns the cp solver.
   Solver* solver() { return &solver_; }
 
