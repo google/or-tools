@@ -1685,18 +1685,18 @@ void ExtractIntMod(FzSolver* fzsolver, FzConstraint* ct) {
              << " := " << target->DebugString() << FZENDL;
       fzsolver->SetExtracted(ct->target_variable, target);
     }
-  } else {
-    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+  } else if (ct->Arg(2).HasOneValue()) {
+    const int64 target = ct->Arg(2).Value();
     if (!ct->Arg(1).HasOneValue()) {
       IntExpr* const mod = fzsolver->GetExpression(ct->Arg(1));
       Constraint* const constraint =
-          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+          MakeBoundModulo(solver, left->Var(), mod->Var(), target);
       AddConstraint(solver, ct, constraint);
     } else {
       const int64 mod = ct->Arg(1).Value();
       Constraint* constraint = nullptr;
-      if (mod == 2 && target->Bound()) {
-        switch (target->Min()) {
+      if (mod == 2) {
+        switch (target) {
           case 0: {
             constraint = MakeVariableEven(solver, left->Var());
             break;
@@ -1714,6 +1714,19 @@ void ExtractIntMod(FzSolver* fzsolver, FzConstraint* ct) {
         constraint =
             solver->MakeEquality(solver->MakeModulo(left, mod), target);
       }
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    IntExpr* const target = fzsolver->GetExpression(ct->Arg(2));
+    if (!ct->Arg(1).HasOneValue()) {
+      IntExpr* const mod = fzsolver->GetExpression(ct->Arg(1));
+      Constraint* const constraint =
+          solver->MakeEquality(solver->MakeModulo(left, mod), target);
+      AddConstraint(solver, ct, constraint);
+    } else {
+      const int64 mod = ct->Arg(1).Value();
+      Constraint* constraint = nullptr;
+      constraint = solver->MakeEquality(solver->MakeModulo(left, mod), target);
       AddConstraint(solver, ct, constraint);
     }
   }

@@ -44,6 +44,8 @@ Constraint* MakeVariableCumulative(Solver* const solver,
 
 Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
+Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
+                            IntVar* const mod, int64 residual);
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
                              const std::vector<IntVar*>& variables,

@@ -122,6 +122,47 @@ class BooleanSumOdd : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
+class BoundModulo : public Constraint {
+ public:
+  BoundModulo(Solver* const s, IntVar* x, IntVar* const m, int64 r)
+      : Constraint(s), var_(x), mod_(m), residual_(r) {}
+
+  virtual ~BoundModulo() {}
+
+  virtual void Post() {
+    Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
+    var_->WhenRange(d);
+    mod_->WhenBound(d);
+  }
+
+  virtual void InitialPropagate() {
+    if (mod_->Bound()) {
+      const int64 d = std::abs(mod_->Min());
+      if (d == 0) {
+        solver()->Fail();
+      } else {
+        const int64 emin = var_->Min();
+        const int64 emax = var_->Max();
+        const int64 new_min = PosIntDivUp(emin - residual_, d) * d + residual_;
+        const int64 new_max =
+            PosIntDivDown(emax - residual_, d) * d + residual_;
+        var_->SetRange(new_min, new_max);
+      }
+    }
+  }
+
+  virtual std::string DebugString() const {
+    return StringPrintf("(%s %% %s == %" GG_LL_FORMAT "d)",
+                        var_->DebugString().c_str(),
+                        mod_->DebugString().c_str(), residual_);
+  }
+
+ private:
+  IntVar* const var_;
+  IntVar* const mod_;
+  const int64 residual_;
+};
+
 class VariableParity : public Constraint {
  public:
   VariableParity(Solver* const s, IntVar* const var, bool odd)
@@ -782,6 +823,11 @@ Constraint* MakeVariableOdd(Solver* const s, IntVar* const var) {
 
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
   return s->RevAlloc(new VariableParity(s, var, false));
+}
+
+Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
+                            IntVar* const mod, int64 residual) {
+  return s->RevAlloc(new BoundModulo(s, var, mod, residual));
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,

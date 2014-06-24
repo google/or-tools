@@ -1411,6 +1411,21 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
   return false;
 }
 
+// Remove target variable from int_mod if bound.
+//
+// Input : int_mod(x1, x2, x3)  => x3
+// Output: int_mod(x1, x2, x3) if x3 has only one value.
+//
+bool FzPresolver::PresolveIntMod(FzConstraint* ct) {
+  if (ct->target_variable != nullptr &&
+      ct->Arg(2).Var() == ct->target_variable && ct->Arg(2).HasOneValue()) {
+    ct->target_variable->defining_constraint = nullptr;
+    ct->target_variable = nullptr;
+    return true;
+  }
+  return false;
+}
+
 // Main presolve rule caller.
 bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   bool changed = false;
@@ -1491,6 +1506,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
       id == "bool_eq_reif" || id == "bool_ne_reif" || id == "bool_le_reif" ||
       id == "bool_lt_reif" || id == "bool_ge_reif" || id == "bool_gt_reif") {
     changed |= PropagateReifiedComparisons(ct);
+  }
+  if (id == "int_mod") {
+    changed |= PresolveIntMod(ct);
   }
   return changed;
 }
