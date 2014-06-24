@@ -4824,7 +4824,11 @@ class DivPosPosIntExpr : public BaseIntExpr {
 
   virtual ~DivPosPosIntExpr() {}
 
-  virtual int64 Min() const { return num_->Min() / denom_->Max(); }
+  virtual int64 Min() const {
+    if (denom_->Max() == 0) {
+      solver()->Fail();
+    }
+    return num_->Min() / denom_->Max(); }
 
   virtual int64 Max() const {
     if (denom_->Min() == 0) {
