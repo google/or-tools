@@ -41,6 +41,7 @@ FzDomain FzDomain::IntegerList(const std::vector<int64>& values) {
 FzDomain FzDomain::AllInt64() {
   FzDomain result;
   result.is_interval = true;
+  result.is_boolean = false;
   return result;
 }
 
@@ -48,14 +49,25 @@ FzDomain FzDomain::Singleton(int64 value) {
   FzDomain result;
   result.is_interval = false;
   result.values.push_back(value);
+  result.is_boolean = false;
   return result;
 }
 
 FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
   FzDomain result;
   result.is_interval = true;
+  result.is_boolean = false;
   result.values.push_back(included_min);
   result.values.push_back(included_max);
+  return result;
+}
+
+FzDomain FzDomain::Boolean() {
+  FzDomain result;
+  result.is_interval = false;
+  result.is_boolean = true;
+  result.values.push_back(0);
+  result.values.push_back(1);
   return result;
 }
 
@@ -540,27 +552,32 @@ std::string FzOnSolutionOutput::Bounds::DebugString() const {
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::SingleVariable(
-    const std::string& name, FzIntegerVariable* const variable) {
+    const std::string& name, FzIntegerVariable* const variable,
+    bool is_boolean) {
   FzOnSolutionOutput result;
   result.name = name;
   result.variable = variable;
+  result.is_boolean = is_boolean;
   return result;
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
     const std::string& name, const std::vector<Bounds>& bounds,
-    const std::vector<FzIntegerVariable*>& flat_variables) {
+    const std::vector<FzIntegerVariable*>& flat_variables,
+    bool is_boolean) {
   FzOnSolutionOutput result;
   result.variable = nullptr;
   result.name = name;
   result.bounds = bounds;
   result.flat_variables = flat_variables;
+  result.is_boolean = is_boolean;
   return result;
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::VoidOutput() {
   FzOnSolutionOutput result;
   result.variable = nullptr;
+  result.is_boolean = false;
   return result;
 }
 

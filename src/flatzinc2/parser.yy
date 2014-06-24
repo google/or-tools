@@ -315,7 +315,8 @@ variable_or_constant_declaration:
   // output to the model if needed.
   context->variable_map[identifier] = var;
   if (ContainsId(annotations, "output_var")) {
-    model->AddOutput(FzOnSolutionOutput::SingleVariable(identifier, var));
+    model->AddOutput(
+        FzOnSolutionOutput::SingleVariable(identifier, var, domain.is_boolean));
   }
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF VAR domain ':' IDENTIFIER
@@ -373,7 +374,8 @@ variable_or_constant_declaration:
       }
       // We add the output information.
       model->AddOutput(
-          FzOnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars));
+          FzOnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars,
+	  domain.is_boolean));
     }
   }
 }
@@ -427,13 +429,13 @@ var_or_value:
 }
 
 int_domain:
-  BOOL { $$ = FzDomain::Interval(0, 1); }
+  BOOL { $$ = FzDomain::Boolean(); }
 | INT { $$ = FzDomain::AllInt64(); }
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' { $$ = FzDomain::IntegerList($2); }
 
 set_domain:
-  SET OF BOOL { $$ = FzDomain::Interval(0, 1); }
+  SET OF BOOL { $$ = FzDomain::Boolean(); }
 | SET OF INT { $$ = FzDomain::AllInt64(); }
 | SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
 | SET OF '{' integers '}' { $$ = FzDomain::IntegerList($4); }

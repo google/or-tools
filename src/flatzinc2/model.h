@@ -52,6 +52,7 @@ struct FzDomain {
   static FzDomain AllInt64();
   static FzDomain Singleton(int64 value);
   static FzDomain Interval(int64 included_min, int64 included_max);
+  static FzDomain Boolean();
 
   bool IsSingleton() const;
   void IntersectWithFzDomain(const FzDomain& domain);
@@ -62,7 +63,8 @@ struct FzDomain {
   bool RemoveValue(int64 value);
   std::string DebugString() const;
 
-  bool is_interval;
+  bool is_interval : 1;
+  bool is_boolean : 1;
   std::vector<int64> values;
   // TODO(user): Rework domains, all int64 should be kintmin..kint64max.
   // Empty should means invalid.
@@ -273,13 +275,15 @@ struct FzOnSolutionOutput {
 
   // Will output: name = <variable value>.
   static FzOnSolutionOutput SingleVariable(const std::string& name,
-                                           FzIntegerVariable* const variable);
+                                           FzIntegerVariable* const variable,
+                                           bool is_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
   static FzOnSolutionOutput MultiDimensionalArray(
       const std::string& name, const std::vector<Bounds>& bounds,
-      const std::vector<FzIntegerVariable*>& flat_variables);
+      const std::vector<FzIntegerVariable*>& flat_variables,
+      bool is_boolean);
   // Empty output.
   static FzOnSolutionOutput VoidOutput();
 
@@ -291,6 +295,7 @@ struct FzOnSolutionOutput {
   // These are the starts and ends of intervals for displaying (potentially
   // multi-dimensional) arrays.
   std::vector<Bounds> bounds;
+  bool is_boolean;
 };
 
 class FzModel {

@@ -95,8 +95,14 @@ void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
 // The format is fixed in the flatzinc specification.
 std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
   if (output.variable != nullptr) {
-    return StringPrintf("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
-                        Extract(output.variable)->Var()->Value());
+    if (output.is_boolean) {
+      return StringPrintf("%s = %s;", output.name.c_str(),
+                          Extract(output.variable)->Var()->Value() == 1 ?
+                          "true" : "false");
+    } else {
+      return StringPrintf("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
+                          Extract(output.variable)->Var()->Value());
+    }
   } else {
     const int bound_size = output.bounds.size();
     std::string result =
@@ -108,9 +114,12 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
-      result.append(
-          StringPrintf("%" GG_LL_FORMAT "d",
-                       Extract(output.flat_variables[i])->Var()->Value()));
+      const int64 value = Extract(output.flat_variables[i])->Var()->Value();
+      if (output.is_boolean) {
+        result.append(StringPrintf(value ? "true" : "false"));
+      } else {
+        result.append(StringPrintf("%" GG_LL_FORMAT "d", value));
+      }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
       }
