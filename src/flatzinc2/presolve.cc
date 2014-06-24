@@ -52,9 +52,15 @@ namespace operations_research {
 // Action: replace all instances of x by b in the model.
 // Output: inactive constraint.
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
-  ct->MarkAsInactive();
-  MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
-  return true;
+  if (ct->Arg(0).HasOneValue() || ct->Arg(1).HasOneValue()) {
+    FZVLOG << "Change bound bool2int into int_eq";
+    ct->type = "int_eq";
+    return true;
+  } else {
+    ct->MarkAsInactive();
+    MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
+    return true;
+  }
 }
 
 // Presolve equality constraint: int_eq
