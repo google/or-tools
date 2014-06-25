@@ -6444,7 +6444,11 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& 
     }
   }
   if (gcd == 1) {
-    return RegisterIntVar(RevAlloc(new DomainIntVar(this, cleaned, name)));
+    if (cleaned.size() == 2 && cleaned[0] == 0 && cleaned[1] == 1) {
+      return MakeBoolVar(name);
+    } else {
+      return RegisterIntVar(RevAlloc(new DomainIntVar(this, cleaned, name)));
+    }
   } else {
     std::vector<int64> new_values;
     new_values.reserve(values.size());
