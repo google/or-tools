@@ -1513,6 +1513,16 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "int_mod") {
     changed |= PresolveIntMod(ct);
   }
+  // Last rule: if the target variable of a constraint is fixed, removed it
+  // the target part.
+  if (ct->target_variable != nullptr &&
+      ct->target_variable->domain.IsSingleton()) {
+    FZVLOG << "Remove target variable from " << ct->DebugString()
+           << " as it is fixed to a single value" << FZENDL;
+    ct->target_variable->defining_constraint = nullptr;
+    ct->target_variable = nullptr;
+    changed = true;
+  }
   return changed;
 }
 
