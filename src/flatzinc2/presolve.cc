@@ -415,7 +415,7 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   int num_fixed_to_true = 0;
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
-    if (var->domain.IsSingleton()) {
+    if (var->HasOneValue()) {
       const int64 value = var->Min();
       if (value == 1) {
         num_fixed_to_true++;
@@ -508,7 +508,7 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   int num_fixed_to_false = 0;
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
-    if (var->domain.IsSingleton()) {
+    if (var->HasOneValue()) {
       const int64 value = var->Min();
       if (value == 0) {
         num_fixed_to_false++;
@@ -682,7 +682,8 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
   if (ct->target_variable != nullptr) return false;
 
   if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == -1 &&
-      ct->Arg(1).variables[0]->defining_constraint == nullptr) {
+      ct->Arg(1).variables[0]->defining_constraint == nullptr &&
+      !ct->Arg(1).variables[0]->HasOneValue()) {
     // Rule 1.
     FZVLOG << "Mark first variable of " << ct->DebugString() << " as target"
            << FZENDL;
@@ -692,7 +693,8 @@ bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
     return true;
   }
   if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[1] == -1 &&
-      ct->Arg(1).variables[1]->defining_constraint == nullptr) {
+      ct->Arg(1).variables[1]->defining_constraint == nullptr &&
+      !ct->Arg(1).variables[1]->HasOneValue()) {
     // Rule 2.
     FZVLOG << "Mark second variable of " << ct->DebugString() << " as target"
            << FZENDL;
@@ -992,7 +994,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     // TODO(user): Check if presolve is valid.
     return true;
   }
-  if (index_var->domain.IsSingleton()) {
+  if (index_var->HasOneValue()) {
     FZVLOG << "Rewrite " << ct->DebugString() << FZENDL;
     const int64 index = index_var->domain.values[0] - 1;
     const int64 value = ct->Arg(1).values[index];
@@ -1053,7 +1055,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
 bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   bool all_integers = true;
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    if (!var->domain.IsSingleton()) {
+    if (!var->HasOneValue()) {
       all_integers = false;
       break;
     }
@@ -1070,7 +1072,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     return true;
   }
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
-  if (index_var->domain.IsSingleton()) {
+  if (index_var->HasOneValue()) {
     // Arrays are 1 based.
     const int64 position = index_var->Min() - 1;
     FzIntegerVariable* const expr = ct->Arg(1).variables[position];
@@ -1173,7 +1175,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
     int state = 2;  // 0 force_false, 1 force true, 2 unknown.
     if (id == "int_eq_reif" || id == "bool_eq_reif") {
       if (var->domain.Contains(value)) {
-        if (var->domain.IsSingleton()) {
+        if (var->HasOneValue()) {
           state = 1;
         }
       } else {
@@ -1181,7 +1183,7 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
       }
     } else if (id == "int_ne_reif" || id == "bool_ne_reif") {
       if (var->domain.Contains(value)) {
-        if (var->domain.IsSingleton()) {
+        if (var->HasOneValue()) {
           state = 0;
         }
       } else {
@@ -1285,14 +1287,16 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   } else if (ct->target_variable == nullptr &&
-             ct->Arg(0).Var()->defining_constraint == nullptr) {
+             ct->Arg(0).Var()->defining_constraint == nullptr &&
+             !ct->Arg(0).Var()->HasOneValue()) {
     FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
     FzIntegerVariable* const var = ct->Arg(0).Var();
     ct->target_variable = var;
     var->defining_constraint = ct;
     return true;
   } else if (ct->target_variable == nullptr &&
-             ct->Arg(1).Var()->defining_constraint == nullptr) {
+             ct->Arg(1).Var()->defining_constraint == nullptr &&
+             !ct->Arg(1).Var()->HasOneValue()) {
     FZVLOG << "Insert target variable in " << ct->DebugString() << FZENDL;
     FzIntegerVariable* const var = ct->Arg(1).Var();
     ct->target_variable = var;
@@ -1516,7 +1520,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   // Last rule: if the target variable of a constraint is fixed, removed it
   // the target part.
   if (ct->target_variable != nullptr &&
-      ct->target_variable->domain.IsSingleton()) {
+      ct->target_variable->HasOneValue()) {
     FZVLOG << "Remove target variable from " << ct->DebugString()
            << " as it is fixed to a single value" << FZENDL;
     ct->target_variable->defining_constraint = nullptr;
