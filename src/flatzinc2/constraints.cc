@@ -1445,6 +1445,24 @@ bool PostHiddenClause(SatPropagator* const sat,
   return AddSumBoolArrayGreaterEqVar(sat, others, vars[0]);
 }
 
+bool PostHiddenLeMax(SatPropagator* const sat,
+                     const std::vector<int64>& coeffs,
+                     const std::vector<IntVar*>& vars) {
+  return false;
+  std::vector<IntVar*> others;
+  others.reserve(vars.size() - 1);
+  if (coeffs[0] > 1 - vars.size()) {
+    return false;
+  }
+  for (int i = 1; i < coeffs.size(); ++i) {
+    if (coeffs[i] != 1) {
+      return false;
+    }
+    others.push_back(vars[i]);
+  }
+  return AddMaxBoolArrayLessEqVar(sat, others, vars[0]);
+}
+
 void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
@@ -1462,6 +1480,9 @@ void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
       PostBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs);
     } else if (FLAGS_use_sat && AreAllBooleans(vars) && rhs == 0 &&
                PostHiddenClause(fzsolver->Sat(), coeffs, vars)) {
+      FZVLOG << "  - posted to sat" << FZENDL;
+    } else if (FLAGS_use_sat && AreAllBooleans(vars) && rhs == 0 &&
+               PostHiddenLeMax(fzsolver->Sat(), coeffs, vars)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       AddConstraint(solver, ct,

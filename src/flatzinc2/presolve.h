@@ -130,7 +130,6 @@ class FzPresolver {
   bool PresolveBoolNot(FzConstraint* ct);
   bool SimplifyIntLinEqReif(FzConstraint* ct);
   bool PresolveIntMod(FzConstraint* ct);
-  bool FindHiddenArrayBoolOr(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWith(FzDomain* domain, const FzArgument& arg);

@@ -666,6 +666,21 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
+                              const std::vector<IntVar*>& vars, IntExpr* target) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
+    return false;
+  }
+  Sat::Literal target_literal = sat->Literal(target);
+  std::vector<Sat::Literal> lits(vars.size() + 1);
+  for (int i = 0; i < vars.size(); ++i) {
+    lits[i] = sat->Literal(vars[i]);
+  }
+  lits[vars.size()] = Negated(target_literal);
+  sat->AddClause(&lits);
+  return true;
+}
+
 bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                                IntExpr* target) {
   if (vars.size() == 1) {
