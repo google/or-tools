@@ -671,13 +671,11 @@ bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
-  Sat::Literal target_literal = sat->Literal(target);
-  std::vector<Sat::Literal> lits(vars.size() + 1);
+  const Sat::Literal target_literal = sat->Literal(target);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
+    const Sat::Literal literal = Negated(sat->Literal(vars[i]));
+    sat->AddClause(target_literal, literal);
   }
-  lits[vars.size()] = Negated(target_literal);
-  sat->AddClause(&lits);
   return true;
 }
 

@@ -1448,7 +1448,6 @@ bool PostHiddenClause(SatPropagator* const sat,
 bool PostHiddenLeMax(SatPropagator* const sat,
                      const std::vector<int64>& coeffs,
                      const std::vector<IntVar*>& vars) {
-  return false;
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
   if (coeffs[0] > 1 - vars.size()) {
