@@ -626,39 +626,38 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
           solver->MakeCumulative(intervals, demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
-  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
-             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
-             IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
-             ct->Arg(3).HasOneValue()) {
-    const std::vector<int64>& durations = ct->Arg(1).values;
-    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
+  // } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
+  //            ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
+  //            IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
+  //            ct->Arg(3).HasOneValue()) {
+  //   const std::vector<int64>& durations = ct->Arg(1).values;
+  //   const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
 
-    std::vector<IntVar*> performed_variables;
-    std::vector<int64> fixed_demands;
-    ExtractPerformedAndDemands(solver, demands, &performed_variables,
-                               &fixed_demands);
-    std::vector<IntervalVar*> intervals(start_variables.size());
-    for (int i = 0; i < start_variables.size(); ++i) {
-      intervals[i] = MakeIntervalStartPerformed(
-          solver, start_variables[i], durations[i], performed_variables[i]);
-    }
-    const int64 capacity = ct->Arg(3).Value();
-    if (IsArrayBoolean(fixed_demands) && capacity == 1) {  // Disjunctive.
-      Constraint* const constraint =
-          solver->MakeDisjunctiveConstraint(intervals, "");
-      AddConstraint(solver, ct, constraint);
-    } else {
-      Constraint* const constraint =
-          solver->MakeCumulative(intervals, fixed_demands, capacity, "");
-      AddConstraint(solver, ct, constraint);
-    }
-    const std::vector<IntVar*> variable_durations =
-        fzsolver->GetVariableArray(ct->Arg(1));
-    IntVar* const vcapacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-    Constraint* const constraint2 = MakeVariableCumulative(
-        solver, start_variables, variable_durations, demands, vcapacity);
-    AddConstraint(solver, ct, constraint2);
-
+  //   std::vector<IntVar*> performed_variables;
+  //   std::vector<int64> fixed_demands;
+  //   ExtractPerformedAndDemands(solver, demands, &performed_variables,
+  //                              &fixed_demands);
+  //   std::vector<IntervalVar*> intervals(start_variables.size());
+  //   for (int i = 0; i < start_variables.size(); ++i) {
+  //     intervals[i] = MakeIntervalStartPerformed(
+  //         solver, start_variables[i], durations[i], performed_variables[i]);
+  //   }
+  //   const int64 capacity = ct->Arg(3).Value();
+  //   if (IsArrayBoolean(fixed_demands) && capacity == 1) {  // Disjunctive.
+  //     Constraint* const constraint =
+  //         solver->MakeDisjunctiveConstraint(intervals, "");
+  //     AddConstraint(solver, ct, constraint);
+  //   } else {
+  //     Constraint* const constraint =
+  //         solver->MakeCumulative(intervals, fixed_demands, capacity, "");
+  //     AddConstraint(solver, ct, constraint);
+  //   }
+  //   const std::vector<IntVar*> variable_durations =
+  //       fzsolver->GetVariableArray(ct->Arg(1));
+  //   IntVar* const vcapacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+  //   Constraint* const constraint2 = MakeVariableCumulative(
+  //       solver, start_variables, variable_durations, demands, vcapacity);
+  //   AddConstraint(solver, ct, constraint2);
   } else {
     // Everything is variable.
     const std::vector<IntVar*> durations =
@@ -836,13 +835,13 @@ void ExtractIntDiv(FzSolver* fzsolver, FzConstraint* ct) {
     if (!ct->Arg(1).HasOneValue()) {
       IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
       IntExpr* const target = solver->MakeDiv(left, right);
-      FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
              << " := " << target->DebugString() << FZENDL;
       fzsolver->SetExtracted(ct->target_variable, target);
     } else {
       const int64 value = ct->Arg(1).Value();
       IntExpr* const target = solver->MakeDiv(left, value);
-      FZVLOG << "  - creating " << ct->Arg(1).DebugString()
+      FZVLOG << "  - creating " << ct->Arg(2).DebugString()
              << " := " << target->DebugString() << FZENDL;
       fzsolver->SetExtracted(ct->target_variable, target);
     }
