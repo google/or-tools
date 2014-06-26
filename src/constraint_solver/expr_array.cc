@@ -1929,7 +1929,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
       }
       first_unbound_backward_.SetValue(solver(), last_unbound);
     }
-    CheckGcd();
+  //  CheckGcd();
   }
 
   virtual void InitialPropagate() {
@@ -1969,7 +1969,6 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     int64 gcd = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       const int64 coeff = coefs_[i];
-      if (coeff == 0) continue;
       if (vars_[i]->Bound()) {
         rhs -= vars_[i]->Min() * coefs_[i];
       } else if (first) {
