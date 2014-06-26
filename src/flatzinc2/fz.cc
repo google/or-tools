@@ -176,7 +176,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char workers_param[] = "--workers";
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--fz_logging";
-   char verbose_param[] = "--fz_verbose";
+  char verbose_param[] = "--fz_verbose";
   char debug_param[] = "--fz_debug";
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
@@ -195,13 +195,13 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = logging_param;
     }
     if (strcmp((*argv)[i], "-v") == 0) {
-          (*argv)[i] = verbose_param;
-        }
-        if (strcmp((*argv)[i], "-d") == 0) {
-          (*argv)[i] = debug_param;
-        }
+      (*argv)[i] = verbose_param;
+    }
+    if (strcmp((*argv)[i], "-d") == 0) {
+      (*argv)[i] = debug_param;
+    }
   }
-  google::ParseCommandLineFlags( argc, argv, true);
+  google::ParseCommandLineFlags(argc, argv, true);
   // Fix the number of solutions.
   if (FLAGS_num_solutions == 0) {  // not specified
     FLAGS_num_solutions = FLAGS_all ? kint32max : 1;

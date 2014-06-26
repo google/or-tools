@@ -32,23 +32,19 @@ namespace {
 // TODO(user): Tie breaking.
 
 // Comparison methods, used by the STL sort.
-template <class Task>
-bool StartMinLessThan(Task* const w1, Task* const w2) {
+template <class Task> bool StartMinLessThan(Task* const w1, Task* const w2) {
   return (w1->StartMin() < w2->StartMin());
 }
 
-template <class Task>
-bool StartMaxLessThan(Task* const w1, Task* const w2) {
+template <class Task> bool StartMaxLessThan(Task* const w1, Task* const w2) {
   return (w1->StartMax() < w2->StartMax());
 }
 
-template <class Task>
-bool EndMinLessThan(Task* const w1, Task* const w2) {
+template <class Task> bool EndMinLessThan(Task* const w1, Task* const w2) {
   return (w1->EndMin() < w2->EndMin());
 }
 
-template <class Task>
-bool EndMaxLessThan(Task* const w1, Task* const w2) {
+template <class Task> bool EndMaxLessThan(Task* const w1, Task* const w2) {
   return (w1->EndMax() < w2->EndMax());
 }
 
@@ -60,14 +56,11 @@ bool EndMaxLessThan(Task* const w1, Task* const w2) {
 // It is indexed, that is it is aware of its position in a reference array.
 struct DisjunctiveTask {
   explicit DisjunctiveTask(IntVar* start_, int64 duration_, IntVar* performed_)
-      : start(start_),
-        duration(duration_),
-        performed(performed_),
-        index(-1) {}
+      : start(start_), duration(duration_), performed(performed_), index(-1) {}
 
   std::string DebugString() const {
-    return StringPrintf(
-        "Task(%s, %" GG_LL_FORMAT "d)", start->DebugString().c_str(), duration);
+    return StringPrintf("Task(%s, %" GG_LL_FORMAT "d)",
+                        start->DebugString().c_str(), duration);
   }
 
   int64 StartMin() const {
@@ -107,12 +100,12 @@ struct ThetaNode {
 
   // Single interval element
   explicit ThetaNode(const IntVar* const start, int64 duration)
-      : total_processing(duration),
-        total_ect(start->Min() + duration) {}
+      : total_processing(duration), total_ect(start->Min() + duration) {}
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
     total_processing = left.total_processing + right.total_processing;
-    total_ect = std::max(left.total_ect + right.total_processing, right.total_ect);
+    total_ect =
+        std::max(left.total_ect + right.total_processing, right.total_ect);
   }
 
   bool IsIdentity() const {
@@ -120,9 +113,9 @@ struct ThetaNode {
   }
 
   std::string DebugString() const {
-    return StringPrintf("ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT
-                        "d }",
-                        total_processing, total_ect < 0LL ? -1LL : total_ect);
+    return StringPrintf(
+        "ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT "d }",
+        total_processing, total_ect < 0LL ? -1LL : total_ect);
   }
 
   int64 total_processing;
@@ -202,8 +195,8 @@ struct LambdaThetaNode {
   // associated with such sets.
   void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right) {
     energy = left.energy + right.energy;
-    energetic_end_min =
-        std::max(right.energetic_end_min, left.energetic_end_min + right.energy);
+    energetic_end_min = std::max(right.energetic_end_min,
+                                 left.energetic_end_min + right.energy);
     const int64 energy_left_opt = left.energy_opt + right.energy;
     const int64 energy_right_opt = left.energy + right.energy_opt;
     if (energy_left_opt > energy_right_opt) {
@@ -288,8 +281,7 @@ class NotLast {
  public:
   NotLast(Solver* const solver, const std::vector<IntVar*>& intervals,
           const std::vector<int64>& durations,
-          const std::vector<IntVar*>& performed,
-          bool mirror);
+          const std::vector<IntVar*>& performed, bool mirror);
 
   ~NotLast() { STLDeleteElements(&by_start_min_); }
 
@@ -305,8 +297,7 @@ class NotLast {
 
 NotLast::NotLast(Solver* const solver, const std::vector<IntVar*>& starts,
                  const std::vector<int64>& durations,
-                 const std::vector<IntVar*>& performed,
-                 bool mirror)
+                 const std::vector<IntVar*>& performed, bool mirror)
     : theta_tree_(starts.size()),
       by_start_min_(starts.size()),
       by_end_max_(starts.size()),
@@ -327,7 +318,8 @@ bool NotLast::Propagate() {
   // ---- Init ----
   std::sort(by_start_max_.begin(), by_start_max_.end(),
             StartMaxLessThan<DisjunctiveTask>);
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   // Update start min positions
   std::sort(by_start_min_.begin(), by_start_min_.end(),
             StartMinLessThan<DisjunctiveTask>);
@@ -427,11 +419,9 @@ class EdgeFinderAndDetectablePrecedences {
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
     Solver* const solver, const std::vector<IntVar*>& starts,
-    const std::vector<int64>& durations,
-    const std::vector<IntVar*>& performed, bool mirror)
-    : solver_(solver),
-      theta_tree_(starts.size()),
-      lt_tree_(starts.size()) {
+    const std::vector<int64>& durations, const std::vector<IntVar*>& performed,
+    bool mirror)
+    : solver_(solver), theta_tree_(starts.size()), lt_tree_(starts.size()) {
   // Populate of the array of intervals
   for (int i = 0; i < starts.size(); ++i) {
     IntVar* const underlying =
@@ -458,7 +448,8 @@ void EdgeFinderAndDetectablePrecedences::UpdateEst() {
 void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
   // Initialization.
   UpdateEst();
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
 
   for (int i = 0; i < size(); ++i) {
@@ -478,7 +469,8 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   }
 
   // Propagate in one direction
-  std::sort(by_end_min_.begin(), by_end_min_.end(), EndMinLessThan<DisjunctiveTask>);
+  std::sort(by_end_min_.begin(), by_end_min_.end(),
+            EndMinLessThan<DisjunctiveTask>);
   std::sort(by_start_max_.begin(), by_start_max_.end(),
             StartMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
@@ -529,7 +521,8 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   }
 
   // Push in one direction.
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   lt_tree_.Clear();
   for (int i = 0; i < size(); ++i) {
     lt_tree_.Insert(*by_start_min_[i]);
@@ -568,8 +561,7 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
 
 class FzDisjunctiveConstraint : public Constraint {
  public:
-  FzDisjunctiveConstraint(Solver* const s,
-                          const std::vector<IntVar*>& starts,
+  FzDisjunctiveConstraint(Solver* const s, const std::vector<IntVar*>& starts,
                           const std::vector<int64>& durations,
                           const std::vector<IntVar*>& performed)
       : Constraint(s),
@@ -579,7 +571,7 @@ class FzDisjunctiveConstraint : public Constraint {
         straight_(s, starts, durations, performed, false),
         mirror_(s, starts, durations, performed, true),
         straight_not_last_(s, starts, durations, performed, false),
-    mirror_not_last_(s, starts, durations, performed, true) {}
+        mirror_not_last_(s, starts, durations, performed, true) {}
 
   virtual ~FzDisjunctiveConstraint() {}
 
@@ -631,16 +623,13 @@ class FzDisjunctiveConstraint : public Constraint {
 
 }  // namespace
 
-Constraint* MakeDisjunctiveConstraint(
-    Solver* const solver,
-    const std::vector<IntVar*>& starts,
-    const std::vector<int64>& durations,
-    const std::vector<IntVar*>& performed) {
+Constraint* MakeDisjunctiveConstraint(Solver* const solver,
+                                      const std::vector<IntVar*>& starts,
+                                      const std::vector<int64>& durations,
+                                      const std::vector<IntVar*>& performed) {
   return solver->RevAlloc(
       new FzDisjunctiveConstraint(solver, starts, durations, performed));
 }
-
-
 
 // Constraint* MakeVariableCumulative(Solver* const solver,
 //                                    const std::vector<IntVar*>& starts,

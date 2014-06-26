@@ -55,7 +55,7 @@ static const Boolean kUndefined = Boolean(2);
 
 inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
-  return Boolean((uint8)(a.value() ^ (uint8)b));
+  return Boolean((uint8)(a.value() ^ (uint8) b));
 }
 inline std::string ToString(Boolean b) {
   switch (b.value()) {
@@ -150,7 +150,9 @@ class Solver {
   void ClearTouchedVariables() { touched_variables_.clear(); }
 
   // List of touched variables since last propagate.
-  const std::vector<Literal>& TouchedVariables() const { return touched_variables_; }
+  const std::vector<Literal>& TouchedVariables() const {
+    return touched_variables_;
+  }
 
   // Backtrack until a certain level.
   void BacktrackTo(int level) {
@@ -652,7 +654,8 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars, IntExpr* target) {
+                                 const std::vector<IntVar*>& vars,
+                                 IntExpr* target) {
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
@@ -667,7 +670,8 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
 }
 
 bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
-                              const std::vector<IntVar*>& vars, IntExpr* target) {
+                              const std::vector<IntVar*>& vars,
+                              IntExpr* target) {
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
@@ -679,7 +683,8 @@ bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
+                               const std::vector<IntVar*>& vars,
                                IntExpr* target) {
   if (vars.size() == 1) {
     return AddBoolLe(sat, vars[0], target);
@@ -781,7 +786,8 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
+                             const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }

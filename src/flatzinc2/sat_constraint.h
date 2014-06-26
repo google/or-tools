@@ -33,12 +33,15 @@ bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                          IntExpr* target);
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars, IntExpr* target);
+                                 const std::vector<IntVar*>& vars,
+                                 IntExpr* target);
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
+                               const std::vector<IntVar*>& vars,
                                IntExpr* target);
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
+                              const std::vector<IntVar*>& vars,
                               IntExpr* target);
 
 bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
@@ -56,9 +59,11 @@ bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                     IntExpr* target);
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars);
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
+                             const std::vector<IntVar*>& vars);
 
-bool AddBoolAndArrayEqualFalse(SatPropagator* sat, const std::vector<IntVar*>& vars);
+bool AddBoolAndArrayEqualFalse(SatPropagator* sat,
+                               const std::vector<IntVar*>& vars);
 
 bool AddAtMostOne(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
@@ -72,5 +77,5 @@ bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
                   IntExpr* target);
 
 void DeclareVariable(SatPropagator* sat, IntVar* var);
-}  // namespace operations_research
+}       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_

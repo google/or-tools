@@ -719,11 +719,11 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(0).variables.size() == 1) {
     if (!ct->Arg(0).HasOneValue()) {
       // Rule 1.
-      const int64 target_min = ct->Arg(2).HasOneValue()
-                                   ? ct->Arg(2).Value()
+      const int64 target_min =
+          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value()
                                    : ct->Arg(2).Var()->Min();
-      const int64 target_max = ct->Arg(2).HasOneValue()
-                                   ? ct->Arg(2).Value()
+      const int64 target_max =
+          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value()
                                    : ct->Arg(2).Var()->Max();
 
       int64 current_index = ct->Arg(1).values.size();
@@ -958,8 +958,8 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       // Rewrite constraint.
       FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
       ct->MutableArg(0)->variables[0] = mapping.variable;
-      ct->Arg(0).variables[0]->domain.IntersectWithInterval(1,
-                                                            new_values.size());
+      ct->Arg(0).variables[0]->domain
+          .IntersectWithInterval(1, new_values.size());
       // TODO(user): Encapsulate argument setters.
       ct->MutableArg(1)->values.swap(new_values);
       if (ct->Arg(1).values.size() == 1) {
@@ -1519,8 +1519,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   // Last rule: if the target variable of a constraint is fixed, removed it
   // the target part.
-  if (ct->target_variable != nullptr &&
-      ct->target_variable->HasOneValue()) {
+  if (ct->target_variable != nullptr && ct->target_variable->HasOneValue()) {
     FZVLOG << "Remove target variable from " << ct->DebugString()
            << " as it is fixed to a single value" << FZENDL;
     ct->target_variable->defining_constraint = nullptr;
@@ -1790,8 +1789,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) ||
-         id == "bool_le_reif" || id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
+         id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.
@@ -1828,8 +1827,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   FzConstraint* start = nullptr;
   std::vector<FzIntegerVariable*> chain;
   std::vector<FzIntegerVariable*> carry_over;
-  hash_map<const FzIntegerVariable*,
-           hash_set<const FzConstraint*>> var_to_constraint;
+  hash_map<const FzIntegerVariable*, hash_set<const FzConstraint*>>
+      var_to_constraint;
   for (FzConstraint* const ct : model->constraints()) {
     for (const FzArgument& arg : ct->arguments) {
       for (FzIntegerVariable* const var : arg.variables) {

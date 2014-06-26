@@ -59,7 +59,7 @@ void ParseFile(const std::string& filename, bool presolve) {
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix = false;
-  google::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
+  google::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/ true);
   operations_research::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }

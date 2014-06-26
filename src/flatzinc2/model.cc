@@ -27,7 +27,6 @@ DEFINE_bool(fz_verbose, false,
 DEFINE_bool(fz_debug, false,
             "Print debug logging information from the flatzinc interpreter.");
 
-
 namespace operations_research {
 // ----- FzDomain -----
 
@@ -126,9 +125,8 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
     for (const int64 v : ovalues)
       if (v >= dmin && v <= dmax) values.push_back(v);
     STLSortAndRemoveDuplicates(&values);
-    if (!values.empty() &&
-        values.back() - values.front() == values.size() - 1 &&
-        values.size() >= 2) {
+    if (!values.empty() && values.back() - values.front() ==
+                               values.size() - 1 && values.size() >= 2) {
       if (values.size() > 2) {
         // Contiguous case.
         const int64 last = values.back();
@@ -245,7 +243,8 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(
+    const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.variables = vars;
@@ -303,17 +302,17 @@ bool FzArgument::HasOneValue() const {
 }
 
 int64 FzArgument::Value() const {
-  DCHECK(HasOneValue()) << "Value() called on unbound FzArgument: "
-                        << DebugString();
+  DCHECK(HasOneValue())
+      << "Value() called on unbound FzArgument: " << DebugString();
   switch (type) {
     case INT_VALUE:
     case INT_INTERVAL:
     case INT_LIST:
       return values[0];
-    case INT_VAR_REF: {
-      return variables[0]->domain.values[0];
-    }
-    default: { return 0; }  // Should fail anyway.
+    case INT_VAR_REF: { return variables[0]->domain.values[0]; }
+    default: {
+      return 0;
+    }  // Should fail anyway.
   }
 }
 
@@ -426,7 +425,8 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(const std::vector<FzAnnotation>& list) {
+FzAnnotation FzAnnotation::AnnotationList(
+    const std::vector<FzAnnotation>& list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -513,9 +513,7 @@ std::string FzAnnotation::DebugString() const {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
     }
-    case IDENTIFIER: {
-      return id;
-    }
+    case IDENTIFIER: { return id; }
     case FUNCTION_CALL: {
       return StringPrintf("%s(%s)", id.c_str(),
                           JoinDebugString(annotations, ", ").c_str());
@@ -524,12 +522,8 @@ std::string FzAnnotation::DebugString() const {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
     }
-    case INT_VALUE: {
-      return StringPrintf("%" GG_LL_FORMAT "d", interval_min);
-    }
-    case INT_VAR_REF: {
-      return variables.front()->name;
-    }
+    case INT_VALUE: { return StringPrintf("%" GG_LL_FORMAT "d", interval_min); }
+    case INT_VAR_REF: { return variables.front()->name; }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -538,9 +532,7 @@ std::string FzAnnotation::DebugString() const {
       }
       return result;
     }
-    case STRING_VALUE: {
-      return StringPrintf("\"%s\"", string_value_.c_str());
-    }
+    case STRING_VALUE: { return StringPrintf("\"%s\"", string_value_.c_str()); }
   }
 }
 
@@ -563,8 +555,7 @@ FzOnSolutionOutput FzOnSolutionOutput::SingleVariable(
 
 FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
     const std::string& name, const std::vector<Bounds>& bounds,
-    const std::vector<FzIntegerVariable*>& flat_variables,
-    bool is_boolean) {
+    const std::vector<FzIntegerVariable*>& flat_variables, bool is_boolean) {
   FzOnSolutionOutput result;
   result.variable = nullptr;
   result.name = name;
@@ -606,8 +597,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments, bool is_domain,
-                            FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments,
+                            bool is_domain, FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);

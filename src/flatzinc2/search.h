@@ -72,7 +72,8 @@ class FzParallelSupportInterface {
   virtual void StartSearch(int worker_id, Type type) = 0;
   // Worker 'worker_id' notifies a new solution in a satisfaction
   // problem. 'solution_string' is the solution to display if needed.
-  virtual void SatSolution(int worker_id, const std::string& solution_string) = 0;
+  virtual void SatSolution(int worker_id,
+                           const std::string& solution_string) = 0;
   // Worker 'worker_id' notifies a new solution in an optimization
   // problem. 'solution_string' is the solution to display if needed.
   virtual void OptimizeSolution(int worker_id, int64 value,

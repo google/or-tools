@@ -567,7 +567,7 @@ class VariableCumulativeTimeTable : public Constraint {
     }
     // Sort
     std::sort(profile_non_unique_time_.begin(), profile_non_unique_time_.end(),
-         TimeLessThan);
+              TimeLessThan);
     // Build profile with unique times
     profile_unique_time_.clear();
     profile_unique_time_.push_back(ProfileDelta(kint64min, 0));

@@ -42,7 +42,8 @@ class FzLog : public SearchLog {
   }
 };
 // Flatten Search annotations.
-void FlattenAnnotations(const FzAnnotation& ann, std::vector<FzAnnotation>* out) {
+void FlattenAnnotations(const FzAnnotation& ann,
+                        std::vector<FzAnnotation>* out) {
   if (ann.type == FzAnnotation::ANNOTATION_LIST ||
       ann.IsFunctionCallWithIdentifier("seq_search")) {
     for (const FzAnnotation& inner : ann.annotations) {
@@ -145,7 +146,8 @@ void MarkComputedVariables(FzConstraint* ct,
   if (id == "int_lin_eq" && ct->target_variable == nullptr) {
     const std::vector<int64>& array_coefficients = ct->Arg(0).values;
     const int size = array_coefficients.size();
-    const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(1).variables;
+    const std::vector<FzIntegerVariable*>& array_variables =
+        ct->Arg(1).variables;
     bool todo = true;
     if (size == 0) {
       return;
@@ -375,7 +377,7 @@ void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
 // Add completion goals to be robust to incomplete search specifications.
 void FzSolver::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& defined_variables,
-    const std::vector<IntVar*>& active_variables,
+    const std::vector<IntVar*>& active_variables, SearchLimit* limit,
     std::vector<DecisionBuilder*>* builders) {
   hash_set<IntVar*> defined_set(defined_variables.begin(),
                                 defined_variables.end());
@@ -395,11 +397,13 @@ void FzSolver::AddCompletionDecisionBuilders(
   if (!secondary_vars.empty()) {
     builders->push_back(solver()->MakeSolveOnce(
         solver()->MakePhase(secondary_vars, Solver::CHOOSE_FIRST_UNBOUND,
-                            Solver::ASSIGN_MIN_VALUE)));
+                            Solver::ASSIGN_MIN_VALUE),
+        limit));
   }
 }
 
-DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
+DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
+                                                  SearchLimit* limit) {
   FZLOG << "Defining search" << std::endl;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
@@ -439,9 +443,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
         }
         break;
       }
-      case FzSolverParameters::IBS: {
-        break;
-      }
+      case FzSolverParameters::IBS: { break; }
       case FzSolverParameters::FIRST_UNBOUND: {
         inner_builder =
             solver()->MakePhase(defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
@@ -495,7 +497,8 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p) {
     builders.push_back(obj_db);
   }
   // Add completion decision builders to be more robust.
-  AddCompletionDecisionBuilders(defined_variables, active_variables, &builders);
+  AddCompletionDecisionBuilders(defined_variables, active_variables, limit,
+                                &builders);
   // Reporting
   for (DecisionBuilder* const db : builders) {
     FZVLOG << "  - adding decision builder = " << db->DebugString() << FZENDL;
@@ -529,16 +532,18 @@ void FzSolver::SyncWithModel() {
 void FzSolver::Solve(FzSolverParameters p,
                      FzParallelSupportInterface* parallel_support) {
   SyncWithModel();
-  DecisionBuilder* const db = CreateDecisionBuilders(p);
+  SearchLimit* const limit =
+      p.time_limit_in_ms > 0 ? solver()->MakeTimeLimit(p.time_limit_in_ms)
+                             : nullptr;
+  DecisionBuilder* const db = CreateDecisionBuilders(p, limit);
   std::vector<SearchMonitor*> monitors;
   if (model_.objective() != nullptr) {
     objective_monitor_ = parallel_support->Objective(
         solver(), model_.maximize(), objective_var_, 1, p.worker_id);
     SearchMonitor* const log =
-        p.use_log
-            ? solver()->RevAlloc(
-                  new FzLog(solver(), objective_monitor_, p.log_period))
-            : nullptr;
+        p.use_log ? solver()->RevAlloc(
+                        new FzLog(solver(), objective_monitor_, p.log_period))
+                  : nullptr;
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
     parallel_support->StartSearch(
@@ -556,9 +561,6 @@ void FzSolver::Solve(FzSolverParameters p,
   // Custom limit in case of parallelism.
   monitors.push_back(parallel_support->Limit(solver(), p.worker_id));
 
-  SearchLimit* const limit = p.time_limit_in_ms > 0
-                                 ? solver()->MakeTimeLimit(p.time_limit_in_ms)
-                                 : nullptr;
   if (limit != nullptr) {
     FZLOG << "  - adding a time limit of " << p.time_limit_in_ms << " ms"
           << std::endl;
@@ -684,12 +686,12 @@ void FzSolver::Solve(FzSolverParameters p,
                       : (model_.objective() == nullptr
                              ? "**sat**"
                              : (timeout ? "**feasible**" : "**proven**")));
-    const std::string obj_string = (model_.objective() != nullptr && !no_solutions
-                                   ? StringPrintf("%" GG_LL_FORMAT "d", best)
-                                   : "");
-    final_output.append(
-        "%%  name, status, obj, solns, s_time, b_time, br, "
-        "fails, cts, demon, delayed, mem, search\n");
+    const std::string obj_string =
+        (model_.objective() != nullptr && !no_solutions
+             ? StringPrintf("%" GG_LL_FORMAT "d", best)
+             : "");
+    final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "
+                        "fails, cts, demon, delayed, mem, search\n");
     final_output.append(StringPrintf(
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT

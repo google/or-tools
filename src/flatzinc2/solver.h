@@ -68,10 +68,12 @@ class FzSolver {
                               std::vector<IntVar*>* active_variables,
                               std::vector<int>* defined_occurrences,
                               std::vector<int>* active_occurrences);
-  void AddCompletionDecisionBuilders(const std::vector<IntVar*>& defined_variables,
-                                     const std::vector<IntVar*>& active_variables,
-                                     std::vector<DecisionBuilder*>* builders);
-  DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p);
+  void AddCompletionDecisionBuilders(
+      const std::vector<IntVar*>& defined_variables,
+      const std::vector<IntVar*>& active_variables, SearchLimit* limit,
+      std::vector<DecisionBuilder*>* builders);
+  DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p,
+                                          SearchLimit* limit);
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);
   void SyncWithModel();
 
@@ -87,8 +89,8 @@ class FzSolver {
   OptimizeVar* objective_monitor_;
   // Alldiff info before extraction
   void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
-  hash_map<const FzIntegerVariable*, std::vector<std::vector<FzIntegerVariable*> > >
-      alldiffs_;
+  hash_map<const FzIntegerVariable*,
+           std::vector<std::vector<FzIntegerVariable*> > > alldiffs_;
   // Sat constraint.
   SatPropagator* sat_;
 };
