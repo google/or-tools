@@ -2332,13 +2332,33 @@ bool AreAllGreaterOrEqual(const std::vector<T>& values, const T& value) {
 }
 
 template <class T>
+bool AreAllLessOrEqual(const std::vector<T>& values, const T& value) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] > value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
 bool AreAllPositive(const std::vector<T>& values) {
   return AreAllGreaterOrEqual(values, T(0));
 }
 
 template <class T>
+bool AreAllNegative(const std::vector<T>& values) {
+  return AreAllLessOrEqual(values, T(0));
+}
+
+template <class T>
 bool AreAllStrictlyPositive(const std::vector<T>& values) {
   return AreAllGreaterOrEqual(values, T(1));
+}
+
+template <class T>
+bool AreAllStrictlyNegativeve(const std::vector<T>& values) {
+  return AreAllLessOrEqual(values, T(-1));
 }
 
 template <class T>

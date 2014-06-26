@@ -2328,6 +2328,15 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     return solver->RevAlloc(
         new PositiveBooleanScalProdEqCst(solver, vars, coefs, cst));
   }
+  if (AreAllBooleans(vars) && AreAllNegative(coefs) && size > 2) {
+    // TODO(user) : bench BooleanScalProdEqVar with IntConst.
+    std::vector<int64> opp_coefs(coefs.size());
+    for (int i = 0; i < coefs.size(); ++i) {
+      opp_coefs[i] = -coefs[i];
+    }
+    return solver->RevAlloc(
+        new PositiveBooleanScalProdEqCst(solver, vars, opp_coefs, -cst));
+  }
 
   // Simplications.
   int constants = 0;
