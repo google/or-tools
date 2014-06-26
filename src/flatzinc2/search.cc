@@ -55,25 +55,42 @@ void FlattenAnnotations(const FzAnnotation& ann,
 }
 
 // Comparison helpers. This one sorts in a decreasing way.
-struct VarDegreeIndex {
+struct VarDegreeIndexSize {
   IntVar* v;
   int d;
   int i;
+  uint64 s;
 
-  VarDegreeIndex(IntVar* var, int degree, int index)
-      : v(var), d(degree), i(index) {}
+  VarDegreeIndexSize(IntVar* var, int degree, int index, uint64 size)
+      : v(var), d(degree), i(index), s(size) {}
 
-  bool operator<(const VarDegreeIndex& other) const {
-    return d > other.d || (d == other.d && i < other.i);
+  int Bucket(uint64 size) const {
+    if (size < 10) {
+      return 0;
+    } else if (size < 1000) {
+      return 1;
+    } else if (size < 100000) {
+      return 2;
+    } else {
+      return 3;
+    }
+  }
+
+  bool operator<(const VarDegreeIndexSize& other) const {
+    const int b = Bucket(s);
+    const int ob = Bucket(other.s);
+    return b < ob ||
+        (b == ob && (d > other.d || (d == other.d && i < other.i)));
   }
 };
 
-void SortVariableByDegree(const std::vector<int>& occurrences,
+void SortVariableByDegree(const std::vector<int>& occurrences, bool use_size,
                           std::vector<IntVar*>* int_vars) {
-  std::vector<VarDegreeIndex> to_sort;
+  std::vector<VarDegreeIndexSize> to_sort;
   for (int i = 0; i < int_vars->size(); ++i) {
     IntVar* const var = (*int_vars)[i];
-    to_sort.push_back(VarDegreeIndex(var, occurrences[i], i));
+    const uint64 size = use_size ? var->Size() : 1;
+    to_sort.push_back(VarDegreeIndexSize(var, occurrences[i], i, size));
   }
   std::sort(to_sort.begin(), to_sort.end());
   for (int i = 0; i < int_vars->size(); ++i) {
@@ -271,11 +288,11 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
         str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
       }
       if (choose.id == "occurrence") {
-        SortVariableByDegree(occurrences, &int_vars);
+        SortVariableByDegree(occurrences, false, &int_vars);
         str = Solver::CHOOSE_FIRST_UNBOUND;
       }
       if (choose.id == "most_constrained") {
-        SortVariableByDegree(occurrences, &int_vars);
+        SortVariableByDegree(occurrences, false, &int_vars);
         str = Solver::CHOOSE_MIN_SIZE;
       }
       const FzAnnotation& select = args[2];
@@ -318,7 +335,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
       const FzAnnotation& choose = args[1];
       Solver::IntVarStrategy str = Solver::CHOOSE_FIRST_UNBOUND;
       if (choose.id == "occurrence") {
-        SortVariableByDegree(occurrences, &bool_vars);
+        SortVariableByDegree(occurrences, false, &bool_vars);
         str = Solver::CHOOSE_FIRST_UNBOUND;
       }
       const FzAnnotation& select = args[2];
@@ -434,7 +451,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
     switch (p.search_type) {
       case FzSolverParameters::DEFAULT: {
         if (defined.empty()) {
-          SortVariableByDegree(defined_occurrences, &defined_variables);
+          SortVariableByDegree(defined_occurrences, true, &defined_variables);
           inner_builder =
               solver()->MakePhase(defined_variables, Solver::CHOOSE_MIN_SIZE,
                                   Solver::ASSIGN_MIN_VALUE);
