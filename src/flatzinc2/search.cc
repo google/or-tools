@@ -535,7 +535,9 @@ void FzSolver::Solve(FzSolverParameters p,
   SearchLimit* const limit =
       p.time_limit_in_ms > 0 ? solver()->MakeTimeLimit(p.time_limit_in_ms)
                              : nullptr;
-  DecisionBuilder* const db = CreateDecisionBuilders(p, limit);
+  SearchLimit* const shadow = limit == nullptr ? nullptr :
+      solver()->MakeCustomLimit(NewPermanentCallback(limit, &SearchLimit::Check));
+  DecisionBuilder* const db = CreateDecisionBuilders(p, shadow);
   std::vector<SearchMonitor*> monitors;
   if (model_.objective() != nullptr) {
     objective_monitor_ = parallel_support->Objective(
