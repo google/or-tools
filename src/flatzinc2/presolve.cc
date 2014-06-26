@@ -592,10 +592,13 @@ bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
 
 // Simplifies linear equations of size 1.
 // Input : int_lin_xx([x], [c1], c2) and int_lin_xx_reif([x], [c1], c2, b)
-//         with c1 == 1 and xx = eq, ne, lt, le, gt, ge
+//         with (c1 == 1 or c2 % c1 == 0) and xx = eq, ne, lt, le, gt, ge
 // Output: int_xx(x, c2) and int_xx_reif(x, c2, b)
 bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
-  if (ct->Arg(0).values.size() == 1 && ct->Arg(0).values[0] == 1) {
+  const int64 coefficient = ct->Arg(0).values[0];
+  const int64 rhs = ct->Arg(2).Value();
+  if (ct->Arg(0).values.size() == 1 &&
+      (coefficient == 1 || (coefficient != 0 && rhs % coefficient == 0))) {
     FZVLOG << "Remove linear part in " << ct->DebugString() << FZENDL;
     // transform arguments.
     ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
@@ -603,12 +606,12 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
     ct->MutableArg(0)->variables.push_back(ct->Arg(1).variables[0]);
     ct->MutableArg(1)->type = FzArgument::INT_VALUE;
     ct->MutableArg(1)->variables.clear();
-    ct->MutableArg(1)->values.push_back(ct->Arg(2).values[0]);
+    ct->MutableArg(1)->values.push_back(rhs / coefficient);
     if (ct->arguments.size() == 4) {
       ct->arguments[2] = ct->Arg(3);
     }
     ct->arguments.pop_back();
-    // Change type.
+    // Change type (remove "_lin" part).
     ct->type.erase(3, 4);
     FZVLOG << "  - " << ct->DebugString() << FZENDL;
     return true;
@@ -801,6 +804,36 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
     ct->type = "int_lin_le_reif";
   }
   return true;
+}
+
+// Regroup linear term with the same variable.
+// Input : int_lin_xxx([c1, .., cn], [x1, .., xn], c0) with xi = xj
+// Output: int_lin_xxx([c1, .., ci + cj, .., cn], [x1, .., xi, .., xn], c0)
+bool FzPresolver::RegroupLinear(FzConstraint* ct) {
+  hash_map<const FzIntegerVariable*, int64> coefficients;
+  const int original_size = ct->Arg(0).values.size();
+  for (int i = 0; i < original_size; ++i) {
+    coefficients[ct->Arg(1).variables[i]] += ct->Arg(0).values[i];
+  }
+  if (coefficients.size() != original_size) {  // Duplicate variables.
+    FZVLOG << "Regroup variables in " << ct->DebugString() << FZENDL;
+    hash_set<const FzIntegerVariable*> processed;
+    int index = 0;
+    for (int i = 0; i < original_size; ++i) {
+      FzIntegerVariable* fz_var = ct->Arg(1).variables[i];
+      if (!ContainsKey(processed, fz_var)) {
+        processed.insert(fz_var);
+        ct->MutableArg(1)->variables[index] = fz_var;
+        ct->MutableArg(0)->values[index] = coefficients[fz_var];
+        index++;
+      }
+    }
+    CHECK_EQ(index, coefficients.size());
+    ct->MutableArg(0)->values.resize(index);
+    ct->MutableArg(1)->variables.resize(index);
+    return true;
+  }
+  return false;
 }
 
 // Bound propagation: int_lin_eq, int_lin_le, int_lin_ge
@@ -1486,6 +1519,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "int_lin_lt") changed |= PresolveIntLinLt(ct);
   if (HasPrefixString(id, "int_lin_")) {
     changed |= PresolveLinear(ct);
+    changed |= RegroupLinear(ct);
     changed |= SimplifyUnaryLinear(ct);
   }
   if (id == "int_lin_eq" || id == "int_lin_le" || id == "int_lin_ge") {
