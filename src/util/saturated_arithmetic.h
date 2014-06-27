@@ -70,7 +70,7 @@ inline int64 CapAddGeneric(int64 x, int64 y) {
   return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
 // TODO(user): port this to other architectures.
 inline int64 CapAddFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
@@ -87,7 +87,7 @@ inline int64 CapAddFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapAdd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapAddFast(x, y);
 #else
   return CapAddGeneric(x, y);
@@ -110,7 +110,7 @@ inline int64 CapSubGeneric(int64 x, int64 y) {
   return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
 // TODO(user): port this to other architectures.
 inline int64 CapSubFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
@@ -127,7 +127,7 @@ inline int64 CapSubFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapSub(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapSubFast(x, y);
 #else
   return CapSubGeneric(x, y);
@@ -167,7 +167,7 @@ inline int64 CapProdGeneric(int64 left, int64 right) {
   return left * right;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
 // TODO(user): port this to other architectures.
 inline int64 CapProdFast(int64 x, int64 y) {
   // cap = kint64max if x and y have the same sign, cap = kint64min
@@ -193,7 +193,7 @@ inline int64 CapProdFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapProd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapProdFast(x, y);
 #else
   return CapProdGeneric(x, y);
