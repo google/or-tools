@@ -40,6 +40,7 @@ DEFINE_bool(cp_use_sat_table, false,
 DEFINE_int32(cp_ac4r_table_threshold, 2048,
              "Above this size, allowed assignment constraints will use the "
              "revised AC-4 implementation of the table constraint.");
+DEFINE_bool(cp_use_mdd_table, true, "Use mdd table");
 
 namespace operations_research {
 // External table code.
@@ -49,6 +50,11 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
 
 Constraint* BuildSatTableConstraint(Solver* solver, const std::vector<IntVar*>& vars,
                                     const IntTupleSet& tuples);
+
+Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
+                                            const IntTupleSet& tuples,
+                                            const std::vector<IntVar*>& vars);
+
 
 namespace {
 // ----- Presolve helpers -----
@@ -1261,18 +1267,25 @@ class TransitionConstraint : public Constraint {
     states.push_back(s->MakeIntVar(final_states_));
     CHECK_EQ(nb_vars + 1, states.size());
 
+    const int num_tuples = transition_table_.NumTuples();
+
     for (int var_index = 0; var_index < nb_vars; ++var_index) {
       std::vector<IntVar*> tmp_vars;
       tmp_vars.push_back(states[var_index]);
       tmp_vars.push_back(vars_[var_index]);
       tmp_vars.push_back(states[var_index + 1]);
       // We always build the compact versions of the tables.
-      if (FLAGS_cp_use_sat_table) {
-        s->AddConstraint(
-            BuildSatTableConstraint(s, tmp_vars, transition_table_));
-      } else if (transition_table_.NumTuples() < kBitsInUint64) {
+      if (num_tuples < kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
+      } else if (FLAGS_cp_use_sat_table &&
+                 num_tuples > FLAGS_cp_ac4r_table_threshold) {
+        s->AddConstraint(
+            BuildSatTableConstraint(s, tmp_vars, transition_table_));
+      } else if (FLAGS_cp_use_mdd_table &&
+                 num_tuples > FLAGS_cp_ac4r_table_threshold) {
+        s->AddConstraint(
+            BuildAc4MddResetTableConstraint(s, transition_table_, tmp_vars));
       } else {
         s->AddConstraint(s->RevAlloc(new CompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
@@ -1334,7 +1347,11 @@ Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
     }
   }
   if (tuples.NumTuples() > FLAGS_cp_ac4r_table_threshold) {
-    return BuildAc4TableConstraint(this, tuples, vars);
+    if (FLAGS_cp_use_mdd_table) {
+      return BuildAc4MddResetTableConstraint(this, tuples, vars);
+    } else {
+      return BuildAc4TableConstraint(this, tuples, vars);
+    }
   } else {
     return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
   }

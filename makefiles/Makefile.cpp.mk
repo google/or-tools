@@ -382,6 +382,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/assignment.$O\
 	$(OBJ_DIR)/constraint_solver/assignment.pb.$O\
 	$(OBJ_DIR)/constraint_solver/ac4r_table.$O\
+	$(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O\
 	$(OBJ_DIR)/constraint_solver/collect_variables.$O\
 	$(OBJ_DIR)/constraint_solver/constraint_solver.$O\
 	$(OBJ_DIR)/constraint_solver/constraints.$O\
@@ -433,6 +434,9 @@ $(OBJ_DIR)/constraint_solver/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assig
 
 $(OBJ_DIR)/constraint_solver/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sac4r_table.$O
+
+$(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O:$(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sac4_mdd_reset_table.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/assignment.proto
