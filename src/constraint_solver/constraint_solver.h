@@ -2008,6 +2008,28 @@ class Solver {
                              const std::vector<int>& demands, IntVar* const capacity,
                              const std::string& name);
 
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should be positive.
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<IntVar*>& demands,
+                             int64 capacity, const std::string& name);
+
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should be positive.
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<IntVar*>& demands,
+                             IntVar* const capacity, const std::string& name);
+
   // This constraint states that the target_var is the convex hull of
   // the intervals. If none of the interval variables is performed,
   // then the target var is unperformed too. Also, if the target
