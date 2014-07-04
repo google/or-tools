@@ -1851,8 +1851,10 @@ class CumulativeConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
-  virtual std::string DebugString() const { return "CumulativeConstraint"; }
-
+  virtual std::string DebugString() const {
+    return StringPrintf("CumulativeConstraint([%s], %" GG_LL_FORMAT "d)",
+                        JoinDebugString(tasks_, ", ").c_str(), capacity_);
+  };
  private:
   // Post temporal disjunctions for tasks that cannot overlap.
   void PostAllDisjunctions() {
@@ -2026,7 +2028,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
 
   virtual std::string DebugString() const {
     return StringPrintf(
-        "VariableDemandCumulativeConstraint([%s], %" GG_LL_FORMAT "d",
+        "VariableDemandCumulativeConstraint([%s], %" GG_LL_FORMAT "d)",
         JoinDebugString(tasks_, ", ").c_str(),
         capacity_);
   }
