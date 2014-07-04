@@ -1403,9 +1403,8 @@ class EdgeFinder : public Constraint {
     // Clear tree.
     lt_tree_.Clear();
     // Clear updates
-    typedef UpdateMap::iterator iterator;
-    for (iterator it = update_map_.begin(); it != update_map_.end(); ++it) {
-      it->second->Reset();
+    for (const auto& entry : update_map_) {
+      entry.second->Reset();
     }
   }
 
@@ -1415,7 +1414,11 @@ class EdgeFinder : public Constraint {
   // This corresponds to lines 2--13 in algorithm 1.3 in Petr Vilim's paper.
   void ComputeConditionalStartMins(int64 demand) {
     DCHECK_GT(demand, 0);
-    UpdatesForADemand* const updates = update_map_[demand];
+    UpdatesForADemand* updates = FindPtrOrNull(update_map_, demand);
+    if (updates == nullptr) {  // Create on demand.
+      updates = new UpdatesForADemand(by_start_min_.size());
+      update_map_[demand] = updates;
+    }
     DCHECK(!updates->up_to_date());
     DualCapacityThetaTree dual_capa_tree(by_start_min_.size(), capacity_);
     const int64 residual_capacity = capacity_ - demand;
@@ -1663,8 +1666,10 @@ class CumulativeTimeTable : public Constraint {
       const int64 end_min = interval->EndMin();
       if (interval->MustBePerformed() && start_max < end_min) {
         const int64 demand = task->DemandMin();
-        profile_non_unique_time_.push_back(ProfileDelta(start_max, +demand));
-        profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand));
+        if (demand > 0) {
+          profile_non_unique_time_.push_back(ProfileDelta(start_max, +demand));
+          profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand));
+        }
       }
     }
     // Sort
@@ -1721,6 +1726,9 @@ class CumulativeTimeTable : public Constraint {
     // Init
     const IntervalVar* const interval = task->interval;
     const int64 demand = task->DemandMin();
+    if (demand == 0) {  // Demand can be null, nothing to propagate.
+      return;
+    }
     const int64 residual_capacity = capacity_ - demand;
     const int64 duration = task->interval->DurationMin();
     const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
