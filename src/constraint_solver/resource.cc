@@ -977,7 +977,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   virtual std::string DebugString() const {
     return StringPrintf("FullDisjunctiveConstraint([%s])",
-                        JoinDebugStringPtr(intervals_, ",").c_str());
+                        JoinDebugStringPtr(intervals_, ", ").c_str());
   }
 
   virtual const std::vector<IntVar*>& nexts() const { return nexts_; }

@@ -1433,7 +1433,7 @@ if (performed_->Min() == 1) {
     start_->SetMin(m);
   } else {
     start_min_.SetValue(solver(), std::max(m, start_min_.Value()));
-    if (start_min_.Value() > start_max_.Value()) {
+    if (start_min_.Value() > std::min(start_max_.Value(), start_->Max())) {
       performed_->SetValue(0);
     }
   }
@@ -1444,7 +1444,7 @@ void StartVarIntervalVar::SetStartMax(int64 m) {
     start_->SetMax(m);
   } else {
     start_max_.SetValue(solver(), std::min(m, start_max_.Value()));
-    if (start_min_.Value() > start_max_.Value()) {
+    if (start_max_.Value() < std::max(start_min_.Value(), start_->Min())) {
       performed_->SetValue(0);
     }
   }
@@ -1456,7 +1456,8 @@ void StartVarIntervalVar::SetStartRange(int64 mi, int64 ma) {
   } else {
     start_min_.SetValue(solver(), std::max(mi, start_min_.Value()));
     start_max_.SetValue(solver(), std::min(ma, start_max_.Value()));
-    if (start_min_.Value() > start_max_.Value()) {
+    if (std::max(start_min_.Value(), start_->Min()) >
+        std::min(start_max_.Value(), start_->Max())) {
       performed_->SetValue(0);
     }
   }
