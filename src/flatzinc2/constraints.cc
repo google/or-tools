@@ -626,38 +626,32 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
           solver->MakeCumulative(intervals, demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
-  // } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
-  //            ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
-  //            IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
-  //            ct->Arg(3).HasOneValue()) {
-  //   const std::vector<int64>& durations = ct->Arg(1).values;
-  //   const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
-
-  //   std::vector<IntVar*> performed_variables;
-  //   std::vector<int64> fixed_demands;
-  //   ExtractPerformedAndDemands(solver, demands, &performed_variables,
-  //                              &fixed_demands);
-  //   std::vector<IntervalVar*> intervals(start_variables.size());
-  //   for (int i = 0; i < start_variables.size(); ++i) {
-  //     intervals[i] = MakeIntervalStartPerformed(
-  //         solver, start_variables[i], durations[i], performed_variables[i]);
-  //   }
-  //   const int64 capacity = ct->Arg(3).Value();
-  //   if (IsArrayBoolean(fixed_demands) && capacity == 1) {  // Disjunctive.
-  //     Constraint* const constraint =
-  //         solver->MakeDisjunctiveConstraint(intervals, "");
-  //     AddConstraint(solver, ct, constraint);
-  //   } else {
-  //     Constraint* const constraint =
-  //         solver->MakeCumulative(intervals, fixed_demands, capacity, "");
-  //     AddConstraint(solver, ct, constraint);
-  //   }
-  //   const std::vector<IntVar*> variable_durations =
-  //       fzsolver->GetVariableArray(ct->Arg(1));
-  //   IntVar* const vcapacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-  //   Constraint* const constraint2 = MakeVariableCumulative(
-  //       solver, start_variables, variable_durations, demands, vcapacity);
-  //   AddConstraint(solver, ct, constraint2);
+  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
+             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
+             IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
+             ct->Arg(3).HasOneValue() && ct->Arg(3).Value() == 1) {
+    // Hidden disjunctive.
+    const std::vector<int64>& durations = ct->Arg(1).values;
+    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
+    const int64 capacity = ct->Arg(3).Value();
+    std::vector<IntVar*> performed_variables;
+    std::vector<int64> fixed_demands;
+    ExtractPerformedAndDemands(solver, demands, &performed_variables,
+                               &fixed_demands);
+    std::vector<IntervalVar*> intervals;
+    intervals.reserve(start_variables.size());
+    for (int i = 0; i < start_variables.size(); ++i) {
+      if (fixed_demands[i] == 1) {
+        intervals.push_back(MakeIntervalStartPerformed(
+            solver, start_variables[i], durations[i],
+            performed_variables[i]));
+      }
+    }
+    if (intervals.size() > 1) {
+      Constraint* const constraint =
+          solver->MakeDisjunctiveConstraint(intervals, "");
+      AddConstraint(solver, ct, constraint);
+    }
   } else {
     // Everything is variable.
     const std::vector<IntVar*> durations =
