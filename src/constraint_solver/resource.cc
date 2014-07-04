@@ -1345,10 +1345,12 @@ class EdgeFinder : public Constraint {
       by_end_max_[i] = tasks[i];
       by_end_min_[i] = tasks[i];
       const int64 demand = tasks[i]->DemandMin();
-      // Create the UpdateForADemand if needed (the [] operator calls the
-      // constructor). May rehash.
-      if (update_map_[demand] == nullptr) {
-        update_map_[demand] = new UpdatesForADemand(tasks.size());
+      if (demand > 0) {
+        // Create the UpdateForADemand if needed (the [] operator calls the
+        // constructor). May rehash.
+        if (update_map_[demand] == nullptr) {
+          update_map_[demand] = new UpdatesForADemand(tasks.size());
+        }
       }
     }
   }
@@ -1450,12 +1452,15 @@ class EdgeFinder : public Constraint {
   // Returns the new start min that can be inferred for task_to_push if it is
   // proved that it cannot end before by_end_max[end_max_index] does.
   int64 ConditionalStartMin(const Task& task_to_push, int end_max_index) {
-    const int64 demand = task_to_push.DemandMin();
-    if (!update_map_[demand]->up_to_date()) {
-      ComputeConditionalStartMins(demand);
+    const int64 demand_min = task_to_push.DemandMin();
+    if (demand_min == 0) {
+      return task_to_push.interval->StartMin();
     }
-    DCHECK(update_map_[demand]->up_to_date());
-    return update_map_[demand]->updates().at(end_max_index);
+    if (!update_map_[demand_min]->up_to_date()) {
+      ComputeConditionalStartMins(demand_min);
+    }
+    DCHECK(update_map_[demand_min]->up_to_date());
+    return update_map_[demand_min]->updates().at(end_max_index);
   }
 
   // Propagates by discovering all end-after-end relationships purely based on
@@ -1725,11 +1730,11 @@ class CumulativeTimeTable : public Constraint {
   void PushTask(const Task* const task, int profile_index, int64 usage) {
     // Init
     const IntervalVar* const interval = task->interval;
-    const int64 demand = task->DemandMin();
-    if (demand == 0) {  // Demand can be null, nothing to propagate.
+    const int64 demand_min = task->DemandMin();
+    if (demand_min == 0) {  // Demand can be null, nothing to propagate.
       return;
     }
-    const int64 residual_capacity = capacity_ - demand;
+    const int64 residual_capacity = capacity_ - demand_min;
     const int64 duration = task->interval->DurationMin();
     const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
 
@@ -1758,8 +1763,8 @@ class CumulativeTimeTable : public Constraint {
     ProfileDelta delta_start(start_max, 0);
     ProfileDelta delta_end(end_min, 0);
     if (interval->MustBePerformed() && start_max < end_min) {
-      delta_start.delta = +demand;
-      delta_end.delta = -demand;
+      delta_start.delta = +demand_min;
+      delta_end.delta = -demand_min;
     }
     while (profile_unique_time_[profile_index].time <
            duration + new_start_min) {
