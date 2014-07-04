@@ -146,8 +146,9 @@ struct VariableCumulativeTask {
   }
 
   std::string DebugString() const {
-    return StringPrintf("Task{ %s, demand: %" GG_LL_FORMAT "d }",
-                        interval->DebugString().c_str(), demand);
+    return StringPrintf("Task{ %s, demand: %s }",
+                        interval->DebugString().c_str(),
+                        demand->DebugString().c_str());
   }
 
   IntervalVar* interval;
@@ -2024,7 +2025,10 @@ class VariableDemandCumulativeConstraint : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return "VariableDemandCumulativeConstraint";
+    return StringPrintf(
+        "VariableDemandCumulativeConstraint([%s], %" GG_LL_FORMAT "d",
+        JoinDebugString(tasks_, ", ").c_str(),
+        capacity_);
   }
 
  private:
