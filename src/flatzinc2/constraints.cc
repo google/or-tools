@@ -610,12 +610,12 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       ct->Arg(2).type == FzArgument::INT_LIST) {
     const std::vector<int64>& durations = ct->Arg(1).values;
     const std::vector<int64>& demands = ct->Arg(2).values;
-    const int64 capacity = ct->Arg(3).Value();
     std::vector<IntervalVar*> intervals;
     solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
                                               &intervals);
     if (ct->Arg(3).HasOneValue()) {
       // Fully fixed case.
+      const int64 capacity = ct->Arg(3).Value();
       Constraint* const constraint =
           solver->MakeCumulative(intervals, demands, capacity, "");
       AddConstraint(solver, ct, constraint);
@@ -642,14 +642,35 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
     intervals.reserve(start_variables.size());
     for (int i = 0; i < start_variables.size(); ++i) {
       if (fixed_demands[i] == 1) {
-        intervals.push_back(MakeIntervalStartPerformed(
-            solver, start_variables[i], durations[i],
-            performed_variables[i]));
+        intervals.push_back(solver->MakeFixedDurationIntervalVar(
+            start_variables[i], durations[i], performed_variables[i],
+            start_variables[i]->name()));
       }
     }
     if (intervals.size() > 1) {
       Constraint* const constraint =
           solver->MakeDisjunctiveConstraint(intervals, "");
+      AddConstraint(solver, ct, constraint);
+    }
+  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
+             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY) {
+    // Cumulative with fixed durations and variable demands.
+    const std::vector<int64>& durations = ct->Arg(1).values;
+    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
+    std::vector<IntervalVar*> intervals;
+    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
+                                              &intervals);
+    if (ct->Arg(3).HasOneValue()) {
+      // Fully fixed case.
+      const int64 capacity = ct->Arg(3).Value();
+      Constraint* const constraint =
+          solver->MakeCumulative(intervals, demands, capacity, "");
+      AddConstraint(solver, ct, constraint);
+    } else {
+      // Capacity is variable.
+      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+      Constraint* const constraint =
+          solver->MakeCumulative(intervals, demands, capacity, "");
       AddConstraint(solver, ct, constraint);
     }
   } else {

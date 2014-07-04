@@ -705,50 +705,6 @@ class VariableCumulativeTimeTable : public Constraint {
 
   DISALLOW_COPY_AND_ASSIGN(VariableCumulativeTimeTable);
 };
-
-// ----- LinkIntervalStartPerformed -----
-
-class LinkIntervalStartPerformed : public Constraint {
- public:
-  LinkIntervalStartPerformed(Solver* solver, IntervalVar* interval,
-                             IntVar* start, IntVar* performed)
-      : Constraint(solver),
-        interval_(interval),
-        start_(start),
-        performed_(performed) {}
-
-  virtual ~LinkIntervalStartPerformed() {}
-
-  virtual void Post() {
-    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
-    interval_->WhenPerformedBound(demon);
-    interval_->WhenStartRange(demon);
-    start_->WhenRange(demon);
-  }
-
-  virtual void InitialPropagate() {
-    if (performed_->Bound() && !interval_->IsPerformedBound()) {
-      interval_->SetPerformed(performed_->Min());
-    } else if (interval_->MustBePerformed()) {
-      performed_->SetValue(1);
-    } else if (!interval_->MayBePerformed()) {
-      performed_->SetValue(0);
-    }
-    interval_->SetStartRange(start_->Min(), start_->Max());
-    if (interval_->MustBePerformed()) {
-      start_->SetRange(interval_->StartMin(), interval_->StartMax());
-    }
-  }
-
-  virtual std::string DebugString() const {
-    return "LinkIntervalStartPerformed";
-  }
-
- private:
-  IntervalVar* const interval_;
-  IntVar* const start_;
-  IntVar* const performed_;
-};
 }  // namespace
 
 Constraint* MakeIsBooleanSumInRange(Solver* const solver,
@@ -932,25 +888,4 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
     solver->AddConstraint(ct);
   }
 }
-
-IntervalVar* MakeIntervalStartPerformed(Solver* solver, IntVar* start,
-                                        int64 duration, IntVar* performed) {
-  const std::string& name = start->name();
-  if (performed->Min() == 1) {
-    return solver->MakeFixedDurationIntervalVar(start, duration, name);
-  } else if (performed->Max() == 0) {
-    IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
-        start->Min(), start->Max(), duration, true, name);
-    interval->SetPerformed(false);
-    return interval;
-    // TODO(user): Implement unperformed interval.
-  } else {
-    IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
-        start->Min(), start->Max(), duration, true, name);
-    solver->AddConstraint(solver->RevAlloc(
-        new LinkIntervalStartPerformed(solver, interval, start, performed)));
-    return interval;
-  }
-}
-
 }  // namespace operations_research
