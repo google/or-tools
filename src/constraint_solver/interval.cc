@@ -1494,11 +1494,13 @@ void StartVarIntervalVar::SetDurationRange(int64 mi, int64 ma) {
 }
 
 int64 StartVarIntervalVar::EndMin() const {
-  return CapAdd(StartMin(), duration_);
+  DCHECK_EQ(performed_->Max(), 1);
+  return CapAdd(std::max(start_->Min(), start_min_.Value()), duration_);
 }
 
 int64 StartVarIntervalVar::EndMax() const {
-  return CapAdd(StartMax(), duration_);
+  DCHECK_EQ(performed_->Max(), 1);
+  return CapAdd(std::min(start_->Max(), start_max_.Value()), duration_);
 }
 
 void StartVarIntervalVar::SetEndMin(int64 m) {
