@@ -1421,12 +1421,12 @@ StartVarIntervalVar::StartVarIntervalVar(Solver* const s, IntVar* const start,
       start_max_(start->Max()) {}
 
 int64 StartVarIntervalVar::StartMin() const {
-  CHECK_EQ(performed_->Max(), 1);
+  DCHECK_EQ(performed_->Max(), 1);
   return std::max(start_->Min(), start_min_.Value());
 }
 
 int64 StartVarIntervalVar::StartMax() const {
-  CHECK_EQ(performed_->Max(), 1);
+  DCHECK_EQ(performed_->Max(), 1);
   return std::min(start_->Max(), start_max_.Value());
 }
 
@@ -1466,12 +1466,12 @@ void StartVarIntervalVar::SetStartRange(int64 mi, int64 ma) {
 }
 
 int64 StartVarIntervalVar::DurationMin() const {
-  CHECK_EQ(performed_->Max(), 1);
+  DCHECK_EQ(performed_->Max(), 1);
   return duration_;
 }
 
 int64 StartVarIntervalVar::DurationMax() const {
-  CHECK_EQ(performed_->Max(), 1);
+  DCHECK_EQ(performed_->Max(), 1);
   return duration_;
 }
 
