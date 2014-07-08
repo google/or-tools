@@ -195,10 +195,14 @@ bool CanonicalBooleanLinearProblem::AddConstraint(
 }
 
 void MutableUpperBoundedLinearConstraint::ClearAndResize(int num_variables) {
-  terms_.assign(num_variables, Coefficient(0));
-  non_zeros_.ClearAndResize(VariableIndex(num_variables));
-  rhs_ = 0;
-  max_sum_ = 0;
+  if (terms_.size() != num_variables) {
+    terms_.assign(num_variables, Coefficient(0));
+    non_zeros_.ClearAndResize(VariableIndex(num_variables));
+    rhs_ = 0;
+    max_sum_ = 0;
+  } else {
+    ClearAll();
+  }
 }
 
 void MutableUpperBoundedLinearConstraint::ClearAll() {

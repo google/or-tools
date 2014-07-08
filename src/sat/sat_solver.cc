@@ -33,6 +33,7 @@ SatSolver::SatSolver()
       pb_constraints_(&trail_),
       symmetry_propagator_(&trail_),
       current_decision_level_(0),
+      assumption_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
       num_processed_fixed_variables_(0),
@@ -88,10 +89,8 @@ void SatSolver::SetNumVariables(int num_variables) {
   watched_clauses_.Resize(num_variables);
   trail_.Resize(num_variables);
   pb_constraints_.Resize(num_variables);
-  symmetry_propagator_.Resize(num_variables);
   decisions_.resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
-  pb_conflict_.ClearAndResize(num_variables);
 
   // Used by NextBranch() for the decision heuristic.
   activities_.resize(num_variables, 0.0);
@@ -293,6 +292,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
                                     std::vector<LiteralWithCoeff>* cst) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
+  if (is_model_unsat_) return false;
 
   // This block removes assigned literals from the constraint.
   //
@@ -525,7 +525,7 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     // TODO(user): Note that we use the clause above to update the variable
     // activites and not the pb conflict. Experiment.
     if (compute_pb_conflict) {
-      pb_conflict_.ClearAll();
+      pb_conflict_.ClearAndResize(num_variables_.value());
       Coefficient initial_slack(-1);
       if (pb_constraints_.ConflictingConstraint() == nullptr) {
         // Generic clause case.
@@ -773,16 +773,6 @@ void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
   is_var_ordering_initialized_ = false;
 }
 
-SatSolver::Status SatSolver::Solve() {
-  SCOPED_TIME_STAT(&stats_);
-  return SolveInternal(0);
-}
-
-SatSolver::Status SatSolver::SolveWithAssumptions() {
-  SCOPED_TIME_STAT(&stats_);
-  return SolveInternal(CurrentDecisionLevel());
-}
-
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
   SCOPED_TIME_STAT(&stats_);
@@ -791,7 +781,8 @@ SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
   for (int i = 0; i < assumptions.size(); ++i) {
     decisions_[i].literal = assumptions[i];
   }
-  return SolveInternal(assumptions.size());
+  assumption_level_ = assumptions.size();
+  return Solve();
 }
 
 SatSolver::Status SatSolver::StatusWithLog(Status status) {
@@ -802,22 +793,13 @@ SatSolver::Status SatSolver::StatusWithLog(Status status) {
   return status;
 }
 
-namespace {
+void SatSolver::SetAssumptionLevel(int assumption_level) {
+  CHECK_GE(assumption_level, 0);
+  CHECK_LE(assumption_level, CurrentDecisionLevel());
+  assumption_level_ = assumption_level;
+}
 
-// A simple class to reset the given int to 0 uppon destruction.
-class ScopedIntReset {
- public:
-  explicit ScopedIntReset(int* p) : p_(p) {}
-  ~ScopedIntReset() { *p_ = 0; }
-
- private:
-  int* p_;
-  DISALLOW_COPY_AND_ASSIGN(ScopedIntReset);
-};
-
-}  // namespace
-
-SatSolver::Status SatSolver::SolveInternal(int initial_assumption_level) {
+SatSolver::Status SatSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
   timer_.Restart();
@@ -856,15 +838,6 @@ SatSolver::Status SatSolver::SolveInternal(int initial_assumption_level) {
       parameters_.max_number_of_conflicts() == std::numeric_limits<int64>::max()
           ? std::numeric_limits<int64>::max()
           : counters_.num_failures + parameters_.max_number_of_conflicts();
-
-  // Note that this can change if assumptions are (or become) consequences of
-  // the ones before them.
-  assumption_level_ = initial_assumption_level;
-
-  // We always want the assumption_level_ to be 0 when the Solve() is done.
-  // This is because we don't want to mess-up the ComputeLbd() for users
-  // that directly use the EnqueueDecision*() functions.
-  ScopedIntReset resetter(&assumption_level_);
 
   // Starts search.
   for (;;) {

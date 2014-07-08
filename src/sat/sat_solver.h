@@ -179,8 +179,9 @@ class SatSolver {
   // and fixing the variables once and for all, this allow to backtrack over the
   // assumptions and thus exploit the incrementally between subsequent solves.
   //
-  // This function backtrack over all the current decision, tries to enqueue
-  // the given assumptions and finally calls SolveWithAssumptions() below.
+  // This function backtrack over all the current decision, tries to enqueue the
+  // given assumptions, sets the assumption level accordingly and finally calls
+  // Solve().
   //
   // If, given these assumptions, the model is UNSAT, this returns the
   // ASSUMPTIONS_UNSAT status. MODEL_UNSAT is reserved for the case where the
@@ -190,17 +191,17 @@ class SatSolver {
   // assumptions by calling GetLastIncompatibleDecisions().
   Status ResetAndSolveWithGivenAssumptions(const std::vector<Literal>& assumptions);
 
+  // Changes the assumption level. All the decisions below this level will be
+  // treated as assumptions by the next Solve(). Note that this may impact some
+  // heuristics, like the LBD value of a clause.
+  void SetAssumptionLevel(int assumption_level);
+
   // This can be called just after SolveWithAssumptions() returned
   // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
   // to a conflict. It returns a subsequence (in the correct order) of the
   // previously enqueued decisions that cannot be taken together without making
   // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
-
-  // Same as Solve(), but any decisions currently on the trail will be treated
-  // as assumptions. The same comment as for ResetAndSolveWithGivenAssumptions()
-  // apllies if the ASSUMPTION_UNSAT status is returned.
-  Status SolveWithAssumptions();
 
   // Returns an UNSAT core. That is a subset of the problem clauses that are
   // still UNSAT. A problem constraint of index #i is the one that was added

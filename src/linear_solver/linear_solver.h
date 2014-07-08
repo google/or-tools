@@ -142,7 +142,9 @@
 #include "base/logging.h"
 #include "base/timer.h"
 
-
+#if defined(USE_GLOP) && !defined(SWIG)
+#include "glop/parameters.pb.h"
+#endif  // USE_GLOP && !SWIG
 
 
 namespace operations_research {
@@ -177,6 +179,9 @@ class MPSolver {
     #ifdef USE_GLPK
     GLPK_LINEAR_PROGRAMMING = 1,
     #endif
+    #ifdef USE_GLOP
+    GLOP_LINEAR_PROGRAMMING = 2,
+    #endif
     #if defined(USE_SLM)
     SULUM_LINEAR_PROGRAMMING = 8,
     #endif
@@ -205,6 +210,9 @@ class MPSolver {
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
+  // Whether the given problem type is supported (this will depend on the
+  // targets that you linked).
+  static bool SupportsProblemType(OptimizationProblemType problem_type);
 
   std::string Name() const {
     return name_;  // Set at construction.
@@ -512,6 +520,7 @@ class MPSolver {
   friend class GurobiInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
+  friend class GLOPInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
@@ -640,6 +649,7 @@ class MPObjective {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class GLOPInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -710,6 +720,7 @@ class MPVariable {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
 
   // Constructor. A variable points to a single MPSolverInterface that
@@ -809,6 +820,7 @@ class MPConstraint {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class GLOPInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
@@ -982,8 +994,18 @@ class MPSolverParameters {
   // Returns the value of a parameter.
   double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
-// @}
+  // @}
 
+  // This only has an effect for Glop. Most users should use the default values.
+  // In case of conflict, parameters set by SetGlopParameters() always take
+  // precedence, except for the time limit (where MPSolver::set_time_limit()
+  // takes precedence).
+  #if defined(USE_GLOP) && !defined(SWIG)
+  void SetGlopParameters(const glop::GlopParameters& parameters) {
+    glop_parameters_ = parameters;
+  }
+  glop::GlopParameters GetGlopParameters() const { return glop_parameters_; }
+  #endif  // USE_GLOP && !SWIG
 
  private:
   // @{
@@ -1004,6 +1026,9 @@ class MPSolverParameters {
   // does not define a default value need such an indicator.
   bool lp_algorithm_is_default_;
 
+  #if defined(USE_GLOP) && !defined(SWIG)
+  glop::GlopParameters glop_parameters_;
+  #endif  // USE_GLOP && !SWIG
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };

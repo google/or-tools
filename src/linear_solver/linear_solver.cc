@@ -327,6 +327,9 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
+#if defined(USE_GLOP)
+extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
+#endif
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
@@ -343,6 +346,10 @@ namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != NULL);
   switch (solver->ProblemType()) {
+#if defined(USE_GLOP)
+    case MPSolver::GLOP_LINEAR_PROGRAMMING:
+      return BuildGLOPInterface(solver);
+#endif
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
       return BuildGLPKInterface(false, solver);
@@ -412,6 +419,34 @@ MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type
 
 MPSolver::~MPSolver() { Clear(); }
 
+// static
+bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
+#ifdef USE_CLP
+  if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_GLPK
+  if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
+  if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_GLOP
+  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+  #endif
+  #if defined(USE_SLM)
+  if (problem_type == SULUM_LINEAR_PROGRAMMING) return true;
+  if (problem_type == SULUM_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_GUROBI
+  if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
+  if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_SCIP
+  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_CBC
+  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  return false;
+}
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   hash_map<std::string, int>::const_iterator it =
@@ -1169,9 +1204,17 @@ double MPSolverInterface::ComputeExactConditionNumber() const {
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
+// By default, we let GLOP keep its own default tolerance, much more accurate
+// than for the rest of the solvers.
+#if defined(USE_GLOP)
+  if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
+#endif
     SetPrimalTolerance(
         param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE));
     SetDualTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
+#if defined(USE_GLOP)
+  }
+#endif
   SetPresolveMode(param.GetIntegerParam(MPSolverParameters::PRESOLVE));
   // TODO(user): In the future, we could distinguish between the
   // algorithm to solve the root LP and the algorithm to solve node

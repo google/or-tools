@@ -74,6 +74,10 @@ DEFINE_bool(fu_malik, false,
 DEFINE_bool(wpm1, false,
             "If true, search the optimal solution with the WPM1 algo.");
 
+DEFINE_bool(use_cardinality_encoding, true,
+            "If true, use an encoding of the at most k constraint instead "
+            "of the native PB format.");
+
 DEFINE_bool(linear_scan, false,
             "If true, search the optimal solution with the linear scan algo.");
 
@@ -159,8 +163,8 @@ int Run() {
   }
 
   // Initialize the solver.
-  SatSolver solver;
-  solver.SetParameters(parameters);
+  std::unique_ptr<SatSolver> solver(new SatSolver());
+  solver->SetParameters(parameters);
 
   // Read the problem.
   LinearBooleanProblem problem;
@@ -173,13 +177,13 @@ int Run() {
   user_timer.Start();
 
   // Load the problem into the solver.
-  if (!LoadBooleanProblem(problem, &solver)) {
+  if (!LoadBooleanProblem(problem, solver.get())) {
     LOG(FATAL) << "Couldn't load problem '" << FLAGS_input << "'.";
   }
   if (!AddObjectiveConstraint(
           problem, !FLAGS_lower_bound.empty(),
           Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
-          Coefficient(atoi64(FLAGS_upper_bound)), &solver)) {
+          Coefficient(atoi64(FLAGS_upper_bound)), solver.get())) {
     LOG(FATAL) << "Issue when setting the objective bounds.";
   }
 
@@ -188,7 +192,7 @@ int Run() {
     LOG(INFO) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     FindLinearBooleanProblemSymmetries(problem, &generators);
-    solver.AddSymmetries(&generators);
+    solver->AddSymmetries(&generators);
   }
 
   // Optimize?
@@ -197,23 +201,40 @@ int Run() {
   if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
     if (FLAGS_randomize > 0 && FLAGS_linear_scan) {
       result = SolveWithRandomParameters(STDOUT_LOG, problem, FLAGS_randomize,
-                                         &solver, &solution);
+                                         solver.get(), &solution);
     }
     if (result == SatSolver::LIMIT_REACHED) {
-      result = FLAGS_fu_malik
-                   ? SolveWithFuMalik(STDOUT_LOG, problem, &solver, &solution)
-                   : FLAGS_wpm1 ? SolveWithWPM1(STDOUT_LOG, problem, &solver,
-                                                &solution)
-                                : SolveWithLinearScan(STDOUT_LOG, problem,
-                                                      &solver, &solution);
+      if (FLAGS_use_cardinality_encoding) {
+        // We use a new solver to not have any PB constraints.
+        if (FLAGS_linear_scan) {
+          solver.reset(new SatSolver());
+          solver->SetParameters(parameters);
+          CHECK(LoadBooleanProblem(problem, solver.get()));
+        }
+        if (FLAGS_linear_scan) {
+          result = SolveWithCardinalityEncoding(STDOUT_LOG, problem,
+                                                solver.get(), &solution);
+        } else {
+          result = SolveWithCardinalityEncodingAndCore(STDOUT_LOG, problem,
+                                                       solver.get(), &solution);
+        }
+      } else {
+        result =
+            FLAGS_fu_malik
+                ? SolveWithFuMalik(STDOUT_LOG, problem, solver.get(), &solution)
+                : FLAGS_wpm1 ? SolveWithWPM1(STDOUT_LOG, problem, solver.get(),
+                                             &solution)
+                             : SolveWithLinearScan(STDOUT_LOG, problem,
+                                                   solver.get(), &solution);
+      }
     }
   } else {
     // Only solve the decision version.
     parameters.set_log_search_progress(true);
-    solver.SetParameters(parameters);
-    result = solver.Solve();
+    solver->SetParameters(parameters);
+    result = solver->Solve();
     if (result == SatSolver::MODEL_SAT) {
-      ExtractAssignment(problem, solver, &solution);
+      ExtractAssignment(problem, *solver, &solution);
       CHECK(IsAssignmentValid(problem, solution));
     }
 
@@ -221,7 +242,7 @@ int Run() {
     // Note(user): For now we just compute an UNSAT core and check it.
     if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
       std::vector<int> core;
-      solver.ComputeUnsatCore(&core);
+      solver->ComputeUnsatCore(&core);
       LOG(INFO) << "UNSAT. Identified a core of " << core.size()
                 << " constraints.";
 
@@ -251,7 +272,7 @@ int Run() {
 
     if (!FLAGS_output.empty()) {
       if (result == SatSolver::MODEL_SAT) {
-        StoreAssignment(solver.Assignment(), problem.mutable_assignment());
+        StoreAssignment(solver->Assignment(), problem.mutable_assignment());
       }
       if (HasSuffixString(FLAGS_output, ".txt")) {
         file::WriteProtoToASCIIFileOrDie(problem, FLAGS_output);
@@ -268,7 +289,7 @@ int Run() {
 
   // Print the solution status.
   if (result == SatSolver::MODEL_SAT) {
-    if (FLAGS_fu_malik || FLAGS_linear_scan) {
+    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
       printf("s OPTIMUM FOUND\n");
     } else {
       printf("s SAT\n");
@@ -297,9 +318,9 @@ int Run() {
 
   // Print final statistics.
   printf("c status: %s\n", SatStatusString(result).c_str());
-  printf("c conflicts: %lld\n", solver.num_failures());
-  printf("c branches: %lld\n", solver.num_branches());
-  printf("c propagations: %lld\n", solver.num_propagations());
+  printf("c conflicts: %lld\n", solver->num_failures());
+  printf("c branches: %lld\n", solver->num_branches());
+  printf("c propagations: %lld\n", solver->num_propagations());
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
   return EXIT_SUCCESS;

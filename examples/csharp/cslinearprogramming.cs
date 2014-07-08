@@ -147,10 +147,15 @@ public class CsLinearProgramming
 
   static void Main()
   {
+    Console.WriteLine("---- Linear programming example with GLOP ----");
+    RunLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
     Console.WriteLine("---- Linear programming example with GLPK ----");
     RunLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
     Console.WriteLine("---- Linear programming example with CLP ----");
     RunLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
+    Console.WriteLine(
+        "---- Linear programming example (Natural API) with GLOP ----");
+    RunLinearProgrammingExampleNaturalApi("GLOP_LINEAR_PROGRAMMING");
     Console.WriteLine(
         "---- Linear programming example (Natural API) with GLPK ----");
     RunLinearProgrammingExampleNaturalApi("GLPK_LINEAR_PROGRAMMING");

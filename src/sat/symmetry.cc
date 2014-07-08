@@ -30,19 +30,14 @@ SymmetryPropagator::~SymmetryPropagator() {
   });
 }
 
-void SymmetryPropagator::Resize(int num_variables) {
-  images_.resize(num_variables << 1);
-  tmp_literal_mapping_.resize(num_variables << 1);
-  for (LiteralIndex i(0); i < tmp_literal_mapping_.size(); ++i) {
-    tmp_literal_mapping_[i] = Literal(i);
-  }
-}
-
 void SymmetryPropagator::AddSymmetry(
     std::unique_ptr<SparsePermutation> permutation) {
   if (permutation->NumCycles() == 0) return;
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(propagation_trail_index_, 0);
+  if (permutation->Size() > images_.size()) {
+    images_.resize(permutation->Size());
+  }
   for (int c = 0; c < permutation->NumCycles(); ++c) {
     int e = permutation->LastElementInCycle(c);
     for (const int image : permutation->Cycle(c)) {
@@ -67,42 +62,45 @@ bool SymmetryPropagator::PropagationNeeded() const {
 bool SymmetryPropagator::PropagateNext() {
   SCOPED_TIME_STAT(&stats_);
   const Literal true_literal = (*trail_)[propagation_trail_index_];
-  const std::vector<ImageInfo>& images = images_[true_literal.Index()];
-  for (int image_index = 0; image_index < images.size(); ++image_index) {
-    const int p_index = images[image_index].permutation_index;
+  if (true_literal.Index() < images_.size()) {
+    const std::vector<ImageInfo>& images = images_[true_literal.Index()];
+    for (int image_index = 0; image_index < images.size(); ++image_index) {
+      const int p_index = images[image_index].permutation_index;
 
-    // TODO(user): some optim ideas: no need to enqueue if a decision image is
-    // already assigned to false. But then the Untrail() is more involved.
-    std::vector<AssignedLiteralInfo>* p_trail = &(permutation_trails_[p_index]);
-    if (Enqueue(true_literal, images[image_index].image, p_trail)) continue;
+      // TODO(user): some optim ideas: no need to enqueue if a decision image is
+      // already assigned to false. But then the Untrail() is more involved.
+      std::vector<AssignedLiteralInfo>* p_trail = &(permutation_trails_[p_index]);
+      if (Enqueue(true_literal, images[image_index].image, p_trail)) continue;
 
-    // We have a non-symmetric literal and its image is not already assigned to
-    // true.
-    const AssignedLiteralInfo& non_symmetric =
-        (*p_trail)[p_trail->back().first_non_symmetric_info_index_so_far];
+      // We have a non-symmetric literal and its image is not already assigned
+      // to
+      // true.
+      const AssignedLiteralInfo& non_symmetric =
+          (*p_trail)[p_trail->back().first_non_symmetric_info_index_so_far];
 
-    // If the first non-symmetric literal is a decision, then we can't deduce
-    // anything. Otherwise, it is either a conflict or a propagation.
-    const AssignmentInfo& assignment_info =
-        trail_->Info(non_symmetric.literal.Variable());
-    if (assignment_info.type == AssignmentInfo::SEARCH_DECISION) continue;
-    if (trail_->Assignment().IsLiteralFalse(non_symmetric.image)) {
-      // Conflict.
-      conflict_permutation_index_ = p_index;
-      conflict_source_reason_ = non_symmetric.literal;
-      conflict_literal_ = non_symmetric.image;
-      ++num_conflicts_;
+      // If the first non-symmetric literal is a decision, then we can't deduce
+      // anything. Otherwise, it is either a conflict or a propagation.
+      const AssignmentInfo& assignment_info =
+          trail_->Info(non_symmetric.literal.Variable());
+      if (assignment_info.type == AssignmentInfo::SEARCH_DECISION) continue;
+      if (trail_->Assignment().IsLiteralFalse(non_symmetric.image)) {
+        // Conflict.
+        conflict_permutation_index_ = p_index;
+        conflict_source_reason_ = non_symmetric.literal;
+        conflict_literal_ = non_symmetric.image;
+        ++num_conflicts_;
 
-      // Backtrack over all the enqueues we just did.
-      for (; image_index >= 0; --image_index) {
-        permutation_trails_[images[image_index].permutation_index].pop_back();
+        // Backtrack over all the enqueues we just did.
+        for (; image_index >= 0; --image_index) {
+          permutation_trails_[images[image_index].permutation_index].pop_back();
+        }
+        return false;
+      } else {
+        // Propagation.
+        trail_->EnqueueWithSymmetricReason(
+            non_symmetric.image, assignment_info.trail_index, p_index);
+        ++num_propagations_;
       }
-      return false;
-    } else {
-      // Propagation.
-      trail_->EnqueueWithSymmetricReason(non_symmetric.image,
-                                         assignment_info.trail_index, p_index);
-      ++num_propagations_;
     }
   }
   ++propagation_trail_index_;
@@ -114,8 +112,10 @@ void SymmetryPropagator::Untrail(int trail_index) {
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
     const Literal true_literal = (*trail_)[propagation_trail_index_];
-    for (ImageInfo& info : images_[true_literal.Index()]) {
-      permutation_trails_[info.permutation_index].pop_back();
+    if (true_literal.Index() < images_.size()) {
+      for (ImageInfo& info : images_[true_literal.Index()]) {
+        permutation_trails_[info.permutation_index].pop_back();
+      }
     }
   }
 }
@@ -171,8 +171,15 @@ const std::vector<Literal>& SymmetryPropagator::LastConflict(
 void SymmetryPropagator::Permute(int index, ClauseRef input,
                                  std::vector<Literal>* output) const {
   SCOPED_TIME_STAT(&stats_);
-  // Initialize tmp_literal_mapping_.
+
+  // Initialize tmp_literal_mapping_ (resize it if needed).
   const SparsePermutation& permutation = *(permutations_[index].get());
+  if (permutation.Size() > tmp_literal_mapping_.size()) {
+    tmp_literal_mapping_.resize(permutation.Size());
+    for (LiteralIndex i(0); i < tmp_literal_mapping_.size(); ++i) {
+      tmp_literal_mapping_[i] = Literal(i);
+    }
+  }
   for (int c = 0; c < permutation.NumCycles(); ++c) {
     int e = permutation.LastElementInCycle(c);
     for (const int image : permutation.Cycle(c)) {

@@ -150,9 +150,11 @@ int main(int argc, char** argv) {
       std::string route;
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
-        route = StrCat(route, StrCat(node, " -> "));
+        route = StrCat(route, routing.IndexToNode(node).value(), " (", node,
+                       ") -> ");
       }
-      route = StrCat(route, "0");
+      const int64 end = routing.End(route_number);
+      route = StrCat(route, routing.IndexToNode(end).value(), " (", end, ")");
       LOG(INFO) << route;
     } else {
       LOG(INFO) << "No solution found.";

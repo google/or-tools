@@ -24,6 +24,15 @@
 namespace operations_research {
 namespace sat {
 
+// Tries to minimize the given UNSAT core with a really simple heuristic.
+// The idea is to remove literals that are consequences of others in the core.
+// We already know that in the initial order, no literal is propagated by the
+// one before it, so we just look for propagation in the reverse order.
+//
+// Important: The given SatSolver must be the one that just produced the given
+// core.
+void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
+
 // Randomizes the decision heuristic of the given SatParameters.
 // This is what SolveWithRandomParameters() below currently use.
 void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters);
@@ -88,6 +97,19 @@ SatSolver::Status SolveWithLinearScan(LogBehavior log,
                                       const LinearBooleanProblem& problem,
                                       SatSolver* solver,
                                       std::vector<bool>* solution);
+
+// Similar algorithm as the one used by qmaxsat, this is a linear scan with the
+// at-most k constraint encoded in SAT. This only works on problem with constant
+// weights.
+SatSolver::Status SolveWithCardinalityEncoding(
+    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
+    std::vector<bool>* solution);
+
+// This is an original algorithm. It is a mix between the cardinality encoding
+// and the Fu & Malik algorithm. It also works on general weighted instances.
+SatSolver::Status SolveWithCardinalityEncodingAndCore(
+    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
+    std::vector<bool>* solution);
 
 }  // namespace sat
 }  // namespace operations_research

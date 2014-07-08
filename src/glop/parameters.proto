@@ -1,0 +1,318 @@
+
+// Contains the definitions for all the GLOP algorithm parameters and their
+// default values.
+//
+// TODO(user): Make the above statement true by moving all algorithm parameters
+// flags here.
+
+syntax = "proto2";
+
+package operations_research.glop;
+
+message GlopParameters {
+
+  // Like a Boolean with an extra value to let the algorithm decide what is the
+  // best choice.
+  enum SolverBehavior {
+    ALWAYS_DO = 0;
+    NEVER_DO = 1;
+    LET_SOLVER_DECIDE = 2;
+  }
+
+  // General strategy used during pricing.
+  enum PricingRule {
+    // Strategy using only the reduced cost of a variable (modulo some params).
+    DANTZIG = 0;
+
+    // Normalize the reduced costs by the norm of the edges. Since computing
+    // norms at each step is too expensive, reduced costs and norms are
+    // updated iteratively from one iteration to the next.
+    STEEPEST_EDGE = 1;
+
+    // Normalize the reduced costs by an approximation of the norm of the edges.
+    // This should offer a good tradeoff between steepest edge and speed.
+    DEVEX = 2;
+  }
+
+  // Heuristics to use in the primal simplex to remove fixed slack variables
+  // from the initial basis.
+  enum InitialBasisHeuristic {
+    // Leave the fixed slack variables in the basis.
+    NONE = 0;
+
+    // Use the heuristic described in:
+    // Robert E. Bixby, "Implementing the Simplex Method: The Initial Basis"
+    // ORSA Jounal on Computing, Vol. 4, No. 3, Summer 1992.
+    // http://joc.journal.informs.org/content/4/3/267.abstract
+    //
+    // It requires use_scaling to be true, otherwise it behaves like NONE.
+    BIXBY = 1;
+
+    // Replace the fixed columns while keeping the initial basis triangular. The
+    // heuristic to select which column to use first is similar to the one used
+    // for BIXBY. This algorithm is similar to the "advanced initial basis"
+    // GLPK uses by default. Both algorithm produce a triangular initial basis,
+    // however the heuristics used are not exactly the same.
+    TRIANGULAR = 2;
+  }
+
+  // PricingRule to use during the feasibility phase.
+  optional PricingRule feasibility_rule = 1 [default = STEEPEST_EDGE];
+
+  // PricingRule to use during the optimization phase.
+  optional PricingRule optimization_rule = 2 [default = STEEPEST_EDGE];
+
+  // Only works with the DANTZIG rule.
+  // Normalize the reduced cost of a variable using the norm of the associated
+  // column. This improves quite a bit the rule at almost no extra complexity.
+  // See the first paper from Ping-Qi Pan cited in primal_pricing.h
+  optional bool normalize_using_column_norm = 4 [default = true];
+
+  // Currently only works with the DANTZIG rule.
+  // This is a kind of partial pricing, it uses the strategy described in
+  // the second paper from Ping-Qi Pan cited in primal_pricing.h
+  optional bool use_nested_pricing = 5 [default = true];
+
+  // We estimate the factorization accuracy of B using the solution of the
+  // LeftSolve() that we need to compute during the pricing step. If our
+  // accuracy tests fall below this threshold, launch a refactorization.
+  // TODO(user): implement this.
+  optional double refactorization_threshold = 6 [default = 1e-8];
+
+  // We estimate the accuracy of the iteratively computed reduced costs. If
+  // it falls below this threshold, we reinitialize them from scratch. Note
+  // that such an operation is pretty fast, so we can use a low threshold.
+  // It is important to have a good accuracy here (better than the
+  // dual_feasibility_tolerance below) to be sure of the sign of such a cost.
+  optional double recompute_reduced_costs_threshold = 8 [default = 1e-8];
+
+  // Note that the threshold is a relative error on the actual norm (not the
+  // squared one) and that edge norms are always greater than 1. Recomputing
+  // norms is a really expensive operation and a large threshold is ok since
+  // this doesn't impact directly the solution but just the entering variable
+  // choice.
+  optional double recompute_edges_norm_threshold = 9 [default = 100.0];
+
+  // The three following parameters correspond to the tolerance epsilon 1,2 and
+  // 3 described in Chvatal p. 115 in the section "Zero Tolerances".
+
+  // This tolerance indicates by how much we allow the variable values to go out
+  // of bounds and still consider the current solution primal-feasible. We also
+  // use the same tolerance for the error A.x - b. Note that the two errors are
+  // closely related if A is scaled in such a way that the greatest coefficient
+  // magnitude on each column is 1.0.
+  //
+  // This is also simply called feasibility tolerance in other solvers.
+  optional double primal_feasibility_tolerance = 10 [default = 1e-8];
+
+  // Variables whose reduced costs have an absolute value smaller than this
+  // tolerance are not considered as entering candidates. That is they do not
+  // take part in deciding whether a solution is dual-feasible or not.
+  //
+  // Note that this value can temporarily increase during the execution of the
+  // algorithm if the estimated precision of the reduced costs is higher than
+  // this tolerance.
+  //
+  // This is also known as the optimality tolerance in other solvers.
+  optional double dual_feasibility_tolerance = 11 [default = 1e-8];
+
+  // During the primal simplex (resp. dual simplex), the coefficients of the
+  // direction (resp. update row) with a magnitude lower than this threshold are
+  // not considered during the ratio test. This tolerance is related to the
+  // precision at which a Solve() involving the basis matrix can be performed.
+  //
+  // TODO(user): Automatically increase it when we detect that the precision
+  // of the Solve() is worse than this.
+  optional double ratio_test_zero_threshold = 12 [default = 1e-9];
+
+  // This impacts the ratio test and indicates by how much we allow a basic
+  // variable value that we move to go out of bounds. The value should be in
+  // [0.0, 1.0) and should be interpreted as a ratio of the
+  // primal_feasibility_tolerance. Setting this to 0.0 basically disables the
+  // Harris ratio test while setting this too close to 1.0 will make it
+  // difficult to keep the variable values inside their bounds modulo the
+  // primal_feasibility_tolerance.
+  //
+  // Note that the same comment applies to the dual simplex ratio test. There,
+  // we allow the reduced costs to be of an infeasible sign by as much as this
+  // ratio times the dual_feasibility_tolerance.
+  optional double harris_tolerance_ratio = 13 [default = 0.5];
+
+  // When we choose the leaving variable, we want to avoid small pivot because
+  // they are the less precise and may cause numerical instabilities. For a
+  // pivot under this threshold times the infinity norm of the direction, we try
+  // various countermeasures in order to avoid using it.
+  optional double small_pivot_threshold = 14 [default = 1e-6];
+
+  // We never follow a basis change with a pivot under this threshold.
+  optional double minimum_acceptable_pivot = 15 [default = 1e-6];
+
+  // Whether or not we scale the matrix A so that the maximum coefficient on
+  // each line and each column is 1.0.
+  optional bool use_scaling = 16 [default = true];
+
+  // What heuristic is used to try to replace the fixed slack columns in the
+  // initial basis of the primal simplex.
+  optional InitialBasisHeuristic initial_basis = 17 [default = TRIANGULAR];
+
+  // Whether or not we keep a transposed version of the matrix A to speed-up the
+  // pricing at the cost of extra memory and the initial tranposition
+  // computation.
+  optional bool use_transposed_matrix = 18 [default = true];
+
+  // Number of iterations between two basis refactorizations. Note that various
+  // conditions in the algorithm may trigger a refactorization before this
+  // period is reached. Set this to 0 if you want to refactorize at each step.
+  optional int32 basis_refactorization_period = 19 [default = 64];
+
+  // Whether or not we solve the dual of the given problem.
+  // With a value of auto, the algorithm decide which approach is probably the
+  // fastest depending on the problem dimensions (see dualizer_threshold).
+  optional SolverBehavior solve_dual_problem = 20 [default = LET_SOLVER_DECIDE];
+
+  // When solve_dual_problem is LET_SOLVER_DECIDE, take the dual if the number
+  // of constraints of the problem is more than this threshold times the number
+  // of variables.
+  optional double dualizer_threshold = 21 [default = 1.5];
+
+  // When the problem status is OPTIMAL, we check the infeasibility of the
+  // solution and change the status to ABNORMAL_BASIS if the primal/dual max
+  // absolute infeasibility is greater than the solution_feasibility_tolerance
+  // or if the relative difference between the primal/dual objective is greater
+  // than the solution_objective_gap_tolerance.
+  optional double solution_feasibility_tolerance = 22 [default = 1e-6];
+  optional double solution_objective_gap_tolerance = 23 [default = 1e-6];
+
+  // If true, then when the solver returns a solution with an OPTIMAL status,
+  // we can guarantee that:
+  // - The primal variable are in their bounds.
+  // - The dual variable are in their bounds.
+  // - If we modify each component of the right-hand side by at most epsilon,
+  //   and each component of the objective function by at most epsilon, then
+  //   the pair (primal values, dual values) is an EXACT optimal solution of
+  //   the perturbed problem.
+  // - The epsilon above is smaller than solution_feasibility_tolerance (*).
+  //
+  // (*): This is the only place where the guarantee is not tight since we
+  // compute the upper bounds with scalar product of the primal/dual
+  // solution and the initial problem coefficients with only double precision.
+  //
+  // Note that whether or not this option is true, we still check the
+  // primal/dual infeasibility and objective gap as explained in the comment of
+  // solution_feasibility_tolerance and solution_objective_gap_tolerance.
+  optional bool provide_strong_optimal_guarantee = 24 [default = true];
+
+  // Threshold for LU-factorization: for stability reasons, the magnitude of the
+  // chosen pivot at a given step is guaranteed to be greater than this
+  // threshold times the maximum magnitude of all the possible pivot choices in
+  // the same column. The value must be in [0,1].
+  optional double lu_factorization_pivot_threshold = 25 [default = 0.01];
+
+  // Maximum time allowed in seconds to solve a problem.
+  optional double max_time_in_seconds = 26 [default = inf];
+
+  // Maximum number of simplex iterations to solve a problem.
+  // A value of -1 means no limit.
+  optional int64 max_number_of_iterations = 27 [default = -1];
+
+  // How many columns do we look at in the Markowitz pivoting rule to find
+  // a good pivot. See markowitz.h.
+  optional int32 markowitz_zlatev_parameter = 29 [default = 3];
+
+  // If a pivot magnitude is smaller than this during the Markowitz LU
+  // factorization, then the matrix is assumed to be singular. Note that
+  // this is an absolute threshold and is not relative to the other possible
+  // pivots on the same column (see lu_factorization_pivot_threshold).
+  optional double markowitz_singularity_threshold = 30 [default = 1e-15];
+
+  // Whether or not we use the dual simplex algorithm instead of the primal.
+  optional bool use_dual_simplex = 31 [default = false];
+
+  // During incremental solve, let the solver decide if it use the primal or
+  // dual simplex algorithm depending on the current solution and on the new
+  // problem. Note that even if this is true, the value of use_dual_simplex
+  // still indicates the default algorithm that the solver will use.
+  optional bool allow_simplex_algorithm_change = 32 [default = false];
+
+  // Devex weights will be reset to 1.0 after that number of updates.
+  optional int32 devex_weights_reset_period = 33 [default = 150];
+
+  // Whether or not we use advanced preprocessing techniques.
+  optional bool use_preprocessing = 34 [default = true];
+
+  // Whether or not to use the middle product form update rather than the
+  // standard eta LU update. The middle form product update should be a lot more
+  // efficient (close to the Forrest-Tomlin update, a bit slower but easier to
+  // implement). See for more details:
+  // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
+  // simplex method", 28 january 2013, Technical Report ERGO-13-0001
+  // http://www.maths.ed.ac.uk/hall/HuHa12/ERGO-13-001.pdf
+  optional bool use_middle_product_form_update = 35 [default = true];
+
+  // Whether we initialize devex weights to 1.0 or to the norms of the matrix
+  // columns.
+  optional bool initialize_devex_with_column_norms = 36 [default = true];
+
+  // Whether or not we exploit the singleton columns already present in the
+  // problem when we create the initial basis.
+  optional bool exploit_singleton_column_in_initial_basis = 37 [default = true];
+
+  // Like small_pivot_threshold but for the dual simplex. This is needed because
+  // the dual algorithm does not interpret this value in the same way.
+  // TODO(user): Clean this up and use the same small pivot detection.
+  optional double dual_small_pivot_threshold = 38 [default = 1e-4];
+
+  // A zero tolerance used by the preprocessors. This is used for things like
+  // detecting if two columns/rows are proportional or if an interval is empty.
+  optional double preprocessor_zero_tolerance = 39 [default = 1e-11];
+
+  // The solver will stop as soon as it has proven that the objective is smaller
+  // than objective_lower_limit or greater than objective_upper_limit. Depending
+  // on the simplex algorithm (primal or dual) and the optimization direction,
+  // note that only one bound will be used at the time. The parameter
+  // solution_objective_gap_tolerance is used as a relative tolerance to improve
+  // the 'proven' guarantee.
+  optional double objective_lower_limit = 40 [default = -inf];
+  optional double objective_upper_limit = 41 [default = inf];
+
+  // During a degenerate iteration, the more conservative approach is to do a
+  // step of length zero (while shifting the bound of the leaving variable).
+  // That is, the variable values are unchanged for the primal simplex or the
+  // reduced cost are unchanged for the dual simplex. However, instead of doing
+  // a step of length zero, it seems to be better on degenerate problems to do a
+  // small positive step. This is what is recommanded in the EXPAND procedure
+  // described in:
+  // P. E. Gill, W. Murray, M. A. Saunders, and M. H. Wright. "A practical anti-
+  // cycling procedure for linearly constrained optimization".
+  // Mathematical Programming, 45:437\u2013474, 1989.
+  //
+  // Here, during a degenerate iteration we do a small positive step of this
+  // factor times the primal (resp. dual) tolerance. In the primal simplex, this
+  // may effectively push variable values (very slightly) further out of their
+  // bounds (resp. reduced costs for the dual simplex).
+  //
+  // Setting this to zero reverts to the more conservative approach of a zero
+  // step during degenerate iterations.
+  optional double degenerate_ministep_factor = 42 [default = 0.01];
+
+  // At the beginning of each solve, the random number generator used in some
+  // part of the solver is reinitialized to this seed. If you change the random
+  // seed, the solver may make different choices during the solving process.
+  // Note that this may lead to a different solution, for example a different
+  // optimal basis.
+  //
+  // For some problems, the running time may vary a lot depending on small
+  // change in the solving algorithm. Running the solver with different seeds
+  // enables to have more robust benchmarks when evaluating new features.
+  //
+  // Also note that the solver is fully deterministic: two runs of the same
+  // binary, on the same machine, on the exact same data and with the same
+  // parameters will go through the exact same iterations. If they hit a time
+  // limit, they might of course yield different results because one will have
+  // advanced farther than the other.
+  optional int32 random_seed = 43 [default = 1];
+
+  // Number of threads in the OMP parallel sections. If left to 1, the code will
+  // not create any OMP threads and will remain single-threaded.
+  optional int32 num_omp_threads = 44 [default = 1];
+}

@@ -112,6 +112,9 @@ def Announce(solver, api_type):
 
 
 def RunAllLinearExampleNaturalLanguageAPI():
+  if hasattr(pywraplp.Solver, 'GLOP_LINEAR_PROGRAMMING'):
+    Announce('GLOP', 'natural language API')
+    RunLinearExampleNaturalLanguageAPI(pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
   if hasattr(pywraplp.Solver, 'GLPK_LINEAR_PROGRAMMING'):
     Announce('GLPK', 'natural language API')
     RunLinearExampleNaturalLanguageAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
@@ -121,6 +124,9 @@ def RunAllLinearExampleNaturalLanguageAPI():
 
 
 def RunAllLinearExampleCppStyleAPI():
+  if hasattr(pywraplp.Solver, 'GLOP_LINEAR_PROGRAMMING'):
+    Announce('GLOP', 'C++ style API')
+    RunLinearExampleCppStyleAPI(pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
   if hasattr(pywraplp.Solver, 'GLPK_LINEAR_PROGRAMMING'):
     Announce('GLPK', 'C++ style API')
     RunLinearExampleCppStyleAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)

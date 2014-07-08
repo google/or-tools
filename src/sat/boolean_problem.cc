@@ -47,10 +47,23 @@ namespace {
 template <typename LinearTerms>
 bool IsValid(const LinearTerms& terms, std::vector<bool>* variable_seen) {
   for (int i = 0; i < terms.literals_size(); ++i) {
-    if (terms.literals(i) == 0) return false;
-    if (terms.coefficients(i) == 0) return false;
+    if (terms.literals(i) == 0) {
+      LOG(INFO) << "Zero literal at position " << i;
+      return false;
+    }
+    if (terms.coefficients(i) == 0) {
+      LOG(INFO) << "Literal " << terms.literals(i) << " has a zero coefficient";
+      return false;
+    }
     const int var = Literal(terms.literals(i)).Variable().value();
-    if (var >= variable_seen->size() || (*variable_seen)[var]) return false;
+    if (var >= variable_seen->size()) {
+      LOG(INFO) << "Out of bound variable " << var;
+      return false;
+    }
+    if ((*variable_seen)[var]) {
+      LOG(INFO) << "Duplicated variable " << var;
+      return false;
+    }
     (*variable_seen)[var] = true;
   }
   for (int i = 0; i < terms.literals_size(); ++i) {
@@ -65,15 +78,24 @@ bool IsValid(const LinearTerms& terms, std::vector<bool>* variable_seen) {
 bool BooleanProblemIsValid(const LinearBooleanProblem& problem) {
   std::vector<bool> variable_seen(problem.num_variables(), false);
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    if (!IsValid(constraint, &variable_seen)) return false;
+    if (!IsValid(constraint, &variable_seen)) {
+      LOG(INFO) << "Invalid constraint " << constraint.name();
+      return false;
+    }
   }
-  if (!IsValid(problem.objective(), &variable_seen)) return false;
+  if (!IsValid(problem.objective(), &variable_seen)) {
+    LOG(INFO) << "Invalid objective.";
+    return false;
+  }
   return true;
 }
 
 bool LoadBooleanProblem(const LinearBooleanProblem& problem,
                         SatSolver* solver) {
-  DCHECK(BooleanProblemIsValid(problem));
+  if (!BooleanProblemIsValid(problem)) {
+    return false;
+  }
+
   if (solver->parameters().log_search_progress()) {
     LOG(INFO) << "Loading problem '" << problem.name() << "', "
               << problem.num_variables() << " variables, "

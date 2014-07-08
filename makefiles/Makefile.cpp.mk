@@ -6,7 +6,8 @@ DYNAMIC_BASE_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)base.$(DYNAMIC_LIB_SUFFIX)
 
 DYNAMIC_LP_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX)
+        $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX) \
+	$(LIB_DIR)/$(LIBPREFIX)glop.$(DYNAMIC_LIB_SUFFIX)
 
 DYNAMIC_ALGORITHMS_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
@@ -46,6 +47,7 @@ DYNAMIC_GRAPH_DEPS = $(DYNAMIC_GRAPH_LIBS) \
 	$(DYNAMIC_BASE_DEPS)
 
 DYNAMIC_LP_DEPS = $(DYNAMIC_LP_LIBS) \
+	$(GEN_DIR)/linear_solver/linear_solver2.pb.h \
 	$(DYNAMIC_BASE_DEPS)
 
 DYNAMIC_ALGORITHMS_DEPS = $(DYNAMIC_ALGORITHMS_LIBS)\
@@ -97,6 +99,7 @@ DYNAMIC_GRAPH_LNK = \
 
 DYNAMIC_LP_LNK = \
         $(DYNAMIC_PRE_LIB)linear_solver$(DYNAMIC_POST_LIB) \
+	$(DYNAMIC_PRE_LIB)glop$(DYNAMIC_POST_LIB) \
         $(DYNAMIC_BASE_LNK) \
         $(DYNAMIC_LD_LP_DEPS)  # Third party linear solvers.
 
@@ -152,7 +155,8 @@ STATIC_BASE_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX)
 
 STATIC_LP_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(STATIC_LIB_SUFFIX)
+        $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(STATIC_LIB_SUFFIX) \
+        $(LIB_DIR)/$(LIBPREFIX)glop.$(STATIC_LIB_SUFFIX)
 
 STATIC_ALGORITHMS_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
@@ -231,6 +235,7 @@ STATIC_GRAPH_LNK = \
 
 STATIC_LP_LNK = \
         $(STATIC_PRE_LIB)linear_solver$(STATIC_POST_LIB) \
+        $(STATIC_PRE_LIB)glop$(STATIC_POST_LIB) \
         $(STATIC_BASE_LNK) \
         $(STATIC_LD_LP_DEPS)  # Third party linear solvers.
 
@@ -292,7 +297,10 @@ LPBINARIES = \
 	$(BIN_DIR)/integer_programming$E \
 	$(BIN_DIR)/linear_programming$E \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
-	$(BIN_DIR)/strawberry_fields_with_column_generation$E
+	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
+	$(BIN_DIR)/mps_driver$E \
+	$(BIN_DIR)/solve$E
+
 
 # Special dimacs example.
 
@@ -308,6 +316,7 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)util.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)glop.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
@@ -319,6 +328,7 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)util.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(STATIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)glop.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)graph.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
@@ -330,6 +340,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc2$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
@@ -342,6 +353,7 @@ clean_cc:
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc*
 	-$(DEL) $(GEN_DIR)$Sflatzinc2$Sparser*
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
@@ -496,7 +508,7 @@ $(OBJ_DIR)/constraint_solver/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
 $(OBJ_DIR)/constraint_solver/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgraph_constraints.$O
 
-$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
+$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Shybrid.$O
 
 $(OBJ_DIR)/constraint_solver/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc
@@ -589,6 +601,7 @@ endif
 # Linear Solver Library
 
 LINEAR_SOLVER_LIB_OBJS = \
+	$(OBJ_DIR)/linear_solver/glop_interface.$O \
 	$(OBJ_DIR)/linear_solver/cbc_interface.$O \
 	$(OBJ_DIR)/linear_solver/clp_interface.$O \
 	$(OBJ_DIR)/linear_solver/glpk_interface.$O \
@@ -596,7 +609,6 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O \
 	$(OBJ_DIR)/linear_solver/model_exporter.$O \
-        $(OBJ_DIR)/linear_solver/proto_tools.$O \
 	$(OBJ_DIR)/linear_solver/scip_interface.$O \
 	$(OBJ_DIR)/linear_solver/sulum_interface.$O
 
@@ -607,34 +619,37 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface
 $(OBJ_DIR)/linear_solver/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
 
+$(OBJ_DIR)/linear_solver/glop_interface.$O:$(SRC_DIR)/linear_solver/glop_interface.cc $(GEN_DIR)/glop/parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sglop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O
+
 $(OBJ_DIR)/linear_solver/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglpk_interface.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sglpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglpk_interface.$O
 
 $(OBJ_DIR)/linear_solver/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sgurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
-$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
+$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Slinear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
 
 $(OBJ_DIR)/linear_solver/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/linear_solver/linear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver2.pb.$O
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Slinear_solver$Slinear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver2.pb.$O
 
 $(GEN_DIR)/linear_solver/linear_solver2.pb.cc:$(SRC_DIR)/linear_solver/linear_solver2.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/linear_solver/linear_solver2.proto
+	$(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Slinear_solver$Slinear_solver2.proto
 
 $(GEN_DIR)/linear_solver/linear_solver2.pb.h:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
 
 $(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/model_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Smodel_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
 
 $(OBJ_DIR)/linear_solver/proto_tools.$O:$(SRC_DIR)/linear_solver/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/proto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sproto_tools.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sproto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sproto_tools.$O
 
 $(OBJ_DIR)/linear_solver/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sscip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
 
 $(OBJ_DIR)/linear_solver/sulum_interface.$O:$(SRC_DIR)/linear_solver/sulum_interface.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/sulum_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssulum_interface.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Ssulum_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssulum_interface.$O
 
 $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX): $(LINEAR_SOLVER_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(DYNAMIC_LIB_SUFFIX) $(LINEAR_SOLVER_LIB_OBJS) $(STATIC_SCIP_LNK)
@@ -653,7 +668,8 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
 	$(OBJ_DIR)/util/stats.$O \
 	$(OBJ_DIR)/util/time_limit.$O \
-	$(OBJ_DIR)/util/xml_helper.$O
+	$(OBJ_DIR)/util/xml_helper.$O \
+        $(OBJ_DIR)/linear_solver/proto_tools.$O \
 
 $(OBJ_DIR)/util/bitset.$O:$(SRC_DIR)/util/bitset.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/bitset.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sbitset.$O
@@ -864,6 +880,150 @@ $(LIB_DIR)/$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX): $(BASE_LIB_OBJS)
 	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX) $(BASE_LIB_OBJS)
 endif
 
+GLOP_LIB_OBJS= \
+  $(OBJ_DIR)/glop/parameters.pb.$O \
+  $(OBJ_DIR)/glop/entering_variable.$O \
+  $(OBJ_DIR)/glop/basis_representation.$O \
+  $(OBJ_DIR)/glop/dual_edge_norms.$O \
+  $(OBJ_DIR)/glop/initial_basis.$O \
+  $(OBJ_DIR)/glop/lp_data.$O \
+  $(OBJ_DIR)/glop/lp_print_utils.$O \
+  $(OBJ_DIR)/glop/lp_solver.$O \
+  $(OBJ_DIR)/glop/lp_types.$O \
+  $(OBJ_DIR)/glop/lp_utils.$O \
+  $(OBJ_DIR)/glop/lu_factorization.$O \
+  $(OBJ_DIR)/glop/markowitz.$O \
+  $(OBJ_DIR)/glop/matrix_scaler.$O \
+  $(OBJ_DIR)/glop/matrix_utils.$O \
+  $(OBJ_DIR)/glop/mps_reader.$O \
+  $(OBJ_DIR)/glop/preprocessor.$O \
+  $(OBJ_DIR)/glop/primal_edge_norms.$O \
+  $(OBJ_DIR)/glop/proto_utils.$O \
+  $(OBJ_DIR)/glop/reduced_costs.$O \
+  $(OBJ_DIR)/glop/revised_simplex.$O \
+  $(OBJ_DIR)/glop/sparse.$O \
+  $(OBJ_DIR)/glop/sparse_column.$O \
+  $(OBJ_DIR)/glop/status.$O \
+  $(OBJ_DIR)/glop/update_row.$O \
+  $(OBJ_DIR)/glop/variables_info.$O \
+  $(OBJ_DIR)/glop/variable_values.$O
+
+$(GEN_DIR)/glop/parameters.pb.cc:$(SRC_DIR)/glop/parameters.proto
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sglop$Sparameters.proto
+
+$(GEN_DIR)/glop/parameters.pb.h:$(GEN_DIR)/glop/parameters.pb.cc
+
+$(OBJ_DIR)/glop/parameters.pb.$O:$(GEN_DIR)/glop/parameters.pb.cc
+	 $(CCC) $(CFLAGS) -c $(GEN_DIR)$Sglop$Sparameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sparameters.pb.$O
+
+$(OBJ_DIR)/glop/basis_representation.$O:$(SRC_DIR)/glop/basis_representation.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sbasis_representation.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sbasis_representation.$O
+
+$(OBJ_DIR)/glop/dual_edge_norms.$O:$(SRC_DIR)/glop/dual_edge_norms.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sdual_edge_norms.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sdual_edge_norms.$O
+
+$(OBJ_DIR)/glop/entering_variable.$O:$(SRC_DIR)/glop/entering_variable.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sentering_variable.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sentering_variable.$O
+
+$(OBJ_DIR)/glop/initial_basis.$O:$(SRC_DIR)/glop/initial_basis.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sinitial_basis.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sinitial_basis.$O
+
+$(OBJ_DIR)/glop/lp_data.$O:$(SRC_DIR)/glop/lp_data.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_data.$O
+
+$(OBJ_DIR)/glop/lp_print_utils.$O:$(SRC_DIR)/glop/lp_print_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_print_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_print_utils.$O
+
+$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
+
+$(OBJ_DIR)/glop/lp_utils.$O:$(SRC_DIR)/glop/lp_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_utils.$O
+
+$(OBJ_DIR)/glop/lp_types.$O:$(SRC_DIR)/glop/lp_types.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_types.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_types.$O
+
+$(OBJ_DIR)/glop/lu_factorization.$O:$(SRC_DIR)/glop/lu_factorization.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slu_factorization.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slu_factorization.$O
+
+$(OBJ_DIR)/glop/markowitz.$O:$(SRC_DIR)/glop/markowitz.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smarkowitz.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smarkowitz.$O
+
+$(OBJ_DIR)/glop/matrix_scaler.$O:$(SRC_DIR)/glop/matrix_scaler.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smatrix_scaler.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smatrix_scaler.$O
+
+$(OBJ_DIR)/glop/matrix_utils.$O:$(SRC_DIR)/glop/matrix_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smatrix_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smatrix_utils.$O
+
+$(OBJ_DIR)/glop/mps_reader.$O:$(SRC_DIR)/glop/mps_reader.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_reader.$O
+
+$(OBJ_DIR)/glop/mps_to_png.$O:$(SRC_DIR)/glop/mps_to_png.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smps_to_png.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_to_png.$O
+
+$(OBJ_DIR)/glop/png_dump.$O:$(SRC_DIR)/glop/png_dump.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Spng_dump.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Spng_dump.$O
+
+$(OBJ_DIR)/glop/preprocessor.$O:$(SRC_DIR)/glop/preprocessor.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Spreprocessor.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Spreprocessor.$O
+
+$(OBJ_DIR)/glop/primal_edge_norms.$O:$(SRC_DIR)/glop/primal_edge_norms.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sprimal_edge_norms.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sprimal_edge_norms.$O
+
+$(OBJ_DIR)/glop/proto_driver.$O:$(SRC_DIR)/glop/proto_driver.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sproto_driver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sproto_driver.$O
+
+$(OBJ_DIR)/glop/proto_txt_to_bin.$O:$(SRC_DIR)/glop/proto_txt_to_bin.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sproto_txt_to_bin.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sproto_txt_to_bin.$O
+
+$(OBJ_DIR)/glop/proto_utils.$O:$(SRC_DIR)/glop/proto_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sproto_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sproto_utils.$O
+
+$(OBJ_DIR)/glop/reduced_costs.$O:$(SRC_DIR)/glop/reduced_costs.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sreduced_costs.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sreduced_costs.$O
+
+$(OBJ_DIR)/glop/revised_simplex.$O:$(SRC_DIR)/glop/revised_simplex.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Srevised_simplex.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Srevised_simplex.$O
+
+$(OBJ_DIR)/glop/sparse.$O:$(SRC_DIR)/glop/sparse.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Ssparse.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssparse.$O
+
+$(OBJ_DIR)/glop/sparse_column.$O:$(SRC_DIR)/glop/sparse_column.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Ssparse_column.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssparse_column.$O
+
+$(OBJ_DIR)/glop/status.$O:$(SRC_DIR)/glop/status.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sstatus.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sstatus.$O
+
+$(OBJ_DIR)/glop/update_row.$O:$(SRC_DIR)/glop/update_row.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Supdate_row.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Supdate_row.$O
+
+$(OBJ_DIR)/glop/variables_info.$O:$(SRC_DIR)/glop/variables_info.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Svariables_info.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Svariables_info.$O
+
+$(OBJ_DIR)/glop/variable_values.$O:$(SRC_DIR)/glop/variable_values.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Svariable_values.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Svariable_values.$O
+
+$(LIB_DIR)/$(LIBPREFIX)glop.$(DYNAMIC_LIB_SUFFIX): $(GLOP_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)glop.$(DYNAMIC_LIB_SUFFIX) $(GLOP_LIB_OBJS)
+
+ifneq ($(SYSTEM),win)
+$(LIB_DIR)/$(LIBPREFIX)glop.$(STATIC_LIB_SUFFIX): $(GLOP_LIB_OBJS)
+	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)glop.$(STATIC_LIB_SUFFIX) $(GLOP_LIB_OBJS)
+endif
+
+$(OBJ_DIR)/glop/mps_driver.$O:$(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/glop/parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Smps_driver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_driver.$O
+
+$(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(STATIC_LP_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
+
+$(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
+
+$(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(STATIC_LP_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
+
+
 # DIMACS challenge problem format library
 
 DIMACS_LIB_OBJS=\
@@ -957,7 +1117,6 @@ endif
 FLATZINC2_LIB_OBJS=\
 	$(OBJ_DIR)/flatzinc2/constraints.$O\
 	$(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O\
-	$(OBJ_DIR)/flatzinc2/flatzinc_resource.$O\
 	$(OBJ_DIR)/flatzinc2/model.$O\
 	$(OBJ_DIR)/flatzinc2/parallel_support.$O\
 	$(OBJ_DIR)/flatzinc2/parser.$O\
@@ -982,9 +1141,6 @@ $(OBJ_DIR)/flatzinc2/constraints.$O:$(SRC_DIR)/flatzinc2/constraints.cc $(SRC_DI
 
 $(OBJ_DIR)/flatzinc2/flatzinc_constraints.$O:$(SRC_DIR)/flatzinc2/flatzinc_constraints.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sflatzinc_constraints.$O
-
-$(OBJ_DIR)/flatzinc2/flatzinc_resource.$O:$(SRC_DIR)/flatzinc2/flatzinc_resource.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Sflatzinc_resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Sflatzinc_resource.$O
 
 $(OBJ_DIR)/flatzinc2/model.$O:$(SRC_DIR)/flatzinc2/model.cc $(SRC_DIR)/flatzinc2/model.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Smodel.$O
@@ -1273,6 +1429,7 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/boolean_problem.$O\
 	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
 	$(OBJ_DIR)/sat/clause.$O\
+	$(OBJ_DIR)/sat/encoding.$O\
 	$(OBJ_DIR)/sat/optimization.$O\
 	$(OBJ_DIR)/sat/pb_constraint.$O\
 	$(OBJ_DIR)/sat/sat_parameters.pb.$O\
@@ -1282,7 +1439,7 @@ SAT_LIB_OBJS = \
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 
-$(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/encoding.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
 $(OBJ_DIR)/sat/boolean_problem.$O: $(SRC_DIR)/sat/boolean_problem.cc  $(SRC_DIR)/sat/boolean_problem.h $(GEN_DIR)/sat/boolean_problem.pb.h  $(SRC_DIR)/sat/sat_solver.h  $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
@@ -1298,6 +1455,9 @@ $(OBJ_DIR)/sat/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN
 
 $(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
+
+$(OBJ_DIR)/sat/encoding.$O: $(SRC_DIR)/sat/encoding.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/encoding.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/encoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
 
 $(OBJ_DIR)/sat/optimization.$O: $(SRC_DIR)/sat/optimization.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/optimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
@@ -1335,7 +1495,7 @@ $(BIN_DIR)/sat_runner$E: $(STATIC_SAT_DEPS) $(OBJ_DIR)/sat/sat_runner.$O
 
 # OR Tools unique library.
 
-$(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
+$(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(GLOP_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX) \
 	  $(ALGORITHMS_LIB_OBJS) \
@@ -1343,6 +1503,7 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OB
 	  $(CONSTRAINT_SOLVER_LIB_OBJS) \
 	  $(GRAPH_LIB_OBJS) \
 	  $(LINEAR_SOLVER_LIB_OBJS) \
+	  $(GLOP_LIB_OBJS) \
 	  $(ROUTING_LIB_OBJS) \
 	  $(SAT_LIB_OBJS) \
 	  $(SHORTESTPATHS_LIB_OBJS) \
@@ -1364,6 +1525,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\include\\base
 	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
 	mkdir temp\\or-tools.$(PORT)\\include\\gflags
+	mkdir temp\\or-tools.$(PORT)\\include\\glop
 	mkdir temp\\or-tools.$(PORT)\\include\\google
 	mkdir temp\\or-tools.$(PORT)\\include\\graph
 	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
@@ -1381,6 +1543,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	copy src\\constraint_solver\\*.h temp\\or-tools.$(PORT)\\include\\constraint_solver
 	copy src\\gen\\constraint_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\constraint_solver
 	copy src\\graph\\*.h temp\\or-tools.$(PORT)\\include\\graph
+	copy src\\glop\\*.h temp\\or-tools.$(PORT)\\include\\glop
+	copy src\\gen\\glop\\*.h temp\\or-tools.$(PORT)\\include\\glop
 	copy src\\linear_solver\\*.h temp\\or-tools.$(PORT)\\include\\linear_solver
 	copy src\\gen\\linear_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\linear_solver
 	copy src\\sat\\*.h temp\\or-tools.$(PORT)\\include\\sat
@@ -1403,6 +1567,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)/include/base
 	mkdir temp/or-tools.$(PORT)/include/constraint_solver
 	mkdir temp/or-tools.$(PORT)/include/gflags
+	mkdir temp/or-tools.$(PORT)/include/glop
 	mkdir temp/or-tools.$(PORT)/include/google
 	mkdir temp/or-tools.$(PORT)/include/graph
 	mkdir temp/or-tools.$(PORT)/include/linear_solver
@@ -1420,6 +1585,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cp src/base/*.h temp/or-tools.$(PORT)/include/base
 	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
 	cp src/gen/constraint_solver/*.pb.h temp/or-tools.$(PORT)/include/constraint_solver
+	cp src/glop/*.h temp/or-tools.$(PORT)/include/glop
+	cp src/gen/glop/*.pb.h temp/or-tools.$(PORT)/include/glop
 	cp src/graph/*.h temp/or-tools.$(PORT)/include/graph
 	cp src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
 	cp src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver

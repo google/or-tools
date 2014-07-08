@@ -90,6 +90,10 @@ void RunLinearProgrammingExample(
 }
 
 void RunAllExamples() {
+  #if defined(USE_GLOP)
+  LOG(INFO) << "---- Linear programming example with GLOP ----";
+  RunLinearProgrammingExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
+  #endif  // USE_GLOP
   #if defined(USE_GLPK)
   LOG(INFO) << "---- Linear programming example with GLPK ----";
   RunLinearProgrammingExample(MPSolver::GLPK_LINEAR_PROGRAMMING);

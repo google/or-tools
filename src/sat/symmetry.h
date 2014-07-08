@@ -56,11 +56,6 @@ class SymmetryPropagator {
   explicit SymmetryPropagator(Trail* trail);  // No ownership taken.
   ~SymmetryPropagator();
 
-  // Changes the number of variables. This must be higher than:
-  // - Any variable touched by a symmetry about to be added or already added.
-  // - Any variable assigned by the trail when calling PropagateNext().
-  void Resize(int num_variables);
-
   // Adds a new permutation to this symmetry propagator. The ownership is
   // transfered. This must be an integer permutation such that:
   // - Its domain is [0, 2 * num_variables) and corresponds to the index
