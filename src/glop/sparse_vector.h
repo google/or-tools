@@ -641,7 +641,7 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
   const EntryIndex size_a = a.num_entries();
   const EntryIndex size_b = b.num_entries();
   const int size_adjustment = delete_common_index ? -2 : 0;
-  c.entry_.resize(size_a + size_b + size_adjustment, {Index(0), 0.0});
+  c.entry_.resize(size_a + size_b + size_adjustment);
   while ((ia < size_a) && (ib < size_b)) {
     const Index index_a = a.entry(ia).index;
     const Index index_b = b.entry(ib).index;
