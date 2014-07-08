@@ -112,7 +112,9 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   // crash.
   ScopedFloatingPointEnv scoped_fenv;
   if (FLAGS_lp_solver_enable_fp_exceptions) {
+#if !defined(_MSC_VER)
     scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
+#endif
   }
 
   // Make an internal copy of the problem for the preprocessing.
