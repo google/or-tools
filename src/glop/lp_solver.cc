@@ -82,7 +82,12 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
 class ScopedFloatingPointEnv {
  public:
   ScopedFloatingPointEnv()
+#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
       : initial_excepts_(fegetexcept()), current_excepts_(0) {}
+#else
+      : initial_excepts_(0), current_excepts_(0) {}
+#endif
+
 
   ~ScopedFloatingPointEnv() {
 #if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
