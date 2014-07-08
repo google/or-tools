@@ -222,4 +222,42 @@ message SatParameters {
   // Theory and Applications of Satisfiability Testing – SAT 2013, Lecture Notes
   // in Computer Science Volume 7962, 2013, pp 309-317.
   optional bool count_assumption_levels_in_lbd = 49 [default = true];
+
+  // ==========================================================================
+  // Max-sat parameters.
+  // ==========================================================================
+
+  // Whether we use a simple heuristic to try to minimize an UNSAT core.
+  optional bool minimize_core = 50 [default = true];
+
+  // In what order do we add the assumptions in a core-based max-sat algorithm
+  enum MaxSatAssumptionOrder {
+    DEFAULT_ASSUMPTION_ORDER = 0;
+    ORDER_ASSUMPTION_BY_DEPTH = 1;
+    ORDER_ASSUMPTION_BY_WEIGHT = 2;
+  }
+  optional MaxSatAssumptionOrder max_sat_assumption_order = 51
+      [default = DEFAULT_ASSUMPTION_ORDER];
+
+  // If true, adds the assumption in the reverse order of the one defined by
+  // max_sat_assumption_order.
+  optional bool max_sat_reverse_assumption_order = 52 [default = false];
+
+  // What stratification algorithm we use in the presence of weigth.
+  enum MaxSatStratificationAlgorithm {
+    // No stratification of the problem.
+    STRATIFICATION_NONE = 0;
+
+    // Start with literals with the highest weight, and when SAT, add the
+    // literals with the next highest weight and so on.
+    STRATIFICATION_DESCENT = 1;
+
+    // Start with all literals. Each time a core is found with a given minimum
+    // weight, do not consider literals with a lower weight for the next core
+    // computation. If the subproblem is SAT, do like in STRATIFICATION_DESCENT
+    // and just add the literals with the next highest weight.
+    STRATIFICATION_ASCENT = 2;
+  }
+  optional MaxSatStratificationAlgorithm max_sat_stratification = 53
+      [default = STRATIFICATION_DESCENT];
 }

@@ -92,8 +92,12 @@ bool BooleanProblemIsValid(const LinearBooleanProblem& problem) {
 
 bool LoadBooleanProblem(const LinearBooleanProblem& problem,
                         SatSolver* solver) {
+  // TODO(user): Currently, the sat solver can load without any issue
+  // constraints with duplicate variables, so we just output a warning if the
+  // problem is not "valid". Make this a strong check once we have some
+  // preprocessing step to remove duplicates variable in the constraints.
   if (!BooleanProblemIsValid(problem)) {
-    return false;
+    LOG(WARNING) << "The given problem is invalid!";
   }
 
   if (solver->parameters().log_search_progress()) {
@@ -109,10 +113,6 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
     num_terms += constraint.literals_size();
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const Literal literal(constraint.literals(i));
-      if (literal.Variable() >= problem.num_variables()) {
-        LOG(WARNING) << "Literal out of bound: " << literal;
-        return false;
-      }
       cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
     }
     if (!solver->AddLinearConstraint(

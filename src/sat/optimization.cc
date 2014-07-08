@@ -916,10 +916,25 @@ SatSolver::Status SolveWithCardinalityEncoding(
   }
 }
 
+namespace {
+
+bool EncodingNodeByWeight(const EncodingNode* a, const EncodingNode* b) {
+  return a->weight() < b->weight();
+}
+
+bool EncodingNodeByDepth(const EncodingNode* a, const EncodingNode* b) {
+  return a->depth() < b->depth();
+}
+
+bool EmptyEncodingNode(const EncodingNode* a) { return a->size() == 0; }
+
+}  // namespace
+
 SatSolver::Status SolveWithCardinalityEncodingAndCore(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution) {
   Logger logger(log);
+  SatParameters parameters = solver->parameters();
   std::vector<std::unique_ptr<EncodingNode>> repository;
 
   // Create one initial nodes per variables with cost.
@@ -943,8 +958,12 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
 
   // This is used by the "stratified" approach.
   Coefficient stratified_lower_bound(0);
-  for (EncodingNode* n : nodes) {
-    stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
+  if (parameters.max_sat_stratification() ==
+      SatParameters::STRATIFICATION_DESCENT) {
+    // In this case, we initialize it to the maximum assumption weights.
+    for (EncodingNode* n : nodes) {
+      stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
+    }
   }
 
   // Start the algorithm.
@@ -955,8 +974,9 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     // Also update the lower_bound. Note that Reduce() needs the solver to be
     // at the root node in order to work.
     solver->Backtrack(0);
-    for (EncodingNode* n : nodes)
+    for (EncodingNode* n : nodes) {
       lower_bound += n->Reduce(*solver) * n->weight();
+    }
 
     // Fix the nodes right-most variables that are above the gap.
     if (upper_bound != kCoefficientMax) {
@@ -967,23 +987,34 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
       }
     }
 
-    // Extract the assumptions from the nodes.
-    // At the same time, we remove empty nodes.
-    std::vector<Literal> assumptions;
-    {
-      int new_node_index = 0;
-      for (EncodingNode* n : nodes) {
-        if (n->size() > 0) {
-          if (n->weight() >= stratified_lower_bound) {
-            assumptions.push_back(n->literal(0).Negated());
-          }
-          nodes[new_node_index] = n;
-          ++new_node_index;
-        }
-      }
-      nodes.resize(new_node_index);
+    // Remove the empty nodes.
+    nodes.erase(std::remove_if(nodes.begin(), nodes.end(), EmptyEncodingNode),
+                nodes.end());
+
+    // Sort the nodes.
+    switch (parameters.max_sat_assumption_order()) {
+      case SatParameters::DEFAULT_ASSUMPTION_ORDER:
+        break;
+      case SatParameters::ORDER_ASSUMPTION_BY_DEPTH:
+        std::sort(nodes.begin(), nodes.end(), EncodingNodeByDepth);
+        break;
+      case SatParameters::ORDER_ASSUMPTION_BY_WEIGHT:
+        std::sort(nodes.begin(), nodes.end(), EncodingNodeByWeight);
+        break;
     }
-    CHECK_LE(assumptions.size(), nodes.size());
+    if (parameters.max_sat_reverse_assumption_order()) {
+      // TODO(user): with DEFAULT_ASSUMPTION_ORDER, this will lead to a somewhat
+      // weird behavior, since we will reverse the nodes at each iterations...
+      std::reverse(nodes.begin(), nodes.end());
+    }
+
+    // Extract the assumptions from the nodes.
+    std::vector<Literal> assumptions;
+    for (EncodingNode* n : nodes) {
+      if (n->weight() >= stratified_lower_bound) {
+        assumptions.push_back(n->literal(0).Negated());
+      }
+    }
 
     // Display the progress.
     const std::string gap_string =
@@ -1030,7 +1061,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
 
     // We have a new core.
     std::vector<Literal> core = solver->GetLastIncompatibleDecisions();
-    MinimizeCore(solver, &core);
+    if (parameters.minimize_core()) MinimizeCore(solver, &core);
 
     // Compute the min weight of all the nodes in the core.
     // The lower bound will be increased by that much.
@@ -1048,6 +1079,13 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     }
     previous_core_info =
         StringPrintf("core:%zu mw:%lld", core.size(), min_weight.value());
+
+    // Increase stratified_lower_bound according to the parameters.
+    if (stratified_lower_bound < min_weight &&
+        parameters.max_sat_stratification() ==
+            SatParameters::STRATIFICATION_ASCENT) {
+      stratified_lower_bound = min_weight;
+    }
 
     // Backtrack to be able to add new constraints.
     solver->Backtrack(0);
