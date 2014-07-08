@@ -24,7 +24,6 @@
 
 #if !defined(_MSC_VER)
 #include <fenv.h>  // NOLINT
-using std::fenv_t;
 #endif
 #if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
 #include <fpu_control.h>
@@ -57,6 +56,16 @@ namespace operations_research {
 //
 // TODO(user): Make it work on 32 bits.
 
+#if defined(_MSC_VER)
+class ScopedFloatingPointEnv {
+ public:
+  ScopedFloatingPointEnv() {}
+
+  ~ScopedFloatingPointEnv() {}
+
+  void EnableExceptions(int excepts) {}
+};
+#else
 class ScopedFloatingPointEnv {
  public:
   ScopedFloatingPointEnv()  {
@@ -87,6 +96,7 @@ class ScopedFloatingPointEnv {
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 };
+#endif
 
 // The following macro does not change "var", but forces gcc to consider it
 // being modified. This can be used to avoid wrong over-optimizations by gcc.
