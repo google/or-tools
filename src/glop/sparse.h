@@ -427,7 +427,7 @@ class CompactSparseMatrix {
 // triangular matrix and some functions work directly on such matrices.
 class TriangularMatrix : private CompactSparseMatrix {
  public:
-  TriangularMatrix() {}
+  TriangularMatrix() : all_diagonal_coefficients_are_one_(true) {}
 
   // Only a subset of the functions from CompactSparseMatrix are exposed (note
   // the private inheritance). They are extended to deal with diagonal
@@ -641,7 +641,7 @@ class TriangularMatrix : private CompactSparseMatrix {
 
   // This common case allows for more efficient Solve() functions.
   // TODO(user): Do not even construct diagonal_coefficients_ in this case?
-  bool all_diagonal_coefficients_are_one_ = true;
+  bool all_diagonal_coefficients_are_one_;
 
   // For the hyper-sparse version. These are used to implement a DFS, see
   // TriangularComputeRowsToConsider() for more details.
