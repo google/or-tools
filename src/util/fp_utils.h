@@ -47,6 +47,46 @@ using std::isnan;
 
 namespace operations_research {
 
+// ScopedFloatingPointEnv is used to easily enable Floating-point exceptions.
+// The initial state is automatically restored when the object is deleted.
+//
+// Note(user): For some reason, this causes an FPE exception to be triggered for
+// unknown reasons when compiled in 32 bits. Because of this, we do not turn
+// on FPE exception if ARCH_K8 is not defined.
+//
+// TODO(user): Make it work on 32 bits.
+
+class ScopedFloatingPointEnv {
+ public:
+  ScopedFloatingPointEnv()  {
+    CHECK_EQ(0, fegetenv(&saved_fenv_));
+  }
+
+  ~ScopedFloatingPointEnv() {
+#if defined(ARCH_K8) && !defined(_MSC_VER)
+    CHECK_EQ(0, fesetenv(&saved_fenv_));
+#endif
+  }
+
+  void EnableExceptions(int excepts) {
+    CHECK_EQ(0, fegetenv(&fenv_));
+#if defined(ARCH_K8) && !defined(_MSC_VER)
+    excepts &= FE_ALL_EXCEPT;
+#ifdef __APPLE__
+    fenv_.__control &= ~excepts;
+#else  // Linux
+    fenv_.__control_word &= ~excepts;
+#endif
+    fenv_.__mxcsr &= ~(excepts << 7);
+    CHECK_EQ(0, fesetenv(&fenv_));
+#endif
+  }
+
+ private:
+  fenv_t fenv_;
+  mutable fenv_t saved_fenv_;
+};
+
 // The following macro does not change "var", but forces gcc to consider it
 // being modified. This can be used to avoid wrong over-optimizations by gcc.
 // See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=47617 for an explanation.

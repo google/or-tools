@@ -24,6 +24,7 @@ inline int PyIntOrLong_Check(PyObject* obj) {
   return PyInt_Check(obj) || PyLong_Check(obj);
 }
 %}
+
 namespace operations_research {
 // --------- std::vector<data> wrapping ----------
 
@@ -160,7 +161,6 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     $1 = failed ? 0 : 1;
   }
 }
-
 %define PY_PROTO_TYPEMAP(PythonModule, CppType, PythonType)
 %typecheck(SWIG_TYPECHECK_POINTER) const CppType&, CppType* {
   bool ok = false;
