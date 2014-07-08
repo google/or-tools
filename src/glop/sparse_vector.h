@@ -656,7 +656,7 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
         // 1ulp, and we don't want to leave such near zero entries.
         if (fabs(sum) > 2.0 * std::numeric_limits<Fractional>::epsilon() *
                             std::max(fabs(a_coeff_mul), fabs(b_coeff))) {
-          c.entry_[ic] = {index_a, sum};
+          c.entry_[ic] = InternalEntry(index_a, sum);
           ++ic;
         }
       } else if (!delete_common_index) {
@@ -666,7 +666,8 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
       ++ia;
       ++ib;
     } else if (index_a < index_b) {
-      c.entry_[ic] = {index_a, multiplier * a.entry(ia).coefficient};
+      c.entry_[ic] =
+          InternalEntry(index_a, multiplier * a.entry(ia).coefficient);
       ++ia;
       ++ic;
     } else {  // index_b < index_a
@@ -676,7 +677,8 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
     }
   }
   while (ia < size_a) {
-    c.entry_[ic] = {a.entry(ia).index, multiplier * a.entry(ia).coefficient};
+    c.entry_[ic] =
+        InternalEntry(a.entry(ia).index, multiplier * a.entry(ia).coefficient);
     ++ia;
     ++ic;
   }
