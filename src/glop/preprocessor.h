@@ -741,6 +741,9 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
       ColChoice col_choice;
       VariableStatus status;
       Fractional value;
+      ColChoiceAndStatus() : col_choice(), status(), value(0.0) {}
+      ColChoiceAndStatus(ColChoice c, VariableStatus s, Fractional v)
+          : col_choice(c), status(s), value(v) {}
     };
     ColChoiceAndStatus bound_backtracking_at_lower_bound;
     ColChoiceAndStatus bound_backtracking_at_upper_bound;

@@ -1130,7 +1130,7 @@ namespace {
 struct ColWithDegree {
   ColIndex col;
   EntryIndex num_entries;
-
+  ColWithDegree(ColIndex c, EntryIndex n) : col(c), num_entries(n) {}
   bool operator<(const ColWithDegree& other) const {
     if (num_entries == other.num_entries) {
       return col < other.col;
@@ -1201,7 +1201,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   std::vector<ColWithDegree> col_by_degree;
   for (ColIndex col(0); col < num_cols; ++col) {
     col_by_degree.push_back(
-        ColWithDegree{col, lp->GetSparseColumn(col).num_entries()});
+        ColWithDegree(col, lp->GetSparseColumn(col).num_entries()));
   }
   std::sort(col_by_degree.begin(), col_by_degree.end());
 
@@ -2585,25 +2585,25 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       }
       if (carried_over_lb <= lb) {
         // Default (and simplest) case: the lower bound didn't change.
-        r.bound_backtracking_at_lower_bound = {
-            MODIFIED, VariableStatus::AT_LOWER_BOUND, lb};
+        r.bound_backtracking_at_lower_bound = RestoreInfo::ColChoiceAndStatus(
+            MODIFIED, VariableStatus::AT_LOWER_BOUND, lb);
       } else {
         lb = carried_over_lb;
-        r.bound_backtracking_at_lower_bound = {
+        r.bound_backtracking_at_lower_bound = RestoreInfo::ColChoiceAndStatus(
             DELETED, carry_over_factor > 0 ? VariableStatus::AT_LOWER_BOUND
                                            : VariableStatus::AT_UPPER_BOUND,
-            carry_over_factor > 0 ? r.lb[DELETED] : r.ub[DELETED]};
+            carry_over_factor > 0 ? r.lb[DELETED] : r.ub[DELETED]);
       }
       if (carried_over_ub >= ub) {
         // Default (and simplest) case: the upper bound didn't change.
-        r.bound_backtracking_at_upper_bound = {
-            MODIFIED, VariableStatus::AT_UPPER_BOUND, ub};
+        r.bound_backtracking_at_upper_bound = RestoreInfo::ColChoiceAndStatus(
+            MODIFIED, VariableStatus::AT_UPPER_BOUND, ub);
       } else {
         ub = carried_over_ub;
-        r.bound_backtracking_at_upper_bound = {
+        r.bound_backtracking_at_upper_bound = RestoreInfo::ColChoiceAndStatus(
             DELETED, carry_over_factor > 0 ? VariableStatus::AT_UPPER_BOUND
                                            : VariableStatus::AT_LOWER_BOUND,
-            carry_over_factor > 0 ? r.ub[DELETED] : r.lb[DELETED]};
+            carry_over_factor > 0 ? r.ub[DELETED] : r.lb[DELETED]);
       }
       // 3) If the new bounds are fixed (the domain is a singleton) or
       //    infeasible, then we let the

@@ -70,50 +70,6 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
   }
 }
 
-// ScopedFloatingPointEnv is used to easily enable Floating-point exceptions.
-// The initial state is automatically restored when the object is deleted.
-//
-// Note(user): For some reason, this causes an FPE exception to be triggered for
-// unknown reasons when compiled in 32 bits. Because of this, we do not turn
-// on FPE exception if ARCH_K8 is not defined.
-//
-// TODO(user): Make it work on 32 bits.
-// TODO(user): Move to ../util/fp_utils.h
-class ScopedFloatingPointEnv {
- public:
-  ScopedFloatingPointEnv()
-#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
-      : initial_excepts_(fegetexcept()), current_excepts_(0) {}
-#else
-      : initial_excepts_(0), current_excepts_(0) {}
-#endif
-
-
-  ~ScopedFloatingPointEnv() {
-#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
-    if (FLAGS_lp_solver_enable_fp_exceptions) {
-      // Enabled exceptions have to be disabled because feenableexcept acts as
-      // a bit-or.
-      fedisableexcept(current_excepts_);
-      feenableexcept(initial_excepts_);
-    }
-#endif
-  }
-
-  void FeEnableExcept(int excepts) {
-#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
-    if (FLAGS_lp_solver_enable_fp_exceptions) {
-      current_excepts_ |= excepts;
-      feenableexcept(current_excepts_);
-    }
-#endif
-  }
-
- private:
-  const int initial_excepts_;
-  int current_excepts_;
-};
-
 }  // anonymous namespace
 
 // --------------------------------------------------------
@@ -155,7 +111,9 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   // that the program is valid. This way, if we have input NaNs, we will not
   // crash.
   ScopedFloatingPointEnv scoped_fenv;
-  scoped_fenv.FeEnableExcept(FE_DIVBYZERO | FE_INVALID);
+  if (FLAGS_lp_solver_enable_fp_exceptions) {
+    scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
+  }
 
   // Make an internal copy of the problem for the preprocessing.
   VLOG(1) << "Initial problem: " << lp.GetDimensionString();

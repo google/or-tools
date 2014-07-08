@@ -265,7 +265,10 @@ class SparseVector {
     Fractional coefficient;
     // TODO(user): Evaluate the impact of having padding (12 bytes struct when
     //              Fractional is a double).
-
+    // Note(user): The two constructors below are not needed when we switch
+    // to initializer lists.
+    InternalEntry() : index(0), coefficient(0.0) {}
+    InternalEntry(Index i, Fractional c) : index(i), coefficient(c) {}
     bool operator<(const InternalEntry& other) const {
       return index < other.index;
     }
@@ -468,7 +471,9 @@ bool SparseVector<IndexType>::CheckNoDuplicates() const {
 template <typename IndexType>
 void SparseVector<IndexType>::SetCoefficient(Index index, Fractional value) {
   DCHECK_GE(index, 0);
-  entry_.push_back({index, value});
+  // TODO(user): when we drop MSVC2012 in the open-source project,
+  // use initializer list-based idiom:  entry_.push_back({index, value});
+  entry_.push_back(InternalEntry(index, value));
   may_contain_duplicates_ = true;
 }
 

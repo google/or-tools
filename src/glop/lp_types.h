@@ -247,7 +247,7 @@ class StrictITIVector : public ITIVector<IntType, T> {
   typedef ITIVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
-#if !defined(__ANDROID__) && !defined(_MSC_VER)
+#if !defined(__ANDROID__) || !defined(_MSC_VER) || (_MSC_VER >= 1800)
   StrictITIVector(std::initializer_list<T> init_list)  // NOLINT
       : ParentType(init_list.begin(), init_list.end()) {}
 #endif

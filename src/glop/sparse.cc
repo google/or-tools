@@ -71,6 +71,7 @@ Fractional ComputeInfinityNormTemplate(const Matrix& matrix) {
 // --------------------------------------------------------
 SparseMatrix::SparseMatrix() : columns_(), num_rows_(0) {}
 
+#if !defined(__ANDROID__) || !defined(_MSC_VER) || (_MSC_VER >= 1800)
 SparseMatrix::SparseMatrix(
     std::initializer_list<std::initializer_list<Fractional>> init_list) {
   ColIndex num_cols(0);
@@ -89,6 +90,7 @@ SparseMatrix::SparseMatrix(
     ++row;
   }
 }
+#endif
 
 void SparseMatrix::Clear() {
   columns_.clear();

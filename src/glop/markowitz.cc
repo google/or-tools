@@ -185,6 +185,8 @@ struct MatrixEntry {
   RowIndex row;
   ColIndex col;
   Fractional coefficient;
+  MatrixEntry(RowIndex r, ColIndex c, Fractional coeff)
+      : row(r), col(c), coefficient(coeff) {}
   bool operator<(const MatrixEntry& o) const {
     return (row == o.row) ? col < o.col : row < o.row;
   }
@@ -202,8 +204,8 @@ void Markowitz::ExtractSingletonColumns(const MatrixView& basis_matrix,
   for (ColIndex col(0); col < num_cols; ++col) {
     const SparseColumn& column = basis_matrix.column(col);
     if (column.num_entries().value() == 1) {
-      singleton_entries.push_back(
-          {column.GetFirstRow(), col, column.GetFirstCoefficient()});
+      singleton_entries.push_back(MatrixEntry(
+           column.GetFirstRow(), col, column.GetFirstCoefficient()));
     }
   }
 
