@@ -28,26 +28,9 @@ DEFINE_int32(simplex_cleanup_frequency, 0,
              "frequency to cleanup the simplex after each call, 0: no cleanup");
 DEFINE_bool(verbose_simplex_call, false,
             "Do not suppress output of the simplex");
-DEFINE_bool(use_clp, true, "use Clp instead of glpk");
 
 namespace operations_research {
 namespace {
-MPSolver::OptimizationProblemType GetType(bool use_clp) {
-  if (use_clp) {
-    #if defined(USE_CLP)
-    return MPSolver::CLP_LINEAR_PROGRAMMING;
-    #else
-    LOG(FATAL) << "CLP not defined";
-    #endif  // USE_CLP
-  } else {
-    #if defined(USE_GLPK)
-    return MPSolver::GLPK_LINEAR_PROGRAMMING;
-    #else
-    LOG(FATAL) << "GLPK not defined";
-    #endif  // USE_GLPK
-  }
-}
-
 class SimplexConnection : public SearchMonitor {
  public:
   SimplexConnection(Solver* const solver, Callback1<MPSolver*>* const builder,
@@ -57,7 +40,7 @@ class SimplexConnection : public SearchMonitor {
         builder_(builder),
         modifier_(modifier),
         runner_(runner),
-        mp_solver_("InSearchSimplex", GetType(FLAGS_use_clp)),
+        mp_solver_("InSearchSimplex", MPSolver::GLOP_LINEAR_PROGRAMMING),
         counter_(0LL),
         simplex_frequency_(simplex_frequency) {
     if (builder != nullptr) {
@@ -520,7 +503,7 @@ class AutomaticLinearization : public SearchMonitor {
  public:
   AutomaticLinearization(Solver* const solver, int frequency)
       : SearchMonitor(solver),
-        mp_solver_("InSearchSimplex", MPSolver::CLP_LINEAR_PROGRAMMING),
+        mp_solver_("InSearchSimplex", MPSolver::GLOP_LINEAR_PROGRAMMING),
         counter_(0),
         simplex_frequency_(frequency),
         objective_(nullptr),
