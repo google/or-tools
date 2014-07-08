@@ -24,6 +24,7 @@
 #include "glop/lp_types.h"
 #include "glop/matrix_scaler.h"
 #include "glop/sparse.h"
+#include "util/fp_utils.h"
 
 namespace operations_research {
 namespace glop {
