@@ -1,6 +1,8 @@
 
 #include "glop/preprocessor.h"
 
+#include <cmath>
+
 #include "base/stringprintf.h"
 #include "glop/lp_utils.h"
 #include "glop/matrix_utils.h"
