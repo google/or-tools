@@ -49,7 +49,7 @@ class SparseMatrix {
   //    {1, 2, 3},
   //    {4, 5, 6},
   //    {7, 8, 9}};
-#if !defined(__ANDROID__) || !defined(_MSC_VER) || (_MSC_VER >= 1800)
+#if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
   explicit SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
 #endif
