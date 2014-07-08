@@ -427,8 +427,8 @@ class LinearProgram {
 // Helper function to check the bounds of the SetVariableBounds() and
 // SetConstraintBounds() functions.
 inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
-  if (std::isnan(lower_bound)) return false;
-  if (std::isnan(upper_bound)) return false;
+  if (isnan(lower_bound)) return false;
+  if (isnan(upper_bound)) return false;
   if (lower_bound == kInfinity && upper_bound == kInfinity) return false;
   if (lower_bound == -kInfinity && upper_bound == -kInfinity) return false;
   if (lower_bound > upper_bound) return false;
