@@ -24,6 +24,7 @@
 
 #if !defined(_MSC_VER)
 #include <fenv.h>  // NOLINT
+using std::fenv_t;
 #endif
 #if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
 #include <fpu_control.h>
