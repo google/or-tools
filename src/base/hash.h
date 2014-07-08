@@ -192,6 +192,19 @@ using HASH_NAMESPACE::hash_set;
 // Microsoft Visual C++ port
 // --------------------------------------------------------------------------
 #ifdef _MSC_VER
+
+inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
+  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
+  operations_research::mix(num, b, c);
+  return c;
+}
+
+inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
+  operations_research::mix(num, b, c);
+  return c;
+}
+
 // TODO(user): Nuke this section and merge with gcc version.
 // The following class defines a hash function for std::pair<int64, int64>.
 class PairInt64Hasher : public stdext::hash_compare<std::pair<int64, int64> > {
