@@ -380,7 +380,7 @@ bool LinearProgram::IsSolutionFeasible(
         ScalarProduct(solution, transpose.column(RowToColIndex(row)));
     // In case there are two or more infinite values in the solution with
     // opposite coefficients.
-    if (std::isnan(sum)) return false;
+    if (isnan(sum)) return false;
     const Fractional lb_error = constraint_lower_bounds()[row] - sum;
     const Fractional ub_error = sum - constraint_upper_bounds()[row];
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance)
