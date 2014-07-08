@@ -1,13 +1,15 @@
 
 #include "glop/preprocessor.h"
 
-#include <cmath>
-
 #include "base/stringprintf.h"
 #include "glop/lp_utils.h"
 #include "glop/matrix_utils.h"
 #include "glop/revised_simplex.h"
 #include "glop/status.h"
+
+#if defined(_MSC_VER)
+double trunc(double d){ return (d>0) ? floor(d) : ceil(d) ; }
+#endif
 
 namespace operations_research {
 namespace glop {
