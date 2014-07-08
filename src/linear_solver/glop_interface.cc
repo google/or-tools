@@ -291,10 +291,7 @@ void GLOPInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 void GLOPInterface::ClearObjective() { NonIncrementalChange(); }
 
 int64 GLOPInterface::iterations() const {
-  // TODO(user): Check with bdb@ if iterations corresponds to
-  //              RevisedSimplex::num_pivots_.
-  LOG(WARNING) << "Iterations are not implemented yet.";
-  return kUnknownNumberOfIterations;
+  return lp_solver_.GetNumberOfSimplexIterations();
 }
 
 int64 GLOPInterface::nodes() const {
