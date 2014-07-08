@@ -85,7 +85,7 @@ class ScopedFloatingPointEnv {
       : initial_excepts_(fegetexcept()), current_excepts_(0) {}
 
   ~ScopedFloatingPointEnv() {
-#ifdef ARCH_K8
+#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
     if (FLAGS_lp_solver_enable_fp_exceptions) {
       // Enabled exceptions have to be disabled because feenableexcept acts as
       // a bit-or.
@@ -96,7 +96,7 @@ class ScopedFloatingPointEnv {
   }
 
   void FeEnableExcept(int excepts) {
-#ifdef ARCH_K8
+#if defined(ARCH_K8) && defined(__GNUC__) && !defined(__APPLE__)
     if (FLAGS_lp_solver_enable_fp_exceptions) {
       current_excepts_ |= excepts;
       feenableexcept(current_excepts_);
