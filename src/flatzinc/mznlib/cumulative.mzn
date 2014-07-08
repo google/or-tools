@@ -37,4 +37,3 @@ predicate cumulative(array[int] of var int: s,
                      array[int] of var int: r,
                      var int: b) =
     variable_cumulative(s, d, r, b);
-
