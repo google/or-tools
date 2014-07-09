@@ -23,6 +23,7 @@
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/hybrid.h"
 
 DECLARE_bool(logging);
 
@@ -793,7 +794,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 
   if (p.simplex_frequency > 0) {
-    monitors.push_back(solver_->MakeSimplexConstraint(p.simplex_frequency));
+    monitors.push_back(
+        MakeSimplexConstraint(solver_.get(), p.simplex_frequency));
   }
 
   if (p.luby_restart > 0) {

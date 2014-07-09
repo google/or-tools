@@ -18,7 +18,6 @@
 // Joint Conference on Artificial Intelligence (IJCAI 03), Acapulco,
 // Mexico, pages 245-250, 2003.
 
-// This file has been modified by Laurent Perron for Google Inc.
 
 #include "base/integral_types.h"
 #include "base/logging.h"

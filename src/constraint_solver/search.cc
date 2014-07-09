@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -4269,7 +4269,7 @@ class LubyRestart : public SearchMonitor {
     if (++current_fails_ >= next_step_) {
       current_fails_ = 0;
       next_step_ = NextLuby(++iteration_) * scale_factor_;
-      RestartCurrentSearch();
+      solver()->RestartCurrentSearch();
     }
   }
 
@@ -4304,7 +4304,7 @@ class ConstantRestart : public SearchMonitor {
   virtual void BeginFail() {
     if (++current_fails_ >= frequency_) {
       current_fails_ = 0;
-      RestartCurrentSearch();
+      solver()->RestartCurrentSearch();
     }
   }
 

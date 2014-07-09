@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1395,6 +1395,71 @@ class RoutingDimension {
   // Returns the cost coefficient of the soft upper bound of a cumul variable
   // for a variable index. If no soft upper bound has been set, 0 is returned.
   int64 GetCumulVarSoftUpperBoundCoefficientFromIndex(int64 index) const;
+
+  // Sets a soft lower bound to the cumul variable of a given node. If the
+  // value of the cumul variable is less than the bound, a cost proportional
+  // to the difference between this value and the bound is added to the cost
+  // function of the model:
+  // cumulVar > lower_bound -> cost = 0
+  // cumulVar <= lower_bound -> cost = coefficient * (lower_bound - cumulVar).
+  // This is also handy to model earliness costs when the dimension represents
+  // time.
+  // Note: Using soft lower and upper bounds or span costs together is, as of
+  // 6/2014, not well supported in the sense that an optimal schedule is not
+  // guaranteed.
+  void SetCumulVarSoftLowerBound(RoutingModel::NodeIndex node,
+                                 int64 lower_bound, int64 coefficient);
+  // Same as SetCumulVarSoftLowerBound applied to vehicle start node,
+  void SetStartCumulVarSoftLowerBound(int vehicle, int64 lower_bound,
+                                      int64 coefficient);
+  // Same as SetCumulVarSoftLowerBound applied to vehicle end node,
+  void SetEndCumulVarSoftLowerBound(int vehicle, int64 lower_bound,
+                                    int64 coefficient);
+  // Same as SetCumulVarSoftLowerBound but using a variable index.
+  void SetCumulVarSoftLowerBoundFromIndex(int64 index, int64 lower_bound,
+                                          int64 coefficient);
+  // Returns true if a soft lower bound has been set for a given node.
+  bool HasCumulVarSoftLowerBound(RoutingModel::NodeIndex node) const;
+  // Returns true if a soft lower bound has been set for a given vehicle start
+  // node.
+  bool HasStartCumulVarSoftLowerBound(int vehicle) const;
+  // Returns true if a soft lower bound has been set for a given vehicle end
+  // node.
+  bool HasEndCumulVarSoftLowerBound(int vehicle) const;
+  // Returns true if a soft lower bound has been set for a given variable index.
+  bool HasCumulVarSoftLowerBoundFromIndex(int64 index) const;
+  // Returns the soft lower bound of a cumul variable for a given node. The
+  // "hard" lower bound of the variable is returned if no soft lower bound has
+  // been set.
+  int64 GetCumulVarSoftLowerBound(RoutingModel::NodeIndex node) const;
+  // Returns the soft lower bound of a cumul variable for a given vehicle start
+  // node. The "hard" lower bound of the variable is returned if no soft lower
+  // bound has been set.
+  int64 GetStartCumulVarSoftLowerBound(int vehicle) const;
+  // Returns the soft lower bound of a cumul variable for a given vehicle end
+  // node. The "hard" lower bound of the variable is returned if no soft lower
+  // bound has been set.
+  int64 GetEndCumulVarSoftLowerBound(int vehicle) const;
+  // Returns the soft lower bound of a cumul variable for a given variable
+  // index. The "hard" lower bound of the variable is returned if no soft lower
+  // bound has been set.
+  int64 GetCumulVarSoftLowerBoundFromIndex(int64 index) const;
+  // Returns the cost coefficient of the soft lower bound of a cumul variable
+  // for a given node. If no soft lower bound has been set, 0 is returned.
+  int64 GetCumulVarSoftLowerBoundCoefficient(RoutingModel::NodeIndex node)
+      const;
+  // Returns the cost coefficient of the soft lower bound of a cumul variable
+  // for a given vehicle start node. If no soft lower bound has been set, 0 is
+  // returned.
+  int64 GetStartCumulVarSoftLowerBoundCoefficient(int vehicle) const;
+  // Returns the cost coefficient of the soft lower bound of a cumul variable
+  // for a given vehicle end node. If no soft lower bound has been set, 0 is
+  // returned.
+  int64 GetEndCumulVarSoftLowerBoundCoefficient(int vehicle) const;
+  // Returns the cost coefficient of the soft lower bound of a cumul variable
+  // for a variable index. If no soft lower bound has been set, 0 is returned.
+  int64 GetCumulVarSoftLowerBoundCoefficientFromIndex(int64 index) const;
+
   // Returns the name of the dimension.
   const std::string& name() const { return name_; }
 
@@ -1439,6 +1504,8 @@ class RoutingDimension {
       int64 slack_max);
   // Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  // Sets up the cost variables related to cumul soft lower bounds.
+  void SetupCumulVarSoftLowerBoundCosts(std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
   void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
@@ -1456,6 +1523,7 @@ class RoutingDimension {
   int64 global_span_cost_coefficient_;
   std::vector<int64> vehicle_span_cost_coefficients_;
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
+  std::vector<SoftBound> cumul_var_soft_lower_bound_;
   RoutingModel* const model_;
   const std::string name_;
 

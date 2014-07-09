@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -134,7 +134,6 @@ class IntervalVarElement;
 class LocalSearchFilter;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
-class MPSolver;
 class ModelCache;
 class ModelVisitor;
 class NoGoodManager;
@@ -225,7 +224,10 @@ struct DefaultPhaseParameters {
     CHOOSE_MAX_VALUE_IMPACT = 2,
   };
 
-  enum ValueSelection { SELECT_MIN_IMPACT = 0, SELECT_MAX_IMPACT = 1, };
+  enum ValueSelection {
+    SELECT_MIN_IMPACT = 0,
+    SELECT_MAX_IMPACT = 1,
+  };
 
   enum DisplayLevel { NONE = 0, NORMAL = 1, VERBOSE = 2 };
 
@@ -956,9 +958,9 @@ class Solver {
   //
   // Solve will terminate whenever any of the following event arise:
   // * A search monitor asks the solver to terminate the search by calling
-  // SearchMonitor::FinishCurrentSearch().
+  //   solver()->FinishCurrentSearch().
   // * A solution is found that is accepted by all search monitors, and none of
-  // the search monitors decides to search for another one.
+  //   the search monitors decides to search for another one.
   //
   // Upon search termination, there will be a series of backtracks all the way
   // to the top level. This means that a user cannot expect to inspect the
@@ -1096,8 +1098,8 @@ class Solver {
                        SequenceVariableBuilder* const builder);
 
   ConstraintBuilder* GetConstraintBuilder(const std::string& tag) const;
-  IntegerExpressionBuilder* GetIntegerExpressionBuilder(const std::string& tag)
-      const;
+  IntegerExpressionBuilder* GetIntegerExpressionBuilder(
+      const std::string& tag) const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const std::string& tag) const;
   SequenceVariableBuilder* GetSequenceVariableBuilder(const std::string& tag) const;
 #endif  // SWIG
@@ -2331,23 +2333,6 @@ class Solver {
                                      SymmetryBreaker* const v3,
                                      SymmetryBreaker* const v4);
 
-// ----- Simplex Connection -----
-#if !defined(SWIG)
-  SearchMonitor* MakeSimplexConnection(Callback1<MPSolver*>* const builder,
-                                       Callback1<MPSolver*>* const modifier,
-                                       Callback1<MPSolver*>* const runner,
-                                       int simplex_frequency);
-#endif  // #if !defined(SWIG)
-
-  // ----- Linear Relaxation Constraint -----
-
-  // Creates a search monitor that will maintain a linear relaxation
-  // of the problem. Every 'simplex_frequency' nodes explored in the
-  // search tree, this linear relaxation will be called and the
-  // resulting optimal solution found by the simplex will be used to
-  // prune the objective of the constraint programming model.
-  SearchMonitor* MakeSimplexConstraint(int simplex_frequency);
-
   // ----- Search Decicions and Decision Builders -----
 
   // ----- Decisions -----
@@ -2936,9 +2921,20 @@ class Solver {
   // method returns expr, nullptr otherwise.
   IntExpr* CastExpression(const IntVar* const var) const;
 
-  // Support for swig.
-  void ShouldFail();
-  void CheckFail();
+  // Tells the solver to kill or restart the current search.
+  void FinishCurrentSearch();
+  void RestartCurrentSearch();
+
+  // These methods are only useful for the SWIG wrappers, who need a way
+  // to externally cause the Solver to fail. See
+  // http://cs/file:constraint_solver.swig%20ShouldFail .
+  // TODO(user): rename these to MarkFailure() and CheckMarkedFailure().
+  void ShouldFail() { should_fail_ = true; }
+  void CheckFail() {
+    if (!should_fail_) return;
+    should_fail_ = false;
+    Fail();
+  }
 
  private:
   void Init();  // Initialization. To be called by the constructors only.
@@ -3221,6 +3217,7 @@ class DecisionBuilder : public BaseObject {
   // its work.
   virtual Decision* Next(Solver* const s) = 0;
   virtual std::string DebugString() const;
+#if !defined(SWIG)
   // This method will be called at the start of the search.  It asks
   // the decision builder if it wants to append search monitors to the
   // list of active monitors for this search. Please note there are no
@@ -3228,6 +3225,7 @@ class DecisionBuilder : public BaseObject {
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const extras);
   virtual void Accept(ModelVisitor* const visitor) const;
+#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
@@ -3648,12 +3646,6 @@ class SearchMonitor : public BaseObject {
   virtual void AcceptNeighbor();
 
   Solver* solver() const { return solver_; }
-
-  // Tells the solver to kill the current search.
-  void FinishCurrentSearch();
-
-  // Tells the solver to restart the current search.
-  void RestartCurrentSearch();
 
   // Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
@@ -4514,8 +4506,8 @@ class IntervalVarElement : public AssignmentElement {
   void Restore();
   void LoadFromProto(
       const IntervalVarAssignmentProto& interval_var_assignment_proto);
-  void WriteToProto(IntervalVarAssignmentProto* interval_var_assignment_proto)
-      const;
+  void WriteToProto(
+      IntervalVarAssignmentProto* interval_var_assignment_proto) const;
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -4626,8 +4618,8 @@ class SequenceVarElement : public AssignmentElement {
   void Restore();
   void LoadFromProto(
       const SequenceVarAssignmentProto& sequence_var_assignment_proto);
-  void WriteToProto(SequenceVarAssignmentProto* sequence_var_assignment_proto)
-      const;
+  void WriteToProto(
+      SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
 
   const std::vector<int>& ForwardSequence() const;
   const std::vector<int>& BackwardSequence() const;
@@ -5263,7 +5255,6 @@ class ParallelSolveSupport {
 ParallelSolveSupport* MakeMtSolveSupport(
     int workers, bool maximize,
     ParallelSolveSupport::ModelBuilder* const model_builder);
-
 #endif  // SWIG
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

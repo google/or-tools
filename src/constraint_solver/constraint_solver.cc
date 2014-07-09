@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1400,71 +1400,46 @@ std::string Solver::model_name() const { return name_; }
 Solver::Solver(const std::string& name, const SolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
-      queue_(new Queue(this)),
-      trail_(new Trail(parameters.trail_block_size, parameters.compress_trail)),
-      state_(OUTSIDE_SEARCH),
-      branches_(0),
-      fails_(0),
-      decisions_(0),
-      neighbors_(0),
-      filtered_neighbors_(0),
-      accepted_neighbors_(0),
-      variable_cleaner_(NewDomainIntVarCleaner()),
-      timer_(new ClockTimer),
-      searches_(1, new Search(this, 0)),
       random_(ACMRandom::DeterministicSeed()),
-      fail_hooks_(nullptr),
-      fail_stamp_(GG_ULONGLONG(1)),
-      balancing_decision_(new BalancingDecision),
-      fail_intercept_(nullptr),
-      demon_profiler_(BuildDemonProfiler(this)),
-      true_constraint_(nullptr),
-      false_constraint_(nullptr),
-      fail_decision_(new FailDecision()),
-      constraint_index_(0),
-      additional_constraint_index_(0),
-      propagation_monitor_(BuildTrace(this)),
-      print_trace_(nullptr),
-      anonymous_variable_index_(0),
-      should_fail_(false) {
+      demon_profiler_(BuildDemonProfiler(this)) {
   Init();
 }
 
 Solver::Solver(const std::string& name)
     : name_(name),
-      parameters_(),
-      queue_(new Queue(this)),
-      trail_(
-          new Trail(parameters_.trail_block_size, parameters_.compress_trail)),
-      state_(OUTSIDE_SEARCH),
-      branches_(0),
-      fails_(0),
-      decisions_(0),
-      neighbors_(0),
-      filtered_neighbors_(0),
-      accepted_neighbors_(0),
-      variable_cleaner_(NewDomainIntVarCleaner()),
-      timer_(new ClockTimer),
-      searches_(1, new Search(this, 0)),
       random_(ACMRandom::DeterministicSeed()),
-      fail_hooks_(nullptr),
-      fail_stamp_(GG_ULONGLONG(1)),
-      balancing_decision_(new BalancingDecision),
-      fail_intercept_(nullptr),
-      demon_profiler_(BuildDemonProfiler(this)),
-      true_constraint_(nullptr),
-      false_constraint_(nullptr),
-      fail_decision_(new FailDecision()),
-      constraint_index_(0),
-      additional_constraint_index_(0),
-      propagation_monitor_(BuildTrace(this)),
-      print_trace_(nullptr),
-      anonymous_variable_index_(0),
-      should_fail_(false) {
+      demon_profiler_(BuildDemonProfiler(this)) {
   Init();
 }
 
 void Solver::Init() {
+  queue_.reset(new Queue(this));
+  trail_.reset(
+      new Trail(parameters_.trail_block_size, parameters_.compress_trail));
+  state_ = OUTSIDE_SEARCH;
+  branches_ = 0;
+  fails_ = 0;
+  decisions_ = 0;
+  neighbors_ = 0;
+  filtered_neighbors_ = 0;
+  accepted_neighbors_ = 0;
+  variable_cleaner_.reset(NewDomainIntVarCleaner());
+  timer_.reset(new ClockTimer);
+  searches_.assign(1, new Search(this, 0));
+  fail_hooks_ = nullptr;
+  fail_stamp_ = GG_ULONGLONG(1);
+  balancing_decision_.reset(new BalancingDecision);
+  fail_intercept_ = nullptr;
+  true_constraint_ = nullptr;
+  false_constraint_ = nullptr;
+  fail_decision_.reset(new FailDecision());
+  constraint_index_ = 0;
+  additional_constraint_index_ = 0;
+  propagation_monitor_.reset(BuildTrace(this));
+  print_trace_ = nullptr;
+  anonymous_variable_index_ = 0;
+  should_fail_ = false;
+
   for (int i = 0; i < kNumPriorities; ++i) {
     demon_runs_[i] = 0;
   }
@@ -2467,13 +2442,12 @@ void Solver::Fail() {
   searches_.back()->JumpBack();
 }
 
-void Solver::ShouldFail() { should_fail_ = true; }
+void Solver::FinishCurrentSearch() {
+  searches_.back()->set_should_finish(true);
+}
 
-void Solver::CheckFail() {
-  if (should_fail_) {
-    should_fail_ = false;
-    Fail();
-  }
+void Solver::RestartCurrentSearch() {
+  searches_.back()->set_should_restart(true);
 }
 
 // ----- Cast Expression -----
@@ -2928,12 +2902,6 @@ bool SearchMonitor::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   return true;
 }
 void SearchMonitor::AcceptNeighbor() {}
-void SearchMonitor::FinishCurrentSearch() {
-  solver()->searches_.back()->set_should_finish(true);
-}
-void SearchMonitor::RestartCurrentSearch() {
-  solver()->searches_.back()->set_should_restart(true);
-}
 void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
 // A search monitors adds itself on the active search.

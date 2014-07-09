@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -829,19 +829,15 @@ class VarLocalSearchOperator : public LocalSearchOperator {
   }
   virtual bool IsIncremental() const { return false; }
   int Size() const { return vars_.size(); }
-// Returns the value in the current assignment of the variable of given index.
-#if !defined(SWIGCSHARP) || !defined(SWIG)
+  // Returns the value in the current assignment of the variable of given index.
   const Val& Value(int64 index) const {
     DCHECK_LT(index, vars_.size());
     return values_[index];
   }
-#endif  // SWIGCSHARP || SWIG
   // Returns the variable of given index.
   V* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
-#if !defined(SWIGCSHARP) || !defined(SWIG)
   const Val& OldValue(int64 index) const { return old_values_[index]; }
-#endif  // SWIGCSHARP || SWIG
   void SetValue(int64 index, const Val& value) {
     values_[index] = value;
     MarkChange(index);
@@ -958,6 +954,34 @@ class IntVarLocalSearchHandler {
 // The Deactivate() method can be used to perform Large Neighborhood Search.
 
 #ifdef SWIG
+// Unfortunately, we must put this code here and not in
+// */constraint_solver.swig, because it must be parsed by SWIG before the
+// derived C++ class.
+// TODO(user): find a way to move this code back to the .swig file, where it
+// belongs.
+// In python, we use a whitelist to expose the API. This whitelist must also
+// be extended here.
+#if defined(SWIGPYTHON)
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::Size;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::Value;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OldValue;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::SetValue;
+%feature("director") VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::IsIncremental;
+%feature("director") VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OnStart;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::IsIncremental;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OnStart;
+#endif
+
+%rename(IntVarLocalSearchOperatorTemplate)
+    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 %template(IntVarLocalSearchOperatorTemplate)
     VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 #endif
@@ -995,6 +1019,8 @@ class SequenceVarLocalSearchOperator;
 class SequenceVarLocalSearchHandler {
  public:
   SequenceVarLocalSearchHandler() : op_(nullptr) {}
+  SequenceVarLocalSearchHandler(const SequenceVarLocalSearchHandler& other)
+      : op_(other.op_) {}
   explicit SequenceVarLocalSearchHandler(SequenceVarLocalSearchOperator* op)
       : op_(op) {}
   void AddToAssignment(SequenceVar* var, const std::vector<int>& value, int64 index,
@@ -1009,6 +1035,13 @@ class SequenceVarLocalSearchHandler {
 };
 
 #ifdef SWIG
+// Unfortunately, we must put this code here and not in
+// */constraint_solver.swig, because it must be parsed by SWIG before the
+// derived C++ class.
+// TODO(user): find a way to move this code back to the .swig file, where it
+// belongs.
+%rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
+      SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 %template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 #endif
@@ -2323,8 +2356,8 @@ bool AreAllNull(const std::vector<T>& values) {
 
 template <class T>
 bool AreAllGreaterOrEqual(const std::vector<T>& values, const T& value) {
-  for (int i = 0; i < values.size(); ++i) {
-    if (values[i] < value) {
+  for (const T& current_value : values) {
+    if (current_value < value) {
       return false;
     }
   }
@@ -2333,8 +2366,8 @@ bool AreAllGreaterOrEqual(const std::vector<T>& values, const T& value) {
 
 template <class T>
 bool AreAllLessOrEqual(const std::vector<T>& values, const T& value) {
-  for (int i = 0; i < values.size(); ++i) {
-    if (values[i] > value) {
+  for (const T& current_value : values) {
+    if (current_value > value) {
       return false;
     }
   }
@@ -2357,7 +2390,7 @@ bool AreAllStrictlyPositive(const std::vector<T>& values) {
 }
 
 template <class T>
-bool AreAllStrictlyNegativeve(const std::vector<T>& values) {
+bool AreAllStrictlyNegative(const std::vector<T>& values) {
   return AreAllLessOrEqual(values, T(-1));
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -739,8 +739,7 @@ class PerformedVar : public BooleanVar {
 class FixedDurationIntervalVar : public BaseIntervalVar {
  public:
   FixedDurationIntervalVar(Solver* const s, int64 start_min, int64 start_max,
-                           int64 duration, bool optional,
-                           const std::string& name);
+                           int64 duration, bool optional, const std::string& name);
   // Unperformed interval.
   FixedDurationIntervalVar(Solver* const s, const std::string& name);
   virtual ~FixedDurationIntervalVar() {}
@@ -1226,8 +1225,10 @@ class StartVarPerformedIntervalVar : public IntervalVar {
 };
 
 // TODO(user): Take care of overflows.
-StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
-    Solver* const s, IntVar* const var, int64 duration, const std::string& name)
+StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(Solver* const s,
+                                                           IntVar* const var,
+                                                           int64 duration,
+                                                           const std::string& name)
     : IntervalVar(s, name), start_var_(var), duration_(duration) {}
 
 int64 StartVarPerformedIntervalVar::StartMin() const {
@@ -1731,7 +1732,7 @@ std::string FixedInterval::DebugString() const {
     out = "IntervalVar(start = ";
   }
   StringAppendF(&out, "%" GG_LL_FORMAT "d, duration = %" GG_LL_FORMAT
-                "d, performed = true)",
+                      "d, performed = true)",
                 start_, duration_);
   return out;
 }
@@ -2243,9 +2244,11 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
       this, start_min, start_max, duration, optional, name)));
 }
 
-void Solver::MakeFixedDurationIntervalVarArray(
-    int count, int64 start_min, int64 start_max, int64 duration, bool optional,
-    const std::string& name, std::vector<IntervalVar*>* array) {
+void Solver::MakeFixedDurationIntervalVarArray(int count, int64 start_min,
+                                               int64 start_max, int64 duration,
+                                               bool optional,
+                                               const std::string& name,
+                                               std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);
   array->clear();
@@ -2289,8 +2292,8 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables, int64 duration,
-    const std::string& name, std::vector<IntervalVar*>* array) {
+    const std::vector<IntVar*>& start_variables, int64 duration, const std::string& name,
+    std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
@@ -2300,10 +2303,11 @@ void Solver::MakeFixedDurationIntervalVarArray(
   }
 }
 
+// This method fills the vector with interval variables built with
+// the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    const std::vector<int64>& durations, const std::string& name,
-    std::vector<IntervalVar*>* array) {
+    const std::vector<IntVar*>& start_variables, const std::vector<int64>& durations,
+    const std::string& name, std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
@@ -2315,9 +2319,8 @@ void Solver::MakeFixedDurationIntervalVarArray(
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    const std::vector<int>& durations, const std::string& name,
-    std::vector<IntervalVar*>* array) {
+    const std::vector<IntVar*>& start_variables, const std::vector<int>& durations,
+    const std::string& name, std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
@@ -2377,9 +2380,9 @@ void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
   array->clear();
   for (int i = 0; i < count; ++i) {
     const std::string var_name = StringPrintf("%s%i", name.c_str(), i);
-    array->push_back(
-        MakeIntervalVar(start_min, start_max, duration_min, duration_max,
-                        end_min, end_max, optional, var_name));
+    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
+                                     duration_max, end_min, end_max, optional,
+                                     var_name));
   }
 }
 

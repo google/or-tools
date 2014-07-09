@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1625,6 +1625,7 @@ void RoutingModel::CloseModel() {
   }
   // Soft cumul upper bound costs
   for (const RoutingDimension* dimension : dimensions_) {
+    dimension->SetupCumulVarSoftLowerBoundCosts(&cost_elements);
     dimension->SetupCumulVarSoftUpperBoundCosts(&cost_elements);
   }
   cost_ = solver_->MakeSum(cost_elements)->Var();
@@ -4437,13 +4438,7 @@ void RoutingDimension::InitializeCumuls(
       }
     }
   }
-  // Explicitly constrain the end cumul to be greater or equal to the start
-  // cumul; so that we don't need to worry about it later (eg. clients setting
-  // a max on the end cumul won't need to also set it on the start cumul).
-  for (int i = 0; i < model_->vehicles(); ++i) {
-    solver->AddConstraint(solver->RevAlloc(new LightRangeLessOrEqual(
-        solver, cumuls_[model_->Start(i)], cumuls_[model_->End(i)])));
-  }
+
   capacity_evaluator_.reset(vehicle_capacity);
 }
 
@@ -4722,6 +4717,144 @@ void RoutingDimension::SetupCumulVarSoftUpperBoundCosts(
       // TODO(user): Check if it wouldn't be better to minimize
       // soft_bound.var here.
       model_->AddVariableMinimizedByFinalizer(cost_var);
+    }
+  }
+}
+
+void RoutingDimension::SetCumulVarSoftLowerBound(RoutingModel::NodeIndex node,
+                                                 int64 lower_bound,
+                                                 int64 coefficient) {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      SetCumulVarSoftLowerBoundFromIndex(index, lower_bound, coefficient);
+      return;
+    }
+  }
+  VLOG(2) << "Cannot set soft lower bound on start or end nodes";
+}
+
+bool RoutingDimension::HasCumulVarSoftLowerBound(
+    RoutingModel::NodeIndex node) const {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      return HasCumulVarSoftLowerBoundFromIndex(index);
+    }
+  }
+  VLOG(2) << "Cannot get soft lower bound on start or end nodes";
+  return false;
+}
+
+int64 RoutingDimension::GetCumulVarSoftLowerBound(
+    RoutingModel::NodeIndex node) const {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      return GetCumulVarSoftLowerBoundFromIndex(index);
+    }
+  }
+  VLOG(2) << "Cannot get soft lower bound on start or end nodes";
+  return 0;
+}
+int64 RoutingDimension::GetCumulVarSoftLowerBoundCoefficient(
+    RoutingModel::NodeIndex node) const {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      return GetCumulVarSoftLowerBoundCoefficientFromIndex(index);
+    }
+  }
+  VLOG(2) << "Cannot get soft lower bound on start or end nodes";
+  return 0;
+}
+
+void RoutingDimension::SetStartCumulVarSoftLowerBound(int vehicle,
+                                                      int64 lower_bound,
+                                                      int64 coefficient) {
+  SetCumulVarSoftLowerBoundFromIndex(model_->Start(vehicle), lower_bound,
+                                     coefficient);
+}
+
+bool RoutingDimension::HasStartCumulVarSoftLowerBound(int vehicle) const {
+  return HasCumulVarSoftLowerBoundFromIndex(model_->Start(vehicle));
+}
+
+int64 RoutingDimension::GetStartCumulVarSoftLowerBound(int vehicle) const {
+  return GetCumulVarSoftLowerBoundFromIndex(model_->Start(vehicle));
+}
+
+int64 RoutingDimension::GetStartCumulVarSoftLowerBoundCoefficient(
+    int vehicle) const {
+  return GetCumulVarSoftLowerBoundCoefficientFromIndex(model_->Start(vehicle));
+}
+
+void RoutingDimension::SetEndCumulVarSoftLowerBound(int vehicle,
+                                                    int64 lower_bound,
+                                                    int64 coefficient) {
+  SetCumulVarSoftLowerBoundFromIndex(model_->End(vehicle), lower_bound,
+                                     coefficient);
+}
+
+bool RoutingDimension::HasEndCumulVarSoftLowerBound(int vehicle) const {
+  return HasCumulVarSoftLowerBoundFromIndex(model_->End(vehicle));
+}
+
+int64 RoutingDimension::GetEndCumulVarSoftLowerBound(int vehicle) const {
+  return GetCumulVarSoftLowerBoundFromIndex(model_->End(vehicle));
+}
+
+int64 RoutingDimension::GetEndCumulVarSoftLowerBoundCoefficient(
+    int vehicle) const {
+  return GetCumulVarSoftLowerBoundCoefficientFromIndex(model_->End(vehicle));
+}
+
+void RoutingDimension::SetCumulVarSoftLowerBoundFromIndex(int64 index,
+                                                          int64 lower_bound,
+                                                          int64 coefficient) {
+  if (index >= cumul_var_soft_lower_bound_.size()) {
+    cumul_var_soft_lower_bound_.resize(index + 1);
+  }
+  SoftBound* const soft_lower_bound = &cumul_var_soft_lower_bound_[index];
+  soft_lower_bound->var = cumuls_[index];
+  soft_lower_bound->bound = lower_bound;
+  soft_lower_bound->coefficient = coefficient;
+}
+
+bool RoutingDimension::HasCumulVarSoftLowerBoundFromIndex(int64 index) const {
+  return (index < cumul_var_soft_lower_bound_.size() &&
+          cumul_var_soft_lower_bound_[index].var != nullptr);
+}
+
+int64 RoutingDimension::GetCumulVarSoftLowerBoundFromIndex(int64 index) const {
+  if (index < cumul_var_soft_lower_bound_.size() &&
+      cumul_var_soft_lower_bound_[index].var != nullptr) {
+    return cumul_var_soft_lower_bound_[index].bound;
+  }
+  return cumuls_[index]->Min();
+}
+
+int64 RoutingDimension::GetCumulVarSoftLowerBoundCoefficientFromIndex(
+    int64 index) const {
+  if (index < cumul_var_soft_lower_bound_.size() &&
+      cumul_var_soft_lower_bound_[index].var != nullptr) {
+    return cumul_var_soft_lower_bound_[index].coefficient;
+  }
+  return 0;
+}
+
+void RoutingDimension::SetupCumulVarSoftLowerBoundCosts(
+    std::vector<IntVar*>* cost_elements) const {
+  CHECK(cost_elements != nullptr);
+  Solver* const solver = model_->solver();
+  for (const SoftBound& soft_bound : cumul_var_soft_lower_bound_) {
+    if (soft_bound.var != nullptr) {
+      IntVar* const cost_var =
+          solver->MakeSemiContinuousExpr(
+              solver->MakeDifference(soft_bound.bound, soft_bound.var), 0,
+                      soft_bound.coefficient)->Var();
+      cost_elements->push_back(cost_var);
+      model_->AddVariableMaximizedByFinalizer(soft_bound.var);
     }
   }
 }

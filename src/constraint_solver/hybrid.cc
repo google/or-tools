@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#include "constraint_solver/hybrid.h"
 
 #include <math.h>
 #include "base/hash.h"
@@ -31,6 +33,20 @@ DEFINE_bool(verbose_simplex_call, false,
 
 namespace operations_research {
 namespace {
+inline MPSolver::OptimizationProblemType LpSolverForCp() {
+  #if defined(USE_GUROBI)
+  return MPSolver::GUROBI_LINEAR_PROGRAMMING;
+  #elif defined(USE_CLP)
+  return MPSolver::CLP_LINEAR_PROGRAMMING;
+  #elif defined(USE_GLPK)
+  return MPSolver::CLP_LINEAR_PROGRAMMING;
+  #elif defined(USE_SULUM)
+  return MPSolver::SULUM_LINEAR_PROGRAMMING;
+  #else
+  LOG(FATAL) << "No suitable linear programming solver available.";
+  #endif
+}
+
 class SimplexConnection : public SearchMonitor {
  public:
   SimplexConnection(Solver* const solver, Callback1<MPSolver*>* const builder,
@@ -40,7 +56,7 @@ class SimplexConnection : public SearchMonitor {
         builder_(builder),
         modifier_(modifier),
         runner_(runner),
-        mp_solver_("InSearchSimplex", MPSolver::GLOP_LINEAR_PROGRAMMING),
+        mp_solver_("InSearchSimplex", LpSolverForCp()),
         counter_(0LL),
         simplex_frequency_(simplex_frequency) {
     if (builder != nullptr) {
@@ -503,7 +519,7 @@ class AutomaticLinearization : public SearchMonitor {
  public:
   AutomaticLinearization(Solver* const solver, int frequency)
       : SearchMonitor(solver),
-        mp_solver_("InSearchSimplex", MPSolver::GLOP_LINEAR_PROGRAMMING),
+        mp_solver_("InSearchSimplex", LpSolverForCp()),
         counter_(0),
         simplex_frequency_(frequency),
         objective_(nullptr),
@@ -583,19 +599,22 @@ class AutomaticLinearization : public SearchMonitor {
   IntVar* objective_;
   bool maximize_;
 };
-
 }  // namespace
 
 // ---------- API ----------
 
-SearchMonitor* Solver::MakeSimplexConnection(
-    Callback1<MPSolver*>* const builder, Callback1<MPSolver*>* const modifier,
-    Callback1<MPSolver*>* const runner, int frequency) {
-  return RevAlloc(
-      new SimplexConnection(this, builder, modifier, runner, frequency));
+SearchMonitor* MakeSimplexConnection(Solver* const solver,
+                                     Callback1<MPSolver*>* const builder,
+                                     Callback1<MPSolver*>* const modifier,
+                                     Callback1<MPSolver*>* const runner,
+                                     int frequency) {
+  return solver->RevAlloc(
+      new SimplexConnection(solver, builder, modifier, runner, frequency));
 }
 
-SearchMonitor* Solver::MakeSimplexConstraint(int simplex_frequency) {
-  return RevAlloc(new AutomaticLinearization(this, simplex_frequency));
+SearchMonitor* MakeSimplexConstraint(Solver* const solver,
+                                     int simplex_frequency) {
+  return solver->RevAlloc(
+      new AutomaticLinearization(solver, simplex_frequency));
 }
 }  // namespace operations_research

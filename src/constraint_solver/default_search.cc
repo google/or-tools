@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -719,7 +719,7 @@ class RestartMonitor : public SearchMonitor {
             VLOG(2) << "restarting";
           }
           num_restarts_++;
-          RestartCurrentSearch();
+          s->RestartCurrentSearch();
           s->Fail();
         }
       }
