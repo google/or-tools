@@ -25,7 +25,7 @@ public class SimpleRoutingTest {
   public SimpleRoutingTest(int[][] costMatrix) {
     super();
     this.costMatrix = costMatrix;
-    globalRes = new ArrayList<>();
+    globalRes = new ArrayList();
   }
 
   //Node Distance Evaluation
