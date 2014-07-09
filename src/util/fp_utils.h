@@ -92,8 +92,12 @@ class ScopedFloatingPointEnv {
   }
 
  private:
+#if defined(_MSC_VER)
+  int saved_control_;
+#else
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
+#endif
 };
 
 // The following macro does not change "var", but forces gcc to consider it
