@@ -255,10 +255,7 @@ class MDD_Factory {
     std::vector<MDD*>* v1, *v2, *tmp;
     int nb = 0;
 
-    bool visited[getNbInstance()];
-    for (int i = 0; i < getNbInstance(); ++i) {
-      visited[i] = false;
-    }
+    std::vector<bool> visited(getNbInstance());
     v1 = new std::vector<MDD*>();
     v2 = new std::vector<MDD*>();
     v1->push_back(T);
