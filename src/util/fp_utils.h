@@ -60,7 +60,7 @@ namespace operations_research {
 class ScopedFloatingPointEnv {
  public:
   ScopedFloatingPointEnv()  {
-#if defined(MSC_VER)
+#if defined(_MSC_VER_DISABLED)
     saved_control_ = _controlfp(0, 0);
 #elif defined(ARCH_K8)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
@@ -68,7 +68,7 @@ class ScopedFloatingPointEnv {
   }
 
   ~ScopedFloatingPointEnv() {
-#if defined(MSC_VER)
+#if defined(_MSC_VER_DISABLED)
     CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
 #elif defined(ARCH_K8)
     CHECK_EQ(0, fesetenv(&saved_fenv_));
@@ -76,7 +76,7 @@ class ScopedFloatingPointEnv {
   }
 
   void EnableExceptions(int excepts) {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER_DISABLED)
     _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
 #elif defined(ARCH_K8)
     CHECK_EQ(0, fegetenv(&fenv_));
@@ -92,7 +92,7 @@ class ScopedFloatingPointEnv {
   }
 
  private:
-#if defined(_MSC_VER)
+#if defined(_MSC_VER_DISABLED)
   int saved_control_;
 #else
   fenv_t fenv_;
