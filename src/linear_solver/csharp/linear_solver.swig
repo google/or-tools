@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,61 +10,37 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// This .swig file is only used in the open-source export of
+//
+// It exposes the linear programming and integer programming solver.
+//
+// The C# API is quite different from the C++ API; mostly because it
+// supports the same "Natural language" API as the python wrapper. See the
+// usage examples.
+//
+// USAGE EXAMPLES:
+// - examples/csharp/cslinearprogramming.cs
+// - examples/csharp/csintegerprogramming.cs
 
 %include base/base.swig
-%include util/csharp/data.swig
-// Swig doesn't like module initializers.
-#define DECLARE_MODULE_INITIALIZER(x);
 
-// Include the file we want to wrap a first time.
 %{
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver_ext.h"
 %}
 
-%module(directors="1") operations_research;
-
+// C# "using" directives needed for the code inlined below.
 %typemap(csimports) SWIGTYPE %{
   using System;
   using System.Collections.Generic;
   using System.Runtime.InteropServices;
 %}
 
-namespace operations_research {
-// Use system infinity.
-%ignore MPSolver::infinity;
-// Automatic renaming to camel case.
-%rename("%(camelcase)s", %$isfunction) "";
-// Rename MakeRowConstraint into MakeConstraint
-%rename (MakeConstraint) MPSolver::MakeRowConstraint;
-// Rename classes, remove MP prefix.
-%rename (Solver) MPSolver;
-%rename (Variable) MPVariable;
-%rename (Constraint) MPConstraint;
-%rename (Objective) MPObjective;
-%rename (SolverParameters) MPSolverParameters;
-
-// Ignore code on MPSolver, see replacement code below.
-%ignore MPSolver::MakeVarArray;
-%ignore MPSolver::MakeNumVarArray;
-%ignore MPSolver::MakeIntVarArray;
-%ignore MPSolver::MakeBoolVarArray;
-// The following 3 methods that use protocol buffers as output
-// arguments are replaced by methods that return a protocol buffer,
-// see code below.
-%ignore MPSolver::ExportModel;
-%ignore MPSolver::ExportModelToNewProto;
-%ignore MPSolver::FillSolutionResponse;
-%ignore MPSolver::SolveWithProtocolBuffers;
-// Ignore Objective(), use MutableObjective() instead.
-%ignore MPSolver::Objective;
-%rename (Objective) MPSolver::MutableObjective;
-// Ignore export to string methods.
-%ignore operations_research::MPSolver::ExportModelAsLpFormat;
-%ignore operations_research::MPSolver::ExportModelAsMpsFormat;
-
-%typemap(cscode) MPVariable %{
+// Patch the MPVariable class to support the natural language API.
+// This code refers to classes ("LinearExpr", etc..) defined in
+// src/com/google/ortools/linearsolver/.
+%typemap(cscode) operations_research::MPVariable %{
   public static LinearExpr operator+(Variable a, double v)
   {
     return new VarWrapper(a) + v;
@@ -236,24 +212,11 @@ namespace operations_research {
   }
 %}
 
-%extend MPSolver {
-  std::string ExportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
-  }
-
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
-  }
-}
-
-// Add csharp code on Solver.
-%typemap(cscode) MPSolver %{
+// Patch the MPSolver class to:
+// - support custom versions of the array-based APIs (MakeVarArray, etc).
+// - customize the construction, and the OptimizationProblemType enum.
+// - support the natural language API.
+%typemap(cscode) operations_research::MPSolver %{
   public Variable[] MakeVarArray(int count,
                                  double lb,
                                  double ub,
@@ -481,8 +444,136 @@ namespace operations_research {
   }
 %}
 
-}  // namespace operations_research
+%ignoreall
 
-// Wrap linear_solver includes
+%unignore operations_research;
+
+// Rename all the exposed classes, by removing the "MP" prefix.
+%rename (Solver) operations_research::MPSolver;
+%rename (Variable) operations_research::MPVariable;
+%rename (Constraint) operations_research::MPConstraint;
+%rename (Objective) operations_research::MPObjective;
+%rename (SolverParameters) operations_research::MPSolverParameters;
+
+// Expose the MPSolver::OptimizationProblemType enum.
+%unignore operations_research::MPSolver::OptimizationProblemType;
+%unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SULUM_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING;
+
+// Expose the MPSolver::ResultStatus enum.
+%unignore operations_research::MPSolver::ResultStatus;
+%unignore operations_research::MPSolver::OPTIMAL;
+%unignore operations_research::MPSolver::FEASIBLE;
+%unignore operations_research::MPSolver::INFEASIBLE;
+%unignore operations_research::MPSolver::UNBOUNDED;
+%unignore operations_research::MPSolver::ABNORMAL;
+%unignore operations_research::MPSolver::NOT_SOLVED;
+
+// Expose the MPSolver's basic API, with some non-trivial renames.
+%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint;
+%rename (Objective) operations_research::MPSolver::MutableObjective;
+
+// Expose the MPSolver's basic API, with trivial renames when needed.
+%unignore operations_research::MPSolver::MPSolver;
+%unignore operations_research::MPSolver::MakeBoolVar;
+%unignore operations_research::MPSolver::MakeIntVar;
+%unignore operations_research::MPSolver::MakeNumVar;
+%unignore operations_research::MPSolver::MakeVar;
+%unignore operations_research::MPSolver::Solve;
+%unignore operations_research::MPSolver::VerifySolution;
+%unignore operations_research::MPSolver::Reset;
+%rename (SetTimeLimit) operations_research::MPSolver::set_time_limit;
+
+// Expose some of the more advanced MPSolver API.
+%unignore operations_research::MPSolver::SupportsProblemType;
+%unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
+%rename (WallTime) operations_research::MPSolver::wall_time;
+%unignore operations_research::MPSolver::Clear;
+%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::NumConstraints;
+%unignore operations_research::MPSolver::EnableOutput;
+%unignore operations_research::MPSolver::SuppressOutput;
+%unignore operations_research::MPSolver::LookupConstraintOrNull;
+%unignore operations_research::MPSolver::LookupVariableOrNull;
+
+// Expose very advanced parts of the MPSolver API. For expert users only.
+%unignore operations_research::MPSolver::ComputeExactConditionNumber;
+%rename (Nodes) operations_research::MPSolver::nodes;
+%rename (Iterations) operations_research::MPSolver::iterations;
+%unignore operations_research::MPSolver::BasisStatus;
+%unignore operations_research::MPSolver::FREE;
+%unignore operations_research::MPSolver::AT_LOWER_BOUND;
+%unignore operations_research::MPSolver::AT_UPPER_BOUND;
+%unignore operations_research::MPSolver::FIXED_VALUE;
+%unignore operations_research::MPSolver::BASIC;
+
+// MPVariable: writer API.
+%unignore operations_research::MPVariable::SetInteger;
+%rename (SetLb) operations_research::MPVariable::SetLB;
+%rename (SetUb) operations_research::MPVariable::SetUB;
+%unignore operations_research::MPVariable::SetBounds;
+
+// MPVariable: reader API.
+%rename (SolutionValue) operations_research::MPVariable::solution_value;
+%rename (Lb) operations_research::MPVariable::lb;
+%rename (Ub) operations_research::MPVariable::ub;
+%rename (Name) operations_research::MPVariable::name;
+%rename (BasisStatus) operations_research::MPVariable::basis_status;
+%rename (ReducedCost) operations_research::MPVariable::reduced_cost;  // expert
+
+// MPConstraint: writer API.
+%unignore operations_research::MPConstraint::SetCoefficient;
+%rename (SetLb) operations_research::MPConstraint::SetLB;
+%rename (SetUb) operations_research::MPConstraint::SetUB;
+%unignore operations_research::MPConstraint::SetBounds;
+%rename (SetIsLazy) operations_research::MPConstraint::set_is_lazy;
+
+// MPConstraint: reader API.
+%unignore operations_research::MPConstraint::GetCoefficient;
+%rename (Lb) operations_research::MPConstraint::lb;
+%rename (Ub) operations_research::MPConstraint::ub;
+%rename (Name) operations_research::MPConstraint::name;
+%rename (Activity) operations_research::MPConstraint::activity;
+%rename (BasisStatus) operations_research::MPConstraint::basis_status;
+%rename (DualValue) operations_research::MPConstraint::dual_value;  // expert
+%rename (IsLazy) operations_research::MPConstraint::is_lazy;  // expert
+
+// MPObjective: writer API.
+%unignore operations_research::MPObjective::SetCoefficient;
+%unignore operations_research::MPObjective::SetMinimization;
+%unignore operations_research::MPObjective::SetMaximization;
+%unignore operations_research::MPObjective::SetOptimizationDirection;
+%unignore operations_research::MPObjective::Clear;
+%unignore operations_research::MPObjective::SetOffset;
+%unignore operations_research::MPObjective::AddOffset;
+
+// MPObjective: reader API.
+%unignore operations_research::MPObjective::Value;
+%unignore operations_research::MPObjective::GetCoefficient;
+%rename (Minimization) operations_research::MPObjective::minimization;
+%rename (Maximization) operations_research::MPObjective::maximization;
+%rename (Offset) operations_research::MPObjective::offset;
+%unignore operations_research::MPObjective::BestBound;
+
+// MPSolverParameters API. For expert users only.
+%unignore operations_research::MPSolverParameters::DoubleParam;
+%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
+%unignore operations_research::MPSolverParameters::GetDoubleParam;
+%unignore operations_research::MPSolverParameters::SetDoubleParam;
+%unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
+
+// We want to ignore the CoeffMap class; but since it inherits from some
+// hash_map<>, swig complains about an undefined base class. Silence it.
+%warnfilter(401) CoeffMap;
+
 %include "linear_solver/linear_solver.h"
 %include "linear_solver/linear_solver_ext.h"
+
+%unignoreall

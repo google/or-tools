@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,347 +10,93 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// This .swig file exposes the linear programming and integer programming
+//
+// The python API is enriched by custom code defined here, making it
+// extremely intuitive, like:
+//   solver = pywraplp.Solver(pywraplp.Solver.LINEAR_PROGRAMMING_GLOP)
+//   x1 = solver.NumVar(0.0, 1.0, 'x1')
+//   x2 = solver.NumVar(-3.0, 2.0, 'x2')
+//   c1 = solver.Add(2 * x1 - 3.2 * x2 + 1 <= 2.5)
+//   solver.Maximize(10 * x1 + 6 * x2)
+//
+// USAGE EXAMPLES:
+// - python/linear_programming.py
+// - ./pywraplp_test.py
+//
+// TODO(user): test all the APIs that are currently marked as 'untested'.
 
 %include base/base.swig
-%include util/python/data.swig
 
-// Swig doesn't like module initializers.
-#define DECLARE_MODULE_INITIALIZER(x);
 
-// Include the file we want to wrap a first time.
 %{
-#include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver2.pb.h"
-#include "linear_solver/linear_solver_ext.h"
+#include "linear_solver/linear_solver.h"
+using std::string;
 %}
 
-// Define the renaming of methods.
-%ignore MakeBoolVarArray;
-%ignore MakeIntVarArray;
-%ignore MakeNumVarArray;
-%ignore MakeVarArray;
-%rename (Activity) activity;
-%rename (BasisStatus) basis_status;
-%rename (BestObjectiveBound) best_objective_bound;
-%rename (BoolVar) MakeBoolVar;
-%rename (Constraint) MPConstraint;
-%rename (Constraint) MakeRowConstraint;
-%rename (DualValue) dual_value;
-%rename (Index) index;
-%rename (Infinity) infinity;
-%rename (IntVar) MakeIntVar;
-%rename (Integer) integer;
-%rename (Iterations) iterations;
-%rename (Lb) lb;
-%rename (LookupConstraint) LookupConstraintOrNull;
-%rename (LookupVariable) LookupVariableOrNull;
-%rename (Nodes) nodes;
-%rename (NumVar) MakeNumVar;
-%rename (Offset) offset;
-%rename (ReducedCost) reduced_cost;
-%rename (SetLb) SetLB;
-%rename (SetTimeLimit) set_time_limit;
-%rename (SetUb) SetUB;
-%rename (SolutionValue) solution_value;
-%rename (Solver) MPSolver;
-%rename (TimeLimit) time_limit;
-%rename (Ub) ub;
-%rename (Variable) MPVariable;
-%rename (WallTime) wall_time;
-
-// Ignore non-mutable version of the Objective accessor, rename the mutable one.
-%ignore Objective;
-%rename (Objective) MutableObjective;
-// Access to the underlying solver is available only in C++.
-%ignore underlying_solver;
-// The ExportModelAs*Format methods return the string directly in the python
-// API, using an empty string to indicate failures (which can also indicate an
-// empty model).
-%ignore ExportModelAsLpFormat(bool, string*);
-%ignore ExportModelAsMpsFormat(bool, bool, string*);
-
 namespace operations_research {
+
 %pythoncode {
+from ortools.linear_solver.linear_solver_natural_api import LinearExpr
+from ortools.linear_solver.linear_solver_natural_api import ProductCst
+from ortools.linear_solver.linear_solver_natural_api import Sum
+from ortools.linear_solver.linear_solver_natural_api import SumArray
+from ortools.linear_solver.linear_solver_natural_api import SumCst
+from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
+}  // %pythoncode
 
-import types
-import sys
-
-import ortools.linear_solver.linear_solver2_pb2
-
-# The classes below allow linear expressions to be expressed naturally with the
-# usual arithmetic operators +-*/ and with constant numbers, which makes the
-# python API very intuitive. See RunLinearExampleNaturalLanguageAPI() in
-# ../python/linear_programming.py for an example.
-class LinearExpr(object):
-  """Holds linear expressions.
-
-  A linear expression is essentially an offset (floating-point value), and a
-  dictionary mapping MPVariable objects to their coefficient (which is also a
-  floating-point value).
-  """
-
-  def Visit(self, coeffs):
-    """Fills the coefficient dictionary, and returns the offset."""
-    return self.DoVisit(coeffs, 1.0)
-
-  def DoVisit(self, coeffs, multiplier):
-    """Like Visit, but do that with a global floating-point multiplier."""
-    raise NotImplementedError
-
-  def solution_value(self):
-    """Value of this linear expr, using the solution_value of its vars."""
-    coeffs = {}
-    constant = self.Visit(coeffs)
-    if sys.version_info[0] >= 3: # Python 3
-      return constant + sum(
-          [var.solution_value() * coeff for var, coeff in coeffs.items()])
-    else:
-      return constant + sum(
-          [var.solution_value() * coeff for var, coeff in coeffs.iteritems()])
-
-
-  def IsConstant(self, expr):
-    if sys.version_info[0] >= 3: # Python 3
-      return  isinstance(expr, (int, float))
-    else:
-      return  isinstance(expr, (int, long, float))
-
-  def __add__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, expr)
-    else:
-      return Sum(self, expr)
-
-  def __radd__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(self, cst)
-    else:
-      raise TypeError
-
-  def __sub__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, -expr)
-    else:
-      return Sum(self, ProductCst(expr, -1))
-
-  def __rsub__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(ProductCst(self, -1), cst)
-    else:
-      raise TypeError
-
-  def __mul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
-
-  def __rmul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
-
-  def __div__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
-
-  def __truediv__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
-
-  def __neg__(self):
-    return ProductCst(self, -1)
-
-  def __eq__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, arg, arg)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
-
-  def __ge__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, arg, 1e308)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
-
-  def __le__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, -1e308, arg)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
-
-
-class ProductCst(LinearExpr):
-  def __init__(self, expr, coef):
-    self.__expr = expr
-    self.__coef = coef
-
-  def __str__(self):
-    if (self.__coef == -1):
-      return '-' + str(self.__expr)
-    else:
-      return '(' + str(self.__coef) + ' * ' + str(self.__expr) + ')'
-
-  def DoVisit(self, coeffs, multiplier):
-    current_multiplier = multiplier * self.__coef
-    if current_multiplier:
-      return self.__expr.DoVisit(coeffs, current_multiplier)
-    return 0.0
-
-
-class Sum(LinearExpr):
-  def __init__(self, left, right):
-    self.__left = left
-    self.__right = right
-
-  def __str__(self):
-    return '(' + str(self.__left) + ' + ' + str(self.__right) + ')'
-
-  def DoVisit(self, coeffs, multiplier):
-    constant = self.__left.DoVisit(coeffs, multiplier)
-    constant += self.__right.DoVisit(coeffs, multiplier)
-    return constant
-
-
-class SumArray(LinearExpr):
-  def __init__(self, array):
-    if type(array) is types.GeneratorType:
-      self.__array = [x for x in array]
-    else:
-      self.__array = array
-
-  def __str__(self):
-    return 'Sum(' + str(self.__array) + ')'
-
-  def DoVisit(self, coeffs, multiplier):
-    constant = 0.0
-    for t in self.__array:
-      if self.IsConstant(t):
-        constant += t * multiplier
-      else:
-        constant += t.DoVisit(coeffs, multiplier)
-    return constant
-
-
-class SumCst(LinearExpr):
-  def __init__(self, expr, cst):
-    self.__expr = expr
-    self.__cst = cst
-
-  def __str__(self):
-    return '(' + str(self.__expr) + ' + ' + str(self.__cst) + ')'
-
-  def DoVisit(self, coeffs, multiplier):
-    constant = self.__expr.DoVisit(coeffs, multiplier)
-    return constant + self.__cst * multiplier
-
-
-class LinearConstraint(object):
-  def __init__(self, expr, lb, ub):
-    self.__expr = expr
-    self.__lb = lb
-    self.__ub = ub
-
-  def __str__(self):
-    if self.__lb > -1e308 and self.__ub < 1e308:
-      if self.__lb == self.__ub:
-        return str(self.__expr) + ' == ' + str(self.__lb)
-      else:
-        return (str(self.__lb) + ' <= ' + str(self.__expr) +
-                " <= " + str(self.__ub))
-    elif self.__lb > -1e308:
-      return str(self.__expr) + ' >= ' + str(self.__lb)
-    elif self.__ub < 1e308:
-      return str(self.__expr) + ' <= ' + str(self.__ub)
-    else:
-      return 'Trivial inequality (always true)'
-
-  def Extract(self, solver, name=''):
-    coeffs = {}
-    constant = self.__expr.Visit(coeffs)
-    lb = -solver.Infinity()
-    ub = solver.Infinity()
-    if self.__lb > -1e308:
-      lb = self.__lb - constant
-    if self.__ub < 1e308:
-      ub = self.__ub - constant
-
-    constraint = solver.RowConstraint(lb, ub, name)
-    if sys.version_info[0] >= 3: # Python 3
-      for v, c, in coeffs.items():
-        constraint.SetCoefficient(v, float(c))
-    else:
-      for v, c, in coeffs.iteritems():
-        constraint.SetCoefficient(v, float(c))
-    return constraint
-}
-
-# We also apply the same idea to MPVariable.
 %extend MPVariable {
-  std::string __str__() {
+  string __str__() {
     return self->name();
   }
-  std::string __repr__() {
+  string __repr__() {
     return self->name();
   }
+
+  // Note(user): the 74 lines below are a pure duplication of code from
+  // ../linear_solver_natural_api.py. Unfortunately it wasn't easy to fix. In
+  // particular, SWIG's %define won't work because they get prepended with a
+  // C-style comment "/*...*/" upon expansion, which breaks the python code.
   %pythoncode {
-  def IsConstant(self, expr):
-    if sys.version_info[0] >= 3: # Python 3
-      return  isinstance(expr, (int, float))
-    else:
-      return  isinstance(expr, (int, long, float))
-
-  __hash__ = object.__hash__
-
   def __add__(self, expr):
-    if self.IsConstant(expr):
+    if isinstance(expr, (int, long, float)):
       return SumCst(self, expr)
     else:
       return Sum(self, expr)
 
   def __radd__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       return SumCst(self, cst)
     else:
       raise TypeError
 
   def __sub__(self, expr):
-    if self.IsConstant(expr):
+    if isinstance(expr, (int, long, float)):
       return SumCst(self, -expr)
     else:
       return Sum(self, ProductCst(expr, -1))
 
   def __rsub__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       return SumCst(ProductCst(self, -1), cst)
     else:
       raise TypeError
 
   def __mul__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __rmul__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __div__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -359,7 +105,7 @@ class LinearConstraint(object):
       raise TypeError
 
   def __truediv__(self, cst):
-    if self.IsConstant(cst):
+    if isinstance(cst, (int, long, float)):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -371,19 +117,19 @@ class LinearConstraint(object):
     return ProductCst(self, -1)
 
   def __eq__(self, arg):
-    if self.IsConstant(arg):
+    if isinstance(arg, (int, long, float)):
       return LinearConstraint(self, arg, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
   def __ge__(self, arg):
-    if self.IsConstant(arg):
+    if isinstance(arg, (int, long, float)):
       return LinearConstraint(self, arg, 1e308)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
 
   def __le__(self, arg):
-    if self.IsConstant(arg):
+    if isinstance(arg, (int, long, float)):
       return LinearConstraint(self, -1e308, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
@@ -397,20 +143,20 @@ class LinearConstraint(object):
     else:
       coeffs[self] = multiplier
     return 0.0
-  }
+  }  // %pythoncode
 }
 
 # See ../python/linear_programming.py for example on how to use the nice
 # extended python API provided below.
 %extend MPSolver {
-  std::string ExportModelAsLpFormat(bool obfuscated) {
-    std::string output;
+  string ExportModelAsLpFormat(bool obfuscated) {
+    string output;
     if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
     return output;
   }
 
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
+  string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    string output;
     if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
       return "";
     }
@@ -418,72 +164,223 @@ class LinearConstraint(object):
   }
 
   %pythoncode {
-    def IsConstant(self, expr):
-      if sys.version_info[0] >= 3: # Python 3
-        return  isinstance(expr, (int, float))
+  def Add(self, constraint, name=''):
+    if isinstance(constraint, bool):
+      if constraint:
+        return self.RowConstraint(0, 0, name)
       else:
-        return  isinstance(expr, (int, long, float))
+        return self.RowConstraint(1, 1, name)
+    else:
+      return constraint.Extract(self, name)
 
-    def Add(self, constraint, name=''):
-      if isinstance(constraint, bool):
-        if constraint:
-          return self.RowConstraint(0, 0, name)
-        else:
-          return self.RowConstraint(1, 1, name)
-      else:
-        return constraint.Extract(self, name)
+  def Sum(self, expr_array):
+    result = SumArray(expr_array)
+    return result
 
-    def Sum(self, expr_array):
-      result = SumArray(expr_array)
-      return result
+  # Compatibility
+  def RowConstraint(self, *args):
+    return self.Constraint(*args)
 
-    # Compatibility
-    def RowConstraint(self, *args):
-      return self.Constraint(*args)
+  def Minimize(self, expr):
+    objective = self.Objective()
+    objective.Clear()
+    objective.SetMinimization()
+    coeffs = {}
+    offset = expr.Visit(coeffs)
+    objective.AddOffset(offset)
+    for v, c, in coeffs.iteritems():
+      objective.SetCoefficient(v, float(c))
 
-    def Minimize(self, expr):
-      objective = self.Objective()
-      objective.Clear()
-      objective.SetMinimization()
-      coeffs = {}
-      offset = expr.Visit(coeffs)
-      objective.AddOffset(offset)
-      if sys.version_info[0] >= 3: # Python 3
-        for v, c, in coeffs.items():
-          objective.SetCoefficient(v, float(c))
-      else:
-        for v, c, in coeffs.iteritems():
-          objective.SetCoefficient(v, float(c))
-
-    def Maximize(self, expr):
-      objective = self.Objective()
-      objective.Clear()
-      objective.SetMaximization()
-      coeffs = {}
-      offset = expr.Visit(coeffs)
-      objective.AddOffset(offset)
-      if sys.version_info[0] >= 3: # Python 3
-        for v, c, in coeffs.items():
-          objective.SetCoefficient(v, float(c))
-      else:
-        for v, c, in coeffs.iteritems():
-          objective.SetCoefficient(v, float(c))
-  }
+  def Maximize(self, expr):
+    objective = self.Objective()
+    objective.Clear()
+    objective.SetMaximization()
+    coeffs = {}
+    offset = expr.Visit(coeffs)
+    objective.AddOffset(offset)
+    for v, c, in coeffs.iteritems():
+      objective.SetCoefficient(v, float(c))
+  }  // %pythoncode
 }
 
-} // namespace operations_research
+%extend MPSolver {
+  %pythoncode {
+  @staticmethod
+  def Infinity():
+    return MPSolver.infinity()
 
-// Support protobuf.
-PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
-                 operations_research::new_proto::MPModelProto,
-                 MPModelProto);
-PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
-                 operations_research::new_proto::MPSolutionResponse,
-                 MPSolutionResponse);
-PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver2_pb2,
-                 operations_research::new_proto::MPModelRequest,
-                 MPModelRequest);
+  def SetTimeLimit(self, x):
+    self.set_time_limit(x)
+  }  // %pythoncode
+}
 
-// Wrap linear_solver includes
+%extend MPVariable {
+  %pythoncode {
+  def SolutionValue(self):
+    return self.solution_value()
+
+  def Integer(self):
+    return self.integer()
+
+  def Lb(self):
+    return self.lb()
+
+  def Ub(self):
+    return self.ub()
+  }  // %pythoncode
+}
+
+%extend MPConstraint {
+  %pythoncode {
+  def Lb(self):
+    return self.lb()
+
+  def Ub(self):
+    return self.ub()
+
+  def SetLb(self, x):
+    self.SetLB(x)
+
+  def SetUb(self, x):
+    self.SetUB(x)
+  }  // %pythoncode
+}
+
+%extend MPConstraint {
+  %pythoncode {
+  def Offset(self):
+    return self.offset()
+  }  // %pythoncode
+}
+}  // namespace operations_research
+
+
+%ignoreall
+
+%unignore operations_research;
+
+// Strip the "MP" prefix from the exposed classes.
+%rename (Solver) operations_research::MPSolver;
+%rename (Solver) operations_research::MPSolver::MPSolver;
+%rename (Constraint) operations_research::MPConstraint;
+%rename (Variable) operations_research::MPVariable;
+%rename (Objective) operations_research::MPObjective;
+
+// Expose the MPSolver::OptimizationProblemType enum.
+%unignore operations_research::MPSolver::OptimizationProblemType;
+%unignore operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+// These aren't unit tested, as they only run on machines with a Gurobi license.
+%unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SULUM_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING;
+
+
+// Expose the MPSolver::ResultStatus enum.
+%unignore operations_research::MPSolver::ResultStatus;
+%unignore operations_research::MPSolver::OPTIMAL;
+%unignore operations_research::MPSolver::FEASIBLE;  // No unit test
+%unignore operations_research::MPSolver::INFEASIBLE;
+%unignore operations_research::MPSolver::UNBOUNDED;  // No unit test
+%unignore operations_research::MPSolver::ABNORMAL;
+%unignore operations_research::MPSolver::NOT_SOLVED;  // No unit test
+
+// Expose the MPSolver's basic API, with some renames.
+%rename (Objective) operations_research::MPSolver::MutableObjective;
+%rename (BoolVar) operations_research::MPSolver::MakeBoolVar;  // No unit test
+%rename (IntVar) operations_research::MPSolver::MakeIntVar;
+%rename (NumVar) operations_research::MPSolver::MakeNumVar;
+%rename (Constraint) operations_research::MPSolver::MakeRowConstraint;
+%unignore operations_research::MPSolver::~MPSolver;
+%unignore operations_research::MPSolver::Solve;
+%unignore operations_research::MPSolver::VerifySolution;
+%unignore operations_research::MPSolver::infinity;
+%unignore operations_research::MPSolver::set_time_limit;  // No unit test
+
+
+// Expose some of the more advanced MPSolver API.
+%unignore operations_research::MPSolver::SupportsProblemType;  // No unit test
+%unignore operations_research::MPSolver::wall_time;  // No unit test
+%unignore operations_research::MPSolver::Clear;  // No unit test
+%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::NumConstraints;
+%unignore operations_research::MPSolver::EnableOutput;  // No unit test
+%unignore operations_research::MPSolver::SuppressOutput;  // No unit test
+%rename (LookupConstraint)
+    operations_research::MPSolver::LookupConstraintOrNull;
+%rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
+
+// Expose very advanced parts of the MPSolver API. For expert users only.
+%unignore operations_research::MPSolver::ComputeExactConditionNumber;
+%unignore operations_research::MPSolver::nodes;
+%unignore operations_research::MPSolver::iterations;  // No unit test
+%unignore operations_research::MPSolver::BasisStatus;
+%unignore operations_research::MPSolver::FREE;  // No unit test
+%unignore operations_research::MPSolver::AT_LOWER_BOUND;
+%unignore operations_research::MPSolver::AT_UPPER_BOUND;
+%unignore operations_research::MPSolver::FIXED_VALUE;  // No unit test
+%unignore operations_research::MPSolver::BASIC;
+
+// MPVariable: reader API.
+%unignore operations_research::MPVariable::solution_value;
+%unignore operations_research::MPVariable::lb;  // No unit test
+%unignore operations_research::MPVariable::ub;  // No unit test
+%unignore operations_research::MPVariable::name;  // No unit test
+%unignore operations_research::MPVariable::basis_status;
+%unignore operations_research::MPVariable::reduced_cost;  // For experts only.
+
+// MPConstraint: writer API.
+%unignore operations_research::MPConstraint::SetCoefficient;
+%unignore operations_research::MPConstraint::SetLB;
+%unignore operations_research::MPConstraint::SetUB;
+%unignore operations_research::MPConstraint::SetBounds;
+%unignore operations_research::MPConstraint::set_is_lazy;
+
+// MPConstraint: reader API.
+%unignore operations_research::MPConstraint::GetCoefficient;
+%unignore operations_research::MPConstraint::lb;
+%unignore operations_research::MPConstraint::ub;
+%unignore operations_research::MPConstraint::name;
+%unignore operations_research::MPConstraint::activity;
+%unignore operations_research::MPConstraint::basis_status;
+%unignore operations_research::MPConstraint::dual_value;  // For experts only.
+
+// MPObjective: writer API.
+%unignore operations_research::MPObjective::SetCoefficient;
+%unignore operations_research::MPObjective::SetMinimization;
+%unignore operations_research::MPObjective::SetMaximization;
+%unignore operations_research::MPObjective::SetOptimizationDirection;
+%unignore operations_research::MPObjective::Clear;  // No unit test
+%unignore operations_research::MPObjective::SetOffset;
+%unignore operations_research::MPObjective::AddOffset;  // No unit test
+
+// MPObjective: reader API.
+%unignore operations_research::MPObjective::Value;
+%unignore operations_research::MPObjective::GetCoefficient;
+%unignore operations_research::MPObjective::minimization;
+%unignore operations_research::MPObjective::maximization;
+%unignore operations_research::MPObjective::offset;
+%unignore operations_research::MPObjective::BestBound;
+
+// MPSolverParameters API. For expert users only.
+// TODO(user): also strip "MP" from the class name.
+// TODO(user): unit test all of it.
+%unignore operations_research::MPSolverParameters;
+%unignore operations_research::MPSolverParameters::MPSolverParameters;
+%unignore operations_research::MPSolverParameters::DoubleParam;
+%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
+%unignore operations_research::MPSolverParameters::SetDoubleParam;
+%unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
+
+// We want to ignore the CoeffMap class; but since it inherits from some
+// hash_map<>, swig complains about an undefined base class. Silence it.
+%warnfilter(401) CoeffMap;
+
 %include "linear_solver/linear_solver.h"
-%include "linear_solver/linear_solver_ext.h"
+
+%unignoreall

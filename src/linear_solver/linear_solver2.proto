@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -131,12 +131,15 @@ message MPModelRequest {
   // program?).
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
-    CLP_LINEAR_PROGRAMMING = 0;            // Recommended default for LP models.
+    GLOP_LINEAR_PROGRAMMING = 2;           // Recommended default for LP models.
+    CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
+    GUROBI_LINEAR_PROGRAMMING = 6;         // Commercial, needs a valid license.
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;   // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
+    GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
   }
   optional SolverType solver_type = 2;
 
