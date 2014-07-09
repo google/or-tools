@@ -44,8 +44,10 @@ public class Knapsack {
     final long[] capacities = {850};
 
     final long optimalProfit = 7534;
+    System.out.println("Solving knapsack with " + profits.length + " items");
 
     solver.init(profits, weights, capacities);
+
     final long computedProfit = solver.solve();
 
     System.out.println("Optimal_Profit = " + computedProfit + "/" +
