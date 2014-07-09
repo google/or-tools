@@ -6,7 +6,7 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingModel;
 
-public class GoogleCPSolver {
+public class SimpleRoutingTest {
 
   //Static Add Library
   static { System.loadLibrary("jniortools"); }
