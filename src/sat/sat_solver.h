@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -172,6 +172,12 @@ class SatSolver {
     LIMIT_REACHED,
   };
   Status Solve();
+
+  // Same as Solve(), but with a given time limit in seconds. Note that this is
+  // slightly redundant with the max_time_in_seconds() parameter, but because
+  // SetParameters() resets more than just the time limit, it is useful to have
+  // this more specific api.
+  Status SolveWithTimeLimit(double max_time_in_seconds);
 
   // Simple interface to solve a problem under the given assumptions. This
   // simply ask the solver to solve a problem given a set of variables fixed to

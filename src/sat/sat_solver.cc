@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -906,6 +906,11 @@ SatSolver::Status SatSolver::Solve() {
       return StatusWithLog(MODEL_UNSAT);
     }
   }
+}
+
+SatSolver::Status SatSolver::SolveWithTimeLimit(double max_time_in_seconds) {
+  time_limit_.reset(new TimeLimit(max_time_in_seconds));
+  return Solve();
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
