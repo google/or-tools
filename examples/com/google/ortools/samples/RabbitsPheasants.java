@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -48,8 +48,8 @@ public class RabbitsPheasants {
         solver.makeProd(rabbits, 4),
         solver.makeProd(pheasants, 2)), 56));
     DecisionBuilder db = solver.makePhase(rabbits, pheasants,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MIN_VALUE);
+                                          Solver.CHOOSE_FIRST_UNBOUND,
+                                          Solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
     solver.nextSolution();
     logger.info(rabbits.toString());

@@ -136,6 +136,24 @@ import java.lang.reflect.*;
 %rename (infinity) operations_research::MPSolver::infinity;
 %rename (setTimeLimit) operations_research::MPSolver::set_time_limit;  // no test
 
+%unignore operations_research::MPSolver::exportModelAsLpFormat;
+%unignore operations_research::MPSolver::exportModelAsMpsFormat;
+
+%extend operations_research::MPSolver {
+  std::string exportModelAsLpFormat(bool obfuscated) {
+    std::string output;
+    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
+    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+}
 
 // Expose some of the more advanced MPSolver API.
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
@@ -220,25 +238,6 @@ import java.lang.reflect.*;
 // We want to ignore the CoeffMap class; but since it inherits from some
 // hash_map<>, swig complains about an undefined base class. Silence it.
 %warnfilter(401) CoeffMap;
-
-%extend operations_research::MPSolver {
-  std::string exportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
-  }
-
-  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
-  }
-}
-
-%unignore operations_research::MPSolver::exportModelAsLpFormat;
-%unignore operations_research::MPSolver::exportModelAsMPSFormat;
 
 %include "linear_solver/linear_solver.h"
 

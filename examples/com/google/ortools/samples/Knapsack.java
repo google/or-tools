@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,15 +21,11 @@ import com.google.ortools.algorithms.KnapsackSolver;
  */
 
 public class Knapsack {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
+  static { System.loadLibrary("jniortools"); }
 
   private static void solve() {
     KnapsackSolver solver = new KnapsackSolver(
-        KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, "test");
+        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, "test");
     final long[] profits = {360, 83, 59, 130, 431, 67, 230, 52, 93,
                             125, 670, 892, 600, 38, 48, 147, 78, 256,
                             63, 17, 120, 164, 432, 35, 92, 110, 22,

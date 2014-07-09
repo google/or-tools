@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 package com.google.ortools.samples;
 
 import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
@@ -23,22 +24,14 @@ import com.google.ortools.linearsolver.MPVariable;
  */
 
 public class LinearProgramming {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
+  static { System.loadLibrary("jniortools"); }
 
   private static MPSolver createSolver (String solverType) {
     try {
-      return new MPSolver("IntegerProgrammingExample",
-                          MPSolver.getSolverEnum(solverType));
-    } catch (java.lang.ClassNotFoundException e) {
-      throw new Error(e);
-    } catch (java.lang.NoSuchFieldException e) {
+      return new MPSolver("LinearProgrammingExample",
+                          MPSolver.OptimizationProblemType.valueOf(solverType));
+    } catch (java.lang.IllegalArgumentException e) {
       return null;
-    } catch (java.lang.IllegalAccessException e) {
-      throw new Error(e);
     }
   }
 
@@ -48,17 +41,18 @@ public class LinearProgramming {
       System.out.println("Could not create solver " + solverType);
       return;
     }
-    double infinity = solver.infinity();
+    double infinity = MPSolver.infinity();
     // x1, x2 and x3 are continuous non-negative variables.
     MPVariable x1 = solver.makeNumVar(0.0, infinity, "x1");
     MPVariable x2 = solver.makeNumVar(0.0, infinity, "x2");
     MPVariable x3 = solver.makeNumVar(0.0, infinity, "x3");
 
     // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-    solver.objective().setCoefficient(x1, 10);
-    solver.objective().setCoefficient(x2, 6);
-    solver.objective().setCoefficient(x3, 4);
-    solver.objective().setMaximization();
+    MPObjective objective = solver.objective();
+    objective.setCoefficient(x1, 10);
+    objective.setCoefficient(x2, 6);
+    objective.setCoefficient(x3, 4);
+    objective.setMaximization();
 
     // x1 + x2 + x3 <= 100.
     MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
@@ -81,20 +75,26 @@ public class LinearProgramming {
     System.out.println("Number of variables = " + solver.numVariables());
     System.out.println("Number of constraints = " + solver.numConstraints());
 
-    int resultStatus = solver.solve();
+    final MPSolver.ResultStatus resultStatus = solver.solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.OPTIMAL) {
+    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
       System.err.println("The problem does not have an optimal solution!");
       return;
     }
 
-    System.out.println("Problem solved in " + solver.wallTime() +
-                       " milliseconds");
+    // Verify that the solution satisfies all constraints (when using solvers
+    // others than GLOP_LINEAR_PROGRAMMING, this is highly recommended!).
+    if (!solver.verifySolution(/*tolerance=*/1e-7, /*logErrors=*/true)) {
+      System.err.println("The solution returned by the solver violated the"
+                         + " problem constraints by at least 1e-7");
+      return;
+    }
+
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
 
     // The objective value of the solution.
-    System.out.println("Optimal objective value = " +
-                       solver.objective().value());
+    System.out.println("Optimal objective value = " + solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());
@@ -102,8 +102,7 @@ public class LinearProgramming {
     System.out.println("x3 = " + x3.solutionValue());
 
     System.out.println("Advanced usage:");
-    System.out.println("Problem solved in " + solver.iterations() +
-                       " iterations");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
     System.out.println("x1: reduced cost = " + x1.reducedCost());
     System.out.println("x2: reduced cost = " + x2.reducedCost());
     System.out.println("x3: reduced cost = " + x3.reducedCost());
@@ -160,11 +159,11 @@ public class LinearProgramming {
   public static void main(String[] args) throws Exception {
     System.out.println("---- Linear programming example with GLOP ----");
     runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
+    System.out.println("---- Export Linear programming example ----");
+    exportLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
     System.out.println("---- Linear programming example with GLPK ----");
     runLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
-    System.out.println("---- Export Linear programming example ----");
-    exportLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
   }
 }

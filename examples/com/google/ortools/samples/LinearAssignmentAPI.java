@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,8 +13,7 @@
 
 package com.google.ortools.samples;
 
-import com.google.ortools.graph.ForwardEbertLinearSumAssignment;
-import com.google.ortools.graph.ForwardStarGraph;
+import com.google.ortools.graph.LinearSumAssignment;
 
 /**
  * Test assignment on a 4x4 matrix. Example taken from
@@ -39,22 +38,22 @@ public class LinearAssignmentAPI {
                           { 45, 110, 95, 115 }};
     final int expectedCost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0];
 
-    ForwardStarGraph graph = new ForwardStarGraph(numSources + numTargets,
-                                                  numSources * numTargets);
-    ForwardEbertLinearSumAssignment assignment =
-        new ForwardEbertLinearSumAssignment(graph, numSources);
+    LinearSumAssignment assignment = new LinearSumAssignment();
     for (int source = 0; source < numSources; ++source) {
       for (int target = 0; target < numTargets; ++target) {
-        final int arc = graph.addArc(source, numSources + target);
-        assignment.setArcCost(arc, cost[source][target]);
+        assignment.addArcWithCost(source, target, cost[source][target]);
       }
     }
 
-    if (assignment.computeAssignment()) {
-    final long totalCost = assignment.getCost();
-    System.out.println("total cost = " + totalCost + "/" + expectedCost);
+    if (assignment.solve() == LinearSumAssignment.Status.OPTIMAL) {
+      System.out.println("Total cost = " + assignment.getOptimalCost() + "/" + expectedCost);
+      for (int node = 0; node < assignment.getNumNodes(); ++node) {
+        System.out.println("Left node " + node
+            + " assigned to right node " + assignment.getRightMate(node)
+            + " with cost " + assignment.getAssignmentCost(node));
+      }
     } else {
-      System.out.println("No solution found");
+      System.out.println("No solution found.");
     }
   }
 
