@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,20 +10,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// TODO(user): make this SWIG file comply with the SWIG style guide.
+%include "base/base.swig"
 
-%include base/base.swig
-
-%{
-#include <vector>
-#include "base/integral_types.h"
-using std::string;
-%}
-
-%{
-inline int PyIntOrLong_Check(PyObject* obj) {
-  return PyInt_Check(obj) || PyLong_Check(obj);
-}
-%}
+%import "base/integral_types.h"
 
 namespace operations_research {
 // --------- std::vector<data> wrapping ----------
@@ -89,7 +79,7 @@ namespace operations_research {
 %enddef
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
-PY_LIST_OUTPUT_TYPEMAP(long long, PyIntOrLong_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(long long, SwigPyIntOrLong_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<vector>.
