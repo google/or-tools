@@ -1,3 +1,15 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // Static part of SWIG-generated C++ wrapper for Python (_module_name.cc).
 //
 // This file should only be included in base.swig inside Python-specific part:
@@ -8,6 +20,9 @@
 //   #endif
 // It has no XXX_H_ guard because SWIG protects all %include'd files to be used
 // only once.
+
+#ifndef OR_TOOLS_BASE_PYTHON_SWIG_H_
+#define OR_TOOLS_BASE_PYTHON_SWIG_H_
 
 #if PY_VERSION_HEX >= 0x03030000  // Py3.3+
 // Use Py3 unicode str() type for C++ strings.
@@ -144,9 +159,9 @@ template <>
 inline bool PyObjAs(PyObject* py, unsigned long long* c) {  // NOLINT
   unsigned long long i;                              // NOLINT
 #if PY_MAJOR_VERSION < 3
-  if (PyInt_Check(py))
+  if (PyInt_Check(py)) {
     i = PyInt_AsUnsignedLongLongMask(py);
-  else  // NOLINT
+  } else  // NOLINT
 #endif
   {
     if (!PyLong_Check(py)) return false;  // Not a Python long.
@@ -214,11 +229,13 @@ inline PyObject* SwigString_FromString(const std::string& s) {
   return PyString_FromStringAndSize(s.data(), s.size());
 }
 
-inline std::string SwigString_AsString(PyObject* o) { return std::string(PyString_AsString(o)); }
+inline std::string SwigString_AsString(PyObject* o) {
+  return std::string(PyString_AsString(o));
+}
 
 // STL std::vector<T> for common types
 
-namespace {
+namespace {  // NOLINT
 
 template <typename T>
 struct vector_pusher {
@@ -235,8 +252,8 @@ struct vector_pusher<T*> {
 };  // namespace
 
 template <class T>
-bool vector_input_helper(PyObject* seq, std::vector<T>* out,
-                         bool (*convert)(PyObject*, T* const)) {
+inline bool vector_input_helper(PyObject* seq, std::vector<T>* out,
+                                bool (*convert)(PyObject*, T* const)) {
   PyObject* item, *it = PyObject_GetIter(seq);
   if (!it) return false;
   T elem;
@@ -254,8 +271,8 @@ bool vector_input_helper(PyObject* seq, std::vector<T>* out,
 }
 
 template <class T>
-bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
-                              swig_type_info* swig_Tp_type) {
+inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
+                                     swig_type_info* swig_Tp_type) {
   PyObject* item, *it = PyObject_GetIter(seq);
   if (!it) {
     PyErr_SetString(PyExc_TypeError, "sequence expected");
@@ -287,7 +304,7 @@ bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
 // The converter function converts a C++ object of type const T or const T&
 // into the corresponding Python object.
 template <class T, class Converter>
-static PyObject* list_output_helper(const T* vec, Converter converter) {
+inline PyObject* list_output_helper(const T* vec, Converter converter) {
   if (vec == NULL) Py_RETURN_NONE;  // Return a nice out-of-band value.
   PyObject* lst = PyList_New(vec->size());
   if (lst == NULL) return NULL;
@@ -315,19 +332,19 @@ struct OutConverter {
 };
 
 template <class T, class TR>
-static PyObject* vector_output_helper(const std::vector<T>* vec,
+inline PyObject* vector_output_helper(const std::vector<T>* vec,
                                       PyObject* (*converter)(const TR x)) {
   return list_output_helper(vec, converter);
 }
 
 template <class T>
-static PyObject* vector_output_helper(const std::vector<T*>* vec,
+inline PyObject* vector_output_helper(const std::vector<T*>* vec,
                                       const OutConverter<T*>& converter) {
   return list_output_helper(vec, converter);
 }
 
 template <class T>
-static PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
+inline PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
                                            swig_type_info* swig_Tp_type,
                                            bool newobj = false) {
 #if 1
@@ -348,3 +365,5 @@ static PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
 #undef PyInt_FromLong
 #define PyInt_FromLong PyLong_FromLong
 #endif
+
+#endif  // OR_TOOLS_BASE_PYTHON_SWIG_H_

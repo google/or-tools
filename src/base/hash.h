@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -105,6 +105,18 @@ static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
   c -= b;
   c ^= (b >> 22);
 }
+
+inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
+  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
+  operations_research::mix(num, b, c);
+  return c;
+}
+
+inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
+  operations_research::mix(num, b, c);
+  return c;
+}
 }  // namespace operations_research
 
 // --------------------------------------------------------------------------
@@ -119,18 +131,6 @@ static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
 #endif
 
 // Support a few hash<> operators, in the hash namespace.
-inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
-  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
-  operations_research::mix(num, b, c);
-  return c;
-}
-
-inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
-  operations_research::mix(num, b, c);
-  return c;
-}
-
 namespace HASH_NAMESPACE {
 template <class First, class Second>
 struct hash<std::pair<First, Second> > {
@@ -139,8 +139,8 @@ struct hash<std::pair<First, Second> > {
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
     return (sizeof(h1) <= sizeof(uint32)) ?  // NOLINT
-               Hash32NumWithSeed(h1, h2)
-                                          : Hash64NumWithSeed(h1, h2);
+        operations_research::Hash32NumWithSeed(h1, h2) :
+        operations_research::Hash64NumWithSeed(h1, h2);
   }
 };
 
@@ -192,19 +192,6 @@ using HASH_NAMESPACE::hash_set;
 // Microsoft Visual C++ port
 // --------------------------------------------------------------------------
 #ifdef _MSC_VER
-
-inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
-  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
-  operations_research::mix(num, b, c);
-  return c;
-}
-
-inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
-  operations_research::mix(num, b, c);
-  return c;
-}
-
 // TODO(user): Nuke this section and merge with gcc version.
 // The following class defines a hash function for std::pair<int64, int64>.
 class PairInt64Hasher : public stdext::hash_compare<std::pair<int64, int64> > {

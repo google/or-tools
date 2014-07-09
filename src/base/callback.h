@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -160,7 +160,9 @@ struct is_class_or_union {
   static small_ tester(void (U::*)());
   template <class U>
   static big_ tester(...);
+  #ifndef SWIG
   static const bool value = sizeof(tester<T>(0)) == sizeof(small_);
+  #endif  // SWIG
 };
 
 template <typename T>
@@ -360,7 +362,7 @@ class _FunctionResultCallback_0_0 : public ResultCallback<R> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_0(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_0(FunctionSignature function)
       : ResultCallback<R>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -393,7 +395,7 @@ class _FunctionResultCallback_0_0<del, void> : public Closure {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_0(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_0(FunctionSignature function)
       : Closure(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -2635,7 +2637,7 @@ class _FunctionResultCallback_0_1 : public ResultCallback1<R, A1> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_1(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_1(FunctionSignature function)
       : ResultCallback1<R, A1>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -2668,7 +2670,7 @@ class _FunctionResultCallback_0_1<del, void, A1> : public Callback1<A1> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_1(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_1(FunctionSignature function)
       : Callback1<A1>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -4948,7 +4950,7 @@ class _FunctionResultCallback_0_2 : public ResultCallback2<R, A1, A2> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_2(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_2(FunctionSignature function)
       : ResultCallback2<R, A1, A2>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -4982,7 +4984,7 @@ class _FunctionResultCallback_0_2<del, void, A1, A2> : public Callback2<A1,
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_2(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_2(FunctionSignature function)
       : Callback2<A1, A2>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -7315,7 +7317,7 @@ class _FunctionResultCallback_0_3 : public ResultCallback3<R, A1, A2, A3> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_3(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_3(FunctionSignature function)
       : ResultCallback3<R, A1, A2, A3>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -7349,7 +7351,7 @@ class _FunctionResultCallback_0_3<del, void, A1, A2, A3> : public Callback3<
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_3(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_3(FunctionSignature function)
       : Callback3<A1, A2, A3>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -9725,7 +9727,7 @@ class _FunctionResultCallback_0_4 : public ResultCallback4<R, A1, A2, A3, A4> {
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_4(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_4(FunctionSignature function)
       : ResultCallback4<R, A1, A2, A3, A4>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -9759,7 +9761,7 @@ class _FunctionResultCallback_0_4<del, void, A1, A2, A3,
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_4(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_4(FunctionSignature function)
       : Callback4<A1, A2, A3, A4>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -12184,7 +12186,7 @@ class _FunctionResultCallback_0_5
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_5(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_5(FunctionSignature function)
       : ResultCallback5<R, A1, A2, A3, A4, A5>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
@@ -12219,7 +12221,7 @@ class _FunctionResultCallback_0_5<del, void, A1, A2, A3, A4,
   FunctionSignature function_;
 
  public:
-  inline _FunctionResultCallback_0_5(FunctionSignature function)
+  explicit inline _FunctionResultCallback_0_5(FunctionSignature function)
       : Callback5<A1, A2, A3, A4, A5>(), function_(function) {}
 
   virtual bool IsRepeatable() const { return !del; }
