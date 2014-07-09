@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "base/filelinereader.h"
 #include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/hybrid.h"
 
 DEFINE_string(
     data_file, "",
@@ -171,7 +172,9 @@ class MultiDimKnapsackData {
           }
           break;
         }
-        case 6: { break; }
+        case 6: {
+          break;
+        }
       }
     } else {
       // 0 = init
@@ -304,7 +307,7 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
 
   if (FLAGS_simplex_frequency > 0) {
     SearchMonitor* const simplex =
-        solver.MakeSimplexConstraint(FLAGS_simplex_frequency);
+        MakeSimplexConstraint(&solver, FLAGS_simplex_frequency);
     monitors.push_back(simplex);
   }
 

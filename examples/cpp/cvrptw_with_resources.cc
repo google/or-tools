@@ -10,15 +10,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// Capacitated Vehicle Routing Problem with Time Windows (and optional orders).
-// A description of the problem can be found here:
-// http://en.wikipedia.org/wiki/Vehicle_routing_problem.
-// The variant which is tackled by this model includes a capacity dimension,
-// time windows and optional orders, with a penalty cost if orders are not
-// performed. For the sake of simplicty, orders are randomly located and
-// distances are computed using the Manhattan distance. Distances are assumed
-// to be in meters and times in seconds.
+// Capacitated Vehicle Routing Problem with Time Windows and capacitated
+// resources.
+// This is an extension to the model in cvrptw.cc so refer to that file for
+// more information on the common part of the model. The model implemented here
+// limits the number of vehicles which can simultaneously leave or enter the
+// depot due to limited resources (or capacity) available.
+// TODO(user): The current model consumes resources even for vehicles with
+// empty routes; fix this when we have an API on the cumulative constraints
+// with variable demands.
 
 #include "base/unique_ptr.h"
 #include <vector>
@@ -33,6 +33,7 @@
 #include "base/random.h"
 
 using operations_research::Assignment;
+using operations_research::IntervalVar;
 using operations_research::IntVar;
 using operations_research::RoutingDimension;
 using operations_research::RoutingModel;
@@ -247,14 +248,37 @@ int main(int argc, char** argv) {
       NewPermanentCallback(&locations, &LocationContainer::ManhattanTime));
   routing.AddDimension(
       NewPermanentCallback(&time, &ServiceTimePlusTransition::Compute),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
+
   // Adding time windows.
   ACMRandom randomizer(GetSeed());
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < routing.nodes(); ++order) {
     const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
-    time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
+    routing.CumulVar(order, kTime)->SetRange(start, start + kTWDuration);
+  }
+
+  // Adding resource constraints at the depot (start and end location of
+  // routes).
+  std::vector<IntVar*> start_end_times;
+  for (int i = 0; i < FLAGS_vrp_vehicles; ++i) {
+    start_end_times.push_back(routing.CumulVar(routing.End(i), kTime));
+    start_end_times.push_back(routing.CumulVar(routing.Start(i), kTime));
+  }
+  // Build corresponding time intervals.
+  const int64 kVehicleSetup = 180;
+  Solver* const solver = routing.solver();
+  std::vector<IntervalVar*> intervals;
+  solver->MakeFixedDurationIntervalVarArray(start_end_times, kVehicleSetup,
+                                            "depot_interval", &intervals);
+  // Constrain the number of maximum simultaneous intervals at depot.
+  const int64 kDepotCapacity = 5;
+  std::vector<int64> depot_usage(start_end_times.size(), 1);
+  solver->AddConstraint(
+      solver->MakeCumulative(intervals, depot_usage, kDepotCapacity, "depot"));
+  // Instantiate route start and end times to produce feasible times.
+  for (int i = 0; i < start_end_times.size(); ++i) {
+    routing.AddVariableMinimizedByFinalizer(start_end_times[i]);
   }
 
   // Adding penalty costs to allow skipping orders.

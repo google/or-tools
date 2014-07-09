@@ -10,15 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// Capacitated Vehicle Routing Problem with Time Windows (and optional orders).
-// A description of the problem can be found here:
-// http://en.wikipedia.org/wiki/Vehicle_routing_problem.
-// The variant which is tackled by this model includes a capacity dimension,
-// time windows and optional orders, with a penalty cost if orders are not
-// performed. For the sake of simplicty, orders are randomly located and
-// distances are computed using the Manhattan distance. Distances are assumed
-// to be in meters and times in seconds.
+// Capacitated Vehicle Routing Problem with Time Windows and refueling
+// constraints.
+// This is an extension to the model in cvrptw.cc so refer to that file for
+// more information on the common part of the model. The model implemented here
+// takes into account refueling constraints using a specific dimension: vehicles
+// must visit certain nodes (refueling nodes) before the quantity of fuel
+// reaches zero. Fuel consumption is proportional to the distance traveled.
 
 #include "base/unique_ptr.h"
 #include <vector>
@@ -52,6 +50,7 @@ DEFINE_bool(vrp_use_deterministic_random_seed, false,
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
+const char* kFuel = "Fuel";
 
 // Random seed generator.
 int32 GetSeed() {
@@ -60,6 +59,12 @@ int32 GetSeed() {
   } else {
     return ACMRandom::HostnamePidTimeSeed();
   }
+}
+
+// Returns true if node is a refueling node (based on node / refuel node ratio).
+bool IsRefuelNode(int64 node) {
+  const int64 kRefuelNodeRatio = 10;
+  return (node % kRefuelNodeRatio == 0);
 }
 
 // Location container, contains positions of orders and can be used to obtain
@@ -77,6 +82,10 @@ class LocationContainer {
   int64 ManhattanDistance(RoutingModel::NodeIndex from,
                           RoutingModel::NodeIndex to) const {
     return locations_[from].DistanceTo(locations_[to]);
+  }
+  int64 NegManhattanDistance(RoutingModel::NodeIndex from,
+                             RoutingModel::NodeIndex to) const {
+    return -ManhattanDistance(from, to);
   }
   int64 ManhattanTime(RoutingModel::NodeIndex from,
                       RoutingModel::NodeIndex to) const {
@@ -126,7 +135,11 @@ class RandomDemand {
     }
   }
   int64 Demand(RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) const {
-    return demand_[from.value()];
+    // Refuel nodes don't have a demand.
+    if (!IsRefuelNode(from.value())) {
+      return demand_[from.value()];
+    }
+    return 0;
   }
 
  private:
@@ -181,6 +194,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   const RoutingDimension& capacity_dimension =
       routing.GetDimensionOrDie(kCapacity);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+  const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int route_number = 0; route_number < routing.vehicles();
        ++route_number) {
     int64 order = routing.Start(route_number);
@@ -191,13 +205,17 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
       while (true) {
         IntVar* const load_var = capacity_dimension.CumulVar(order);
         IntVar* const time_var = time_dimension.CumulVar(order);
-        StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
+        IntVar* const fuel_var = fuel_dimension.CumulVar(order);
+        StringAppendF(&plan_output,
+                      "%lld Load(%lld) Time(%lld, %lld) Fuel(%lld, %lld) -> ",
                       order, plan.Value(load_var), plan.Min(time_var),
-                      plan.Max(time_var));
+                      plan.Max(time_var), plan.Min(fuel_var),
+                      plan.Max(fuel_var));
         if (routing.IsEnd(order)) break;
         order = plan.Value(routing.NextVar(order));
       }
     }
+    plan_output += "\n";
   }
   LOG(INFO) << plan_output;
 }
@@ -253,8 +271,28 @@ int main(int argc, char** argv) {
   ACMRandom randomizer(GetSeed());
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < routing.nodes(); ++order) {
-    const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
-    time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
+    if (!IsRefuelNode(order)) {
+      const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
+      time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
+    }
+  }
+
+  // Adding fuel dimension. This dimension consumes a quantity equal to the
+  // distance traveled. Only refuel nodes can make the quantity of dimension
+  // increase by letting slack variable replenish the fuel.
+  const int64 kFuelCapacity = kXMax + kYMax;
+  routing.AddDimension(
+      NewPermanentCallback(&locations,
+                           &LocationContainer::NegManhattanDistance),
+      kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
+  const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
+  for (int order = 0; order < routing.Size(); ++order) {
+    // Only let slack free for refueling nodes.
+    if (!IsRefuelNode(order) || routing.IsStart(order)) {
+      fuel_dimension.SlackVar(order)->SetValue(0);
+    }
+    // Needed to instantiate fuel quantity at each node.
+    routing.AddVariableMinimizedByFinalizer(fuel_dimension.CumulVar(order));
   }
 
   // Adding penalty costs to allow skipping orders.

@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -63,16 +63,18 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 
   new_proto::MPModelRequest model_request;
   model_request.mutable_model()->CopyFrom(model_proto);
-#if defined(USE_GLPK)
-  if (type == MPSolver::GLPK_LINEAR_PROGRAMMING) {
-    model_request.set_solver_type(new_proto::MPModelRequest::GLPK_LINEAR_PROGRAMMING);
+  #if defined(USE_GLOP)
+  if (type == MPSolver::GLOP_LINEAR_PROGRAMMING) {
+    model_request.set_solver_type(
+        new_proto::MPModelRequest::GLOP_LINEAR_PROGRAMMING);
   }
-#endif  // USE_GLPK
-#if defined(USE_CLP)
+  #endif  // USE_GLOP
+  #if defined(USE_CLP)
   if (type == MPSolver::CLP_LINEAR_PROGRAMMING) {
-    model_request.set_solver_type(new_proto::MPModelRequest::CLP_LINEAR_PROGRAMMING);
+    model_request.set_solver_type(
+        new_proto::MPModelRequest::CLP_LINEAR_PROGRAMMING);
   }
-#endif  // USE_CLP
+  #endif  // USE_CLP
 
   new_proto::MPSolutionResponse solution_response;
   MPSolver::SolveWithProto(model_request, &solution_response);
@@ -88,14 +90,14 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 }
 
 void RunAllExamples() {
-#if defined(USE_GLPK)
-  LOG(INFO) << "----- Running Max Example with GLPK -----";
-  BuildLinearProgrammingMaxExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
-#endif  // USE_GLPK
-#if defined(USE_CLP)
+  #if defined(USE_GLOP)
+  LOG(INFO) << "----- Running Max Example with GLOP -----";
+  BuildLinearProgrammingMaxExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
+  #endif  // USE_GLOP
+  #if defined(USE_CLP)
   LOG(INFO) << "----- Running Max Example with Coin LP -----";
   BuildLinearProgrammingMaxExample(MPSolver::CLP_LINEAR_PROGRAMMING);
-#endif  // USE_CLP
+  #endif  // USE_CLP
 }
 }  // namespace operations_research
 
