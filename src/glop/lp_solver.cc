@@ -126,7 +126,7 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   ScopedFloatingPointEnv scoped_fenv;
   if (FLAGS_lp_solver_enable_fp_exceptions) {
 #ifdef _MSC_VER
-    scoped_fenv.EnableExceptions(_EM_INVALID | EM_ZERODIVIDE);
+    scoped_fenv.EnableExceptions(_EM_INVALID | _EM_ZERODIVIDE);
 #else
     scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
 #endif
