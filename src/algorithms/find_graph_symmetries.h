@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // TODO(user, fdid): Refine this toplevel comment when this file settles.
 
 #ifndef OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_

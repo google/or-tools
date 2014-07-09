@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // Simple interface to solve the linear sum assignment problem. It
 // uses about twice as much memory as directly using the
 // LinearSumAssignment class template, but it is as fast and presents

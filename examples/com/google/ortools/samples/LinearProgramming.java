@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 package com.google.ortools.samples;
 
 import com.google.ortools.linearsolver.MPConstraint;
@@ -157,13 +158,13 @@ public class LinearProgramming {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println("---- Linear programming example with GLOP ----");
+    System.out.println("---- Linear programming example with GLOP (recommended) ----");
     runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
     System.out.println("---- Export Linear programming example ----");
     exportLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
-    System.out.println("---- Linear programming example with GLPK ----");
-    runLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
+    System.out.println("---- Linear programming example with GLPK ----");
+    runLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
   }
 }

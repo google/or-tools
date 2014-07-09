@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Basic utility functions on Fractional or row/column of Fractional.
 
 #ifndef OR_TOOLS_GLOP_LP_UTILS_H_

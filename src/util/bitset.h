@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Various utility functions on bitsets.
 
 #ifndef OR_TOOLS_UTIL_BITSET_H_

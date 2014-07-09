@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Utilities to display linear expression in a human-readable way.
 
 #ifndef OR_TOOLS_GLOP_LP_PRINT_UTILS_H_

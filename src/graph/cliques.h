@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 //
 // Maximal clique algorithms, based on the Bron-Kerbosch algorithm.
 // See http://en.wikipedia.org/wiki/Bron-Kerbosch_algorithm

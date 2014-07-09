@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef OR_TOOLS_SAT_SAT_CNF_READER_H_
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 

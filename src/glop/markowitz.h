@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // LU decomposition algorithm of a sparse matrix B with Markowitz pivot
 // selection strategy. The algorithm constructs a lower matrix L, upper matrix
 // U, row permutation P and a column permutation Q such that L.U = P.B.Q^{-1}.

@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // Algorithms to encode constraints into their SAT representation. Currently,
 // this contains one possible encoding of a cardinality constraint as used by
 // the core-based optimization algorithm in optimization.h .

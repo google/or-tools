@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // Helper classes to make it easy to implement range-based for loop.
 
 #ifndef OR_TOOLS_UTIL_ITERATORS_H_

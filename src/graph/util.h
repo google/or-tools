@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // A collections of utilities for the Graph classes in ./graph.h.
 
 #ifndef OR_TOOLS_GRAPH_UTIL_H_

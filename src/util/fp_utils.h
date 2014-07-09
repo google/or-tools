@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Utility functions on IEEE floating-point numbers.
 // Implemented on float, double, and long double.
 //
@@ -56,31 +57,29 @@ namespace operations_research {
 //
 // TODO(user): Make it work on 32 bits.
 
-#if defined(_MSC_VER)
-class ScopedFloatingPointEnv {
- public:
-  ScopedFloatingPointEnv() {}
-
-  ~ScopedFloatingPointEnv() {}
-
-  void EnableExceptions(int excepts) {}
-};
-#else
 class ScopedFloatingPointEnv {
  public:
   ScopedFloatingPointEnv()  {
+#if defined(MSC_VER)
+    saved_control_ = _controlfp(0, 0);
+#elif defined(ARCH_K8)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
+#endif
   }
 
   ~ScopedFloatingPointEnv() {
-#if defined(ARCH_K8) && !defined(_MSC_VER)
+#if defined(MSC_VER)
+    CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
+#elif defined(ARCH_K8)
     CHECK_EQ(0, fesetenv(&saved_fenv_));
 #endif
   }
 
   void EnableExceptions(int excepts) {
+#if defined(_MSC_VER)
+    _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
+#elif defined(ARCH_K8)
     CHECK_EQ(0, fegetenv(&fenv_));
-#if defined(ARCH_K8) && !defined(_MSC_VER)
     excepts &= FE_ALL_EXCEPT;
 #ifdef __APPLE__
     fenv_.__control &= ~excepts;
@@ -96,7 +95,6 @@ class ScopedFloatingPointEnv {
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 };
-#endif
 
 // The following macro does not change "var", but forces gcc to consider it
 // being modified. This can be used to avoid wrong over-optimizations by gcc.
@@ -113,6 +111,7 @@ inline fpu_control_t GetFPPrecision() {
   _FPU_GETCW(status);
   return status & (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
 }
+
 
 // CPU precision control. Parameters can be:
 // _FPU_EXTENDED, _FPU_DOUBLE or _FPU_SINGLE.

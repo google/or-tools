@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Common types and constants used by the Linear Programming solver.
 
 #ifndef OR_TOOLS_GLOP_LP_TYPES_H_

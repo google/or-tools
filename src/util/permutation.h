@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 //
 // Classes for permuting indexable, ordered containers of data without
 // depending on that data to be accessible in any particular way. The

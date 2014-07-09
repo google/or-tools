@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include "constraint_solver/java/constraint_solver.swig"

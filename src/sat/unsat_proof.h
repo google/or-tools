@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This file contains the in-memory data structure used by the SAT solver to
 // generate unsatisfiability proof and UNSAT cores.
 //

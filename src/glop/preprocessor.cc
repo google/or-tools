@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include "glop/preprocessor.h"
 
 #include "base/stringprintf.h"
@@ -18,10 +19,6 @@
 #include "glop/matrix_utils.h"
 #include "glop/revised_simplex.h"
 #include "glop/status.h"
-
-#if defined(_MSC_VER)
-double trunc(double d){ return (d>0) ? floor(d) : ceil(d) ; }
-#endif
 
 namespace operations_research {
 namespace glop {
@@ -31,6 +28,10 @@ namespace {
 std::string IntervalString(Fractional lb, Fractional ub) {
   return StringPrintf("[%g, %g]", lb, ub);
 }
+
+#if defined(_MSC_VER)
+double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
+#endif
 }  // namespace
 
 std::string ProblemSolution::DebugString() const {

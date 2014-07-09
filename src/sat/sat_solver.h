@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This file implements a SAT solver.
 // see http://en.wikipedia.org/wiki/Boolean_satisfiability_problem
 // for more detail.

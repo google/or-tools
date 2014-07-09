@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include "glop/basis_representation.h"
 
 #include "base/stl_util.h"

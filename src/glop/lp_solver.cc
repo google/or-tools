@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include "glop/lp_solver.h"
 
 #include <stack>
@@ -124,7 +125,9 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   // crash.
   ScopedFloatingPointEnv scoped_fenv;
   if (FLAGS_lp_solver_enable_fp_exceptions) {
-#if !defined(_MSC_VER)
+#ifdef _MSC_VER
+    scoped_fenv.EnableExceptions(_EM_INVALID | EM_ZERODIVIDE);
+#else
     scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
 #endif
   }

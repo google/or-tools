@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 syntax = "proto2";
 import "constraint_solver/search_limit.proto";
 

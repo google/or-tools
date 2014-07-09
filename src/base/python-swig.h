@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // Static part of SWIG-generated C++ wrapper for Python (_module_name.cc).
 //
 // This file should only be included in base.swig inside Python-specific part:

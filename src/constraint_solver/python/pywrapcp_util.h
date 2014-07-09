@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This .h file cannot be used in isolation!
 // It represents some of the inlined C++ content of ./constraint_solver.swig,
 // and was split out because it's a large enough chunk of C++ code.

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // The SparseMatrixScaler class provides tools to scale a SparseMatrix, i.e.
 // reduce the range of its coefficients and make for each column and each row
 // the maximum magnitude of its coefficients equal to 1.

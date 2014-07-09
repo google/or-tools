@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This .swig file exposes the linear programming and integer programming
 // a java codelab yet, as of July 2014)
 //
@@ -39,6 +40,21 @@
 import java.lang.reflect.*;
 %}
 
+%extend operations_research::MPSolver {
+  string exportModelAsLpFormat(bool obfuscated) {
+    string output;
+    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    string output;
+    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+}
 
 // Add java code on MPSolver.
 %typemap(javacode) operations_research::MPSolver %{
@@ -136,24 +152,6 @@ import java.lang.reflect.*;
 %rename (infinity) operations_research::MPSolver::infinity;
 %rename (setTimeLimit) operations_research::MPSolver::set_time_limit;  // no test
 
-%unignore operations_research::MPSolver::exportModelAsLpFormat;
-%unignore operations_research::MPSolver::exportModelAsMpsFormat;
-
-%extend operations_research::MPSolver {
-  std::string exportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
-  }
-
-  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
-  }
-}
 
 // Expose some of the more advanced MPSolver API.
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test

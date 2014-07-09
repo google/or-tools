@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 //
 // Function for outputting an assignment problem in DIMACS format:
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm

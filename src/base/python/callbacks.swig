@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // SWIG wrapping of some Callbacks in python.
 // This doesn't directly expose a C++ API; rather it provides typemaps that can
 // be used by other .swig files to easily expose APIs that use callbacks.
