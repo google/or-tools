@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """Send + more = money.
 
@@ -18,6 +17,7 @@ In this model, we try to solve the following cryptarythm
 SEND + MORE = MONEY
 Each letter corresponds to one figure and all letters have different values.
 """
+
 
 
 from google.apputils import app
@@ -43,8 +43,10 @@ def main(unused_argv):
 
   letters = [s, e, n, d, m, o, r, y]
 
-  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * r + e ==
-             10000 * m + 1000 * o + 100 * n + 10 * e + y)
+  solver.Add(
+      1000 * s + 100 * e + 10 * n + d +
+      1000 * m + 100 * o + 10 * r + e ==
+      10000 * m + 1000 * o + 100 * n + 10 * e + y)
 
   # pylint: disable=g-explicit-bool-comparison
   solver.Add(s != 0)

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """Traveling Salesman Sample.
 
@@ -25,6 +24,7 @@
 """
 
 
+
 import random
 
 from google.apputils import app
@@ -34,11 +34,11 @@ from ortools.constraint_solver import pywrapcp
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_integer('tsp_size', 10,
-                      'Size of Traveling Salesman Problem instance.')
+                     'Size of Traveling Salesman Problem instance.')
 gflags.DEFINE_boolean('tsp_use_random_matrix', True,
-                      'Use random cost matrix.')
+                     'Use random cost matrix.')
 gflags.DEFINE_integer('tsp_random_forbidden_connections', 0,
-                      'Number of random forbidden connections.')
+                     'Number of random forbidden connections.')
 gflags.DEFINE_integer('tsp_random_seed', 0, 'Random seed.')
 gflags.DEFINE_boolean('light_propagation', False, 'Use light propagation')
 
@@ -62,9 +62,9 @@ class RandomMatrix(object):
     rand.seed(FLAGS.tsp_random_seed)
     distance_max = 100
     self.matrix = {}
-    for from_node in range(size):
+    for from_node in xrange(size):
       self.matrix[from_node] = {}
-      for to_node in range(size):
+      for to_node in xrange(size):
         if from_node == to_node:
           self.matrix[from_node][to_node] = 0
         else:
@@ -113,7 +113,7 @@ def main(_):
       from_node = rand.randrange(FLAGS.tsp_size - 1)
       to_node = rand.randrange(FLAGS.tsp_size - 1) + 1
       if routing.NextVar(from_node).Contains(to_node):
-        print('Forbidding connection %i -> %i' % (from_node, to_node))
+        print 'Forbidding connection ' + str(from_node) + ' -> ' + str(to_node)
         routing.NextVar(from_node).RemoveValue(to_node)
         forbidden_connections += 1
 
@@ -121,7 +121,7 @@ def main(_):
     assignment = routing.SolveWithParameters(parameters, None)
     if assignment:
       # Solution cost.
-      print(assignment.ObjectiveValue())
+      print assignment.ObjectiveValue()
       # Inspect solution.
       # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       route_number = 0
@@ -131,11 +131,11 @@ def main(_):
         route += str(node) + ' -> '
         node = assignment.Value(routing.NextVar(node))
       route += '0'
-      print(route)
+      print route
     else:
-      print('No solution found.')
+      print 'No solution found.'
   else:
-    print('Specify an instance greater than 0.')
+    print 'Specify an instance greater than 0.'
 
 if __name__ == '__main__':
   app.run()

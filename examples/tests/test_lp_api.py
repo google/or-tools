@@ -52,7 +52,7 @@ def test_proto():
 
 def main():
   test_sum_no_brackets()
-  test_proto()
+  #  test_proto()
 
 
 if __name__ == '__main__':

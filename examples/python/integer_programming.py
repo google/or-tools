@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
   """Example of simple integer program with natural language API."""
   solver = pywraplp.Solver('RunIntegerExampleNaturalLanguageAPI',
                            optimization_problem_type)
-  infinity = solver.Infinity()
+  infinity = solver.infinity()
   # x1 and x2 are integer non-negative variables.
   x1 = solver.IntVar(0.0, infinity, 'x1')
   x2 = solver.IntVar(0.0, infinity, 'x2')
@@ -38,7 +38,7 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
   """Example of simple integer program with the C++ style API."""
   solver = pywraplp.Solver('RunIntegerExampleCppStyleAPI',
                            optimization_problem_type)
-  infinity = solver.Infinity()
+  infinity = solver.infinity()
   # x1 and x2 are integer non-negative variables.
   x1 = solver.IntVar(0.0, infinity, 'x1')
   x2 = solver.IntVar(0.0, infinity, 'x2')
@@ -58,25 +58,29 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
 
 def SolveAndPrint(solver, variable_list):
   """Solve the problem and print the solution."""
-  print('Number of variables = %d' % solver.NumVariables())
-  print('Number of constraints = %d' % solver.NumConstraints())
+  print 'Number of variables = %d' % solver.NumVariables()
+  print 'Number of constraints = %d' % solver.NumConstraints()
 
   result_status = solver.Solve()
 
   # The problem has an optimal solution.
   assert result_status == pywraplp.Solver.OPTIMAL
 
-  print('Problem solved in %f milliseconds' % solver.WallTime())
+  # The solution looks legit (when using solvers others than
+  # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
+  assert solver.VerifySolution(1e-7, True)
+
+  print 'Problem solved in %f milliseconds' % solver.wall_time()
 
   # The objective value of the solution.
-  print('Optimal objective value = %f' % solver.Objective().Value())
+  print 'Optimal objective value = %f' % solver.Objective().Value()
 
   # The value of each variable in the solution.
   for variable in variable_list:
-    print('%s = %f' % (variable.name(), variable.SolutionValue()))
+    print '%s = %f' % (variable.name(), variable.solution_value())
 
-  print('Advanced usage:')
-  print('Problem solved in %d branch-and-bound nodes' % solver.Nodes())
+  print 'Advanced usage:'
+  print 'Problem solved in %d branch-and-bound nodes' % solver.nodes()
 
 
 def Announce(solver, api_type):

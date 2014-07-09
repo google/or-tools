@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -114,8 +114,8 @@ def main(unused_argv):
     people = [englishman, spaniard, japanese, ukrainian, norwegian]
     water_drinker = [p for p in people if p.Value() == water.Value()][0]
     zebra_owner = [p for p in people if p.Value() == zebra.Value()][0]
-    print 'The %s drinks water.' % water_drinker.name()
-    print 'The %s owns the zebra.' % zebra_owner.name()
+    print 'The %s drinks water.' % water_drinker.Name()
+    print 'The %s owns the zebra.' % zebra_owner.Name()
   else:
     print 'No solutions to the zebra problem, this is unusual!'
   solver.EndSearch()

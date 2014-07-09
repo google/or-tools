@@ -141,7 +141,7 @@ class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
     if self._x.Bound():
       if self._x.Value() < 5:
         print 'Reject %d' % self._x.Value()
-        self.solver().Fail()
+        self.Solver().Fail()
       else:
         print 'Accept %d' % self._x.Value()
 
@@ -235,8 +235,8 @@ def main():
   test_member()
   test_sparse_var()
   test_modulo()
-  test_limit()
-  test_export()
+  #  test_limit()
+  #  test_export()
   test_search_monitor()
   test_demon()
   test_failing_constraint()

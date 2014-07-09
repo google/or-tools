@@ -1,442 +1,86 @@
-// TODO(user): Refactor this file to adhere to the SWIG style guide.
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// This .swig file exposes the code declared in ../constraint_solver.h and
+// ../constraint_solveri.h.
+//
+// It is particularly complex for a swig file, mostly because it contains a
+// lot of MOE code for the export to the or-tools open-source project at
+// powerful python API thanks to the possible use of directors.
+//
+// USAGE EXAMPLES (most of which are also unit tests):
+// - ./pywrapcp_test.py
+// - python/appointments.py
+// - python/golomb8.py
+// - python/hidato_table.py
+// - python/jobshop_ft06.py
+// - python/magic_sequence_distribute.py
+// - python/rabbit_pheasant.py
+// - python/simple_meeting.py
+// - python/sudoku.py
+// - python/zebra.py
 
-%include exception.i
-%include util/python/data.swig
-%include util/python/tuple_set.swig
+%include "base/base.swig"
 
-// ----- Callback Wrapping -----
-%{
-#include "base/callback.h"  // TODO(user): switch to std::function
-%}
-namespace operations_research {
-%{
-static string PyCallbackString(PyObject* pyfunc) {
-   string result;
-   PyObject* arglist = Py_BuildValue("()");
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyString_AsString(pyresult);
-     Py_DECREF(pyresult);
-   }
-   return result;
-}
-%}
+%import "util/python/data.swig"
 
-%typemap(in) ResultCallback<string>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackString, $input);
-}
+// Callback wrapping. See base/python/callbacks.swig.
+#define FATAL_CALLBACK_EXCEPTION
+%include "base/python/callbacks.swig"
 
-%{
-static int64 PyCallback1Int64Int64(PyObject* pyfunc, int64 i) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   // () needed to force creation of one-element tuple
-   PyObject* arglist = Py_BuildValue("(l)", static_cast<int>(i));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback1<int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback1Int64Int64, $input);
-}
-
-%{
-static int64 PyCallback2Int64Int64Int64(PyObject* pyfunc, int64 i, int64 j) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   PyObject* arglist = Py_BuildValue("ll",
-                                     static_cast<int>(i),
-                                     static_cast<int>(j));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback2<int64, int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback2Int64Int64Int64, $input);
-}
-
-%{
-  static int64 PyCallback3Int64Int64Int64Int64(PyObject* pyfunc,
-                                               int64 i, int64 j, int64 k) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   PyObject* arglist = Py_BuildValue("lll",
-                                     static_cast<int>(i),
-                                     static_cast<int>(j),
-                                     static_cast<int>(k));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback3<int64, int64, int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback3Int64Int64Int64Int64, $input);
-}
-
-%{
-static bool PyCallbackBool(PyObject* pyfunc) {
-   bool result = false;
-   // "()" needed to force creation of empty argument list
-   PyObject* arglist = Py_BuildValue("()");
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     // no PyBool_AsBool so do this instead:
-     if (pyresult == Py_True) {
-       result = true;
-     } else {
-       result = false;
-     }
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback<bool>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackBool, $input);
-}
-}  // namespace operations_research
-
-%module(directors="1") operations_research
-
-%feature("director") operations_research::SearchMonitor;
-%feature("director") operations_research::Constraint;
-%feature("director") operations_research::Demon;
-%feature("director") operations_research::BaseLNS;
-%feature("nodirector") operations_research::BaseLNS::Start;
-%feature("nodirector") operations_research::BaseLNS::OnStart;
-%feature("nodirector") operations_research::BaseLNS::MakeNextNeighbor;
-%feature("nodirector") operations_research::BaseLNS::MakeOneNeighbor;
-%feature("nodirector") operations_research::BaseLNS::IsIncremental;
-%feature("director") operations_research::LocalSearchOperator;
-%feature("director") operations_research::PathOperator;
-%feature("director") operations_research::IntVarLocalSearchOperator;
-%feature("nodirector") operations_research::IntVarLocalSearchOperator::Start;
-%feature("nodirector") operations_research::IntVarLocalSearchOperator::MakeNextNeighbor;
-%feature("director") operations_research::SequenceVarLocalSearchOperator;
-%feature("nodirector") operations_research::SequenceVarLocalSearchOperator::Start;
-%feature("director") operations_research::IntVarLocalSearchFilter;
-%feature("nodirector") operations_research::IntVarLocalSearchFilter::Start;
-
-// We *do* need to use SWIGTYPE_... descriptor directly in embedded C++ code:
-// the recommended replacement $descriptor(...) is only available within
-// SWIG code.
+// We *do* need to use SWIGTYPE_... type names directly, because the
+// (recommended replacement) $descriptor macro fails, as of 2014-06, with
+// types such as operations_research::Solver.
+// The absence of whitespace before 'swiglint' is mandatory.
 //swiglint: disable swigtype-name
 
-#pragma SWIG nowarn=473 // about Decision* return from Next()
 %{
-#include <setjmp.h>
-
-#include "constraint_solver/assignment.pb.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/model.pb.h"
-#include "constraint_solver/search_limit.pb.h"
-
-DECLARE_bool(cp_trace_propagation);
-DECLARE_bool(cp_trace_search);
-DECLARE_bool(cp_print_model);
-DECLARE_bool(cp_model_stats);
-DECLARE_string(cp_export_file);
-DECLARE_bool(cp_no_solve);
-DECLARE_string(cp_profile_file);
-DECLARE_bool(log_prefix);
-
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() {
-    longjmp(exception_buffer, 1);
-  }
-};
-
-class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
- public:
-  CallPyDecisionBuilder(PyObject* pydb) : pysolver_(nullptr), pyarg_(nullptr) {
-    Py_INCREF(pydb);
-    pydb_ = pydb;
-    func_ = PyObject_GetAttrString(pydb_, "NextWrapper");
-    Py_XINCREF(func_);
-    str_func_ = PyObject_GetAttrString(pydb_, "DebugString");
-    Py_XINCREF(str_func_);
-  }
-
-  virtual ~CallPyDecisionBuilder() {
-    Py_DECREF(pydb_);
-    pydb_ = nullptr;
-    Py_XDECREF(func_);
-    func_ = nullptr;
-    Py_XDECREF(str_func_);
-    str_func_ = nullptr;
-    Py_XDECREF(pysolver_);
-    pysolver_ = nullptr;
-    Py_XDECREF(pyarg_);
-    pyarg_ = nullptr;
-  }
-
-  virtual operations_research::Decision* Next(
-      operations_research::Solver* const s) {
-    if (pysolver_ == nullptr) {
-      pysolver_ = SWIG_NewPointerObj(s,
-                                     SWIGTYPE_p_operations_research__Solver,
-                                     SWIG_POINTER_EXCEPTION);
-      pyarg_ = Py_BuildValue((char*)"(O)", pysolver_);
-    }
-    operations_research::Decision* result = nullptr;
-    PyObject* pyresult = PyEval_CallObject(func_, pyarg_);
-    if (pyresult) {
-      if (SWIG_ConvertPtr(pyresult,
-                          (void **) &result,
-                          SWIGTYPE_p_operations_research__Decision,
-                          SWIG_POINTER_EXCEPTION | 0) == -1) {
-        LOG(INFO) << "Error in type from python Decision";
-      }
-      Py_DECREF(pyresult);
-    } else {  // something went wrong, we fail.
-      s->Fail();
-    }
-    return result;
-  }
-
-  virtual std::string DebugString() const {
-    std::string result = "PyDecisionBuilder";
-    if (str_func_) {
-      PyObject* pyresult = PyEval_CallObject(str_func_, nullptr);
-      if (pyresult) {
-        result = PyString_AsString(pyresult);
-        Py_DECREF(pyresult);
-      }
-    }
-    return result;
-  }
- private:
-  PyObject* pysolver_;
-  PyObject* pyarg_;
-  PyObject* pydb_;
-  PyObject* func_;
-  PyObject* str_func_;
-};
-
-class PyLNSNoValues : public operations_research::BaseLNS {
- public:
-  PyLNSNoValues(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars), op_(op) {
-    Py_INCREF(op_);
-    init_func_ = PyObject_GetAttrString(op_, "InitFragments");
-    Py_XINCREF(init_func_);
-    fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
-    Py_XINCREF(fragment_func_);
-  }
-
-  virtual ~PyLNSNoValues() {
-    Py_DECREF(op_);
-    op_ = nullptr;
-    Py_XDECREF(init_func_);
-    init_func_ = nullptr;
-    Py_XDECREF(fragment_func_);
-    fragment_func_ = nullptr;
-  }
-
-  virtual void InitFragments() {
-    if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
-      Py_XDECREF(pyresult);
-    }
-  }
-
-  virtual bool NextFragment(std::vector<int>* fragment) {
-    PyObject* list = PyList_New(0);
-    PyObject* args = Py_BuildValue((char*)"(O)", list);
-    PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
-    Py_DECREF(args);
-    const int size = PyList_Size(list);
-    for (size_t i = 0; i < size; ++i) {
-      const int val = PyInt_AsLong(PyList_GetItem(list, i));
-      fragment->push_back(val);
-    }
-    Py_DECREF(list);
-    bool result = false;
-    if (pyresult) {
-      result = PyInt_AsLong(pyresult);
-      Py_DECREF(pyresult);
-    }
-    return result;
-  }
-
-  virtual std::string DebugString() const {
-    return "PyLNSNoValues()";
-  }
- private:
-  PyObject* op_;
-  PyObject* init_func_;
-  PyObject* fragment_func_;
-};
-
-class PyLNS : public operations_research::BaseLNS {
- public:
-  PyLNS(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars), op_(op) {
-    Py_INCREF(op_);
-    init_func_ = PyObject_GetAttrString(op_, "InitFragments");
-    Py_XINCREF(init_func_);
-    fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
-    Py_XINCREF(fragment_func_);
-    base_lns_ = SWIG_NewPointerObj(this,
-                                   SWIGTYPE_p_operations_research__BaseLNS,
-                                   SWIG_POINTER_EXCEPTION);
-    Py_INCREF(base_lns_);
-  }
-  virtual ~PyLNS() {
-    Py_DECREF(op_);
-    op_ = nullptr;
-    Py_XDECREF(init_func_);
-    init_func_ = nullptr;
-    Py_XDECREF(fragment_func_);
-    fragment_func_ = nullptr;
-    Py_DECREF(base_lns_);
-    base_lns_ = nullptr;
-  }
-
-  virtual void InitFragments() {
-    if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
-      Py_XDECREF(pyresult);
-    }
-  }
-
-  virtual bool NextFragment(std::vector<int>* fragment) {
-    PyObject* list = PyList_New(0);
-    PyObject* args = Py_BuildValue((char*)"(OO)", list, base_lns_);
-    PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
-    Py_DECREF(args);
-    const int size = PyList_Size(list);
-    for (size_t i = 0; i < size; ++i) {
-      const int val = PyInt_AsLong(PyList_GetItem(list, i));
-      fragment->push_back(val);
-    }
-    Py_DECREF(list);
-    bool result = false;
-    if (pyresult) {
-      result = PyInt_AsLong(pyresult);
-      Py_DECREF(pyresult);
-    }
-    return result;
-  }
-
-  virtual std::string DebugString() const {
-    return "PyLNS()";
-  }
- private:
-  PyObject* op_;
-  PyObject* init_func_;
-  PyObject* fragment_func_;
-  PyObject* base_lns_;
-};
+// This #includes constraint_solver.h, and inlines some C++ helpers.
+#include "constraint_solver/python/pywrapcp_util.h"
 %}
 
-namespace operations_research {
-%pythoncode {
-import gflags as flags
-import ortools.constraint_solver.assignment_pb2
-import ortools.constraint_solver.model_pb2
-import ortools.constraint_solver.search_limit_pb2
-
-FLAGS = flags.FLAGS
-flags.DEFINE_boolean('cp_trace_propagation', False,
-                     'trace all propagation events.')
-flags.DEFINE_boolean('cp_trace_search', False,
-                     'trace all search events.')
-flags.DEFINE_boolean('cp_print_model', False,
-                     'prints the model before solving it.')
-flags.DEFINE_boolean('cp_model_stats', False,
-                     'displays model statistics before solving it.')
-flags.DEFINE_string('cp_export_file', '',
-                    'exports model to file using CPModelProto.')
-flags.DEFINE_boolean('cp_no_solve', False,
-                     'force failures at the beginning of a search.')
-flags.DEFINE_string('cp_profile_file', '',
-                    'exports profiling overview to file.')
-flags.DEFINE_boolean('log_prefix', False, 'use log prefix.')
+// We need to fully support C++ inheritance, because it is heavily used by the
+// exposed C++ classes. Eg:
+// class BaseClass {
+//   virtual void Foo() { ... }
+//   virtual void Bar() { Foo(); ... }
+// };
+// ...
+// class SubClass {
+//   // Overrides Foo; and expects the inherited Bar() to use
+//   // the overriden Foo().
+//   virtual void Foo() { ... }
+// };
+//
+// See the occurrences of "director" in this file.
+%module(directors="1") operations_research
+// The %feature and %exception below let python exceptions that occur within
+// director method propagate to the user as they were originally. See
+// http://www.swig.org/Doc1.3/Python.html#Python_nn36 for example.
+%feature("director:except") {
+    if ($error != NULL) {
+        throw Swig::DirectorMethodException();
+    }
 }
-}  // namespace operations_research
+%exception {
+  try { $action }
+  catch (Swig::DirectorException &e) { SWIG_fail; }
+}
 
-// Rename rules for directors
-%rename (InitialPropagateWrapper)
-    operations_research::Constraint::InitialPropagate;
-%rename (RunWrapper) operations_research::Demon::Run;
-%rename (NextFragmentWrapper) operations_research::BaseLNS::NextFragment;
 
-// Rename rules on SolutionCollector.
-%rename (Branches) operations_research::SolutionCollector::branches;
-%rename (Failures) operations_research::SolutionCollector::failures;
-%rename (ObjectiveValue) operations_research::SolutionCollector::objective_value;
-%rename (Solution) operations_research::SolutionCollector::solution;
-%rename (SolutionCount) operations_research::SolutionCollector::solution_count;
-%rename (WallTime) operations_research::SolutionCollector::wall_time;
+// ============= Type conversions ==============
 
-// Rename rule on OptimizeVar
-%rename (Best) operations_research::OptimizeVar::best;
-
-// Rename rule on SearchLimit
-%rename (IsCrossed) operations_research::SearchLimit::crossed;
-
-// Rename rules on Solver.
-%rename (AcceptedNeighbors) operations_research::Solver::accepted_neighbors;
-%rename (Add) operations_research::Solver::AddConstraint;
-%rename (Branches) operations_research::Solver::branches;
-%rename (DemonRuns) operations_research::Solver::demon_runs;
-%rename (FailStamp) operations_research::Solver::fail_stamp;
-%rename (Failures) operations_research::Solver::failures;
-%rename (FilteredNeighbors) operations_research::Solver::filtered_neighbors;
-%rename (Neighbors) operations_research::Solver::neighbors;
-%rename (Solutions) operations_research::Solver::solutions;
-%rename (Stamp) operations_research::Solver::stamp;
-%rename (WallTime) operations_research::Solver::wall_time;
-
-// Generic rule to remove all Make prefixes.
-%rename("%(strip:[Make])s", %$isfunction) "";
-
-// Conversion utilities.
-namespace operations_research {
-
+// Conversion utilities, to be able to expose APIs that return a C++ object
+// pointer. The PyObjAs template must be able to deal with all such types.
 %define PY_CONVERT_HELPER_PTR(CType)
 %{
 template<>
@@ -454,7 +98,7 @@ PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 #undef PY_CONVERT_HELPER_PTR
 
-// Conversion to IntExpr* and IntVar* are a bit special because of the two
+// Conversion of IntExpr* and IntVar* are a bit special because of the two
 // possible casts from IntExpr and Constraint.
 %define PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(Class)
 %{
@@ -487,8 +131,20 @@ PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
 #undef PY_CONVERT_HELPER_INTEXPR_OR_INTVAR
 
-// Conversions to DecisionBuilder* are also special because we've redefined
-// our own python DecisionBuilder object.
+// Conversions of DecisionBuilder* are also special because we redefine
+// our own python PyDecisionBuilder object.
+// TODO(user): for or-tools, remove this code and use directors instead.
+%pythoncode {
+class PyDecisionBuilder(object):
+  def NextWrapper(self, solver):
+    try:
+      return self.Next(solver)
+    except Exception:
+      return solver.FailDecision()
+
+  def DebugString(self):
+    return "PyDecisionBuilder"
+}  // %pythoncode
 %{
 template<>
 bool PyObjAs(PyObject *py_obj, operations_research::DecisionBuilder** b) {
@@ -505,7 +161,7 @@ bool PyObjAs(PyObject *py_obj, operations_research::DecisionBuilder** b) {
 }
 %}
 
-// Actual conversions. Also include the conversion to std::vector<Class>.
+// Actual conversions. This also includes the conversion to std::vector<Class>.
 %define PY_CONVERT(Class)
 %{
 bool CanConvertTo ## Class(PyObject *py_obj) {
@@ -513,8 +169,10 @@ bool CanConvertTo ## Class(PyObject *py_obj) {
   return PyObjAs(py_obj, &tmp);
 }
 %}
-%typemap(in) Class* const { if (!PyObjAs($input, &$1)) SWIG_fail; }
-%typecheck(SWIG_TYPECHECK_POINTER) Class* const {
+%typemap(in) operations_research::Class* const {
+  if (!PyObjAs($input, &$1)) SWIG_fail;
+}
+%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
   $1 = CanConvertTo ## Class($input);
   if ($1 == 0) PyErr_Clear();
 }
@@ -531,114 +189,68 @@ PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
-// Support protobuf.
-PY_PROTO_TYPEMAP(ortools.constraint_solver.model_pb2,
-                 operations_research::CPModelProto,
-                 CPModelProto);
-PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
-                 operations_research::SearchLimitProto,
-                 SearchLimitProto);
-PY_PROTO_TYPEMAP(ortools.constraint_solver.assignment_pb2,
-                 operations_research::AssignmentProto,
-                 AssignmentProto);
 
-// Add display methods on BaseObject and remove DebugString method.
-%ignore BaseObject::DebugString;
-%extend BaseObject {
-  std::string __str__() {
-    return self->DebugString();
+// ============= Extensions ==============
+
+// Add display methods on BaseObject and Solver.
+%extend operations_research::BaseObject {
+  string __str__() {
+    return $self->DebugString();
   }
-  std::string __repr__() {
-    return self->DebugString();
+}
+%extend operations_research::Solver {
+  string __str__() {
+    return $self->DebugString();
   }
 }
 
-%extend IntervalVar {
-  std::string __repr__() {
-    return self->DebugString();
-  }
-  Constraint* EndsAfterEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_END, other);
-  }
-  Constraint* EndsAfterStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_START, other);
-  }
-  Constraint* EndsAtEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_END, other);
-  }
-  Constraint* EndsAtStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_START, other);
-  }
-  Constraint* StartsAfterEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AFTER_END, other);
-  }
-  Constraint* StartsAfterStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AFTER_START,
-                                                   other);
-  }
-  Constraint* StartsAtEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AT_END, other);
-  }
-  Constraint* StartsAtStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AT_START,
-                                                   other);
-  }
-  Constraint* StaysInSync(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STAYS_IN_SYNC,
-                                                   other);
-  }
-  Constraint* EndsAfter(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_AFTER,
-                                                   date);
-  }
-  Constraint* EndsAt(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_AT,
-                                                   date);
-  }
-  Constraint* EndsBefore(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_BEFORE,
-                                                   date);
-  }
-  Constraint* StartsAfter(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AFTER,
-                                                   date);
-  }
-  Constraint* StartsAt(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AT,
-                                                   date);
-  }
-  Constraint* StartsBefore(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_BEFORE,
-                                                   date);
-  }
-  Constraint* CrossesDate(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::CROSS_DATE,
-                                                   date);
-  }
-  Constraint* AvoidsDate(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::AVOID_DATE,
-                                                   date);
-  }
+// Extend IntervalVar to provide a nicer pythonic API for precedence
+// and scheduling constraints. The macros below help do that concisely.
+%define PRECEDENCE_CONSTRAINT(PythonMethodName, CppEnumName)
+Constraint* PythonMethodName(IntervalVar* other) {
+  return $self->solver()->MakeIntervalVarRelation(
+      $self, operations_research::Solver::CppEnumName, other);
 }
+%enddef
+%define SCHEDULING_CONSTRAINT(PythonMethodName, CppEnumName)
+Constraint* PythonMethodName(int64 date) {
+  return $self->solver()->MakeIntervalVarRelation(
+      $self, operations_research::Solver::CppEnumName, date);
+}
+%enddef
+%extend operations_research::IntervalVar {
+  PRECEDENCE_CONSTRAINT(EndsAfterEnd, ENDS_AFTER_END)
+  PRECEDENCE_CONSTRAINT(EndsAfterStart, ENDS_AFTER_START)
+  PRECEDENCE_CONSTRAINT(EndsAtEnd, ENDS_AT_END)
+  PRECEDENCE_CONSTRAINT(EndsAtStart, ENDS_AT_START)
+  PRECEDENCE_CONSTRAINT(StartsAfterEnd, STARTS_AFTER_END)
+  PRECEDENCE_CONSTRAINT(StartsAfterStart, STARTS_AFTER_START)
+  PRECEDENCE_CONSTRAINT(StartsAtEnd, STARTS_AT_END)
+  PRECEDENCE_CONSTRAINT(StartsAtStart, STARTS_AT_START)
+  PRECEDENCE_CONSTRAINT(StaysInSync, STAYS_IN_SYNC)
+  SCHEDULING_CONSTRAINT(EndsAfter, ENDS_AFTER)
+  SCHEDULING_CONSTRAINT(EndsAt, ENDS_AT)
+  SCHEDULING_CONSTRAINT(EndsBefore, ENDS_BEFORE)
+  SCHEDULING_CONSTRAINT(StartsAfter, STARTS_AFTER)
+  SCHEDULING_CONSTRAINT(StartsAt, STARTS_AT)
+  SCHEDULING_CONSTRAINT(StartsBefore, STARTS_BEFORE)
+  SCHEDULING_CONSTRAINT(CrossesDate, CROSS_DATE)
+  SCHEDULING_CONSTRAINT(AvoidsDate, AVOID_DATE)
+}
+#undef PRECEDENCE_CONSTRAINT
+#undef SCHEDULING_CONSTRAINT
 
+// Use DebugString() for the native string conversion in python, for objects
+// that support it.
 %define PY_STRINGIFY_DEBUGSTRING(Class)
-%extend Class {
-  std::string __repr__() {
-    return self->DebugString();
+%extend operations_research::Class {
+  string __repr__() {
+    return $self->DebugString();
   }
 }
 %enddef
+PY_STRINGIFY_DEBUGSTRING(BaseObject);
+PY_STRINGIFY_DEBUGSTRING(IntervalVar);
 PY_STRINGIFY_DEBUGSTRING(SequenceVar);
 PY_STRINGIFY_DEBUGSTRING(IntVar);
 PY_STRINGIFY_DEBUGSTRING(IntExpr);
@@ -648,91 +260,53 @@ PY_STRINGIFY_DEBUGSTRING(DecisionBuilder);
 PY_STRINGIFY_DEBUGSTRING(Decision);
 #undef PY_STRINGIFY_DEBUGSTRING
 
-// Add display methods on Solver and remove DebugString method.
-%ignore Solver::DebugString;
-
-// Indentation is critical here as the code is copied verbatim in the
-// python code.
-%feature("pythonappend") Solver::Solver %{
-        Solver.SetPythonFlags(FLAGS.cp_trace_propagation,
-                              FLAGS.cp_trace_search,
-                              FLAGS.cp_print_model,
-                              FLAGS.cp_model_stats,
-                              FLAGS.cp_export_file,
-                              FLAGS.cp_no_solve,
-                              FLAGS.cp_profile_file,
-                              FLAGS.log_prefix)
-%}
-
-
-%extend Solver {
-static void SetPythonFlags(bool trace_propagation,
-                             bool trace_search,
-                             bool print_model,
-                             bool model_stats,
-                             const std::string& export_file,
-                             bool no_solve,
-                             const std::string& profile_file,
-                             bool log_prefix) {
-    FLAGS_cp_trace_propagation = trace_propagation;
-    FLAGS_cp_trace_search = trace_search;
-    FLAGS_cp_print_model = print_model;
-    FLAGS_cp_model_stats = model_stats;
-    FLAGS_cp_export_file = export_file;
-    FLAGS_cp_no_solve = no_solve;
-    FLAGS_cp_profile_file = profile_file;
-    FLAGS_log_prefix = log_prefix;
-  }
-
+// Extend the solver with a few nicer pythonic methods.
+%extend operations_research::Solver {
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* callback = nullptr) {
-    return self->MakeNoCycle(nexts, active, callback, false);
+    return $self->MakeNoCycle(nexts, active, callback, false);
   }
 
   SearchMonitor* SearchLogWithCallback(int period,
-                                       ResultCallback<std::string>* callback) {
-    return self->MakeSearchLog(period, callback);
+                                       ResultCallback<string>* callback) {
+    return $self->MakeSearchLog(period, callback);
   }
 
   IntExpr* ElementFunction(ResultCallback1<int64, int64>* values,
                            IntVar* const index) {
-    return self->MakeElement(values, index);
-  }
-
-  std::string __str__() {
-    return self->DebugString();
+    return $self->MakeElement(values, index);
   }
 
   LocalSearchOperator* LNSOperator(const std::vector<IntVar*>& vars,
                                    PyObject* lns) {
-    return self->RevAlloc(new PyLNS(vars, lns));
+    return $self->RevAlloc(new PyLNS(vars, lns));
   }
 
   LocalSearchOperator* LNSNoValuesOperator(const std::vector<IntVar*>& vars,
                                            PyObject* lns) {
-    return self->RevAlloc(new PyLNSNoValues(vars, lns));
+    return $self->RevAlloc(new PyLNSNoValues(vars, lns));
   }
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
       ResultCallback1<int64, int64>* var_evaluator,
       operations_research::Solver::IntValueStrategy val_str) {
-    return self->MakePhase(vars, var_evaluator, val_str);
+    return $self->MakePhase(vars, var_evaluator, val_str);
   }
 
   DecisionBuilder* VarStrValEvalPhase(
       const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
       ResultCallback2<int64, int64, int64>* val_eval) {
-    return self->MakePhase(vars, var_str, val_eval);
+    return $self->MakePhase(vars, var_str, val_eval);
   }
 
   DecisionBuilder* VarEvalValEvalPhase(
       const std::vector<IntVar*>& vars,
       ResultCallback1<int64, int64>* var_eval,
       ResultCallback2<int64, int64, int64>* val_eval) {
-    return self->MakePhase(vars, var_eval, val_eval);
+    return $self->MakePhase(vars, var_eval, val_eval);
   }
 
   DecisionBuilder* VarStrValEvalTieBreakPhase(
@@ -740,7 +314,7 @@ static void SetPythonFlags(bool trace_propagation,
       operations_research::Solver::IntVarStrategy var_str,
       ResultCallback2<int64, int64, int64>* val_eval,
       ResultCallback1<int64, int64>* tie_breaker) {
-    return self->MakePhase(vars, var_str, val_eval, tie_breaker);
+    return $self->MakePhase(vars, var_str, val_eval, tie_breaker);
   }
 
   DecisionBuilder* VarEvalValEvalTieBreakPhase(
@@ -748,14 +322,14 @@ static void SetPythonFlags(bool trace_propagation,
       ResultCallback1<int64, int64>* var_eval,
       ResultCallback2<int64, int64, int64>* val_eval,
       ResultCallback1<int64, int64>* tie_breaker) {
-    return self->MakePhase(vars, var_eval, val_eval, tie_breaker);
+    return $self->MakePhase(vars, var_eval, val_eval, tie_breaker);
   }
 
   DecisionBuilder* EvalEvalStrPhase(
       const std::vector<IntVar*>& vars,
       ResultCallback2<int64, int64, int64>* evaluator,
       operations_research::Solver::EvaluatorStrategy str) {
-    return self->MakePhase(vars, evaluator, str);
+    return $self->MakePhase(vars, evaluator, str);
   }
 
   DecisionBuilder* EvalEvalStrTieBreakPhase(
@@ -763,7 +337,7 @@ static void SetPythonFlags(bool trace_propagation,
       ResultCallback2<int64, int64, int64>* evaluator,
       ResultCallback1<int64, int64>* tie_breaker,
       operations_research::Solver::EvaluatorStrategy str) {
-    return self->MakePhase(vars, evaluator, tie_breaker, str);
+    return $self->MakePhase(vars, evaluator, tie_breaker, str);
   }
 
   SearchMonitor* GuidedLocalSearch(
@@ -773,7 +347,7 @@ static void SetPythonFlags(bool trace_propagation,
       int64 step,
       const std::vector<IntVar*>& vars,
       double penalty_factor) {
-    return self->MakeGuidedLocalSearch(maximize,
+    return $self->MakeGuidedLocalSearch(maximize,
                                        objective,
                                        objective_function,
                                        step,
@@ -787,7 +361,7 @@ static void SetPythonFlags(bool trace_propagation,
       IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
-    return self->MakeLocalSearchObjectiveFilter(vars,
+    return $self->MakeLocalSearchObjectiveFilter(vars,
                                                 values,
                                                 objective,
                                                 filter_enum,
@@ -795,301 +369,264 @@ static void SetPythonFlags(bool trace_propagation,
   }
 }
 
-// Ignore wrapping of some solver methods.
-%ignore Solver::MakeIntVarArray;
-%ignore Solver::MakeBoolVarArray;
-%ignore Solver::MakeSum(IntExpr* const left, IntExpr* const right);
-%ignore Solver::MakeSum(IntExpr* const expr, int64 value);
-%ignore Solver::MakeSum(IntVar* const * vars, int size);
-%ignore Solver::MakeDifference;
-%ignore Solver::MakeOpposite;
-%ignore Solver::MakeProd;
-%ignore Solver::MakeSquare;
-%ignore Solver::MakeElement(ResultCallback1<int64, int64>* values,
-                            IntVar* const index);
-%ignore Solver::MakeMin(IntExpr* const expr, int val);
-%ignore Solver::MakeMax(IntExpr* const expr, int val);
-%ignore Solver::MakeEquality;
-%ignore Solver::MakeNonEquality;
-%ignore Solver::MakeGreaterOrEqual;
-%ignore Solver::MakeGreater;
-%ignore Solver::MakeLessOrEqual;
-%ignore Solver::MakeLess;
-%ignore Solver::MakeConstraintInitialPropagateCallback;
-%ignore Solver::MakeDelayedConstraintInitialPropagateCallback;
-%ignore Solver::MakeLocalSearchObjectiveFilter;
-%ignore Solver::MakePhase(IntVar* const v0, PhaseStrategy str);
-%ignore Solver::MakePhase(IntVar* const v0,
-                          IntVar* const v1,
-                          PhaseStrategy str);
-%ignore Solver::MakePhase(IntVar* const v0,
-                          IntVar* const v1,
-                          IntVar* const v2,
-                          PhaseStrategy str);
-%ignore Solver::MakePhase(IntVar* const v0,
-                          IntVar* const v1,
-                          IntVar* const v3,
-                          IntVar* const v4,
-                          PhaseStrategy str);
-%ignore Solver::Compose(DecisionBuilder* const db1,
-                        DecisionBuilder* const db2);
-%ignore Solver::Compose(DecisionBuilder* const db1,
-                        DecisionBuilder* const db2,
-                        DecisionBuilder* const db3);
-%ignore Solver::Compose(DecisionBuilder* const db1,
-                        DecisionBuilder* const db2,
-                        DecisionBuilder* const db3,
-                        DecisionBuilder* const db4);
-
-%rename (DomainIteratorAux) IntVar::MakeDomainIterator;
-%rename (HoleIteratorAux) IntVar::MakeHoleIterator;
-
 // Add arithmetic operators to integer expressions.
-%extend IntExpr {
+%extend operations_research::IntExpr {
   IntExpr* __add__(IntExpr* other) {
-    return self->solver()->MakeSum(self, other);
+    return $self->solver()->MakeSum($self, other);
   }
   IntExpr* __add__(Constraint* other) {
-    return self->solver()->MakeSum(self, other->Var());
+    return $self->solver()->MakeSum($self, other->Var());
   }
   IntExpr* __add__(int64 v) {
-    return self->solver()->MakeSum(self, v);
+    return $self->solver()->MakeSum($self, v);
   }
   IntExpr* __radd__(int64 v) {
-    return self->solver()->MakeSum(self, v);
+    return $self->solver()->MakeSum($self, v);
   }
   IntExpr* __sub__(IntExpr* other) {
-    return self->solver()->MakeDifference(self, other);
+    return $self->solver()->MakeDifference($self, other);
   }
   IntExpr* __sub__(Constraint* other) {
-    return self->solver()->MakeDifference(self, other->Var());
+    return $self->solver()->MakeDifference($self, other->Var());
   }
   IntExpr* __sub__(int64 v) {
-    return self->solver()->MakeSum(self, -v);
+    return $self->solver()->MakeSum($self, -v);
   }
   IntExpr* __rsub__(int64 v) {
-    return self->solver()->MakeDifference(v, self);
+    return $self->solver()->MakeDifference(v, $self);
   }
   IntExpr* __mul__(IntExpr* other) {
-    return self->solver()->MakeProd(self, other);
+    return $self->solver()->MakeProd($self, other);
   }
   IntExpr* __mul__(Constraint* other) {
-    return self->solver()->MakeProd(self, other->Var());
+    return $self->solver()->MakeProd($self, other->Var());
   }
   IntExpr* __mul__(int64 v) {
-    return self->solver()->MakeProd(self, v);
+    return $self->solver()->MakeProd($self, v);
   }
   IntExpr* __rmul__(int64 v) {
-    return self->solver()->MakeProd(self, v);
+    return $self->solver()->MakeProd($self, v);
   }
   IntExpr* __floordiv__(int64 v) {
-    return self->solver()->MakeDiv(self, v);
+    return $self->solver()->MakeDiv($self, v);
   }
   IntExpr* __mod__(int64 v) {
-    return self->solver()->MakeModulo(self, v);
+    return $self->solver()->MakeModulo($self, v);
   }
   IntExpr* __mod__(IntExpr* e) {
-    return self->solver()->MakeModulo(self, e);
+    return $self->solver()->MakeModulo($self, e);
   }
   IntExpr* __neg__() {
-    return self->solver()->MakeOpposite(self);
+    return $self->solver()->MakeOpposite($self);
   }
   IntExpr* __abs__() {
-    return self->solver()->MakeAbs(self);
+    return $self->solver()->MakeAbs($self);
   }
   IntExpr* Square() {
-    return self->solver()->MakeSquare(self);
+    return $self->solver()->MakeSquare($self);
   }
 
   Constraint* __eq__(int64 v) {
-    return self->solver()->MakeEquality(self, v);
+    return $self->solver()->MakeEquality($self, v);
   }
   Constraint* __ne__(int64 v) {
-    return self->solver()->MakeNonEquality(self->Var(), v);
+    return $self->solver()->MakeNonEquality($self->Var(), v);
   }
   Constraint* __ge__(int64 v) {
-    return self->solver()->MakeGreaterOrEqual(self, v);
+    return $self->solver()->MakeGreaterOrEqual($self, v);
   }
   Constraint* __gt__(int64 v) {
-    return self->solver()->MakeGreater(self, v);
+    return $self->solver()->MakeGreater($self, v);
   }
   Constraint* __le__(int64 v) {
-    return self->solver()->MakeLessOrEqual(self, v);
+    return $self->solver()->MakeLessOrEqual($self, v);
   }
   Constraint* __lt__(int64 v) {
-    return self->solver()->MakeLess(self, v);
+    return $self->solver()->MakeLess($self, v);
   }
   Constraint* __eq__(IntExpr* other) {
-    return self->solver()->MakeEquality(self->Var(), other->Var());
+    return $self->solver()->MakeEquality($self->Var(), other->Var());
   }
   Constraint* __ne__(IntExpr* other) {
-    return self->solver()->MakeNonEquality(self->Var(), other->Var());
+    return $self->solver()->MakeNonEquality($self->Var(), other->Var());
   }
   Constraint* __ge__(IntExpr* other) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeGreaterOrEqual($self->Var(), other->Var());
   }
   Constraint* __gt__(IntExpr* other) {
-    return self->solver()->MakeGreater(self->Var(), other->Var());
+    return $self->solver()->MakeGreater($self->Var(), other->Var());
   }
   Constraint* __le__(IntExpr* other) {
-    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeLessOrEqual($self->Var(), other->Var());
   }
   Constraint* __lt__(IntExpr* other) {
-    return self->solver()->MakeLess(self->Var(), other->Var());
+    return $self->solver()->MakeLess($self->Var(), other->Var());
   }
   Constraint* __eq__(Constraint* other) {
-    return self->solver()->MakeEquality(self->Var(), other->Var());
+    return $self->solver()->MakeEquality($self->Var(), other->Var());
   }
   Constraint* __ne__(Constraint* other) {
-    return self->solver()->MakeNonEquality(self->Var(), other->Var());
+    return $self->solver()->MakeNonEquality($self->Var(), other->Var());
   }
   Constraint* __ge__(Constraint* other) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeGreaterOrEqual($self->Var(), other->Var());
   }
   Constraint* __gt__(Constraint* other) {
-    return self->solver()->MakeGreater(self->Var(), other->Var());
+    return $self->solver()->MakeGreater($self->Var(), other->Var());
   }
   Constraint* __le__(Constraint* other) {
-    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeLessOrEqual($self->Var(), other->Var());
   }
   Constraint* __lt__(Constraint* other) {
-    return self->solver()->MakeLess(self->Var(), other->Var());
+    return $self->solver()->MakeLess($self->Var(), other->Var());
   }
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeMapDomain(self->Var(), vars);
+    return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
   IntExpr* IndexOf(const std::vector<int64>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntVar* IsMember(const std::vector<int64>& values) {
-    return self->solver()->MakeIsMemberVar(self->Var(), values);
+    return $self->solver()->MakeIsMemberVar($self->Var(), values);
   }
   Constraint* Member(const std::vector<int64>& values) {
-    return self->solver()->MakeMemberCt(self->Var(), values);
+    return $self->solver()->MakeMemberCt($self->Var(), values);
   }
 }
 
 // Add arithmetic operators to integer expressions.
-%extend Constraint {
+%extend operations_research::Constraint {
   IntExpr* __add__(IntExpr* other) {
-    return self->solver()->MakeSum(self->Var(), other);
+    return $self->solver()->MakeSum($self->Var(), other);
   }
   IntExpr* __add__(Constraint* other) {
-    return self->solver()->MakeSum(self->Var(), other->Var());
+    return $self->solver()->MakeSum($self->Var(), other->Var());
   }
   IntExpr* __add__(int64 v) {
-    return self->solver()->MakeSum(self->Var(), v);
+    return $self->solver()->MakeSum($self->Var(), v);
   }
   IntExpr* __radd__(int64 v) {
-    return self->solver()->MakeSum(self->Var(), v);
+    return $self->solver()->MakeSum($self->Var(), v);
   }
   IntExpr* __sub__(IntExpr* other) {
-    return self->solver()->MakeDifference(self->Var(), other);
+    return $self->solver()->MakeDifference($self->Var(), other);
   }
   IntExpr* __sub__(Constraint* other) {
-    return self->solver()->MakeDifference(self->Var(), other->Var());
+    return $self->solver()->MakeDifference($self->Var(), other->Var());
   }
   IntExpr* __sub__(int64 v) {
-    return self->solver()->MakeSum(self->Var(), -v);
+    return $self->solver()->MakeSum($self->Var(), -v);
   }
   IntExpr* __rsub__(int64 v) {
-    return self->solver()->MakeDifference(v, self->Var());
+    return $self->solver()->MakeDifference(v, $self->Var());
   }
   IntExpr* __mul__(IntExpr* other) {
-    return self->solver()->MakeProd(self->Var(), other);
+    return $self->solver()->MakeProd($self->Var(), other);
   }
   IntExpr* __mul__(Constraint* other) {
-    return self->solver()->MakeProd(self->Var(), other->Var());
+    return $self->solver()->MakeProd($self->Var(), other->Var());
   }
   IntExpr* __mul__(int64 v) {
-    return self->solver()->MakeProd(self->Var(), v);
+    return $self->solver()->MakeProd($self->Var(), v);
   }
   IntExpr* __rmul__(int64 v) {
-    return self->solver()->MakeProd(self->Var(), v);
+    return $self->solver()->MakeProd($self->Var(), v);
   }
   IntExpr* __floordiv__(int64 v) {
-    return self->solver()->MakeDiv(self->Var(), v);
+    return $self->solver()->MakeDiv($self->Var(), v);
   }
 
   IntExpr* __neg__() {
-    return self->solver()->MakeOpposite(self->Var());
+    return $self->solver()->MakeOpposite($self->Var());
   }
   IntExpr* __abs__() {
-    return self->solver()->MakeAbs(self->Var());
+    return $self->solver()->MakeAbs($self->Var());
   }
   IntExpr* Square() {
-    return self->solver()->MakeSquare(self->Var());
+    return $self->solver()->MakeSquare($self->Var());
   }
 
   Constraint* __eq__(int64 v) {
-    return self->solver()->MakeEquality(self->Var(), v);
+    return $self->solver()->MakeEquality($self->Var(), v);
   }
   Constraint* __ne__(int64 v) {
-    return self->solver()->MakeNonEquality(self->Var(), v);
+    return $self->solver()->MakeNonEquality($self->Var(), v);
   }
   Constraint* __ge__(int64 v) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), v);
+    return $self->solver()->MakeGreaterOrEqual($self->Var(), v);
   }
   Constraint* __gt__(int64 v) {
-    return self->solver()->MakeGreater(self->Var(), v);
+    return $self->solver()->MakeGreater($self->Var(), v);
   }
   Constraint* __le__(int64 v) {
-    return self->solver()->MakeLessOrEqual(self->Var(), v);
+    return $self->solver()->MakeLessOrEqual($self->Var(), v);
   }
   Constraint* __lt__(int64 v) {
-    return self->solver()->MakeLess(self->Var(), v);
+    return $self->solver()->MakeLess($self->Var(), v);
   }
   Constraint* __eq__(IntExpr* other) {
-    return self->solver()->MakeEquality(self->Var(), other->Var());
+    return $self->solver()->MakeEquality($self->Var(), other->Var());
   }
   Constraint* __ne__(IntExpr* other) {
-    return self->solver()->MakeNonEquality(self->Var(), other->Var());
+    return $self->solver()->MakeNonEquality($self->Var(), other->Var());
   }
   Constraint* __ge__(IntExpr* other) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeGreaterOrEqual($self->Var(), other->Var());
   }
   Constraint* __gt__(IntExpr* other) {
-    return self->solver()->MakeGreater(self->Var(), other->Var());
+    return $self->solver()->MakeGreater($self->Var(), other->Var());
   }
   Constraint* __le__(IntExpr* other) {
-    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeLessOrEqual($self->Var(), other->Var());
   }
   Constraint* __lt__(IntExpr* other) {
-    return self->solver()->MakeLess(self->Var(), other->Var());
+    return $self->solver()->MakeLess($self->Var(), other->Var());
   }
   Constraint* __eq__(Constraint* other) {
-    return self->solver()->MakeEquality(self->Var(), other->Var());
+    return $self->solver()->MakeEquality($self->Var(), other->Var());
   }
   Constraint* __ne__(Constraint* other) {
-    return self->solver()->MakeNonEquality(self->Var(), other->Var());
+    return $self->solver()->MakeNonEquality($self->Var(), other->Var());
   }
   Constraint* __ge__(Constraint* other) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeGreaterOrEqual($self->Var(), other->Var());
   }
   Constraint* __gt__(Constraint* other) {
-    return self->solver()->MakeGreater(self->Var(), other->Var());
+    return $self->solver()->MakeGreater($self->Var(), other->Var());
   }
   Constraint* __le__(Constraint* other) {
-    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
+    return $self->solver()->MakeLessOrEqual($self->Var(), other->Var());
   }
   Constraint* __lt__(Constraint* other) {
-    return self->solver()->MakeLess(self->Var(), other->Var());
+    return $self->solver()->MakeLess($self->Var(), other->Var());
   }
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeMapDomain(self->Var(), vars);
+    return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
   IntExpr* IndexOf(const std::vector<int64>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
 }
 
-%extend IntVarIterator {
+// Add easy variable getters to BaseLNS ([i] gets the value of variable #i).
+%extend operations_research::BaseLNS {
+  int64 __getitem__(int index) {
+    return $self->Value(index);
+  }
+
+  int __len__() {
+    return $self->Size();
+  }
+}
+
+// Extend IntVarIterator to make it iterable in python.
+%extend operations_research::IntVarIterator {
   %pythoncode {
   def __iter__(self):
     self.Init()
@@ -1102,43 +639,37 @@ static void SetPythonFlags(bool trace_propagation,
       return result
     else:
       raise StopIteration()
-  }
+  }  // %pythoncode
 }
 
-%extend IntVar {
+// Extend IntVar to provide natural iteration over its domains.
+%extend operations_research::IntVar {
   %pythoncode {
   def DomainIterator(self):
     return iter(self.DomainIteratorAux(False))
 
   def HoleIterator(self):
     return iter(self.HoleIteratorAux(False))
-  }
+  }  // %pythoncode
 }
 
-%extend BaseLNS {
-  int64 __getitem__(int index) {
-    return self->Value(index);
-  }
-
-  int __len__() {
-    return self->Size();
-  }
-}
-
-%extend IntVarLocalSearchFilter {
+%extend operations_research::IntVarLocalSearchFilter {
   int64 IndexFromVar(IntVar* const var) const {
     int64 index = -1;
-    self->FindIndex(var, &index);
+    $self->FindIndex(var, &index);
     return index;
   }
 }
-}  // namespace operations_research
+
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
 // files in ../java and ../csharp.
+// TODO(user): extract this duplicated code into a common, multi-language
+// .swig file with SWIG_exception.
 
 // Protect from failure.
+// TODO(user): document this further.
 %define PROTECT_FROM_FAILURE(Method, GetSolver)
 %exception Method {
   operations_research::Solver* const solver = GetSolver;
@@ -1151,11 +682,15 @@ static void SetPythonFlags(bool trace_propagation,
     delete intercept;
   } else {
     solver->clear_fail_intercept();
-    PyErr_SetString(PyExc_IndexError, "fail");
+    // IMPORTANT: the type and message of the exception raised matter,
+    // because they are caught by the python overrides of some CP classes.
+    // See the occurrences of the "PyExc_Exception" string below.
+    PyErr_SetString(PyExc_Exception, "CP Solver fail");
     SWIG_fail;
   }
 }
 %enddef
+
 namespace operations_research {
 PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
 PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
@@ -1179,32 +714,1456 @@ PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
 PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const ct), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
-#undef PROTECT_FROM_FAILURE
 }  // namespace operations_research
+#undef PROTECT_FROM_FAILURE
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-// Wrap cp includes
-%include constraint_solver/constraint_solver.h
-%include constraint_solver/constraint_solveri.h
+// ============= Handling C++ flags ==============
+
+// We "convert" the C++ flags to python gflags. We also need to actually
+// pass the value from the python flags to the C++ ones, upon the Solver
+// construction.
+// TODO(user): cp_trace_propagation is set too late to be useful. Investigate
+// and fix it.
+// Phase 1: declare the C++ flags.
+%import "base/commandlineflags.h"
+%{
+DECLARE_bool(cp_trace_propagation);
+DECLARE_bool(cp_trace_search);
+DECLARE_bool(cp_print_model);
+DECLARE_bool(cp_model_stats);
+DECLARE_string(cp_export_file);
+DECLARE_bool(cp_no_solve);
+DECLARE_string(cp_profile_file);
+%}
+// Phase 2: define the python flags.
+%pythoncode {
+import gflags as flags
+FLAGS = flags.FLAGS
+flags.DEFINE_boolean('cp_trace_propagation', False,
+                      'trace all propagation events.')
+flags.DEFINE_boolean('cp_trace_search', False,
+                      'trace all search events.')
+flags.DEFINE_boolean('cp_print_model', False,
+                      'prints the model before solving it.')
+flags.DEFINE_boolean('cp_model_stats', False,
+                      'displays model statistics before solving it.')
+flags.DEFINE_string('cp_export_file', '',
+                     'exports model to file using CPModelProto.')
+flags.DEFINE_boolean('cp_no_solve', False,
+                      'force failures at the beginning of a search.')
+flags.DEFINE_string('cp_profile_file', '',
+                     'exports profiling overview to file.')
+}  // %pythoncode
+// Phase 3: extend the Solver C++ object with a SetFlags() method that sets
+// all the important flags from its input parameters.
+%extend operations_research::Solver {
+  static void SetFlags(bool trace_propagation,
+                       bool trace_search,
+                       bool print_model,
+                       bool model_stats,
+                       const string& export_file,
+                       bool no_solve,
+                       const string& profile_file) {
+    FLAGS_cp_trace_propagation = trace_propagation;
+    FLAGS_cp_trace_search = trace_search;
+    FLAGS_cp_print_model = print_model;
+    FLAGS_cp_model_stats = model_stats;
+    FLAGS_cp_export_file = export_file;
+    FLAGS_cp_no_solve = no_solve;
+    FLAGS_cp_profile_file = profile_file;
+  }
+}
+// Phase 4: at the end of the Solver's constructor code (in python), call
+// SetFlags() with the python flags as parameters.
+// Note: Indentation is critical here as the code is copied verbatim in the
+// python code.
+%feature("pythonappend") operations_research::Solver::Solver %{
+        Solver.SetFlags(FLAGS.cp_trace_propagation,
+                        FLAGS.cp_trace_search,
+                        FLAGS.cp_print_model,
+                        FLAGS.cp_model_stats,
+                        FLAGS.cp_export_file,
+                        FLAGS.cp_no_solve,
+                        FLAGS.cp_profile_file)
+%}
+
+
+// ============= Exposed C++ API : Solver class ==============
+
+%ignoreall
+
+%unignore operations_research;
+
+namespace operations_research {
+
+// Solver: Basic API.
+%unignore Solver;
+%unignore Solver::Solver;
+%unignore Solver::~Solver;
+%rename (Add) Solver::AddConstraint;
+%unignore Solver::Solve;
+
+// Solver: Decomposed or specialized Solve() API.
+%unignore Solver::NewSearch;
+%unignore Solver::NextSolution;
+%unignore Solver::RestartSearch;
+%unignore Solver::EndSearch;
+%unignore Solver::Fail;
+%unignore Solver::SolveAndCommit;
+%unignore Solver::FinishCurrentSearch;
+%unignore Solver::RestartCurrentSearch;
+
+// Solver: Debug and performance counters.
+%rename (WallTime) Solver::wall_time;
+%rename (Branches) Solver::branches;
+%rename (Solutions) Solver::solutions;
+%rename (Failures) Solver::failures;
+%rename (AcceptedNeighbors) Solver::accepted_neighbors;
+%rename (Stamp) Solver::stamp;
+%rename (FailStamp) Solver::fail_stamp;
+%unignore Solver::SearchDepth;
+%unignore Solver::SearchLeftDepth;
+%unignore Solver::SolveDepth;
+%rename (Constraints) Solver::constraints;
+%unignore Solver::CheckAssignment;
+%unignore Solver::CheckConstraint;
+
+// Solver: IntVar creation. We always strip the "Make" prefix in python.
+%rename (IntVar) Solver::MakeIntVar;
+%rename (BoolVar) Solver::MakeBoolVar;
+%rename (IntConst) Solver::MakeIntConst;
+
+// Solver: IntExpr creation. Most methods creating IntExpr are not exposed
+// directly in python, but rather via the "Natural language" API. See examples.
+%rename (Sum) Solver::MakeSum(const std::vector<IntVar*>&);
+%rename (ScalProd) Solver::MakeScalProd;
+%rename (Max) Solver::MakeMax;
+%rename (Min) Solver::MakeMin;
+%rename (SemiContinuousExpr) Solver::MakeSemiContinuousExpr;
+%rename (MonotonicElement) Solver::MakeMonotonicElement;
+%rename (IndexEpression) Solver::MakeIndexEpression;
+%rename (ConvexPiecewiseExpr) Solver::MakeConvexPiecewiseExpr;
+%rename (ConditionalExpression) Solver::MakeConditionalExpression;
+
+// Solver: Basic constraints.
+%rename (TrueConstraint) Solver::MakeTrueConstraint;
+%rename (FalseConstraint) Solver::MakeFalseConstraint;
+%rename (AllDifferent) Solver::MakeAllDifferent;
+%rename (AllDifferentExcept) Solver::MakeAllDifferentExcept;
+%rename (AllowedAssignments) Solver::MakeAllowedAssignments;
+%rename (BetweenCt) Solver::MakeBetweenCt;
+%rename (DisjunctiveConstraint) Solver::MakeDisjunctiveConstraint;
+%rename (Distribute) Solver::MakeDistribute;
+%rename (Cumulative) Solver::MakeCumulative;
+
+// Solver: Constraints about interval variables.
+%rename (FixedDurationIntervalVar) Solver::MakeFixedDurationIntervalVar;
+%rename (FixedInterval) Solver::MakeFixedInterval;
+%rename (MirrorInterval) Solver::MakeMirrorInterval;
+%rename (FixedDurationStartSyncedOnStartIntervalVar)
+    Solver::MakeFixedDurationStartSyncedOnStartIntervalVar;
+%rename (FixedDurationEndSyncedOnEndIntervalVar)
+    Solver::MakeFixedDurationEndSyncedOnEndIntervalVar;
+%rename (IntervalRelaxedMin) Solver::MakeIntervalRelaxedMin;
+%rename (IntervalRelaxedMax) Solver::MakeIntervalRelaxedMax;
+%rename (TemporalDisjunction) Solver::MakeTemporalDisjunction;
+%rename (Cover) Solver::MakeCover;
+
+// Solver: Constraints tying a boolean var to an expression. Model-wise; it is
+// equivalent to creating the expression via the python natural API; and then
+// declaring its equality to the boolean var.
+%rename (IsEqualCstVar) Solver::MakeIsEqualCstVar;
+%rename (IsBetweenVar) Solver::MakeIsBetweenVar;
+%rename (IsMemberVar) Solver::MakeIsMemberVar;
+%rename (IsLessVar) Solver::MakeIsLessVar;
+// The methods below should be avoided: use the *Var versions above if you can.
+%rename (IsEqualCstCt) Solver::MakeIsEqualCstCt;
+%rename (IsMemberCt) Solver::MakeIsMemberCt;
+%rename (IsBetweenCt) Solver::MakeIsBetweenCt;
+%rename (IsLessCt) Solver::MakeIsLessCt;
+
+// Solver: Elaborate constraint creation.
+%rename (Count) Solver::MakeCount;
+%rename (Deviation) Solver::MakeDeviation;
+%rename (SortingConstraint) Solver::MakeSortingConstraint;
+%rename (LexicalLess) Solver::MakeLexicalLess;
+%rename (LexicalLessOrEqual) Solver::MakeLexicalLessOrEqual;
+%rename (InversePermutationConstraint) Solver::MakeInversePermutationConstraint;
+%rename (NullIntersect) Solver::MakeNullIntersect;
+%rename (NullIntersectExcept) Solver::MakeNullIntersectExcept;
+%rename (Circuit) Solver::MakeCircuit;
+%rename (SubCircuit) Solver::MakeSubCircuit;
+%rename (PathCumul) Solver::MakePathCumul;
+%rename (DelayedPathCumul) Solver::MakeDelayedPathCumul;
+%rename (TransitionConstraint) Solver::MakeTransitionConstraint;
+%rename (NonOverlappingBoxesConstraint)
+    Solver::MakeNonOverlappingBoxesConstraint;
+%rename (Pack) Solver::MakePack;
+
+// Solver: Other object creation.
+%rename (Assignment) Solver::MakeAssignment;
+
+// Solver: Demon creation and demon-related methods.
+%unignore Solver::ShouldFail;
+%rename (ConstraintInitialPropagateCallback)
+    Solver::MakeConstraintInitialPropagateCallback;
+%rename (DelayedConstraintInitialPropagateCallback)
+    Solver::MakeDelayedConstraintInitialPropagateCallback;
+
+
+// Solver: Solution Collectors
+%rename (BestValueSolutionCollector) Solver::MakeBestValueSolutionCollector;
+%rename (FirstSolutionCollector) Solver::MakeFirstSolutionCollector;
+%rename (LastSolutionCollector) Solver::MakeLastSolutionCollector;
+%rename (AllSolutionCollector) Solver::MakeAllSolutionCollector;
+
+// Solver: Objective variables, i.e. OptimizeVar creation.
+%rename (Minimize) Solver::MakeMinimize;
+%rename (Maximize) Solver::MakeMaximize;
+%rename (Optimize) Solver::MakeOptimize;
+%rename (WeightedMinimize) Solver::MakeWeightedMinimize;
+%rename (WeightedMaximize) Solver::MakeWeightedMaximize;
+%rename (WeightedOptimize) Solver::MakeWeightedOptimize;
+
+// Solver: Meta-heuristics.
+%rename (TabuSearch) Solver::MakeTabuSearch;
+%rename (SimulatedAnnealing) Solver::MakeSimulatedAnnealing;
+%rename (GuidedLocalSearch) Solver::MakeGuidedLocalSearch;
+%rename (LubyRestart) Solver::MakeLubyRestart;
+%rename (ConstantRestart) Solver::MakeConstantRestart;
+
+// Solver: Search Limits.
+%unignore Solver::SearchLimitProto;  // search_limit.proto
+%rename (Limit) Solver::MakeLimit;
+%rename (TimeLimit) Solver::MakeTimeLimit;
+%rename (SolutionsLimit) Solver::MakeSolutionsLimit;
+%rename (CustomLimit) Solver::MakeCustomLimit;
+
+// Solver: Search logs.
+%rename (SearchLog) Solver::MakeSearchLog;
+%rename (SearchTrace) Solver::MakeSearchTrace;
+
+// Solver: Model visitors.
+%unignore Solver::Accept;
+%rename (PrintModelVisitor) Solver::MakePrintModelVisitor;
+%rename (StatisticsModelVisitor) Solver::MakeStatisticsModelVisitor;
+
+// Solver: Decisions
+%rename (SplitVariableDomain) Solver::MakeSplitVariableDomain;
+%rename (AssignVariableValue) Solver::MakeAssignVariableValue;
+%rename (VariableLessOrEqualValue) Solver::MakeVariableLessOrEqualValue;
+%rename (VariableGreaterOrEqualValue) Solver::MakeVariableGreaterOrEqualValue;
+%rename (AssignVariableValueOrFail) Solver::MakeAssignVariableValueOrFail;
+%rename (AssignVariablesValues) Solver::MakeAssignVariablesValues;
+%rename (FailDecision) Solver::MakeFailDecision;
+
+// Solver: Decision builders. Many versions of MakePhase() are not exposed
+// directly; instead there are python-specific shortcuts provided above.
+// See the occurrences of "DecisionBuilder*" in this file.
+%unignore Solver::Try(const std::vector<DecisionBuilder*>&);
+%unignore Solver::Compose(const std::vector<DecisionBuilder*>&);
+%rename (SolveOnce) Solver::MakeSolveOnce(DecisionBuilder* const,
+                                          const std::vector<SearchMonitor*>&);
+%rename (Phase) Solver::MakePhase(const std::vector<IntVar*>&,
+                                  IntVarStrategy, IntValueStrategy);
+%rename (Phase) Solver::MakePhase(const std::vector<IntervalVar*>&,
+                                  IntervalStrategy);
+%rename (Phase) Solver::MakePhase(const std::vector<SequenceVar*>&,
+                                  SequenceStrategy);
+%rename (DefaultPhase) Solver::MakeDefaultPhase;
+%rename (LocalSearchPhase) Solver::MakeLocalSearchPhase;
+%rename (ScheduleOrPostpone) Solver::MakeScheduleOrPostpone;
+%rename (ScheduleOrExpedite) Solver::MakeScheduleOrExpedite;
+%rename (RankFirstInterval) Solver::MakeRankFirstInterval;
+%rename (RankLastInterval) Solver::MakeRankLastInterval;
+%rename (DecisionBuilderFromAssignment)
+    Solver::MakeDecisionBuilderFromAssignment;
+%rename (ConstraintAdder) Solver::MakeConstraintAdder;
+%rename (NestedOptimize) Solver::MakeNestedOptimize;
+%rename (StoreAssignment) Solver::MakeStoreAssignment;
+%rename (RestoreAssignment) Solver::MakeRestoreAssignment;
+
+// Solver: Local search operators.
+%rename (Operator) Solver::MakeOperator;
+%rename (RandomLNSOperator) Solver::MakeRandomLNSOperator;
+%unignore Solver::ConcatenateOperators;
+%unignore Solver::RandomConcatenateOperators;
+%rename (LocalSearchPhaseParameters) Solver::MakeLocalSearchPhaseParameters;
+%rename (MoveTowardTargetOperator) Solver::MakeMoveTowardTargetOperator;
+%rename (NeighborhoodLimit) Solver::MakeNeighborhoodLimit;
+
+// Enums. Each section below exposes one enum, with all its exposed values.
+%unignore Solver::IntVarStrategy;
+%unignore Solver::INT_VAR_DEFAULT;
+%unignore Solver::INT_VAR_SIMPLE;
+%unignore Solver::CHOOSE_FIRST_UNBOUND;
+%unignore Solver::CHOOSE_RANDOM;
+%unignore Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+%unignore Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN;
+%unignore Solver::CHOOSE_MIN_SIZE_LOWEST_MAX;
+%unignore Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX;
+%unignore Solver::CHOOSE_LOWEST_MIN;
+%unignore Solver::CHOOSE_HIGHEST_MAX;
+%unignore Solver::CHOOSE_MIN_SIZE;
+%unignore Solver::CHOOSE_MAX_SIZE;
+%unignore Solver::CHOOSE_MAX_REGRET_ON_MIN;
+%unignore Solver::CHOOSE_PATH;
+
+%unignore Solver::IntValueStrategy;
+%unignore Solver::INT_VALUE_DEFAULT;
+%unignore Solver::INT_VALUE_SIMPLE;
+%unignore Solver::ASSIGN_MIN_VALUE;
+%unignore Solver::ASSIGN_MAX_VALUE;
+%unignore Solver::ASSIGN_RANDOM_VALUE;
+%unignore Solver::ASSIGN_CENTER_VALUE;
+%unignore Solver::SPLIT_LOWER_HALF;
+%unignore Solver::SPLIT_UPPER_HALF;
+
+%unignore Solver::SequenceStrategy;
+%unignore Solver::SEQUENCE_DEFAULT;
+%unignore Solver::SEQUENCE_SIMPLE;
+%unignore Solver::CHOOSE_MIN_SLACK_RANK_FORWARD;
+%unignore Solver::CHOOSE_RANDOM_RANK_FORWARD;
+
+%unignore Solver::IntervalStrategy;
+%unignore Solver::INTERVAL_DEFAULT;
+%unignore Solver::INTERVAL_SIMPLE;
+%unignore Solver::INTERVAL_SET_TIMES_FORWARD;
+%unignore Solver::INTERVAL_SET_TIMES_BACKWARD;
+
+%unignore Solver::LocalSearchOperators;
+%unignore Solver::TWOOPT;
+%unignore Solver::OROPT;
+%unignore Solver::RELOCATE;
+%unignore Solver::EXCHANGE;
+%unignore Solver::CROSS;
+%unignore Solver::MAKEACTIVE;
+%unignore Solver::MAKEINACTIVE;
+%unignore Solver::MAKECHAININACTIVE;
+%unignore Solver::SWAPACTIVE;
+%unignore Solver::EXTENDEDSWAPACTIVE;
+%unignore Solver::PATHLNS;
+%unignore Solver::FULLPATHLNS;
+%unignore Solver::UNACTIVELNS;
+%unignore Solver::INCREMENT;
+%unignore Solver::DECREMENT;
+%unignore Solver::SIMPLELNS;
+
+%unignore Solver::LocalSearchFilterBound;
+%unignore Solver::GE;
+%unignore Solver::LE;
+%unignore Solver::EQ;
+
+%unignore Solver::LocalSearchOperation;
+%unignore Solver::SUM;
+%unignore Solver::PROD;
+%unignore Solver::MAX;
+%unignore Solver::MIN;
+
+}  // namespace operations_research
+
+// ============= Unexposed C++ API : Solver class ==============
+// TODO(user): remove this listing of unexposed methods (which was exhaustive
+// as of 2014-07-01) when we are confident with the stability of the or-tools
+// export. Until then, it is an extremely useful reference for development.
+//
+// Unexposed Solver:: methods (grouped semantically):
+//
+// - parameters()
+// - SaveValue()
+// - RevAlloc()
+// - RevAllocArray()
+//
+// - AddCastConstraint()
+//
+// - state()
+//
+// - ExportModel()
+// - LoadModel()
+// - UpgradeModel()
+//
+// TODO(user): implement backtrack actions with std::function and experiment
+// swig with that.
+// - AddBacktrackAction()
+//
+// - DebugString()
+// - MemoryUsage()
+// - VirtualMemorySize()
+// - SetClock()
+//
+// - demon_runs()
+// - neighbors()
+// - filtered_neighbors()
+//
+// - MakeIntVarArray()
+// - MakeBoolVarArray()
+//
+// - MakeIsEqualCt()
+// - MakeIsEqualVar()
+// - MakeIsDifferentCstCt()
+// - MakeIsDifferentCstVar()
+// - MakeIsDifferentVar()
+// - MakeIsDifferentCt()
+// - MakeIsLessOrEqualCstCt()
+// - MakeIsLessOrEqualCstVar()
+// - MakeIsLessOrEqualVar()
+// - MakeIsLessOrEqualCt()
+// - MakeIsGreaterOrEqualCstCt()
+// - MakeIsGreaterOrEqualCstVar()
+// - MakeIsGreaterOrEqualVar()
+// - MakeIsGreaterOrEqualCt()
+// - MakeIsGreaterCstCt()
+// - MakeIsGreaterCstVar()
+// - MakeIsGreaterVar()
+// - MakeIsGreaterCt()
+// - MakeIsLessCstCt()
+// - MakeIsLessCstVar()
+//
+// TODO(user): Implement a ScalProd python object.
+// TODO(user): make the python natural API able to support and indirectly
+// expose the following block of methods:
+// - MakeSumLessOrEqual()
+// - MakeSumGreaterOrEqual()
+// - MakeSumEquality()
+// - MakeScalProdEquality()
+// - MakeScalProdGreaterOrEqual()
+// - MakeScalProdLessOrEqual()
+// - MakeMinEquality()
+// - MakeMaxEquality()
+//
+// - MakeElementEquality()
+// - MakeAbsEquality()
+// - MakeIndexOfConstraint()
+//
+// - MakeCallbackDemon()
+//
+// - MakeFixedDurationIntervalVarArray()
+// - MakeIntervalVarArray()
+//
+// - MakeEquality()  // On IntervalVar.
+//
+// - MakeBranchesLimit()
+// - MakeFailuresLimit()
+// - UpdateLimits()
+// - GetTime()
+//
+// - MakeNoGoodManager()
+//
+// - MakeTreeMonitor()
+//
+// - MakeVariableDegreeVisitor()
+//
+// - MakeSymmetryManager()
+//
+// - MakeSimplexConstraint()
+//
+// - MakeDefaultSolutionPool()
+// - MakeVariableDomainFilter()
+//
+// - TopPeriodicCheck()
+// - TopProgressPercent()
+// - PushState()
+// - PopState()
+//
+// - SetBranchSelector()
+// - MakeApplyBranchSelector()
+//
+// - SaveAndSetValue()
+// - SaveAndAdd()
+//
+// - Rand64()
+// - Rand32()
+// - ReSeed()
+//
+// - AddFailHook()
+// - ExportProfilingOverview()
+// - CurrentlyInSolve()
+// - balancing_decision()
+// - set_fail_intercept()
+// - clear_fail_intercept()
+// - demon_profiler()
+// - HasName()
+//
+// - RegisterDemon()
+// - RegisterIntExpr()
+// - RegisterIntVar()
+// - RegisterIntervalVar()
+//
+// - ActiveSearch()
+// - Cache()
+// - InstrumentsDemons()
+// - IsProfilingEnabled()
+// - InstrumentsVariables()
+// - NameAllVariables()
+// - model_name()
+// - Graph()
+// - GetPropagationMonitor()
+// - AddPropagationMonitor()
+// - tmp_vector_
+// - IsBooleanVar()
+// - IsProduct()
+// - CastExpression()
+
+// Unexposed Solver enums:
+// - EvaluatorLocalSearchOperators
+// - DemonPriority
+// - BinaryIntervalRelation (replaced by an ad-hoc API on IntervalVar).
+// - UnaryIntervalRelation (ditto)
+// - DecisionModification
+// - MarkerType
+// - SolverState
+
+// ============= Exposed C++ API : classes other than "Solver" ==============
+
+namespace operations_research {
+
+// Unexposed top-level classes and methods:
+// - Zero()
+// - BaseObject
+// - DecisionVisitor
+// - Action
+// - ModelVisitor
+// - CastConstraint
+// - NumericalRev<>
+// - RevArray<>
+// - NumericalRevArray<>
+// - NoGood
+// - NoGoodManager
+// - AssignmentElement
+// - SolutionPool
+
+// SolverParameters
+// Ignored:
+// - Constants:
+//   - kDefaultTrailCompression
+//   - kDefaultTrailBlockSize
+//   - kDefaultArraySplitSize
+//   - kDefaultNameStoring
+//   - kDefaultProfileLevel
+//   - kDefaultTraceLevel
+//   - kDefaultNameAllVariables
+%unignore SolverParameters;
+%unignore SolverParameters::SolverParameters;
+
+// SolverParameters: Enums.
+%unignore SolverParameters::TrailCompression;
+%unignore SolverParameters::NO_COMPRESSION;
+%unignore SolverParameters::COMPRESS_WITH_ZLIB;
+%unignore SolverParameters::ProfileLevel;
+%unignore SolverParameters::NO_PROFILING;
+%unignore SolverParameters::NORMAL_PROFILING;
+%unignore SolverParameters::TraceLevel;
+%unignore SolverParameters::NO_TRACE;
+%unignore SolverParameters::NORMAL_TRACE;
+
+// SolverParameters: data members.
+%unignore SolverParameters::compress_trail;
+%unignore SolverParameters::trail_block_size;
+%unignore SolverParameters::array_split_size;
+%unignore SolverParameters::store_names;
+%unignore SolverParameters::profile_level;
+%unignore SolverParameters::trace_level;
+%unignore SolverParameters::name_all_variables;
+
+// DefaultPhaseParameters
+// Ignored:
+// - Constants:
+//   - kDefaultNumberOfSplits
+//   - kDefaultHeuristicPeriod
+//   - kDefaultHeuristicNumFailuresLimit
+//   - kDefaultSeed
+//   - kDefaultRestartLogSize
+//   - kDefaultUseNoGoods
+%unignore DefaultPhaseParameters;
+%unignore DefaultPhaseParameters::DefaultPhaseParameters;
+
+// DefaultPhaseParameters: Enums.
+%unignore DefaultPhaseParameters::VariableSelection;
+%unignore DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
+%unignore DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT;
+%unignore DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT;
+%unignore DefaultPhaseParameters::ValueSelection;
+%unignore DefaultPhaseParameters::SELECT_MIN_IMPACT;
+%unignore DefaultPhaseParameters::SELECT_MAX_IMPACT;
+%unignore DefaultPhaseParameters::DisplayLevel;
+%unignore DefaultPhaseParameters::NONE;
+%unignore DefaultPhaseParameters::NORMAL;
+%unignore DefaultPhaseParameters::VERBOSE;
+
+// DefaultPhaseParameters: data members.
+%unignore DefaultPhaseParameters::var_selection_schema;
+%unignore DefaultPhaseParameters::value_selection_schema;
+%unignore DefaultPhaseParameters::initialization_splits;
+%unignore DefaultPhaseParameters::run_all_heuristics;
+%unignore DefaultPhaseParameters::heuristic_period;
+%unignore DefaultPhaseParameters::heuristic_num_failures_limit;
+%unignore DefaultPhaseParameters::persistent_impact;
+%unignore DefaultPhaseParameters::random_seed;
+%unignore DefaultPhaseParameters::restart_log_size;
+%unignore DefaultPhaseParameters::display_level;
+%unignore DefaultPhaseParameters::use_no_goods;
+%unignore DefaultPhaseParameters::decision_builder;
+
+// PropagationBaseObject
+// Ignored:
+// - PropagationBaseObject()
+// - ~PropagationBaseObject()
+// - DebugString()
+// - FreezeQueue()
+// - UnfreezeQueue()
+// - EnqueueDelayedDemon()
+// - EnqueueVar()
+// - Execute()
+// - ExecuteAll()
+// - EnqueueAll()
+// - set_queue_action_on_fail()
+// - clear_queue_action_on_fail()
+// - set_name()
+// - HasName()
+// - Basename()
+%unignore PropagationBaseObject;
+%rename (Name) PropagationBaseObject::name;
+%rename (Solver) PropagationBaseObject::solver;
+
+// Decision
+// Ignored:
+// - DebugString()
+// - Accept()
+%unignore Decision;
+%unignore Decision::Decision;
+%unignore Decision::~Decision;
+%unignore Decision::Apply;
+%unignore Decision::Refute;
+
+
+// DecisionBuilder
+// Ignored:
+// - DebugString()
+%unignore DecisionBuilder;
+%unignore DecisionBuilder::DecisionBuilder;
+%unignore DecisionBuilder::~DecisionBuilder;
+%unignore DecisionBuilder::Next;
+
+
+// Constraint
+// Ignored:
+// - Post()
+// - DebugString()
+// - PostAndPropagate()
+// - Accept()
+// - IsCastConstraint()
+%unignore Constraint;
+%unignore Constraint::Var;
+// Note(user): we prefer setting the 'director' feature on the individual
+// methods of a class that require it, but sometimes we must actually set
+// 'director' on the class itself, because it is a C++ abstract class and
+// the client needs to construct it. In these cases, we don't bother
+// setting the 'director' feature on individual methods, since it is done
+// automatically when setting it on the class.
+%feature("director") Constraint;
+%unignore Constraint::Constraint;
+%unignore Constraint::~Constraint;
+%unignore Constraint::Post;
+%unignore Constraint::InitialPropagate;
+%rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+
+
+// SearchMonitor.
+// Ignored:
+// - kNoProgress
+// - PeriodicCheck()
+// - ProgressPercent()
+// - Accept()
+// - Install()
+%unignore SearchMonitor;
+%unignore SearchMonitor::SearchMonitor;
+%unignore SearchMonitor::~SearchMonitor;
+%unignore SearchMonitor::EnterSearch;
+%feature("director") SearchMonitor::EnterSearch;
+%unignore SearchMonitor::RestartSearch;
+%feature("director") SearchMonitor::RestartSearch;
+%unignore SearchMonitor::ExitSearch;
+%feature("director") SearchMonitor::ExitSearch;
+%unignore SearchMonitor::BeginNextDecision;
+%feature("director") SearchMonitor::BeginNextDecision;
+%unignore SearchMonitor::EndNextDecision;
+%feature("director") SearchMonitor::EndNextDecision;
+%unignore SearchMonitor::ApplyDecision;
+%feature("director") SearchMonitor::ApplyDecision;
+%unignore SearchMonitor::RefuteDecision;
+%feature("director") SearchMonitor::RefuteDecision;
+%unignore SearchMonitor::AfterDecision;
+%feature("director") SearchMonitor::AfterDecision;
+%unignore SearchMonitor::BeginFail;
+%feature("director") SearchMonitor::BeginFail;
+%unignore SearchMonitor::EndFail;
+%feature("director") SearchMonitor::EndFail;
+%unignore SearchMonitor::BeginInitialPropagation;
+%feature("director") SearchMonitor::BeginInitialPropagation;
+%unignore SearchMonitor::EndInitialPropagation;
+%feature("director") SearchMonitor::EndInitialPropagation;
+%unignore SearchMonitor::AcceptSolution;
+%feature("director") SearchMonitor::AcceptSolution;
+%unignore SearchMonitor::AtSolution;
+%feature("director") SearchMonitor::AtSolution;
+%unignore SearchMonitor::NoMoreSolutions;
+%feature("director") SearchMonitor::NoMoreSolutions;
+%unignore SearchMonitor::LocalOptimum;
+%feature("director") SearchMonitor::LocalOptimum;
+%unignore SearchMonitor::AcceptDelta;
+%feature("director") SearchMonitor::AcceptDelta;
+%unignore SearchMonitor::AcceptNeighbor;
+%feature("director") SearchMonitor::AcceptNeighbor;
+%rename (Solver) SearchMonitor::solver;
+
+
+// Rev<>
+%unignore Rev;
+%unignore Rev::Rev;
+%unignore Rev::Value;
+%unignore Rev::SetValue;
+
+// IntExpr
+// Ignored:
+// - IntExpr()
+// - ~IntExpr()
+// - Accept()
+%unignore IntExpr;
+%unignore IntExpr::Min;
+%unignore IntExpr::Max;
+%unignore IntExpr::Bound;
+%unignore IntExpr::SetValue;
+%unignore IntExpr::SetMin;
+%unignore IntExpr::SetMax;
+%unignore IntExpr::SetRange;
+%unignore IntExpr::Var;
+%unignore IntExpr::IsVar;
+%unignore IntExpr::VarWithName;
+%unignore IntExpr::WhenRange;
+
+
+// IntVar
+// Ignored:
+// - IntVar()
+// - ~IntVar()
+// - VarType()
+// - Accept()
+// - IsEqual()
+// - IsDifferent()
+// - IsGreaterOrEqual()
+// - IsLessOrEqual()
+%unignore IntVar;
+%unignore IntVar::Value;
+%unignore IntVar::Size;
+%unignore IntVar::Contains;
+%unignore IntVar::RemoveValue;
+%unignore IntVar::RemoveValues;
+%unignore IntVar::RemoveInterval;
+%unignore IntVar::SetValues;
+%unignore IntVar::Var;
+%unignore IntVar::IsVar;
+%unignore IntVar::WhenBound;
+%unignore IntVar::WhenDomain;
+%rename (HoleIteratorAux) IntVar::MakeHoleIterator;
+%feature("director") IntVar::MakeHoleIterator;
+%rename (DomainIteratorAux) IntVar::MakeDomainIterator;
+%feature("director") IntVar::MakeDomainIterator;
+%unignore IntVar::OldMin;
+%unignore IntVar::OldMax;
+
+
+// SolutionCollector.
+// Ignored:
+// - SolutionCollector()
+// - ~SolutionCollector()
+// - EnterSearch()
+%unignore SolutionCollector;
+%unignore SolutionCollector::Value;
+%unignore SolutionCollector::StartValue;
+%unignore SolutionCollector::EndValue;
+%unignore SolutionCollector::DurationValue;
+%unignore SolutionCollector::PerformedValue;
+%unignore SolutionCollector::ForwardSequence;
+%unignore SolutionCollector::BackwardSequence;
+%unignore SolutionCollector::Unperformed;
+%rename (Solution) SolutionCollector::solution;
+%rename (SolutionCount) SolutionCollector::solution_count;
+%rename (ObjectiveValue) SolutionCollector::objective_value;
+%rename (WallTime) SolutionCollector::wall_time;
+%rename (Branches) SolutionCollector::branches;
+%rename (Failures) SolutionCollector::failures;
+%unignore SolutionCollector::Add;
+%unignore SolutionCollector::AddObjective;
+
+
+// OptimizeVar.
+// Ignored:
+// - OptimizeVar()
+// - ~OptimizeVat()
+// - EnterSearch()
+// - BeginNextDecision()
+// - RefuteDecision()
+// - AtSolution()
+// - AcceptSolution()
+// - Print()
+// - DebugString()
+// - Accept()
+// - ApplyBound()
+%unignore OptimizeVar;
+%rename (Best) OptimizeVar::best;
+%unignore OptimizeVar::Var;
+
+// SearchLimit.
+// Ignored:
+// - SearchLimit()
+// - ~SearchLimit()
+// - crossed()
+// - Check()
+// - Init()
+// - Copy()
+// - MakeClone()
+// - EnterSearch()
+// - BeginNextDecision()
+// - PeriodicCheck()
+// - RefuteDecision()
+// - DebugString()
+%unignore SearchLimit;
+%rename (Crossed) SearchLimit::crossed;
+%unignore SearchLimit::SearchLimit;
+%unignore SearchLimit::~SearchLimit;
+%unignore SearchLimit::Check;
+%unignore SearchLimit::Init;
+
+
+// IntervalVar
+// Ignored:
+// - kMinValidValue
+// - kMaxValidValue
+// - IntervalVar()
+// - ~IntervalVar()
+// - Accept()
+%unignore IntervalVar;
+%unignore IntervalVar::StartExpr;
+%unignore IntervalVar::DurationExpr;
+%unignore IntervalVar::EndExpr;
+%unignore IntervalVar::SafeStartExpr;
+%unignore IntervalVar::SafeDurationExpr;
+%unignore IntervalVar::SafeEndExpr;
+%unignore IntervalVar::PerformedExpr;
+%unignore IntervalVar::StartMin;
+%unignore IntervalVar::StartMax;
+%unignore IntervalVar::SetStartMin;
+%unignore IntervalVar::SetStartMax;
+%unignore IntervalVar::SetStartRange;
+%unignore IntervalVar::DurationMin;
+%unignore IntervalVar::DurationMax;
+%unignore IntervalVar::SetDurationMin;
+%unignore IntervalVar::SetDurationMax;
+%unignore IntervalVar::SetDurationRange;
+%unignore IntervalVar::EndMin;
+%unignore IntervalVar::EndMax;
+%unignore IntervalVar::SetEndMin;
+%unignore IntervalVar::SetEndMax;
+%unignore IntervalVar::SetEndRange;
+%unignore IntervalVar::MustBePerformed;
+%unignore IntervalVar::MayBePerformed;
+%unignore IntervalVar::CannotBePerformed;
+%unignore IntervalVar::SetPerformed;
+%unignore IntervalVar::IsPerformedBound;
+%unignore IntervalVar::OldStartMin;
+%unignore IntervalVar::OldStartMax;
+%unignore IntervalVar::OldDurationMin;
+%unignore IntervalVar::OldDurationMax;
+%unignore IntervalVar::OldEndMin;
+%unignore IntervalVar::OldEndMax;
+%unignore IntervalVar::WhenStartRange;
+%unignore IntervalVar::WhenStartBound;
+%unignore IntervalVar::WhenDurationRange;
+%unignore IntervalVar::WhenDurationBound;
+%unignore IntervalVar::WhenEndRange;
+%unignore IntervalVar::WhenEndBound;
+%unignore IntervalVar::WasPerformedBound;
+%unignore IntervalVar::WhenPerformedBound;
+%unignore IntervalVar::WhenAnything;
+
+
+// SequenceVar.
+// Ignored:
+// - SequenceVar()
+// - ~SequenceVar()
+// - DebugString()
+// - DurationRange()
+// - HorizonRange()
+// - ActiveHorizonRange()
+// - ComputeStatistics()
+// - ComputePossibleFirstsAndLasts()
+// - RankSequence()
+// - FillSequence()
+// - Accept()
+%unignore SequenceVar;
+%unignore SequenceVar::RankFirst;
+%unignore SequenceVar::RankNotFirst;
+%unignore SequenceVar::RankLast;
+%unignore SequenceVar::RankNotLast;
+%unignore SequenceVar::Interval;
+%unignore SequenceVar::Next;
+%rename (Size) SequenceVar::size;
+
+// Assignment
+// Ignored:
+// - Assignment()
+// - ~Assignment()
+// - FastAdd()
+// - DebugString()
+// - Contains()
+// - Copy()
+// - ==()
+// - !=()
+%unignore Assignment;
+%unignore Assignment::Clear;
+%unignore Assignment::Size;
+%unignore Assignment::Empty;
+%unignore Assignment::NumIntVars;
+%unignore Assignment::NumIntervalVars;
+%unignore Assignment::NumSequenceVars;
+%unignore Assignment::Add;
+%unignore Assignment::Store;
+%unignore Assignment::Restore;
+%unignore Assignment::Load;
+%unignore Assignment::Save;
+
+// Assignment: activate/deactivate.
+%unignore Assignment::Activate;
+%unignore Assignment::Deactivate;
+%unignore Assignment::Activated;
+%unignore Assignment::ObjectiveActivate;
+%unignore Assignment::ObjectiveDeactivate;
+%unignore Assignment::ObjectiveActivated;
+
+// Assignment: Objective API.
+%unignore Assignment::HasObjective;
+%unignore Assignment::Objective;
+%unignore Assignment::AddObjective;
+%unignore Assignment::ObjectiveMin;
+%unignore Assignment::ObjectiveMax;
+%unignore Assignment::ObjectiveValue;
+%unignore Assignment::ObjectiveBound;
+%unignore Assignment::SetObjectiveMin;
+%unignore Assignment::SetObjectiveMax;
+%unignore Assignment::SetObjectiveValue;
+%unignore Assignment::SetObjectiveRange;
+
+// Assignment: IntVar API.
+%unignore Assignment::Min;
+%unignore Assignment::Max;
+%unignore Assignment::Value;
+%unignore Assignment::Bound;
+%unignore Assignment::SetMin;
+%unignore Assignment::SetMax;
+%unignore Assignment::SetRange;
+
+// Assignment: IntervalVar API.
+%unignore Assignment::SetValue;
+%unignore Assignment::StartMin;
+%unignore Assignment::StartMax;
+%unignore Assignment::StartValue;
+%unignore Assignment::DurationMin;
+%unignore Assignment::DurationMax;
+%unignore Assignment::DurationValue;
+%unignore Assignment::EndMin;
+%unignore Assignment::EndMax;
+%unignore Assignment::EndValue;
+%unignore Assignment::PerformedMin;
+%unignore Assignment::PerformedMax;
+%unignore Assignment::PerformedValue;
+%unignore Assignment::SetStartMin;
+%unignore Assignment::SetStartMax;
+%unignore Assignment::SetStartRange;
+%unignore Assignment::SetStartValue;
+%unignore Assignment::SetDurationMin;
+%unignore Assignment::SetDurationMax;
+%unignore Assignment::SetDurationRange;
+%unignore Assignment::SetDurationValue;
+%unignore Assignment::SetEndMin;
+%unignore Assignment::SetEndMax;
+%unignore Assignment::SetEndValue;
+%unignore Assignment::SetEndRange;
+%unignore Assignment::SetPerformedMin;
+%unignore Assignment::SetPerformedMax;
+%unignore Assignment::SetPerformedRange;
+%unignore Assignment::SetPerformedValue;
+
+// Assignment: SequenceVar API.
+%unignore Assignment::ForwardSequence;
+%unignore Assignment::BackwardSequence;
+%unignore Assignment::Unperformed;
+%unignore Assignment::SetForwardSequence;
+%unignore Assignment::SetBackwardSequence;
+%unignore Assignment::SetUnperformed;
+%unignore Assignment::SetSequence;
+
+// Assignment: underlying containers.
+%unignore Assignment::IntVarContainer;
+%unignore Assignment::MutableIntVarContainer;
+%unignore Assignment::IntervalVarContainer;
+%unignore Assignment::MutableIntervalVarContainer;
+%unignore Assignment::SequenceVarContainer;
+%unignore Assignment::MutableSequenceVarContainer;
+
+
+// DisjunctiveConstraint
+// Ignored:
+// - DisjunctiveConstraint()
+// - ~DisjunctiveConstraint()
+%unignore DisjunctiveConstraint;
+%rename (SequenceVar) DisjunctiveConstraint::MakeSequenceVar;
+%unignore DisjunctiveConstraint::SetTransitionTime;
+%unignore DisjunctiveConstraint::TransitionTime;
+
+// Pack (Constraint)
+// Ignored:
+// - typedefs:
+//   - ItemUsageEvaluator
+//   - ItemUsagePerBinEvaluator
+// - Pack()
+// - ~Pack()
+// - Post()
+// - ClearAll()
+// - PropagateDelayed()
+// - InitialPropagate()
+// - Propagate()
+// - OneDomain()
+// - DebugString()
+// - IsUndecided()
+// - SetImpossible()
+// - Assign()
+// - IsAssignedStatusKnown()
+// - IsPossible()
+// - AssignVar()
+// - SetAssigned()
+// - SetUnassigned()
+// - RemoveAllPossibleFromBin()
+// - AssignAllPossibleToBin()
+// - AssignFirstPossibleToBin()
+// - AssignAllRemainingItems()
+// - UnassignAllRemainingItems()
+// - Accept()
+%unignore Pack;
+%unignore Pack::AddWeightedSumLessOrEqualConstantDimension;
+%unignore Pack::AddWeightedSumLessOrEqualConstantDimension;
+%unignore Pack::AddWeightedSumLessOrEqualConstantDimension;
+%unignore Pack::AddWeightedSumEqualVarDimension;
+%unignore Pack::AddWeightedSumEqualVarDimension;
+%unignore Pack::AddSumVariableWeightsLessOrEqualConstantDimension;
+%unignore Pack::AddWeightedSumOfAssignedDimension;
+%unignore Pack::AddCountUsedBinDimension;
+%unignore Pack::AddCountAssignedItemsDimension;
+
+// LocalSearchPhaseParameters
+%unignore LocalSearchPhaseParameters;
+
+// Demon
+// Ignored:
+// - priority()
+// - DebugString()
+%feature("director") Demon;
+%unignore Demon;
+%unignore Demon::Demon;
+%unignore Demon::~Demon;
+%rename (RunWrapper) Demon::Run;
+%rename (Inhibit) Demon::inhibit;
+%rename (Desinhibit) Demon::desinhibit;
+
+// AssignmentElement
+// Ignored:
+// - AssignmentElement()
+%unignore AssignmentElement;
+%unignore AssignmentElement::Activate;
+%unignore AssignmentElement::Deactivate;
+%unignore AssignmentElement::Activated;
+
+// IntVarElement
+// Ignored:
+// - IntVarElement()
+// - ~IntVarElement()
+// - Reset()
+// - Clone()
+// - Copy()
+// - Store()
+// - Restore()
+// - LoadFromProto()
+// - WriteToProto()
+// - DebugString()
+// - operator==()
+// - operator!=()
+%unignore IntVarElement;
+%unignore IntVarElement::Min;
+%unignore IntVarElement::SetMin;
+%unignore IntVarElement::Max;
+%unignore IntVarElement::SetMax;
+%unignore IntVarElement::Value;
+%unignore IntVarElement::Bound;
+%unignore IntVarElement::SetRange;
+%unignore IntVarElement::SetValue;
+%unignore IntVarElement::Var;
+
+// IntervalVarElement
+// Ignored:
+// - IntervalVarElement()
+// - ~IntervalVarElement()
+// - Reset()
+// - Clone()
+// - Copy()
+// - Var()
+// - Store()
+// - Restore()
+// - LoadFromProto()
+// - WriteToProto()
+// - DebugString()
+// - operator==()
+// - operator!=()
+%unignore IntervalVarElement;
+%unignore IntervalVarElement::StartMin;
+%unignore IntervalVarElement::StartMax;
+%unignore IntervalVarElement::StartValue;
+%unignore IntervalVarElement::DurationMin;
+%unignore IntervalVarElement::DurationMax;
+%unignore IntervalVarElement::DurationValue;
+%unignore IntervalVarElement::EndMin;
+%unignore IntervalVarElement::EndMax;
+%unignore IntervalVarElement::EndValue;
+%unignore IntervalVarElement::PerformedMin;
+%unignore IntervalVarElement::PerformedMax;
+%unignore IntervalVarElement::PerformedValue;
+%unignore IntervalVarElement::SetStartMin;
+%unignore IntervalVarElement::SetStartMax;
+%unignore IntervalVarElement::SetStartRange;
+%unignore IntervalVarElement::SetStartValue;
+%unignore IntervalVarElement::SetDurationMin;
+%unignore IntervalVarElement::SetDurationMax;
+%unignore IntervalVarElement::SetDurationRange;
+%unignore IntervalVarElement::SetDurationValue;
+%unignore IntervalVarElement::SetEndMin;
+%unignore IntervalVarElement::SetEndMax;
+%unignore IntervalVarElement::SetEndRange;
+%unignore IntervalVarElement::SetEndValue;
+%unignore IntervalVarElement::SetPerformedMin;
+%unignore IntervalVarElement::SetPerformedMax;
+%unignore IntervalVarElement::SetPerformedRange;
+%unignore IntervalVarElement::SetPerformedValue;
+
+// SequenceVarElement
+// Ignored:
+// - SequenceVarElement()
+// - ~SequenceVarElement()
+// - Reset()
+// - Clone()
+// - Copy()
+// - Var()
+// - Store()
+// - Restore()
+// - LoadFromProto()
+// - WriteToProto()
+// - DebugString()
+// - operator==()
+// - operator!=()
+%unignore SequenceVarElement;
+%unignore SequenceVarElement::ForwardSequence;
+%unignore SequenceVarElement::BackwardSequence;
+%unignore SequenceVarElement::Unperformed;
+%unignore SequenceVarElement::SetSequence;
+%unignore SequenceVarElement::SetForwardSequence;
+%unignore SequenceVarElement::SetBackwardSequence;
+%unignore SequenceVarElement::SetUnperformed;
+
+// AssignmentContainer<>
+// Ignored:
+// - AssignmentContainer()
+// - Add()
+// - FastAdd()
+// - AddAtPosition()
+// - Clear()
+// - Resize()
+// - Empty()
+// - Copy()
+// - elements()
+// - All Element() method taking (const V* const var)
+// - operator==()
+// - operator!=()
+%unignore AssignmentContainer;
+%unignore AssignmentContainer::Contains;
+%rename (Element) AssignmentContainer::MutableElement(int);
+%unignore AssignmentContainer::Size;
+%unignore AssignmentContainer::Store;
+%unignore AssignmentContainer::Restore;
+
+// IntVarIterator
+// Ignored:
+// - ~IntVarIterator()
+// - DebugString()
+%unignore IntVarIterator;
+%unignore IntVarIterator::Init;
+%unignore IntVarIterator::Value;
+%unignore IntVarIterator::Next;
+%unignore IntVarIterator::Ok;
+
+
+}  // namespace operations_research
+
+%include "constraint_solver/constraint_solver.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
+%rename (RevInteger) Rev<int64>;
+%rename (RevInteger) Rev<int64>::Rev;
+%unignore Rev<int64>::Value;
+%unignore Rev<int64>::SetValue;
 %template(RevInteger) Rev<int64>;
-%template(RevBool) Rev<bool>;
-typedef Assignment::AssignmentContainer AssignmentContainer;
-%template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
-}
 
+%rename (RevBool) Rev<bool>;
+%rename (RevBool) Rev<bool>::Rev;
+%unignore Rev<bool>::Value;
+%unignore Rev<bool>::SetValue;
+%template(RevBool) Rev<bool>;
+
+%rename (IntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%rename (Element)
+    AssignmentContainer<IntVar, IntVarElement>::MutableElement(int);
+%unignore AssignmentContainer<IntVar, IntVarElement>::Size;
+%template (IntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%rename (IntervalContainer)
+    AssignmentContainer<IntervalVar, IntervalVarElement>;
+%template (IntervalContainer)
+    AssignmentContainer<IntervalVar, IntervalVarElement>;
+%rename (SequenceContainer)
+    AssignmentContainer<SequenceVar, SequenceVarElement>;
+%template (SequenceContainer)
+    AssignmentContainer<SequenceVar, SequenceVarElement>;
+
+}  // namespace operations_research
+
+// ================= constraint_solver.i API =====================
+
+namespace operations_research {
+
+// Ignored top-level classes, enums and methods:
+// - BaseIntExpr
+// - VarTypes (enum)
+// - IntVarLocalSearchHandler
+// - SequenceVarLocalSearchHandler
+// - ChangeValue
+// - PathOperator
+// - MakeLocalSearchOperator()
+// - PropagationMonitor
+// - SymmetryBreaker
+// - SearchLog
+// - ModelCache
+//
+// - RevGrowingArray<>
+// - RevIntSet<>
+// - RevPartialSequence
+// - IsArrayConstant<>()
+// - IsArrayBoolean<>()
+// - AreAllOnes<>()
+// - AreAllNull<>()
+// - AreAllGreaterOrEqual<>()
+// - AreAllPositive<>()
+// - AreAllStrictlyPositive<>()
+// - IsIncreasingContiguous<>()
+// - IsIncreasing<>()
+// - IsArrayInRange<>()
+// - AreAllBound()
+// - AreAllBooleans()
+// - AreAllBoundOrNull<>()
+// - AreAllBoundTo()
+// - MaxVarArray()
+// - MinVarArray()
+// - FillValues()
+// - PosIntDivUp()
+// - PosIntDivDown()
+// - AreAllBoundTo()
+// - MaxVarArray()
+// - MinVarArray()
+// - FillValues()
+// - PosIntDivUp()
+// - PosIntDivDown()
+// - ToInt64Vector()
+// - SortedNoDuplicates()
+
+// LocalSearchOperator
+// Ignored:
+// - LocalSearchOperator()
+// - ~LocalSearchOperator()
+%unignore LocalSearchOperator;
+%rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
+%unignore LocalSearchOperator::Start;
+%feature("director") LocalSearchOperator::MakeNextNeighbor;
+%feature("director") LocalSearchOperator::Start;
+
+
+// VarLocalSearchOperator<>
+// Ignored:
+// - VarLocalSearchOperator()
+// - ~VarLocalSearchOperator()
+// - Start()
+// - Var()
+// - SkipUnchanged()
+// - Activated()
+// - Activate()
+// - Deactivate()
+// - ApplyChanges()
+// - RevertChanges()
+// - AddVars()
+%unignore VarLocalSearchOperator;
+%unignore VarLocalSearchOperator::Size;
+%unignore VarLocalSearchOperator::Value;
+%unignore VarLocalSearchOperator::IsIncremental;
+%feature("director") VarLocalSearchOperator::IsIncremental;
+%unignore VarLocalSearchOperator::IsIncremental;
+%unignore VarLocalSearchOperator::OnStart;
+%feature("director") VarLocalSearchOperator::OnStart;
+%unignore VarLocalSearchOperator::OnStart;
+%unignore VarLocalSearchOperator::OldValue;
+%unignore VarLocalSearchOperator::SetValue;
+
+
+// IntVarLocalSearchOperator
+// Ignored:
+// - MakeNextNeighbor()
+%unignore IntVarLocalSearchOperator;
+%feature("director") IntVarLocalSearchOperator;
+%unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
+%unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
+%unignore IntVarLocalSearchOperator::Size;
+%feature("director") IntVarLocalSearchOperator::MakeOneNeighbor;
+%rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
+
+
+// BaseLNS.
+%unignore BaseLNS;
+%feature("director") BaseLNS;
+%unignore BaseLNS::BaseLNS;
+%unignore BaseLNS::~BaseLNS;
+%unignore BaseLNS::InitFragments;
+%rename (NextFragmentWrapper) BaseLNS::NextFragment;
+
+// ChangeValue
+%unignore ChangeValue;
+%unignore ChangeValue::ChangeValue;
+%unignore ChangeValue::~ChangeValue;
+%unignore ChangeValue::ModifyValue;
+
+// SequenceVarLocalSearchOperator
+// Ignored:
+// - SequenceVarLocalSearchOperator()
+// - ~SequenceVarLocalSearchOperator()
+// - Sequence()
+// - OldSequence()
+// - SetForwardSequence()
+// - SetBackwardSequence()
+%unignore SequenceVarLocalSearchOperator;
+%unignore SequenceVarLocalSearchOperator::Start;
+
+// PathOperator
+// Ignored:
+// - PathOperator()
+// - ~PathOperator()
+// - SkipUnchanged()
+// - Next()
+// - Path()
+// - number_of_nexts()
+%unignore PathOperator;
+%rename (Neighbor) PathOperator::MakeNeighbor;
+%feature("director") PathOperator::MakeNeighbor;
+
+
+// LocalSearchFilter
+%unignore LocalSearchFilter;
+%unignore LocalSearchFilter::Accept;
+%unignore LocalSearchFilter::Synchronize;
+%unignore LocalSearchFilter::IsIncremental;
+
+
+// IntVarLocalSearchFilter
+// Ignored:
+// - Synchronize()
+// - FindIndex()
+// - AddVars()
+// - Var()
+// - IsVarSynced()
+%feature("director") IntVarLocalSearchFilter;
+%feature("nodirector") IntVarLocalSearchFilter::Start;  // Inherited.
+%unignore IntVarLocalSearchFilter;
+%unignore IntVarLocalSearchFilter::IntVarLocalSearchFilter;
+%unignore IntVarLocalSearchFilter::~IntVarLocalSearchFilter;
+%unignore IntVarLocalSearchFilter::Value;
+%unignore IntVarLocalSearchFilter::Size;
+
+
+// BooleanVar
+// Ignored:
+// - kUnboundBooleanVarValue
+// - BooleanVar()
+// - ~BooleanVar()
+// - SetMin()
+// - SetMax()
+// - SetRange()
+// - Bound()
+// - RemoveValue()
+// - RemoveInterval()
+// - WhenBound()
+// - WhenRange()
+// - WhenDomain()
+// - Size()
+// - MakeHoleIterator()
+// - MakeDomainIterator()
+// - DebugString()
+// - VarType()
+// - IsEqual()
+// - IsDifferent()
+// - IsGreaterOrEqual()
+// - IsLessOrEqual()
+// - RestoreValue()
+// - BaseName()
+// - RawValue()
+%unignore BooleanVar;
+%unignore BooleanVar::Value;
+%unignore BooleanVar::Min;
+%unignore BooleanVar::Max;
+%unignore BooleanVar::Contains;
+
+}  // namespace operations_research
+
+%include "constraint_solver/constraint_solveri.h"
+
+%unignoreall
+
+// ============= Custom python wrappers around C++ objects ==============
+// (this section must be after the constraint_solver*.h %includes)
+
+// Helpers to manipulate a wrapped C++ std::vector<int>*. Their wrapped versions
+// are used in the python PyLNS.NextFragmentWrapper() method below.
+// Note(user): We attempted to use %typemaps instead, but didn't make it work.
+%inline %{
+inline void ClearIntVector(std::vector<int>* v) { v->clear(); }
+inline void PushBackIntVector(int x, std::vector<int>* v) { v->push_back(x); }
+%}
 %pythoncode {
 class PyDecisionBuilder(object):
+
   def NextWrapper(self, solver):
-    result = None
     try:
-      result = self.Next(solver)
-    except Exception:
-      return solver.FailDecision()
-    return result
+      return self.Next(solver)
+    except Exception as e:
+      # TODO(user): use a custom Exception class in PROTECT_FROM_FAILURE,
+      # instead of PyExc_Exception, and catch it here. Also fix all other
+      # occurrences (see below).
+      if 'CP Solver fail' in str(e):
+        return solver.FailDecision()
+      else:
+        raise
 
   def DebugString(self):
     return "PyDecisionBuilder"
@@ -1212,14 +2171,14 @@ class PyDecisionBuilder(object):
 
 class PyConstraint(Constraint):
 
-  def __init__(self, solver):
-    Constraint.__init__(self, solver)
-
   def InitialPropagateWrapper(self):
     try:
       self.InitialPropagate()
-    except:
-      self.solver().ShouldFail()
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        self.solver().ShouldFail()
+      else:
+        raise
 
   def DebugString(self):
     return "PyConstraint"
@@ -1227,14 +2186,14 @@ class PyConstraint(Constraint):
 
 class PyDemon(Demon):
 
-  def __init__(self):
-    Demon.__init__(self)
-
   def RunWrapper(self, solver):
     try:
       self.Run(solver)
-    except:
-      solver.ShouldFail()
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
 
   def DebugString(self):
     return "PyDemon"
@@ -1242,24 +2201,19 @@ class PyDemon(Demon):
 
 class PyLns(BaseLNS):
 
-  def __init__(self, vars):
-    BaseLNS.__init__(self, vars)
-
   def NextFragment(self):
     return []
 
   def InitFragments(self):
     pass
 
-  def NextFragmentWrapper(self, fragment):
-    fragment.clear()
+  def NextFragmentWrapper(self, output_cpp_vector_fragments):
+    ClearIntVector(output_cpp_vector_fragments);
     f = self.NextFragment()
     if not f:
       return False
-    else:
-      for v in f:
-        fragment.push_back(v)
-      return True
-}
+    for x in f:
+      PushBackIntVector(x, output_cpp_vector_fragments);
+    return True
+}  // %pythoncode
 
-%template(IntVector) std::vector<int>;

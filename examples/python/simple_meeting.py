@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """Simple meeting scheduler.
 
@@ -25,6 +24,7 @@ Each person must have an 1 hour lunch break between 11h30 AM and 2h30 PM.
 The goal is to find a meeting and a room such that all m mandatory people are
 in the meeting and a maximum of non mandatory people are also in the meeting.
 """
+
 
 
 from google.apputils import app

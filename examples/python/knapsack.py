@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -45,7 +45,7 @@ def main(unused_argv):
   solver.Init(profits, weights, capacities)
   computed_profit = solver.Solve()
 
-  print('optimal profit = %i/%i' % (computed_profit, optimal_profit))
+  print 'optimal profit = ' + str(computed_profit) + '/' + str(optimal_profit)
 
 
 if __name__ == '__main__':

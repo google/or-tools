@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include "constraint_solver/python/constraint_solver.swig"
 
@@ -38,7 +39,7 @@ bool PyObjAs(PyObject *py, operations_research::RoutingModel::NodeIndex* i) {
 %}
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
                        PyInt_Check, PyInt_FromLong);
-// TODO(user): also support std::vector<std::vector<>> <-> list of list for python.
+// TODO(user): also support std::vector<std::vector<>> <-> list of list.
 
 // Create input mapping for NodeEvaluator2
 %{

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Google
+# Copyright 2010-2014 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 """Rabbit + Pheasant puzzle.
 
@@ -22,16 +21,17 @@ flavors of constraint programming interfaces.
 """
 
 
+
 from ortools.constraint_solver import pywrapcp
 
 
 def main():
   # Create the solver.
-  solver = pywrapcp.Solver("rabbit+pheasant")
+  solver = pywrapcp.Solver('rabbit+pheasant')
 
   # Create the variables.
-  pheasant = solver.IntVar(0, 100, "pheasant")
-  rabbit = solver.IntVar(0, 100, "rabbit")
+  pheasant = solver.IntVar(0, 100, 'pheasant')
+  rabbit = solver.IntVar(0, 100, 'rabbit')
 
   # Create the constraints.
   solver.Add(pheasant + rabbit == 20)
@@ -52,5 +52,5 @@ def main():
   solver.EndSearch()
   print solver
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   main()
