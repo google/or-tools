@@ -1,6 +1,4 @@
-//
-// Copyright 2012 Google
-//
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,9 +15,9 @@ using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
 /// <summary>
-///   Sample showing how to model and solve a capacitated vehicle routing problem
-///   with time windows using the swig-wrapped version of the vehicle routing
-///   library in src/constraint_solver.
+///   Sample showing how to model and solve a capacitated vehicle routing
+///   problem with time windows using the swig-wrapped version of the vehicle
+///   routing library in src/constraint_solver.
 /// </summary>
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
@@ -71,7 +69,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     }
 
     public override long Run(int first_index, int second_index) {
-      if (first_index >= locations_.Length || second_index >= locations_.Length) {
+      if (first_index >= locations_.Length ||
+          second_index >= locations_.Length) {
         return 0;
       }
       return (Math.Abs(locations_[first_index].x_ -
@@ -143,7 +142,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   /// <param name="demand_max"> maximum quantity of a demand. </param>
   /// <param name="time_window_max"> maximum starting time of the order time
   /// window. </param>
-  /// <param name="time_window_width"> duration of the order time window. </param>
+  /// <param name="time_window_width"> duration of the order time window.
+  /// </param>
   /// <param name="penalty_min"> minimum pernalty cost if order is dropped.
   /// </param>
   /// <param name="penalty_max"> maximum pernalty cost if order is dropped.

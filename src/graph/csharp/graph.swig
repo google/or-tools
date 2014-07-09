@@ -1,54 +1,136 @@
-// TODO(user): Refactor this file to adhere to the SWIG style guide.
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// This .swig file is only used in the open-source export of
+//
+// It exposes some of the C++ classes in ../, namely :
+// - SimpleMaxFlow, from ../max_flow.h
+// - SimpleMinCostFlow, from ../min_cost_flow.h
+// - LinearSumAssignment, from ../assignment.h
+//
+// USAGE EXAMPLES:
+// - examples/csharp/assignment.cs
+// - examples/csharp/csflow.cs
 
-%include util/csharp/data.swig
+%include "base/base.swig"
 
-// First phase: #include the file we want to wrap.
+%import "graph/ebert_graph.h"
+
 %{
-#include "util/zvector.h"
-#include "graph/ebert_graph.h"
 #include "graph/assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
 %}
 
-// Rename rules on EbertGraph.
-%rename(EndArcIndex) operations_research::StarGraphBase::end_arc_index;
-%rename(EndNodeIndex) operations_research::StarGraphBase::end_node_index;
-%rename(MaxEndArcIndex) operations_research::StarGraphBase::max_end_arc_index;
-%rename(MaxEndNodeIndex) operations_research::StarGraphBase::max_end_node_index;
-%rename(MaxNumArcs) operations_research::StarGraphBase::max_num_arcs;
-%rename(MaxNumArcs) operations_research::StarGraphBase::max_num_arcs;
-%rename(MaxNumNodes) operations_research::StarGraphBase::max_num_nodes;
-%rename(MaxNumNodes) operations_research::StarGraphBase::max_num_nodes;
-%rename(NumArcs) operations_research::StarGraphBase::num_arcs;
-%rename(NumNodes) operations_research::StarGraphBase::num_nodes;
+// ############ max_flow.h ############
 
-// Rename rules on MaxFlow.
-%rename (Graph) operations_research::MaxFlow::graph;
-%rename (GetStatus) operations_research::MaxFlow::status;
+%ignoreall
 
-// Rename rules on MinCostFlow.
-%rename (Graph) operations_research::MinCostFlow::graph;
-%rename (GetStatus) operations_research::MinCostFlow::status;
+%unignore operations_research;
+%rename (MaxFlow) operations_research::SimpleMaxFlow;
+%unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
+// %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
+%unignore operations_research::SimpleMaxFlow::AddArcWithCapacity;
+%unignore operations_research::SimpleMaxFlow::Solve;
+%unignore operations_research::SimpleMaxFlow::NumNodes;
+%unignore operations_research::SimpleMaxFlow::NumArcs;
+%unignore operations_research::SimpleMaxFlow::Tail;
+%unignore operations_research::SimpleMaxFlow::Head;
+%unignore operations_research::SimpleMaxFlow::Capacity;
+%unignore operations_research::SimpleMaxFlow::OptimalFlow;
+%unignore operations_research::SimpleMaxFlow::Flow;
+%unignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;
+%unignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;
 
-// Use the SimpleLinearSumAssignment.
-%rename(ComplexLinearSumAssignment) operations_research::LinearSumAssignment;
-%rename(LinearSumAssignment) operations_research::SimpleLinearSumAssignment;
-
-// Second phase: %include the same files.
-%include "util/zvector.h"
-%include "graph/ebert_graph.h"
-%include "graph/assignment.h"
+// Expose the "operations_research::SimpleMaxFlow::Status" enum.
+%unignore operations_research::SimpleMaxFlow::Status;
+%unignore operations_research::SimpleMaxFlow::OPTIMAL;
+%unignore operations_research::SimpleMaxFlow::POSSIBLE_OVERFLOW;
+%unignore operations_research::SimpleMaxFlow::BAD_INPUT;
+%unignore operations_research::SimpleMaxFlow::BAD_RESULT;
 %include "graph/max_flow.h"
+
+%unignoreall
+
+// ############ min_cost_flow.h ############
+
+%ignoreall
+
+%unignore operations_research;
+
+// We prefer our users to access the Status enum via the "SimpleMinCostFlow"
+// class, i.e. SimpleMinCostFlow.OPTIMAL. But since they're defined on a
+// base class in the .h, we must expose it.
+%unignore operations_research::MinCostFlowBase;
+%unignore operations_research::MinCostFlowBase::Status;
+%unignore operations_research::MinCostFlowBase::OPTIMAL;
+%unignore operations_research::MinCostFlowBase::NOT_SOLVED;
+%unignore operations_research::MinCostFlowBase::FEASIBLE;
+%unignore operations_research::MinCostFlowBase::INFEASIBLE;
+%unignore operations_research::MinCostFlowBase::UNBALANCED;
+%unignore operations_research::MinCostFlowBase::BAD_RESULT;
+%unignore operations_research::MinCostFlowBase::BAD_COST_RANGE;
+
+%rename (MinCostFlow) operations_research::SimpleMinCostFlow;
+%unignore operations_research::SimpleMinCostFlow::SimpleMinCostFlow;
+%unignore operations_research::SimpleMinCostFlow::~SimpleMinCostFlow;
+%unignore operations_research::SimpleMinCostFlow::AddArcWithCapacityAndUnitCost;
+%unignore operations_research::SimpleMinCostFlow::SetNodeSupply;
+%unignore operations_research::SimpleMinCostFlow::Solve;
+%unignore operations_research::SimpleMinCostFlow::SolveMaxFlowWithMinCost;
+%unignore operations_research::SimpleMinCostFlow::OptimalCost;
+%unignore operations_research::SimpleMinCostFlow::MaximumFlow;
+%unignore operations_research::SimpleMinCostFlow::Flow;
+%unignore operations_research::SimpleMinCostFlow::NumNodes;
+%unignore operations_research::SimpleMinCostFlow::NumArcs;
+%unignore operations_research::SimpleMinCostFlow::Tail;
+%unignore operations_research::SimpleMinCostFlow::Head;
+%unignore operations_research::SimpleMinCostFlow::Capacity;
+%unignore operations_research::SimpleMinCostFlow::Supply;
+%unignore operations_research::SimpleMinCostFlow::UnitCost;
+
 %include "graph/min_cost_flow.h"
 
-%template(StarStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(StarGraphCore) operations_research::EbertGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(StarGraph) operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
-%template(ForwardStarStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(ForwardStarGraphCore) operations_research::EbertGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(ForwardStarGraph) operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
-%template(ForwardStarStaticStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(ForwardStarStaticGraph) operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
-%template(MaxFlow) operations_research::GenericMaxFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
-%template(MinCostFlow) operations_research::GenericMinCostFlow<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>, operations_research::FlowQuantity, operations_research::CostValue>;
+%unignoreall
+
+// ############ assignment.h ############
+
+// TODO(user): document which method is tested and which isn't, once the C#
+// example using this code has been backported from or-tools.
+%ignoreall
+
+%unignore operations_research;
+// We only expose the C++ "operations_research::SimpleLinearSumAssignment"
+// class, and we rename it "LinearSumAssignment".
+%rename(LinearSumAssignment) operations_research::SimpleLinearSumAssignment;
+%unignore
+    operations_research::SimpleLinearSumAssignment::SimpleLinearSumAssignment;
+%unignore operations_research::SimpleLinearSumAssignment::AddArcWithCost;
+%unignore operations_research::SimpleLinearSumAssignment::Solve;
+%unignore operations_research::SimpleLinearSumAssignment::NumNodes;
+%unignore operations_research::SimpleLinearSumAssignment::NumArcs;
+%unignore operations_research::SimpleLinearSumAssignment::LeftNode;
+%unignore operations_research::SimpleLinearSumAssignment::RightNode;
+%unignore operations_research::SimpleLinearSumAssignment::Cost;
+%unignore operations_research::SimpleLinearSumAssignment::OptimalCost;
+%unignore operations_research::SimpleLinearSumAssignment::RightMate;
+%unignore operations_research::SimpleLinearSumAssignment::AssignmentCost;
+
+// Expose the "operations_research::SimpleLinearSumAssignment::Status" enum.
+%unignore operations_research::SimpleLinearSumAssignment::Status;
+%unignore operations_research::SimpleLinearSumAssignment::OPTIMAL;
+%unignore operations_research::SimpleLinearSumAssignment::INFEASIBLE;
+%unignore operations_research::SimpleLinearSumAssignment::POSSIBLE_OVERFLOW;
+
+%include "graph/assignment.h"
+
+%unignoreall

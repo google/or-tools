@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+// TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include exception.i
 %include util/csharp/data.swig
@@ -188,7 +189,19 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
-%ignore operations_research::SequenceVarLocalSearchOperatorTemplate::Value;
+%ignore operations_research::VarLocalSearchOperator::Value;
+%ignore operations_research::VarLocalSearchOperator::OldValue;
+%ignore operations_research::SequenceVarLocalSearchOperator::Sequence;
+%ignore operations_research::SequenceVarLocalSearchOperator::OldSequence;
+%ignore operations_research::SolutionCollector::ForwardSequence;
+%ignore operations_research::SolutionCollector::BackwardSequence;
+%ignore operations_research::SolutionCollector::Unperformed;
+%ignore operations_research::SequenceVarElement::ForwardSequence;
+%ignore operations_research::SequenceVarElement::BackwardSequence;
+%ignore operations_research::SequenceVarElement::Unperformed;
+%ignore operations_research::Assignment::ForwardSequence;
+%ignore operations_research::Assignment::BackwardSequence;
+%ignore operations_research::Assignment::Unperformed;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -413,144 +426,144 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 namespace operations_research {
 %extend IntervalVar {
   Constraint* EndsAfterEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_END, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AFTER_END, other);
   }
   Constraint* EndsAfterStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_START, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AFTER_START, other);
   }
   Constraint* EndsAtEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_END, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AT_END, other);
   }
   Constraint* EndsAtStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_START, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AT_START, other);
   }
   Constraint* StartsAfterEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AFTER_END, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AFTER_END, other);
   }
   Constraint* StartsAfterStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AFTER_START,
-                                                   other);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::STARTS_AFTER_START,
+                                                    other);
   }
   Constraint* StartsAtEnd(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AT_END, other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AT_END, other);
   }
   Constraint* StartsAtStart(IntervalVar* other) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AT_START,
-                                                   other);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::STARTS_AT_START,
+                                                    other);
   }
   Constraint* EndsAfter(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_AFTER,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::ENDS_AFTER,
+                                                    date);
   }
   Constraint* EndsAt(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_AT,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::ENDS_AT,
+                                                    date);
   }
   Constraint* EndsBefore(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::ENDS_BEFORE,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::ENDS_BEFORE,
+                                                    date);
   }
   Constraint* StartsAfter(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AFTER,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::STARTS_AFTER,
+                                                    date);
   }
   Constraint* StartsAt(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_AT,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::STARTS_AT,
+                                                    date);
   }
   Constraint* StartsBefore(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::STARTS_BEFORE,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::STARTS_BEFORE,
+                                                    date);
   }
   Constraint* CrossesDate(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::CROSS_DATE,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::CROSS_DATE,
+                                                    date);
   }
   Constraint* AvoidsDate(int64 date) {
-    return self->solver()->MakeIntervalVarRelation(self,
-                                                   operations_research::Solver::AVOID_DATE,
-                                                   date);
+    return $self->solver()->MakeIntervalVarRelation($self,
+                                                    operations_research::Solver::AVOID_DATE,
+                                                    date);
   }
   IntervalVar* RelaxedMax() {
-    return self->solver()->MakeIntervalRelaxedMax(self);
+    return $self->solver()->MakeIntervalRelaxedMax($self);
   }
   IntervalVar* RelaxedMin() {
-    return self->solver()->MakeIntervalRelaxedMin(self);
+    return $self->solver()->MakeIntervalRelaxedMin($self);
   }
 }
 
 %extend IntExpr {
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeMapDomain(self->Var(), vars);
+    return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
   IntExpr* IndexOf(const std::vector<int64>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeElement(vars, self->Var());
+    return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntVar* IsEqual(int64 value) {
-    return self->solver()->MakeIsEqualCstVar(self->Var(), value);
+    return $self->solver()->MakeIsEqualCstVar($self->Var(), value);
   }
   IntVar* IsDifferent(int64 value) {
-    return self->solver()->MakeIsDifferentCstVar(self->Var(), value);
+    return $self->solver()->MakeIsDifferentCstVar($self->Var(), value);
   }
   IntVar* IsGreater(int64 value) {
-    return self->solver()->MakeIsGreaterCstVar(self->Var(), value);
+    return $self->solver()->MakeIsGreaterCstVar($self->Var(), value);
   }
   IntVar* IsGreaterOrEqual(int64 value) {
-    return self->solver()->MakeIsGreaterOrEqualCstVar(self->Var(), value);
+    return $self->solver()->MakeIsGreaterOrEqualCstVar($self->Var(), value);
   }
   IntVar* IsLess(int64 value) {
-    return self->solver()->MakeIsLessCstVar(self->Var(), value);
+    return $self->solver()->MakeIsLessCstVar($self->Var(), value);
   }
   IntVar* IsLessOrEqual(int64 value) {
-    return self->solver()->MakeIsLessOrEqualCstVar(self->Var(), value);
+    return $self->solver()->MakeIsLessOrEqualCstVar($self->Var(), value);
   }
   IntVar* IsMember(const std::vector<int64>& values) {
-    return self->solver()->MakeIsMemberVar(self->Var(), values);
+    return $self->solver()->MakeIsMemberVar($self->Var(), values);
   }
   IntVar* IsMember(const std::vector<int>& values) {
-    return self->solver()->MakeIsMemberVar(self->Var(), values);
+    return $self->solver()->MakeIsMemberVar($self->Var(), values);
   }
   Constraint* Member(const std::vector<int64>& values) {
-    return self->solver()->MakeMemberCt(self->Var(), values);
+    return $self->solver()->MakeMemberCt($self->Var(), values);
   }
   Constraint* Member(const std::vector<int>& values) {
-    return self->solver()->MakeMemberCt(self->Var(), values);
+    return $self->solver()->MakeMemberCt($self->Var(), values);
   }
   IntVar* IsEqual(IntExpr* const other) {
-    return self->solver()->MakeIsEqualVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsEqualVar($self->Var(), other->Var());
   }
   IntVar* IsDifferent(IntExpr* const other) {
-    return self->solver()->MakeIsDifferentVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsDifferentVar($self->Var(), other->Var());
   }
   IntVar* IsGreater(IntExpr* const other) {
-    return self->solver()->MakeIsGreaterVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsGreaterVar($self->Var(), other->Var());
   }
   IntVar* IsGreaterOrEqual(IntExpr* const other) {
-    return self->solver()->MakeIsGreaterOrEqualVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsGreaterOrEqualVar($self->Var(), other->Var());
   }
   IntVar* IsLess(IntExpr* const other) {
-    return self->solver()->MakeIsLessVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsLessVar($self->Var(), other->Var());
   }
   IntVar* IsLessOrEqual(IntExpr* const other) {
-    return self->solver()->MakeIsLessOrEqualVar(self->Var(), other->Var());
+    return $self->solver()->MakeIsLessOrEqualVar($self->Var(), other->Var());
   }
   OptimizeVar* Minimize(long step) {
-    return self->solver()->MakeMinimize(self->Var(), step);
+    return $self->solver()->MakeMinimize($self->Var(), step);
   }
   OptimizeVar* Maximize(long step) {
-    return self->solver()->MakeMaximize(self->Var(), step);
+    return $self->solver()->MakeMaximize($self->Var(), step);
   }
 }
 
@@ -868,147 +881,90 @@ namespace operations_research {
   private DecisionBuilder pinned_decision_builder_;
 %}
 
+%extend Assignment {
+  int ForwardSequenceSize(const SequenceVar* const v) const {
+    return $self->ForwardSequence(v).size();
+  }
+  int ForwardSequenceValueAt(const SequenceVar* const v, int i) const {
+    return $self->ForwardSequence(v)[i];
+  }
+  int BackwardSequenceSize(const SequenceVar* const v) const {
+    return $self->BackwardSequence(v).size();
+  }
+  int BackwardSequenceValueAt(const SequenceVar* const v, int position) const {
+    return $self->BackwardSequence(v)[position];
+  }
+  int UnperformedSize(const SequenceVar* const v) const {
+    return $self->Unperformed(v).size();
+  }
+  int UnperformedValueAt(const SequenceVar* const v, int position) const {
+    return $self->Unperformed(v)[position];
+  }
+}
+
+%typemap(cscode) Assignment %{
+  public int[] ForwardSequence(SequenceVar v) {
+    int size = ForwardSequenceSize(v);
+    int[] result = new int[size];
+    for (int i = 0; i < size; ++i) result[i] = ForwardSequenceValueAt(v, i);
+    return result;
+  }
+  public int[] BackwardSequence(SequenceVar v) {
+    int size = BackwardSequenceSize(v);
+    int[] result = new int[size];
+    for (int i = 0; i < size; ++i) result[i] = BackwardSequenceValueAt(v, i);
+    return result;
+  }
+  public int[] Unperformed(SequenceVar v) {
+    int size = UnperformedSize(v);
+    int[] result = new int[size];
+    for (int i = 0; i < size; ++i) result[i] = UnperformedValueAt(v, i);
+    return result;
+  }
+%}
+
+%extend SequenceVarLocalSearchOperator {
+  int SequenceSize(int index) const {
+    return $self->Sequence(index).size();
+  }
+  int SequenceValueAt(int index, int position) const {
+    return $self->Sequence(index)[position];
+  }
+  int OldSequenceSize(int index) const {
+    return $self->OldSequence(index).size();
+  }
+  int OldSequenceValueAt(int index, int position) const {
+    return $self->OldSequence(index)[position];
+  }
+}
+
+%typemap(cscode) SequenceVarLocalSearchOperator %{
+  public int[] Sequence(int index) {
+    int size = SequenceSize(index);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = SequenceValueAt(index, position);
+    }
+    return result;
+  }
+  public int[] OldSequence(int index) {
+    int size = OldSequenceSize(index);
+    int[] result = new int[size];
+    for (int position = 0; position < size; ++position) {
+      result[position] = OldSequenceValueAt(index, position);
+    }
+    return result;
+  }
+%}
+
 %extend IntVarLocalSearchFilter {
   int Index(IntVar* const var) {
     int64 index = -1;
-    self->FindIndex(var, &index);
+    $self->FindIndex(var, &index);
     return index;
   }
 }
-
 }  // namespace operations_research
-
-CS_VECTOR_RETURN1(operations_research, SequenceVarLocalSearchOperator, Sequence,
-                  int, int64)
-CS_VECTOR_RETURN1(operations_research, SequenceVarLocalSearchOperator,
-                  OldSequence, int, int64)
-
-%typemap(cscode) operations_research::SequenceVarLocalSearchOperator %{
-  public int[] Sequence(long a) {
-    int size = SequenceSize(a);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = SequenceValueAt(a, position);
-    }
-    return result;
-  }
-  public int[] OldSequence(long a) {
-    int size = OldSequenceSize(a);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = OldSequenceValueAt(a, position);
-    }
-    return result;
-  }
-%}
-
-CS_VECTOR_RETURN2(operations_research, SolutionCollector, ForwardSequence,
-                  int, int, SequenceVar*)
-CS_VECTOR_RETURN2(operations_research, SolutionCollector, BackwardSequence,
-                  int, int, SequenceVar*)
-CS_VECTOR_RETURN2(operations_research, SolutionCollector, Unperformed,
-                  int, int, SequenceVar*)
-
-%typemap(cscode) operations_research::SolutionCollector %{
-  public int[] ForwardSequence(int a, SequenceVar b) {
-    int size = ForwardSequenceSize(a, b);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = ForwardSequenceValueAt(a, b, position);
-    }
-    return result;
-  }
-  public int[] BackwardSequence(int a, SequenceVar b) {
-    int size = BackwardSequenceSize(a, b);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = BackwardSequenceValueAt(a, b, position);
-    }
-    return result;
-  }
-  public int[] Unperformed(int a, SequenceVar b) {
-    int size = UnperformedSize(a, b);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = UnperformedValueAt(a, b, position);
-    }
-    return result;
-  }
-%}
-
-CS_VECTOR_RETURN1(operations_research, Assignment, ForwardSequence,
-                  int, const SequenceVar* const)
-CS_VECTOR_RETURN1(operations_research, Assignment, BackwardSequence,
-                  int, const SequenceVar* const)
-CS_VECTOR_RETURN1(operations_research, Assignment, Unperformed,
-                  int, const SequenceVar* const)
-
-%typemap(cscode) operations_research::Assignment %{
-  public int[] ForwardSequence(SequenceVar a) {
-    int size = ForwardSequenceSize(a);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = ForwardSequenceValueAt(a, position);
-    }
-    return result;
-  }
-  public int[] BackwardSequence(SequenceVar a) {
-    int size = BackwardSequenceSize(a);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = BackwardSequenceValueAt(a, position);
-    }
-    return result;
-  }
-  public int[] Unperformed(SequenceVar a) {
-    int size = UnperformedSize(a);
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = UnperformedValueAt(a, position);
-    }
-    return result;
-  }
-%}
-
-CS_VECTOR_RETURN0(operations_research, SequenceVarElement, ForwardSequence,
-                  int)
-CS_VECTOR_RETURN0(operations_research, SequenceVarElement, BackwardSequence,
-                   int)
-CS_VECTOR_RETURN0(operations_research, SequenceVarElement, Unperformed,
-                   int)
-
-%typemap(cscode) operations_research::SequenceVarElement %{
-  public int[] ForwardSequence() {
-    int size = ForwardSequenceSize();
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = ForwardSequenceValueAt(position);
-    }
-    return result;
-  }
-  public int[] BackwardSequence() {
-    int size = BackwardSequenceSize();
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = BackwardSequenceValueAt(position);
-    }
-    return result;
-  }
-  public int[] Unperformed() {
-    int size = UnperformedSize();
-    int[] result = new int[size];
-    for (int position = 0; position < size; ++position) {
-      result[position] = UnperformedValueAt(position);
-    }
-    return result;
-  }
-%}
-
-
-%extend operations_research::IntVarLocalSearchOperator {
-  int64 Value(int64 index) const { return self->Value(index); }
-  int64 OldValue(int64 index) const { return self->OldValue(index); }
-}
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -1022,10 +978,19 @@ class LocalSearchPhaseParameters {
 %include constraint_solver/constraint_solver.h
 %include constraint_solver/constraint_solveri.h
 
-// Define templates instantiation after wrapping.
 namespace operations_research {
 %template(RevInteger) Rev<int64>;
 %template(RevBool) Rev<bool>;
 typedef Assignment::AssignmentContainer AssignmentContainer;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
+
+// We can't use VarLocalSearchOperator::[Old]Value() because it's problematic
+// when instantiated on the SequenceVarLocalSearchOperator subclass (because
+// their return type is a const std::vector<int>&). So we ignore them and
+// redefine them here, only for the base class of IntVarLocalSearchOperator.
+%extend VarLocalSearchOperator<operations_research::IntVar, int64,
+                               operations_research::IntVarLocalSearchHandler> {
+  int64 Value(int64 i) const { return $self->Value(i); }
+  int64 OldValue(int64 i) const { return $self->OldValue(i); }
+}
 }

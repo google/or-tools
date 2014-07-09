@@ -1,4 +1,4 @@
-// Copyright 2010-2013 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,7 +10,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 using System;
 using Google.OrTools.LinearSolver;
 
@@ -29,8 +28,10 @@ public class CsIntegerProgramming
     Variable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     // Minimize x1 + 2 * x2.
-    solver.Objective().SetCoefficient(x1, 1);
-    solver.Objective().SetCoefficient(x2, 2);
+    Objective objective = solver.Objective();
+    objective.SetMinimization();
+    objective.SetCoefficient(x1, 1);
+    objective.SetCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
     Constraint ct = solver.MakeConstraint(17, double.PositiveInfinity);
@@ -50,8 +51,7 @@ public class CsIntegerProgramming
                       " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                      solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " + objective.Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());

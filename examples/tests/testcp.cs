@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,12 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 using System;
+using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
 public class CsTestCpOperator
 {
+  // TODO(user): Add proper tests.
   static void Check(bool test, String message)
   {
     if (!test)
@@ -411,42 +412,6 @@ public class CsTestCpOperator
     int[] seq = ass.ForwardSequence(var);
     Console.WriteLine(seq.Length);
   }
-
-  // static void TestScheduling()
-  // {
-  //   Solver solver = new Solver("Scheduling");
-  //   IntervalVar[] tasks = new IntervalVar[taskCount];
-  //   List<IntVar> all_ends = new List<IntVar>();
-  //   int i = 0;
-  //   foreach(Task t in myTaskList)
-  //   {
-  //     tasks[i] = solver.MakeFixedInterval(0, (long)t.Duration, t.Name);
-  //     if (t.Successors.Count <= 0)
-  //       all_ends.Add(tasks[i].EndExpr().Var());
-  //     //solver.Add(solver.MakeGreaterOrEqual(tasks[i].StartExpr(), 1)); // { 1 }
-  //     i++;
-  //   }
-
-  //   IntVar objective_var = solver.MakeMax(all_ends.ToArray()).Var();
-  //   OptimizeVar objective_monitor = solver.MakeMinimize(objective_var, 1);
-  //   DecisionBuilder obj_phase = solver.MakePhase(objective_var, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
-
-  //   const int kLogFrequency = 999999999;
-  //   SearchMonitor search_log = solver.MakeSearchLog(kLogFrequency, objective_monitor);
-
-  //   SolutionCollector collector = solver.MakeLastSolutionCollector();
-  //   collector.AddObjective(objective_var);
-
-  //   if (solver.Solve(obj_phase, objective_monitor))
-  //   {
-  //     Console.Out.WriteLine("Solution: ");
-  //     foreach(IntervalVar t in tasks)
-  //       Console.Out.WriteLine(t.ToString());
-  //   }else
-  //    {
-  //      Console.Out.WriteLine("Can not find a solution");
-  //    }
-  // }
 
   static void Main()
   {
