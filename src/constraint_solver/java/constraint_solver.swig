@@ -265,8 +265,7 @@ namespace operations_research {
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class,
                               "getCPtr",
-                              "(Lcom/google/ortools/"
-                              "constraintsolver/type;)J");
+                              "(Lcom/google/ortools/constraintsolver/type;)J");
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
@@ -274,6 +273,26 @@ namespace operations_research {
     result.push_back(reinterpret_cast<operations_research::type*>(ptr_value));
   }
   $1 = &result;
+}
+%typemap(freearg) const std::vector<type*>& {
+  delete $1;
+}
+%typemap(out) const std::vector<type*>& {
+  jclass object_class =
+      jenv->FindClass("com/google/ortools/constraintsolver/type");
+  $result = jenv->NewObjectArray($1->size(), object_class, 0);
+  if (nullptr != object_class) {
+    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
+    for (int i = 0; i < $1->size(); ++i) {
+      jlong obj_ptr = 0;
+      *((operations_research::type **)&obj_ptr) = (*$1)[i];
+      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
+      jenv->SetObjectArrayElement($result, i, elem);
+    }
+  }
+}
+%typemap(javaout) const std::vector<type*> & {
+  return $jnicall;
 }
 %enddef
 CONVERT_VECTOR(IntVar);
