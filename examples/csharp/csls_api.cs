@@ -27,7 +27,7 @@ public class OneVarLns : BaseLNS
     index_ = 0;
   }
 
-  public override bool NextFragment(IntVector fragment)
+  public override bool NextFragment(CpIntVector fragment)
   {
     int size = Size();
     if (index_ < size)

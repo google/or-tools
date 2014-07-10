@@ -640,13 +640,13 @@ class RoutingModel {
       indices->clear();
     }
   }
-#ifndef SWIG
+#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Returns the variable indices of the nodes in the disjunction of index
   // 'index'.
   const std::vector<int>& GetDisjunctionIndices(DisjunctionIndex index) const {
     return disjunctions_[index].nodes;
   }
-#endif
+#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Returns the penalty of the node disjunction of index 'index'.
   int64 GetDisjunctionPenalty(DisjunctionIndex index) const {
     return disjunctions_[index].penalty;
@@ -886,14 +886,14 @@ class RoutingModel {
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
 // Variables
-#if !defined(SWIG)
+#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
   const std::vector<IntVar*>& Nexts() const { return nexts_; }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
-#endif
+#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
@@ -1039,9 +1039,9 @@ class RoutingModel {
   int64 GetDimensionSpanCost(const std::string& d) const;
   int64 GetTransitValue(const std::string& d, int64 from, int64 to,
                         int64 vehicle) const;
-#ifndef SWIG
+#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   const std::vector<IntVar*>& CumulVars(const std::string& dimension_name) const;
-#endif
+#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // All the methods below are replaced by public methods with the same name
   // on the RoutingDimension class. See those.
   IntVar* CumulVar(int64 index, const std::string& dimension_name) const;
@@ -1300,12 +1300,13 @@ class RoutingDimension {
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
   IntVar* TransitVar(int64 index) const { return transits_[index]; }
   IntVar* SlackVar(int64 index) const { return slacks_[index]; }
-#ifndef SWIG
+#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   // vectors instead (indexed by int64 var index).
   const std::vector<IntVar*>& cumuls() const { return cumuls_; }
   const std::vector<IntVar*>& transits() const { return transits_; }
   const std::vector<IntVar*>& slacks() const { return slacks_; }
+#if !defined(SWIGCSHARP)
   // Returns the callback evaluating the capacity for vehicle indices.
   RoutingModel::VehicleEvaluator* capacity_evaluator() const {
     return capacity_evaluator_.get();
@@ -1316,6 +1317,7 @@ class RoutingDimension {
     return transit_evaluators_[vehicle];
   }
 #endif
+#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Sets an upper bound on the dimension span on a given vehicle. This is the
   // preferred way to limit the "length" of the route of a vehicle according to
   // a dimension.

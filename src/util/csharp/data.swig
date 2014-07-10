@@ -23,32 +23,6 @@ using std::string;
 
 ////////////////////////////////////////////////
 //
-// CS_TYPEMAP_STDVECTOR
-//
-// Map c# arrays to c++ vectors for POD types.
-//
-////////////////////////////////////////////////
-
-// This typemap will transform a .net array into a pair length, c array.
-// This pair is then used to rebuild a vector from it.
-%define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
-
-%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
-%typemap(imtype)   const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
-%typemap(cstype)   const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
-%typemap(csin)     const std::vector<TYPE>&  "$csinput.Length, $csinput"
-%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
-%typemap(in)       const std::vector<TYPE>&  %{
-  $1 = new std::vector<TYPE>;
-  $1->reserve(length$argnum);
-  for(int i = 0; i < length$argnum; ++i) {
-    $1->emplace_back($input[i]);
-  }
-%}
-%enddef // CS_TYPEMAP_STDVECTOR
-
-////////////////////////////////////////////////
-//
 //    CS_TYPEMAP_STDVECTOR_IN1
 //
 // Map c# bi-dimensional arrays to c++ vectors of vectors for POD types.
@@ -85,75 +59,9 @@ using std::string;
 %}
 %enddef // CS_TYPEMAP_STDVECTOR_IN1
 
-////////////////////////////////////////////////
-//
-//    CS_TYPEMAP_PTRARRAY
-//
-////////////////////////////////////////////////
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
-// This typemap will perform the same transformation for an array of object.
-// The result is an vector of the C objects.
-%define CS_TYPEMAP_PTRARRAY(CTYPE, TYPE)
-
-%typemap(cscode) CTYPE %{
-  public static IntPtr[] getCPtr(TYPE[] arr) {
-    IntPtr[] pointers = new IntPtr[arr.Length];
-    for (int i = 0; i < arr.Length; i++) {
-      pointers[i] = (IntPtr)TYPE.getCPtr(arr[i]);
-    }
-    return pointers;
-  }
-%}
-
-%typemap(ctype) CTYPE** "CTYPE**"
-
-%typemap(imtype,
-         inattributes="[In, Out, MarshalAs(UnmanagedType.LPArray)]",
-         outattributes="[return: MarshalAs(UnmanagedType.LPArray)]")
-CTYPE** "IntPtr[]"
-
-%typemap(cstype)  CTYPE** "TYPE[]"
-%typemap(csin)    CTYPE** "TYPE.getCPtr($csinput)"
-%typemap(in)      CTYPE** "$1 = $input;"
-%typemap(freearg) CTYPE** ""
-%typemap(argout)  CTYPE** ""
-
-%enddef  // CS_TYPEMAP_PTRARRAY
-
-////////////////////////////////////////////////
-//
-// CS_TYPEMAP_STDVECTOR_OBJECT
-//
-// Map c# arrays to c++ vectors for swiged C++ objects.
-//
-////////////////////////////////////////////////
-
-%define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
-
-%typemap(cscode) CTYPE %{
-  public static IntPtr[] getCPtr(TYPE[] arr) {
-    IntPtr[] pointers = new IntPtr[arr.Length];
-    for (int i = 0; i < arr.Length; i++)
-      pointers[i] = (IntPtr)TYPE.getCPtr(arr[i]);
-    return pointers;
-  }
-%}
-
-%typemap(ctype)  const std::vector<CTYPE*>& "int length$argnum, CTYPE**"
-%typemap(imtype) const std::vector<CTYPE*>& "int length$argnum, IntPtr[]"
-%typemap(cstype) const std::vector<CTYPE*>& "TYPE[]"
-%typemap(csin)   const std::vector<CTYPE*>& "$csinput.Length, TYPE.getCPtr($csinput)"
-%typemap(in)     const std::vector<CTYPE*>& (std::vector<CTYPE*> result) {
-  result.reserve(length$argnum);
-  for (int i = 0; i < length$argnum; i++) {
-    result.emplace_back($input[i]);
-  }
-  $1 = &result;
-}
-%enddef  // CS_TYPEMAP_STDVECTOR_OBJECT
-
-CS_TYPEMAP_STDVECTOR(int64, int64, long)
-CS_TYPEMAP_STDVECTOR(int, int, int)
 CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
 CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
 

@@ -20,6 +20,8 @@
 #include "constraint_solver/routing.h"
 %}
 
+%module(directors="1") operations_research;
+
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(ctype) operations_research::RoutingModel::NodeIndex "int"
 %typemap(imtype) operations_research::RoutingModel::NodeIndex "int"
@@ -45,12 +47,28 @@
   }
 %}
 
-// Convert std::vector<RoutingModel::NodeIndex> to/from int arrays.
+// This typemap will transform a .net array into a pair length, c array.
+// This pair is then used to rebuild a vector from it.
+%define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
+
+%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
+%typemap(imtype)   const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
+%typemap(cstype)   const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
+%typemap(csin)     const std::vector<TYPE>&  "$csinput.Length, $csinput"
+%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
+%typemap(in)       const std::vector<TYPE>&  %{
+  $1 = new std::vector<TYPE>;
+  $1->reserve(length$argnum);
+  for(int i = 0; i < length$argnum; ++i) {
+    $1->emplace_back($input[i]);
+  }
+%}
+%enddef // CS_TYPEMAP_STDVECTOR
+
 CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
 
 // Create input mapping for NodeEvaluator2
-%module(directors="1") main
 %feature("director") NodeEvaluator2;
 %{
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {

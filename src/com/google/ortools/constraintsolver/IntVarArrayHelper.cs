@@ -189,4 +189,180 @@ namespace Google.OrTools.ConstraintSolver
       return flat;
     }
   }
+
+public partial class CpIntVarVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<IntVar>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpIntVarVector(IntVar[] inVal) {
+    var outVal= new CpIntVarVector();
+    foreach (IntVar element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# IntVar array
+  public static implicit operator IntVar[](CpIntVarVector inVal) {
+    var outVal= new IntVar[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpSearchMonitorVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<SearchMonitor>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpSearchMonitorVector(SearchMonitor[] inVal) {
+    var outVal= new CpSearchMonitorVector();
+    foreach (SearchMonitor element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# SearchMonitor array
+  public static implicit operator SearchMonitor[](CpSearchMonitorVector inVal) {
+    var outVal= new SearchMonitor[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpDecisionBuilderVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<DecisionBuilder>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpDecisionBuilderVector(DecisionBuilder[] inVal) {
+    var outVal= new CpDecisionBuilderVector();
+    foreach (DecisionBuilder element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# DecisionBuilder array
+  public static implicit operator DecisionBuilder[](CpDecisionBuilderVector inVal) {
+    var outVal= new DecisionBuilder[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpIntervalVarVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<IntervalVar>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpIntervalVarVector(IntervalVar[] inVal) {
+    var outVal= new CpIntervalVarVector();
+    foreach (IntervalVar element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# IntervalVar array
+  public static implicit operator IntervalVar[](CpIntervalVarVector inVal) {
+    var outVal= new IntervalVar[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpSequenceVarVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<SequenceVar>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpSequenceVarVector(SequenceVar[] inVal) {
+    var outVal= new CpSequenceVarVector();
+    foreach (SequenceVar element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# SequenceVar array
+  public static implicit operator SequenceVar[](CpSequenceVarVector inVal) {
+    var outVal= new SequenceVar[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpLocalSearchOperatorVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<LocalSearchOperator>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpLocalSearchOperatorVector(LocalSearchOperator[] inVal) {
+    var outVal= new CpLocalSearchOperatorVector();
+    foreach (LocalSearchOperator element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# LocalSearchOperator array
+  public static implicit operator LocalSearchOperator[](CpLocalSearchOperatorVector inVal) {
+    var outVal= new LocalSearchOperator[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpLocalSearchFilterVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<LocalSearchFilter>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpLocalSearchFilterVector(LocalSearchFilter[] inVal) {
+    var outVal= new CpLocalSearchFilterVector();
+    foreach (LocalSearchFilter element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# LocalSearchFilter array
+  public static implicit operator LocalSearchFilter[](CpLocalSearchFilterVector inVal) {
+    var outVal= new LocalSearchFilter[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
+public partial class CpSymmetryBreakerVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<SymmetryBreaker>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpSymmetryBreakerVector(SymmetryBreaker[] inVal) {
+    var outVal= new CpSymmetryBreakerVector();
+    foreach (SymmetryBreaker element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# SymmetryBreaker array
+  public static implicit operator SymmetryBreaker[](CpSymmetryBreakerVector inVal) {
+    var outVal= new SymmetryBreaker[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
 }  // namespace Google.OrTools.ConstraintSolver

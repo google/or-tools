@@ -20,6 +20,11 @@
 #include "algorithms/knapsack_solver.h"
 %}
 
+%include "std_vector.i"
+
+%template(KIntVector) std::vector<int>;
+%template(KInt64Vector) std::vector<int64>;
+
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
 
