@@ -13,7 +13,10 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include util/csharp/data.swig
+%include base/base.swig
+
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
 // Include the file we want to wrap a first time.
 %{
@@ -22,10 +25,11 @@
 
 %include "std_vector.i"
 
-%template(KIntVector) std::vector<int>;
 %template(KInt64Vector) std::vector<int64>;
+%template(KInt64VectorVector) std::vector<std::vector<int64> >;
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
+
 
 %include "algorithms/knapsack_solver.h"

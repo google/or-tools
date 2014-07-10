@@ -37,24 +37,39 @@ public partial class KInt64Vector: IDisposable, System.Collections.IEnumerable
   }
 }
 
-public partial class KIntVector: IDisposable, System.Collections.IEnumerable
+public partial class KInt64VectorVector : IDisposable, System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
-    , System.Collections.Generic.IList<int>
+    , System.Collections.Generic.IEnumerable<KInt64Vector>
 #endif
-{
-  // cast from C# int array
-  public static implicit operator KIntVector(int[] inVal) {
-    var outVal= new KIntVector();
-    foreach (int element in inVal) {
-      outVal.Add(element);
+ {
+  // cast from C# long matrix
+  public static implicit operator KInt64VectorVector(long[,] inVal) {
+    int x_size = inVal.GetLength(0);
+    int y_size = inVal.GetLength(1);
+    KInt64VectorVector outVal = new KInt64VectorVector();
+    for (int i = 0; i < x_size; ++i)
+    {
+      outVal.Add(new KInt64Vector());
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i].Add(inVal[i, j]);
+      }
     }
     return outVal;
   }
 
-  // cast to C# int array
-  public static implicit operator int[](KIntVector inVal) {
-    var outVal= new int[inVal.Count];
-    inVal.CopyTo(outVal);
+  // cast to C# long matrix
+  public static implicit operator long[,](KInt64VectorVector inVal) {
+    int x_size = inVal.Count;
+    int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
+    var outVal= new long[x_size, y_size];
+    for (int i = 0; i < x_size; ++i)
+    {
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i, j] = inVal[i][j];
+      }
+    }
     return outVal;
   }
 }

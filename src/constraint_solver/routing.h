@@ -1316,7 +1316,7 @@ class RoutingDimension {
   Solver::IndexEvaluator2* transit_evaluator(int vehicle) const {
     return transit_evaluators_[vehicle];
   }
-#endif
+#endif  // SWIGCSHARP
 #endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
   // Sets an upper bound on the dimension span on a given vehicle. This is the
   // preferred way to limit the "length" of the route of a vehicle according to

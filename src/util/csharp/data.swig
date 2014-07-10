@@ -19,52 +19,6 @@
 using std::string;
 %}
 
-%include base/base.swig
-
-////////////////////////////////////////////////
-//
-//    CS_TYPEMAP_STDVECTOR_IN1
-//
-// Map c# bi-dimensional arrays to c++ vectors of vectors for POD types.
-//
-////////////////////////////////////////////////
-
-%define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
-%typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int len$argnum_2, CTYPE*
-%}
-%typemap(imtype) const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int len$argnum_2, CSHARPTYPE[]
-%}
-%typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[,] %}
-%typemap(csin)   const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0),$csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
-%typemap(in)     const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
-  const int size_x = len$argnum_1;
-  const int size_y = len$argnum_2;
-
-  result.clear();
-  result.resize(size_x);
-
-  TYPE* inner_array = reinterpret_cast<TYPE*>($input);
-
-  for (int index1 = 0; index1 < size_x; ++index1) {
-    result[index1].reserve(size_y);
-    for (int index2 = 0; index2 < size_y; ++index2) {
-      const TYPE value = inner_array[index1 * size_y + index2];
-      result[index1].emplace_back(value);
-    }
-  }
-
-  $1 = &result;
-%}
-%enddef // CS_TYPEMAP_STDVECTOR_IN1
-
-/* allow partial c# classes */
-%typemap(csclassmodifiers) SWIGTYPE "public partial class"
-
-CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
-CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
-
 // SWIG macros to be used in generating C# wrappers for C++ protocol
 // message parameters.  Each protocol message is serialized into
 // byte[] before passing into (or returning from) C++ code.

@@ -15,10 +15,6 @@
 
 %include "base/base.swig"
 
-// This .swig include provides a lot of typemap conversion tools.
-// TODO(user): see if we really need it.
-%include util/csharp/data.swig
-
 %{
 // TODO(user): See if we really need <vector>.
 #include <vector>

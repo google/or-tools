@@ -65,6 +65,44 @@
 %}
 %enddef // CS_TYPEMAP_STDVECTOR
 
+////////////////////////////////////////////////
+//
+//    CS_TYPEMAP_STDVECTOR_IN1
+//
+// Map c# bi-dimensional arrays to c++ vectors of vectors for POD types.
+//
+////////////////////////////////////////////////
+
+%define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
+%typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
+  int len$argnum_1, int len$argnum_2, CTYPE*
+%}
+%typemap(imtype) const std::vector<std::vector<TYPE> >&  %{
+  int len$argnum_1, int len$argnum_2, CSHARPTYPE[]
+%}
+%typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[,] %}
+%typemap(csin)   const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0),$csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
+%typemap(in)     const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
+  const int size_x = len$argnum_1;
+  const int size_y = len$argnum_2;
+
+  result.clear();
+  result.resize(size_x);
+
+  TYPE* inner_array = reinterpret_cast<TYPE*>($input);
+
+  for (int index1 = 0; index1 < size_x; ++index1) {
+    result[index1].reserve(size_y);
+    for (int index2 = 0; index2 < size_y; ++index2) {
+      const TYPE value = inner_array[index1 * size_y + index2];
+      result[index1].emplace_back(value);
+    }
+  }
+
+  $1 = &result;
+%}
+%enddef // CS_TYPEMAP_STDVECTOR_IN1
+
 CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
 

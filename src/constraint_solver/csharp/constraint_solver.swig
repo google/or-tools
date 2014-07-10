@@ -14,8 +14,10 @@
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include exception.i
-%include util/csharp/data.swig
 %include util/csharp/tuple_set.swig
+
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
