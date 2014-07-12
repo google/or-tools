@@ -28,7 +28,7 @@ public class NetDecisionBuilder : DecisionBuilder
   /**
    * This methods wraps the calls to next() and catches fail exceptions.
    */
-  public override Decision NextWrap(Solver solver)
+  public override Decision NextWrapper(Solver solver)
   {
     try
     {
@@ -45,6 +45,50 @@ public class NetDecisionBuilder : DecisionBuilder
   public virtual Decision Next(Solver solver)
   {
     return null;
+  }
+}
+
+public class NetDemon : Demon
+{
+  /**
+   * This methods wraps the calls to next() and catches fail exceptions.
+   */
+  public override void RunWrapper(Solver solver)
+  {
+    try
+    {
+      Run(solver);
+    }
+    catch (ApplicationException e)
+    {
+      solver.ShouldFail();
+    }
+  }
+  /**
+   * This is the new method to subclass when defining a .Net decision builder.
+   */
+  public virtual void Run(Solver solver) {}
+  public override int Priority() {
+    return Solver.NORMAL_PRIORITY;
+  }
+  public override string ToString() {
+    return "NetDemon";
+  }
+}
+
+public class NetConstraint : Constraint {
+  public NetConstraint(Solver s) : base(s) {}
+
+  public override void InitialPropagateWrapper() {
+    try {
+      InitialPropagate();
+    } catch (ApplicationException e) {
+      solver().ShouldFail();
+    }
+  }
+  public virtual void InitialPropagate() {}
+  public override string ToString() {
+    return "NetConstraint";
   }
 }
 }  // namespace Google.OrTools.ConstraintSolver

@@ -15,6 +15,7 @@
 
 %include exception.i
 %include util/csharp/tuple_set.swig
+%include "std_vector.i"
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -79,14 +80,47 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
-%module(directors="1") main
+%module(directors="1", allprotected="1") operations_research;
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
 %feature("director") LongResultCallback3;
+%feature("director") Action;
+%feature("director") BaseLNS;
+%feature("director") Decision;
+%feature("director") DecisionBuilder;
+%feature("director") IntVarLocalSearchFilter;
+%feature("director") IntVarLocalSearchOperator;
+%feature("director") SequenceVarLocalSearchOperator;
+%feature("director") LocalSearchOperator;
+%feature("director") OptimizeVar;
+%feature("director") SearchLimit;
+%feature("director") SearchMonitor;
+%feature("director") SymmetryBreaker;
+
 %{
+#include <setjmp.h>
+
 #include <vector>
+
 #include "base/callback.h"
 #include "base/integral_types.h"
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
+};
+}  // namespace operations_research
+
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() {
+    longjmp(exception_buffer, 1);
+  }
+};
 
 class LongResultCallback1 {
  public:
@@ -148,44 +182,6 @@ class LongResultCallback3 {
     "$descriptor(ResultCallback3<int64, int64, int64, int64>*)
      .getCPtr($csinput.GetPermanentCallback())";
 
-%module(directors="1", allprotected="1") operations_research;
-%feature("director") Action;
-%feature("director") BaseLNS;
-%feature("director") Decision;
-%feature("director") DecisionBuilder;
-%feature("director") IntVarLocalSearchFilter;
-%feature("director") IntVarLocalSearchOperator;
-%feature("director") SequenceVarLocalSearchOperator;
-%feature("director") LocalSearchOperator;
-%feature("director") OptimizeVar;
-%feature("director") SearchLimit;
-%feature("director") SearchMonitor;
-%feature("director") SymmetryBreaker;
-
-%include "std_vector.i"
-
-%{
-#include <setjmp.h>
-
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-
-namespace operations_research {
-class LocalSearchPhaseParameters {
- public:
-  LocalSearchPhaseParameters() {}
-  ~LocalSearchPhaseParameters() {}
-};
-}  // namespace operations_research
-
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() {
-    longjmp(exception_buffer, 1);
-  }
-};
-%}
-
 %template(CpIntVector) std::vector<int>;
 %template(CpInt64Vector) std::vector<int64>;
 
@@ -211,8 +207,26 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
 
+// Rename rules on Demon.
+%feature("director") operations_research::Demon;
+%feature("nodirector") operations_research::Demon::inhibit;
+%feature("nodirector") operations_research::Demon::desinhibit;
+%rename (RunWrapper) operations_research::Demon::Run;
+%rename (Inhibit) operations_research::Demon::inhibit;
+%rename (Desinhibit) operations_research::Demon::desinhibit;
+
+// Rename rules on Constraint.
+%feature("director") operations_research::Constraint;
+%rename (InitialPropagateWrapper) operations_research::Constraint::InitialPropagate;
+%ignore operations_research::Constraint::PostAndPropagate;
+%feature ("nodirector") operations_research::Constraint::Accept;
+%ignore operations_research::Constraint::Accept;
+%feature ("nodirector") operations_research::Constraint::Var;
+%feature ("nodirector") operations_research::Constraint::IsCastConstraint;
+%ignore operations_research::Constraint::IsCastConstraint;
+
 // Rename rule on DecisionBuilder;
-%rename (NextWrap) operations_research::DecisionBuilder::Next;
+%rename (NextWrapper) operations_research::DecisionBuilder::Next;
 
 // Rename rule on SearchLimit
 %rename (IsCrossed) operations_research::SearchLimit::crossed;
@@ -386,9 +400,7 @@ namespace operations_research {
     return index;
   }
 }
-}  // namespace operations_research
 
-namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
   LocalSearchPhaseParameters();
