@@ -413,6 +413,92 @@ public class CsTestCpOperator
     Console.WriteLine(seq.Length);
   }
 
+  class DemonTest : NetDemon {
+    public DemonTest(IntVar x) {
+        x_ = x;
+        Console.WriteLine("Demon built");
+    }
+
+    public override void Run(Solver s) {
+        Console.WriteLine("in Run(), saw " + x_.ToString());
+    }
+
+    private IntVar x_;
+  }
+
+  static void TestDemon() {
+    Solver solver = new Solver("TestDemon");
+    IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
+    NetDemon demon = new DemonTest(x);
+    demon.Run(solver);
+  }
+
+  class ConstraintTest : NetConstraint {
+    public ConstraintTest(Solver solver, IntVar x) : base(solver) {
+        x_ = x;
+    }
+
+    public override void Post() {
+        Console.WriteLine("in Post()");
+        Demon demon = new DemonTest(x_);
+        x_.WhenBound(demon);
+        Console.WriteLine("out of Post()");
+    }
+
+    public override void InitialPropagate() {
+        Console.WriteLine("in InitialPropagate");
+        x_.SetMin(5);
+        Console.WriteLine("out of InitialPropagate");
+    }
+
+    private IntVar x_;
+  }
+
+  static void TestConstraint() {
+    Solver solver = new Solver("TestConstraint");
+    IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
+    Constraint ct = new ConstraintTest(solver, x);
+    solver.Add(ct);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
+        Solver.ASSIGN_MIN_VALUE);
+    solver.Solve(db);
+  }
+
+  class DumbGreaterOrEqualToFive : NetConstraint {
+    public DumbGreaterOrEqualToFive(Solver solver, IntVar x) : base(solver) {
+        x_ = x;
+    }
+
+    public override void Post() {
+        Demon demon = solver().MakeConstraintInitialPropagateCallback(this);
+        x_.WhenBound(demon);
+    }
+
+    public override void InitialPropagate() {
+        if (x_.Bound()) {
+            if (x_.Value() < 5) {
+                Console.WriteLine("Reject " + x_.ToString());
+                solver().Fail();
+            } else {
+                Console.WriteLine("Accept " + x_.ToString());
+            }
+        }
+    }
+
+    private IntVar x_;
+  }
+
+  static void TestFailingConstraint() {
+    Solver solver = new Solver("TestConstraint");
+    IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
+    Constraint ct = new DumbGreaterOrEqualToFive(solver, x);
+    solver.Add(ct);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
+        Solver.ASSIGN_MIN_VALUE);
+    solver.Solve(db);
+  }
+
+
   static void Main()
   {
     TestConstructors();
@@ -421,5 +507,8 @@ public class CsTestCpOperator
     TestBaseEqualityWithExpr();
     TestDowncast();
     TestSequence();
+    TestDemon();
+    TestConstraint();
+    TestFailingConstraint();
   }
 }
