@@ -440,8 +440,10 @@ public class CsTestCpOperator
 
     public override void Post() {
         Console.WriteLine("in Post()");
-        Demon demon = new DemonTest(x_);
-        x_.WhenBound(demon);
+        // Always store the demon in the constraint to avoid it being reclaimed
+        // by the GC.
+        demon_ = new DemonTest(x_);
+        x_.WhenBound(demon_);
         Console.WriteLine("out of Post()");
     }
 
@@ -452,6 +454,7 @@ public class CsTestCpOperator
     }
 
     private IntVar x_;
+    private Demon demon_;
   }
 
   static void TestConstraint() {
@@ -470,8 +473,8 @@ public class CsTestCpOperator
     }
 
     public override void Post() {
-        Demon demon = solver().MakeConstraintInitialPropagateCallback(this);
-        x_.WhenBound(demon);
+        demon_ = solver().MakeConstraintInitialPropagateCallback(this);
+        x_.WhenBound(demon_);
     }
 
     public override void InitialPropagate() {
@@ -486,6 +489,7 @@ public class CsTestCpOperator
     }
 
     private IntVar x_;
+    private Demon demon_;
   }
 
   static void TestFailingConstraint() {
@@ -498,6 +502,57 @@ public class CsTestCpOperator
     solver.Solve(db);
   }
 
+  static void TestDomainIterator() {
+    Solver solver = new Solver("TestConstraint");
+    IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
+    int count = 0;
+    foreach (long i in x.GetDomain()) {
+      Console.Write(i + " ");
+    }
+    Console.WriteLine();
+  }
+
+  class WatchDomain : NetDemon {
+    public WatchDomain(IntVar x) {
+      x_ = x;
+    }
+
+    public override void Run(Solver s) {
+      foreach (long removed in x_.GetHoles()) {
+        Console.WriteLine("Removed " + removed);
+      }
+    }
+
+    private IntVar x_;
+  }
+
+  class RemoveThreeValues : NetConstraint {
+    public RemoveThreeValues(Solver solver, IntVar x) : base(solver) {
+      x_ = x;
+    }
+
+    public override void Post() {
+      demon_ = new WatchDomain(x_);
+      x_.WhenDomain(demon_);
+    }
+
+    public override void InitialPropagate() {
+      x_.RemoveValues(new long[] {3, 5, 7});
+    }
+
+    private IntVar x_;
+    private Demon demon_;
+  }
+
+  static void TestHoleIterator() {
+    Solver solver = new Solver("TestConstraint");
+    IntVar x = solver.MakeIntVar(0, 10, "x");
+    Constraint ct = new RemoveThreeValues(solver, x);
+    solver.Add(ct);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
+        Solver.ASSIGN_MIN_VALUE);
+    solver.Solve(db);
+  }
 
   static void Main()
   {
@@ -510,5 +565,7 @@ public class CsTestCpOperator
     TestDemon();
     TestConstraint();
     TestFailingConstraint();
+    TestDomainIterator();
+    TestHoleIterator();
   }
 }

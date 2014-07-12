@@ -17,6 +17,12 @@
 %include util/csharp/tuple_set.swig
 %include "std_vector.i"
 
+%typemap(csimports) SWIGTYPE %{
+using System;
+using System.Runtime.InteropServices;
+using System.Collections;
+%}
+
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
@@ -246,6 +252,23 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Rename NewSearch and EndSearch to add pinning.
 %rename (NewSearchAux) operations_research::Solver::NewSearch;
 %rename (EndSearchAux) operations_research::Solver::EndSearch;
+
+// Transform IntVar.
+%ignore operations_research::IntVar::MakeDomainIterator;
+%ignore operations_research::IntVar::MakeHoleIterator;
+
+%extend operations_research::IntVar {
+  operations_research::IntVarIterator* GetDomain() {
+    return $self->MakeDomainIterator(false);
+  }
+
+  operations_research::IntVarIterator* GetHoles() {
+    return $self->MakeHoleIterator(false);
+  }
+}
+
+%typemap(csinterfaces_derived) operations_research::IntVarIterator "IEnumerable";
+
 
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 

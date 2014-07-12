@@ -12,6 +12,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 
 namespace Google.OrTools.ConstraintSolver
 {
@@ -89,6 +90,58 @@ public class NetConstraint : Constraint {
   public virtual void InitialPropagate() {}
   public override string ToString() {
     return "NetConstraint";
+  }
+}
+
+public class IntVarEnumerator : IEnumerator {
+  private IntVarIterator iterator_;
+
+  // Enumerators are positioned before the first element
+  // until the first MoveNext() call.
+  bool first_ = true;
+
+  public IntVarEnumerator(IntVarIterator iterator) {
+    iterator_ = iterator;
+  }
+
+  public bool MoveNext() {
+    if (first_) {
+      iterator_.Init();
+      first_ = false;
+    } else {
+      iterator_.Next();
+    }
+    return iterator_.Ok();
+  }
+
+  public void Reset() {
+    first_ = true;
+  }
+
+  object IEnumerator.Current {
+    get {
+      return Current;
+    }
+  }
+
+  public long Current {
+    get {
+      if (iterator_.Ok()) {
+        return iterator_.Value();
+      } else {
+        throw new InvalidOperationException();
+      }
+    }
+  }
+}
+
+public partial class IntVarIterator : BaseObject, IEnumerable {
+  IEnumerator IEnumerable.GetEnumerator() {
+    return (IEnumerator) GetEnumerator();
+  }
+
+  public IntVarEnumerator GetEnumerator() {
+    return new IntVarEnumerator(this);
   }
 }
 }  // namespace Google.OrTools.ConstraintSolver
