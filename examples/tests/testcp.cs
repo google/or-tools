@@ -506,8 +506,8 @@ public class CsTestCpOperator
     Solver solver = new Solver("TestConstraint");
     IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
     int count = 0;
-    foreach (long i in x.GetDomain()) {
-      Console.Write(i + " ");
+    foreach (long value in x.GetDomain()) {
+      Console.Write(value + " ");
     }
     Console.WriteLine();
   }
@@ -554,8 +554,7 @@ public class CsTestCpOperator
     solver.Solve(db);
   }
 
-  static void Main()
-  {
+  static void Main() {
     TestConstructors();
     TestConstraintWithExpr();
     TestWrappedConstraintWithExpr();
