@@ -72,13 +72,11 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
   for (int index1 = 0; index1 < size; ++index1) {
     jlongArray inner_array =
         (jlongArray)jenv->GetObjectArrayElement($input, index1);
-    const int tuple_size = jenv->GetArrayLength(inner_array);
-    (*$1)[index1].reserve(tuple_size);
-    jlong* const values =
-        jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
-    for (int index2 = 0; index2 < tuple_size; ++index2) {
-      const int64 value = values[index2];
-      (*$1)[index1].emplace_back(value);
+    const int inner_size = jenv->GetArrayLength(inner_array);
+    (*$1)[index1].resize(inner_size);
+    jlong* values = jenv->GetLongArrayElements(inner_array, nullptr);
+    for (int index2 = 0; index2 < inner_size; ++index2) {
+      (*$1)[index1][index2] = values[index2];
     }
     jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
     jenv->DeleteLocalRef(inner_array);
