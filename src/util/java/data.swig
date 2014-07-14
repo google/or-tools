@@ -66,26 +66,28 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
 %typemap(jtype) const std::vector<std::vector<int64> >& "long[][]"
 %typemap(jstype) const std::vector<std::vector<int64> >& "long[][]"
 %typemap(javain) const std::vector<std::vector<int64> >& "$javainput"
-%typemap(in) const std::vector<std::vector<int64> >& (std::vector<std::vector<int64> > result) {
+%typemap(in) const std::vector<std::vector<int64> >& {
   const int size = jenv->GetArrayLength($input);
-  result.clear();
-  result.resize(size);
+  $1 = new std::vector<std::vector<int64> >(size);
   for (int index1 = 0; index1 < size; ++index1) {
     jlongArray inner_array =
         (jlongArray)jenv->GetObjectArrayElement($input, index1);
     const int tuple_size = jenv->GetArrayLength(inner_array);
-    result[index1].reserve(tuple_size);
+    (*$1)[index1].reserve(tuple_size);
     jlong* const values =
         jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
     for (int index2 = 0; index2 < tuple_size; ++index2) {
       const int64 value = values[index2];
-      result[index1].emplace_back(value);
+      (*$1)[index1].emplace_back(value);
     }
     jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
     jenv->DeleteLocalRef(inner_array);
   }
-  $1 = &result;
 }
+%typemap(freearg) std::vector<std::vector<int64> >& {
+  delete $1;
+}
+
 
 // SWIG macros to be used in generating Java wrappers for C++ protocol
 // message parameters.  Each protocol message is serialized into
