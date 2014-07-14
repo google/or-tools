@@ -415,12 +415,12 @@ public class CsTestCpOperator
 
   class DemonTest : NetDemon {
     public DemonTest(IntVar x) {
-        x_ = x;
-        Console.WriteLine("Demon built");
+      x_ = x;
+      Console.WriteLine("Demon built");
     }
 
     public override void Run(Solver s) {
-        Console.WriteLine("in Run(), saw " + x_.ToString());
+      Console.WriteLine("in Run(), saw " + x_.ToString());
     }
 
     private IntVar x_;
@@ -435,22 +435,22 @@ public class CsTestCpOperator
 
   class ConstraintTest : NetConstraint {
     public ConstraintTest(Solver solver, IntVar x) : base(solver) {
-        x_ = x;
+      x_ = x;
     }
 
     public override void Post() {
-        Console.WriteLine("in Post()");
-        // Always store the demon in the constraint to avoid it being reclaimed
-        // by the GC.
-        demon_ = new DemonTest(x_);
-        x_.WhenBound(demon_);
-        Console.WriteLine("out of Post()");
+      Console.WriteLine("in Post()");
+      // Always store the demon in the constraint to avoid it being reclaimed
+      // by the GC.
+      demon_ = new DemonTest(x_);
+      x_.WhenBound(demon_);
+      Console.WriteLine("out of Post()");
     }
 
     public override void InitialPropagate() {
-        Console.WriteLine("in InitialPropagate");
-        x_.SetMin(5);
-        Console.WriteLine("out of InitialPropagate");
+      Console.WriteLine("in InitialPropagate");
+      x_.SetMin(5);
+      Console.WriteLine("out of InitialPropagate");
     }
 
     private IntVar x_;
@@ -463,29 +463,29 @@ public class CsTestCpOperator
     Constraint ct = new ConstraintTest(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+                                          Solver.ASSIGN_MIN_VALUE);
     solver.Solve(db);
   }
 
   class DumbGreaterOrEqualToFive : NetConstraint {
     public DumbGreaterOrEqualToFive(Solver solver, IntVar x) : base(solver) {
-        x_ = x;
+      x_ = x;
     }
 
     public override void Post() {
-        demon_ = solver().MakeConstraintInitialPropagateCallback(this);
-        x_.WhenBound(demon_);
+      demon_ = solver().MakeConstraintInitialPropagateCallback(this);
+      x_.WhenBound(demon_);
     }
 
     public override void InitialPropagate() {
-        if (x_.Bound()) {
-            if (x_.Value() < 5) {
-                Console.WriteLine("Reject " + x_.ToString());
-                solver().Fail();
-            } else {
-                Console.WriteLine("Accept " + x_.ToString());
-            }
+      if (x_.Bound()) {
+        if (x_.Value() < 5) {
+          Console.WriteLine("Reject " + x_.ToString());
+          solver().Fail();
+        } else {
+          Console.WriteLine("Accept " + x_.ToString());
         }
+      }
     }
 
     private IntVar x_;
@@ -498,7 +498,7 @@ public class CsTestCpOperator
     Constraint ct = new DumbGreaterOrEqualToFive(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+                                          Solver.ASSIGN_MIN_VALUE);
     solver.Solve(db);
   }
 
@@ -550,7 +550,7 @@ public class CsTestCpOperator
     Constraint ct = new RemoveThreeValues(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-        Solver.ASSIGN_MIN_VALUE);
+                                          Solver.ASSIGN_MIN_VALUE);
     solver.Solve(db);
   }
 

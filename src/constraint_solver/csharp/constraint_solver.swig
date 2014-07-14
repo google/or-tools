@@ -269,7 +269,6 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 
 %typemap(csinterfaces_derived) operations_research::IntVarIterator "IEnumerable";
 
-
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 
 namespace operations_research {
