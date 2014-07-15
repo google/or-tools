@@ -518,9 +518,11 @@ public class CsTestCpOperator
     }
 
     public override void Run(Solver s) {
+      Console.Write("Remove [");
       foreach (long removed in x_.GetHoles()) {
-        Console.WriteLine("Removed " + removed);
+        Console.Write(removed + " ");
       }
+      Console.WriteLine("]");
     }
 
     private IntVar x_;

@@ -74,11 +74,7 @@ VECTOR_AS_JAVA_ARRAY(int64, long, Long);
         (jlongArray)jenv->GetObjectArrayElement($input, index1);
     const int inner_size = jenv->GetArrayLength(inner_array);
     (*$1)[index1].resize(inner_size);
-    jlong* values = jenv->GetLongArrayElements(inner_array, nullptr);
-    for (int index2 = 0; index2 < inner_size; ++index2) {
-      (*$1)[index1][index2] = values[index2];
-    }
-    jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
+    jenv->GetLongArrayRegion(inner_array, 0, inner_size, &(*$1)[index1][0]);
     jenv->DeleteLocalRef(inner_array);
   }
 }
