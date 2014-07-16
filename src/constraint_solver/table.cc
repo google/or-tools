@@ -41,7 +41,7 @@ DEFINE_bool(cp_use_sat_table, false,
 DEFINE_int32(cp_ac4r_table_threshold, 2048,
              "Above this size, allowed assignment constraints will use the "
              "revised AC-4 implementation of the table constraint.");
-DEFINE_bool(cp_use_mdd_table, true, "Use mdd table");
+DEFINE_bool(cp_use_mdd_table, false, "Use mdd table");
 
 namespace operations_research {
 // External table code.
