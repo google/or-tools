@@ -282,10 +282,10 @@ variable_or_constant_declaration:
     // TODO(lperron): check that all assignments are included in the domain.
   } else {
     std::vector<int64> values(num_constants);
-    for (int i = 0; i < num_constants; ++i) {
-      values[i] = assignments[i].values.front();
-      CHECK(domain.Contains(values[i]));
-    }
+    // for (int i = 0; i < num_constants; ++i) {
+    //   values[i] = assignments[i].values.front();
+    //   CHECK(domain.Contains(values[i]));
+    // }
     context->integer_array_map[identifier] = values;
   }
 }
@@ -369,7 +369,7 @@ variable_or_constant_declaration:
       for (int a = 0; a < list.annotations.size(); ++a) {
         const FzAnnotation& bound = list.annotations[a];
         CHECK_EQ(FzAnnotation::INTERVAL, bound.type);
-        bounds.push_back(
+        bounds.emplace_back(
             FzOnSolutionOutput::Bounds(bound.interval_min, bound.interval_max));
       }
       // We add the output information.
@@ -392,9 +392,9 @@ var_or_value_array:  // Cannot be empty.
   var_or_value_array ',' var_or_value {
     $$.clear();
     $$.swap($1);
-    $$.push_back($3);
+    $$.emplace_back($3);
  }
-| var_or_value { $$.clear(); $$.push_back($1); }
+| var_or_value { $$.clear(); $$.emplace_back($1); }
 
 var_or_value:
   IVALUE { $$ = VariableRefOrValue::Value($1); }  // An integer value.
@@ -451,8 +451,8 @@ domain:
 | float_domain { $$ = $1; }
 
 integers:
-  integers ',' integer { $$.clear(); $$.swap($1); $$.push_back($3); }
-| integer { $$.clear(); $$.push_back($1); }
+  integers ',' integer { $$.clear(); $$.swap($1); $$.emplace_back($3); }
+| integer { $$.clear(); $$.emplace_back($1); }
 
 integer:
   IVALUE { $$ = $1; }
@@ -477,9 +477,9 @@ const_literals:
   const_literals ',' const_literal {
   $$.clear();
   $$.swap($1);
-  $$.push_back($3);
+  $$.emplace_back($3);
 }
-| const_literal { $$.clear(); $$.push_back($1); }
+| const_literal { $$.clear(); $$.reserve(4096); $$.emplace_back($1); }
 
 //---------------------------------------------------------------------------
 // Parsing constraints
@@ -511,8 +511,8 @@ constraint :
 }
 
 arguments:
-  arguments ',' argument { $$.clear(); $$.swap($1); $$.push_back($3); }
-| argument { $$.clear(); $$.push_back($1); }
+  arguments ',' argument { $$.clear(); $$.swap($1); $$.emplace_back($3); }
+| argument { $$.clear(); $$.emplace_back($1); }
 
 argument:
   IVALUE { $$ = FzArgument::IntegerValue($1); }
@@ -567,9 +567,9 @@ argument:
     $$.variables.reserve($2.size());
     for (const VariableRefOrValue& arg : arguments) {
       if (arg.variable != nullptr) {
-         $$.variables.push_back(arg.variable);
+         $$.variables.emplace_back(arg.variable);
       } else {
-         $$.variables.push_back(FzIntegerVariable::Constant(arg.value));
+         $$.variables.emplace_back(FzIntegerVariable::Constant(arg.value));
       }
     }
   } else {
@@ -577,7 +577,7 @@ argument:
     $$.values.reserve($2.size());
     for (const VariableRefOrValue& arg : arguments) {
       DCHECK(arg.variable == nullptr);
-      $$.values.push_back(arg.value);
+      $$.values.emplace_back(arg.value);
     }
   }
 }
@@ -590,7 +590,7 @@ annotations:
   annotations COLONCOLON annotation {
     $$.clear();
     $$.swap($1);
-    $$.push_back($3);
+    $$.emplace_back($3);
   }
 | /* empty */ { $$.clear(); }
 
@@ -598,9 +598,9 @@ annotation_arguments:  // Cannot be empty.
   annotation_arguments ',' annotation  {
     $$.clear();
     $$.swap($1);
-    $$.push_back($3);
+    $$.emplace_back($3);
   }
-| annotation { $$.clear(); $$.push_back($1); }
+| annotation { $$.clear(); $$.emplace_back($1); }
 
 annotation:
   IVALUE DOTDOT IVALUE { $$ = FzAnnotation::Interval($1, $3); }

@@ -1547,6 +1547,9 @@ void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
       IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(3))->Var();
       if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
         PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs, boolvar);
+      } else if (rhs == 0 && AreAllPositive(coeffs) && AreAllBooleans(vars)) {
+        // Special case. this is or(vars) = not(boolvar).
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, 0, boolvar);
       } else {
         Constraint* const constraint = solver->MakeIsLessOrEqualCstCt(
             solver->MakeScalProd(vars, coeffs), rhs, boolvar);
