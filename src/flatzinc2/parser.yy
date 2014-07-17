@@ -65,20 +65,35 @@ struct VariableRefOrValue {
   bool defined;
 };
 
+struct VariableRefOrValueArray {
+  std::vector<FzIntegerVariable*> variables;
+  std::vector<int64> values;
+
+  void PushBack(const VariableRefOrValue& v) {
+    CHECK(v.defined);
+    variables.push_back(v.variable);
+    values.push_back(v.value);
+  }
+
+  int Size() const {
+    return values.size();
+  }
+};
+
 // Class needed to pass information from the lexer to the parser.
 struct LexerInfo {
   int64 integer_value;
   double double_value;
   std::string string_value;
   FzDomain domain;
-  std::vector<FzDomain> domains;
-  std::vector<int64> integers;
+  std::vector<FzDomain>* domains;
+  std::vector<int64>* integers;
   FzArgument arg;
-  std::vector<FzArgument> args;
+  std::vector<FzArgument>* args;
   FzAnnotation annotation;
-  std::vector<FzAnnotation> annotations;
+  std::vector<FzAnnotation>* annotations;
   VariableRefOrValue var_or_value;
-  std::vector<VariableRefOrValue> var_or_value_array;
+  VariableRefOrValueArray* var_or_value_array;
 };
 }  // namespace operations_research
 
@@ -117,12 +132,14 @@ void orfz_error(FzParserContext* context, FzModel* model, bool* ok,
 namespace operations_research {
 // Whether the given list of annotations contains the given identifier
 // (or function call).
-bool ContainsId(const std::vector<FzAnnotation>& annotations, const std::string& id) {
-  for (int i = 0; i < annotations.size(); ++i) {
-    if ((annotations[i].type == FzAnnotation::IDENTIFIER ||
-         annotations[i].type == FzAnnotation::FUNCTION_CALL) &&
-        annotations[i].id == id) {
-      return true;
+bool ContainsId(std::vector<FzAnnotation>* annotations, const std::string& id) {
+  if (annotations != nullptr) {
+    for (int i = 0; i < annotations->size(); ++i) {
+      if (((*annotations)[i].type == FzAnnotation::IDENTIFIER ||
+           (*annotations)[i].type == FzAnnotation::FUNCTION_CALL) &&
+          (*annotations)[i].id == id) {
+        return true;
+      }
     }
   }
   return false;
@@ -246,6 +263,8 @@ variable_or_constant_declaration:
   const FzDomain& domain = $1;
   const std::string& identifier = $3;
   const FzDomain& assignment = $6;
+  std::vector<FzAnnotation>* const annotations = $4;
+
 
   if (!assignment.IsSingleton()) {
     // TODO(lperron): Check that the assignment is included in the domain.
@@ -255,17 +274,22 @@ variable_or_constant_declaration:
     CHECK(domain.Contains(value));
     context->integer_map[identifier] = value;
   }
+  delete annotations;
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF int_domain ':' IDENTIFIER
     annotations '=' '[' integers ']' {
+  std::vector<FzAnnotation>* const annotations = $11;
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
   const int64 num_constants = $5;
   const std::string& identifier = $10;
-  const std::vector<int64>& assignments = $14;
-  CHECK_EQ(num_constants, assignments.size());
+  const std::vector<int64>* const assignments = $14;
+  CHECK(assignments != nullptr);
+  CHECK_EQ(num_constants, assignments->size());
   // TODO(lperron): CHECK all values within domain.
-  context->integer_array_map[identifier] = assignments;
+  context->integer_array_map[identifier] = *assignments;
+  delete assignments;
+  delete annotations;
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
@@ -274,20 +298,24 @@ variable_or_constant_declaration:
   const int64 num_constants = $5;
   const FzDomain& domain = $8;
   const std::string& identifier = $10;
-  const std::vector<FzDomain>& assignments = $14;
-  CHECK_EQ(num_constants, assignments.size());
+  const std::vector<FzDomain>* const assignments = $14;
+  const std::vector<FzAnnotation>* const annotations = $11;
+  CHECK(assignments != nullptr);
+  CHECK_EQ(num_constants, assignments->size());
 
-  if (!AreAllSingleton(assignments)) {
-    context->domain_array_map[identifier] = assignments;
+  if (!AreAllSingleton(*assignments)) {
+    context->domain_array_map[identifier] = *assignments;
     // TODO(lperron): check that all assignments are included in the domain.
   } else {
     std::vector<int64> values(num_constants);
-    // for (int i = 0; i < num_constants; ++i) {
-    //   values[i] = assignments[i].values.front();
-    //   CHECK(domain.Contains(values[i]));
-    // }
+    for (int i = 0; i < num_constants; ++i) {
+      values[i] = (*assignments)[i].values.front();
+      CHECK(domain.Contains(values[i]));
+    }
     context->integer_array_map[identifier] = values;
   }
+  delete assignments;
+  delete annotations;
 }
 | VAR domain ':' IDENTIFIER annotations optional_var_or_value {
   // Declaration of a variable. If it's unassigned or assigned to a
@@ -296,7 +324,7 @@ variable_or_constant_declaration:
   // existing variable x according to the current (re-)declaration.
   const FzDomain& domain = $2;
   const std::string& identifier = $4;
-  const std::vector<FzAnnotation>& annotations = $5;
+  std::vector<FzAnnotation>* const annotations = $5;
   const VariableRefOrValue& assignment = $6;
   const bool introduced = ContainsId(annotations, "var_is_introduced");
   FzIntegerVariable* var = nullptr;
@@ -318,6 +346,7 @@ variable_or_constant_declaration:
     model->AddOutput(
         FzOnSolutionOutput::SingleVariable(identifier, var, domain.is_boolean));
   }
+  delete annotations;
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF VAR domain ':' IDENTIFIER
     annotations optional_var_or_value_array {
@@ -328,28 +357,32 @@ variable_or_constant_declaration:
   const int64 num_vars = $5;
   const FzDomain& domain = $9;
   const std::string& identifier = $11;
-  const std::vector<FzAnnotation>& annotations = $12;
-  const std::vector<VariableRefOrValue>& assignments = $13;
-  CHECK(assignments.empty() || assignments.size() == num_vars);
+  std::vector<FzAnnotation>* const annotations = $12;
+  VariableRefOrValueArray* const assignments = $13;
+  CHECK(assignments == nullptr || assignments->variables.size() == num_vars);
+  CHECK(assignments == nullptr || assignments->values.size() == num_vars);
   const bool introduced = ContainsId(annotations, "introduced");
 
   std::vector<FzIntegerVariable*> vars(num_vars, nullptr);
 
   for (int i = 0; i < num_vars; ++i) {
     const std::string var_name = StringPrintf("%s[%d]", identifier.c_str(), i + 1);
-    if (assignments.empty()) {
+    if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
-    } else if (assignments[i].variable == nullptr) {
+    } else if (assignments->variables[i] == nullptr) {
       // Assigned to an integer constant.
-      CHECK(domain.Contains(assignments[i].value));
-      vars[i] = model->AddVariable(
-          var_name, FzDomain::Singleton(assignments[i].value), introduced);
+      const int64 value = assignments->values[i];
+      CHECK(domain.Contains(value));
+      vars[i] =
+          model->AddVariable(var_name, FzDomain::Singleton(value), introduced);
     } else {
-      CHECK(assignments[i].variable != nullptr);
-      vars[i] = assignments[i].variable;
+      FzIntegerVariable* const var = assignments->variables[i];
+      CHECK(var != nullptr);
+      vars[i] = var;
       vars[i]->Merge(var_name, domain, nullptr, introduced);
     }
   }
+  delete assignments;
 
   // Register the variable array on the context.
   context->variable_array_map[identifier] = vars;
@@ -357,26 +390,29 @@ variable_or_constant_declaration:
   // We parse the annotations to build an output object if
   // needed. It's a bit more convoluted than the simple variable
   // output.
-  for (int i = 0; i < annotations.size(); ++i) {
-    const FzAnnotation& ann = annotations[i];
-    if (ann.IsFunctionCallWithIdentifier("output_array")) {
-      // We have found an output annotation.
-      CHECK_EQ(1, ann.annotations.size());
-      CHECK_EQ(FzAnnotation::ANNOTATION_LIST, ann.annotations.back().type);
-      const FzAnnotation& list = ann.annotations.back();
-      // Let's build the vector of bounds.
-      std::vector<FzOnSolutionOutput::Bounds> bounds;
-      for (int a = 0; a < list.annotations.size(); ++a) {
-        const FzAnnotation& bound = list.annotations[a];
-        CHECK_EQ(FzAnnotation::INTERVAL, bound.type);
-        bounds.emplace_back(
-            FzOnSolutionOutput::Bounds(bound.interval_min, bound.interval_max));
+  if (annotations != nullptr) {
+    for (int i = 0; i < annotations->size(); ++i) {
+      const FzAnnotation& ann = (*annotations)[i];
+      if (ann.IsFunctionCallWithIdentifier("output_array")) {
+        // We have found an output annotation.
+        CHECK_EQ(1, ann.annotations.size());
+        CHECK_EQ(FzAnnotation::ANNOTATION_LIST, ann.annotations.back().type);
+        const FzAnnotation& list = ann.annotations.back();
+        // Let's build the vector of bounds.
+        std::vector<FzOnSolutionOutput::Bounds> bounds;
+        for (int a = 0; a < list.annotations.size(); ++a) {
+          const FzAnnotation& bound = list.annotations[a];
+          CHECK_EQ(FzAnnotation::INTERVAL, bound.type);
+          bounds.emplace_back(
+              FzOnSolutionOutput::Bounds(bound.interval_min, bound.interval_max));
+        }
+        // We add the output information.
+        model->AddOutput(
+            FzOnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars,
+      domain.is_boolean));
       }
-      // We add the output information.
-      model->AddOutput(
-          FzOnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars,
-	  domain.is_boolean));
     }
+    delete annotations;
   }
 }
 
@@ -385,16 +421,18 @@ optional_var_or_value:
 | /*empty*/ { $$ = VariableRefOrValue::Undefined(); }
 
 optional_var_or_value_array:
-  '=' '[' var_or_value_array ']' { $$.clear(); $$.swap($3); }
-| /*empty*/ { $$.clear(); }
+  '=' '[' var_or_value_array ']' { $$ = $3; }
+| /*empty*/ { $$ = nullptr; }
 
 var_or_value_array:  // Cannot be empty.
   var_or_value_array ',' var_or_value {
-    $$.clear();
-    $$.swap($1);
-    $$.emplace_back($3);
- }
-| var_or_value { $$.clear(); $$.emplace_back($1); }
+  $$ = $1;
+  $$->PushBack($3);
+}
+| var_or_value {
+  $$ = new VariableRefOrValueArray();
+  $$->PushBack($1);
+}
 
 var_or_value:
   IVALUE { $$ = VariableRefOrValue::Value($1); }  // An integer value.
@@ -432,13 +470,21 @@ int_domain:
   BOOL { $$ = FzDomain::Boolean(); }
 | INT { $$ = FzDomain::AllInt64(); }
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
-| '{' integers '}' { $$ = FzDomain::IntegerList($2); }
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = FzDomain::IntegerList(*$2);
+  delete $2;
+}
 
 set_domain:
   SET OF BOOL { $$ = FzDomain::Boolean(); }
 | SET OF INT { $$ = FzDomain::AllInt64(); }
 | SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
-| SET OF '{' integers '}' { $$ = FzDomain::IntegerList($4); }
+| SET OF '{' integers '}' {
+  CHECK($4 != nullptr);
+  $$ = FzDomain::IntegerList(*$4);
+  delete $4;
+}
 
 float_domain:
   FLOAT { $$ = FzDomain::AllInt64(); }  // TODO(lperron): implement floats.
@@ -451,8 +497,8 @@ domain:
 | float_domain { $$ = $1; }
 
 integers:
-  integers ',' integer { $$.clear(); $$.swap($1); $$.emplace_back($3); }
-| integer { $$.clear(); $$.emplace_back($1); }
+  integers ',' integer { $$ = $1; $$->emplace_back($3); }
+| integer { $$ = new std::vector<int64>(); $$->emplace_back($1); }
 
 integer:
   IVALUE { $$ = $1; }
@@ -464,7 +510,11 @@ integer:
 const_literal:
   IVALUE { $$ = FzDomain::Singleton($1); }
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
-| '{' integers '}' { $$ = FzDomain::IntegerList($2); }
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = FzDomain::IntegerList(*$2);
+  delete $2;
+}
 | '{' '}' { $$ = FzDomain::IntegerList(std::vector<int64>()); }
 | DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
 | IDENTIFIER { $$ = FzDomain::Singleton(FindOrDie(context->integer_map, $1)); }
@@ -475,11 +525,10 @@ const_literal:
 
 const_literals:
   const_literals ',' const_literal {
-  $$.clear();
-  $$.swap($1);
-  $$.emplace_back($3);
+  $$ = $1;
+  $$->emplace_back($3);
 }
-| const_literal { $$.clear(); $$.reserve(4096); $$.emplace_back($1); }
+| const_literal { $$ = new std::vector<FzDomain>(); $$->emplace_back($1); }
 
 //---------------------------------------------------------------------------
 // Parsing constraints
@@ -491,35 +540,44 @@ constraints: constraints constraint ';'
 constraint :
   CONSTRAINT IDENTIFIER '(' arguments ')' annotations {
   const std::string& identifier = $2;
-  const std::vector<FzArgument>& arguments = $4;
-  const std::vector<FzAnnotation>& annotations = $6;
+  const std::vector<FzArgument>* const arguments = $4;
+  std::vector<FzAnnotation>* const annotations = $6;
 
   // Does the constraint has a defines_var annotation?
   FzIntegerVariable* defines_var = nullptr;
-  for (int i = 0; i < annotations.size(); ++i) {
-    const FzAnnotation& ann = annotations[i];
-    if (ann.IsFunctionCallWithIdentifier("defines_var")) {
-      CHECK_EQ(1, ann.annotations.size());
-      CHECK_EQ(FzAnnotation::INT_VAR_REF, ann.annotations.back().type);
-      defines_var = ann.annotations.back().variables[0];
-      break;
+  if (annotations != nullptr) {
+    for (int i = 0; i < annotations->size(); ++i) {
+      const FzAnnotation& ann = (*annotations)[i];
+      if (ann.IsFunctionCallWithIdentifier("defines_var")) {
+        CHECK_EQ(1, ann.annotations.size());
+        CHECK_EQ(FzAnnotation::INT_VAR_REF, ann.annotations.back().type);
+        defines_var = ann.annotations.back().variables[0];
+        break;
+      }
     }
+    delete annotations;
   }
 
-  model->AddConstraint(identifier, arguments,
+  CHECK(arguments != nullptr);
+  model->AddConstraint(identifier, *arguments,
                        ContainsId(annotations, "domain"), defines_var);
+  delete arguments;
 }
 
 arguments:
-  arguments ',' argument { $$.clear(); $$.swap($1); $$.emplace_back($3); }
-| argument { $$.clear(); $$.emplace_back($1); }
+  arguments ',' argument { $$ = $1; $$->emplace_back($3); }
+| argument { $$ = new std::vector<FzArgument>(); $$->emplace_back($1); }
 
 argument:
   IVALUE { $$ = FzArgument::IntegerValue($1); }
 | DVALUE { $$ = FzArgument::VoidArgument(); }
 | SVALUE { $$ = FzArgument::VoidArgument(); }
 | IVALUE DOTDOT IVALUE { $$ = FzArgument::Interval($1, $3); }
-| '{' integers '}' { $$ = FzArgument::IntegerList($2); }
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = FzArgument::IntegerList(*$2);
+  delete $2;
+}
 | IDENTIFIER {
   const std::string& id = $1;
   if (ContainsKey(context->integer_map, id)) {
@@ -554,31 +612,28 @@ argument:
   }
 }
 | '[' var_or_value_array ']' {
-  const std::vector<VariableRefOrValue>& arguments = $2;
+  VariableRefOrValueArray* const arguments = $2;
+  CHECK(arguments != nullptr);
   bool has_variables = false;
-  for (int i = 0; i < arguments.size(); ++i) {
-    if (arguments[i].variable != nullptr) {
+  for (int i = 0; i < arguments->Size(); ++i) {
+    if (arguments->variables[i] != nullptr) {
       has_variables = true;
       break;
     }
   }
   if (has_variables) {
     $$ = FzArgument::IntVarRefArray(std::vector<FzIntegerVariable*>());
-    $$.variables.reserve($2.size());
-    for (const VariableRefOrValue& arg : arguments) {
-      if (arg.variable != nullptr) {
-         $$.variables.emplace_back(arg.variable);
+    $$.variables.reserve(arguments->Size());
+    for (int i = 0; i < arguments->Size(); ++i) {
+      if (arguments->variables[i] != nullptr) {
+         $$.variables.emplace_back(arguments->variables[i]);
       } else {
-         $$.variables.emplace_back(FzIntegerVariable::Constant(arg.value));
+         $$.variables.emplace_back(
+             FzIntegerVariable::Constant(arguments->values[i]));
       }
     }
   } else {
-    $$ = FzArgument::IntegerList(std::vector<int64>());
-    $$.values.reserve($2.size());
-    for (const VariableRefOrValue& arg : arguments) {
-      DCHECK(arg.variable == nullptr);
-      $$.values.emplace_back(arg.value);
-    }
+    $$ = FzArgument::IntegerList(arguments->values);
   }
 }
 
@@ -588,19 +643,14 @@ argument:
 
 annotations:
   annotations COLONCOLON annotation {
-    $$.clear();
-    $$.swap($1);
-    $$.emplace_back($3);
+    $$ = $1 != nullptr ? $1 : new std::vector<FzAnnotation>();
+    $$->emplace_back($3);
   }
-| /* empty */ { $$.clear(); }
+| /* empty */ { $$ = nullptr; }
 
 annotation_arguments:  // Cannot be empty.
-  annotation_arguments ',' annotation  {
-    $$.clear();
-    $$.swap($1);
-    $$.emplace_back($3);
-  }
-| annotation { $$.clear(); $$.emplace_back($1); }
+  annotation_arguments ',' annotation  { $$ = $1; $$->emplace_back($3); }
+| annotation { $$ = new std::vector<FzAnnotation>(); $$->emplace_back($1); }
 
 annotation:
   IVALUE DOTDOT IVALUE { $$ = FzAnnotation::Interval($1, $3); }
@@ -617,7 +667,9 @@ annotation:
   }
 }
 | IDENTIFIER '(' annotation_arguments ')' {
-  $$ = FzAnnotation::FunctionCall($1, $3);
+  std::vector<FzAnnotation>* const annotations = $3;
+  $$ = FzAnnotation::FunctionCall($1, annotations);
+  delete annotations;
 }
 | IDENTIFIER '[' IVALUE ']' {
   CHECK(ContainsKey(context->variable_array_map, $1))
@@ -625,7 +677,11 @@ annotation:
   $$ = FzAnnotation::Variable(
       FzLookup(FindOrDie(context->variable_array_map, $1), $3));
 }
-| '[' annotation_arguments ']' { $$ = FzAnnotation::AnnotationList($2); }
+| '[' annotation_arguments ']' {
+  std::vector<FzAnnotation>* const annotations = $2;
+  $$ = FzAnnotation::AnnotationList(annotations);
+  delete annotations;
+}
 
 //---------------------------------------------------------------------------
 // Parsing solve declaration.
@@ -634,14 +690,17 @@ annotation:
 solve:
   SOLVE annotations SATISFY {
   model->Satisfy($2);
+  delete $2;
 }
 | SOLVE annotations MINIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
   model->Minimize($4.Var(), $2);
+  delete $2;
 }
 | SOLVE annotations MAXIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
   model->Maximize($4.Var(), $2);
+  delete $2;
 }
 
 %%

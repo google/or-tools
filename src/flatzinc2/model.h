@@ -141,6 +141,7 @@ struct FzArgument {
   static FzArgument IntegerValue(int64 value);
   static FzArgument Interval(int64 imin, int64 imax);
   static FzArgument IntegerList(const std::vector<int64>& values);
+  static FzArgument IntegerList(std::vector<int64>* values);
   static FzArgument IntVarRef(FzIntegerVariable* const var);
   static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
   static FzArgument VoidArgument();
@@ -235,10 +236,10 @@ struct FzAnnotation {
   };
 
   static FzAnnotation Empty();
-  static FzAnnotation AnnotationList(const std::vector<FzAnnotation>& list);
+  static FzAnnotation AnnotationList(std::vector<FzAnnotation>* list);
   static FzAnnotation Identifier(const std::string& id);
   static FzAnnotation FunctionCall(const std::string& id,
-                                   const std::vector<FzAnnotation>& args);
+                                   std::vector<FzAnnotation>* args);
   static FzAnnotation Interval(int64 interval_min, int64 interval_max);
   static FzAnnotation IntegerValue(int64 value);
   static FzAnnotation Variable(FzIntegerVariable* const var);
@@ -319,11 +320,11 @@ class FzModel {
   // Set the search annotations and the objective: either simply satisfy the
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
-  void Satisfy(const std::vector<FzAnnotation>& search_annotations);
-  void Minimize(FzIntegerVariable* const obj,
-                const std::vector<FzAnnotation>& search_annotations);
-  void Maximize(FzIntegerVariable* const obj,
-                const std::vector<FzAnnotation>& search_annotations);
+  void Satisfy(std::vector<FzAnnotation>* search_annotations);
+  void Minimize(FzIntegerVariable* obj,
+                std::vector<FzAnnotation>* search_annotations);
+  void Maximize(FzIntegerVariable* obj,
+                std::vector<FzAnnotation>* search_annotations);
 
   // ----- Accessors and mutators -----
 

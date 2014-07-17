@@ -1227,6 +1227,16 @@ bool AreAllExtractedAsVariables(
   return true;
 }
 
+bool AreAllFzVariablesBoolean(FzSolver* fzsolver, FzConstraint* ct) {
+  for (FzIntegerVariable* const fz_var : ct->Arg(1).variables) {
+    IntVar* var = fzsolver->Extract(fz_var)->Var();
+    if (var->Min() < 0 || var->Max() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
@@ -1302,7 +1312,8 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
+  if (size <= 3 && !all_booleans) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1396,7 +1407,8 @@ void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
+  if (size <= 3 && !all_booleans) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1509,7 +1521,8 @@ void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
+  if (size <= 3 && !all_booleans) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1550,6 +1563,11 @@ void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
       } else if (rhs == 0 && AreAllPositive(coeffs) && AreAllBooleans(vars)) {
         // Special case. this is or(vars) = not(boolvar).
         PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, 0, boolvar);
+      } else if (rhs < 0 && AreAllPositive(coeffs) &&
+                 IsArrayInRange(vars, 0LL, kint64max)) {
+        // Trivial failure.
+        boolvar->SetValue(0);
+        FZVLOG << "  - set target to 0" << FZENDL;
       } else {
         Constraint* const constraint = solver->MakeIsLessOrEqualCstCt(
             solver->MakeScalProd(vars, coeffs), rhs, boolvar);
@@ -1989,10 +2007,53 @@ void ExtractMaximumInt(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractMinimumInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
-  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
-  Constraint* const constraint = solver->MakeMinEquality(variables, target);
-  AddConstraint(solver, ct, constraint);
+  if (ct->target_variable != nullptr && ct->Arg(1).variables.size() < 3) {
+    IntExpr* target = nullptr;
+    switch (ct->Arg(1).variables.size()) {
+      case 0: {
+        target = solver->MakeIntConst(0);
+        break;
+      }
+      case 1: {
+        target = fzsolver->Extract(ct->Arg(1).variables[0]);
+        break;
+      }
+      case 2: {
+        IntExpr* const e0 = fzsolver->Extract(ct->Arg(1).variables[0]);
+        IntExpr* const e1 = fzsolver->Extract(ct->Arg(1).variables[1]);
+        target = solver->MakeMin(e0, e1);
+        break;
+      }
+      // case 3: {
+      //   IntExpr* const e0 = fzsolver->Extract(ct->Arg(1).variables[0]);
+      //   IntExpr* const e1 = fzsolver->Extract(ct->Arg(1).variables[1]);
+      //   IntExpr* const e2 = fzsolver->Extract(ct->Arg(1).variables[2]);
+      //   target = solver->MakeMin(solver->MakeMin(e0, e1), e2);
+      //   break;
+      // }
+      // case 4: {
+      //   IntExpr* const e0 = fzsolver->Extract(ct->Arg(1).variables[0]);
+      //   IntExpr* const e1 = fzsolver->Extract(ct->Arg(1).variables[1]);
+      //   IntExpr* const e2 = fzsolver->Extract(ct->Arg(1).variables[2]);
+      //   IntExpr* const e3 = fzsolver->Extract(ct->Arg(1).variables[3]);
+      //   target = solver->MakeMin(solver->MakeMin(e0, e1),
+      //                            solver->MakeMin(e2, e3));
+      //   break;
+      // }
+      default: {
+        target = solver->MakeMin(fzsolver->GetVariableArray(ct->Arg(1)));
+        break;
+      }
+    }
+    FZVLOG << "  - creating " << ct->target_variable->DebugString()
+           << " := " << target->DebugString() << FZENDL;
+    fzsolver->SetExtracted(ct->target_variable, target);
+  } else {
+    IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
+    const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
+    Constraint* const constraint = solver->MakeMinEquality(variables, target);
+    AddConstraint(solver, ct, constraint);
+  }
 }
 
 void ExtractNvalue(FzSolver* fzsolver, FzConstraint* ct) {

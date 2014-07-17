@@ -160,6 +160,10 @@ class FzPresolver {
 
   // Stores all variables defined in the search annotations.
   hash_set<FzIntegerVariable*> decision_variables_;
+
+  // Stores all constraints containing a variable.
+  hash_map<const FzIntegerVariable*,
+           hash_set<FzConstraint*>> var_to_constraints_;
 };
 }  // namespace operations_research
 

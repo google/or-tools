@@ -1688,8 +1688,14 @@ FzIntegerVariable* FzPresolver::FindRepresentativeOfVar(
 }
 
 void FzPresolver::SubstituteEverywhere(FzModel* model) {
+  // Collected impacted constraints.
+  hash_set<FzConstraint*> impacted;
+  for (const auto& p : var_representative_map_) {
+    const hash_set<FzConstraint*>& contains = var_to_constraints_[p.first];
+    impacted.insert(contains.begin(), contains.end());
+  }
   // Rewrite the constraints.
-  for (FzConstraint* const ct : model->constraints()) {
+  for (FzConstraint* const ct : impacted) {
     if (ct != nullptr && ct->active) {
       for (int i = 0; i < ct->arguments.size(); ++i) {
         FzArgument* argument = &ct->arguments[i];
@@ -1697,14 +1703,21 @@ void FzPresolver::SubstituteEverywhere(FzModel* model) {
           case FzArgument::INT_VAR_REF:
           case FzArgument::INT_VAR_REF_ARRAY: {
             for (int i = 0; i < argument->variables.size(); ++i) {
-              argument->variables[i] =
-                  FindRepresentativeOfVar(argument->variables[i]);
+              FzIntegerVariable* const old_var = argument->variables[i];
+              FzIntegerVariable* const new_var =
+                  FindRepresentativeOfVar(old_var);
+              if (new_var != old_var) {
+                argument->variables[i] = new_var;
+                var_to_constraints_[new_var].insert(ct);
+              }
             }
             break;
           }
           default: {}
         }
       }
+      // No need to update var_to_constraints, it should have been done already
+      // in the arguments of the constraints.
       ct->target_variable = FindRepresentativeOfVar(ct->target_variable);
     }
   }
@@ -1861,12 +1874,11 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   FzConstraint* start = nullptr;
   std::vector<FzIntegerVariable*> chain;
   std::vector<FzIntegerVariable*> carry_over;
-  hash_map<const FzIntegerVariable*, hash_set<const FzConstraint*>>
-      var_to_constraint;
+  var_to_constraints_.clear();
   for (FzConstraint* const ct : model->constraints()) {
     for (const FzArgument& arg : ct->arguments) {
       for (FzIntegerVariable* const var : arg.variables) {
-        var_to_constraint[var].insert(ct);
+        var_to_constraints_[var].insert(ct);
       }
     }
   }
@@ -1875,7 +1887,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
     } else if (ct->type == start->type &&
                ct->Arg(1).Var() == carry_over.back() &&
-               var_to_constraint[ct->Arg(2).Var()].size() <= 2) {
+               var_to_constraints_[ct->Arg(2).Var()].size() <= 2) {
       chain.push_back(ct->Arg(0).Var());
       carry_over.push_back(ct->Arg(2).Var());
       ct->active = false;

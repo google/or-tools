@@ -236,6 +236,15 @@ FzArgument FzArgument::IntegerList(const std::vector<int64>& values) {
   return result;
 }
 
+FzArgument FzArgument::IntegerList(std::vector<int64>* values) {
+  FzArgument result;
+  result.type = INT_LIST;
+  if (values != nullptr) {
+    result.values.swap(*values);
+  }
+  return result;
+}
+
 FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   FzArgument result;
   result.type = INT_VAR_REF;
@@ -426,12 +435,14 @@ FzAnnotation FzAnnotation::Empty() {
 }
 
 FzAnnotation FzAnnotation::AnnotationList(
-    const std::vector<FzAnnotation>& list) {
+    std::vector<FzAnnotation>* list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.annotations = list;
+  if (list != nullptr) {
+    result.annotations.swap(*list);
+  }
   return result;
 }
 
@@ -445,13 +456,15 @@ FzAnnotation FzAnnotation::Identifier(const std::string& id) {
 }
 
 FzAnnotation FzAnnotation::FunctionCall(const std::string& id,
-                                        const std::vector<FzAnnotation>& args) {
+                                        std::vector<FzAnnotation>* args) {
   FzAnnotation result;
   result.type = FUNCTION_CALL;
   result.interval_min = 0;
   result.interval_max = 0;
   result.id = id;
-  result.annotations = args;
+  if (args != nullptr) {
+    result.annotations.swap(*args);
+  }
   return result;
 }
 
@@ -611,23 +624,29 @@ void FzModel::AddOutput(const FzOnSolutionOutput& output) {
   output_.push_back(output);
 }
 
-void FzModel::Satisfy(const std::vector<FzAnnotation>& search_annotations) {
+void FzModel::Satisfy(std::vector<FzAnnotation>* search_annotations) {
   objective_ = nullptr;
-  search_annotations_ = search_annotations;
+  if (search_annotations != nullptr) {
+    search_annotations_.swap(*search_annotations);
+  }
 }
 
-void FzModel::Minimize(FzIntegerVariable* const obj,
-                       const std::vector<FzAnnotation>& search_annotations) {
+void FzModel::Minimize(FzIntegerVariable* obj,
+                       std::vector<FzAnnotation>* search_annotations) {
   objective_ = obj;
   maximize_ = false;
-  search_annotations_ = search_annotations;
+  if (search_annotations != nullptr) {
+    search_annotations_.swap(*search_annotations);
+  }
 }
 
-void FzModel::Maximize(FzIntegerVariable* const obj,
-                       const std::vector<FzAnnotation>& search_annotations) {
+void FzModel::Maximize(FzIntegerVariable* obj,
+                       std::vector<FzAnnotation>* search_annotations) {
   objective_ = obj;
   maximize_ = true;
-  search_annotations_ = search_annotations;
+  if (search_annotations != nullptr) {
+    search_annotations_.swap(*search_annotations);
+  }
 }
 
 std::string FzModel::DebugString() const {
