@@ -663,7 +663,7 @@ class SmallMinConstraint : public Constraint {
   SmallMinConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
                      IntVar* const target_var)
     : Constraint(solver), vars_(vars), target_var_(target_var),
-      target_var_min_(0), target_var_max_(0) {}
+      computed_min_(0), computed_max_(0) {}
 
   virtual ~SmallMinConstraint() {}
 
@@ -685,8 +685,8 @@ class SmallMinConstraint : public Constraint {
       min_min = std::min(min_min, var->Min());
       min_max = std::min(min_max, var->Max());
     }
-    target_var_min_.SetValue(solver(), min_min);
-    target_var_max_.SetValue(solver(), min_max);
+    computed_min_.SetValue(solver(), min_min);
+    computed_max_.SetValue(solver(), min_max);
     // Propagate to min_var.
     target_var_->SetRange(min_min, min_max);
 
@@ -715,8 +715,8 @@ class SmallMinConstraint : public Constraint {
     const int64 old_min = var->OldMin();
     const int64 var_min = var->Min();
     const int64 var_max = var->Max();
-    if ((old_min == target_var_min_.Value() && old_min != var_min) ||
-        var_max < target_var_max_.Value()) {
+    if ((old_min == computed_min_.Value() && old_min != var_min) ||
+        var_max < computed_max_.Value()) {
       // Can influence the min var bounds.
       int64 min_min = kint64max;
       int64 min_max = kint64max;
@@ -724,11 +724,11 @@ class SmallMinConstraint : public Constraint {
         min_min = std::min(min_min, var->Min());
         min_max = std::min(min_max, var->Max());
       }
-      if (min_min > target_var_min_.Value() ||
-          min_max < target_var_max_.Value()) {
-        target_var_min_.SetValue(solver(), min_min);
-        target_var_max_.SetValue(solver(), min_max);
-        target_var_->SetRange(target_var_min_.Value(), target_var_max_.Value());
+      if (min_min > computed_min_.Value() ||
+          min_max < computed_max_.Value()) {
+        computed_min_.SetValue(solver(), min_min);
+        computed_max_.SetValue(solver(), min_max);
+        target_var_->SetRange(computed_min_.Value(), computed_max_.Value());
       }
     }
     MinVarChanged();
@@ -738,15 +738,15 @@ class SmallMinConstraint : public Constraint {
     const int64 new_min = target_var_->Min();
     const int64 new_max = target_var_->Max();
     // Nothing to do?
-    if (new_min <= target_var_min_.Value() &&
-        new_max >= target_var_max_.Value()) {
+    if (new_min <= computed_min_.Value() &&
+        new_max >= computed_max_.Value()) {
       return;
     }
 
     IntVar* candidate = nullptr;
     int active = 0;
 
-    if (new_max < target_var_max_.Value()) {
+    if (new_max < computed_max_.Value()) {
       // Look if only one candidate to push the max down.
       for (IntVar* const var : vars_) {
         if (var->Min() <= new_max) {
@@ -760,7 +760,7 @@ class SmallMinConstraint : public Constraint {
         solver()->Fail();
       }
     }
-    if (target_var_min_.Value() < new_min) {
+    if (computed_min_.Value() < new_min) {
       if (active == 1) {
         candidate->SetRange(new_min, new_max);
       } else {
@@ -775,8 +775,8 @@ class SmallMinConstraint : public Constraint {
 
   std::vector<IntVar*> vars_;
   IntVar* const target_var_;
-  Rev<int64> target_var_min_;
-  Rev<int64> target_var_max_;
+  Rev<int64> computed_min_;
+  Rev<int64> computed_max_;
 };
 
 // ---------- Max Array ----------
@@ -931,6 +931,127 @@ class MaxConstraint : public TreeArrayConstraint {
 
  private:
   Demon* max_demon_;
+};
+
+class SmallMaxConstraint : public Constraint {
+ public:
+  SmallMaxConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
+                     IntVar* const target_var)
+    : Constraint(solver), vars_(vars), target_var_(target_var),
+      computed_min_(0), computed_max_(0) {}
+
+  virtual ~SmallMaxConstraint() {}
+
+  virtual void Post() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      Demon* const demon = MakeConstraintDemon1(
+          solver(), this, &SmallMaxConstraint::VarChanged, "VarChanged", i);
+      vars_[i]->WhenRange(demon);
+    }
+    Demon* const mdemon = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
+        solver(), this, &SmallMaxConstraint::MaxVarChanged, "MinVarChanged"));
+    target_var_->WhenRange(mdemon);
+  }
+
+  virtual void InitialPropagate() {
+    int64 max_min = kint64min;
+    int64 max_max = kint64min;
+    for (IntVar* const var : vars_) {
+      max_min = std::max(max_min, var->Min());
+      max_max = std::max(max_max, var->Max());
+    }
+    computed_min_.SetValue(solver(), max_min);
+    computed_max_.SetValue(solver(), max_max);
+    // Propagate to min_var.
+    target_var_->SetRange(max_min, max_max);
+
+    // Push down.
+    MaxVarChanged();
+  }
+
+  std::string DebugString() const {
+    return StringPrintf("SmallMax(%s) == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
+                        target_var_->DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kMaxEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            target_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kMaxEqual, this);
+  }
+
+ private:
+  void VarChanged(int index) {
+    IntVar* const var = vars_[index];
+    const int64 old_max = var->OldMax();
+    const int64 var_min = var->Min();
+    const int64 var_max = var->Max();
+    if ((old_max == computed_max_.Value() && old_max != var_max) ||
+        var_min > computed_min_.Value()) {  // REWRITE
+      // Can influence the min var bounds.
+      int64 max_min = kint64min;
+      int64 max_max = kint64min;
+      for (IntVar* const var : vars_) {
+        max_min = std::max(max_min, var->Min());
+        max_max = std::max(max_max, var->Max());
+      }
+      if (max_min > computed_min_.Value() ||
+          max_max < computed_max_.Value()) {
+        computed_min_.SetValue(solver(), max_min);
+        computed_max_.SetValue(solver(), max_max);
+        target_var_->SetRange(computed_min_.Value(), computed_max_.Value());
+      }
+    }
+    MaxVarChanged();
+  }
+
+  void MaxVarChanged() {
+    const int64 new_min = target_var_->Min();
+    const int64 new_max = target_var_->Max();
+    // Nothing to do?
+    if (new_min <= computed_min_.Value() &&
+        new_max >= computed_max_.Value()) {
+      return;
+    }
+
+    IntVar* candidate = nullptr;
+    int active = 0;
+
+    if (new_min > computed_min_.Value()) {
+      // Look if only one candidate to push the max down.
+      for (IntVar* const var : vars_) {
+        if (var->Max() >= new_min) {
+          if (active++ >= 1) {
+            break;
+          }
+          candidate = var;
+        }
+      }
+      if (active == 0) {
+        solver()->Fail();
+      }
+    }
+    if (computed_max_.Value() > new_max) {
+      if (active == 1) {
+        candidate->SetRange(new_min, new_max);
+      } else {
+        for (IntVar* const var : vars_) {
+          var->SetMax(new_max);
+        }
+      }
+    } else if (active == 1) {
+      candidate->SetMin(new_min);
+    }
+  }
+
+  std::vector<IntVar*> vars_;
+  IntVar* const target_var_;
+  Rev<int64> computed_min_;
+  Rev<int64> computed_max_;
 };
 
 // Boolean And and Ors
@@ -3020,7 +3141,7 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
           new_max = std::min(new_max, vars[i]->Max());
         }
         IntVar* const new_var = MakeIntVar(new_min, new_max);
-        if (size < parameters_.array_split_size) {
+        if (size <= parameters_.array_split_size) {
           AddConstraint(RevAlloc(new SmallMinConstraint(this, vars, new_var)));
         } else {
           AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
@@ -3061,7 +3182,11 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
           new_max = std::max(new_max, vars[i]->Max());
         }
         IntVar* const new_var = MakeIntVar(new_min, new_max);
-        AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+        if (size <= parameters_.array_split_size) {
+          AddConstraint(RevAlloc(new SmallMaxConstraint(this, vars, new_var)));
+        } else {
+          AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+        }
         model_cache_->InsertVarArrayExpression(new_var, vars,
                                                ModelCache::VAR_ARRAY_MAX);
         return new_var;
@@ -3076,7 +3201,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
   if (size > 2) {
     if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
-    } else if (size < parameters_.array_split_size) {
+    } else if (size <= parameters_.array_split_size) {
       return RevAlloc(new SmallMinConstraint(this, vars, min_var));
     } else {
       return RevAlloc(new MinConstraint(this, vars, min_var));
@@ -3096,6 +3221,8 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   if (size > 2) {
     if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+    } else if (size <= parameters_.array_split_size) {
+      return RevAlloc(new SmallMaxConstraint(this, vars, max_var));
     } else {
       return RevAlloc(new MaxConstraint(this, vars, max_var));
     }
