@@ -555,12 +555,12 @@ constraint :
         break;
       }
     }
-    delete annotations;
   }
 
   CHECK(arguments != nullptr);
   model->AddConstraint(identifier, *arguments,
                        ContainsId(annotations, "domain"), defines_var);
+  delete annotations;
   delete arguments;
 }
 
