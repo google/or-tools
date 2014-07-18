@@ -5081,9 +5081,8 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   void PropagateSub() {
-    int64 smin = 0;
-    int64 smax = 0;
-    sub_->Range(&smin, &smax);
+    const int64 smin = sub_->Min();
+    const int64 smax = sub_->Max();
     if (smax <= 0) {
       target_var_->SetRange(-smax, -smin);
     } else if (smin >= 0) {
@@ -5094,17 +5093,15 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   void PropagateTarget() {
-    const int64 target_min = std::max(target_var_->Min(), 0LL);
     const int64 target_max = target_var_->Max();
-    int64 smin = 0;
-    int64 smax = 0;
-    sub_->Range(&smin, &smax);
-    if (smax < target_min || smax == 0) {
-      sub_->SetRange(-target_max, -target_min);
-    } else if (smin > -target_min || smin == 0) {
-      sub_->SetRange(target_min, target_max);
-    } else {
-      sub_->SetRange(-target_max, target_max);
+    sub_->SetRange(-target_max, target_max);
+    const int64 target_min = target_var_->Min();
+    if (target_min > 0) {
+      if (sub_->Min() > -target_min) {
+        sub_->SetMin(target_min);
+      } else if (sub_->Max() < target_min) {
+        sub_->SetMax(-target_min);
+      }
     }
   }
 
@@ -5169,13 +5166,15 @@ class IntAbs : public BaseIntExpr {
 
   virtual void SetRange(int64 mi, int64 ma) {
     expr_->SetRange(-ma, ma);
-    int64 emin = 0;
-    int64 emax = 0;
-    expr_->Range(&emin, &emax);
-    if (emin > -mi) {
-      expr_->SetMin(mi);
-    } else if (emax < mi) {
-      expr_->SetMax(-mi);
+    if (mi > 0) {
+      int64 emin = 0;
+      int64 emax = 0;
+      expr_->Range(&emin, &emax);
+      if (emin > -mi) {
+        expr_->SetMin(mi);
+      } else if (emax < mi) {
+        expr_->SetMax(-mi);
+      }
     }
   }
 
