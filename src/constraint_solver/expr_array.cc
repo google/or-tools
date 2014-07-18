@@ -288,6 +288,119 @@ class SumConstraint : public TreeArrayConstraint {
   Demon* sum_demon_;
 };
 
+// This constraint implements sum(vars) == sum_var.
+class SmallSumConstraint : public Constraint {
+ public:
+  SmallSumConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
+                     IntVar* const target_var)
+      : Constraint(solver), vars_(vars), target_var_(target_var),
+        computed_min_(0), computed_max_(0), sum_demon_(nullptr) {}
+
+  virtual ~SmallSumConstraint() {}
+
+  virtual void Post() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      Demon* const demon = MakeConstraintDemon1(
+          solver(), this, &SmallSumConstraint::VarChanged, "VarChanged", i);
+      vars_[i]->WhenRange(demon);
+    }
+    sum_demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
+        solver(), this, &SmallSumConstraint::SumChanged, "SumChanged"));
+    target_var_->WhenRange(sum_demon_);
+  }
+
+  virtual void InitialPropagate() {
+    // Compute up.
+    int64 sum_min = 0;
+    int64 sum_max = 0;
+    for (IntVar* const var : vars_) {
+      sum_min += var->Min();
+      sum_max += var->Max();
+    }
+
+    // Propagate to sum_var.
+    computed_min_.SetValue(solver(), sum_min);
+    computed_max_.SetValue(solver(), sum_max);
+    target_var_->SetRange(sum_min, sum_max);
+
+    // Push down.
+    SumChanged();
+  }
+
+  void SumChanged() {
+    int64 new_min = target_var_->Min();
+    int64 new_max = target_var_->Max();
+    const int64 sum_min = computed_min_.Value();
+    const int64 sum_max = computed_max_.Value();
+    if (new_max == sum_min && new_max != kint64max) {
+      // We can fix all terms to min.
+      for (int i = 0; i < vars_.size(); ++i) {
+        vars_[i]->SetValue(vars_[i]->Min());
+      }
+    } else if (new_min == sum_max && new_min != kint64min) {
+      // We can fix all terms to max.
+      for (int i = 0; i < vars_.size(); ++i) {
+        vars_[i]->SetValue(vars_[i]->Max());
+      }
+    } else {
+      if (new_min > sum_min || new_max < sum_max) {  // something to do.
+        // Intersect the new bounds with the computed bounds.
+        new_max = std::min(sum_max, new_max);
+        new_min = std::max(sum_min, new_min);
+
+        // Detect failure early.
+        if (new_max < sum_min || new_min > sum_max) {
+          solver()->Fail();
+        }
+
+        // Push to variables.
+        for (IntVar* const var : vars_) {
+          const int64 var_min = var->Min();
+          const int64 var_max = var->Max();
+          const int64 residual_min = sum_min - var_min;
+          const int64 residual_max = sum_max - var_max;
+          var->SetRange(new_min - residual_max, new_max - residual_min);
+        }
+      }
+    }
+  }
+
+  void VarChanged(int term_index) {
+    IntVar* const var = vars_[term_index];
+    const int64 delta_min = var->Min() - var->OldMin();
+    const int64 delta_max = var->OldMax() - var->Max();
+    computed_min_.Add(solver(), delta_min);
+    computed_max_.Add(solver(), -delta_max);
+    if (computed_max_.Value() < target_var_->Max() ||
+        computed_min_.Value() > target_var_->Min()) {
+      target_var_->SetRange(computed_min_.Value(), computed_max_.Value());
+    } else {
+      EnqueueDelayedDemon(sum_demon_);
+    }
+  }
+
+  std::string DebugString() const {
+    return StringPrintf("SmallSum(%s) == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(),
+                        target_var_->DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            target_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
+  }
+
+ private:
+  const std::vector<IntVar*> vars_;
+  IntVar* target_var_;
+  NumericalRev<int64> computed_min_;
+  NumericalRev<int64> computed_max_;
+  Demon* sum_demon_;
+};
 // ----- SafeSumConstraint -----
 
 bool DetectSumOverflow(const std::vector<IntVar*>& vars) {
@@ -2904,6 +3017,9 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
     if (AreAllBooleans(vars)) {
       solver->AddConstraint(
           solver->RevAlloc(new SumBooleanEqualToVar(solver, vars, sum_var)));
+    } else if (size <= solver->parameters().array_split_size) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SmallSumConstraint(solver, vars, sum_var)));
     } else {
       solver->AddConstraint(
           solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
@@ -3275,6 +3391,8 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
     }
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
+    } else if (size <= parameters_.array_split_size) {
+      return RevAlloc(new SmallSumConstraint(this, vars, MakeIntConst(cst)));
     } else {
       return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
     }
@@ -3295,9 +3413,11 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
     return MakeEquality(vars[0], var);
   } else if (size == 2) {
     return MakeEquality(MakeSum(vars[0], vars[1]), var);
-  } else {
+ } else {
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, var));
+    } else if (size <= parameters_.array_split_size) {
+      return RevAlloc(new SmallSumConstraint(this, vars, var));
     } else {
       return RevAlloc(new SumConstraint(this, vars, var));
     }
