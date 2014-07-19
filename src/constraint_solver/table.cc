@@ -435,16 +435,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   CompactPositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
-        length_(BitLength64(tuples.NumTuples())),
-        active_tuples_(new uint64[length_]),
-        stamps_(new uint64[length_]),
+        length_(0),
+        active_tuples_(nullptr),
+        stamps_(nullptr),
         original_min_(new int64[arity_]),
-        temp_mask_(new uint64[length_]),
+        temp_mask_(nullptr),
         demon_(nullptr),
         touched_var_(-1),
         var_sizes_(arity_, 0),
         first_active_(0),
-        last_active_(length_ - 1) {}
+        last_active_(-1) {}
 
   virtual ~CompactPositiveTableConstraint() {}
 
@@ -457,117 +457,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           solver(), this, &CompactPositiveTableConstraint::Update, "Update", i);
       vars_[i]->WhenDomain(u);
     }
-    for (int i = 0; i < length_; ++i) {
-      stamps_[i] = 0;
-      active_tuples_[i] = 0;
-    }
     for (int i = 0; i < arity_; ++i) {
       var_sizes_.SetValue(solver(), i, vars_[i]->Size());
-    }
-  }
-
-  bool IsTupleSupported(int tuple_index) {
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      int64 value = 0;
-      if (!TupleValue(tuple_index, var_index, &value) ||
-          !vars_[var_index]->Contains(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void BuildStructures() {
-    // Build active_ structure.
-    bool found_one = false;
-    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
-      if (IsTupleSupported(tuple_index)) {
-        SetBit64(active_tuples_.get(), tuple_index);
-        found_one = true;
-      }
-    }
-    if (!found_one) {
-      solver()->Fail();
-    }
-  }
-
-  void BuildMasks() {
-    // Build masks.
-    masks_.clear();
-    masks_.resize(arity_);
-    for (int i = 0; i < arity_; ++i) {
-      original_min_[i] = vars_[i]->Min();
-      const int64 span = vars_[i]->Max() - original_min_[i] + 1;
-      masks_[i].resize(span);
-      for (int j = 0; j < span; ++j) {
-        masks_[i][j] = nullptr;
-      }
-    }
-  }
-
-  void FillMasks() {
-    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
-      if (IsBitSet64(active_tuples_.get(), tuple_index)) {
-        for (int var_index = 0; var_index < arity_; ++var_index) {
-          const int64 value = UnsafeTupleValue(tuple_index, var_index);
-          const int64 value_index = value - original_min_[var_index];
-          DCHECK_GE(value_index, 0);
-          DCHECK_LT(value_index, masks_[var_index].size());
-          uint64* mask = masks_[var_index][value_index];
-          if (!mask) {
-            mask = solver()->RevAllocArray(new uint64[length_]);
-            memset(mask, 0, length_ * sizeof(*mask));
-            masks_[var_index][value_index] = mask;
-          }
-          SetBit64(mask, tuple_index);
-        }
-      }
-    }
-  }
-
-  void ComputeMasksBoundaries() {
-    // Store boundaries of non zero parts of masks.
-    starts_.clear();
-    starts_.resize(arity_);
-    ends_.clear();
-    ends_.resize(arity_);
-    supports_.clear();
-    supports_.resize(arity_);
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      const int64 span = vars_[var_index]->Max() - original_min_[var_index] + 1;
-      starts_[var_index].resize(span);
-      ends_[var_index].resize(span);
-      supports_[var_index].resize(span);
-      for (int value_index = 0; value_index < span; ++value_index) {
-        const uint64* const mask = masks_[var_index][value_index];
-        if (mask != nullptr) {
-          starts_[var_index][value_index] = 0;
-          while (!mask[starts_[var_index][value_index]]) {
-            starts_[var_index][value_index]++;
-          }
-          supports_[var_index][value_index] = starts_[var_index][value_index];
-          ends_[var_index][value_index] = length_ - 1;
-          while (!mask[ends_[var_index][value_index]]) {
-            ends_[var_index][value_index]--;
-          }
-        }
-      }
-    }
-  }
-
-  void RemoveUnsupportedValues() {
-    // remove unreached values.
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      IntVar* const var = vars_[var_index];
-      to_remove_.clear();
-      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
-        if (!masks_[var_index][value - original_min_[var_index]]) {
-          to_remove_.push_back(value);
-        }
-      }
-      if (to_remove_.size() > 0) {
-        var->RemoveValues(to_remove_);
-      }
     }
   }
 
@@ -578,6 +469,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     ComputeMasksBoundaries();
     RemoveUnsupportedValues();
   }
+
+  // ----- Propagation -----
 
   void Propagate() {
     UpdateFirstAndLast();
@@ -708,7 +601,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       default: {
         ClearTempMask();
-        const int64 count = var_sizes_.Value(var_index) - var_size;
+        const int64 estimated_hole_size =
+            var_sizes_.Value(var_index) - var_size;
         const int64 old_min = var->OldMin();
         const int64 old_max = var->OldMax();
         const int64 var_min = var->Min();
@@ -716,7 +610,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         // Rough estimation of the number of operation if we scan
         // deltas in the domain of the variable.
         const int64 number_of_operations =
-            count + var_min - old_min + old_max - var_max;
+            estimated_hole_size + var_min - old_min + old_max - var_max;
         if (number_of_operations < var_size) {
           // Let's scan the removed values since last run.
           for (int64 value = old_min; value < var_min; ++value) {
@@ -776,6 +670,121 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
+  // ----- Initialization -----
+
+  bool IsTupleSupported(int tuple_index) {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      int64 value = 0;
+      if (!TupleValue(tuple_index, var_index, &value) ||
+          !vars_[var_index]->Contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void BuildStructures() {
+    // build list of valid tuples.
+    valid_tuples_.clear();
+    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
+      if (IsTupleSupported(tuple_index)) {
+        valid_tuples_.push_back(tuple_index);
+      }
+    }
+    if (valid_tuples_.empty()) {
+      solver()->Fail();
+    }
+    length_ = BitLength64(valid_tuples_.size());
+  }
+
+  void BuildMasks() {
+    // Build masks.
+    temp_mask_.reset(new uint64[length_]);
+    masks_.clear();
+    masks_.resize(arity_);
+    for (int i = 0; i < arity_; ++i) {
+      original_min_[i] = vars_[i]->Min();
+      const int64 span = vars_[i]->Max() - original_min_[i] + 1;
+      masks_[i].resize(span, nullptr);
+    }
+  }
+
+  void FillMasks() {
+    active_tuples_.reset(new uint64[length_]);
+    stamps_.reset(new uint64[length_]);
+    for (int i = 0; i < length_; ++i) {
+      stamps_[i] = 0;
+      active_tuples_[i] = 0;
+    }
+    last_active_.SetValue(solver(), length_ - 1);
+
+    for (int valid_index = 0; valid_index < valid_tuples_.size();
+         ++valid_index) {
+      const int tuple_index = valid_tuples_[valid_index];
+      SetBit64(active_tuples_.get(), valid_index);
+      for (int var_index = 0; var_index < arity_; ++var_index) {
+        const int64 value = UnsafeTupleValue(tuple_index, var_index);
+        const int64 value_index = value - original_min_[var_index];
+        DCHECK_GE(value_index, 0);
+        DCHECK_LT(value_index, masks_[var_index].size());
+        uint64* mask = masks_[var_index][value_index];
+        if (!mask) {
+          mask = solver()->RevAllocArray(new uint64[length_]);
+          memset(mask, 0, length_ * sizeof(*mask));
+          masks_[var_index][value_index] = mask;
+        }
+        SetBit64(mask, valid_index);
+      }
+    }
+    valid_tuples_.clear();
+  }
+
+  void ComputeMasksBoundaries() {
+    // Store boundaries of non zero parts of masks.
+    starts_.clear();
+    starts_.resize(arity_);
+    ends_.clear();
+    ends_.resize(arity_);
+    supports_.clear();
+    supports_.resize(arity_);
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      const int64 span = vars_[var_index]->Max() - original_min_[var_index] + 1;
+      starts_[var_index].resize(span);
+      ends_[var_index].resize(span);
+      supports_[var_index].resize(span);
+      for (int value_index = 0; value_index < span; ++value_index) {
+        const uint64* const mask = masks_[var_index][value_index];
+        if (mask != nullptr) {
+          starts_[var_index][value_index] = 0;
+          while (!mask[starts_[var_index][value_index]]) {
+            starts_[var_index][value_index]++;
+          }
+          supports_[var_index][value_index] = starts_[var_index][value_index];
+          ends_[var_index][value_index] = length_ - 1;
+          while (!mask[ends_[var_index][value_index]]) {
+            ends_[var_index][value_index]--;
+          }
+        }
+      }
+    }
+  }
+
+  void RemoveUnsupportedValues() {
+    // remove unreached values.
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      IntVar* const var = vars_[var_index];
+      to_remove_.clear();
+      for (const int64 value : InitAndGetValues(iterators_[var_index])) {
+        if (!masks_[var_index][value - original_min_[var_index]]) {
+          to_remove_.push_back(value);
+        }
+      }
+      if (to_remove_.size() > 0) {
+        var->RemoveValues(to_remove_);
+      }
+    }
+  }
+
   void UpdateFirstAndLast() {
     int first = first_active_.Value();
     int last = last_active_.Value();
@@ -792,6 +801,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     first_active_.SetValue(s, first);
     last_active_.SetValue(s, last);
   }
+
+  // Helpers during propagation.
 
   bool AndTempMaskWithActive() {
     const int first = first_active_.Value();
@@ -833,7 +844,13 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         std::max(first_active_.Value(), starts_[var_index][value_index]);
     const int loop_end =
         std::min(last_active_.Value(), ends_[var_index][value_index]);
-    for (int offset = loop_start; offset <= loop_end; ++offset) {
+    for (int offset = support + 1; offset <= loop_end; ++offset) {
+      if ((mask[offset] & active_tuples_[offset]) != 0) {
+        supports_[var_index][value_index] = offset;
+        return true;
+      }
+    }
+    for (int offset = loop_start; offset < support; ++offset) {
       if ((mask[offset] & active_tuples_[offset]) != 0) {
         supports_[var_index][value_index] = offset;
         return true;
@@ -874,28 +891,29 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   // Length of bitsets in double words.
-  const int length_;
+  int length_;
   // Bitset of active tuples.
   std::unique_ptr<uint64[]> active_tuples_;
   // Array of stamps, one per 64 tuples.
   std::unique_ptr<uint64[]> stamps_;
   // The masks per value per variable.
-  std::vector<std::vector<uint64*> > masks_;
+  std::vector<std::vector<uint64*>> masks_;
   // The min on the vars at creation time.
   std::unique_ptr<int64[]> original_min_;
   // The starts of active bitsets.
-  std::vector<std::vector<int> > starts_;
+  std::vector<std::vector<int>> starts_;
   // The ends of the active bitsets.x
-  std::vector<std::vector<int> > ends_;
+  std::vector<std::vector<int>> ends_;
   // A temporary mask use for computation.
   std::unique_ptr<uint64[]> temp_mask_;
   // The portion of the active tuples supporting each value per variable.
-  std::vector<std::vector<int> > supports_;
+  std::vector<std::vector<int>> supports_;
   Demon* demon_;
   int touched_var_;
   RevArray<int64> var_sizes_;
   Rev<int> first_active_;
   Rev<int> last_active_;
+  std::vector<int> valid_tuples_;
 };
 
 // ----- Small Compact Table. -----
