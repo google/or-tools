@@ -442,7 +442,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         temp_mask_(new uint64[length_]),
         demon_(nullptr),
         touched_var_(-1),
-        var_sizes_(arity_, 0) {}
+        var_sizes_(arity_, 0),
+        first_active_(0),
+        last_active_(length_ - 1) {}
 
   virtual ~CompactPositiveTableConstraint() {}
 
@@ -578,6 +580,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void Propagate() {
+    UpdateFirstAndLast();
     // Reset touch_var_ if in mode (more than 1 variable was modified).
     if (touched_var_ == -2) {
       touched_var_ = -1;
@@ -681,6 +684,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void Update(int var_index) {
+    UpdateFirstAndLast();
     // This method will update the set of active tuples by masking out all
     // tuples attached to values of the variables that have been removed.
 
@@ -748,7 +752,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
     // And check active_tuples_ is still not empty, we fail otherwise.
     if (changed) {
-      for (int offset = 0; offset < length_; ++offset) {
+      const int first = first_active_.Value();
+      const int last = last_active_.Value();
+      for (int offset = first; offset <= last; ++offset) {
         if (active_tuples_[offset]) {
           // We push the propagate method only if something has changed.
           if (touched_var_ == -1 || touched_var_ == var_index) {
@@ -770,9 +776,28 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
+  void UpdateFirstAndLast() {
+    int first = first_active_.Value();
+    int last = last_active_.Value();
+    while (first <= last && active_tuples_[first] == 0) {
+      first++;
+    }
+    Solver* const s = solver();
+    if (first > last) {  // If we fail, this will be detected by now.
+      s->Fail();
+    }
+    while (last > first && active_tuples_[last] == 0) {
+      last--;
+    }
+    first_active_.SetValue(s, first);
+    last_active_.SetValue(s, last);
+  }
+
   bool AndTempMaskWithActive() {
+    const int first = first_active_.Value();
+    const int last = last_active_.Value();
     bool changed = false;
-    for (int offset = 0; offset < length_; ++offset) {
+    for (int offset = first; offset <= last; ++offset) {
       if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
         AndActiveTuples(offset, temp_mask_[offset]);
         changed = true;
@@ -782,8 +807,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   bool SubstractTempMaskFromActive() {
+    const int first = first_active_.Value();
+    const int last = last_active_.Value();
     bool changed = false;
-    for (int offset = 0; offset < length_; ++offset) {
+    for (int offset = first; offset <= last; ++offset) {
       if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
         AndActiveTuples(offset, ~temp_mask_[offset]);
         changed = true;
@@ -802,9 +829,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if ((mask[support] & active_tuples_[support]) != 0) {
       return true;
     }
-    const int loop_end = ends_[var_index][value_index];
-    for (int offset = starts_[var_index][value_index]; offset <= loop_end;
-         ++offset) {
+    const int loop_start =
+        std::max(first_active_.Value(), starts_[var_index][value_index]);
+    const int loop_end =
+        std::min(last_active_.Value(), ends_[var_index][value_index]);
+    for (int offset = loop_start; offset <= loop_end; ++offset) {
       if ((mask[offset] & active_tuples_[offset]) != 0) {
         supports_[var_index][value_index] = offset;
         return true;
@@ -816,8 +845,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   void OrTempMask(int var_index, int64 value_index) {
     const uint64* const mask = masks_[var_index][value_index];
     if (mask) {
-      const int start = starts_[var_index][value_index];
-      const int end = ends_[var_index][value_index];
+      const int start =
+          std::max(first_active_.Value(), starts_[var_index][value_index]);
+      const int end =
+          std::min(ends_[var_index][value_index], last_active_.Value());
       for (int offset = start; offset <= end; ++offset) {
         temp_mask_[offset] |= mask[offset];
       }
@@ -863,6 +894,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   Demon* demon_;
   int touched_var_;
   RevArray<int64> var_sizes_;
+  Rev<int> first_active_;
+  Rev<int> last_active_;
 };
 
 // ----- Small Compact Table. -----
