@@ -1130,7 +1130,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       case 2: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min] |
-                                 masks_[var_index][var->Max() - original_min]);
+                  masks_[var_index][var->Max() - original_min]);
         return;
       }
       default: {
@@ -1149,8 +1149,10 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         // to remove this code and the var_sizes in the non_small
         // version.
         uint64 hole_mask = 0;
-        for (const int64 value : InitAndGetValues(holes_[var_index])) {
-          hole_mask |= var_mask[value - original_min];
+        if (!contiguous) {
+          for (const int64 value : InitAndGetValues(holes_[var_index])) {
+            hole_mask |= var_mask[value - original_min];
+          }
         }
         const int64 hole_operations = var_min - old_min + old_max - var_max;
         // We estimate the domain iterator to be 4x slower.
