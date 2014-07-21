@@ -428,7 +428,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   std::vector<ValueBitset> masks_;
 };
 
-// ----- Compact Table. -----
+// ----- Compact Tables -----
 
 class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
@@ -513,9 +513,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
               solver()->Fail();
             } else {
               var->SetValue(var_max);
+              var_sizes_.SetValue(solver(), var_index, 1);
             }
           } else if (!max_support) {
             var->SetValue(var_min);
+            var_sizes_.SetValue(solver(), var_index, 1);
           }
           break;
         }
@@ -571,12 +573,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             to_remove_.resize(index + 1);
           }
           var->RemoveValues(to_remove_);
+          var_sizes_.SetValue(solver(), var_index, var->Size());
         }
       }
     }
   }
 
   void Update(int var_index) {
+    if (vars_[var_index]->Size() == var_sizes_.Value(var_index)) {
+      return;
+    }
     UpdateFirstAndLast();
     // This method will update the set of active tuples by masking out all
     // tuples attached to values of the variables that have been removed.
@@ -1160,6 +1166,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         const int64 var_min = var->Min();
         const int64 var_max = var->Max();
         const bool contiguous = var_size == var_max - var_min + 1;
+        const bool nearly_contiguous =
+            var_size > (var_max - var_min + 1) * 7 / 10;
 
         // Count the number of masks to collect to compare the deduction
         // vs the construction of the new active bitset.
@@ -1189,6 +1197,12 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           if (contiguous) {
             for (int64 value = var_min; value <= var_max; ++value) {
               domain_mask |= var_mask[value - original_min];
+            }
+          } else if (nearly_contiguous) {
+            for (int64 value = var_min; value <= var_max; ++value) {
+              if (var->Contains(value)) {
+                domain_mask |= var_mask[value - original_min];
+              }
             }
           } else {
             for (const int64 value : InitAndGetValues(iterators_[var_index])) {
@@ -1324,12 +1338,12 @@ class TransitionConstraint : public Constraint {
     const int num_tuples = transition_table_.NumTuples();
 
     for (int var_index = 0; var_index < nb_vars; ++var_index) {
-      std::vector<IntVar*> tmp_vars;
-      tmp_vars.push_back(states[var_index]);
-      tmp_vars.push_back(vars_[var_index]);
-      tmp_vars.push_back(states[var_index + 1]);
+      std::vector<IntVar*> tmp_vars(3);
+      tmp_vars[0] = states[var_index];
+      tmp_vars[1] = vars_[var_index];
+      tmp_vars[2] = states[var_index + 1];
       // We always build the compact versions of the tables.
-      if (num_tuples < kBitsInUint64) {
+      if (num_tuples <= kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
       } else if (FLAGS_cp_use_sat_table &&
