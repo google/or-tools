@@ -59,7 +59,7 @@
   http://www.hakank.org/google_or_tools/
 '''
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main():
