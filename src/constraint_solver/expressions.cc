@@ -7094,10 +7094,10 @@ IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
   if (r->Bound()) {
     return MakeMin(l, r->Min());
   }
-  if (l->Min() > r->Max()) {
+  if (l->Min() >= r->Max()) {
     return r;
   }
-  if (r->Min() > l->Max()) {
+  if (r->Min() >= l->Max()) {
     return l;
   }
   return RegisterIntExpr(RevAlloc(new MinIntExpr(this, l, r)));
@@ -7130,10 +7130,10 @@ IntExpr* Solver::MakeMax(IntExpr* const l, IntExpr* const r) {
   if (r->Bound()) {
     return MakeMax(l, r->Min());
   }
-  if (l->Min() > r->Max()) {
+  if (l->Min() >= r->Max()) {
     return l;
   }
-  if (r->Min() > l->Max()) {
+  if (r->Min() >= l->Max()) {
     return r;
   }
   return RegisterIntExpr(RevAlloc(new MaxIntExpr(this, l, r)));
