@@ -7105,7 +7105,7 @@ IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
 
 IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  if (v < e->Min()) {
+  if (v <= e->Min()) {
     return MakeIntConst(v);
   }
   if (e->Bound()) {
@@ -7147,7 +7147,7 @@ IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {
   if (v <= e->Min()) {
     return e;
   }
-  if (e->Max() < v) {
+  if (e->Max() <= v) {
     return MakeIntConst(v);
   }
   return RegisterIntExpr(RevAlloc(new MaxCstIntExpr(this, e, v)));
