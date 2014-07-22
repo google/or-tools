@@ -930,6 +930,7 @@ namespace operations_research {
 %rename (NullIntersect) Solver::MakeNullIntersect;
 %rename (NullIntersectExcept) Solver::MakeNullIntersectExcept;
 %rename (Circuit) Solver::MakeCircuit;
+%rename (MemberCt) Solver::MakeMemberCt;
 %rename (SubCircuit) Solver::MakeSubCircuit;
 %rename (PathCumul) Solver::MakePathCumul;
 %rename (DelayedPathCumul) Solver::MakeDelayedPathCumul;
@@ -1324,7 +1325,7 @@ namespace operations_research {
 // - Basename()
 %unignore PropagationBaseObject;
 %rename (Name) PropagationBaseObject::name;
-%rename (Solver) PropagationBaseObject::solver;
+%rename (solver) PropagationBaseObject::solver;
 
 // Decision
 // Ignored:
@@ -1364,6 +1365,7 @@ namespace operations_research {
 %feature("director") Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
+%unignore Constraint::solver;
 %unignore Constraint::Post;
 %unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
@@ -1415,7 +1417,7 @@ namespace operations_research {
 %feature("director") SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
 %feature("director") SearchMonitor::AcceptNeighbor;
-%rename (Solver) SearchMonitor::solver;
+%rename (solver) SearchMonitor::solver;
 
 
 // Rev<>
@@ -1441,7 +1443,6 @@ namespace operations_research {
 %unignore IntExpr::IsVar;
 %unignore IntExpr::VarWithName;
 %unignore IntExpr::WhenRange;
-
 
 // IntVar
 // Ignored:

@@ -208,10 +208,13 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   %pythoncode {
   @staticmethod
   def Infinity():
-    return MPSolver.infinity()
+    return Solver.infinity()
 
   def SetTimeLimit(self, x):
     self.set_time_limit(x)
+
+  def WallTime(self):
+    return self->wall_time()
   }  // %pythoncode
 }
 
