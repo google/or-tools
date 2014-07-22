@@ -175,7 +175,7 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "Sum =", objective.best()
+    print "Sum =", objective.Best()
     print "row_sums:", [row_sums[i].Value() for i in range(rows)]
     print "col_sums:", [col_sums[j].Value() for j in range(cols)]
     for i in range(rows):

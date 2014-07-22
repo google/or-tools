@@ -80,12 +80,12 @@ def make_transition_tuples(pattern):
   p_len = len(pattern)
   num_states = p_len + sum(pattern)
 
-  tuples = pywrapcp.IntTupleSet(3)
+  tuples = []
 
   # this is for handling 0-clues. It generates
   # just the minimal state
   if num_states == 0:
-    tuples.Insert3(1, 0, 1)
+    tuples.append((1, 0, 1))
     return (tuples, 1)
 
   # convert pattern to a 0/1 pattern for easy handling of
@@ -99,15 +99,15 @@ def make_transition_tuples(pattern):
   for i in range(num_states):
     state = i + 1
     if tmp[i] == 0:
-      tuples.Insert3(state, 0, state)
-      tuples.Insert3(state, 1, state + 1)
+      tuples.append((state, 0, state))
+      tuples.append((state, 1, state + 1))
     else:
       if i < num_states - 1:
         if tmp[i + 1] == 1:
-          tuples.Insert3(state, 1, state + 1)
+          tuples.append((state, 1, state + 1))
         else:
-          tuples.Insert3(state, 0, state + 1)
-  tuples.Insert3(num_states, 0, num_states)
+          tuples.append((state, 0, state + 1))
+  tuples.append((num_states, 0, num_states))
   return (tuples, num_states)
 
 

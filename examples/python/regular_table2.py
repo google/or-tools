@@ -74,13 +74,13 @@ def regular(x, Q, S, d, q0, F):
   # to state zero.  This allows us to continue even if we hit a
   # non-accepted input.
 
-  d2 = pywrapcp.IntTupleSet(3)
+  d2 = []
   for i in range(Q + 1):
     for j in range(1, S + 1):
       if i == 0:
-        d2.Insert3(0, j, 0)
+        d2.append((0, j, 0))
       else:
-        d2.Insert3(i, j, d[i - 1][j - 1])
+        d2.append((i, j, d[i - 1][j - 1]))
 
   solver.Add(solver.TransitionConstraint(x, d2, q0, F))
 

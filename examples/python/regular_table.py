@@ -74,13 +74,13 @@ def regular(x, Q, S, d, q0, F):
   # to state zero.  This allows us to continue even if we hit a
   # non-accepted input.
 
-  d2 = pywrapcp.IntTupleSet(3)
+  d2 = []
   for i in range(Q + 1):
     for j in range(S):
       if i == 0:
-        d2.Insert3(0, j, 0)
+        d2.append((0, j, 0))
       else:
-        d2.Insert3(i, j, d[i - 1][j])
+        d2.append((i, j, d[i - 1][j]))
 
   # If x hasindex set m..n, then a[m-1] holds the initial state
   # (q0), and a[i+1] holds the state we're in after processing

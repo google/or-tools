@@ -214,7 +214,10 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     self.set_time_limit(x)
 
   def WallTime(self):
-    return self->wall_time()
+    return self.wall_time()
+
+  def Iterations(self):
+    return self.iterations()
   }  // %pythoncode
 }
 

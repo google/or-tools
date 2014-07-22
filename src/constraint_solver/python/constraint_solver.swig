@@ -975,6 +975,8 @@ namespace operations_research {
 %unignore Solver::SearchLimitProto;  // search_limit.proto
 %rename (Limit) Solver::MakeLimit;
 %rename (TimeLimit) Solver::MakeTimeLimit;
+%rename (BranchesLimit) Solver::MakeBranchesLimit;
+%rename (FailuresLimit) Solver::MakeFailuresLimit;
 %rename (SolutionsLimit) Solver::MakeSolutionsLimit;
 %rename (CustomLimit) Solver::MakeCustomLimit;
 
@@ -1144,8 +1146,6 @@ namespace operations_research {
 //
 // - MakeEquality()  // On IntervalVar.
 //
-// - MakeBranchesLimit()
-// - MakeFailuresLimit()
 // - UpdateLimits()
 // - GetTime()
 //

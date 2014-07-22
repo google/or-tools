@@ -211,7 +211,7 @@ def main(unused_argv):
                           solver.ASSIGN_MIN_VALUE)
   # The most important aspect is to limit the time exploring each fragment.
   inner_limit = solver.FailuresLimit(FLAGS.lns_fail_limit)
-  continuation_db = solver.SolveOnce(inner_db, inner_limit)
+  continuation_db = solver.SolveOnce(inner_db, [inner_limit])
 
   # Now, we create the LNS objects.
   rand = random.Random()
