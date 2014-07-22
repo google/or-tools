@@ -93,8 +93,8 @@ def main(problem, rows, cols, max_steps):
   # all coordinates must be unique
   for s in range(max_steps):
     for t in range(s + 1, max_steps):
-      b1 = solver.IsDifferentVar(x[s], x[t])
-      b2 = solver.IsDifferentVar(y[s], y[t])
+      b1 = x[s] != x[t]
+      b2 = y[s] != y[t]
       solver.Add(b1 + b2 >= 1)
 
   # calculate the points (to maximize)

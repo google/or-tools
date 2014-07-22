@@ -484,10 +484,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
-  IntExpr* Element(const std::vector<int64>& vars) {
+  IntExpr* IndexOf(const std::vector<int64>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
-  IntExpr* Element(const std::vector<IntVar*>& vars) {
+  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntVar* IsMember(const std::vector<int64>& values) {
@@ -847,6 +847,7 @@ namespace operations_research {
 %rename (IndexEpression) Solver::MakeIndexEpression;
 %rename (ConvexPiecewiseExpr) Solver::MakeConvexPiecewiseExpr;
 %rename (ConditionalExpression) Solver::MakeConditionalExpression;
+%rename (Element) Solver::MakeElement;
 
 // Solver: Basic constraints.
 %rename (TrueConstraint) Solver::MakeTrueConstraint;
@@ -858,6 +859,19 @@ namespace operations_research {
 %rename (DisjunctiveConstraint) Solver::MakeDisjunctiveConstraint;
 %rename (Distribute) Solver::MakeDistribute;
 %rename (Cumulative) Solver::MakeCumulative;
+
+// Solver: Constraints extracted from expressions.
+%rename (SumLessOrEqual) Solver::MakeSumLessOrEqual;
+%rename (SumGreaterOrEqual) Solver::MakeSumGreaterOrEqual;
+%rename (SumEquality) Solver::MakeSumEquality;
+%rename (ScalProdEquality) Solver::MakeScalProdEquality;
+%rename (ScalProdGreaterOrEqual) Solver::MakeScalProdGreaterOrEqual;
+%rename (ScalProdLessOrEqual) Solver::MakeScalProdLessOrEqual;
+%rename (MinEquality) Solver::MakeMinEquality;
+%rename (MaxEquality) Solver::MakeMaxEquality;
+%rename (ElementEquality) Solver::MakeElementEquality;
+%rename (AbsEquality) Solver::MakeAbsEquality;
+%rename (IndexOfConstraint) Solver::MakeIndexOfConstraint;
 
 // Solver: Constraints about interval variables.
 %rename (FixedDurationIntervalVar) Solver::MakeFixedDurationIntervalVar;
@@ -1121,22 +1135,6 @@ namespace operations_research {
 // - MakeIsGreaterCt()
 // - MakeIsLessCstCt()
 // - MakeIsLessCstVar()
-//
-// TODO(user): Implement a ScalProd python object.
-// TODO(user): make the python natural API able to support and indirectly
-// expose the following block of methods:
-// - MakeSumLessOrEqual()
-// - MakeSumGreaterOrEqual()
-// - MakeSumEquality()
-// - MakeScalProdEquality()
-// - MakeScalProdGreaterOrEqual()
-// - MakeScalProdLessOrEqual()
-// - MakeMinEquality()
-// - MakeMaxEquality()
-//
-// - MakeElementEquality()
-// - MakeAbsEquality()
-// - MakeIndexOfConstraint()
 //
 // - MakeCallbackDemon()
 //
@@ -2217,4 +2215,3 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
-
