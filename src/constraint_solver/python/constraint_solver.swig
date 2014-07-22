@@ -484,10 +484,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeMapDomain($self->Var(), vars);
   }
-  IntExpr* IndexOf(const std::vector<int64>& vars) {
+  IntExpr* Element(const std::vector<int64>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
-  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
+  IntExpr* Element(const std::vector<IntVar*>& vars) {
     return $self->solver()->MakeElement(vars, $self->Var());
   }
   IntVar* IsMember(const std::vector<int64>& values) {
