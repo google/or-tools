@@ -889,15 +889,36 @@ namespace operations_research {
 // Solver: Constraints tying a boolean var to an expression. Model-wise; it is
 // equivalent to creating the expression via the python natural API; and then
 // declaring its equality to the boolean var.
-%rename (IsEqualCstVar) Solver::MakeIsEqualCstVar;
 %rename (IsBetweenVar) Solver::MakeIsBetweenVar;
-%rename (IsMemberVar) Solver::MakeIsMemberVar;
+%rename (IsDifferentCstVar) Solver::MakeIsDifferentCstVar;
+%rename (IsDifferentVar) Solver::MakeIsDifferentVar;
+%rename (IsEqualCstVar) Solver::MakeIsEqualCstVar;
+%rename (IsEqualVar) Solver::MakeIsEqualVar;
+%rename (IsGreaterCstVar) Solver::MakeIsGreaterCstVar;
+%rename (IsGreaterOrEqualCstVar) Solver::MakeIsGreaterOrEqualCstVar;
+%rename (IsGreaterOrEqualVar) Solver::MakeIsGreaterOrEqualVar;
+%rename (IsGreaterVar) Solver::MakeIsGreaterVar;
+%rename (IsLessCstVar) Solver::MakeIsLessCstVar;
+%rename (IsLessOrEqualCstVar) Solver::MakeIsLessOrEqualCstVar;
+%rename (IsLessOrEqualVar) Solver::MakeIsLessOrEqualVar;
 %rename (IsLessVar) Solver::MakeIsLessVar;
+%rename (IsMemberVar) Solver::MakeIsMemberVar;
 // The methods below should be avoided: use the *Var versions above if you can.
-%rename (IsEqualCstCt) Solver::MakeIsEqualCstCt;
-%rename (IsMemberCt) Solver::MakeIsMemberCt;
 %rename (IsBetweenCt) Solver::MakeIsBetweenCt;
+%rename (IsDifferentCstCt) Solver::MakeIsDifferentCstCt;
+%rename (IsDifferentCt) Solver::MakeIsDifferentCt;
+%rename (IsEqualCstCt) Solver::MakeIsEqualCstCt;
+%rename (IsEqualCt) Solver::MakeIsEqualCt;
+%rename (IsGreaterCstCt) Solver::MakeIsGreaterCstCt;
+%rename (IsGreaterCt) Solver::MakeIsGreaterCt;
+%rename (IsGreaterOrEqualCstCt) Solver::MakeIsGreaterOrEqualCstCt;
+%rename (IsGreaterOrEqualCt) Solver::MakeIsGreaterOrEqualCt;
+%rename (IsLessCstCt) Solver::MakeIsLessCstCt;
 %rename (IsLessCt) Solver::MakeIsLessCt;
+%rename (IsLessOrEqualCstCt) Solver::MakeIsLessOrEqualCstCt;
+%rename (IsLessOrEqualCt) Solver::MakeIsLessOrEqualCt;
+%rename (IsMemberCt) Solver::MakeIsMemberCt;
+
 
 // Solver: Elaborate constraint creation.
 %rename (Count) Solver::MakeCount;
@@ -1114,27 +1135,6 @@ namespace operations_research {
 //
 // - MakeIntVarArray()
 // - MakeBoolVarArray()
-//
-// - MakeIsEqualCt()
-// - MakeIsEqualVar()
-// - MakeIsDifferentCstCt()
-// - MakeIsDifferentCstVar()
-// - MakeIsDifferentVar()
-// - MakeIsDifferentCt()
-// - MakeIsLessOrEqualCstCt()
-// - MakeIsLessOrEqualCstVar()
-// - MakeIsLessOrEqualVar()
-// - MakeIsLessOrEqualCt()
-// - MakeIsGreaterOrEqualCstCt()
-// - MakeIsGreaterOrEqualCstVar()
-// - MakeIsGreaterOrEqualVar()
-// - MakeIsGreaterOrEqualCt()
-// - MakeIsGreaterCstCt()
-// - MakeIsGreaterCstVar()
-// - MakeIsGreaterVar()
-// - MakeIsGreaterCt()
-// - MakeIsLessCstCt()
-// - MakeIsLessCstVar()
 //
 // - MakeCallbackDemon()
 //
