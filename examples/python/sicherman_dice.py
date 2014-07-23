@@ -125,14 +125,14 @@ def main():
   solver.EndSearch()
 
   print
-  print "num_solutions:", num_solutions, "solver.solutions:", solver.solutions()
+  print "num_solutions:", num_solutions, "solver.solutions:", solver.Solutions()
   print "failures:", solver.Failures()
   print "branches:", solver.Branches()
   print "WallTime:", solver.WallTime()
   print "MemoryUsage:", solver.MemoryUsage()
   print "SearchDepth:", solver.SearchDepth()
   print "SolveDepth:", solver.SolveDepth()
-  print "stamp:", solver.stamp()
+  print "stamp:", solver.Stamp()
   print "solver", solver
 
 

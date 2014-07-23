@@ -830,6 +830,7 @@ namespace operations_research {
 %rename (Constraints) Solver::constraints;
 %unignore Solver::CheckAssignment;
 %unignore Solver::CheckConstraint;
+%unignore Solver::MemoryUsage;
 
 // Solver: IntVar creation. We always strip the "Make" prefix in python.
 %rename (IntVar) Solver::MakeIntVar;
@@ -1128,7 +1129,6 @@ namespace operations_research {
 // - AddBacktrackAction()
 //
 // - DebugString()
-// - MemoryUsage()
 // - VirtualMemorySize()
 // - SetClock()
 //
