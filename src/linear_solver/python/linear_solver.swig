@@ -205,62 +205,32 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 }
 
 %extend MPSolver {
-  %pythoncode {
-  @staticmethod
-  def Infinity():
-    return Solver.infinity()
-
-  def SetTimeLimit(self, x):
-    self.set_time_limit(x)
-
-  def WallTime(self):
-    return self.wall_time()
-
-  def Iterations(self):
-    return self.iterations()
-  }  // %pythoncode
-}
+  static double Infinity() { return operations_research::MPSolver::infinity(); }
+  void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
+  int64 WallTime() const { return $self->wall_time(); }
+  int64 Iterations() const { return $self->iterations(); }
+}  // extend MPSolver
 
 %extend MPVariable {
-  %pythoncode {
-  def SolutionValue(self):
-    return self.solution_value()
-
-  def Integer(self):
-    return self.integer()
-
-  def Lb(self):
-    return self.lb()
-
-  def Ub(self):
-    return self.ub()
-  }  // %pythoncode
-}
+  double SolutionValue() const { return $self->solution_value(); }
+  bool Integer() const { return $self->integer(); }
+  double Lb() const { return $self->lb(); }
+  double Ub() const { return $self->ub(); }
+  double ReducedCost() const { return $self->reduced_cost(); }
+}  // extend MPVariable
 
 %extend MPConstraint {
-  %pythoncode {
-  def Lb(self):
-    return self.lb()
+  double Lb() const { return $self->lb(); }
+  double Ub() const { return $self->ub(); }
+  void SetLb(double x) { $self->SetLB(x); }
+  void SetUb(double x) { $self->SetUB(x); }
+  double DualValue() const { return $self->dual_value(); }
+}  // extend MPConstraint
 
-  def Ub(self):
-    return self.ub()
-
-  def SetLb(self, x):
-    self.SetLB(x)
-
-  def SetUb(self, x):
-    self.SetUB(x)
-  }  // %pythoncode
-}
-
-%extend MPConstraint {
-  %pythoncode {
-  def Offset(self):
-    return self.offset()
-  }  // %pythoncode
-}
+%extend MPObjective {
+  double Offset() const { return $self->offset();}
+}  // extend MPObjective
 }  // namespace operations_research
-
 
 %ignoreall
 
