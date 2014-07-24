@@ -24,6 +24,8 @@ using System.Collections;
 %include "util/csharp/tuple_set.swig"
 
 %module(directors="1", allprotected="1") operations_research;
+#pragma SWIG nowarn=473
+
 %feature("director") Action;
 %feature("director") BaseLNS;
 %feature("director") Decision;

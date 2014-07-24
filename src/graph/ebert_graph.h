@@ -1856,7 +1856,7 @@ struct graph_traits<ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
   static const bool is_dynamic = false;
 };
 
-namespace internal {
+namespace or_internal {
 
 // The TailArrayBuilder class template is not expected to be used by
 // clients. It is a helper for the TailArrayManager template.
@@ -1904,7 +1904,7 @@ struct TailArrayReleaser<GraphType, false> {
   GraphType* const graph_;
 };
 
-}  // namespace internal
+}  // namespace or_internal
 
 template <typename GraphType>
 class TailArrayManager {
@@ -1912,14 +1912,14 @@ class TailArrayManager {
   explicit TailArrayManager(GraphType* g) : graph_(g) {}
 
   bool BuildTailArrayFromAdjacencyListsIfForwardGraph() const {
-    internal::TailArrayBuilder<GraphType,
+    or_internal::TailArrayBuilder<GraphType,
                                graph_traits<GraphType>::has_reverse_arcs>
         tail_array_builder(graph_);
     return tail_array_builder.BuildTailArray();
   }
 
   void ReleaseTailArrayIfForwardGraph() const {
-    internal::TailArrayReleaser<GraphType,
+    or_internal::TailArrayReleaser<GraphType,
                                 graph_traits<GraphType>::has_reverse_arcs>
         tail_array_releaser(graph_);
     tail_array_releaser.ReleaseTailArray();
@@ -1946,7 +1946,7 @@ class ArcFunctorOrderingByTailAndHead {
   const GraphType& graph_;
 };
 
-namespace internal {
+namespace or_internal {
 
 // The GraphBuilderFromArcs class template is not expected to be used
 // by clients. It is a helper for the AnnotatedGraphBuildManager
@@ -2051,17 +2051,17 @@ class GraphBuilderFromArcs<GraphType, true> {
   const bool sort_arcs_;
 };
 
-}  // namespace internal
+}  // namespace or_internal
 
 template <typename GraphType>
 class AnnotatedGraphBuildManager
-    : public internal::GraphBuilderFromArcs<
+    : public or_internal::GraphBuilderFromArcs<
           GraphType, graph_traits<GraphType>::is_dynamic> {
  public:
   AnnotatedGraphBuildManager(typename GraphType::NodeIndex num_nodes,
                              typename GraphType::ArcIndex num_arcs,
                              bool sort_arcs)
-      : internal::GraphBuilderFromArcs<
+      : or_internal::GraphBuilderFromArcs<
             GraphType, graph_traits<GraphType>::is_dynamic>(num_nodes, num_arcs,
                                                             sort_arcs) {}
 };

@@ -64,6 +64,8 @@
 //
 // See the occurrences of "director" in this file.
 %module(directors="1") operations_research
+#pragma SWIG nowarn=473
+
 // The %feature and %exception below let python exceptions that occur within
 // director method propagate to the user as they were originally. See
 // http://www.swig.org/Doc1.3/Python.html#Python_nn36 for example.
@@ -2216,4 +2218,3 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
-
