@@ -16,7 +16,6 @@
 #include "base/logging.h"
 #include "base/mutex.h"
 #include "base/stringprintf.h"
-#include "base/synchronization.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc2/model.h"
