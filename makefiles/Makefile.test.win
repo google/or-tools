@@ -1,13 +1,12 @@
 test: test_cc test_python test_java test_csharp
 
-test_cc: cc $(BIN_DIR)/mtsearch_test.exe
+test_cc: cc
 	$(BIN_DIR)\\golomb.exe --size=5
 	$(BIN_DIR)\\cvrptw.exe
 	$(BIN_DIR)\\flow_api.exe
 	$(BIN_DIR)\\linear_programming.exe
 	$(BIN_DIR)\\integer_programming.exe
 	$(BIN_DIR)\\tsp.exe
-	$(BIN_DIR)\\mtsearch_test.exe
 
 test_python: python
 	set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\hidato_table.py

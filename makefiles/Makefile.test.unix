@@ -1,13 +1,12 @@
 .PHONY : test
 test: test_cc test_python test_java test_csharp
 
-test_cc: cc $(BIN_DIR)/mtsearch_test
+test_cc: cc
 	$(BIN_DIR)/golomb --size=5
 	$(BIN_DIR)/cvrptw
 	$(BIN_DIR)/flow_api
 	$(BIN_DIR)/linear_programming
 	$(BIN_DIR)/integer_programming
-	$(BIN_DIR)/mtsearch_test
 
 test_python: python
 	PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHON_VERSION) $(EX_DIR)/python/hidato_table.py

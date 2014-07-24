@@ -351,7 +351,6 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(BIN_DIR)$Smtsearch_test$E
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
@@ -420,7 +419,6 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/local_search.$O\
 	$(OBJ_DIR)/constraint_solver/model.pb.$O\
 	$(OBJ_DIR)/constraint_solver/model_cache.$O\
-	$(OBJ_DIR)/constraint_solver/mtsearch.$O\
 	$(OBJ_DIR)/constraint_solver/nogoods.$O\
 	$(OBJ_DIR)/constraint_solver/pack.$O\
 	$(OBJ_DIR)/constraint_solver/range_cst.$O\
@@ -536,9 +534,6 @@ $(GEN_DIR)/constraint_solver/model.pb.h:$(GEN_DIR)/constraint_solver/model.pb.cc
 
 $(OBJ_DIR)/constraint_solver/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/nogoods.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Snogoods.$O
-
-$(OBJ_DIR)/constraint_solver/mtsearch.$O:$(SRC_DIR)/constraint_solver/mtsearch.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/mtsearch.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smtsearch.$O
 
 $(OBJ_DIR)/constraint_solver/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/pack.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Spack.$O
@@ -1363,12 +1358,6 @@ $(OBJ_DIR)/bug_fz1.$O:$(EX_DIR)/tests/bug_fz1.cc $(SRC_DIR)/constraint_solver/co
 
 $(BIN_DIR)/bug_fz1$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/bug_fz1.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
-
-$(OBJ_DIR)/mtsearch_test.$O:$(EX_DIR)/tests/mtsearch_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/mtsearch_test.cc $(OBJ_OUT)$(OBJ_DIR)$Smtsearch_test.$O
-
-$(BIN_DIR)/mtsearch_test$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/mtsearch_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/mtsearch_test.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smtsearch_test$E
 
 $(OBJ_DIR)/ac4r_table_test.$O:$(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ac4r_table_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sac4r_table_test.$O
