@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This is the java SWIG wrapper for ../tuple_set.h. See that file.
 // TODO(user): Refactor this file to comply with the SWIG style guide.
 

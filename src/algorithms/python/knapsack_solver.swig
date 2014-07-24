@@ -23,7 +23,6 @@
 
 %{
 #include "algorithms/knapsack_solver.h"
-using std::string;
 %}
 
 %ignoreall

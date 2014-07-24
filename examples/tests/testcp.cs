@@ -16,24 +16,42 @@ using Google.OrTools.ConstraintSolver;
 
 public class CsTestCpOperator
 {
-  // TODO(user): Add proper tests.
+  // TODO(lperron): Add proper tests.
+
+  static int error_count_ = 0;
+
   static void Check(bool test, String message)
   {
     if (!test)
     {
       Console.WriteLine("Error: " + message);
+      error_count_++;
     }
   }
 
-  static void CheckEquality(double v1, double v2, String message)
+  static void CheckLongEq(long v1, long v2, String message)
   {
     if (v1 != v2)
     {
       Console.WriteLine("Error: " + v1 + " != " + v2 + " " + message);
+      error_count_++;
     }
   }
 
-  static void TestConstructors()
+  static void CheckIntRange(IntVar var, long vmin, long vmax) {
+    if (var.Min() != vmin) {
+      Console.WriteLine("Error: " + var.ToString() +
+                        " does not have the expected min : " + vmin);
+      error_count_++;
+    }
+    if (var.Max() != vmax) {
+      Console.WriteLine("Error: " + var.ToString() +
+                        " does not have the expected max : " + vmax);
+      error_count_++;
+    }
+  }
+
+  static void ConstructorsTest()
   {
     Console.WriteLine("TestConstructors");
     Solver solver = new Solver("test");
@@ -52,7 +70,7 @@ public class CsTestCpOperator
     Console.WriteLine(c6.ToString());
   }
 
-  static void TestConstraintWithExpr()
+  static void ConstraintWithExprTest()
   {
     Console.WriteLine("TestConstraintWithExpr");
     Solver solver = new Solver("test");
@@ -190,7 +208,7 @@ public class CsTestCpOperator
     Console.WriteLine(c12l.ToString());
   }
 
-  static void TestWrappedConstraintWithExpr()
+  static void WrappedConstraintWithExprTest()
   {
     Console.WriteLine("TestWrappedConstraintWithExpr");
     Solver solver = new Solver("test");
@@ -290,7 +308,7 @@ public class CsTestCpOperator
     Console.WriteLine(c10k.ToString());
   }
 
-  static void TestBaseEqualityWithExpr()
+  static void BaseEqualityWithExprTest()
   {
     Console.WriteLine("TestBaseEqualityWithExpr");
     Solver solver = new Solver("test");
@@ -390,7 +408,7 @@ public class CsTestCpOperator
     Console.WriteLine(c10k.ToString());
   }
 
-  static void TestDowncast()
+  static void DowncastTest()
   {
     Solver solver = new Solver("TestDowncast");
     IntVar x = solver.MakeIntVar(0, 10, "x");
@@ -399,7 +417,7 @@ public class CsTestCpOperator
     Console.WriteLine(y.ToString());
   }
 
-  static void TestSequence()
+  static void SequenceTest()
   {
     Solver solver = new Solver("TestSequence");
     IntervalVar[] intervals =
@@ -413,60 +431,70 @@ public class CsTestCpOperator
     Console.WriteLine(seq.Length);
   }
 
-  class DemonTest : NetDemon {
-    public DemonTest(IntVar x) {
+  // A simple demon that simply sets the maximum of a fixed IntVar to 10 when
+  // it's being called.
+  class SetMaxDemon : NetDemon {
+    public SetMaxDemon(IntVar x) {
       x_ = x;
-      Console.WriteLine("Demon built");
     }
 
     public override void Run(Solver s) {
-      Console.WriteLine("in Run(), saw " + x_.ToString());
+      x_.SetMax(10);
     }
 
     private IntVar x_;
   }
 
-  static void TestDemon() {
-    Solver solver = new Solver("TestDemon");
+  static void DemonTest() {
+    Solver solver = new Solver("DemonTest");
     IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
-    NetDemon demon = new DemonTest(x);
+    NetDemon demon = new SetMaxDemon(x);
+    CheckLongEq(x.Max(), 11, "Bad test setup");
     demon.Run(solver);
+    CheckLongEq(x.Max(), 10, "The demon did not run.");
   }
 
-  class ConstraintTest : NetConstraint {
-    public ConstraintTest(Solver solver, IntVar x) : base(solver) {
+  // This constraint has a single target variable x. It enforces x >= 5 upon
+  // InitialPropagate() and invokes the SetMaxDemon when x changes its range.
+  class SetMinAndMaxConstraint : NetConstraint {
+    public SetMinAndMaxConstraint(Solver solver, IntVar x) : base(solver) {
       x_ = x;
     }
 
     public override void Post() {
-      Console.WriteLine("in Post()");
       // Always store the demon in the constraint to avoid it being reclaimed
       // by the GC.
-      demon_ = new DemonTest(x_);
+      demon_ = new SetMaxDemon(x_);
       x_.WhenBound(demon_);
-      Console.WriteLine("out of Post()");
     }
 
     public override void InitialPropagate() {
-      Console.WriteLine("in InitialPropagate");
       x_.SetMin(5);
-      Console.WriteLine("out of InitialPropagate");
     }
 
     private IntVar x_;
     private Demon demon_;
   }
 
-  static void TestConstraint() {
+  static void ConstraintTest() {
     Solver solver = new Solver("TestConstraint");
     IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
-    Constraint ct = new ConstraintTest(solver, x);
+    Constraint ct = new SetMinAndMaxConstraint(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-    solver.Solve(db);
+    solver.NewSearch(db);
+    CheckIntRange(x, -1, 11);
+    Check(solver.NextSolution(), "NextSolution() failed");
+    CheckIntRange(x, 6, 6);
+    Check(solver.NextSolution(), "NextSolution() failed");
+    CheckIntRange(x, 10, 10);
+    Check(!solver.NextSolution(), "Not expecting a third solution");
+    solver.EndSearch();
   }
-
+  // // This constraint has a single target variable x. It enforces x >= 5,
+  // but only at the leaf of the search tree: it doesn't change x's bounds,
+  // and simply fails if x is bound and is < 5.
   class DumbGreaterOrEqualToFive : NetConstraint {
     public DumbGreaterOrEqualToFive(Solver solver, IntVar x) : base(solver) {
       x_ = x;
@@ -474,16 +502,13 @@ public class CsTestCpOperator
 
     public override void Post() {
       demon_ = solver().MakeConstraintInitialPropagateCallback(this);
-      x_.WhenBound(demon_);
+      x_.WhenRange(demon_);
     }
 
     public override void InitialPropagate() {
       if (x_.Bound()) {
         if (x_.Value() < 5) {
-          Console.WriteLine("Reject " + x_.ToString());
           solver().Fail();
-        } else {
-          Console.WriteLine("Accept " + x_.ToString());
         }
       }
     }
@@ -492,40 +517,48 @@ public class CsTestCpOperator
     private Demon demon_;
   }
 
-  static void TestFailingConstraint() {
+  static void FailingConstraintTest() {
     Solver solver = new Solver("TestConstraint");
     IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
     Constraint ct = new DumbGreaterOrEqualToFive(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-    solver.Solve(db);
+    solver.NewSearch(db);
+    Check(solver.NextSolution(), "NextSolution failed");
+    CheckLongEq(6, x.Min(), "Min not set");
+    solver.EndSearch();
   }
 
-  static void TestDomainIterator() {
+  static void DomainIteratorTest() {
     Solver solver = new Solver("TestConstraint");
     IntVar x = solver.MakeIntVar(new int[] {2, 4, -1, 6, 11, 10}, "x");
     int count = 0;
     foreach (long value in x.GetDomain()) {
-      Console.Write(value + " ");
+      count++;
     }
-    Console.WriteLine();
+    CheckLongEq(count, (long)x.Size(),
+                "GetDomain() iterated on an unexpected number of values.");
   }
 
-  class WatchDomain : NetDemon {
-    public WatchDomain(IntVar x) {
+  class CountHoles : NetDemon {
+    public CountHoles(IntVar x) {
       x_ = x;
+      count_ = 0;
     }
 
     public override void Run(Solver s) {
-      Console.Write("Remove [");
       foreach (long removed in x_.GetHoles()) {
-        Console.Write(removed + " ");
+        count_++;
       }
-      Console.WriteLine("]");
+    }
+
+    public int count() {
+      return count_;
     }
 
     private IntVar x_;
+    private int count_;
   }
 
   class RemoveThreeValues : NetConstraint {
@@ -534,7 +567,7 @@ public class CsTestCpOperator
     }
 
     public override void Post() {
-      demon_ = new WatchDomain(x_);
+      demon_ = new CountHoles(x_);
       x_.WhenDomain(demon_);
     }
 
@@ -542,31 +575,41 @@ public class CsTestCpOperator
       x_.RemoveValues(new long[] {3, 5, 7});
     }
 
+    public int count() {
+      return demon_.count();
+    }
+
     private IntVar x_;
-    private Demon demon_;
+    private CountHoles demon_;
   }
 
-  static void TestHoleIterator() {
+  static void HoleIteratorTest() {
     Solver solver = new Solver("TestConstraint");
     IntVar x = solver.MakeIntVar(0, 10, "x");
-    Constraint ct = new RemoveThreeValues(solver, x);
+    RemoveThreeValues ct = new RemoveThreeValues(solver, x);
     solver.Add(ct);
     DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
     solver.Solve(db);
+    CheckLongEq(3, ct.count(), "Something went wrong, either in the " +
+                "GetHoles() iterator, or the WhenDomain() demon invocation.");
   }
 
   static void Main() {
-    TestConstructors();
-    TestConstraintWithExpr();
-    TestWrappedConstraintWithExpr();
-    TestBaseEqualityWithExpr();
-    TestDowncast();
-    TestSequence();
-    TestDemon();
-    TestConstraint();
-    TestFailingConstraint();
-    TestDomainIterator();
-    TestHoleIterator();
+    ConstructorsTest();
+    ConstraintWithExprTest();
+    WrappedConstraintWithExprTest();
+    BaseEqualityWithExprTest();
+    DowncastTest();
+    SequenceTest();
+    DemonTest();
+    ConstraintTest();
+    FailingConstraintTest();
+    DomainIteratorTest();
+    HoleIteratorTest();
+    if (error_count_ != 0) {
+      Console.WriteLine("Found " + error_count_ + " errors.");
+      Environment.Exit(1);
+    }
   }
 }

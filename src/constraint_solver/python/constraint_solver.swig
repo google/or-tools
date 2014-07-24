@@ -195,12 +195,12 @@ PY_CONVERT(LocalSearchFilter);
 
 // Add display methods on BaseObject and Solver.
 %extend operations_research::BaseObject {
-  string __str__() {
+  std::string __str__() {
     return $self->DebugString();
   }
 }
 %extend operations_research::Solver {
-  string __str__() {
+  std::string __str__() {
     return $self->DebugString();
   }
 }
@@ -245,7 +245,7 @@ Constraint* PythonMethodName(int64 date) {
 // that support it.
 %define PY_STRINGIFY_DEBUGSTRING(Class)
 %extend operations_research::Class {
-  string __repr__() {
+  std::string __repr__() {
     return $self->DebugString();
   }
 }
@@ -764,9 +764,9 @@ flags.DEFINE_string('cp_profile_file', '',
                        bool trace_search,
                        bool print_model,
                        bool model_stats,
-                       const string& export_file,
+                       const std::string& export_file,
                        bool no_solve,
-                       const string& profile_file) {
+                       const std::string& profile_file) {
     FLAGS_cp_trace_propagation = trace_propagation;
     FLAGS_cp_trace_search = trace_search;
     FLAGS_cp_print_model = print_model;

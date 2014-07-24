@@ -291,7 +291,7 @@ void BinaryImplicationGraph::MinimizeConflictWithReachability(
 
   // We treat the direct implications differently so we can also remove the
   // redundant implications from this list at the same time.
-  std::vector<Literal>& direct_implications = implications_[root_literal_index];
+  auto& direct_implications = implications_[root_literal_index];
   for (const Literal l : direct_implications) {
     if (is_marked_[l.Index()]) continue;
     dfs_stack_.push_back(l);

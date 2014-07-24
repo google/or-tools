@@ -24,13 +24,12 @@
 %import "base/callback.h"
 
 %{
-using std::string;
-static string PyCallbackString(PyObject* pyfunc) {
+static std::string PyCallbackString(PyObject* pyfunc) {
   PyObject* pyresult = PyObject_CallFunctionObjArgs(pyfunc, nullptr);
-  string result;
+  std::string result;
   if (!pyresult) {
     PyErr_SetString(PyExc_RuntimeError,
-                    "ResultCallback<string> invocation failed.");
+                    "ResultCallback<std::string> invocation failed.");
   } else {
     result = PyString_AsString(pyresult);
     Py_DECREF(pyresult);
@@ -39,7 +38,7 @@ static string PyCallbackString(PyObject* pyfunc) {
 }
 %}
 
-%typemap(in) ResultCallback<string>* {
+%typemap(in) ResultCallback<std::string>* {
   if (!PyCallable_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Need a callable object!");
     SWIG_fail;

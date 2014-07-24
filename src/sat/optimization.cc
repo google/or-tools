@@ -196,6 +196,14 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   // the assumptions are unsat with unit propagation only. This is just a
   // convenient way to remove assumptions that are propagated by the one before
   // them.
+  if (solver->ResetAndSolveWithGivenAssumptions(temp) !=
+      SatSolver::ASSUMPTIONS_UNSAT) {
+    // This should almost never happen, but it is not impossible. The reason is
+    // that the solver may delete some learned clauses required by the unit
+    // propagation to show that the core is unsat.
+    LOG(WARNING) << "This should only happen rarely! otherwise, investigate";
+    return;
+  }
   CHECK_EQ(solver->ResetAndSolveWithGivenAssumptions(temp),
            SatSolver::ASSUMPTIONS_UNSAT);
   temp = solver->GetLastIncompatibleDecisions();

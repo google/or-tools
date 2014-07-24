@@ -36,7 +36,7 @@
 %typemap(out) operations_research::RoutingModel::NodeIndex {
   $result = $1.value();
 }
-%typemap(csvarin)  operations_research::RoutingModel::NodeIndex
+%typemap(csvarin) operations_research::RoutingModel::NodeIndex
 %{
         set { $imcall; }
 %}
@@ -47,10 +47,14 @@
   }
 %}
 
-// This typemap will transform a .net array into a pair length, c array.
-// This pair is then used to rebuild a vector from it.
+// This typemap maps C# TypeA[] arrays to C++ std::vector<TypeB>, where
+// TypeA and TypeB are strictly equivalent, bit-wise (like an IntType
+// and an int, for example). This is done via an intermediate mapping
+// to pairs (int length, TypeA*).
+//
+// We need to redefine it ourselves it because std_vector.i will only
+// allow these conversions when TypeA == TypeB.
 %define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
-
 %typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
 %typemap(imtype)   const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
 %typemap(cstype)   const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
@@ -65,14 +69,10 @@
 %}
 %enddef // CS_TYPEMAP_STDVECTOR
 
-////////////////////////////////////////////////
-//
-//    CS_TYPEMAP_STDVECTOR_IN1
-//
-// Map c# bi-dimensional arrays to c++ vectors of vectors for POD types.
-//
-////////////////////////////////////////////////
+CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 
+// Ditto, for bi-dimensional arrays: map C# TypeA[][] to C++
+// std::vector<std::vector<TypeB>>.
 %define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
 %typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
   int len$argnum_1, int len$argnum_2, CTYPE*
@@ -103,7 +103,6 @@
 %}
 %enddef // CS_TYPEMAP_STDVECTOR_IN1
 
-CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
 
 // Create input mapping for NodeEvaluator2
@@ -112,14 +111,16 @@ CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int)
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
+
+  virtual ~NodeEvaluator2() {}
+
   virtual int64 Run(int i, int j) = 0;
+
   operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback() {
     CHECK(!used_as_permanent_handler_);
     used_as_permanent_handler_ = true;
     return this;
   }
-
-  virtual ~NodeEvaluator2() {}
 
  private:
   virtual bool IsRepeatable() const { return true; }
@@ -133,8 +134,10 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 %}
 
+// We prefer keeping this C# extension here (instead of moving it to a dedicated
+// C# file, using partial classes) because it uses SWIG's $descriptor().
 %typemap(cscode) NodeEvaluator2 %{
-  public SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t DisownAndGetPermanentCallback() {
+  public $descriptor(operations_research::RoutingModel::NodeEvaluator2*) DisownAndGetPermanentCallback() {
     swigCMemOwn = false;
     return GetPermanentCallback();
   }
@@ -142,72 +145,20 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
-  NodeEvaluator2() : used_as_permanent_handler_(false) {}
-
-  virtual ~NodeEvaluator2() {}
-
+  NodeEvaluator2();
   virtual int64 Run(int i, int j) = 0;
-
-  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
+  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
+  virtual ~NodeEvaluator2();
 
  private:
-  virtual bool IsRepeatable() const { return true; }
-
+  virtual bool IsRepeatable() const;
   virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
-                    operations_research::RoutingModel::NodeIndex j) {
-    return Run(i.value(), j.value());
-  }
-
+                    operations_research::RoutingModel::NodeIndex j);
   bool used_as_permanent_handler_;
 };
 
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
-
-// Add a reference to callbacks on the routing model such that they
-// are not garbaged out.
-
-%typemap(cscode) operations_research::RoutingModel %{
-  public bool AddDimension(NodeEvaluator2 evaluator, long slack_max,
-                           long capacity, bool fix_start_cumul_to_zero,
-                           string name) {
-    pinned_node_evaluator2_.Add(evaluator);
-    return AddDimensionAux(evaluator, slack_max, capacity,
-                           fix_start_cumul_to_zero, name);
-  }
-
-  public bool AddDimensionWithVehicleCapacity(
-      NodeEvaluator2 evaluator, long slack_max,
-      LongResultCallback1 vehicle_capacity, bool fix_start_cumul_to_zero,
-      string name) {
-    pinned_node_evaluator2_.Add(evaluator);
-    pinned_long_result_callback_1_.Add(vehicle_capacity);
-    return AddDimensionWithVehicleCapacityAux(
-        evaluator, slack_max, vehicle_capacity, fix_start_cumul_to_zero, name);
-  }
-
-  public void SetArcCostEvaluatorOfAllVehicles(NodeEvaluator2 evaluator) {
-    pinned_node_evaluator2_.Add(evaluator);
-    SetArcCostEvaluatorOfAllVehiclesAux(evaluator);
-  }
-
-  public void SetArcCostEvaluatorOfVehicle(NodeEvaluator2 evaluator,
-                                           int vehicle) {
-    pinned_node_evaluator2_.Add(evaluator);
-    SetArcCostEvaluatorOfVehicleAux(evaluator, vehicle);
-  }
-
-  private System.Collections.Generic.List<NodeEvaluator2>
-      pinned_node_evaluator2_ =
-          new System.Collections.Generic.List<NodeEvaluator2>();
-  private System.Collections.Generic.List<LongResultCallback1>
-      pinned_long_result_callback_1_ =
-          new System.Collections.Generic.List<LongResultCallback1>();
-%}
 
 %rename (AddDimensionAux) operations_research::RoutingModel::AddDimension;
 %rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;

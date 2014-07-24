@@ -41,14 +41,14 @@ import java.lang.reflect.*;
 %}
 
 %extend operations_research::MPSolver {
-  string exportModelAsLpFormat(bool obfuscated) {
-    string output;
+  std::string exportModelAsLpFormat(bool obfuscated) {
+    std::string output;
     if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
     return output;
   }
 
-  string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    string output;
+  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
     if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
       return "";
     }

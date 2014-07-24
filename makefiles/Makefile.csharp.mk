@@ -23,16 +23,17 @@ endif
 endif
 
 CSHARPEXE = \
-	$(BIN_DIR)/cslinearprogramming.exe \
-	$(BIN_DIR)/csintegerprogramming.exe \
-	$(BIN_DIR)/csrabbitspheasants.exe \
-	$(BIN_DIR)/csflow.exe \
 	$(BIN_DIR)/csknapsack.exe \
+	$(BIN_DIR)/csintegerprogramming.exe \
+	$(BIN_DIR)/cslinearprogramming.exe \
+	$(BIN_DIR)/csls_api.exe \
+	$(BIN_DIR)/csflow.exe \
+	$(BIN_DIR)/csrabbitspheasants.exe \
+	$(BIN_DIR)/cstsp.exe \
 	$(BIN_DIR)/furniture_moving_intervals.exe \
 	$(BIN_DIR)/organize_day_intervals.exe \
-	$(BIN_DIR)/csls_api.exe \
-	$(BIN_DIR)/cscvrptw.exe \
-	$(BIN_DIR)/cstsp.exe
+	$(BIN_DIR)/techtalk_scheduling.exe \
+	$(BIN_DIR)/cscvrptw.exe
 
 csharpexe: $(CSHARPEXE)
 
@@ -118,22 +119,24 @@ $(BIN_DIR)/Google.OrTools.dll: \
 	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/graph_csharp_wrap.$O \
+	$(SRC_DIR)/com/google/ortools/algorithms/IntArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/IntVarArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/IntArrayHelper.cs \
+	$(SRC_DIR)/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/SolverHelper.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/ValCstPair.cs \
-	$(SRC_DIR)/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
 	$(SRC_DIR)/com/google/ortools/linearsolver/LinearExpr.cs \
 	$(SRC_DIR)/com/google/ortools/linearsolver/LinearConstraint.cs \
-	$(SRC_DIR)/com/google/ortools/algorithms/IntArrayHelper.cs \
+	$(SRC_DIR)/com/google/ortools/linearsolver/SolverHelper.cs \
+	$(SRC_DIR)/com/google/ortools/linearsolver/VariableHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/NestedArrayHelper.cs \
 	$(STATIC_ALL_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\algorithms\\*cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(GEN_DIR)/com/google/ortools/knapsacksolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*cs $(GEN_DIR)/com/google/ortools/graph/*.cs
+	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/knapsacksolver/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 endif
 
@@ -220,11 +223,11 @@ $(BIN_DIR)/csflow.exe: $(BIN_DIR)/Google.OrTools.dll $(EX_DIR)/csharp/csflow.cs
 
 # Examples using multiple libraries.
 
-$(BIN_DIR)/slow_scheduling.exe: $(BIN_DIR)/Google.OrTools.dll $(EX_DIR)/csharp/slow_scheduling.cs
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sslow_scheduling.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.dll $(EX_DIR)$Scsharp$Sslow_scheduling.cs
+$(BIN_DIR)/techtalk_scheduling.exe: $(BIN_DIR)/Google.OrTools.dll $(EX_DIR)/csharp/techtalk_scheduling.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stechtalk_scheduling.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.dll $(EX_DIR)$Scsharp$Stechtalk_scheduling.cs
 
-slow_scheduling: $(BIN_DIR)/slow_scheduling.exe
-	$(MONO) $(BIN_DIR)$Sslow_scheduling.exe
+techtalk_scheduling: $(BIN_DIR)/techtalk_scheduling.exe
+	$(MONO) $(BIN_DIR)$Stechtalk_scheduling.exe
 
 # Build and compile custome CP examples
 

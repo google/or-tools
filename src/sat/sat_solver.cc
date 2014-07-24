@@ -33,6 +33,7 @@ SatSolver::SatSolver()
       num_constraints_(0),
       pb_constraints_(&trail_),
       symmetry_propagator_(&trail_),
+      track_binary_clauses_(false),
       current_decision_level_(0),
       assumption_level_(0),
       propagation_trail_index_(0),
@@ -231,8 +232,7 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals,
       SatClause::Create(literals, SatClause::PROBLEM_CLAUSE, node));
 
   if (parameters_.treat_binary_clauses_separately() && clause->Size() == 2) {
-    binary_implication_graph_.AddBinaryClause(clause->FirstLiteral(),
-                                              clause->SecondLiteral());
+    AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
   } else {
     if (!watched_clauses_.AttachAndPropagate(clause.get(), &trail_)) {
       return ModelUnsat();
@@ -353,6 +353,9 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     trail_.EnqueueWithUnitReason(literals[0], node);
   } else {
     if (parameters_.treat_binary_clauses_separately() && literals.size() == 2) {
+      if (track_binary_clauses_) {
+        CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
+      }
       binary_implication_graph_.AddBinaryConflict(literals[0], literals[1],
                                                   &trail_);
     } else {
@@ -397,6 +400,12 @@ void SatSolver::SaveDebugAssignment() {
   for (VariableIndex i(0); i < num_variables_; ++i) {
     debug_assignment_.AssignFromTrueLiteral(
         trail_.Assignment().GetTrueLiteralForAssignedVariable(i));
+  }
+}
+
+void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
+  if (!track_binary_clauses_ || binary_clauses_.Add(BinaryClause(a, b))) {
+    binary_implication_graph_.AddBinaryClause(a, b);
   }
 }
 
@@ -750,6 +759,28 @@ void SatSolver::Backtrack(int target_level) {
     UntrailWithoutPQUpdate(target_trail_index);
   }
   trail_.SetDecisionLevel(target_level);
+}
+
+bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
+  SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(CurrentDecisionLevel(), 0);
+  for (BinaryClause c : clauses) {
+    if (trail_.Assignment().IsLiteralFalse(c.a) &&
+        trail_.Assignment().IsLiteralFalse(c.b)) {
+      return ModelUnsat();
+    }
+    AddBinaryClauseInternal(c.a, c.b);
+  }
+  if (!Propagate()) return ModelUnsat();
+  return true;
+}
+
+const std::vector<BinaryClause>& SatSolver::NewlyAddedBinaryClauses() {
+  return binary_clauses_.newly_added();
+}
+
+void SatSolver::ClearNewlyAddedBinaryClauses() {
+  binary_clauses_.ClearNewlyAdded();
 }
 
 namespace {
@@ -1203,8 +1234,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
           if (clause->Size() == 2 &&
               parameters_.treat_binary_clauses_separately()) {
             // The clause is now a binary clause, treat it separately.
-            binary_implication_graph_.AddBinaryClause(clause->FirstLiteral(),
-                                                      clause->SecondLiteral());
+            AddBinaryClauseInternal(clause->FirstLiteral(),
+                                    clause->SecondLiteral());
             watched_clauses_.LazyDetach(clause);
             ++num_binary;
           } else if (parameters_.unsat_proof()) {

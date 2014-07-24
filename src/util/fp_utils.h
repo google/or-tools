@@ -23,7 +23,9 @@
 #ifndef OR_TOOLS_UTIL_FP_UTILS_H_
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
-#if !defined(_MSC_VER)
+#if defined(_MSC_VER)
+#pragma fenv_access (on) // NOLINT
+#else
 #include <fenv.h>  // NOLINT
 #endif
 #if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
@@ -94,7 +96,7 @@ class ScopedFloatingPointEnv {
  private:
 #if defined(_MSC_VER)
   // int saved_control_;
-#else
+#elif defined(ARCH_K8)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 #endif

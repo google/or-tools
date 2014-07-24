@@ -26,11 +26,6 @@
 namespace operations_research {
 namespace glop {
 
-// Computes a rational approximation numerator/denominator for value x
-// using a continued fraction algorithm. The absolute difference between the
-// output fraction and the input "x" will not exceed "precision".
-Fraction RationalApproximation(const double x, const double precision);
-
 // Returns a std::string representing a floating-point number in decimal,
 // with a precision corresponding to the type of the argument.
 inline std::string Stringify(const float a) { return StringPrintf("%.7g", a); }

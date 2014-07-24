@@ -211,7 +211,7 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 install_mono: $(MONO_TARGET)
 
 dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make && make install
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make -j 16 && make install
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure $(ACLOCAL_TARGET)
 ifeq ($(PLATFORM),MACOSX)

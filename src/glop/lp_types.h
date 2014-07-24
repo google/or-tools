@@ -68,11 +68,6 @@ static inline double ToDouble(double f) { return f; }
 
 static inline double ToDouble(long double f) { return static_cast<double>(f); }
 
-// The type Fraction represents a number in the form of two integers: numerator
-// and denominator. This type is used to display the rational approximation
-// of a Fractional number.
-typedef std::pair<int64, int64> Fraction;
-
 // The type Fractional denotes the type of numbers on which the computations are
 // performed. This is defined as double here, but it could as well be float,
 // DoubleDouble, QuadDouble, or infinite-precision rationals.

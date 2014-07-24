@@ -28,18 +28,18 @@
 
 // Add a char* cast to the SWIG 1.3.21 typemaps to remove a compiler warning.
 %typemap(constcode) long long {
-  PyObject *object = PyLong_FromLongLong($value);
-  if (object) {
-    int rc = PyDict_SetItemString(d, (char*) "$symname", object);
-    Py_DECREF(object);
-  }
+PyObject *object = PyLong_FromLongLong($value);
+if (object) {
+int rc = PyDict_SetItemString(d, (char*) "$symname", object);
+Py_DECREF(object);
+}
 }
 %typemap(constcode) unsigned long long {
-  PyObject *object = PyLong_FromUnsignedLongLong($value);
-  if (object) {
-    int rc = PyDict_SetItemString(d, (char*) "$symname", object);
-    Py_DECREF(object);
-  }
+PyObject *object = PyLong_FromUnsignedLongLong($value);
+if (object) {
+int rc = PyDict_SetItemString(d, (char*) "$symname", object);
+Py_DECREF(object);
+}
 }
 
 %{
@@ -70,133 +70,130 @@
 
 // std::string
 
-namespace std {
-  class string;
+class std::string;
 
-  %typemap(typecheck) string = char *;
-  %typemap(typecheck) const string & = char *;
+%typemap(typecheck) std::string = char *;
+%typemap(typecheck) const std::string & = char *;
 
-  %typemap(in) string {
-    char * buf;
-    Py_ssize_t len;
-    if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-      return NULL;
-    $1 = string(buf, len);
-  }
+%typemap(in) std::string {
+char * buf;
+Py_ssize_t len;
+if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+return NULL;
+$1 = std::string(buf, len);
+}
 
-  %typemap(in) const string & (string temp) {
-    char * buf;
-    Py_ssize_t len;
-    if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-      return NULL;
-    temp = string(buf, len);
-    $1 = &temp;
-  }
+%typemap(in) const std::string & (std::string temp) {
+char * buf;
+Py_ssize_t len;
+if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+return NULL;
+temp = std::string(buf, len);
+$1 = &temp;
+}
 
-  %typemap(out) string {
-    $result = PyString_FromStringAndSize($1.data(), $1.size());
-  }
+%typemap(out) std::string {
+$result = PyString_FromStringAndSize($1.data(), $1.size());
+}
 
-  %typemap(out) const string & {
-    $result = PyString_FromStringAndSize($1->data(), $1->size());
-  }
+%typemap(out) const std::string & {
+$result = PyString_FromStringAndSize($1->data(), $1->size());
+}
 
-  %typemap(in, numinputs = 0) string * OUTPUT (string temp) {
-    temp = string();
-    $1 = &temp;
-  }
+%typemap(in, numinputs = 0) std::string * OUTPUT (std::string temp) {
+temp = std::string();
+$1 = &temp;
+}
 
-  %typemap(argout, fragment = "t_output_helper") string * OUTPUT {
-    $result = t_output_helper(
-      $result,
-      PyString_FromStringAndSize($1->data(), $1->length()));
-  }
+%typemap(argout, fragment = "t_output_helper") std::string * OUTPUT {
+$result = t_output_helper(
+$result,
+PyString_FromStringAndSize($1->data(), $1->length()));
+}
 
-  %typemap(varout) string {
-    $result = PyString_FromStringAndSize($1.data(), $1.size());
-  }
-
+%typemap(varout) std::string {
+$result = PyString_FromStringAndSize($1.data(), $1.size());
 }
 
 %apply const std::string & {std::string &};
 %apply const std::string & {std::string *};
 
-// For some versions of the C++ compiler, string is not the same as
+// For some versions of the C++ compiler, std::string is not the same as
 // std::string.
 
-class string;
+class std::string;
 
 // Swig2 no longer protects char* from being NULL, so we must use explicit check
 // like %apply Pointer NONNULL {const char *};
 %typemap(check) Pointer NONNULL {
-  if ($1 == NULL) {
-    SWIG_exception(SWIG_TypeError, "'$1_name' must not be None");
-  }
+if ($1 == NULL) {
+SWIG_exception(SWIG_TypeError, "'$1_name' must not be None");
+}
 }
 
 // We no longer provide typemaps for std:: namespace.
 #define USE_EXPLICIT_STD_TYPEMAPS
 
-%typemap(typecheck) string = char *;
-%typemap(typecheck) const string & = char *;
+%typemap(typecheck) std::string = char *;
+%typemap(typecheck) const std::string & = char *;
 
-%typemap(in) string {
-  char * buf;
-  Py_ssize_t len;
-  if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-    return NULL;
-  $1 = string(buf, len);
+%typemap(in) std::string {
+char * buf;
+Py_ssize_t len;
+if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+return NULL;
+$1 = std::string(buf, len);
 }
 
-%typemap(in) const string & (string temp) {
-  char * buf;
-  Py_ssize_t len;
-  if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-    return NULL;
-  temp = string(buf, len);
-  $1 = &temp;
+%typemap(in) const std::string & (std::string temp) {
+char * buf;
+Py_ssize_t len;
+if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+return NULL;
+temp = std::string(buf, len);
+$1 = &temp;
 }
 
-%typemap(out) string {
-  $result = PyString_FromStringAndSize($1.data(), $1.size());
+%typemap(out) std::string {
+$result = PyString_FromStringAndSize($1.data(), $1.size());
 }
 
-%typemap(out) const string & {
-  $result = PyString_FromStringAndSize($1->data(), $1->size());
+%typemap(out) const std::string & {
+$result = PyString_FromStringAndSize($1->data(), $1->size());
 }
 
-%typemap(in, numinputs = 0) string * OUTPUT (string temp) {
-  temp = string();
-  $1 = &temp;
+%typemap(in, numinputs = 0) std::string * OUTPUT (std::string temp) {
+temp = std::string();
+$1 = &temp;
 }
 
-%typemap(argout, fragment = "t_output_helper") string * OUTPUT {
-  $result = t_output_helper(
-    $result,
-    PyString_FromStringAndSize($1->data(), $1->length()));
+%typemap(argout, fragment = "t_output_helper") std::string * OUTPUT {
+$result = t_output_helper(
+$result,
+PyString_FromStringAndSize($1->data(), $1->length()));
 }
 
-%typemap(varout) string {
-  $result = PyString_FromStringAndSize($1.data(), $1.size());
+%typemap(varout) std::string {
+$result = PyString_FromStringAndSize($1.data(), $1.size());
 }
 
-%apply const string & {string &};
-%apply const string & {string *};
+%apply const std::string & {std::string &};
+%apply const std::string & {std::string *};
 
 // Support for those popular buffer-pointer/length input pairs
 %typemap(in) (void *INPUT, unsigned int LENGTH) (Py_ssize_t len) {
-  if (PyObject_AsReadBuffer($input, (const void**) &$1, &len) != 0)
-    return NULL;
-  if (((Py_ssize_t)($2_type)len) != len) {
-    SWIG_exception(SWIG_ValueError, "input data too large");
-  }
-  $2 = ($2_type)len;
+if (PyObject_AsReadBuffer($input, (const void**) &$1, &len) != 0)
+return NULL;
+if (((Py_ssize_t)($2_type)len) != len) {
+SWIG_exception(SWIG_ValueError, "input data too large");
+}
+$2 = ($2_type)len;
 }
 
 %typemap(in) (void *INPUT, uint64 LENGTH) (Py_ssize_t len) {
-  if (PyObject_AsReadBuffer($input, (const void**) &$1, &len) != 0)
-    return NULL;
-  $2 = len;
+if (PyObject_AsReadBuffer($input, (const void**) &$1, &len) != 0)
+return NULL;
+$2 = len;
 }
 
 // char **
@@ -204,9 +201,9 @@ class string;
 %typemap(in, numinputs=0) char ** OUTPUT {
 }
 %typemap(argout, fragment="t_output_helper") char ** OUTPUT {
-  char* tmpstr = NULL;
-  if ($1 != NULL) tmpstr = *$1;
-  $result = t_output_helper($result, PyString_FromString(tmpstr));
+char* tmpstr = NULL;
+if ($1 != NULL) tmpstr = *$1;
+$result = t_output_helper($result, PyString_FromString(tmpstr));
 }
 
 
@@ -220,36 +217,36 @@ class string;
 
 %define LIST_OUTPUT_TYPEMAP(type, py_converter)
 %typemap(in) std::vector<type>(std::vector<type> temp) {
-  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
-    if (!PyErr_Occurred())
-      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
-    return NULL;
-  }
-  $1 = temp;
+if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+if (!PyErr_Occurred())
+SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+return NULL;
+}
+$1 = temp;
 }
 %typemap(in) const std::vector<type>& (std::vector<type> temp),
-             const std::vector<type>* (std::vector<type> temp) {
-  if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
-    if (!PyErr_Occurred())
-      SWIG_Error(SWIG_TypeError, "sequence(type) expected");
-    return NULL;
-  }
-  $1 = &temp;
+const std::vector<type>* (std::vector<type> temp) {
+if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
+if (!PyErr_Occurred())
+SWIG_Error(SWIG_TypeError, "sequence(type) expected");
+return NULL;
+}
+$1 = &temp;
 }
 %typemap(in,numinputs=0)
- std::vector<type>* OUTPUT (std::vector<type> temp),
- hash_set<type>* OUTPUT (hash_set<type> temp),
- std::set<type>* OUTPUT (std::set<type> temp) {
-  $1 = &temp;
+std::vector<type>* OUTPUT (std::vector<type> temp),
+hash_set<type>* OUTPUT (hash_set<type> temp),
+std::set<type>* OUTPUT (std::set<type> temp) {
+$1 = &temp;
 }
 %typemap(argout) std::vector<type>* OUTPUT, std::set<type>* OUTPUT, hash_set<type>* OUTPUT {
-  %append_output(list_output_helper($1, &py_converter));
+%append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {
-  $result = vector_output_helper(&$1, &py_converter);
+$result = vector_output_helper(&$1, &py_converter);
 }
 %typemap(out) std::vector<type>*, const std::vector<type>& {
-  $result = vector_output_helper($1, &py_converter);
+$result = vector_output_helper($1, &py_converter);
 }
 %enddef
 
@@ -263,7 +260,7 @@ LIST_OUTPUT_TYPEMAP(long, PyInt_FromLong);
 LIST_OUTPUT_TYPEMAP(unsigned long, PyLong_FromUnsignedLong);
 LIST_OUTPUT_TYPEMAP(long long, PyLong_FromLongLong);
 LIST_OUTPUT_TYPEMAP(unsigned long long, PyLong_FromUnsignedLongLong);
-LIST_OUTPUT_TYPEMAP(string, SwigString_FromString);
+LIST_OUTPUT_TYPEMAP(std::string, SwigString_FromString);
 LIST_OUTPUT_TYPEMAP(char *, PyBytes_FromString);
 LIST_OUTPUT_TYPEMAP(double, PyFloat_FromDouble);
 LIST_OUTPUT_TYPEMAP(float, PyFloat_FromDouble);
@@ -312,34 +309,34 @@ COPY_TYPEMAPS(uint64, Fprint);
 #undef COPY_TYPEMAPS
 
 %apply (void * INPUT, unsigned int LENGTH)
-     { (void * INPUT, uint32 LENGTH) }
+{ (void * INPUT, uint32 LENGTH) }
 %apply (void * INPUT, uint64 LENGTH)
-     { (void * INPUT, size_t LENGTH) };
+{ (void * INPUT, size_t LENGTH) };
 
 %apply (void * INPUT, unsigned int LENGTH)
-     { (const void * INPUT, unsigned int LENGTH) };
+{ (const void * INPUT, unsigned int LENGTH) };
 %apply (void * INPUT, unsigned int LENGTH)
-     { (const void * INPUT, uint32 LENGTH) };
+{ (const void * INPUT, uint32 LENGTH) };
 %apply (void * INPUT, uint64 LENGTH)
-     { (const void * INPUT, size_t LENGTH) };
+{ (const void * INPUT, size_t LENGTH) };
 
 %apply (void * INPUT, unsigned int LENGTH)
-     { (const char * INPUT, unsigned int LENGTH) };
+{ (const char * INPUT, unsigned int LENGTH) };
 %apply (void * INPUT, unsigned int LENGTH)
-     { (const char * INPUT, uint32 LENGTH) };
+{ (const char * INPUT, uint32 LENGTH) };
 %apply (void * INPUT, uint64 LENGTH)
-     { (const char * INPUT, size_t LENGTH) };
+{ (const char * INPUT, size_t LENGTH) };
 
 // We accept either python ints or longs for uint64 arguments.
 %typemap(in) uint64 {
-  if (PyInt_Check($input)) {
-    $1 = static_cast<uint64>(PyInt_AsLong($input));
-  } else if (PyLong_Check($input)) {
-    $1 = static_cast<uint64>(PyLong_AsUnsignedLongLong($input));
-  } else {
-    SWIG_exception(SWIG_TypeError,
-                   "int or long value expected for argument \"$1_name\"")
-  }
+if (PyInt_Check($input)) {
+$1 = static_cast<uint64>(PyInt_AsLong($input));
+} else if (PyLong_Check($input)) {
+$1 = static_cast<uint64>(PyLong_AsUnsignedLongLong($input));
+} else {
+SWIG_exception(SWIG_TypeError,
+"int or long value expected for argument \"$1_name\"")
+}
 }
 
 // When a method returns a pointer or reference to a subobject of the
@@ -348,11 +345,11 @@ COPY_TYPEMAPS(uint64, Fprint);
 // the parent object alive, which indirectly keeps the subobject alive.
 %define SWIG_RETURN_POINTER_TO_SUBOBJECT(cpp_method, py_method)
 %feature("shadow") cpp_method %{
-  def py_method(*args):
-    result = $action(*args)
-    if result is not None:
-      result.keepalive = args[0]
-    return result
+def py_method(*args):
+result = $action(*args)
+if result is not None:
+result.keepalive = args[0]
+return result
 %}
 %enddef
 
@@ -379,99 +376,99 @@ COPY_TYPEMAPS(uint64, Fprint);
 %apply const std::string & {std::string &};
 %apply const std::string & {std::string *};
 
-// string
-%typemap(jni) string "jstring"
-%typemap(jtype) string "String"
-%typemap(jstype) string "String"
-%typemap(javadirectorin) string "$jniinput"
-%typemap(javadirectorout) string "$javacall"
+// std::string
+%typemap(jni) std::string "jstring"
+%typemap(jtype) std::string "String"
+%typemap(jstype) std::string "String"
+%typemap(javadirectorin) std::string "$jniinput"
+%typemap(javadirectorout) std::string "$javacall"
 
-%typemap(in) string
+%typemap(in) std::string
 %{ if(!$input) {
-     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
-     return $null;
-    }
-    const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
-    if (!$1_pstr) return $null;
-    $1.assign($1_pstr);
-    jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+return $null;
+}
+const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+if (!$1_pstr) return $null;
+$1.assign($1_pstr);
+jenv->ReleaseStringUTFChars($input, $1_pstr); %}
 
-%typemap(directorout) string
+%typemap(directorout) std::string
 %{ if(!$input) {
-     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
-     return $null;
-   }
-   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
-   if (!$1_pstr) return $null;
-   $result.assign($1_pstr);
-   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+return $null;
+}
+const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+if (!$1_pstr) return $null;
+$result.assign($1_pstr);
+jenv->ReleaseStringUTFChars($input, $1_pstr); %}
 
-%typemap(directorin,descriptor="Ljava/lang/String;") string
+%typemap(directorin,descriptor="Ljava/lang/String;") std::string
 %{ $input = jenv->NewStringUTF($1.c_str()); %}
 
-%typemap(out) string
+%typemap(out) std::string
 %{ $result = jenv->NewStringUTF($1.c_str()); %}
 
-%typemap(javain) string "$javainput"
+%typemap(javain) std::string "$javainput"
 
-%typemap(javaout) string {
-    return $jnicall;
-  }
+%typemap(javaout) std::string {
+return $jnicall;
+}
 
-%typemap(typecheck) string = char *;
+%typemap(typecheck) std::string = char *;
 
-%typemap(throws) string
+%typemap(throws) std::string
 %{ SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, $1.c_str());
-   return $null; %}
+return $null; %}
 
-// const string &
-%typemap(jni) const string & "jstring"
-%typemap(jtype) const string & "String"
-%typemap(jstype) const string & "String"
-%typemap(javadirectorin) const string & "$jniinput"
-%typemap(javadirectorout) const string & "$javacall"
+// const std::string &
+%typemap(jni) const std::string & "jstring"
+%typemap(jtype) const std::string & "String"
+%typemap(jstype) const std::string & "String"
+%typemap(javadirectorin) const std::string & "$jniinput"
+%typemap(javadirectorout) const std::string & "$javacall"
 
-%typemap(in) const string &
+%typemap(in) const std::string &
 %{ if(!$input) {
-     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
-     return $null;
-   }
-   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
-   if (!$1_pstr) return $null;
-   std::string $1_str($1_pstr);
-   $1 = &$1_str;
-   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+return $null;
+}
+const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+if (!$1_pstr) return $null;
+std::string $1_str($1_pstr);
+$1 = &$1_str;
+jenv->ReleaseStringUTFChars($input, $1_pstr); %}
 
-%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const string &
+%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const std::string &
 %{ if(!$input) {
-     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
-     return $null;
-   }
-   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
-   if (!$1_pstr) return $null;
-   /* possible thread - reentrant code problem */
-   static std::string $1_str;
-   $1_str = $1_pstr;
-   $result = &$1_str;
-   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+return $null;
+}
+const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+if (!$1_pstr) return $null;
+/* possible thread - reentrant code problem */
+static std::string $1_str;
+$1_str = $1_pstr;
+$result = &$1_str;
+jenv->ReleaseStringUTFChars($input, $1_pstr); %}
 
-%typemap(directorin,descriptor="Ljava/lang/String;") const string &
+%typemap(directorin,descriptor="Ljava/lang/String;") const std::string &
 %{ $input = jenv->NewStringUTF($1.c_str()); %}
 
-%typemap(out) const string &
+%typemap(out) const std::string &
 %{ $result = jenv->NewStringUTF($1->c_str()); %}
 
-%typemap(javain) const string & "$javainput"
+%typemap(javain) const std::string & "$javainput"
 
-%typemap(javaout) const string & {
-    return $jnicall;
-  }
+%typemap(javaout) const std::string & {
+return $jnicall;
+}
 
-%typemap(typecheck) const string & = char *;
+%typemap(typecheck) const std::string & = char *;
 
-%typemap(throws) const string &
+%typemap(throws) const std::string &
 %{ SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, $1.c_str());
-   return $null;
+return $null;
 %}
 
 %define COPY_TYPEMAPS(oldtype, newtype)

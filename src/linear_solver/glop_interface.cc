@@ -381,8 +381,6 @@ void GLOPInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
   SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
 
-  // The parameters set using SetGlopParameters() take precedence.
-  parameters_.MergeFrom(param.GetGlopParameters());
 }
 
 void GLOPInterface::SetRelativeMipGap(double value) {

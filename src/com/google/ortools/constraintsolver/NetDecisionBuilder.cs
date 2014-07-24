@@ -17,17 +17,18 @@ using System.Collections;
 namespace Google.OrTools.ConstraintSolver
 {
 /**
- * This class acts as a intermediate step between a c++ decision
- * builder and a .Net one. Its main purpose is to catch the .Net
- * exception launched when a failure occurs during the Next() call,
- * and to return silently a System.ApplicationException that will
- * propagate the failure back to the C++ code.
+ * This class acts as a intermediate step between a c++ decision builder and a
+ * .Net one. Its main purpose is to catch the .Net application exception
+ * launched when a failure occurs during the Next() call, and to return
+ * silently a System.ApplicationException that will propagate the failure back
+ * to the C++ code.
  *
  */
 public class NetDecisionBuilder : DecisionBuilder
 {
   /**
    * This methods wraps the calls to next() and catches fail exceptions.
+   * It currently catches all application exceptions.
    */
   public override Decision NextWrapper(Solver solver)
   {
@@ -37,6 +38,7 @@ public class NetDecisionBuilder : DecisionBuilder
     }
     catch (ApplicationException e)
     {
+      // TODO(lperron): Catch only fail exceptions.
       return solver.MakeFailDecision();
     }
   }
@@ -62,6 +64,8 @@ public class NetDemon : Demon
     }
     catch (ApplicationException e)
     {
+      // TODO(lperron): Check that this is indeed a fail. Try implementing
+      // custom exceptions (hard).
       solver.ShouldFail();
     }
   }
@@ -98,7 +102,7 @@ public class IntVarEnumerator : IEnumerator {
 
   // Enumerators are positioned before the first element
   // until the first MoveNext() call.
-  bool first_ = true;
+  private bool first_ = true;
 
   public IntVarEnumerator(IntVarIterator iterator) {
     iterator_ = iterator;
@@ -126,7 +130,7 @@ public class IntVarEnumerator : IEnumerator {
 
   public long Current {
     get {
-      if (iterator_.Ok()) {
+      if (!first_ && iterator_.Ok()) {
         return iterator_.Value();
       } else {
         throw new InvalidOperationException();

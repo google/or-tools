@@ -13,6 +13,7 @@
 
 #include "sat/pb_constraint.h"
 
+#include "base/fingerprint2011.h"
 #include "util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -367,6 +368,9 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
 
   // Sentinel.
   starts_.push_back(literals_.size());
+
+  hash_ = Fingerprint2011(reinterpret_cast<const char*>(cst.data()),
+                          cst.size() * sizeof(LiteralWithCoeff));
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(
@@ -778,32 +782,49 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
     propagation_trail_index_ = trail_->Index();
   }
 
-  // Optimization if the constraint terms are the same as the one of the last
-  // added constraint.
-  if (!constraints_.empty() && constraints_.back()->HasIdenticalTerms(cst)) {
-    if (rhs < constraints_.back()->Rhs()) {
-      // The new constraint is tighther, so we also replace the ResolutionNode.
-      // TODO(user): The old one could be unlocked at this point.
-      constraints_.back()->ChangeResolutionNode(node);
-      return constraints_.back()->InitializeRhs(rhs, propagation_trail_index_,
-                                                &thresholds_.back(), trail_,
-                                                &conflict_scratchpad_);
-    } else {
-      // The constraint is redundant, so there is nothing to do.
-      return true;
+  std::unique_ptr<UpperBoundedLinearConstraint> c(
+      new UpperBoundedLinearConstraint(cst, node));
+  std::vector<UpperBoundedLinearConstraint*>& duplicate_candidates =
+      possible_duplicates_[c->hash()];
+
+  // Optimization if the constraint terms are duplicates.
+  for (UpperBoundedLinearConstraint* candidate : duplicate_candidates) {
+    if (candidate->HasIdenticalTerms(cst)) {
+      if (rhs < candidate->Rhs()) {
+        // TODO(user): the index is needed to give the correct thresholds_ entry
+        // to InitializeRhs() below, but this linear scan is not super
+        // efficient.
+        ConstraintIndex i(0);
+        while (i < constraints_.size() &&
+               constraints_[i.value()].get() != candidate) {
+          ++i;
+        }
+        CHECK_LT(i, constraints_.size());
+
+        // The new constraint is tighther, so we also replace the
+        // ResolutionNode. TODO(user): The old one could be unlocked at this
+        // point.
+        candidate->ChangeResolutionNode(node);
+        return candidate->InitializeRhs(rhs, propagation_trail_index_,
+                                        &thresholds_[i], trail_,
+                                        &conflict_scratchpad_);
+      } else {
+        // The constraint is redundant, so there is nothing to do.
+        return true;
+      }
     }
   }
 
-  const ConstraintIndex cst_index(constraints_.size());
-  constraints_.emplace_back(new UpperBoundedLinearConstraint(cst, node));
   thresholds_.push_back(Coefficient(0));
-  if (!constraints_.back()->InitializeRhs(rhs, propagation_trail_index_,
-                                          &thresholds_.back(), trail_,
-                                          &conflict_scratchpad_)) {
+  if (!c->InitializeRhs(rhs, propagation_trail_index_, &thresholds_.back(),
+                        trail_, &conflict_scratchpad_)) {
     thresholds_.pop_back();
-    constraints_.pop_back();
     return false;
   }
+
+  const ConstraintIndex cst_index(constraints_.size());
+  duplicate_candidates.push_back(c.get());
+  constraints_.emplace_back(c.release());
   for (LiteralWithCoeff term : cst) {
     DCHECK_LT(term.literal.Index(), to_update_.size());
     to_update_[term.literal.Index()].push_back(ConstraintIndexWithCoeff(
@@ -1003,6 +1024,18 @@ void PbConstraints::DeleteConstraintMarkedForDeletion() {
         thresholds_[new_index] = thresholds_[i];
       }
       ++new_index;
+    } else {
+      // Remove it from possible_duplicates_.
+      UpperBoundedLinearConstraint* c = constraints_[i.value()].get();
+      std::vector<UpperBoundedLinearConstraint*>& ref =
+          possible_duplicates_[c->hash()];
+      for (int i = 0; i < ref.size(); ++i) {
+        if (ref[i] == c) {
+          std::swap(ref[i], ref.back());
+          ref.pop_back();
+          break;
+        }
+      }
     }
   }
   constraints_.resize(new_index.value());

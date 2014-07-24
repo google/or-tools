@@ -267,6 +267,40 @@ class SatSolver {
   // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
 
+  // Extract the current problem clauses. The Output type must support the two
+  // functions:
+  //  - void AddBinaryClause(Literal a, Literal b);
+  //  - void AddClause(ClauseRef clause);
+  //
+  // TODO(user): also copy the learned clauses?
+  template <typename Output>
+  void ExtractClauses(Output* out) {
+    Backtrack(0);
+
+    // It is important to process the newly fixed variables, so they are not
+    // present in the clauses we export.
+    if (num_processed_fixed_variables_ < trail_.Index()) {
+      ProcessNewlyFixedVariableResolutionNodes();
+      ProcessNewlyFixedVariables();
+    }
+
+    // Note(user): Putting the binary clauses first help because the presolver
+    // currently process the clauses in order.
+    binary_implication_graph_.ExtractAllBinaryClauses(out);
+    for (SatClause* clause : problem_clauses_) {
+      if (clause->IsAttached()) {
+        out->AddClause(ClauseRef(clause->begin(), clause->end()));
+      }
+    }
+  }
+
+  // Functions to manage the set of learned binary clauses.
+  // Only clauses added/learned when TrackBinaryClause() is true are managed.
+  void TrackBinaryClauses(bool value) { track_binary_clauses_ = value; }
+  bool AddBinaryClauses(const std::vector<BinaryClause>& clauses);
+  const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
+  void ClearNewlyAddedBinaryClauses();
+
   // Various getters of the current solver state.
   struct Decision {
     Decision() : trail_index(-1) {}
@@ -292,6 +326,10 @@ class SatSolver {
   void SaveDebugAssignment();
 
  private:
+  // Adds a binary clause to the BinaryImplicationGraph and to the
+  // BinaryClauseManager when track_binary_clauses_ is true.
+  void AddBinaryClauseInternal(Literal a, Literal b);
+
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
   // where added since that time, they will be considered unassigned.
@@ -583,6 +621,10 @@ class SatSolver {
   BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
   SymmetryPropagator symmetry_propagator_;
+
+  // Keep track of all binary clauses so they can be exported.
+  bool track_binary_clauses_;
+  BinaryClauseManager binary_clauses_;
 
   // The solver trail.
   Trail trail_;

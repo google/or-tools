@@ -105,7 +105,6 @@ static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
   c -= b;
   c ^= (b >> 22);
 }
-
 inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
   uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
   operations_research::mix(num, b, c);
@@ -138,9 +137,10 @@ struct hash<std::pair<First, Second> > {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
-    return (sizeof(h1) <= sizeof(uint32)) ?  // NOLINT
-        operations_research::Hash32NumWithSeed(h1, h2) :
-        operations_research::Hash64NumWithSeed(h1, h2);
+    return (sizeof(h1) <= sizeof(uint32))
+               ?  // NOLINT
+               operations_research::Hash32NumWithSeed(h1, h2)
+               : operations_research::Hash64NumWithSeed(h1, h2);
   }
 };
 
@@ -274,16 +274,14 @@ class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
     operations_research::mix(x, y, z);
     return z;
   }
-  bool operator()(const std::pair<T*, int>& a1,
-                  const std::pair<T*, int>& a2) const {
+  bool operator()(const std::pair<T*, int>& a1, const std::pair<T*, int>& a2) const {
     return a1.first < a2.first ||
            (a1.first == a2.first && a1.second < a2.second);
   }
 };
 
 template <class T, class U>
-class PairPointerIntTypeHasher
-    : public stdext::hash_compare<std::pair<T*, U> > {
+class PairPointerIntTypeHasher : public stdext::hash_compare<std::pair<T*, U> > {
  public:
   size_t operator()(const std::pair<T*, U>& a) const {
     uint64 x = reinterpret_cast<uint64>(a.first);
@@ -292,8 +290,7 @@ class PairPointerIntTypeHasher
     operations_research::mix(x, y, z);
     return z;
   }
-  bool operator()(const std::pair<T*, U>& a1,
-                  const std::pair<T*, U>& a2) const {
+  bool operator()(const std::pair<T*, U>& a1, const std::pair<T*, U>& a2) const {
     return a1.first < a2.first ||
            (a1.first == a2.first && a1.second < a2.second);
   }
@@ -309,16 +306,14 @@ class PairPointerIntHasher : public stdext::hash_compare<std::pair<T*, int> > {
     operations_research::mix(x, y, z);
     return z;
   }
-  bool operator()(const std::pair<T*, int>& a1,
-                  const std::pair<T*, int>& a2) const {
+  bool operator()(const std::pair<T*, int>& a1, const std::pair<T*, int>& a2) const {
     return a1.first < a2.first ||
            (a1.first == a2.first && a1.second < a2.second);
   }
 };
 
 template <class T, class U>
-class PairPointerIntTypeHasher
-    : public stdext::hash_compare<std::pair<T*, U> > {
+class PairPointerIntTypeHasher : public stdext::hash_compare<std::pair<T*, U> > {
  public:
   size_t operator()(const std::pair<T*, U>& a) const {
     uint32 x = reinterpret_cast<uint32>(a.first);
@@ -327,8 +322,7 @@ class PairPointerIntTypeHasher
     operations_research::mix(x, y, z);
     return z;
   }
-  bool operator()(const std::pair<T*, U>& a1,
-                  const std::pair<T*, U>& a2) const {
+  bool operator()(const std::pair<T*, U>& a1, const std::pair<T*, U>& a2) const {
     return a1.first < a2.first ||
            (a1.first == a2.first && a1.second < a2.second);
   }

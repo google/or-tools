@@ -10,13 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // TODO(user): make this SWIG file comply with the SWIG style guide.
 %include base/base.swig
 
 %{
 #include <vector>
 #include "base/integral_types.h"
-using std::string;
 %}
 
 %{

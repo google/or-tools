@@ -417,6 +417,10 @@ class UpperBoundedLinearConstraint {
   void set_activity(double activity) { activity_ = activity; }
   double activity() const { return activity_; }
 
+  // Returns a fingerprint of the constraint linear expression (without rhs).
+  // This is used for duplicate detection.
+  int64 hash() const { return hash_; }
+
  private:
   Coefficient GetSlackFromThreshold(Coefficient threshold) {
     return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
@@ -451,6 +455,8 @@ class UpperBoundedLinearConstraint {
 
   // This is only used for UNSAT core computation.
   ResolutionNode* node_;
+
+  int64 hash_;
 };
 
 // Class responsible for managing a set of pseudo-Boolean constraints and their
@@ -482,16 +488,16 @@ class PbConstraints {
     parameters_ = parameters;
   }
 
-  // Adds a constraint in canonical form to the set of managed constraints.
+  // Adds a constraint in canonical form to the set of managed constraints. Note
+  // that this detects constraints with exactly the same terms. In this case,
+  // the constraint rhs is updated if the new one is lower or nothing is done
+  // otherwise.
   //
   // There are some preconditions, and the function will return false if they
   // are not met. The constraint can be added when the trail is not empty,
   // however given the current propagated assignment:
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
-  //
-  // Note(user): There is an optimization if the last constraint added is the
-  // same as the one we are trying to add.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
                      ResolutionNode* node);
 
@@ -602,6 +608,10 @@ class PbConstraints {
 
   // Bitset used to optimize the Untrail() function.
   SparseBitset<ConstraintIndex> to_untrail_;
+
+  // Pointers to the constraints grouped by their hash.
+  // This is used to find duplicate constraints by AddConstraint().
+  hash_map<int64, std::vector<UpperBoundedLinearConstraint*>> possible_duplicates_;
 
   // Last conflicting PB constraint index. This is reset to -1 when
   // ClearConflictingConstraint() is called.

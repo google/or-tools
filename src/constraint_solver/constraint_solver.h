@@ -4666,8 +4666,7 @@ class AssignmentContainer {
   // Adds element without checking its presence in the container.
   E* FastAdd(V* var) {
     DCHECK(var != nullptr);
-    E e(var);
-    elements_.push_back(e);
+    elements_.emplace_back(var);
     return &elements_.back();
   }
   // Advanced usage: Adds element at a given position; position has to have

@@ -169,6 +169,7 @@ class ClauseRef {
 
   // Returns true if this clause contains no literal.
   bool IsEmpty() const { return begin_ == end_; }
+  int size() const { return end_ - begin_; }
 
  private:
   Literal const* begin_;

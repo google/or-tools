@@ -30,8 +30,10 @@ test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp.exe $(BIN_DIR)/testcp.exe
 	$(MONO) $(BIN_DIR)/csknapsack.exe
 	$(MONO) $(BIN_DIR)/furniture_moving_intervals.exe
 	$(MONO) $(BIN_DIR)/organize_day_intervals.exe
+	$(MONO) $(BIN_DIR)/furniture_moving_intervals.exe
+	$(MONO) $(BIN_DIR)/techtalk_scheduling.exe
+	$(MONO) $(BIN_DIR)/csls_api.exe
 	$(MONO) $(BIN_DIR)/cstsp.exe
 	$(MONO) $(BIN_DIR)/cscvrptw.exe
 	$(MONO) $(BIN_DIR)/testlp.exe
 	$(MONO) $(BIN_DIR)/testcp.exe
-	$(MONO) $(BIN_DIR)/csls_api.exe

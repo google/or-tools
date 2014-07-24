@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This .swig files exposes some of the C++ classes in ../, namely :
 // - MaxFlow, from SimpleMaxFlow in ../max_flow.h
 // - MinCostFlow, from SimpleMinCostFlow in ../min_cost_flow.h

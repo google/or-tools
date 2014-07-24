@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
+#include <cmath>
 #include <limits>
 
 #include "base/integral_types.h"
+#include "util/bitset.h"
 
 namespace operations_research {
 // ---------- Overflow utility functions ----------
@@ -140,32 +142,46 @@ inline int64 CapOpp(int64 v) {
   return v == kint64min ? kint64max : -v;
 }
 
-inline int64 CapProdGeneric(int64 left, int64 right) {
-  if (left == 0 || right == 0) {
-    return 0;
+// For an inspiration of the function below, see Henry S. Warren, Hacker's
+// Delight second edition, Addison-Wesley Professional, 2012, p.32,
+// section 2-13.
+// http://www.amazon.com/Hackers-Delight-Edition-Henry-Warren/dp/0321842685
+inline int64 CapProdGeneric(int64 x, int64 y) {
+  // Early return. This would have to be tested later on to avoid division
+  // by zero.
+  if (y == 0) return 0;
+  const int64 z = x * y;
+  // Note: the following test on the most significant bit position brings a 20%
+  // improvement on a Nehalem machine using g++. Your mileage may vary.
+  if (MostSignificantBitPosition64(std::abs(x)) +
+      MostSignificantBitPosition64(std::abs(y)) < 62) return z;
+  // Catch x = kint64min separately. When y = -1, z = kint64min, and z / -1
+  // produces a Division Exception (on x86-64) as the positive result does not
+  // fit in a signed 64-bit integer. (This is the only problematic case.)
+  if (x == kint64min) return CapWithSignOf(x ^ y);
+  // We know that at this point y != 0 and x != kint64min, so it is safe to
+  // divide z by y.
+  if (z / y == x) return z;
+  return CapWithSignOf(x ^ y);
+}
+
+inline int64 CapProdUsingDoubles(int64 a, int64 b) {
+  // This is the same algorithm as used in the Python intobject.c file.
+  const double double_prod = static_cast<double>(a) * static_cast<double>(b);
+  const int64 int_prod = a * b;
+  // It's faster to compute this before now as it can be done in parallel with
+  // the computations on doubles (product, conversion from int), and the integer
+  // product.
+  const int64 cap = CapWithSignOf(a ^ b);
+  const double int_prod_as_double = static_cast<double>(int_prod);
+  if (int_prod_as_double == double_prod) {
+    return int_prod;
   }
-  if (left > 0) {   /* left is positive */
-    if (right > 0) {/* left and right are positive */
-      if (left > (kint64max / right)) {
-        return kint64max;
-      }
-    } else {/* left positive, right non-positive */
-      if (right < (kint64min / left)) {
-        return kint64min;
-      }
-    }               /* left positive, right non-positive */
-  } else {          /* left is non-positive */
-    if (right > 0) {/* left is non-positive, right is positive */
-      if (left < (kint64min / right)) {
-        return kint64min;
-      }
-    } else {/* left and right are non-positive */
-      if (right < (kint64max / left)) {
-        return kint64max;
-      }
-    } /* end if left and right are non-positive */
-  }   /* end if left is non-positive */
-  return left * right;
+  const double diff = std::abs(int_prod_as_double - double_prod);
+  if (32.0 * diff <= std::abs(double_prod)) {
+    return int_prod;
+  }
+  return cap;
 }
 
 #if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
@@ -197,10 +213,9 @@ inline int64 CapProd(int64 x, int64 y) {
 #if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapProdFast(x, y);
 #else
-  return CapProdGeneric(x, y);
+  return CapProdWithDoubles(x, y);
 #endif
 }
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_

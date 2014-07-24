@@ -33,7 +33,6 @@
 %{
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver.h"
-using std::string;
 %}
 
 namespace operations_research {
@@ -48,10 +47,10 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 }  // %pythoncode
 
 %extend MPVariable {
-  string __str__() {
+  std::string __str__() {
     return self->name();
   }
-  string __repr__() {
+  std::string __repr__() {
     return self->name();
   }
 
@@ -150,14 +149,14 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 # See ../python/linear_programming.py for example on how to use the nice
 # extended python API provided below.
 %extend MPSolver {
-  string ExportModelAsLpFormat(bool obfuscated) {
-    string output;
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    std::string output;
     if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
     return output;
   }
 
-  string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    string output;
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
     if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
       return "";
     }
@@ -231,6 +230,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   double Offset() const { return $self->offset();}
 }  // extend MPObjective
 }  // namespace operations_research
+
 
 %ignoreall
 

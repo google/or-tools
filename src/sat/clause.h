@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_SAT_CLAUSE_H_
 #define OR_TOOLS_SAT_CLAUSE_H_
 
+#include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <queue>
 #include <string>
@@ -28,6 +29,7 @@
 #include "base/timer.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/hash.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
 #include "util/bitset.h"
@@ -244,6 +246,44 @@ class LiteralWatchers {
   DISALLOW_COPY_AND_ASSIGN(LiteralWatchers);
 };
 
+// A binary clause. This is used by BinaryClauseManager.
+struct BinaryClause {
+  BinaryClause(Literal _a, Literal _b) : a(_a), b(_b) {}
+  bool operator==(BinaryClause o) const { return a == o.a && b == o.b; }
+  bool operator!=(BinaryClause o) const { return a != o.a || b != o.b; }
+  Literal a;
+  Literal b;
+};
+
+// A simple class to manage a set of binary clauses.
+class BinaryClauseManager {
+ public:
+  BinaryClauseManager() {}
+  int NumClauses() const { return set_.size(); }
+
+  // Adds a new binary clause to the manager and returns true if it wasn't
+  // already present.
+  bool Add(BinaryClause c) {
+    std::pair<int32, int32> p(c.a.SignedValue(), c.b.SignedValue());
+    if (p.first > p.second) std::swap(p.first, p.second);
+    if (set_.find(p) == set_.end()) {
+      set_.insert(p);
+      newly_added_.push_back(c);
+      return true;
+    }
+    return false;
+  }
+
+  // Returns the newly added BinaryClause since the last ClearNewlyAdded() call.
+  const std::vector<BinaryClause>& newly_added() const { return newly_added_; }
+  void ClearNewlyAdded() { newly_added_.clear(); }
+
+ private:
+  hash_set<std::pair<int32, int32>> set_;
+  std::vector<BinaryClause> newly_added_;
+  DISALLOW_COPY_AND_ASSIGN(BinaryClauseManager);
+};
+
 // Special class to store and propagate clauses of size 2 (i.e. implication).
 // Such clauses are never deleted.
 //
@@ -338,13 +378,27 @@ class BinaryImplicationGraph {
   // Returns the number of current implications.
   int64 NumberOfImplications() const { return num_implications_; }
 
+  // Extract all the binary clauses managed by this class. The Output type must
+  // support an AddBinaryClause(Literal a, Literal b) function.
+  template <typename Output>
+  void ExtractAllBinaryClauses(Output* out) const {
+    for (LiteralIndex i(0); i < implications_.size(); ++i) {
+      const Literal a = Literal(i).Negated();
+      for (const Literal b : implications_[i]) {
+        // Because we store implications, the clause will actually appear twice
+        // as (a, b) and (b, a). We output only one.
+        if (a < b) out->AddBinaryClause(a, b);
+      }
+    }
+  }
+
  private:
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
   // This is indexed by the Index() of a literal. Each list stores the
   // literals that are implied if the index literal becomes true.
-  ITIVector<LiteralIndex, std::vector<Literal> > implications_;
+  ITIVector<LiteralIndex, std::vector<Literal>> implications_;
   int64 num_implications_;
 
   // Holds the last conflicting binary clause.

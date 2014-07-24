@@ -13,7 +13,7 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include base/base.swig
+%include "base/base.swig"
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -25,11 +25,13 @@
 
 %include "std_vector.i"
 
+// See the comment in
+// ../../constraint_solver/csharp/constraint_solver.swig about naming
+// the template instantiation of std::vector<> differently.
 %template(KInt64Vector) std::vector<int64>;
 %template(KInt64VectorVector) std::vector<std::vector<int64> >;
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
-
 
 %include "algorithms/knapsack_solver.h"

@@ -13,18 +13,64 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include exception.i
-%include util/csharp/tuple_set.swig
-%include "std_vector.i"
-
 %typemap(csimports) SWIGTYPE %{
 using System;
 using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
+%include exception.i
+%include std_vector.i
+%include "util/csharp/tuple_set.swig"
+
+%module(directors="1", allprotected="1") operations_research;
+%feature("director") Action;
+%feature("director") BaseLNS;
+%feature("director") Decision;
+%feature("director") DecisionBuilder;
+%feature("director") IntVarLocalSearchFilter;
+%feature("director") IntVarLocalSearchOperator;
+%feature("director") LocalSearchOperator;
+%feature("director") LongResultCallback1;
+%feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
+%feature("director") OptimizeVar;
+%feature("director") SearchLimit;
+%feature("director") SearchMonitor;
+%feature("director") SequenceVarLocalSearchOperator;
+%feature("director") SymmetryBreaker;
+
+%{
+#include <setjmp.h>
+
+#include <string>
+#include <vector>
+
+#include "base/callback.h"
+#include "base/integral_types.h"
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
+};
+}  // namespace operations_research
+
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() {
+    longjmp(exception_buffer, 1);
+  }
+};
+%}
+
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
+
+// TODO(user): Try to allow this per class (difficult with CpIntVector).
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
@@ -47,7 +93,7 @@ using System.Collections;
     return $null;
   }
 }
-%enddef
+%enddef  // PROTECT_FROM_FAILURE
 
 namespace operations_research {
 PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
@@ -78,56 +124,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // ############ END DUPLICATED CODE BLOCK ############
 
 // Callback wrapping.
-%{
-#include <vector>
-#include "base/callback.h"
-#include "base/integral_types.h"
-%}
-
 // TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
-%module(directors="1", allprotected="1") operations_research;
-%feature("director") LongResultCallback1;
-%feature("director") LongResultCallback2;
-%feature("director") LongResultCallback3;
-%feature("director") Action;
-%feature("director") BaseLNS;
-%feature("director") Decision;
-%feature("director") DecisionBuilder;
-%feature("director") IntVarLocalSearchFilter;
-%feature("director") IntVarLocalSearchOperator;
-%feature("director") SequenceVarLocalSearchOperator;
-%feature("director") LocalSearchOperator;
-%feature("director") OptimizeVar;
-%feature("director") SearchLimit;
-%feature("director") SearchMonitor;
-%feature("director") SymmetryBreaker;
-
 %{
-#include <setjmp.h>
-
-#include <vector>
-
-#include "base/callback.h"
-#include "base/integral_types.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-
-namespace operations_research {
-class LocalSearchPhaseParameters {
- public:
-  LocalSearchPhaseParameters() {}
-  ~LocalSearchPhaseParameters() {}
-};
-}  // namespace operations_research
-
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() {
-    longjmp(exception_buffer, 1);
-  }
-};
-
 class LongResultCallback1 {
  public:
   virtual int64 Run(int64) = 0;
@@ -188,12 +187,16 @@ class LongResultCallback3 {
     "$descriptor(ResultCallback3<int64, int64, int64, int64>*)
      .getCPtr($csinput.GetPermanentCallback())";
 
+// Since knapsack_solver.swig and constraint_solver.swig both need to
+// instantiate the std::vector template, but their csharp_wrap.cc
+// files end up being compiled into the same .dll, we must name the
+// vector template differently.
 %template(CpIntVector) std::vector<int>;
 %template(CpInt64Vector) std::vector<int64>;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);
-%template(Cp ## TYPE ## Vector) std::vector<CTYPE*>;
+%template(TYPE ## Vector) std::vector<CTYPE*>;
 %enddef  // CS_TYPEMAP_STDVECTOR_OBJECT
 
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
@@ -249,7 +252,8 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Keep the .solver() API.
 %rename (solver) *::solver;
 
-// Rename NewSearch and EndSearch to add pinning.
+// Rename NewSearch and EndSearch to add pinning. See the overrides of
+// NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) operations_research::Solver::NewSearch;
 %rename (EndSearchAux) operations_research::Solver::EndSearch;
 

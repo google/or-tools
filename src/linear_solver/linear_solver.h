@@ -143,10 +143,6 @@
 #include "base/logging.h"
 #include "base/timer.h"
 
-#if defined(USE_GLOP) && !defined(SWIG)
-#include "glop/parameters.pb.h"
-#endif  // USE_GLOP && !SWIG
-
 
 namespace operations_research {
 
@@ -997,16 +993,6 @@ class MPSolverParameters {
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
   // @}
 
-  // This only has an effect for Glop. Most users should use the default values.
-  // In case of conflict, parameters set by SetGlopParameters() always take
-  // precedence, except for the time limit (where MPSolver::set_time_limit()
-  // takes precedence).
-  #if defined(USE_GLOP) && !defined(SWIG)
-  void SetGlopParameters(const glop::GlopParameters& parameters) {
-    glop_parameters_ = parameters;
-  }
-  glop::GlopParameters GetGlopParameters() const { return glop_parameters_; }
-  #endif  // USE_GLOP && !SWIG
 
  private:
   // @{
@@ -1027,9 +1013,6 @@ class MPSolverParameters {
   // does not define a default value need such an indicator.
   bool lp_algorithm_is_default_;
 
-  #if defined(USE_GLOP) && !defined(SWIG)
-  glop::GlopParameters glop_parameters_;
-  #endif  // USE_GLOP && !SWIG
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };

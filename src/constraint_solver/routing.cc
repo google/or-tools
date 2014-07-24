@@ -3953,16 +3953,20 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
               NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
               GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_INSERTION] =
-      first_solution_filtered_decision_builders_
-          [ROUTING_GLOBAL_CHEAPEST_INSERTION];
+      solver_->Try(
+          first_solution_filtered_decision_builders_
+          [ROUTING_GLOBAL_CHEAPEST_INSERTION],
+          first_solution_decision_builders_[ROUTING_BEST_INSERTION]);
   // Local cheapest insertion
   first_solution_filtered_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
       solver_->RevAlloc(new LocalCheapestInsertionFilteredDecisionBuilder(
           this, NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
           GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_LOCAL_CHEAPEST_INSERTION] =
-      first_solution_filtered_decision_builders_
-          [ROUTING_LOCAL_CHEAPEST_INSERTION];
+      solver_->Try(
+          first_solution_filtered_decision_builders_
+          [ROUTING_LOCAL_CHEAPEST_INSERTION],
+          first_solution_decision_builders_[ROUTING_BEST_INSERTION]);
   // Savings
   if (FLAGS_routing_use_filtered_first_solutions) {
     first_solution_filtered_decision_builders_[ROUTING_SAVINGS] =

@@ -190,7 +190,7 @@ message SatParameters {
   // solver will abort as soon as it detects that this limit is crossed. As a
   // result, this limit is approximative, but usually the solver will not go too
   // much over.
-  optional int64 max_memory_in_mb = 40 [default = 4096];
+  optional int64 max_memory_in_mb = 40 [default = 6000];
 
   // Whether the solver should log the search progress to LOG(INFO).
   optional bool log_search_progress = 41 [default = false];
@@ -223,6 +223,11 @@ message SatParameters {
   // Theory and Applications of Satisfiability Testing – SAT 2013, Lecture Notes
   // in Computer Science Volume 7962, 2013, pp 309-317.
   optional bool count_assumption_levels_in_lbd = 49 [default = true];
+
+  // During presolve, only try to perform the bounded variable elimination of a
+  // variable x if the number of occurences of x times the number of occurences
+  // of not(x) is not greater than this parameter.
+  optional int32 presolve_bce_threshold = 54 [default = 100];
 
   // ==========================================================================
   // Max-sat parameters.

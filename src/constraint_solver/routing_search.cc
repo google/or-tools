@@ -1729,10 +1729,10 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
         pickup_to_entries,
     std::vector<GlobalCheapestInsertionFilteredDecisionBuilder::PairEntries>*
         delivery_to_entries) {
-  // First, remove entries which have already been inserted and keep track of
-  // the entries which are being kept and must be updated.
+// First, remove entries which have already been inserted and keep track of
+// the entries which are being kept and must be updated.
 #if defined(_MSC_VER)
-  hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>, 
+  hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>,
            PairPairInt64Hasher> existing_insertions;
 #else
   hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>>
@@ -1827,10 +1827,10 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
         pickup_to_entries,
     std::vector<GlobalCheapestInsertionFilteredDecisionBuilder::PairEntries>*
         delivery_to_entries) {
-  // First, remove entries which have already been inserted and keep track of
-  // the entries which are being kept and must be updated.
+// First, remove entries which have already been inserted and keep track of
+// the entries which are being kept and must be updated.
 #if defined(_MSC_VER)
-  hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>, 
+  hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>,
            PairPairInt64Hasher> existing_insertions;
 #else
   hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>>

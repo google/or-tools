@@ -32,6 +32,7 @@
 #include "sat/boolean_problem.h"
 #include "sat/optimization.h"
 #include "sat/sat_solver.h"
+#include "sat/simplification.h"
 #include "util/time_limit.h"
 #include "algorithms/sparse_permutation.h"
 
@@ -75,9 +76,13 @@ DEFINE_bool(fu_malik, false,
 DEFINE_bool(wpm1, false,
             "If true, search the optimal solution with the WPM1 algo.");
 
-DEFINE_bool(use_cardinality_encoding, true,
-            "If true, use an encoding of the at most k constraint instead "
-            "of the native PB format.");
+DEFINE_bool(qmaxsat, false,
+            "If true, search the optimal solution with a linear scan and "
+            " the cardinality encoding used in qmaxsat.");
+
+DEFINE_bool(core_enc, false,
+            "If true, search the optimal solution with the core-based "
+            "cardinality encoding algo.");
 
 DEFINE_bool(linear_scan, false,
             "If true, search the optimal solution with the linear scan algo.");
@@ -89,6 +94,9 @@ DEFINE_int32(randomize, 500,
 DEFINE_bool(use_symmetry, false,
             "If true, find and exploit the eventual symmetries "
             "of the problem.");
+
+DEFINE_bool(presolve, false,
+            "Only work on pure SAT problem. If true, presolve the problem.");
 
 
 DEFINE_bool(refine_core, false,
@@ -117,7 +125,8 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
   } else if (HasSuffixString(filename, ".cnf") ||
              HasSuffixString(filename, ".wcnf")) {
     SatCnfReader reader;
-    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
+    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
+        FLAGS_core_enc) {
       reader.InterpretCnfAsMaxSat(true);
     }
     if (!reader.Load(filename, problem)) {
@@ -199,40 +208,114 @@ int Run() {
   // Optimize?
   std::vector<bool> solution;
   SatSolver::Status result = SatSolver::LIMIT_REACHED;
-  if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
-    if (FLAGS_randomize > 0 && FLAGS_linear_scan) {
+  if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
+      FLAGS_core_enc) {
+    if (FLAGS_randomize > 0 && (FLAGS_linear_scan || FLAGS_qmaxsat)) {
       result = SolveWithRandomParameters(STDOUT_LOG, problem, FLAGS_randomize,
                                          solver.get(), &solution);
     }
     if (result == SatSolver::LIMIT_REACHED) {
-      if (FLAGS_use_cardinality_encoding) {
-        // We use a new solver to not have any PB constraints.
-        if (FLAGS_linear_scan) {
-          solver.reset(new SatSolver());
-          solver->SetParameters(parameters);
-          CHECK(LoadBooleanProblem(problem, solver.get()));
-        }
-        if (FLAGS_linear_scan) {
-          result = SolveWithCardinalityEncoding(STDOUT_LOG, problem,
-                                                solver.get(), &solution);
-        } else {
-          result = SolveWithCardinalityEncodingAndCore(STDOUT_LOG, problem,
-                                                       solver.get(), &solution);
-        }
-      } else {
+      if (FLAGS_qmaxsat) {
+        solver.reset(new SatSolver());
+        solver->SetParameters(parameters);
+        CHECK(LoadBooleanProblem(problem, solver.get()));
+        result = SolveWithCardinalityEncoding(STDOUT_LOG, problem, solver.get(),
+                                              &solution);
+      } else if (FLAGS_core_enc) {
+        result = SolveWithCardinalityEncodingAndCore(STDOUT_LOG, problem,
+                                                     solver.get(), &solution);
+      } else if (FLAGS_fu_malik) {
+        result = SolveWithFuMalik(STDOUT_LOG, problem, solver.get(), &solution);
+      } else if (FLAGS_wpm1) {
+        result = SolveWithWPM1(STDOUT_LOG, problem, solver.get(), &solution);
+      } else if (FLAGS_linear_scan) {
         result =
-            FLAGS_fu_malik
-                ? SolveWithFuMalik(STDOUT_LOG, problem, solver.get(), &solution)
-                : FLAGS_wpm1 ? SolveWithWPM1(STDOUT_LOG, problem, solver.get(),
-                                             &solution)
-                             : SolveWithLinearScan(STDOUT_LOG, problem,
-                                                   solver.get(), &solution);
+            SolveWithLinearScan(STDOUT_LOG, problem, solver.get(), &solution);
       }
     }
   } else {
     // Only solve the decision version.
     parameters.set_log_search_progress(true);
     solver->SetParameters(parameters);
+
+    // Presolve.
+    if (FLAGS_presolve) {
+      // Copy the fixed variables.
+      // TODO(user): move this and the code to postsolve a SAT problem into
+      // the simplification.h/cc files.
+      VariablesAssignment assignment;
+      assignment.Resize(problem.num_variables());
+      for (int i = 0; i < solver->LiteralTrail().Index(); ++i) {
+        assignment.AssignFromTrueLiteral(solver->LiteralTrail()[i]);
+      }
+
+      SatPresolver presolver;
+      presolver.SetParameters(parameters);
+      solver->ExtractClauses(&presolver);
+      solver.release();
+      if (!presolver.Presolve()) {
+        printf("c unsat during presolve!");
+        printf("c status: %s\n",
+               SatStatusString(SatSolver::MODEL_UNSAT).c_str());
+        return EXIT_SUCCESS;
+      }
+
+      // Load the presolved problem in a new solver.
+      solver.reset(new SatSolver());
+      solver->SetParameters(parameters);
+
+      int new_size = 0;
+      const ITIVector<VariableIndex, VariableIndex> mapping =
+          presolver.GetMapping(&new_size);
+
+      // We need to remap all the clauses so that the domain of the used
+      // variable is dense.
+      std::vector<Literal> temp;
+      solver->SetNumVariables(new_size);
+      for (const std::vector<Literal>& clause : presolver) {
+        temp.clear();
+        for (Literal l : clause) {
+          CHECK_NE(mapping[l.Variable()], VariableIndex(-1));
+          temp.push_back(Literal(mapping[l.Variable()], l.IsPositive()));
+        }
+        if (!temp.empty()) solver->AddProblemClause(temp);
+      }
+
+      // Solve.
+      result = solver->Solve();
+
+      // Statistics of the solver on the presolved problem.
+      printf("c status: %s\n", SatStatusString(result).c_str());
+      printf("c conflicts: %lld\n", solver->num_failures());
+      printf("c branches: %lld\n", solver->num_branches());
+      printf("c propagations: %lld\n", solver->num_propagations());
+
+      // Recover the solution.
+      if (result == SatSolver::MODEL_SAT) {
+        // Copy the assigned variable from the presolved problem.
+        for (VariableIndex var(0); var < mapping.size(); ++var) {
+          const VariablesAssignment& result = solver->Assignment();
+          if (mapping[var] != VariableIndex(-1)) {
+            CHECK(!assignment.IsVariableAssigned(var));
+            assignment.AssignFromTrueLiteral(Literal(
+                var, result.IsLiteralTrue(Literal(mapping[var], true))));
+          }
+        }
+        presolver.Postsolve(&assignment);
+        solution.clear();
+        for (int i = 0; i < assignment.NumberOfVariables(); ++i) {
+          solution.push_back(
+              assignment.IsLiteralTrue(Literal(VariableIndex(i), true)));
+        }
+        CHECK(IsAssignmentValid(problem, solution));
+      }
+
+      // Overall time.
+      printf("c walltime: %f\n", wall_timer.Get());
+      printf("c usertime: %f\n", user_timer.Get());
+      return EXIT_SUCCESS;
+    }
+
     result = solver->Solve();
     if (result == SatSolver::MODEL_SAT) {
       ExtractAssignment(problem, *solver, &solution);
