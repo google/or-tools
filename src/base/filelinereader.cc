@@ -18,11 +18,13 @@
 
 #include "base/file.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
+#include "base/unique_ptr.h"
 
 namespace operations_research {
 FileLineReader::FileLineReader(const char* const filename)
-    : filename_(filename), line_callback_(NULL), loaded_successfully_(false) {}
+    : filename_(filename),
+      line_callback_(nullptr),
+      loaded_successfully_(false) {}
 
 FileLineReader::~FileLineReader() {}
 
@@ -38,7 +40,7 @@ void FileLineReader::Reload() {
     return;
   }
 
-  scoped_ptr<char[]> line(new char[kMaxLineLength]);
+  std::unique_ptr<char[]> line(new char[kMaxLineLength]);
   for (;;) {
     char* const result = data_file->ReadLine(line.get(), kMaxLineLength);
     if (result == NULL) {

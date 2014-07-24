@@ -15,7 +15,7 @@
 #include <string>
 #include "base/logging.h"
 #include "base/recordio.h"
-#include "base/scoped_ptr.h"
+#include "base/unique_ptr.h"
 
 namespace operations_research {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;
@@ -34,7 +34,7 @@ std::string RecordWriter::Compress(std::string const& s) const {
   const char* source = s.c_str();
 
   unsigned long dsize = source_size + (source_size * 0.1f) + 16;  // NOLINT
-  scoped_ptr<char> destination(new char[dsize]);
+  std::unique_ptr<char> destination(new char[dsize]);
   // Use compress() from zlib.h.
   const int result =
       compress(reinterpret_cast<unsigned char*>(destination.get()), &dsize,

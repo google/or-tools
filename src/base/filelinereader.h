@@ -21,7 +21,7 @@
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/file.h"
-#include "base/scoped_ptr.h"
+#include "base/unique_ptr.h"
 
 namespace operations_research {
 // The FileLineReader class will read a text file specified by
@@ -45,7 +45,7 @@ class FileLineReader {
 
  private:
   const char* filename_;
-  scoped_ptr<Callback1<char*> > line_callback_;
+  std::unique_ptr<Callback1<char*> > line_callback_;
   bool loaded_successfully_;
 };
 }  // namespace operations_research

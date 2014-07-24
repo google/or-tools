@@ -26,7 +26,7 @@
 
 #include "base/file.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
+#include "base/unique_ptr.h"
 #include "base/join.h"
 
 namespace operations_research {
@@ -100,7 +100,7 @@ int64 File::ReadToString(std::string* const output, uint64 max_length) {
   int64 needed = max_length;
   int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
 
-  scoped_ptr<char[]> buf(new char[bufsize]);
+  std::unique_ptr<char[]> buf(new char[bufsize]);
 
   int64 nread = 0;
   while (needed > 0) {

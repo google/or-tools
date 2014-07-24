@@ -16,7 +16,7 @@
 
 #include <string>
 #include "base/file.h"
-#include "base/scoped_ptr.h"
+#include "base/unique_ptr.h"
 
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.
@@ -104,9 +104,9 @@ class RecordReader {
     if (file_->Read(&csize, sizeof(csize)) != sizeof(csize)) {
       return false;
     }
-    scoped_ptr<char[]> buffer(new char[usize + 1]);
+    std::unique_ptr<char[]> buffer(new char[usize + 1]);
     if (csize != 0) {  // The data is compressed.
-      scoped_ptr<char[]> compressed_buffer(new char[csize + 1]);
+      std::unique_ptr<char[]> compressed_buffer(new char[csize + 1]);
       if (file_->Read(compressed_buffer.get(), csize) != csize) {
         return false;
       }
