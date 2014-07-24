@@ -14,8 +14,10 @@
 #ifndef OR_TOOLS_BASE_SYNCHRONIZATION_H_
 #define OR_TOOLS_BASE_SYNCHRONIZATION_H_
 
+#include <condition_variable>
+#include <mutex>
+
 #include "base/logging.h"
-#include "base/mutex.h"
 
 namespace operations_research {
 class Barrier {
@@ -24,15 +26,15 @@ class Barrier {
       : num_to_block_(num_threads), num_to_exit_(num_threads) {}
 
   bool Block() {
-    MutexLock l(&this->lock_);
+    std::unique_lock<std::mutex> mutex_lock(mutex_);
     this->num_to_block_--;
     CHECK_GE(this->num_to_block_, 0);
     if (num_to_block_ > 0) {
       while (num_to_block_ > 0) {
-        condition_.Wait(&lock_);
+        condition_.wait(mutex_lock);
       }
     } else {
-      condition_.SignalAll();
+      condition_.notify_all();
     }
     this->num_to_exit_--;
     CHECK_GE(this->num_to_exit_, 0);
@@ -40,8 +42,8 @@ class Barrier {
   }
 
  private:
-  Mutex lock_;
-  CondVar condition_;
+  std::mutex mutex_;
+  std::condition_variable condition_;
   int num_to_block_;
   int num_to_exit_;
   DISALLOW_COPY_AND_ASSIGN(Barrier);

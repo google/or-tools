@@ -11,21 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tinythread.h"  // NOLINT
+#include <thread>
+
 #include "base/mutex.h"
-#include "tinythread.cpp"
 
 namespace operations_research {
-Mutex::Mutex() : real_mutex_(new tthread::mutex) {}
+Mutex::Mutex() {}
 Mutex::~Mutex() {}
-void Mutex::Lock() { real_mutex_->lock(); }
-void Mutex::Unlock() { real_mutex_->unlock(); }
-bool Mutex::TryLock() { return real_mutex_->try_lock(); }
-tthread::mutex* Mutex::RealMutex() const { return real_mutex_.get(); }
+void Mutex::Lock() { real_mutex_.lock(); }
+void Mutex::Unlock() { real_mutex_.unlock(); }
+bool Mutex::TryLock() { return real_mutex_.try_lock(); }
 
-CondVar::CondVar() : real_condition_(new tthread::condition_variable) {}
+CondVar::CondVar() {}
 CondVar::~CondVar() {}
-void CondVar::Wait(Mutex* const mu) { real_condition_->wait(*mu->RealMutex()); }
-void CondVar::Signal() { real_condition_->notify_one(); }
-void CondVar::SignalAll() { real_condition_->notify_all(); }
+void CondVar::Wait(Mutex* const mu) {
+  std::unique_lock<std::mutex> mutex_lock(mu->real_mutex_);
+  real_condition_.wait(mutex_lock);
+}
+void CondVar::Signal() { real_condition_.notify_one(); }
+void CondVar::SignalAll() { real_condition_.notify_all(); }
 }  // namespace operations_research

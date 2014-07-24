@@ -11,10 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tinythread.h"  // NOLINT
-#include "base/macros.h"
-#include "base/mutex.h"
-#include "base/synchronization.h"
 #include "base/threadpool.h"
 
 namespace operations_research {
@@ -25,44 +21,34 @@ void RunWorker(void* data) {
     work->Run();
     work = thread_pool->GetNextTask();
   }
-  thread_pool->StopOnFinalBarrier();
 }
 
 ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
     : num_workers_(num_workers),
       waiting_to_finish_(false),
-      started_(false),
-      final_barrier_(new Barrier(num_workers + 1)) {}
+      started_(false) {}
 
 ThreadPool::~ThreadPool() {
   if (started_) {
-    mutex_.Lock();
+    std::unique_lock<std::mutex> mutex_lock(mutex_);
     waiting_to_finish_ = true;
-    condition_.SignalAll();
-    mutex_.Unlock();
-    StopOnFinalBarrier();
+    mutex_lock.unlock();
+    condition_.notify_all();
     for (int i = 0; i < num_workers_; ++i) {
-      all_workers_[i]->join();
-      delete all_workers_[i];
+      all_workers_[i].join();
     }
-  }
-}
-
-void ThreadPool::StopOnFinalBarrier() {
-  if (final_barrier_->Block()) {
-    final_barrier_.reset(NULL);
   }
 }
 
 void ThreadPool::StartWorkers() {
   started_ = true;
   for (int i = 0; i < num_workers_; ++i) {
-    all_workers_.push_back(new tthread::thread(&RunWorker, this));
+    all_workers_.push_back(std::thread(&RunWorker, this));
   }
 }
 
 Closure* ThreadPool::GetNextTask() {
-  MutexLock lock(&mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   for (;;) {
     if (!tasks_.empty()) {
       Closure* const task = tasks_.front();
@@ -72,17 +58,18 @@ Closure* ThreadPool::GetNextTask() {
     if (waiting_to_finish_) {
       return NULL;
     } else {
-      condition_.Wait(&mutex_);
+      condition_.wait(lock);
     }
   }
   return NULL;
 }
 
 void ThreadPool::Add(Closure* const closure) {
-  MutexLock lock(&mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   tasks_.push_back(closure);
   if (started_) {
-    condition_.SignalAll();
+    lock.unlock();
+    condition_.notify_one();
   }
 }
 }  // namespace operations_research

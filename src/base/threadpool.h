@@ -14,16 +14,19 @@
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
 #define OR_TOOLS_BASE_THREADPOOL_H_
 
+#include <condition_variable>
 #include <list>
+#include <mutex>
 #include <string>
 #include <vector>
+#include <thread>
 
 #include "base/callback.h"
 #include "base/macros.h"
 #include "base/logging.h"
 #include "base/mutex.h"
-#include "base/scoped_ptr.h"
 #include "base/synchronization.h"
+#include "base/unique_ptr.h"
 
 namespace operations_research {
 class ThreadPool {
@@ -33,18 +36,16 @@ class ThreadPool {
 
   void StartWorkers();
   void Add(Closure* const closure);
-  void StopOnFinalBarrier();
   Closure* GetNextTask();
 
  private:
   const int num_workers_;
   std::list<Closure*> tasks_;
-  Mutex mutex_;
-  CondVar condition_;
+  std::mutex mutex_;
+  std::condition_variable condition_;
   bool waiting_to_finish_;
   bool started_;
-  scoped_ptr<Barrier> final_barrier_;
-  std::vector<tthread::thread*> all_workers_;
+  std::vector<std::thread> all_workers_;
 };
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_THREADPOOL_H_

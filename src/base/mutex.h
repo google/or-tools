@@ -14,13 +14,16 @@
 #ifndef OR_TOOLS_BASE_MUTEX_H_
 #define OR_TOOLS_BASE_MUTEX_H_
 
+#include <condition_variable>
+#include <mutex>
+
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
-namespace tthread {
+
+namespace std {
 class condition_variable;
 class mutex;
 class thread;
-}  // namespace tthread
+}  // std
 
 namespace operations_research {
 class Mutex {
@@ -30,16 +33,18 @@ class Mutex {
   void Lock();
   void Unlock();
   bool TryLock();
-  tthread::mutex* RealMutex() const;
+
+  friend class CondVar;
 
  private:
-  scoped_ptr<tthread::mutex> real_mutex_;
+  std::mutex real_mutex_;
   DISALLOW_COPY_AND_ASSIGN(Mutex);
 };
 
 class MutexLock {
  public:
   explicit MutexLock(Mutex* const mutex) : mutex_(mutex) {
+
     this->mutex_->Lock();
   }
 
@@ -59,7 +64,7 @@ class CondVar {
   void SignalAll();
 
  private:
-  scoped_ptr<tthread::condition_variable> real_condition_;
+  std::condition_variable real_condition_;
   DISALLOW_COPY_AND_ASSIGN(CondVar);
 };
 
