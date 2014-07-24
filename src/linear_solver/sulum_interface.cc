@@ -25,9 +25,9 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
+#include "base/unique_ptr.h"
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
@@ -435,8 +435,8 @@ void SLMInterface::ExtractOldConstraints() {
   int max_constraint_size = solver_->ComputeMaxConstraintSize(
       0, last_constraint_index_);
 
-  scoped_array<int> indices(new int[max_constraint_size ]);
-  scoped_array<double> coefs(new double[max_constraint_size ]);
+  std::unique_ptr<int[]> indices(new int[max_constraint_size ]);
+  std::unique_ptr<double[]> coefs(new double[max_constraint_size ]);
 
   for (int i = 0; i < last_constraint_index_; ++i) {
     MPConstraint* const  ct = solver_->constraints_[i];
@@ -499,8 +499,8 @@ void SLMInterface::ExtractNewConstraints() {
 
     // Make space for dummy variable.
     max_row_length = std::max(1, max_row_length);
-    scoped_array<int> indices(new int[max_row_length]);
-    scoped_array<double> coefs(new double[max_row_length]);
+    std::unique_ptr<int[]> indices(new int[max_row_length]);
+    std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
@@ -786,8 +786,8 @@ double SLMInterface::ComputeExactConditionNumber() const {
   CheckReturnKey(SlmGetCons(model_,&num_rows));
   CheckReturnKey(SlmGetVars(model_,&num_cols));
 
-  scoped_array<double> row_scaling_factor(new double[num_rows]);
-  scoped_array<double> column_scaling_factor(new double[num_cols]);
+  std::unique_ptr<double[]> row_scaling_factor(new double[num_rows]);
+  std::unique_ptr<double[]> column_scaling_factor(new double[num_cols]);
 
   for (int row = 0; row < num_rows; ++row) {
     row_scaling_factor[row] = 1.0;
@@ -810,8 +810,8 @@ double SLMInterface::ComputeScaledBasisL1Norm(
     double* row_scaling_factor, double* column_scaling_factor) const {
   double norm = 0.0;
 
-  scoped_array<double> values(new double[num_rows]);
-  scoped_array<int> indices(new int[num_rows]);
+  std::unique_ptr<double[]> values(new double[num_rows]);
+  std::unique_ptr<int[]> indices(new int[num_rows]);
   for (int col = 0; col < num_cols; ++col) {
     SlmStatusKey slm_basis_status;
 
@@ -875,8 +875,8 @@ double SLMInterface::ComputeInverseScaledBasisL1Norm(
     }
   }
 
-  scoped_array<double> right_hand_side(new double[num_rows]);
-  scoped_array<int> basidx(new int[num_rows]);
+  std::unique_ptr<double[]> right_hand_side(new double[num_rows]);
+  std::unique_ptr<int[]> basidx(new int[num_rows]);
 
   CheckReturnKey(SlmGetBasisHead(model_,basidx.get()));
 

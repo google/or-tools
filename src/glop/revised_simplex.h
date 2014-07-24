@@ -531,7 +531,7 @@ class RevisedSimplex {
   ColIndex first_slack_col_;
 
   // We're using vectors after profiling and looking at the generated assembly
-  // it's as fast as scoped_ptr as long as the size is properly reserved
+  // it's as fast as std::unique_ptr as long as the size is properly reserved
   // beforehand.
 
   // Temporary view of the matrix given to Solve() with extra slack columns.

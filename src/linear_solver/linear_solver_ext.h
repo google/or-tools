@@ -24,7 +24,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/timer.h"
 #include "base/strutil.h"
 #include "base/sparsetable.h"

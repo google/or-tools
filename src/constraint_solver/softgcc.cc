@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/unique_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
@@ -905,56 +906,56 @@ class SoftGCC : public Constraint{
   int64 sum_card_min_;
 
   //for each value, the quantity of flow into this value
-  scoped_ptr<int64[]> underflow_;
+  std::unique_ptr<int64[]> underflow_;
  //for each variable, the value it is matched to
-  scoped_ptr<int64[]> under_variable_match_;
+  std::unique_ptr<int64[]> under_variable_match_;
   //first variable matched to the value
-  scoped_ptr<int64[]> under_value_match_;
+  std::unique_ptr<int64[]> under_value_match_;
   //total flow
   int64 under_total_flow_;
   //next variable matched
-  scoped_ptr<int64[]> under_next_match_;
+  std::unique_ptr<int64[]> under_next_match_;
   //previous variable matched
-  scoped_ptr<int64[]> under_previous_match_;
+  std::unique_ptr<int64[]> under_previous_match_;
 
   //for each value, the quantity of flow into this value
-  scoped_ptr<int64[]> overflow_;
+  std::unique_ptr<int64[]> overflow_;
   //for each variable, the value it is matched to
-  scoped_ptr<int64[]> over_variable_match_;
+  std::unique_ptr<int64[]> over_variable_match_;
   //first variable matched to the value
-  scoped_ptr<int64[]> over_value_match_;
+  std::unique_ptr<int64[]> over_value_match_;
   //total flow
   int64 over_total_flow_;
   //next variable matched
-  scoped_ptr<int64[]> over_next_match_;
+  std::unique_ptr<int64[]> over_next_match_;
   //previous variable matched
-  scoped_ptr<int64[]> over_previous_match_;
+  std::unique_ptr<int64[]> over_previous_match_;
 
   //flags for the dfs_ if the var nodes have been visited
-  scoped_ptr<int64[]> variable_seen_;
+  std::unique_ptr<int64[]> variable_seen_;
   //flags for the dfs_ if the val nodes have been visited
-  scoped_ptr<int64[]> value_seen_;
+  std::unique_ptr<int64[]> value_seen_;
   //magic_ used for the flag in _variable_seen_ and _value_seen_
   int64 magic_;
   int64 dfs_;
   int64 component_;
-  scoped_ptr<int64[]> variable_component_;
-  scoped_ptr<int64[]> variable_dfs_;
-  scoped_ptr<int64[]> variable_high_;
-  scoped_ptr<int64[]> value_component_;
-  scoped_ptr<int64[]> value_dfs_;
-  scoped_ptr<int64[]> value_high_;
+  std::unique_ptr<int64[]> variable_component_;
+  std::unique_ptr<int64[]> variable_dfs_;
+  std::unique_ptr<int64[]> variable_high_;
+  std::unique_ptr<int64[]> value_component_;
+  std::unique_ptr<int64[]> value_dfs_;
+  std::unique_ptr<int64[]> value_high_;
   int64 sink_component_;
   int64 sink_dfs_;
   int64 sink_high_;
-  scoped_ptr<bool[]> is_var_always_matched_in_underflow_;
-  scoped_ptr<bool[]> is_var_always_matched_in_overflow_;
-  scoped_ptr<int64[]> stack_;
-  scoped_ptr<int64[]> type_;
+  std::unique_ptr<bool[]> is_var_always_matched_in_underflow_;
+  std::unique_ptr<bool[]> is_var_always_matched_in_overflow_;
+  std::unique_ptr<int64[]> stack_;
+  std::unique_ptr<int64[]> type_;
   int64 top_;
   std::vector<int64> num_vars_in_component_;
-  scoped_ptr<int64[]> under_variable_component_;
-  scoped_ptr<int64[]> under_value_component_;
+  std::unique_ptr<int64[]> under_variable_component_;
+  std::unique_ptr<int64[]> under_value_component_;
 };
 }  // namespace
 

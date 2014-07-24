@@ -14,7 +14,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
 #include "base/map_util.h"
@@ -300,7 +299,7 @@ class TableVar {
   IntVar* const var_;
   IntVarIterator* const domain_iterator_;
   IntVarIterator* const delta_domain_iterator_;
-  scoped_ptr<int[]> shared_positions_;
+  std::unique_ptr<int[]> shared_positions_;
 };
 
 class Ac4TableConstraint : public Constraint {

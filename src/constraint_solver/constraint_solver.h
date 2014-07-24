@@ -74,7 +74,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
 #include "base/timer.h"
@@ -3835,7 +3834,7 @@ class IntExpr : public PropagationBaseObject {
 // variable that has created this iterator.
 
 // IntVar* current_var;
-// scoped_ptr<IntVarIterator> it(current_var->MakeHoleIterator(false));
+// std::unique_ptr<IntVarIterator> it(current_var->MakeHoleIterator(false));
 // for (const int64 hole : InitAndGetValues(it)) {
 //   // use the hole
 // }
