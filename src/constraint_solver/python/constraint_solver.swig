@@ -241,7 +241,7 @@ Constraint* PythonMethodName(int64 date) {
 #undef PRECEDENCE_CONSTRAINT
 #undef SCHEDULING_CONSTRAINT
 
-// Use DebugString() for the native string conversion in python, for objects
+// Use DebugString() for the native std::string conversion in python, for objects
 // that support it.
 %define PY_STRINGIFY_DEBUGSTRING(Class)
 %extend operations_research::Class {
@@ -270,7 +270,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   }
 
   SearchMonitor* SearchLogWithCallback(int period,
-                                       ResultCallback<string>* callback) {
+                                       ResultCallback<std::string>* callback) {
     return $self->MakeSearchLog(period, callback);
   }
 
@@ -685,7 +685,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     solver->clear_fail_intercept();
     // IMPORTANT: the type and message of the exception raised matter,
     // because they are caught by the python overrides of some CP classes.
-    // See the occurrences of the "PyExc_Exception" string below.
+    // See the occurrences of the "PyExc_Exception" std::string below.
     PyErr_SetString(PyExc_Exception, "CP Solver fail");
     SWIG_fail;
   }
@@ -890,34 +890,34 @@ namespace operations_research {
 // Solver: Constraints tying a boolean var to an expression. Model-wise; it is
 // equivalent to creating the expression via the python natural API; and then
 // declaring its equality to the boolean var.
-%rename (IsBetweenVar) Solver::MakeIsBetweenVar;
-%rename (IsDifferentCstVar) Solver::MakeIsDifferentCstVar;
-%rename (IsDifferentVar) Solver::MakeIsDifferentVar;
 %rename (IsEqualCstVar) Solver::MakeIsEqualCstVar;
 %rename (IsEqualVar) Solver::MakeIsEqualVar;
+%rename (IsDifferentCstVar) Solver::MakeIsDifferentCstVar;
+%rename (IsDifferentVar) Solver::MakeIsDifferentVar;
 %rename (IsGreaterCstVar) Solver::MakeIsGreaterCstVar;
-%rename (IsGreaterOrEqualCstVar) Solver::MakeIsGreaterOrEqualCstVar;
-%rename (IsGreaterOrEqualVar) Solver::MakeIsGreaterOrEqualVar;
 %rename (IsGreaterVar) Solver::MakeIsGreaterVar;
 %rename (IsLessCstVar) Solver::MakeIsLessCstVar;
+%rename (IsLessVar) Solver::MakeIsLessVar;
+%rename (IsGreaterOrEqualCstVar) Solver::MakeIsGreaterOrEqualCstVar;
+%rename (IsGreaterOrEqualVar) Solver::MakeIsGreaterOrEqualVar;
 %rename (IsLessOrEqualCstVar) Solver::MakeIsLessOrEqualCstVar;
 %rename (IsLessOrEqualVar) Solver::MakeIsLessOrEqualVar;
-%rename (IsLessVar) Solver::MakeIsLessVar;
+%rename (IsBetweenVar) Solver::MakeIsBetweenVar;
 %rename (IsMemberVar) Solver::MakeIsMemberVar;
 // The methods below should be avoided: use the *Var versions above if you can.
-%rename (IsBetweenCt) Solver::MakeIsBetweenCt;
-%rename (IsDifferentCstCt) Solver::MakeIsDifferentCstCt;
-%rename (IsDifferentCt) Solver::MakeIsDifferentCt;
 %rename (IsEqualCstCt) Solver::MakeIsEqualCstCt;
 %rename (IsEqualCt) Solver::MakeIsEqualCt;
+%rename (IsDifferentCstCt) Solver::MakeIsDifferentCstCt;
+%rename (IsDifferentCt) Solver::MakeIsDifferentCt;
 %rename (IsGreaterCstCt) Solver::MakeIsGreaterCstCt;
 %rename (IsGreaterCt) Solver::MakeIsGreaterCt;
-%rename (IsGreaterOrEqualCstCt) Solver::MakeIsGreaterOrEqualCstCt;
-%rename (IsGreaterOrEqualCt) Solver::MakeIsGreaterOrEqualCt;
 %rename (IsLessCstCt) Solver::MakeIsLessCstCt;
 %rename (IsLessCt) Solver::MakeIsLessCt;
+%rename (IsGreaterOrEqualCstCt) Solver::MakeIsGreaterOrEqualCstCt;
+%rename (IsGreaterOrEqualCt) Solver::MakeIsGreaterOrEqualCt;
 %rename (IsLessOrEqualCstCt) Solver::MakeIsLessOrEqualCstCt;
 %rename (IsLessOrEqualCt) Solver::MakeIsLessOrEqualCt;
+%rename (IsBetweenCt) Solver::MakeIsBetweenCt;
 %rename (IsMemberCt) Solver::MakeIsMemberCt;
 
 
@@ -1365,7 +1365,6 @@ namespace operations_research {
 %feature("director") Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
-%unignore Constraint::solver;
 %unignore Constraint::Post;
 %unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
@@ -1443,6 +1442,7 @@ namespace operations_research {
 %unignore IntExpr::IsVar;
 %unignore IntExpr::VarWithName;
 %unignore IntExpr::WhenRange;
+
 
 // IntVar
 // Ignored:
@@ -2216,3 +2216,4 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
+

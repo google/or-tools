@@ -74,7 +74,8 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
-%module(directors="1") main
+%module(directors="1", allprotected="1") main
+#pragma SWIG nowarn=473
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
 %feature("director") LongResultCallback3;
@@ -208,6 +209,8 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %feature("director") Action;
 %feature("director") LocalSearchOperator;
 %feature("director") PathOperator;
+%feature("director") SymmetryBreaker;
+
 %feature("director") BaseLns;
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") SequenceVarLocalSearchOperator;
@@ -295,6 +298,7 @@ namespace operations_research {
   return $jnicall;
 }
 %enddef
+
 CONVERT_VECTOR(IntVar);
 CONVERT_VECTOR(SearchMonitor);
 CONVERT_VECTOR(DecisionBuilder);
@@ -302,6 +306,7 @@ CONVERT_VECTOR(IntervalVar);
 CONVERT_VECTOR(SequenceVar);
 CONVERT_VECTOR(LocalSearchOperator);
 CONVERT_VECTOR(LocalSearchFilter);
+CONVERT_VECTOR(SymmetryBreaker);
 
 %typemap(javacode) Solver %{
   /**

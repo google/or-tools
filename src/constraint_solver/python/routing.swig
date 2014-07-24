@@ -44,7 +44,7 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
 
 // Create input mapping for NodeEvaluator2
 %{
-static int64 PyCallbackNodeEvaluator2(
+static int64 PyCallback2NodeIndexNodeIndex(
     PyObject* pyfunc,
     operations_research::RoutingModel::NodeIndex i,
     operations_research::RoutingModel::NodeIndex j) {
@@ -67,7 +67,7 @@ static int64 PyCallbackNodeEvaluator2(
     PyErr_SetString(PyExc_TypeError, "Need a callable object!");
     SWIG_fail;
   }
-  $1 = NewPermanentCallback(&PyCallbackNodeEvaluator2, $input);
+  $1 = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, $input);
 }
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
