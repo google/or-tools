@@ -41,7 +41,6 @@ using operations_research::Solver;
 using operations_research::ACMRandom;
 using operations_research::StringAppendF;
 using operations_research::StringPrintf;
-using operations_research::scoped_ptr;
 
 
 DECLARE_string(routing_first_solution);

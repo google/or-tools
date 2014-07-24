@@ -17,15 +17,23 @@
 #include "base/callback.h"
 #include "base/logging.h"
 #include "base/mutex.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/synchronization.h"
+#include "base/unique_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
 DEFINE_int32(workers, 4, "Number of workers for tests");
 
 namespace operations_research {
+namespace {
+template <class T, class TT>
+inline T ThreadSafeIncrement(T* value, Mutex* sm, TT inc) {
+  MutexLock l(sm);
+  return (*value) += inc;
+}
+}
+
 class UpVar : public BaseLNS {
  public:
   UpVar(const std::vector<IntVar*>& vars, int worker)
@@ -178,7 +186,7 @@ void TestInitialSolution() {
   LOG(INFO) << "TestInitialSolution";
   int work_done = 0;
   Mutex mutex;
-  scoped_ptr<ParallelSolveSupport> support(
+  std::unique_ptr<ParallelSolveSupport> support(
       MakeMtSolveSupport(FLAGS_workers,
                          false,
                          NewPermanentCallback(
@@ -194,7 +202,7 @@ void TestNoInitialSolution() {
   LOG(INFO) << "TestNoInitialSolution";
   int work_done = 0;
   Mutex mutex;
-  scoped_ptr<ParallelSolveSupport> support(
+  std::unique_ptr<ParallelSolveSupport> support(
       MakeMtSolveSupport(FLAGS_workers,
                          false,
                          NewPermanentCallback(
@@ -207,7 +215,7 @@ void TestNoInitialSolution() {
 
 void TestModelWithSearch() {
   LOG(INFO) << "TestModelWithSearch";
-  scoped_ptr<ParallelSolveSupport> support(
+  std::unique_ptr<ParallelSolveSupport> support(
       MakeMtSolveSupport(FLAGS_workers,
                          true,
                          NewPermanentCallback(

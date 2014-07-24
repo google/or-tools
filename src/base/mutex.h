@@ -19,12 +19,6 @@
 
 #include "base/macros.h"
 
-namespace std {
-class condition_variable;
-class mutex;
-class thread;
-}  // std
-
 namespace operations_research {
 class Mutex {
  public:
@@ -44,7 +38,6 @@ class Mutex {
 class MutexLock {
  public:
   explicit MutexLock(Mutex* const mutex) : mutex_(mutex) {
-
     this->mutex_->Lock();
   }
 

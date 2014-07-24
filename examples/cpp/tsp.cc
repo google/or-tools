@@ -39,8 +39,6 @@ using operations_research::Assignment;
 using operations_research::RoutingModel;
 using operations_research::ACMRandom;
 using operations_research::StrCat;
-using operations_research::scoped_ptr;
-
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");

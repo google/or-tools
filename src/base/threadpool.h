@@ -22,11 +22,6 @@
 #include <thread>
 
 #include "base/callback.h"
-#include "base/macros.h"
-#include "base/logging.h"
-#include "base/mutex.h"
-#include "base/synchronization.h"
-#include "base/unique_ptr.h"
 
 namespace operations_research {
 class ThreadPool {
