@@ -622,7 +622,7 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface
 $(OBJ_DIR)/linear_solver/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
 
-$(OBJ_DIR)/linear_solver/glop_interface.$O:$(SRC_DIR)/linear_solver/glop_interface.cc
+$(OBJ_DIR)/linear_solver/glop_interface.$O:$(SRC_DIR)/linear_solver/glop_interface.cc $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sglop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O
 
 $(OBJ_DIR)/linear_solver/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interface.cc
@@ -941,7 +941,7 @@ $(OBJ_DIR)/glop/lp_data.$O:$(SRC_DIR)/glop/lp_data.cc
 $(OBJ_DIR)/glop/lp_print_utils.$O:$(SRC_DIR)/glop/lp_print_utils.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_print_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_print_utils.$O
 
-$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
 
 $(OBJ_DIR)/glop/lp_utils.$O:$(SRC_DIR)/glop/lp_utils.cc
