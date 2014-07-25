@@ -10,6 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#if defined(__GNUC__)  // Linux or Mac OS X.
+#include <signal.h>
+#endif  // __GNUC__
 #include <iostream>  // NOLINT
 #include <string>
 #include "base/integral_types.h"
@@ -41,6 +44,27 @@ class FzLog : public SearchLog {
     std::cout << "%% " << line << std::endl;
   }
 };
+
+static bool ControlC = false;
+
+class FzInterrupt : public SearchLimit {
+ public:
+  FzInterrupt(Solver* const solver) : SearchLimit(solver) {}
+  virtual ~FzInterrupt() {}
+
+  virtual bool Check() {
+    return ControlC;
+  }
+
+  virtual void Init() {}
+
+  virtual void Copy(const SearchLimit* const limit) {}
+
+  virtual SearchLimit* MakeClone() const {
+    return solver()->RevAlloc(new FzInterrupt(solver()));
+  }
+};
+
 // Flatten Search annotations.
 void FlattenAnnotations(const FzAnnotation& ann,
                         std::vector<FzAnnotation>* out) {
@@ -563,8 +587,10 @@ void FzSolver::Solve(FzSolverParameters p,
         p.use_log ? solver()->RevAlloc(
                         new FzLog(solver(), objective_monitor_, p.log_period))
                   : nullptr;
+    SearchLimit* const ctrl_c = solver()->RevAlloc(new FzInterrupt(solver()));
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
+    monitors.push_back(ctrl_c);
     parallel_support->StartSearch(
         p.worker_id, model_.maximize() ? FzParallelSupportInterface::MAXIMIZE
                                        : FzParallelSupportInterface::MINIMIZE);
@@ -725,3 +751,9 @@ void FzSolver::Solve(FzSolverParameters p,
   }
 }
 }  // namespace operations_research
+
+void interrupt_handler(int s) {
+  FZLOG << "Ctrl-C caught" << FZENDL;
+  operations_research::ControlC = true;
+}
+

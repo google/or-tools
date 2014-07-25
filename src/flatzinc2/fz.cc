@@ -14,6 +14,10 @@
 // of the funcionnalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
+#if defined(__GNUC__)  // Linux or Mac OS X.
+#include <signal.h>
+#endif  // __GNUC__
+
 #include <iostream>  // NOLINT
 #include <string>
 #include <vector>
@@ -49,6 +53,7 @@ DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
 
 using operations_research::ThreadPool;
+extern void interrupt_handler(int s);
 
 namespace operations_research {
 void Solve(const FzModel* const model, const FzSolverParameters& parameters,
@@ -208,6 +213,10 @@ void ParseAndRun(const std::string& filename, int num_workers) {
   }
   FzModelStatistics stats(model);
   stats.PrintStatistics();
+
+#if defined(__GNUC__)
+  signal (SIGINT, &interrupt_handler);
+#endif
 
   if (num_workers == 0) {
     operations_research::SequentialRun(&model);
