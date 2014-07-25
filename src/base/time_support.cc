@@ -43,7 +43,7 @@ int64 GetCurrentTimeNanos() {
 #elif defined(__GNUC__)  // Linux
   const int64 kSecondInNanoSeconds = 1000000000;
   struct timespec current;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current);
+  clock_gettime(CLOCK_REALTIME, &current);
   return current.tv_sec * kSecondInNanoSeconds + current.tv_nsec;
 #endif
 }
