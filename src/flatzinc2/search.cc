@@ -682,9 +682,9 @@ void FzSolver::Solve(FzSolverParameters p,
       final_output.append("%% TIMEOUT\n");
       timeout = true;
     } else if (!breaked && num_solutions == 0 &&
-               !parallel_support->Interrupted()) {
+               !parallel_support->Interrupted() && !ControlC) {
       final_output.append("=====UNSATISFIABLE=====\n");
-    } else if (!breaked && !parallel_support->Interrupted()) {
+    } else if (!breaked && !parallel_support->Interrupted() && !ControlC) {
       final_output.append("==========\n");
       proven = true;
     }
