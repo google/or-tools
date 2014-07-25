@@ -678,7 +678,7 @@ void FzSolver::Solve(FzSolverParameters p,
             (p.all_solutions && p.num_solutions == 1 && num_solutions >= 1);
       }
     }
-    if (parallel_support->Interrupted()) {
+    if (parallel_support->Interrupted() || ControlC) {
       final_output.append("%% TIMEOUT\n");
       timeout = true;
     } else if (!breaked && num_solutions == 0 &&
@@ -756,4 +756,3 @@ void interrupt_handler(int s) {
   FZLOG << "Ctrl-C caught" << FZENDL;
   operations_research::ControlC = true;
 }
-
