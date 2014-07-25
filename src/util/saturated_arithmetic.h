@@ -213,7 +213,7 @@ inline int64 CapProd(int64 x, int64 y) {
 #if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapProdFast(x, y);
 #else
-  return CapProdWithDoubles(x, y);
+  return CapProdUsingDoubles(x, y);
 #endif
 }
 }  // namespace operations_research
