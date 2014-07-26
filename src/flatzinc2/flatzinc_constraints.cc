@@ -460,7 +460,185 @@ class BooleanSumInRange : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
-// ----- Inverse constraint -----
+// ----- Variable duration interval var -----
+
+class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
+ public:
+  StartVarDurationVarPerformedIntervalVar(Solver* const s,
+                                          IntVar* const start,
+                                          IntVar* const  duration,
+                                          const std::string& name);
+  virtual ~StartVarDurationVarPerformedIntervalVar() {}
+
+  virtual int64 StartMin() const;
+  virtual int64 StartMax() const;
+  virtual void SetStartMin(int64 m);
+  virtual void SetStartMax(int64 m);
+  virtual void SetStartRange(int64 mi, int64 ma);
+  virtual int64 OldStartMin() const { return start_->OldMin(); }
+  virtual int64 OldStartMax() const { return start_->OldMax(); }
+  virtual void WhenStartRange(Demon* const d) { start_->WhenRange(d); }
+  virtual void WhenStartBound(Demon* const d) { start_->WhenBound(d); }
+
+  virtual int64 DurationMin() const;
+  virtual int64 DurationMax() const;
+  virtual void SetDurationMin(int64 m);
+  virtual void SetDurationMax(int64 m);
+  virtual void SetDurationRange(int64 mi, int64 ma);
+  virtual int64 OldDurationMin() const { return duration_->Min(); }
+  virtual int64 OldDurationMax() const { return duration_->Max(); }
+  virtual void WhenDurationRange(Demon* const d) { duration_->WhenRange(d); }
+  virtual void WhenDurationBound(Demon* const d) { duration_->WhenBound(d); }
+
+  virtual int64 EndMin() const;
+  virtual int64 EndMax() const;
+  virtual void SetEndMin(int64 m);
+  virtual void SetEndMax(int64 m);
+  virtual void SetEndRange(int64 mi, int64 ma);
+  virtual int64 OldEndMin() const {
+    return start_->OldMin() + duration_->OldMin();
+  }
+  virtual int64 OldEndMax() const {
+    return start_->OldMax() + duration_->OldMax();
+  }
+  virtual void WhenEndRange(Demon* const d) {
+    start_->WhenRange(d);
+    duration_->WhenRange(d);
+  }
+  virtual void WhenEndBound(Demon* const d) {
+    start_->WhenBound(d);
+    duration_->WhenBound(d);
+  }
+
+  virtual bool MustBePerformed() const;
+  virtual bool MayBePerformed() const;
+  virtual void SetPerformed(bool val);
+  virtual bool WasPerformedBound() const { return true; }
+  virtual void WhenPerformedBound(Demon* const d) {}
+  virtual std::string DebugString() const;
+
+  virtual IntExpr* StartExpr() { return start_; }
+  virtual IntExpr* DurationExpr() { return duration_; }
+  virtual IntExpr* EndExpr() {
+    return solver()->MakeSum(start_, duration_);
+  }
+  virtual IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+    return StartExpr();
+  }
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+    return DurationExpr();
+  }
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "", 0, nullptr);
+  }
+
+ private:
+  IntVar* const start_;
+  IntVar* const duration_;
+};
+
+// TODO(user): Take care of overflows.
+StartVarDurationVarPerformedIntervalVar::
+StartVarDurationVarPerformedIntervalVar(Solver* const s,
+                                        IntVar* const var,
+                                        IntVar* const duration,
+                                        const std::string& name)
+    : IntervalVar(s, name), start_(var), duration_(duration) {}
+
+int64 StartVarDurationVarPerformedIntervalVar::StartMin() const {
+  return start_->Min();
+}
+
+int64 StartVarDurationVarPerformedIntervalVar::StartMax() const {
+  return start_->Max();
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetStartMin(int64 m) {
+  start_->SetMin(m);
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetStartMax(int64 m) {
+  start_->SetMax(m);
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+  start_->SetRange(mi, ma);
+}
+
+int64 StartVarDurationVarPerformedIntervalVar::DurationMin() const {
+  return duration_->Min();
+}
+
+int64 StartVarDurationVarPerformedIntervalVar::DurationMax() const {
+  return duration_->Max();
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetDurationMin(int64 m) {
+  duration_->SetMin(m);
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetDurationMax(int64 m) {
+  duration_->SetMax(m);
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetDurationRange(
+    int64 mi, int64 ma) {
+  duration_->SetRange(mi, ma);
+}
+
+int64 StartVarDurationVarPerformedIntervalVar::EndMin() const {
+  return start_->Min() + duration_->Min();
+}
+
+int64 StartVarDurationVarPerformedIntervalVar::EndMax() const {
+  return start_->Max() + duration_->Max();
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetEndMin(int64 m) {
+  start_->SetMin(m - duration_->Max());
+  duration_->SetMin(m - start_->Max());
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetEndMax(int64 m) {
+  start_->SetMax(m - duration_->Min());
+  duration_->SetMax(m - start_->Min());
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
+  start_->SetRange(mi - duration_->Max(), ma - duration_->Min());
+  duration_->SetRange(mi - start_->Max(), ma - start_->Min());
+}
+
+bool StartVarDurationVarPerformedIntervalVar::MustBePerformed() const {
+  return true;
+}
+
+bool StartVarDurationVarPerformedIntervalVar::MayBePerformed() const {
+  return true;
+}
+
+void StartVarDurationVarPerformedIntervalVar::SetPerformed(bool val) {
+  if (!val) {
+    solver()->Fail();
+  }
+}
+
+std::string StartVarDurationVarPerformedIntervalVar::DebugString() const {
+  std::string out;
+  const std::string& var_name = name();
+  if (!var_name.empty()) {
+    out = var_name + "(start = ";
+  } else {
+    out = "IntervalVar(start = ";
+  }
+  StringAppendF(&out, "%s, duration = %s, performed = true)",
+                start_->DebugString().c_str(),
+                duration_->DebugString().c_str());
+  return out;
+}
 
 // Variable demand cumulative time table
 
@@ -888,4 +1066,15 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
     solver->AddConstraint(ct);
   }
 }
+
+IntervalVar* MakePerformedIntervalVar(Solver* const solver,
+                                      IntVar* const start,
+                                      IntVar* const duration,
+                                      const std::string& n) {
+  CHECK(start != nullptr);
+  CHECK(duration != nullptr);
+  return solver->RegisterIntervalVar(solver->RevAlloc(
+      new StartVarDurationVarPerformedIntervalVar(solver, start, duration, n)));
+}
+
 }  // namespace operations_research

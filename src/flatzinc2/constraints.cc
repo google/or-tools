@@ -603,47 +603,74 @@ void ExtractPerformedAndDemands(Solver* const solver,
 }
 
 void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
+  // This constraint has many possible translation into the CP library.
+  // First we parse the arguments.
   Solver* const solver = fzsolver->solver();
+  // Parse start variables.
   const std::vector<IntVar*> start_variables =
       fzsolver->GetVariableArray(ct->Arg(0));
-  if (ct->Arg(1).type == FzArgument::INT_LIST &&
-      ct->Arg(2).type == FzArgument::INT_LIST) {
-    const std::vector<int64>& durations = ct->Arg(1).values;
-    const std::vector<int64>& demands = ct->Arg(2).values;
-    std::vector<IntervalVar*> intervals;
-    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
-                                              &intervals);
-    if (ct->Arg(3).HasOneValue()) {
-      // Fully fixed case.
-      const int64 capacity = ct->Arg(3).Value();
-      Constraint* const constraint =
-          solver->MakeCumulative(intervals, demands, capacity, "");
-      AddConstraint(solver, ct, constraint);
-    } else {
-      // Capacity is variable.
-      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-      Constraint* const constraint =
-          solver->MakeCumulative(intervals, demands, capacity, "");
-      AddConstraint(solver, ct, constraint);
+
+  // Parse durations.
+  std::vector<int64> fixed_durations;
+  std::vector<IntVar*> variable_durations;
+  if (ct->Arg(1).type == FzArgument::INT_LIST) {
+    fixed_durations = ct->Arg(1).values;
+  } else {
+    variable_durations = fzsolver->GetVariableArray(ct->Arg(1));
+    if (AreAllBound(variable_durations)) {
+      FillValues(variable_durations, &fixed_durations);
+      variable_durations.clear();
     }
-  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
-             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY &&
-             IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
-             ct->Arg(3).HasOneValue() && ct->Arg(3).Value() == 1) {
-    // Hidden disjunctive.
-    const std::vector<int64>& durations = ct->Arg(1).values;
-    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
-    const int64 capacity = ct->Arg(3).Value();
+  }
+
+  // Parse demands.
+  std::vector<int64> fixed_demands;
+  std::vector<IntVar*> variable_demands;
+  if (ct->Arg(2).type == FzArgument::INT_LIST) {
+    fixed_demands = ct->Arg(2).values;
+  } else {
+    variable_demands = fzsolver->GetVariableArray(ct->Arg(2));
+    if (AreAllBound(variable_demands)) {
+      FillValues(variable_demands, &fixed_demands);
+      variable_demands.clear();
+    }
+  }
+
+  // Parse capacity.
+  int64 fixed_capacity = 0;
+  IntVar* variable_capacity = nullptr;
+  if (ct->Arg(3).HasOneValue()) {
+    fixed_capacity = ct->Arg(3).Value();
+  } else {
+    variable_capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
+  }
+
+  // Special case. We will not create the interval variables.
+  if (!fixed_durations.empty() && !fixed_demands.empty() &&
+      AreAllOnes(fixed_durations) && variable_capacity == nullptr &&
+      AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1)) {
+    // Hidden all different.
+    Constraint* const constraint =
+        solver->MakeAllDifferent(start_variables);
+    AddConstraint(solver, ct, constraint);
+    return;
+  }
+
+  // Special case. Durations are fixed, demands are boolean, capacity
+  // is one.  We can transform the cumulative into a disjunctive with
+  // optional interval variables.
+  if (!fixed_durations.empty() && fixed_demands.empty() &&
+      IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
+      variable_capacity == nullptr && fixed_capacity == 1) {
     std::vector<IntVar*> performed_variables;
-    std::vector<int64> fixed_demands;
-    ExtractPerformedAndDemands(solver, demands, &performed_variables,
-                               &fixed_demands);
+    ExtractPerformedAndDemands(
+        solver, variable_demands, &performed_variables, &fixed_demands);
     std::vector<IntervalVar*> intervals;
     intervals.reserve(start_variables.size());
     for (int i = 0; i < start_variables.size(); ++i) {
       if (fixed_demands[i] == 1) {
         intervals.push_back(solver->MakeFixedDurationIntervalVar(
-            start_variables[i], durations[i], performed_variables[i],
+            start_variables[i], fixed_durations[i], performed_variables[i],
             start_variables[i]->name()));
       }
     }
@@ -652,66 +679,58 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
           solver->MakeDisjunctiveConstraint(intervals, "");
       AddConstraint(solver, ct, constraint);
     }
-  } else if (ct->Arg(1).type == FzArgument::INT_LIST &&
-             ct->Arg(2).type == FzArgument::INT_VAR_REF_ARRAY) {
-    // Cumulative with fixed durations and variable demands.
-    const std::vector<int64>& durations = ct->Arg(1).values;
-    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
-    std::vector<IntervalVar*> intervals;
-    solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "",
-                                              &intervals);
-    if (ct->Arg(3).HasOneValue()) {
-      // Fully fixed case.
-      const int64 capacity = ct->Arg(3).Value();
-      Constraint* const constraint =
-          solver->MakeCumulative(intervals, demands, capacity, "");
-      AddConstraint(solver, ct, constraint);
-    } else {
-      // Capacity is variable.
-      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-      Constraint* const constraint =
-          solver->MakeCumulative(intervals, demands, capacity, "");
-      AddConstraint(solver, ct, constraint);
+    return;
+  }
+
+  // Back to regular case. Let's create the interval variables.
+  Constraint* constraint = nullptr;
+  std::vector<IntervalVar*> intervals;
+  if (!fixed_durations.empty()) {
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
+          start_variables[i], fixed_durations[i], start_variables[i]->name());
+      intervals.push_back(interval);
     }
   } else {
-    // Everything is variable.
-    const std::vector<IntVar*> durations =
-        fzsolver->GetVariableArray(ct->Arg(1));
-    const std::vector<IntVar*> demands = fzsolver->GetVariableArray(ct->Arg(2));
-    IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-    if (AreAllBound(durations) && AreAllBound(demands) && capacity->Bound()) {
-      std::vector<int64> fdurations;
-      FillValues(durations, &fdurations);
-      std::vector<int64> fdemands;
-      FillValues(demands, &fdemands);
-      const int64 fcapacity = capacity->Min();
-      if (AreAllOnes(fdurations) &&
-          AreAllGreaterOrEqual(fdemands, fcapacity / 2 + 1)) {
-        // Hidden alldifferent.
-        Constraint* const constraint =
-            solver->MakeAllDifferent(start_variables);
-        AddConstraint(solver, ct, constraint);
-      } else {
-        std::vector<IntervalVar*> intervals;
-        solver->MakeFixedDurationIntervalVarArray(start_variables, fdurations,
-                                                  "", &intervals);
-        if (AreAllGreaterOrEqual(fdemands, fcapacity / 2 + 1)) {
-          Constraint* const constraint =
-              solver->MakeDisjunctiveConstraint(intervals, "");
-          AddConstraint(solver, ct, constraint);
-        } else {
-          Constraint* const constraint =
-              solver->MakeCumulative(intervals, fdemands, fcapacity, "");
-          AddConstraint(solver, ct, constraint);
-        }
-      }
-    } else {
-      IntVar* const capacity = fzsolver->GetExpression(ct->Arg(3))->Var();
-      Constraint* const constraint = MakeVariableCumulative(
-          solver, start_variables, durations, demands, capacity);
-      AddConstraint(solver, ct, constraint);
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntVar* const start = start_variables[i];
+      IntVar* const duration = variable_durations[i];
+      IntervalVar* const interval =
+          MakePerformedIntervalVar(solver, start, duration, start->name());
+      intervals.push_back(interval);
     }
   }
+
+  if (!fixed_demands.empty()) {
+    // Demands are fixed.
+    if (variable_capacity == nullptr) {
+      constraint =
+          AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1) ?
+          solver->MakeDisjunctiveConstraint(intervals, "") :
+          solver->MakeCumulative(intervals, fixed_demands, fixed_capacity , "");
+    } else {
+      // Capacity is variable.
+      constraint = solver->MakeCumulative(
+          intervals, fixed_demands, variable_capacity, "");
+    }
+  } else {
+    // Demands are variables.
+    if (variable_capacity == nullptr) {
+      // Capacity is fixed.
+      constraint = solver->MakeCumulative(
+          intervals, variable_demands, fixed_capacity, "");
+    } else {
+      // Capacity is variable.
+      // Constraint* const constraint2 = MakeVariableCumulative(
+      //     solver, start_variables, variable_durations, variable_demands,
+      //     variable_capacity);
+      // AddConstraint(solver, ct, constraint2);
+
+      constraint = solver->MakeCumulative(
+          intervals, variable_demands, variable_capacity, "");
+    }
+  }
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {

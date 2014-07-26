@@ -58,5 +58,10 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
                            const std::vector<IntVar*>& variables,
                            int64 range_min, int64 range_max);
+
+IntervalVar* MakePerformedIntervalVar(Solver* const solver,
+                                      IntVar* const start,
+                                      IntVar* const duration,
+                                      const std::string& n);
 }       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_
