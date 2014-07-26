@@ -386,41 +386,44 @@ class DisjunctiveLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
 // A cumulative lambda-theta tree
 class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
  public:
-  CumulativeLambdaThetaTree(int size, int64 capacity)
-      : MonoidOperationTree<LambdaThetaNode>(size), capacity_(capacity) {}
+  CumulativeLambdaThetaTree(int size, int64 capacity_max)
+      : MonoidOperationTree<LambdaThetaNode>(size),
+        capacity_max_(capacity_max) {}
+
+  void SetCapacityMax(int64 capacity_max) { capacity_max_ = capacity_max; }
 
   void Insert(const CumulativeTask& task) {
-    Set(task.index, LambdaThetaNode(capacity_, task));
+    Set(task.index, LambdaThetaNode(capacity_max_, task));
   }
 
   void Grey(const CumulativeTask& task) {
     const int index = task.index;
-    Set(index, LambdaThetaNode(capacity_, task, index));
+    Set(index, LambdaThetaNode(capacity_max_, task, index));
   }
 
   void Insert(const VariableCumulativeTask& task) {
-    Set(task.index, LambdaThetaNode(capacity_, task));
+    Set(task.index, LambdaThetaNode(capacity_max_, task));
   }
 
   void Grey(const VariableCumulativeTask& task) {
     const int index = task.index;
-    Set(index, LambdaThetaNode(capacity_, task, index));
+    Set(index, LambdaThetaNode(capacity_max_, task, index));
   }
 
   int64 energetic_end_min() const { return result().energetic_end_min; }
   int64 energetic_end_min_opt() const { return result().energetic_end_min_opt; }
   int64 Ect() const {
-    return MathUtil::CeilOfRatio(energetic_end_min(), capacity_);
+    return MathUtil::CeilOfRatio(energetic_end_min(), capacity_max_);
   }
   int64 EctOpt() const {
-    return MathUtil::CeilOfRatio(result().energetic_end_min_opt, capacity_);
+    return MathUtil::CeilOfRatio(result().energetic_end_min_opt, capacity_max_);
   }
   int argmax_energetic_end_min_opt() const {
     return result().argmax_energetic_end_min_opt;
   }
 
  private:
-  const int64 capacity_;
+  int64 capacity_max_;
 };
 
 // -------------- Not Last -----------------------------------------
@@ -1221,32 +1224,34 @@ class DualCapacityThetaTree
  public:
   static const int64 kNotInitialized;
 
-  DualCapacityThetaTree(int size, int64 capacity)
+  DualCapacityThetaTree(int size, int64 capacity_max)
       : MonoidOperationTree<DualCapacityThetaNode>(size),
-        capacity_(capacity),
+        capacity_max_(capacity_max),
         residual_capacity_(-1) {}
 
   virtual ~DualCapacityThetaTree() {}
 
+  void SetCapacityMax(int64 capacity_max) { capacity_max_ = capacity_max; }
+
   void Insert(const CumulativeTask* task) {
     Set(task->index,
-        DualCapacityThetaNode(capacity_, residual_capacity_, *task));
+        DualCapacityThetaNode(capacity_max_, residual_capacity_, *task));
   }
 
   void Insert(const VariableCumulativeTask* task) {
     Set(task->index,
-        DualCapacityThetaNode(capacity_, residual_capacity_, *task));
+        DualCapacityThetaNode(capacity_max_, residual_capacity_, *task));
   }
 
   void SetResidualCapacity(int residual_capacity) {
     Clear();
     DCHECK_LE(0, residual_capacity);
-    DCHECK_LE(residual_capacity, capacity_);
+    DCHECK_LE(residual_capacity, capacity_max_);
     residual_capacity_ = residual_capacity;
   }
 
  private:
-  const int64 capacity_;
+  int64 capacity_max_;
   int64 residual_capacity_;
   DISALLOW_COPY_AND_ASSIGN(DualCapacityThetaTree);
 };
@@ -1370,55 +1375,28 @@ class UpdatesForADemand {
   DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
-// Returns std::min(a * b, kint64max). a is positive.
-int64 SafeProduct(int64 a, int64 b) {
-  DCHECK_GE(a, 0);
-
-  const bool is_positive = b >= 0;
-  b = std::max(b, -b);  // abs(b) for int64.
-  // Note std::max(kint64min, -kint64min) = kint64min, so when b == kint64min,
-  // the following DCHECK fails.
-  DCHECK_GE(b, 0);
-  const int kint64SurelyOverflow = 63;
-  const bool surely_overflow =
-      MostSignificantBitPosition64(a) + MostSignificantBitPosition64(b) >
-      kint64SurelyOverflow;
-
-  // When the sum of MostSignificantBitPosition64 for a and b is smaller
-  // than 61 no overflow can appear and the product result is positive (as a
-  // and b are positive). However when the sum is between 61 and 63 then it
-  // is not possible to say in advance if an overflow will occur. Nevertheless
-  // the product sign is a valid test for overflow: if an overflow occurs,
-  // then the product is surely negative, and if the product is negative
-  // then an overflow occurred.
-  const int64 product = a * b;
-  return (!surely_overflow && product >= 0)
-             ? ((is_positive) ? product : -product)
-             : ((is_positive) ? kint64max : -kint64max);
-}
-
 // One-sided cumulative edge finder.
 template <class Task> class EdgeFinder : public Constraint {
  public:
   EdgeFinder(Solver* const solver, const std::vector<Task*>& tasks,
-             int64 capacity)
+             IntVar* const capacity)
       : Constraint(solver),
         capacity_(capacity),
         by_start_min_(tasks.size()),
         by_end_max_(tasks.size()),
         by_end_min_(tasks.size()),
-        lt_tree_(tasks.size(), capacity_) {
+        lt_tree_(tasks.size(), capacity_->Max()) {
     // Populate
     for (int i = 0; i < tasks.size(); ++i) {
       by_start_min_[i] = tasks[i];
       by_end_max_[i] = tasks[i];
       by_end_min_[i] = tasks[i];
-      const int64 demand = tasks[i]->DemandMin();
-      if (demand > 0) {
+      const int64 demand_min = tasks[i]->DemandMin();
+      if (demand_min > 0) {
         // Create the UpdateForADemand if needed (the [] operator calls the
         // constructor). May rehash.
-        if (update_map_[demand] == nullptr) {
-          update_map_[demand] = new UpdatesForADemand(tasks.size());
+        if (update_map_[demand_min] == nullptr) {
+          update_map_[demand_min] = new UpdatesForADemand(tasks.size());
         }
       }
     }
@@ -1431,13 +1409,14 @@ template <class Task> class EdgeFinder : public Constraint {
 
   virtual void Post() {
     // Add the demons
+    Demon* const demon = MakeDelayedConstraintDemon0(
+        solver(), this, &EdgeFinder::InitialPropagate, "RangeChanged");
     for (int i = 0; i < by_start_min_.size(); ++i) {
       // Delay propagation, as this constraint is not incremental: we pay
       // O(n log n) each time the constraint is awakened.
-      Demon* const demon = MakeDelayedConstraintDemon0(
-          solver(), this, &EdgeFinder::InitialPropagate, "RangeChanged");
       by_start_min_[i]->WhenAnything(demon);
     }
+    capacity_->WhenRange(demon);
   }
 
   // The propagation algorithms: checks for overloading, computes new start mins
@@ -1473,6 +1452,7 @@ template <class Task> class EdgeFinder : public Constraint {
     std::sort(by_end_min_.begin(), by_end_min_.end(), EndMinLessThan<Task>);
     // Clear tree.
     lt_tree_.Clear();
+    lt_tree_.SetCapacityMax(capacity_->Max());
     // Clear updates
     for (const auto& entry : update_map_) {
       entry.second->Reset();
@@ -1491,8 +1471,9 @@ template <class Task> class EdgeFinder : public Constraint {
       update_map_[demand] = updates;
     }
     DCHECK(!updates->up_to_date());
-    DualCapacityThetaTree dual_capa_tree(by_start_min_.size(), capacity_);
-    const int64 residual_capacity = capacity_ - demand;
+    DualCapacityThetaTree dual_capa_tree(by_start_min_.size(),
+                                         capacity_->Max());
+    const int64 residual_capacity = capacity_->Max() - demand;
     dual_capa_tree.SetResidualCapacity(residual_capacity);
     // It's important to initialize the update at IntervalVar::kMinValidValue
     // rather than at kInt64min, because its opposite may be used if it's a
@@ -1525,7 +1506,8 @@ template <class Task> class EdgeFinder : public Constraint {
     if (demand_min == 0) {
       return task_to_push.interval->StartMin();
     }
-    if (!update_map_[demand_min]->up_to_date()) {
+    if (!ContainsKey(update_map_, demand_min) ||
+        !update_map_[demand_min]->up_to_date()) {
       ComputeConditionalStartMins(demand_min);
     }
     DCHECK(update_map_[demand_min]->up_to_date());
@@ -1578,7 +1560,7 @@ template <class Task> class EdgeFinder : public Constraint {
       lt_tree_.Insert(*task);
       // Maximum energetic end min without overload.
       const int64 max_feasible =
-          SafeProduct(capacity_, task->interval->EndMax());
+          CapProd(capacity_->Max(), task->interval->EndMax());
       if (lt_tree_.energetic_end_min() > max_feasible) {
         solver()->Fail();
       }
@@ -1593,7 +1575,7 @@ template <class Task> class EdgeFinder : public Constraint {
       Task* const twj = by_end_max_[j];
       // We should have checked for overload earlier.
       const int64 max_feasible =
-          SafeProduct(capacity_, twj->interval->EndMax());
+          CapProd(capacity_->Max(), twj->interval->EndMax());
       DCHECK_LE(lt_tree_.energetic_end_min(), max_feasible);
       while (lt_tree_.energetic_end_min_opt() > max_feasible) {
         const int i = lt_tree_.argmax_energetic_end_min_opt();
@@ -1621,7 +1603,7 @@ template <class Task> class EdgeFinder : public Constraint {
   }
 
   // Capacity of the cumulative resource.
-  const int64 capacity_;
+  IntVar* const capacity_;
 
   // Cumulative tasks, ordered by non-decreasing start min.
   std::vector<Task*> by_start_min_;
@@ -1694,7 +1676,7 @@ bool TimeLessThan(const ProfileDelta& delta1, const ProfileDelta& delta2) {
 template <class Task> class CumulativeTimeTable : public Constraint {
  public:
   CumulativeTimeTable(Solver* const solver, const std::vector<Task*>& tasks,
-                      int64 capacity)
+                      IntVar* const capacity)
       : Constraint(solver), by_start_min_(tasks), capacity_(capacity) {
     // There may be up to 2 delta's per interval (one on each side),
     // plus two sentinels
@@ -1711,12 +1693,13 @@ template <class Task> class CumulativeTimeTable : public Constraint {
   }
 
   virtual void Post() {
-    Demon* d = MakeDelayedConstraintDemon0(
+    Demon* demon = MakeDelayedConstraintDemon0(
         solver(), this, &CumulativeTimeTable::InitialPropagate,
         "InitialPropagate");
     for (int i = 0; i < NumTasks(); ++i) {
-      by_start_min_[i]->WhenAnything(d);
+      by_start_min_[i]->WhenAnything(demon);
     }
+    capacity_->WhenRange(demon);
   }
 
   int NumTasks() const { return by_start_min_.size(); }
@@ -1765,9 +1748,7 @@ template <class Task> class CumulativeTimeTable : public Constraint {
     for (int i = 0; i < profile_unique_time_.size(); ++i) {
       const ProfileDelta& profile_delta = profile_unique_time_[i];
       usage += profile_delta.delta;
-      if (usage > capacity_) {
-        solver()->Fail();
-      }
+      capacity_->SetMin(usage);
     }
     DCHECK_EQ(0, usage);
     profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
@@ -1802,7 +1783,7 @@ template <class Task> class CumulativeTimeTable : public Constraint {
     if (demand_min == 0) {  // Demand can be null, nothing to propagate.
       return;
     }
-    const int64 residual_capacity = capacity_ - demand_min;
+    const int64 residual_capacity = capacity_->Max() - demand_min;
     const int64 duration = task->interval->DurationMin();
     const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
 
@@ -1862,7 +1843,7 @@ template <class Task> class CumulativeTimeTable : public Constraint {
   Profile profile_unique_time_;
   Profile profile_non_unique_time_;
   std::vector<Task*> by_start_min_;
-  const int64 capacity_;
+  IntVar* const capacity_;
 
   DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
 };
@@ -1871,8 +1852,8 @@ class CumulativeConstraint : public Constraint {
  public:
   CumulativeConstraint(Solver* const s,
                        const std::vector<IntervalVar*>& intervals,
-                       const std::vector<int64>& demands, int64 capacity,
-                       const std::string& name)
+                       const std::vector<int64>& demands,
+                       IntVar* const capacity, const std::string& name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -1914,13 +1895,15 @@ class CumulativeConstraint : public Constraint {
                                         intervals_);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kDemandsArgument,
                                        demands_);
-    visitor->VisitIntegerArgument(ModelVisitor::kCapacityArgument, capacity_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kCapacityArgument,
+                                            capacity_);
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("CumulativeConstraint([%s], %" GG_LL_FORMAT "d)",
-                        JoinDebugString(tasks_, ", ").c_str(), capacity_);
+    return StringPrintf("CumulativeConstraint([%s], %s)",
+                        JoinDebugString(tasks_, ", ").c_str(),
+                        capacity_->DebugString().c_str());
   }
   ;
 
@@ -1933,7 +1916,7 @@ class CumulativeConstraint : public Constraint {
         for (int j = i + 1; j < intervals_.size(); ++j) {
           IntervalVar* const interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
-            if (tasks_[i].demand + tasks_[j].demand > capacity_) {
+            if (tasks_[i].demand + tasks_[j].demand > capacity_->Max()) {
               Constraint* const constraint =
                   solver()->MakeTemporalDisjunction(interval_i, interval_j);
               solver()->AddConstraint(constraint);
@@ -1959,7 +1942,8 @@ class CumulativeConstraint : public Constraint {
         //              > 1/2 (capacity_ + capacity_)
         //              > capacity_.
         // Therefore these two tasks cannot overlap.
-        if (demand * 2 > capacity_ && tasks_[i].interval->MayBePerformed()) {
+        if (demand * 2 > capacity_->Max() &&
+            tasks_[i].interval->MayBePerformed()) {
           high_demand_intervals.push_back(tasks_[i].interval);
         }
       }
@@ -1985,7 +1969,7 @@ class CumulativeConstraint : public Constraint {
       const CumulativeTask& original_task = tasks_[i];
       IntervalVar* const interval = original_task.interval;
       // Check if exceed capacity
-      if (original_task.demand > capacity_) {
+      if (original_task.demand > capacity_->Max()) {
         interval->SetPerformed(false);
       }
       // Add to the useful_task vector if it may be performed and that it
@@ -2031,7 +2015,7 @@ class CumulativeConstraint : public Constraint {
   }
 
   // Capacity of the cumulative resource
-  const int64 capacity_;
+  IntVar* const capacity_;
 
   // The tasks that share the cumulative resource
   std::vector<CumulativeTask> tasks_;
@@ -2049,7 +2033,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
   VariableDemandCumulativeConstraint(Solver* const s,
                                      const std::vector<IntervalVar*>& intervals,
                                      const std::vector<IntVar*>& demands,
-                                     int64 capacity, const std::string& name)
+                                     IntVar* const capacity,
+                                     const std::string& name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2091,14 +2076,16 @@ class VariableDemandCumulativeConstraint : public Constraint {
                                         intervals_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kDemandsArgument,
                                                demands_);
-    visitor->VisitIntegerArgument(ModelVisitor::kCapacityArgument, capacity_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kCapacityArgument,
+                                            capacity_);
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
   virtual std::string DebugString() const {
     return StringPrintf(
-        "VariableDemandCumulativeConstraint([%s], %" GG_LL_FORMAT "d)",
-        JoinDebugString(tasks_, ", ").c_str(), capacity_);
+        "VariableDemandCumulativeConstraint([%s], %s)",
+        JoinDebugString(tasks_, ", ").c_str(),
+        capacity_->DebugString().c_str());
   }
 
  private:
@@ -2110,7 +2097,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
         for (int j = i + 1; j < intervals_.size(); ++j) {
           IntervalVar* const interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
-            if (tasks_[i].demand->Min() + tasks_[j].demand->Min() > capacity_) {
+            if (tasks_[i].demand->Min() + tasks_[j].demand->Min() >
+                capacity_->Max()) {
               Constraint* const constraint =
                   solver()->MakeTemporalDisjunction(interval_i, interval_j);
               solver()->AddConstraint(constraint);
@@ -2136,7 +2124,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
         //              > 1/2 (capacity_ + capacity_)
         //              > capacity_.
         // Therefore these two tasks cannot overlap.
-        if (demand * 2 > capacity_ && tasks_[i].interval->MayBePerformed()) {
+        if (demand * 2 > capacity_->Max() &&
+            tasks_[i].interval->MayBePerformed()) {
           high_demand_intervals.push_back(tasks_[i].interval);
         }
       }
@@ -2162,7 +2151,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
       const VariableCumulativeTask& original_task = tasks_[i];
       IntervalVar* const interval = original_task.interval;
       // Check if exceed capacity
-      if (original_task.demand->Min() > capacity_) {
+      if (original_task.demand->Min() > capacity_->Max()) {
         interval->SetPerformed(false);
       }
       // Add to the useful_task vector if it may be performed and that it
@@ -2208,7 +2197,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
   }
 
   // Capacity of the cumulative resource
-  const int64 capacity_;
+  IntVar* const capacity_;
 
   // The tasks that share the cumulative resource
   std::vector<VariableCumulativeTask> tasks_;
@@ -2256,8 +2245,8 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   if (capacity == 1 && AreAllOnes(demands)) {
     return MakeDisjunctiveConstraint(intervals, name);
   }
-  return RevAlloc(
-      new CumulativeConstraint(this, intervals, demands, capacity, name));
+  return RevAlloc(new CumulativeConstraint(
+      this, intervals, demands, MakeIntConst(capacity), name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
@@ -2274,42 +2263,8 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
   }
-  if (capacity->Bound()) {
-    return MakeCumulative(intervals, demands, capacity->Min(), name);
-  }
-  std::vector<IntervalVar*> a_intervals;
-  std::vector<int64> a_demands;
-  int64 horizon_min = kint64max;
-  int64 horizon_max = kint64min;
-  for (int i = 0; i < demands.size(); ++i) {
-    if (demands[i] > 0) {
-      a_intervals.push_back(intervals[i]);
-      a_demands.push_back(demands[i]);
-      horizon_max = std::max(horizon_max, intervals[i]->EndMax());
-      horizon_min = std::min(horizon_min, intervals[i]->StartMin());
-    }
-  }
-  const int64 total_duration = horizon_max = horizon_max + 1;
-  const int64 capacity_min = std::max(capacity->Min(), 0LL);
-  const int64 capacity_max = capacity->Max();
-  const int64 delta_capacity = capacity_max - capacity_min;
-  std::vector<IntVar*> o_vars;  // Optional variables.
-  std::vector<int64> o_coefs;
-  for (int64 mult = 1; mult <= delta_capacity; mult *= 2) {
-    const std::string name =
-        StringPrintf("VariableCapacity<%" GG_LL_FORMAT "d>", mult);
-    IntervalVar* const var = MakeFixedDurationIntervalVar(
-        horizon_min, horizon_min, total_duration, true, name);
-    a_intervals.push_back(var);
-    a_demands.push_back(mult);
-    o_vars.push_back(var->PerformedExpr()->Var());
-    o_coefs.push_back(mult);
-  }
-  o_vars.push_back(capacity);
-  o_coefs.push_back(1);
-  AddConstraint(MakeScalProdEquality(o_vars, o_coefs, capacity_max));
-  return RevAlloc(new CumulativeConstraint(this, a_intervals, a_demands,
-                                           capacity_max, name));
+  return RevAlloc(
+      new CumulativeConstraint(this, intervals, demands, capacity, name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
@@ -2336,7 +2291,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
     return MakeCumulative(intervals, fixed_demands, capacity, name);
   }
   return RevAlloc(new VariableDemandCumulativeConstraint(
-      this, intervals, demands, capacity, name));
+      this, intervals, demands, MakeIntConst(capacity), name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
@@ -2347,9 +2302,6 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
   }
-  if (capacity->Bound()) {
-    return MakeCumulative(intervals, demands, capacity->Min(), name);
-  }
   if (AreAllBound(demands)) {
     std::vector<int64> fixed_demands(demands.size());
     for (int i = 0; i < demands.size(); ++i) {
@@ -2357,29 +2309,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
     }
     return MakeCumulative(intervals, fixed_demands, capacity, name);
   }
-  std::vector<IntervalVar*> a_intervals;
-  std::vector<IntVar*> a_demands;
-  int64 horizon_min = kint64max;
-  int64 horizon_max = kint64min;
-  for (int i = 0; i < demands.size(); ++i) {
-    if (demands[i]->Max() > 0) {
-      a_intervals.push_back(intervals[i]);
-      a_demands.push_back(demands[i]);
-      horizon_max = std::max(horizon_max, intervals[i]->EndMax());
-      horizon_min = std::min(horizon_min, intervals[i]->StartMin());
-    }
-  }
-  const int64 total_duration = horizon_max = horizon_max + 1;
-  const int64 capacity_max = capacity->Max();
-  IntVar* const residual_capacity =
-      MakeDifference(capacity_max, capacity)->Var();
-  const std::string residual_name =
-      StringPrintf("VariableCapacity<%s>", name.c_str());
-  IntervalVar* const var = MakeFixedDurationIntervalVar(
-      horizon_min, horizon_min, total_duration, true, residual_name);
-  a_intervals.push_back(var);
-  a_demands.push_back(residual_capacity);
   return RevAlloc(new VariableDemandCumulativeConstraint(
-      this, a_intervals, a_demands, capacity_max, name));
+      this, intervals, demands, capacity, name));
 }
 }  // namespace operations_research
