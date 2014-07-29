@@ -59,10 +59,7 @@ SatSolver::~SatSolver() {
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
   if (parameters_.unsat_proof()) {
     // We need to free the memory used by the ResolutionNode of the clauses
-    for (SatClause* clause : learned_clauses_) {
-      unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
-    }
-    for (SatClause* clause : problem_clauses_) {
+    for (SatClause* clause : clauses_) {
       unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
     }
     // We also have to free the ResolutionNode of the variable assigned at
@@ -79,8 +76,7 @@ SatSolver::~SatSolver() {
       unsat_proof_.UnlockNode(node);
     }
   }
-  STLDeleteElements(&problem_clauses_);
-  STLDeleteElements(&learned_clauses_);
+  STLDeleteElements(&clauses_);
 }
 
 void SatSolver::SetNumVariables(int num_variables) {
@@ -237,7 +233,7 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals,
     if (!watched_clauses_.AttachAndPropagate(clause.get(), &trail_)) {
       return ModelUnsat();
     }
-    problem_clauses_.push_back(clause.release());
+    clauses_.push_back(clause.release());
   }
   return true;
 }
@@ -363,7 +359,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
           SatClause::Create(literals, SatClause::LEARNED_CLAUSE, node);
       CompressLearnedClausesIfNeeded();
       --num_learned_clause_before_cleanup_;
-      learned_clauses_.emplace_back(clause);
+      clauses_.emplace_back(clause);
       BumpClauseActivity(clause);
 
       // Important: Even though the only literal at the last decision level has
@@ -843,7 +839,7 @@ SatSolver::Status SatSolver::Solve() {
   // Display initial statistics.
   if (parameters_.log_search_progress()) {
     LOG(INFO) << "Initial memory usage: " << MemoryUsage();
-    LOG(INFO) << "Number of clauses (size > 2): " << problem_clauses_.size();
+    LOG(INFO) << "Number of clauses (size > 2): " << clauses_.size();
     LOG(INFO) << "Number of binary clauses: "
               << binary_implication_graph_.NumberOfImplications();
     LOG(INFO) << "Number of linear constraints: "
@@ -996,7 +992,7 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
     if (level == 0) continue;
     if (level == CurrentDecisionLevel() &&
         trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
-        trail_.Info(var).sat_clause->IsLearned() &&
+        !trail_.Info(var).sat_clause->MustBeKept() &&
         trail_.Info(var).sat_clause->Lbd() < bump_again_lbd_limit) {
       activities_[var] += variable_activity_increment_;
     }
@@ -1026,7 +1022,7 @@ void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
 }
 
 void SatSolver::BumpClauseActivity(SatClause* clause) {
-  if (!clause->IsLearned()) return;
+  if (clause->MustBeKept()) return;
   clause->IncreaseActivity(clause_activity_increment_);
   if (clause->Activity() > parameters_.max_clause_activity_value()) {
     RescaleClauseActivities(1.0 / parameters_.max_clause_activity_value());
@@ -1057,7 +1053,7 @@ void SatSolver::RescaleVariableActivities(double scaling_factor) {
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (SatClause* clause : learned_clauses_) {
+  for (SatClause* clause : clauses_) {
     clause->MultiplyActivity(scaling_factor);
   }
 }
@@ -1173,12 +1169,11 @@ std::string SatSolver::StatusString(Status status) const {
 
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
-  const int learned = learned_clauses_.size();
   return StringPrintf("%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
                       "d, "
-                      "depth:%d, learned:%d, restarts:%d, vars:%d",
+                      "depth:%d, clauses:%lu, restarts:%d, vars:%d",
                       time_in_s, MemoryUsage().c_str(), counters_.num_failures,
-                      CurrentDecisionLevel(), learned, restart_count_,
+                      CurrentDecisionLevel(), clauses_.size(), restart_count_,
                       num_variables_.value() - num_processed_fixed_variables_);
 }
 
@@ -1220,32 +1215,30 @@ void SatSolver::ProcessNewlyFixedVariables() {
 
   // We remove the clauses that are always true and the fixed literals from the
   // others.
-  for (int i = 0; i < 2; ++i) {
-    for (SatClause* clause : (i == 0) ? problem_clauses_ : learned_clauses_) {
-      if (clause->IsAttached()) {
-        if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_.Assignment(),
-                                                     &removed_literals)) {
-          // The clause is always true, detach it.
-          // TODO(user): Unlock its associated resolution node right away since
-          // the solver will not be able to reach it again.
+  for (SatClause* clause : clauses_) {
+    if (clause->IsAttached()) {
+      if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_.Assignment(),
+                                                   &removed_literals)) {
+        // The clause is always true, detach it.
+        // TODO(user): Unlock its associated resolution node right away since
+        // the solver will not be able to reach it again.
+        watched_clauses_.LazyDetach(clause);
+        ++num_detached_clauses;
+      } else if (!removed_literals.empty()) {
+        if (clause->Size() == 2 &&
+            parameters_.treat_binary_clauses_separately()) {
+          // The clause is now a binary clause, treat it separately.
+          AddBinaryClauseInternal(clause->FirstLiteral(),
+                                  clause->SecondLiteral());
           watched_clauses_.LazyDetach(clause);
-          ++num_detached_clauses;
-        } else if (!removed_literals.empty()) {
-          if (clause->Size() == 2 &&
-              parameters_.treat_binary_clauses_separately()) {
-            // The clause is now a binary clause, treat it separately.
-            AddBinaryClauseInternal(clause->FirstLiteral(),
-                                    clause->SecondLiteral());
-            watched_clauses_.LazyDetach(clause);
-            ++num_binary;
-          } else if (parameters_.unsat_proof()) {
-            // The "new" clause is derived from the old one plus the level 0
-            // literals.
-            ResolutionNode* new_node = CreateResolutionNode(
-                clause->ResolutionNodePointer(), ClauseRef(removed_literals));
-            unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
-            clause->ChangeResolutionNode(new_node);
-          }
+          ++num_binary;
+        } else if (parameters_.unsat_proof()) {
+          // The "new" clause is derived from the old one plus the level 0
+          // literals.
+          ResolutionNode* new_node = CreateResolutionNode(
+              clause->ResolutionNodePointer(), ClauseRef(removed_literals));
+          unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
+          clause->ChangeResolutionNode(new_node);
         }
       }
     }
@@ -1259,17 +1252,16 @@ void SatSolver::ProcessNewlyFixedVariables() {
     // Free-up learned clause memory. Note that this also postpone a bit the
     // next clause cleaning phase since we removed some clauses.
     std::vector<SatClause*>::iterator iter = std::partition(
-        learned_clauses_.begin(), learned_clauses_.end(),
+        clauses_.begin(), clauses_.end(),
         std::bind1st(std::mem_fun(&SatSolver::IsClauseAttachedOrUsedAsReason),
                      this));
     if (parameters_.unsat_proof()) {
-      for (std::vector<SatClause*>::iterator it = iter; it != learned_clauses_.end();
-           ++it) {
+      for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
         unsat_proof_.UnlockNode((*it)->ResolutionNodePointer());
       }
     }
-    STLDeleteContainerPointers(iter, learned_clauses_.end());
-    learned_clauses_.erase(iter, learned_clauses_.end());
+    STLDeleteContainerPointers(iter, clauses_.end());
+    clauses_.erase(iter, clauses_.end());
   }
 
   // We also clean the binary implication graph.
@@ -2375,14 +2367,13 @@ bool ClauseOrdering(SatClause* a, SatClause* b) {
 
 }  // namespace
 
-void SatSolver::InitLearnedClauseLimit() {
-  const int num_learned_clauses = learned_clauses_.size();
+void SatSolver::InitLearnedClauseLimit(int current_num_learned) {
   target_number_of_learned_clauses_ =
-      num_learned_clauses + parameters_.clause_cleanup_increment();
+      current_num_learned + parameters_.clause_cleanup_increment();
   num_learned_clause_before_cleanup_ =
       target_number_of_learned_clauses_ / parameters_.clause_cleanup_ratio() -
-      num_learned_clauses;
-  VLOG(1) << "reduced learned database to " << num_learned_clauses
+      current_num_learned;
+  VLOG(1) << "reduced learned database to " << current_num_learned
           << " clauses. Next cleanup in " << num_learned_clause_before_cleanup_
           << " conflicts.";
 }
@@ -2391,40 +2382,30 @@ void SatSolver::CompressLearnedClausesIfNeeded() {
   if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
 
-  // First time?
-  if (learned_clauses_.size() == 0) {
-    InitLearnedClauseLimit();
-    return;
-  }
-
   // Move the clause that should be kept at the beginning and sort the other
   // using the ClauseOrdering order.
   std::vector<SatClause*>::iterator clause_to_keep_end = std::partition(
-      learned_clauses_.begin(), learned_clauses_.end(),
+      clauses_.begin(), clauses_.end(),
       std::bind1st(std::mem_fun(&SatSolver::ClauseShouldBeKept), this));
-  std::sort(clause_to_keep_end, learned_clauses_.end(), ClauseOrdering);
+  std::sort(clause_to_keep_end, clauses_.end(), ClauseOrdering);
 
-  // Compute the index of the first clause to delete.
-  const int num_learned_clauses = learned_clauses_.size();
-  const int first_clause_to_delete =
-      std::max(static_cast<int>(clause_to_keep_end - learned_clauses_.begin()),
-          std::min(num_learned_clauses, target_number_of_learned_clauses_));
-
-  // Delete all the learned clause after 'first_clause_to_delete'.
-  for (int i = first_clause_to_delete; i < num_learned_clauses; ++i) {
-    SatClause* clause = learned_clauses_[i];
-    watched_clauses_.LazyDetach(clause);
-    if (clause->ResolutionNodePointer() != nullptr) {
-      unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
+  // Delete all the clause after first_clause_to_delete (if any).
+  std::vector<SatClause*>::iterator first_clause_to_delete =
+      clause_to_keep_end + target_number_of_learned_clauses_;
+  if (first_clause_to_delete < clauses_.end()) {
+    for (auto iter = first_clause_to_delete; iter < clauses_.end(); ++iter) {
+      SatClause* clause = *iter;
+      counters_.num_literals_forgotten += clause->Size();
+      watched_clauses_.LazyDetach(clause);
+      if (clause->ResolutionNodePointer() != nullptr) {
+        unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
+      }
     }
+    watched_clauses_.CleanUpWatchers();
+    STLDeleteContainerPointers(first_clause_to_delete, clauses_.end());
+    clauses_.erase(first_clause_to_delete, clauses_.end());
   }
-  watched_clauses_.CleanUpWatchers();
-  for (int i = first_clause_to_delete; i < num_learned_clauses; ++i) {
-    counters_.num_literals_forgotten += learned_clauses_[i]->Size();
-    delete learned_clauses_[i];
-  }
-  learned_clauses_.resize(first_clause_to_delete);
-  InitLearnedClauseLimit();
+  InitLearnedClauseLimit(clauses_.end() - clause_to_keep_end);
 }
 
 void SatSolver::InitRestart() {

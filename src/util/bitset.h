@@ -711,6 +711,19 @@ class SparseBitset {
       to_clear_.clear();
     }
   }
+  void Resize(IntegerType size) {
+    if (size < bitset_.size()) {
+      int new_index = 0;
+      for (IntegerType index : to_clear_) {
+        if (index < size) {
+          to_clear_[new_index] = index;
+          ++new_index;
+        }
+      }
+      to_clear_.resize(new_index);
+    }
+    bitset_.Resize(size);
+  }
   bool operator[](IntegerType index) const { return bitset_[index]; }
   void Set(IntegerType index) {
     if (!bitset_[index]) {
@@ -724,6 +737,19 @@ class SparseBitset {
   }
   const std::vector<IntegerType>& PositionsSetAtLeastOnce() const {
     return to_clear_;
+  }
+
+  // Tells the class that all its bits are cleared, so it can reset to_clear_
+  // to the empty vector. Note that this call is "unsafe" since the fact that
+  // the class is actually all cleared is only checked in debug mode.
+  //
+  // This is useful to iterate on the "set" positions while clearing them for
+  // instance. This way, after the loop, a client can call this for efficiency.
+  void NotifyAllClear() {
+    if (DEBUG_MODE) {
+      for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
+    }
+    to_clear_.clear();
   }
 
  private:

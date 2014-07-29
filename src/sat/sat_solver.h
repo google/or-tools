@@ -287,8 +287,8 @@ class SatSolver {
     // Note(user): Putting the binary clauses first help because the presolver
     // currently process the clauses in order.
     binary_implication_graph_.ExtractAllBinaryClauses(out);
-    for (SatClause* clause : problem_clauses_) {
-      if (clause->IsAttached()) {
+    for (SatClause* clause : clauses_) {
+      if (clause->MustBeKept()) {
         out->AddClause(ClauseRef(clause->begin(), clause->end()));
       }
     }
@@ -421,7 +421,7 @@ class SatSolver {
 
   // Predicate used by CompressLearnedClausesIfNeeded().
   bool ClauseShouldBeKept(SatClause* clause) const {
-    return clause->Lbd() <= 2 || clause->Size() <= 2 ||
+    return clause->MustBeKept() || clause->Lbd() <= 2 || clause->Size() <= 2 ||
            IsClauseUsedAsReason(clause);
   }
 
@@ -566,7 +566,7 @@ class SatSolver {
   // Checks if we need to reduce the number of learned clauses and do
   // it if needed. The second function updates the learned clause limit.
   void CompressLearnedClausesIfNeeded();
-  void InitLearnedClauseLimit();
+  void InitLearnedClauseLimit(int current_num_learned);
 
   // Bumps the activity of all variables appearing in the conflict.
   // See VSIDS decision heuristic: Chaff: Engineering an Efficient SAT Solver.
@@ -609,12 +609,15 @@ class SatSolver {
   // The number of constraints of the initial problem that where added.
   int num_constraints_;
 
-  // Original clauses of the problem and clauses learned during search.
-  // These vector have the ownership of the pointers. We currently do not use
-  // std::unique_ptr<SatClause> because it can't be used with STL algorithm
-  // like std::partition.
-  std::vector<SatClause*> problem_clauses_;
-  std::vector<SatClause*> learned_clauses_;
+  // All the clauses managed by the solver (initial and learned). This vector
+  // has ownership of the pointers. We currently do not use
+  // std::unique_ptr<SatClause> because it can't be used with some STL
+  // algorithms like std::partition.
+  //
+  // Note that the unit clauses are not kept here and if the parameter
+  // treat_binary_clauses_separately is true, the binary clause are not kept
+  // here either.
+  std::vector<SatClause*> clauses_;
 
   // Observers of literals.
   LiteralWatchers watched_clauses_;

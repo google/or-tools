@@ -166,7 +166,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   // Find a better way for the "initial" polarity choice and tie breaking
   // between literal choices. Note that it seems none of the modern SAT solver
   // relies on this.
-  if (!clause->IsLearned()) UpdateStatistics(*clause, /*added=*/true);
+  if (clause->MustBeKept()) UpdateStatistics(*clause, /*added=*/true);
   clause->SortLiterals(statistics_, parameters_);
   return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
 }
@@ -174,7 +174,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
-  if (!clause->IsLearned()) UpdateStatistics(*clause, /*added=*/false);
+  if (clause->MustBeKept()) UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
   is_clean_ = false;
   needs_cleaning_[clause->FirstLiteral().Index()] = true;
@@ -473,7 +473,7 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, ClauseType ty
   for (int i = 0; i < literals.size(); ++i) {
     clause->literals_[i] = literals[i];
   }
-  clause->is_learned_ = (type == LEARNED_CLAUSE);
+  clause->must_be_kept_ = (type == PROBLEM_CLAUSE);
   clause->is_attached_ = false;
   clause->activity_ = 0.0;
   clause->lbd_ = 0;

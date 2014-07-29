@@ -101,8 +101,10 @@ class SatClause {
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment,
                                         std::vector<Literal>* removed_literals);
 
-  // True if the clause is learned.
-  bool IsLearned() const { return is_learned_; }
+  // True if the clause must be kept for the problem to remain the same. Usually
+  // the clause we learn during the search can be deleted if needed, so this
+  // will be false for them.
+  bool MustBeKept() const { return must_be_kept_; }
 
   // Returns true if the clause is satisfied for the given assignment. Note that
   // the assignment may be partial, so false does not mean that the clause can't
@@ -151,7 +153,7 @@ class SatClause {
   // Note that the max lbd is the maximum depth of the search tree (decision
   // levels), so it should fit easily in 30 bits. Note that we can also upper
   // bound it without hurting too much the clause cleaning heuristic.
-  bool is_learned_ : 1;
+  bool must_be_kept_ : 1;
   bool is_attached_ : 1;
   int lbd_ : 30;
   int size_ : 32;
