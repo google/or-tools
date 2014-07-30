@@ -257,38 +257,67 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
-  const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
+  const int64 array_size = ct->Arg(1).variables.size();
   const int64 imin = std::max(index->Min(), 1LL);
-  const int64 imax = std::min(index->Max(), static_cast<int64>(vars.size()));
+  const int64 imax = std::min(index->Max(), array_size);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
-  const int64 size = imax - imin + 1;
-  std::vector<IntVar*> var_array(size);
-  for (int i = 0; i < size; ++i) {
-    var_array[i] = vars[i + imin - 1];
-  }
-  if (ct->target_variable != nullptr) {
-    DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
-    IntExpr* const target = solver->MakeElement(var_array, shifted_index);
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << target->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, target);
-  } else {
-    Constraint* constraint = nullptr;
-    if (ct->Arg(2).HasOneValue()) {
-      const int64 target = ct->Arg(2).Value();
-      if (fzsolver->IsAllDifferent(ct->Arg(1).variables)) {
-        constraint =
-            solver->MakeIndexOfConstraint(var_array, shifted_index, target);
+  if (array_size == 2 && imin == 1 && imax == 2) {
+    IntExpr* const zero = fzsolver->Extract(ct->Arg(1).variables[0]);
+    IntExpr* const one = fzsolver->Extract(ct->Arg(1).variables[1]);
+    if (ct->target_variable != nullptr) {
+      DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
+      IntExpr* const zero = fzsolver->Extract(ct->Arg(1).variables[0]);
+      IntExpr* const one = fzsolver->Extract(ct->Arg(1).variables[1]);
+      IntExpr* const target =
+          solver->MakeIfThenElse(shifted_index->Var(), one, zero);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      Constraint* constraint = nullptr;
+      if (ct->Arg(2).HasOneValue()) {
+        const int64 target = ct->Arg(2).Value();
+        constraint = solver->MakeEquality(
+            solver->MakeIfThenElse(shifted_index->Var(), one, zero), target);
       } else {
+        IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
+        constraint = solver->MakeEquality(
+            solver->MakeIfThenElse(shifted_index->Var(), one, zero), target);
+      }
+      AddConstraint(solver, ct, constraint);
+    }
+  } else {
+    const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(1));
+    const int64 size = imax - imin + 1;
+    std::vector<IntVar*> var_array(size);
+    for (int i = 0; i < size; ++i) {
+      var_array[i] = vars[i + imin - 1];
+    }
+
+    if (ct->target_variable != nullptr) {
+      DCHECK_EQ(ct->Arg(2).Var(), ct->target_variable);
+      IntExpr* const target = solver->MakeElement(var_array, shifted_index);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      fzsolver->SetExtracted(ct->target_variable, target);
+    } else {
+      Constraint* constraint = nullptr;
+      if (ct->Arg(2).HasOneValue()) {
+        const int64 target = ct->Arg(2).Value();
+        if (fzsolver->IsAllDifferent(ct->Arg(1).variables)) {
+          constraint =
+              solver->MakeIndexOfConstraint(var_array, shifted_index, target);
+        } else {
+          constraint =
+              solver->MakeElementEquality(var_array, shifted_index, target);
+        }
+      } else {
+        IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
         constraint =
             solver->MakeElementEquality(var_array, shifted_index, target);
       }
-    } else {
-      IntVar* const target = fzsolver->GetExpression(ct->Arg(2))->Var();
-      constraint =
-          solver->MakeElementEquality(var_array, shifted_index, target);
+      AddConstraint(solver, ct, constraint);
     }
-    AddConstraint(solver, ct, constraint);
   }
 }
 
@@ -929,8 +958,8 @@ void ExtractIntEqReif(FzSolver* fzsolver, FzConstraint* ct) {
   if (ct->target_variable != nullptr) {
     CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
     if (ct->Arg(1).HasOneValue()) {
-      IntVar* const boolvar =
-          solver->MakeIsEqualCstVar(left, ct->Arg(1).Value());
+      const int64 value = ct->Arg(1).Value();
+      IntVar* const boolvar = solver->MakeIsEqualCstVar(left, value);
       FZVLOG << "  - creating " << ct->target_variable->DebugString()
              << " := " << boolvar->DebugString() << FZENDL;
       fzsolver->SetExtracted(ct->target_variable, boolvar);
@@ -1355,10 +1384,10 @@ void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
     if (ct->target_variable != nullptr) {
       if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
         IntVar* const boolvar = solver->MakeBoolVar();
-        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, rhs,
-                                boolvar);
         FZVLOG << "  - creating " << ct->target_variable->DebugString()
                << " := " << boolvar->DebugString() << FZENDL;
+        PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, rhs,
+                                boolvar);
         fzsolver->SetExtracted(ct->target_variable, boolvar);
       } else {
         IntVar* const boolvar =

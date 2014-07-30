@@ -965,6 +965,136 @@ IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
 
 // ---------- Generalized element ----------
 
+// ----- IfThenElseExpr -----
+
+class IfThenElseExpr : public BaseIntExpr {
+ public:
+  IfThenElseExpr(Solver* const solver, IntVar* const index, IntExpr* zero,
+                 IntExpr* const one)
+      : BaseIntExpr(solver), index_(index), zero_(zero), one_(one) {}
+
+  virtual ~IfThenElseExpr() {}
+
+  virtual int64 Min() const {
+    if (index_->Max() == 0) {
+      return zero_->Min();
+    } else if (index_->Min() == 1) {
+      return one_->Min();
+    } else {
+      return std::min(zero_->Min(), one_->Min());
+    }
+  }
+
+  virtual void SetMin(int64 m) {
+    if (index_->Max() == 0) {
+      zero_->SetMin(m);
+    } else if (index_->Min() == 1) {
+      one_->SetMin(m);
+    } else {
+      if (m > zero_->Max()) {
+        index_->SetValue(1);
+        one_->SetMin(m);
+      } else if (m > one_->Max()) {
+        index_->SetValue(0);
+        zero_->SetMin(m);
+      }
+    }
+  }
+
+  virtual int64 Max() const {
+    if (index_->Max() == 0) {
+      return zero_->Max();
+    } else if (index_->Min() == 1) {
+      return one_->Max();
+    } else {
+      return std::max(zero_->Max(), one_->Max());
+    }
+  }
+
+  virtual void SetMax(int64 m) {
+    if (index_->Max() == 0) {
+      zero_->SetMax(m);
+    } else if (index_->Min() == 1) {
+      one_->SetMax(m);
+    } else {
+      if (m < zero_->Min()) {
+        index_->SetValue(1);
+        one_->SetMax(m);
+      } else if (m < one_->Min()) {
+        index_->SetValue(0);
+        zero_->SetMax(m);
+      }
+    }
+  }
+
+  virtual void Range(int64* l, int64* u) {
+    if (index_->Max() == 0) {
+      zero_->Range(l, u);
+    } else if (index_->Min() == 1) {
+      one_->Range(l, u);
+    } else {
+      int64 zl = 0;
+      int64 zu = 0;
+      int64 ol = 0;
+      int64 ou = 0;
+      zero_->Range(&zl, &zu);
+      one_->Range(&ol, &ou);
+      *l = std::min(zl, ol);
+      *u = std::max(zu, ou);
+    }
+  }
+
+  virtual void SetRange(int64 mi, int64 ma) {
+    if (index_->Max() == 0) {
+      zero_->SetRange(mi, ma);
+    } else if (index_->Min() == 1) {
+      one_->SetRange(mi, ma);
+    } else {
+      if (ma < zero_->Min() || mi > zero_->Max()) {
+        index_->SetValue(1);
+        one_->SetRange(mi, ma);
+      } else if (ma < one_->Min() || mi > one_->Max()) {
+        index_->SetValue(0);
+        zero_->SetRange(mi, ma);
+      }
+    }
+  }
+
+  virtual bool Bound() const {
+    if (index_->Max() == 0) {
+      return zero_->Bound();
+    } else if (index_->Min() == 1) {
+      return one_->Bound();
+    } else {
+      return zero_->Bound() && one_->Bound() && zero_->Min() == one_->Min();
+    }
+  }
+
+  virtual void WhenRange(Demon* d) {
+    if (index_->Min() == 0) {
+      return zero_->WhenRange(d);
+    }
+    if (index_->Max() == 1) {
+      one_->WhenRange(d);
+    }
+    if (!index_->Bound()) {
+      index_->WhenRange(d);
+    }
+  }
+
+  virtual std::string DebugString() const {
+    return StringPrintf("IfThenElseExpr(%s, [%s, %s])",
+                        index_->DebugString().c_str(),
+                        zero_->DebugString().c_str(),
+                        one_->DebugString().c_str());
+  }
+
+ private:
+  IntVar* const index_;
+  IntExpr* const zero_;
+  IntExpr* const one_;
+};
+
 // ----- IntExprArrayElementCt -----
 
 // This constraint implements vars[index] == var. It is delayed such
@@ -1298,6 +1428,17 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
 }
 }  // namespace
 
+IntExpr* Solver::MakeIfThenElse(IntVar* const condition, int64 then_value,
+                                int64 else_value) {
+  return MakeSum(MakeProd(condition, then_value - else_value), else_value);
+}
+
+IntExpr* Solver::MakeIfThenElse(IntVar* const condition,
+                                IntExpr* const then_expr,
+                                IntExpr* const else_expr) {
+  return RevAlloc(new IfThenElseExpr(this, condition, else_expr, then_expr));
+}
+
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   if (index->Bound()) {
     return vars[index->Min()];
@@ -1309,6 +1450,14 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
       values[i] = vars[i]->Value();
     }
     return MakeElement(values, index);
+  }
+  if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
+      index->Min() >= 0 && index->Max() < vars.size()) {
+    // Let's get the index between 0 and 1.
+    IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
+    IntVar* const zero = vars[index->Min()];
+    IntVar* const one = vars[index->Max()];
+    return RevAlloc(new IfThenElseExpr(this, scaled_index, zero, one));
   }
   int64 emin = kint64max;
   int64 emax = kint64min;
