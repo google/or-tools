@@ -3629,6 +3629,43 @@ class PlusIntExpr : public BaseIntExpr {
     right_->WhenRange(d);
   }
 
+  void ExpandPlusIntExpr(IntExpr* const expr, std::vector<IntExpr*>* subs) {
+    PlusIntExpr* const casted = dynamic_cast<PlusIntExpr*>(expr);
+    if (casted != nullptr) {
+      ExpandPlusIntExpr(casted->left_, subs);
+      ExpandPlusIntExpr(casted->right_, subs);
+    } else {
+      subs->push_back(expr);
+    }
+  }
+
+  bool AreAllVariables(const std::vector<IntExpr*>& exprs) {
+    for (IntExpr* const expr : exprs) {
+      if (!expr->IsVar()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  virtual IntVar* CastToVar() {
+    if (dynamic_cast<PlusIntExpr*>(left_) != nullptr ||
+        dynamic_cast<PlusIntExpr*>(right_) != nullptr) {
+      std::vector<IntExpr*> sub_exprs;
+      ExpandPlusIntExpr(left_, &sub_exprs);
+      ExpandPlusIntExpr(right_, &sub_exprs);
+      if (sub_exprs.size() >= 3 && AreAllVariables(sub_exprs)) {
+        std::vector<IntVar*> sub_vars(sub_exprs.size());
+        for (int i = 0; i < sub_exprs.size(); ++i) {
+          sub_vars[i] = sub_exprs[i]->Var();
+        }
+        IntVar* const result = solver()->MakeSum(sub_vars)->Var();
+        return result;
+      }
+    }
+    return BaseIntExpr::CastToVar();
+  }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
