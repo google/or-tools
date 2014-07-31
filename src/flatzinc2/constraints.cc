@@ -261,7 +261,7 @@ void ExtractArrayVarIntElement(FzSolver* fzsolver, FzConstraint* ct) {
   const int64 imin = std::max(index->Min(), 1LL);
   const int64 imax = std::min(index->Max(), array_size);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
-  if (array_size == 2 && imin == 1 && imax == 2) {
+  if (array_size == 2 && imin == 1 && imax == 2 && false) {
     IntExpr* const zero = fzsolver->Extract(ct->Arg(1).variables[0]);
     IntExpr* const one = fzsolver->Extract(ct->Arg(1).variables[1]);
     if (ct->target_variable != nullptr) {

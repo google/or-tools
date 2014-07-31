@@ -1451,14 +1451,14 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
     }
     return MakeElement(values, index);
   }
-  if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
-      index->Min() >= 0 && index->Max() < vars.size()) {
-    // Let's get the index between 0 and 1.
-    IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
-    IntVar* const zero = vars[index->Min()];
-    IntVar* const one = vars[index->Max()];
-    return RevAlloc(new IfThenElseExpr(this, scaled_index, zero, one));
-  }
+  // if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
+  //     index->Min() >= 0 && index->Max() < vars.size()) {
+  //   // Let's get the index between 0 and 1.
+  //   IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
+  //   IntVar* const zero = vars[index->Min()];
+  //   IntVar* const one = vars[index->Max()];
+  //   return RevAlloc(new IfThenElseExpr(this, scaled_index, one, zero));
+  // }
   int64 emin = kint64max;
   int64 emax = kint64min;
   std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));

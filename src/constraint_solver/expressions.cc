@@ -3640,11 +3640,11 @@ class PlusIntExpr : public BaseIntExpr {
   }
 
   bool AreAllVariables(const std::vector<IntExpr*>& exprs) {
-    for (IntExpr* const expr : exprs) {
-      if (!expr->IsVar()) {
-        return false;
-      }
-    }
+    // for (IntExpr* const expr : exprs) {
+    //   if (!expr->IsVar()) {
+    //     return false;
+    //   }
+    // }
     return true;
   }
 
