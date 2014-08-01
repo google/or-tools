@@ -1887,7 +1887,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
     } else if (ct->type == start->type &&
                ct->Arg(1).Var() == carry_over.back() &&
-               var_to_constraints_[ct->Arg(2).Var()].size() <= 2) {
+               var_to_constraints_[ct->Arg(0).Var()].size() <= 2) {
       chain.push_back(ct->Arg(0).Var());
       carry_over.push_back(ct->Arg(2).Var());
       ct->active = false;
