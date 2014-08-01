@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include "base/unique_ptr.h"
 #include <string>
@@ -261,7 +260,8 @@ IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64>* values);
 
 class IntExprElement : public BaseIntExprElement {
  public:
-  IntExprElement(Solver* const s, const std::vector<int64>& vals, IntVar* const expr)
+  IntExprElement(Solver* const s, const std::vector<int64>& vals,
+                 IntVar* const expr)
       : BaseIntExprElement(s, expr), values_(vals) {}
 
   virtual ~IntExprElement() {}
@@ -369,9 +369,8 @@ class IncreasingIntExprElement : public BaseIntExpr {
   IntVar* const index_;
 };
 
-IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
-                                                   const std::vector<int64>& values,
-                                                   IntVar* const index)
+IncreasingIntExprElement::IncreasingIntExprElement(
+    Solver* const s, const std::vector<int64>& values, IntVar* const index)
     : BaseIntExpr(s), values_(values), index_(index) {
   DCHECK(index);
   DCHECK(s);
@@ -518,7 +517,8 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int64>& values,
+                             IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -527,7 +527,8 @@ IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const ind
   return BuildElement(this, values, index);
 }
 
-IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int>& values,
+                             IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -965,132 +966,73 @@ IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
 
 // ---------- Generalized element ----------
 
-// ----- IfThenElseExpr -----
+// ----- IfThenElseCt -----
 
-class IfThenElseExpr : public BaseIntExpr {
+class IfThenElseCt : public CastConstraint {
  public:
-  IfThenElseExpr(Solver* const solver, IntVar* const index, IntExpr* zero,
-                 IntExpr* const one)
-      : BaseIntExpr(solver), index_(index), zero_(zero), one_(one) {}
+  IfThenElseCt(Solver* const solver, IntVar* const condition,
+               IntExpr* const one, IntExpr* const zero, IntVar* const target)
+      : CastConstraint(solver, target),
+        condition_(condition),
+        zero_(zero),
+        one_(one) {}
 
-  virtual ~IfThenElseExpr() {}
+  virtual ~IfThenElseCt() {}
 
-  virtual int64 Min() const {
-    if (index_->Max() == 0) {
-      return zero_->Min();
-    } else if (index_->Min() == 1) {
-      return one_->Min();
-    } else {
-      return std::min(zero_->Min(), one_->Min());
-    }
+  virtual void Post() {
+    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
+    condition_->WhenBound(demon);
+    one_->WhenRange(demon);
+    zero_->WhenRange(demon);
+    target_var_->WhenRange(demon);
   }
 
-  virtual void SetMin(int64 m) {
-    if (index_->Max() == 0) {
-      zero_->SetMin(m);
-    } else if (index_->Min() == 1) {
-      one_->SetMin(m);
+  virtual void InitialPropagate() {
+    condition_->SetRange(0, 1);
+    const int64 target_var_min = target_var_->Min();
+    const int64 target_var_max = target_var_->Max();
+    int64 new_min = kint64min;
+    int64 new_max = kint64max;
+    if (condition_->Max() == 0) {
+      zero_->SetRange(target_var_min, target_var_max);
+      zero_->Range(&new_min, &new_max);
+    } else if (condition_->Min() == 1) {
+      one_->SetRange(target_var_min, target_var_max);
+      one_->Range(&new_min, &new_max);
     } else {
-      if (m > zero_->Max()) {
-        index_->SetValue(1);
-        one_->SetMin(m);
-      } else if (m > one_->Max()) {
-        index_->SetValue(0);
-        zero_->SetMin(m);
+      if (target_var_max < zero_->Min() || target_var_min > zero_->Max()) {
+        condition_->SetValue(1);
+        one_->SetRange(target_var_min, target_var_max);
+        one_->Range(&new_min, &new_max);
+      } else if (target_var_max < one_->Min() || target_var_min > one_->Max()) {
+        condition_->SetValue(0);
+        zero_->SetRange(target_var_min, target_var_max);
+        zero_->Range(&new_min, &new_max);
+      } else {
+        int64 zl = 0;
+        int64 zu = 0;
+        int64 ol = 0;
+        int64 ou = 0;
+        zero_->Range(&zl, &zu);
+        one_->Range(&ol, &ou);
+        new_min = std::min(zl, ol);
+        new_max = std::max(zu, ou);
       }
     }
-  }
-
-  virtual int64 Max() const {
-    if (index_->Max() == 0) {
-      return zero_->Max();
-    } else if (index_->Min() == 1) {
-      return one_->Max();
-    } else {
-      return std::max(zero_->Max(), one_->Max());
-    }
-  }
-
-  virtual void SetMax(int64 m) {
-    if (index_->Max() == 0) {
-      zero_->SetMax(m);
-    } else if (index_->Min() == 1) {
-      one_->SetMax(m);
-    } else {
-      if (m < zero_->Min()) {
-        index_->SetValue(1);
-        one_->SetMax(m);
-      } else if (m < one_->Min()) {
-        index_->SetValue(0);
-        zero_->SetMax(m);
-      }
-    }
-  }
-
-  virtual void Range(int64* l, int64* u) {
-    if (index_->Max() == 0) {
-      zero_->Range(l, u);
-    } else if (index_->Min() == 1) {
-      one_->Range(l, u);
-    } else {
-      int64 zl = 0;
-      int64 zu = 0;
-      int64 ol = 0;
-      int64 ou = 0;
-      zero_->Range(&zl, &zu);
-      one_->Range(&ol, &ou);
-      *l = std::min(zl, ol);
-      *u = std::max(zu, ou);
-    }
-  }
-
-  virtual void SetRange(int64 mi, int64 ma) {
-    if (index_->Max() == 0) {
-      zero_->SetRange(mi, ma);
-    } else if (index_->Min() == 1) {
-      one_->SetRange(mi, ma);
-    } else {
-      if (ma < zero_->Min() || mi > zero_->Max()) {
-        index_->SetValue(1);
-        one_->SetRange(mi, ma);
-      } else if (ma < one_->Min() || mi > one_->Max()) {
-        index_->SetValue(0);
-        zero_->SetRange(mi, ma);
-      }
-    }
-  }
-
-  virtual bool Bound() const {
-    if (index_->Max() == 0) {
-      return zero_->Bound();
-    } else if (index_->Min() == 1) {
-      return one_->Bound();
-    } else {
-      return zero_->Bound() && one_->Bound() && zero_->Min() == one_->Min();
-    }
-  }
-
-  virtual void WhenRange(Demon* d) {
-    if (index_->Min() == 0) {
-      return zero_->WhenRange(d);
-    }
-    if (index_->Max() == 1) {
-      one_->WhenRange(d);
-    }
-    if (!index_->Bound()) {
-      index_->WhenRange(d);
-    }
+    target_var_->SetRange(new_min, new_max);
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("IfThenElseExpr(%s, [%s, %s])",
-                        index_->DebugString().c_str(),
-                        zero_->DebugString().c_str(),
-                        one_->DebugString().c_str());
+    return StringPrintf(
+        "(%s ? %s : %s) == %s", condition_->DebugString().c_str(),
+        one_->DebugString().c_str(), zero_->DebugString().c_str(),
+        target_var_->DebugString().c_str());
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {}
+
  private:
-  IntVar* const index_;
+  IntVar* const condition_;
   IntExpr* const zero_;
   IntExpr* const one_;
 };
@@ -1428,18 +1370,16 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
 }
 }  // namespace
 
-IntExpr* Solver::MakeIfThenElse(IntVar* const condition, int64 then_value,
-                                int64 else_value) {
-  return MakeSum(MakeProd(condition, then_value - else_value), else_value);
+Constraint* Solver::MakeIfThenElseCt(IntVar* const condition,
+                                     IntExpr* const then_expr,
+                                     IntExpr* const else_expr,
+                                     IntVar* const target_var) {
+  return RevAlloc(
+      new IfThenElseCt(this, condition, then_expr, else_expr, target_var));
 }
 
-IntExpr* Solver::MakeIfThenElse(IntVar* const condition,
-                                IntExpr* const then_expr,
-                                IntExpr* const else_expr) {
-  return RevAlloc(new IfThenElseExpr(this, condition, else_expr, then_expr));
-}
-
-IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
+                             IntVar* const index) {
   if (index->Bound()) {
     return vars[index->Min()];
   }
@@ -1451,14 +1391,21 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
     }
     return MakeElement(values, index);
   }
-  // if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
-  //     index->Min() >= 0 && index->Max() < vars.size()) {
-  //   // Let's get the index between 0 and 1.
-  //   IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
-  //   IntVar* const zero = vars[index->Min()];
-  //   IntVar* const one = vars[index->Max()];
-  //   return RevAlloc(new IfThenElseExpr(this, scaled_index, one, zero));
-  // }
+  if (index->Size() == 2 && index->Min() + 1 == index->Max() &&
+      index->Min() >= 0 && index->Max() < vars.size()) {
+    // Let's get the index between 0 and 1.
+    IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
+    IntVar* const zero = vars[index->Min()];
+    IntVar* const one = vars[index->Max()];
+    const std::string name = StringPrintf(
+        "ElementVar([%s], %s)", JoinNamePtr(vars, ", ").c_str(),
+        index->name().c_str());
+    IntVar* const target =MakeIntVar(std::min(zero->Min(), one->Min()),
+                                     std::max(zero->Max(), one->Max()), name);
+    AddConstraint(
+        RevAlloc(new IfThenElseCt(this, scaled_index, one, zero, target)));
+    return target;
+  }
   int64 emin = kint64max;
   int64 emax = kint64min;
   std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
@@ -1558,14 +1505,16 @@ Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
   }
 }
 
-IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value) {
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
+                                     int64 value) {
   IntExpr* const cache = model_cache_->FindVarArrayConstantExpression(
       vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                                     JoinNamePtr(vars, ", ").c_str(), value);
+    const std::string name =
+        StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+                     JoinNamePtr(vars, ", ").c_str(), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

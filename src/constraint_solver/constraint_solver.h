@@ -1280,10 +1280,10 @@ class Solver {
   IntExpr* MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value);
 
   // Special cases with arrays of size two.
-  IntExpr* MakeIfThenElse(IntVar* const condition, int64 then_value,
-                          int64 else_value);
-  IntExpr* MakeIfThenElse(IntVar* const condition, IntExpr* const then_expr,
-                          IntExpr* const else_expr);
+  Constraint* MakeIfThenElseCt(IntVar* const condition,
+                               IntExpr* const then_expr,
+                               IntExpr* const else_expr,
+                               IntVar* const target_var);
 
   // std::min(vars)
   IntExpr* MakeMin(const std::vector<IntVar*>& vars);
