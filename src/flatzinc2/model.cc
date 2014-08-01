@@ -202,7 +202,7 @@ std::string FzDomain::DebugString() const {
     if (values.empty()) {
       return "int";
     } else {
-      return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", values[0],
+      return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
                           values[1]);
     }
   } else if (values.size() == 1) {
