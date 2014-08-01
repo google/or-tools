@@ -90,6 +90,7 @@ class FzPresolver {
   // First pass of model scanning. Useful to get information that will
   // prevent some destructive modifications of the model.
   void FirstPassModelScan(FzModel* model);
+  void MergeIntEqNe(FzModel* model);
 
   // First pass scan helpers.
   void StoreDifference(FzConstraint* ct);

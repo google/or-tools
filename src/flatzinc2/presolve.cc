@@ -124,8 +124,8 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
       return true;
     } else if (ct->Arg(1).IsVariable()) {
       // Rule 3.
-      MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
       ct->MarkAsInactive();
+      MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
       return true;
     }
   } else if (ct->Arg(0).HasOneValue()) {  // Arg0 is an integer value.
@@ -1579,6 +1579,67 @@ void FzPresolver::StoreDifference(FzConstraint* ct) {
   }
 }
 
+void FzPresolver::MergeIntEqNe(FzModel* model) {
+  hash_map<const FzIntegerVariable*,
+           hash_map<int64, FzIntegerVariable*>> int_eq_reif_map;
+  hash_map<const FzIntegerVariable*,
+           hash_map<int64, FzIntegerVariable*>> int_ne_reif_map;
+  for (FzConstraint* const ct : model->constraints()) {
+    if (!ct->active) continue;
+    if (ct->type == "int_eq_reif" && ct->Arg(2).values.empty()) {
+      FzIntegerVariable* var = nullptr;
+      int64 value = 0;
+      if (ct->Arg(0).values.empty() && ct->Arg(1).variables.empty()) {
+        var = ct->Arg(0).Var();
+        value = ct->Arg(1).Value();
+      } else if (ct->Arg(1).values.empty() && ct->Arg(0).variables.empty()) {
+        var = ct->Arg(1).Var();
+        value = ct->Arg(0).Value();
+      }
+      if (var != nullptr) {
+        FzIntegerVariable* boolvar = ct->Arg(2).Var();
+        FzIntegerVariable* stored = FindPtrOrNull(int_eq_reif_map[var], value);
+        if (stored == nullptr) {
+          int_eq_reif_map[var][value] = boolvar;
+        } else {
+          FZVLOG << "Merge " << ct->DebugString() << FZENDL;
+          ct->type = "bool_eq";
+          ct->arguments.clear();
+          ct->arguments.push_back(FzArgument::IntVarRef(stored));
+          ct->arguments.push_back(FzArgument::IntVarRef(boolvar));
+          FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+        }
+      }
+    }
+
+    if (ct->type == "int_ne_reif" && ct->Arg(2).values.empty()) {
+      FzIntegerVariable* var = nullptr;
+      int64 value = 0;
+      if (ct->Arg(0).values.empty() && ct->Arg(1).variables.empty()) {
+        var = ct->Arg(0).Var();
+        value = ct->Arg(1).Value();
+      } else if (ct->Arg(1).values.empty() && ct->Arg(0).variables.empty()) {
+        var = ct->Arg(1).Var();
+        value = ct->Arg(0).Value();
+      }
+      if (var != nullptr) {
+        FzIntegerVariable* boolvar = ct->Arg(2).Var();
+        FzIntegerVariable* stored = FindPtrOrNull(int_ne_reif_map[var], value);
+        if (stored == nullptr) {
+          int_ne_reif_map[var][value] = boolvar;
+        } else {
+          FZVLOG << "Merge " << ct->DebugString() << FZENDL;
+          ct->type = "bool_eq";
+          ct->arguments.clear();
+          ct->arguments.push_back(FzArgument::IntVarRef(stored));
+          ct->arguments.push_back(FzArgument::IntVarRef(boolvar));
+          FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+        }
+      }
+    }
+  }
+}
+
 void FzPresolver::FirstPassModelScan(FzModel* model) {
   for (FzConstraint* const ct : model->constraints()) {
     if (!ct->active) continue;
@@ -1597,6 +1658,8 @@ void FzPresolver::FirstPassModelScan(FzModel* model) {
 
 bool FzPresolver::Run(FzModel* model) {
   FirstPassModelScan(model);
+
+  MergeIntEqNe(model);
 
   bool changed_since_start = false;
   // Let's presolve the bool2int predicates first.
