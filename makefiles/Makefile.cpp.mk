@@ -1162,7 +1162,7 @@ $(OBJ_DIR)/flatzinc2/parser.yy.$O:$(GEN_DIR)/flatzinc2/parser.yy.cc $(SRC_DIR)/f
 $(OBJ_DIR)/flatzinc2/presolve.$O:$(SRC_DIR)/flatzinc2/presolve.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/presolve.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Spresolve.$O
 
-$(OBJ_DIR)/flatzinc2/sat_constraint.$O:$(SRC_DIR)/flatzinc2/sat_constraint.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h
+$(OBJ_DIR)/flatzinc2/sat_constraint.$O:$(SRC_DIR)/flatzinc2/sat_constraint.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h  $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc2$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc2$Ssat_constraint.$O
 
 $(OBJ_DIR)/flatzinc2/search.$O:$(SRC_DIR)/flatzinc2/search.cc $(SRC_DIR)/flatzinc2/model.h $(SRC_DIR)/flatzinc2/solver.h

@@ -549,7 +549,9 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
 
 void FzSolver::SyncWithModel() {
   for (FzConstraint* const ct : model_.constraints()) {
-    MarkComputedVariables(ct, &implied_variables_);
+    if (ct->active) {
+      MarkComputedVariables(ct, &implied_variables_);
+    }
   }
 
   for (FzIntegerVariable* const fz_var : model_.variables()) {

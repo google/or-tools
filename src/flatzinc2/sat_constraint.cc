@@ -65,8 +65,8 @@ class SatPropagator : public Constraint {
     bool expr_negated = false;
     CHECK(solver()->IsBooleanVar(expr, &expr_var, &expr_negated));
 #ifdef SAT_DEBUG
-    VLOG(2) << "  - SAT: Parse " << expr->DebugString() << " to "
-            << expr_var->DebugString() << "/" << expr_negated;
+    FZDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
+            << expr_var->DebugString() << "/" << expr_negated << FZENDL;
 #endif
     if (ContainsKey(indices_, expr_var)) {
       return sat::Literal(indices_[expr_var], !expr_negated);
@@ -79,8 +79,8 @@ class SatPropagator : public Constraint {
       indices_[expr_var] = var;
       sat::Literal literal(var, !expr_negated);
 #ifdef SAT_DEBUG
-      VLOG(2) << "    - created var = " << var.value()
-              << ", literal = " << literal.value();
+      FZDLOG << "    - created var = " << var.value()
+             << ", literal = " << literal.value() << FZENDL;
 #endif
       return literal;
     }
@@ -93,8 +93,8 @@ class SatPropagator : public Constraint {
       const sat::VariableIndex var = literal.Variable();
       const bool assigned_bool = literal.IsPositive();
 #ifdef SAT_DEBUG
-      VLOG(2) << " - var " << var << " was assigned to " << assigned_bool
-              << " from literal " << literal.value();
+      FZDLOG << " - var " << var << " was assigned to " << assigned_bool
+             << " from literal " << literal.value() << FZENDL;
 #endif
       demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
@@ -106,28 +106,43 @@ class SatPropagator : public Constraint {
   void VariableIndexBound(int index) {
     if (sat_decision_level_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
-      VLOG(2) << "After failure, sat_decision_level = "
-              << sat_decision_level_.Value()
-              << ", sat decision level = " << sat_.CurrentDecisionLevel();
+      FZDLOG << "After failure, sat_decision_level = "
+             << sat_decision_level_.Value() << ", sat decision level = "
+             << sat_.CurrentDecisionLevel() << FZENDL;
 #endif
       sat_.Backtrack(sat_decision_level_.Value());
       DCHECK_EQ(sat_decision_level_.Value(), sat_.CurrentDecisionLevel());
     }
     const sat::VariableIndex var = sat::VariableIndex(index);
 #ifdef SAT_DEBUG
-    VLOG(2) << "VariableIndexBound: " << vars_[index]->DebugString()
-            << " with sat variable " << var;
+    FZDLOG << "VariableIndexBound: " << vars_[index]->DebugString()
+           << " with sat variable " << var << FZENDL;
 #endif
     const bool new_value = vars_[index]->Value() != 0;
     sat::Literal literal(var, new_value);
+    if (sat_.Assignment().IsVariableAssigned(var)) {
+      if (new_value == sat_.Assignment().IsLiteralTrue(literal)) {
 #ifdef SAT_DEBUG
-    VLOG(2) << " - enqueue literal = " << literal.value() << " at depth "
-            << sat_decision_level_.Value();
+      FZDLOG << " - literal = " << literal.value() << " already processed"
+             << FZENDL;
+#endif
+      return;
+      } else {
+#ifdef SAT_DEBUG
+      FZDLOG << " - literal = " << literal.value() << " assign opposite value"
+             << FZENDL;
+#endif
+        solver()->Fail();
+      }
+    }
+#ifdef SAT_DEBUG
+    FZDLOG << " - enqueue literal = " << literal.value() << " at depth "
+           << sat_decision_level_.Value() << FZENDL;
 #endif
     const int trail_index = sat_.LiteralTrail().Index();
     if (!sat_.EnqueueDecisionIfNotConflicting(literal)) {
 #ifdef SAT_DEBUG
-      VLOG(2) << " - failure detected, should backtrack";
+      FZDLOG << " - failure detected, should backtrack" << FZENDL;
 #endif
       solver()->Fail();
     } else {
@@ -148,7 +163,7 @@ class SatPropagator : public Constraint {
 
   virtual void InitialPropagate() {
 #ifdef SAT_DEBUG
-    VLOG(2) << "Initial propagation on sat solver";
+    FZDLOG << "Initial propagation on sat solver" << FZENDL;
 #endif
     PullSatAssignmentFrom(0);
 
@@ -159,7 +174,7 @@ class SatPropagator : public Constraint {
       }
     }
 #ifdef SAT_DEBUG
-    VLOG(2) << " - done";
+    FZDLOG << " - done" << FZENDL;
 #endif
   }
 
@@ -923,7 +938,7 @@ class SatPropagator : public Constraint {
       return Sat::kErrorLiteral;
     }
 #ifdef SAT_DEBUG
-    VLOG(2) << "  - SAT: Parse " << expr->DebugString() << " to "
+    FZDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated;
 #endif
     if (ContainsKey(indices_, expr_var)) {
@@ -935,7 +950,7 @@ class SatPropagator : public Constraint {
       indices_[expr_var] = var;
       Sat::Literal literal = Sat::MakeLiteral(var, !expr_negated);
 #ifdef SAT_DEBUG
-      VLOG(2) << "    - created var = " << var.value()
+      FZDLOG << "    - created var = " << var.value()
               << ", literal = " << literal.value();
 #endif
       return literal;
@@ -947,7 +962,7 @@ class SatPropagator : public Constraint {
   void VariableBound(int index) {
     if (sat_trail_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
-      VLOG(2) << "After failure, sat_trail = " << sat_trail_.Value()
+      FZDLOG << "After failure, sat_trail = " << sat_trail_.Value()
               << ", sat decision level = " << sat_.CurrentDecisionLevel();
 #endif
       sat_.BacktrackTo(sat_trail_.Value());
@@ -955,18 +970,18 @@ class SatPropagator : public Constraint {
     }
     const Sat::Variable var = Sat::Variable(index);
 #ifdef SAT_DEBUG
-    VLOG(2) << "VariableBound: " << vars_[index]->DebugString()
+    FZDLOG << "VariableBound: " << vars_[index]->DebugString()
             << " with sat variable " << var;
 #endif
     const bool new_value = vars_[index]->Value() != 0;
     Sat::Literal literal = Sat::MakeLiteral(var, new_value);
 #ifdef SAT_DEBUG
-    VLOG(2) << " - enqueue literal = " << literal.value() << " at depth "
+    FZDLOG << " - enqueue literal = " << literal.value() << " at depth "
             << sat_trail_.Value();
 #endif
     if (!sat_.PropagateOneLiteral(literal)) {
 #ifdef SAT_DEBUG
-      VLOG(2) << " - failure detected, should backtrack";
+      FZDLOG << " - failure detected, should backtrack";
 #endif
       solver()->Fail();
     } else {
@@ -975,7 +990,7 @@ class SatPropagator : public Constraint {
         const Sat::Variable var = Sat::Var(literal);
         const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
-        VLOG(2) << " - var " << var << " was assigned to " << assigned_bool
+        FZDLOG << " - var " << var << " was assigned to " << assigned_bool
                 << " from literal " << literal.value();
 #endif
         demons_[var.value()]->inhibit(solver());
@@ -995,7 +1010,7 @@ class SatPropagator : public Constraint {
 
   virtual void InitialPropagate() {
 #ifdef SAT_DEBUG
-    VLOG(2) << "Initial propagation on sat solver";
+    FZDLOG << "Initial propagation on sat solver";
 #endif
     sat_.ClearTouchedVariables();
     ApplyEarlyDeductions();
@@ -1006,7 +1021,7 @@ class SatPropagator : public Constraint {
       }
     }
 #ifdef SAT_DEBUG
-    VLOG(2) << " - done";
+    FZDLOG << " - done";
 #endif
   }
 
@@ -1052,7 +1067,7 @@ class SatPropagator : public Constraint {
   void StoreEarlyDeductions() {
     for (const Sat::Literal literal : sat_.TouchedVariables()) {
 #ifdef SAT_DEBUG
-      VLOG(2) << "Postponing deduction " << literal.value();
+      FZDLOG << "Postponing deduction " << literal.value();
 #endif
       early_deductions_.push_back(literal);
     }
@@ -1065,7 +1080,7 @@ class SatPropagator : public Constraint {
       const Sat::Variable var = Sat::Var(literal);
       const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
-      VLOG(2) << " - var " << var << " (" << vars_[var.value()]->DebugString()
+      FZDLOG << " - var " << var << " (" << vars_[var.value()]->DebugString()
               << ") was early assigned to " << assigned_bool << " from literal "
               << literal.value();
 #endif
