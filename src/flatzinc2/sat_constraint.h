@@ -76,6 +76,9 @@ bool AddIntEqReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
 bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
                   IntExpr* target);
 
+bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
+                   int64 range_min, int64 range_max);
+
 void DeclareVariable(SatPropagator* sat, IntVar* var);
 }       // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_

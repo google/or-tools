@@ -728,9 +728,9 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
     FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
     solver->AddConstraint(ct);
   } else if (range_min <= 0 && range_max >= possible_vars) {
-    Constraint* const ct = solver->MakeTrueConstraint();
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
+    FZVLOG << "  - ignore true constraint" << FZENDL;
+  } else if (FLAGS_use_sat && AddSumInRange(sat, alt, range_min, range_max)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
              AddAtMostOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
