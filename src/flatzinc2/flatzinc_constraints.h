@@ -36,12 +36,6 @@ Constraint* MakeBooleanSumInRange(Solver* const solver,
 Constraint* MakeBooleanSumOdd(Solver* const solver,
                               const std::vector<IntVar*>& variables);
 
-Constraint* MakeVariableCumulative(Solver* const solver,
-                                   const std::vector<IntVar*>& starts,
-                                   const std::vector<IntVar*>& durations,
-                                   const std::vector<IntVar*>& usages,
-                                   IntVar* const capacity);
-
 Constraint* MakeVariableOdd(Solver* const s, IntVar* const var);
 Constraint* MakeVariableEven(Solver* const s, IntVar* const var);
 Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
