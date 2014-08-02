@@ -303,6 +303,11 @@ bool FzSolver::Extract() {
     ExtractConstraint(ct);
   }
   FZLOG << "  - " << sorted.size() << " constraints created" << FZENDL;
+  const int num_sat_constraints = FLAGS_use_sat ? NumSatConstraints(sat_) : 0;
+  if (num_sat_constraints > 0) {
+    FZLOG << "  - " << num_sat_constraints << " sat constraints created"
+          << FZENDL;
+  }
 
   // Add domain constraints to created expressions.
   int domain_constraints = 0;

@@ -20,6 +20,8 @@ class SatPropagator;
 
 SatPropagator* MakeSatPropagator(Solver* solver);
 
+int NumSatConstraints(SatPropagator* sat);
+
 bool AddBoolEq(SatPropagator* sat, IntExpr* left, IntExpr* right);
 
 bool AddBoolLe(SatPropagator* sat, IntExpr* left, IntExpr* right);

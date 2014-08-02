@@ -522,6 +522,10 @@ bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
 SatPropagator* MakeSatPropagator(Solver* solver) {
   return solver->RevAlloc(new SatPropagator(solver));
 }
+
+int NumSatConstraints(SatPropagator* sat) {
+  return sat->sat()->NumAddedConstraints();
+}
 }  // namespace operations_research
 #else
 namespace operations_research {
@@ -1042,6 +1046,8 @@ class SatPropagator : public Constraint {
     VLOG(1) << "Should Not Be Visited";
   }
 
+  int NumClauses() const { return sat_.NumClauses(); }
+
  private:
   void StoreEarlyDeductions() {
     for (const Sat::Literal literal : sat_.TouchedVariables()) {
@@ -1383,6 +1389,10 @@ bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
 
 SatPropagator* MakeSatPropagator(Solver* solver) {
   return solver->RevAlloc(new SatPropagator(solver));
+}
+
+int NumSatConstraints(SatPropagator* sat) {
+  return sat->sat()->NumClauses();
 }
 }  // namespace operations_research
 #endif
