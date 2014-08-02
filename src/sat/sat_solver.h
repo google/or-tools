@@ -138,7 +138,7 @@ class SatSolver {
   // will also be the unique index associated to the next constraint that will
   // be added. This unique index is used by UnsatCore() to indicates what
   // constraints are part of the core.
-  int NumAddedConstraints() { return num_constraints_; }
+  int NumAddedConstraints() const { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
