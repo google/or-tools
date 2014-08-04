@@ -756,9 +756,7 @@ class RankedPropagator : public Constraint {
                 << partial_sequence_.DebugString();
       }
     }
-    for (int i = 0; i < previous_.size(); ++i) {
-      previous_[i] = -1;
-    }
+    previous_.assign(previous_.size(), -1);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (nexts_[i]->Bound()) {
         previous_[nexts_[i]->Min()] = i;
@@ -1225,7 +1223,7 @@ class DualCapacityThetaTree
 
   void Init(int64 capacity_max, int64 residual_capacity) {
     DCHECK_LE(0, residual_capacity);
-    DCHECK_LE(residual_capacity, capacity_max_);
+    DCHECK_LE(residual_capacity, capacity_max);
     Clear();
     capacity_max_ = capacity_max;
     residual_capacity_ = residual_capacity;
