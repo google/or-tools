@@ -489,8 +489,7 @@ bool NotLast::Propagate() {
 
   // --- Execute ----
   int j = 0;
-  for (int i = 0; i < by_start_max_.size(); ++i) {
-    DisjunctiveTask* const twi = by_end_max_[i];
+  for (DisjunctiveTask* const twi : by_end_max_) {
     while (j < by_start_max_.size() &&
            twi->interval->EndMax() > by_start_max_[j]->interval->StartMax()) {
       if (j > 0 && theta_tree_.Ect() > by_start_max_[j]->interval->StartMax()) {
@@ -575,15 +574,15 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()) {
   // Populate of the array of intervals
-  for (int i = 0; i < intervals.size(); ++i) {
+  for (IntervalVar* const interval : intervals) {
     IntervalVar* const underlying =
-        mirror ? solver->MakeMirrorInterval(intervals[i]) : intervals[i];
+        mirror ? solver->MakeMirrorInterval(interval) : interval;
     IntervalVar* const relaxed = solver->MakeIntervalRelaxedMax(underlying);
-    DisjunctiveTask* const w = new DisjunctiveTask(relaxed);
-    by_end_min_.push_back(w);
-    by_start_min_.push_back(w);
-    by_end_max_.push_back(w);
-    by_start_max_.push_back(w);
+    DisjunctiveTask* const task = new DisjunctiveTask(relaxed);
+    by_end_min_.push_back(task);
+    by_start_min_.push_back(task);
+    by_end_max_.push_back(task);
+    by_start_max_.push_back(task);
     new_est_.push_back(kint64min);
   }
 }
@@ -602,8 +601,7 @@ void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
   std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
 
-  for (int i = 0; i < size(); ++i) {
-    DisjunctiveTask* const task = by_end_max_[i];
+  for (DisjunctiveTask* const task : by_end_max_) {
     theta_tree_.Insert(task);
     if (theta_tree_.Ect() > task->interval->EndMax()) {
       solver_->Fail();
@@ -614,9 +612,7 @@ void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
 bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   // Initialization.
   UpdateEst();
-  for (int i = 0; i < size(); ++i) {
-    new_est_[i] = kint64min;
-  }
+  new_est_.assign(size(), kint64min);
 
   // Propagate in one direction
   std::sort(by_end_min_.begin(), by_end_min_.end(), EndMinLessThan<DisjunctiveTask>);
@@ -624,8 +620,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
        StartMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
   int j = 0;
-  for (int i = 0; i < size(); ++i) {
-    DisjunctiveTask* const task_i = by_end_min_[i];
+  for (DisjunctiveTask* const task_i : by_end_min_) {
     if (j < size()) {
       DisjunctiveTask* task_j = by_start_max_[j];
       while (task_i->interval->EndMin() > task_j->interval->StartMax()) {
