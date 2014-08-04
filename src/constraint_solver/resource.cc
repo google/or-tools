@@ -1464,8 +1464,10 @@ class EdgeFinder : public Constraint {
     // -kInt64min = -(-kInt64max - 1) = kInt64max + 1 = -kInt64min
     int64 update = IntervalVar::kMinValidValue;
     for (int i = 0; i < by_end_max_.size(); ++i) {
-      const int64 current_end_max = by_end_max_[i]->interval->EndMax();
-      dual_capacity_tree_.Insert(by_end_max_[i]);
+      Task* const task = by_end_max_[i];
+      if (task->EnergyMin() == 0) continue;
+      const int64 current_end_max = task->interval->EndMax();
+      dual_capacity_tree_.Insert(task);
       const int64 energy_threshold = residual_capacity * current_end_max;
       const DualCapacityThetaNode& root = dual_capacity_tree_.result();
       const int64 res_energetic_end_min = root.residual_energetic_end_min;
@@ -1485,10 +1487,10 @@ class EdgeFinder : public Constraint {
   // Returns the new start min that can be inferred for task_to_push if it is
   // proved that it cannot end before by_end_max[end_max_index] does.
   int64 ConditionalStartMin(const Task& task_to_push, int end_max_index) {
-    const int64 demand_min = task_to_push.DemandMin();
-    if (demand_min == 0) {
+    if (task_to_push.EnergyMin() == 0) {
       return task_to_push.interval->StartMin();
     }
+    const int64 demand_min = task_to_push.DemandMin();
     UpdatesForADemand* const updates = GetOrMakeUpdate(demand_min);
     if (!updates->up_to_date()) {
       ComputeConditionalStartMins(updates, demand_min);
@@ -1505,8 +1507,7 @@ class EdgeFinder : public Constraint {
   void PropagateBasedOnEndMinGreaterThanEndMax() {
     int end_max_index = 0;
     int64 max_start_min = kint64min;
-    for (int i = 0; i < by_start_min_.size(); ++i) {
-      Task* const task = by_end_min_[i];
+    for (Task* const task : by_end_min_) {
       const int64 end_min = task->interval->EndMin();
       while (end_max_index < by_start_min_.size() &&
              by_end_max_[end_max_index]->interval->EndMax() <= end_min) {
@@ -1537,8 +1538,7 @@ class EdgeFinder : public Constraint {
 
   // Fill the theta-lambda-tree, and check for overloading.
   void FillInTree() {
-    for (int i = 0; i < by_start_min_.size(); ++i) {
-      Task* const task = by_end_max_[i];
+    for (Task* const task : by_end_max_) {
       lt_tree_.Insert(*task);
       // Maximum energetic end min without overload.
       const int64 max_feasible =
@@ -1665,7 +1665,7 @@ class CumulativeTimeTable : public Constraint {
       : Constraint(solver), by_start_min_(tasks), capacity_(capacity) {
     // There may be up to 2 delta's per interval (one on each side),
     // plus two sentinels
-    const int profile_max_size = 2 * NumTasks() + 2;
+    const int profile_max_size = 2 * by_start_min_.size() + 2;
     profile_non_unique_time_.reserve(profile_max_size);
     profile_unique_time_.reserve(profile_max_size);
   }
@@ -1681,13 +1681,11 @@ class CumulativeTimeTable : public Constraint {
     Demon* demon = MakeDelayedConstraintDemon0(
         solver(), this, &CumulativeTimeTable::InitialPropagate,
         "InitialPropagate");
-    for (int i = 0; i < NumTasks(); ++i) {
-      by_start_min_[i]->WhenAnything(demon);
+    for (Task* const task : by_start_min_) {
+      task->WhenAnything(demon);
     }
     capacity_->WhenRange(demon);
   }
-
-  int NumTasks() const { return by_start_min_.size(); }
 
   void Accept(ModelVisitor* const visitor) const {
     LOG(FATAL) << "Should not be visited";
@@ -1700,16 +1698,17 @@ class CumulativeTimeTable : public Constraint {
   void BuildProfile() {
     // Build profile with non unique time
     profile_non_unique_time_.clear();
-    for (int i = 0; i < NumTasks(); ++i) {
-      const Task* const task = by_start_min_[i];
+    for (const Task* const task : by_start_min_) {
       const IntervalVar* const interval = task->interval;
       const int64 start_max = interval->StartMax();
       const int64 end_min = interval->EndMin();
       if (interval->MustBePerformed() && start_max < end_min) {
-        const int64 demand = task->DemandMin();
-        if (demand > 0) {
-          profile_non_unique_time_.push_back(ProfileDelta(start_max, +demand));
-          profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand));
+        const int64 demand_min = task->DemandMin();
+        if (demand_min > 0) {
+          profile_non_unique_time_.emplace_back(
+              ProfileDelta(start_max, +demand_min));
+          profile_non_unique_time_.emplace_back(
+              ProfileDelta(end_min, -demand_min));
         }
       }
     }
@@ -1748,8 +1747,7 @@ class CumulativeTimeTable : public Constraint {
     std::sort(by_start_min_.begin(), by_start_min_.end(), StartMinLessThan<Task>);
     int64 usage = 0;
     int profile_index = 0;
-    for (int task_index = 0; task_index < NumTasks(); ++task_index) {
-      const Task* const task = by_start_min_[task_index];
+    for (const Task* const task : by_start_min_) {
       while (task->interval->StartMin() >
              profile_unique_time_[profile_index].time) {
         DCHECK(profile_index < profile_unique_time_.size());
