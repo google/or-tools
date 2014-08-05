@@ -1741,8 +1741,10 @@ class CumulativeTimeTable : public Constraint {
     int64 usage = 0;
     int profile_index = 0;
     for (const Task* const task : by_start_min_) {
-      while (task->interval->StartMin() >
-             profile_unique_time_[profile_index].time) {
+      const IntervalVar* const interval = task->interval;
+      if (interval->StartMin() == interval->StartMax() &&
+          interval->EndMin() == interval->EndMax()) continue;
+      while (interval->StartMin() > profile_unique_time_[profile_index].time) {
         DCHECK(profile_index < profile_unique_time_.size());
         ++profile_index;
         usage += profile_unique_time_[profile_index].delta;
