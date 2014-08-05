@@ -25,7 +25,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
-DEFINE_bool(cp_diffn_use_cumulative, false,
+DEFINE_bool(cp_diffn_use_cumulative, true,
             "Diffn constraint adds redundant cumulative constraint");
 
 namespace operations_research {
@@ -63,7 +63,7 @@ class Diffn : public Constraint {
     }
     delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                  "PropagateAll");
-    if (FLAGS_cp_diffn_use_cumulative && AreAllBound(dx_) && AreAllBound(dy_) &&
+    if (FLAGS_cp_diffn_use_cumulative &&
         IsArrayInRange(x_, 0LL, kint64max) &&
         IsArrayInRange(y_, 0LL, kint64max)) {
       Constraint* ct1 = nullptr;
@@ -80,18 +80,25 @@ class Diffn : public Constraint {
         const int64 min_y = MinVarArray(y_);
         const int64 max_y = MaxVarArray(y_);
         const int64 max_size_y = MaxVarArray(dy_);
-        std::vector<int64> size_x;
-        FillValues(dx_, &size_x);
-        std::vector<int64> size_y;
-        FillValues(dy_, &size_y);
-
-        ct1 = MakeCumulativeConstraint(x_, size_x, size_y,
-                                       max_size_y + max_y - min_y);
-        ct2 = MakeCumulativeConstraint(y_, size_y, size_x,
-                                       max_size_x + max_x - min_x);
+        if (AreAllBound(dx_)) {
+          std::vector<int64> size_x;
+          FillValues(dx_, &size_x);
+          ct1 = MakeCumulativeConstraint(
+              x_, size_x, dy_, max_size_y + max_y - min_y);
+        }
+        if (AreAllBound(dy_)) {
+          std::vector<int64> size_y;
+          FillValues(dy_, &size_y);
+          ct2 = MakeCumulativeConstraint(
+               y_, size_y, dx_, max_size_x + max_x - min_x);
+        }
       }
-      s->AddConstraint(ct1);
-      s->AddConstraint(ct2);
+      if (ct1 != nullptr) {
+        s->AddConstraint(ct1);
+      }
+      if (ct2 != nullptr) {
+        s->AddConstraint(ct2);
+      }
     }
   }
 
@@ -266,7 +273,7 @@ class Diffn : public Constraint {
 
   Constraint* MakeCumulativeConstraint(const std::vector<IntVar*>& positions,
                                        const std::vector<int64>& sizes,
-                                       const std::vector<int64>& demands,
+                                       const std::vector<IntVar*>& demands,
                                        int64 capacity) {
     std::vector<IntervalVar*> intervals;
     solver()->MakeFixedDurationIntervalVarArray(positions, sizes, "interval",
