@@ -1710,27 +1710,24 @@ class CumulativeTimeTable : public Constraint {
          TimeLessThan);
     // Build profile with unique times
     profile_unique_time_.clear();
-    profile_unique_time_.push_back(ProfileDelta(kint64min, 0));
+    profile_unique_time_.emplace_back(ProfileDelta(kint64min, 0));
+    int64 max_usage = 0;
+    int64 usage = 0;
     for (int i = 0; i < profile_non_unique_time_.size(); ++i) {
       const ProfileDelta& profile_delta = profile_non_unique_time_[i];
       if (profile_delta.time == profile_unique_time_.back().time) {
         profile_unique_time_.back().delta += profile_delta.delta;
       } else {
-        profile_unique_time_.push_back(profile_delta);
+        // Check max usage w.r.t. capacity, set new min usage if possible.
+        usage += profile_unique_time_.back().delta;
+        if (usage > max_usage) {
+          max_usage = usage;
+          capacity_->SetMin(usage);
+        }
+        profile_unique_time_.emplace_back(profile_delta);
       }
     }
-    // Re-scan profile to check max usage w.r.t. capacity, check
-    // final usage to be 0, and set min capacity to max usage.
-    int64 max_usage = 0;
-    int64 usage = 0;
-    for (int i = 0; i < profile_unique_time_.size(); ++i) {
-      const ProfileDelta& profile_delta = profile_unique_time_[i];
-      usage += profile_delta.delta;
-      if (usage > max_usage) {
-        max_usage = usage;
-        capacity_->SetMin(usage);
-      }
-    }
+    // Check final usage to be 0.
     DCHECK_EQ(0, usage);
     profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
   }
