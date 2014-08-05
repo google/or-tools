@@ -302,10 +302,18 @@ bool FzSolver::Extract() {
   for (FzConstraint* const ct : sorted) {
     ExtractConstraint(ct);
   }
-  FZLOG << "  - " << sorted.size() << " constraints created" << FZENDL;
+  FZLOG << "  - " << sorted.size() << " constraints parsed" << FZENDL;
+  const int num_cp_constraints = solver_.constraints();
+  if (num_cp_constraints <= 1) {
+    FZLOG << "  - " << num_cp_constraints
+                    << " constraint added to the CP solver" << FZENDL;
+  } else {
+    FZLOG << "  - " << num_cp_constraints
+                    << " constraints added to the CP solver" << FZENDL;
+  }
   const int num_sat_constraints = FLAGS_use_sat ? NumSatConstraints(sat_) : 0;
   if (num_sat_constraints > 0) {
-    FZLOG << "  - " << num_sat_constraints << " sat constraints created"
+    FZLOG << "  - " << num_sat_constraints << " constraints added to SAT solver"
           << FZENDL;
   }
 
