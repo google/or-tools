@@ -31,7 +31,7 @@ void SatTableConstraint::Post() {
   sat_solver->SetNumVariables(sat_solver->NumVariables() + tuples_.NumTuples());
 
   std::vector<sat::Literal> clause;
-  std::vector<std::pair<int, int>> column_values;
+  std::vector<std::pair<int64, int>> column_values;
   for (int i = 0; i < tuples_.Arity(); ++i) {
     column_values.clear();
     IntVarLiteralGetter literal_getter =
@@ -75,7 +75,7 @@ void SatTableConstraint::Post() {
       clause.clear();
       clause.push_back(literal_getter.IsNotEqualTo(value));
       for (; column_index < column_values.size(); ++column_index) {
-        std::pair<int, int> entry = column_values[column_index];
+        std::pair<int64, int> entry = column_values[column_index];
         if (entry.first != value) break;
         clause.push_back(sat::Literal(first_tuple_var + entry.second, true));
       }
