@@ -281,7 +281,11 @@ class BinaryClauseManager {
   void ClearNewlyAdded() { newly_added_.clear(); }
 
  private:
+#if defined(_MSC_VER)
+  hash_set<std::pair<int32, int32>, PairIntHasher> set_;
+#else
   hash_set<std::pair<int32, int32>> set_;
+#endif
   std::vector<BinaryClause> newly_added_;
   DISALLOW_COPY_AND_ASSIGN(BinaryClauseManager);
 };
