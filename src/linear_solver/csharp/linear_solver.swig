@@ -111,6 +111,25 @@
 %unignore operations_research::MPSolver::FIXED_VALUE;
 %unignore operations_research::MPSolver::BASIC;
 
+// Extend code.
+%unignore operations_research::MPSolver::ExportModelAsLpFormat(bool);
+%unignore operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
+%extend operations_research::MPSolver {
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    std::string output;
+    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    return output;
+  }
+
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    std::string output;
+    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+      return "";
+    }
+    return output;
+  }
+}
+
 // MPVariable: writer API.
 %unignore operations_research::MPVariable::SetInteger;
 %rename (SetLb) operations_research::MPVariable::SetLB;

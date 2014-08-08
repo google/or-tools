@@ -91,7 +91,8 @@ public class CsLinearProgramming
     Console.WriteLine("    activity = " + c2.Activity());
   }
 
-  private static void RunLinearProgrammingExampleNaturalApi(String solverType)
+  private static void RunLinearProgrammingExampleNaturalApi(
+      String solverType, bool printModel)
   {
     Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
     if (solver == null)
@@ -111,6 +112,11 @@ public class CsLinearProgramming
 
     Console.WriteLine("Number of variables = " + solver.NumVariables());
     Console.WriteLine("Number of constraints = " + solver.NumConstraints());
+
+    if (printModel) {
+      string model = solver.ExportModelAsLpFormat(false);
+      Console.WriteLine(model);
+    }
 
     int resultStatus = solver.Solve();
 
@@ -156,12 +162,12 @@ public class CsLinearProgramming
     RunLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
     Console.WriteLine(
         "---- Linear programming example (Natural API) with GLOP ----");
-    RunLinearProgrammingExampleNaturalApi("GLOP_LINEAR_PROGRAMMING");
+    RunLinearProgrammingExampleNaturalApi("GLOP_LINEAR_PROGRAMMING", true);
     Console.WriteLine(
         "---- Linear programming example (Natural API) with GLPK ----");
-    RunLinearProgrammingExampleNaturalApi("GLPK_LINEAR_PROGRAMMING");
+    RunLinearProgrammingExampleNaturalApi("GLPK_LINEAR_PROGRAMMING", false);
     Console.WriteLine(
         "---- Linear programming example (Natural API) with CLP ----");
-    RunLinearProgrammingExampleNaturalApi("CLP_LINEAR_PROGRAMMING");
+    RunLinearProgrammingExampleNaturalApi("CLP_LINEAR_PROGRAMMING", false);
   }
 }
