@@ -51,7 +51,6 @@ DEFINE_bool(presolve, true, "Use presolve.");
 DECLARE_bool(fz_logging);
 DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
-DECLARE_bool(cp_use_cumulative_edge_finder);
 
 using operations_research::ThreadPool;
 extern void interrupt_handler(int s);
@@ -153,8 +152,6 @@ void ParallelRun(const FzModel* const model, int worker_id,
 
 void FixAndParseParameters(int* argc, char*** argv) {
   FLAGS_log_prefix = false;
-  // Every benchmarks seems to be faster without the edge finder.
-  FLAGS_cp_use_cumulative_edge_finder = false;
   char all_param[] = "--all";
   char free_param[] = "--free";
   char workers_param[] = "--workers";
