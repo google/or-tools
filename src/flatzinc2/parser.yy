@@ -291,7 +291,17 @@ variable_or_constant_declaration:
   delete assignments;
   delete annotations;
 }
-| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF int_domain ':' IDENTIFIER
+    annotations '=' '[' ']' {
+  std::vector<FzAnnotation>* const annotations = $11;
+  // Declaration of a (named) constant array. See rule right above.
+  CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
+  const int64 num_constants = $5;
+  CHECK_EQ($5, 0) << "Empty arrays should have a size of 0";
+  const std::string& identifier = $10;
+  context->integer_array_map[identifier] = std::vector<int64>();
+  delete annotations;
+}| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
   // Declaration of a (named) constant array: See rule above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
