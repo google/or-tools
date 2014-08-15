@@ -288,21 +288,27 @@ class SumConstraint : public TreeArrayConstraint {
   Demon* sum_demon_;
 };
 
-// This constraint implements sum(vars) == sum_var.
+// This constraint implements sum(vars) == target_var.
 class SmallSumConstraint : public Constraint {
  public:
   SmallSumConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
                      IntVar* const target_var)
-      : Constraint(solver), vars_(vars), target_var_(target_var),
-        computed_min_(0), computed_max_(0), sum_demon_(nullptr) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0),
+        sum_demon_(nullptr) {}
 
   virtual ~SmallSumConstraint() {}
 
   virtual void Post() {
     for (int i = 0; i < vars_.size(); ++i) {
-      Demon* const demon = MakeConstraintDemon1(
-          solver(), this, &SmallSumConstraint::VarChanged, "VarChanged", i);
-      vars_[i]->WhenRange(demon);
+      if (!vars_[i]->Bound()) {
+        Demon* const demon = MakeConstraintDemon1(
+            solver(), this, &SmallSumConstraint::VarChanged, "VarChanged", i);
+        vars_[i]->WhenRange(demon);
+      }
     }
     sum_demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(), this, &SmallSumConstraint::SumChanged, "SumChanged"));
@@ -775,16 +781,21 @@ class SmallMinConstraint : public Constraint {
  public:
   SmallMinConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
                      IntVar* const target_var)
-    : Constraint(solver), vars_(vars), target_var_(target_var),
-      computed_min_(0), computed_max_(0) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0) {}
 
   virtual ~SmallMinConstraint() {}
 
   virtual void Post() {
     for (int i = 0; i < vars_.size(); ++i) {
-      Demon* const demon = MakeConstraintDemon1(
-          solver(), this, &SmallMinConstraint::VarChanged, "VarChanged", i);
-      vars_[i]->WhenRange(demon);
+      if (!vars_[i]->Bound()) {
+        Demon* const demon = MakeConstraintDemon1(
+            solver(), this, &SmallMinConstraint::VarChanged, "VarChanged", i);
+        vars_[i]->WhenRange(demon);
+      }
     }
     Demon* const mdemon = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(), this, &SmallMinConstraint::MinVarChanged, "MinVarChanged"));
@@ -837,8 +848,7 @@ class SmallMinConstraint : public Constraint {
         min_min = std::min(min_min, var->Min());
         min_max = std::min(min_max, var->Max());
       }
-      if (min_min > computed_min_.Value() ||
-          min_max < computed_max_.Value()) {
+      if (min_min > computed_min_.Value() || min_max < computed_max_.Value()) {
         computed_min_.SetValue(solver(), min_min);
         computed_max_.SetValue(solver(), min_max);
         target_var_->SetRange(computed_min_.Value(), computed_max_.Value());
@@ -851,8 +861,7 @@ class SmallMinConstraint : public Constraint {
     const int64 new_min = target_var_->Min();
     const int64 new_max = target_var_->Max();
     // Nothing to do?
-    if (new_min <= computed_min_.Value() &&
-        new_max >= computed_max_.Value()) {
+    if (new_min <= computed_min_.Value() && new_max >= computed_max_.Value()) {
       return;
     }
 
@@ -1050,16 +1059,21 @@ class SmallMaxConstraint : public Constraint {
  public:
   SmallMaxConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
                      IntVar* const target_var)
-    : Constraint(solver), vars_(vars), target_var_(target_var),
-      computed_min_(0), computed_max_(0) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0) {}
 
   virtual ~SmallMaxConstraint() {}
 
   virtual void Post() {
     for (int i = 0; i < vars_.size(); ++i) {
-      Demon* const demon = MakeConstraintDemon1(
-          solver(), this, &SmallMaxConstraint::VarChanged, "VarChanged", i);
-      vars_[i]->WhenRange(demon);
+      if (!vars_[i]->Bound()) {
+        Demon* const demon = MakeConstraintDemon1(
+            solver(), this, &SmallMaxConstraint::VarChanged, "VarChanged", i);
+        vars_[i]->WhenRange(demon);
+      }
     }
     Demon* const mdemon = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(), this, &SmallMaxConstraint::MaxVarChanged, "MinVarChanged"));
@@ -1112,8 +1126,7 @@ class SmallMaxConstraint : public Constraint {
         max_min = std::max(max_min, var->Min());
         max_max = std::max(max_max, var->Max());
       }
-      if (max_min > computed_min_.Value() ||
-          max_max < computed_max_.Value()) {
+      if (max_min > computed_min_.Value() || max_max < computed_max_.Value()) {
         computed_min_.SetValue(solver(), max_min);
         computed_max_.SetValue(solver(), max_max);
         target_var_->SetRange(computed_min_.Value(), computed_max_.Value());
@@ -1126,8 +1139,7 @@ class SmallMaxConstraint : public Constraint {
     const int64 new_min = target_var_->Min();
     const int64 new_max = target_var_->Max();
     // Nothing to do?
-    if (new_min <= computed_min_.Value() &&
-        new_max >= computed_max_.Value()) {
+    if (new_min <= computed_min_.Value() && new_max >= computed_max_.Value()) {
       return;
     }
 
@@ -3413,7 +3425,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
     return MakeEquality(vars[0], var);
   } else if (size == 2) {
     return MakeEquality(MakeSum(vars[0], vars[1]), var);
- } else {
+  } else {
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, var));
     } else if (size <= parameters_.array_split_size) {

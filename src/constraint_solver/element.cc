@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include <algorithm>
 #include "base/unique_ptr.h"
 #include <string>
@@ -260,8 +261,7 @@ IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64>* values);
 
 class IntExprElement : public BaseIntExprElement {
  public:
-  IntExprElement(Solver* const s, const std::vector<int64>& vals,
-                 IntVar* const expr)
+  IntExprElement(Solver* const s, const std::vector<int64>& vals, IntVar* const expr)
       : BaseIntExprElement(s, expr), values_(vals) {}
 
   virtual ~IntExprElement() {}
@@ -369,8 +369,9 @@ class IncreasingIntExprElement : public BaseIntExpr {
   IntVar* const index_;
 };
 
-IncreasingIntExprElement::IncreasingIntExprElement(
-    Solver* const s, const std::vector<int64>& values, IntVar* const index)
+IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
+                                                   const std::vector<int64>& values,
+                                                   IntVar* const index)
     : BaseIntExpr(s), values_(values), index_(index) {
   DCHECK(index);
   DCHECK(s);
@@ -517,8 +518,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const std::vector<int64>& values,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -527,8 +527,7 @@ IntExpr* Solver::MakeElement(const std::vector<int64>& values,
   return BuildElement(this, values, index);
 }
 
-IntExpr* Solver::MakeElement(const std::vector<int>& values,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -1505,16 +1504,14 @@ Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
   }
 }
 
-IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
-                                     int64 value) {
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value) {
   IntExpr* const cache = model_cache_->FindVarArrayConstantExpression(
       vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name =
-        StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                     JoinNamePtr(vars, ", ").c_str(), value);
+    const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+                                     JoinNamePtr(vars, ", ").c_str(), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(
