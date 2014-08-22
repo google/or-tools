@@ -63,7 +63,7 @@ class JobShopData {
     JOB_READ
   };
 
-  explicit JobShopData(const std::string& filename) :
+  explicit JobShopData(const string& filename) :
         name_(""),
         filename_(filename),
         machine_count_(0),
@@ -91,7 +91,7 @@ class JobShopData {
 
   int job_count() const { return job_count_; }
 
-  const std::string& name() const { return name_; }
+  const string& name() const { return name_; }
 
   int horizon() const { return horizon_; }
 
@@ -133,7 +133,7 @@ class JobShopData {
     ++current_line_nbr_;
     VLOG(3) << "Line number " << current_line_nbr_;
 
-    std::vector<std::string> words;
+    std::vector<string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
     switch (problem_type_) {
       case UNDEFINED: {
