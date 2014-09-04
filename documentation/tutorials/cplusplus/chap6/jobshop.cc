@@ -1,4 +1,4 @@
-// Copyright 2011-2013 Google
+// Copyright 2011-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,7 +58,7 @@ void Jobshop(const JobShopData& data) {
     for (int task_index = 0; task_index < tasks.size(); ++task_index) {
       const JobShopData::Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
-      const string name = StringPrintf("J%dM%dI%dD%d",
+      const std::string name = StringPrintf("J%dM%dI%dD%d",
                                       task.job_id,
                                       task.machine_id,
                                       task_index,
@@ -90,7 +90,7 @@ void Jobshop(const JobShopData& data) {
   // Adds disjunctive constraints and creates sequence variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = StringPrintf("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
     solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);

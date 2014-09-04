@@ -1,4 +1,4 @@
-// Copyright 2011-2013 Google
+// Copyright 2011-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,7 @@ namespace operations_research {
 class DecreaseOneVar: public IntVarLocalSearchOperator {
   public:
     explicit DecreaseOneVar(const std::vector<IntVar*>& variables)
-            : IntVarLocalSearchOperator(variables.data(), variables.size()),
+            : IntVarLocalSearchOperator(variables),
             variable_index_(0) {
               VLOG(2) << "Creation of DecreaseOneVar Local Search Operator";
             }
@@ -70,7 +70,7 @@ class DecreaseOneVar: public IntVarLocalSearchOperator {
 class ObjectiveValueFilter : public IntVarLocalSearchFilter {
   public:
     explicit ObjectiveValueFilter(const std::vector<IntVar*>& vars):
-    IntVarLocalSearchFilter(vars.data(), vars.size()), obj_(0) {}
+    IntVarLocalSearchFilter(vars), obj_(0) {}
 
     virtual ~ObjectiveValueFilter() {}
 
@@ -106,7 +106,7 @@ class ObjectiveValueFilter : public IntVarLocalSearchFilter {
 class InfeasibleNeighborFilter : public IntVarLocalSearchFilter {
   public:
     explicit InfeasibleNeighborFilter(const std::vector<IntVar*>& vars) :
-    IntVarLocalSearchFilter(vars.data(), vars.size()) {}
+    IntVarLocalSearchFilter(vars) {}
 
     virtual ~InfeasibleNeighborFilter() {}
 

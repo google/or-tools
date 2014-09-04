@@ -1,4 +1,4 @@
-// Copyright 2011-2013 Google
+// Copyright 2011-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,8 +35,8 @@ namespace operations_research {
   // ----- Exchange 2 intervals on a sequence variable -----
 class SwapIntervals : public SequenceVarLocalSearchOperator {
  public:
-  SwapIntervals(const SequenceVar* const* vars, int size)
-      : SequenceVarLocalSearchOperator(vars, size),
+  SwapIntervals(const std::vector<operations_research::SequenceVar*>& vars)
+      : SequenceVarLocalSearchOperator(vars),
         current_var_(-1),
         current_first_(-1),
         current_second_(-1) {}
@@ -94,8 +94,8 @@ class SwapIntervals : public SequenceVarLocalSearchOperator {
 // ----- Shuffle a fixed-length sub-sequence on one sequence variable -----
 class ShuffleIntervals : public SequenceVarLocalSearchOperator {
  public:
-  ShuffleIntervals(const SequenceVar* const* vars, int size, int max_length)
-      : SequenceVarLocalSearchOperator(vars, size),
+  ShuffleIntervals(const std::vector<SequenceVar*>& vars, int max_length)
+      : SequenceVarLocalSearchOperator(vars),
         max_length_(max_length),
         current_var_(-1),
         current_first_(-1),
@@ -172,7 +172,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
     return true;
   }
 
-  const int max_length_;
+  const int64 max_length_;
   int current_var_;
   int current_first_;
   int current_length_;

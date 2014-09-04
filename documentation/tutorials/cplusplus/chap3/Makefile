@@ -1,7 +1,7 @@
 OR_TOOLS_TOP=XXX
 OR_TOOLS_SOURCES=$(OR_TOOLS_TOP)/src
 
-SOURCES= golomb1.cc golomb2.cc golomb3.cc golomb4.cc
+SOURCES= golomb1.cc golomb2.cc golomb3.cc golomb4.cc golomb5.cc golomb6.cc
 
 OBJECTS=$(SOURCES:.cc=.$O)
 
