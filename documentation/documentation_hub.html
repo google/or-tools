@@ -84,9 +84,10 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.2.9: (2014-08-22 14:02:09)
-------------------------------
-* regaining control - NO CHANGE
+<pre id="verbatim">v.0.2.10: (2014-09-04 16:09:13)
+-------------------------------
+* Quick update of the tutorial codes in chapters 2, 3 and 6: code adapted to the new API; the manual is NOT up to date!
+* Licenses updated;
 </pre>
 <p>This is the <a href="changes_list.txt">list of changes</a>.</p>
 <h5>Legend:</h5>
@@ -107,6 +108,9 @@ Thank you very much.
 <hr>
 
 <p>This is work in progress. Pages will be modified, moved or even removed!</p>
+
+<p><font color="red">As of September 4, 2014, the manual is <b>NOT</b> up to date with the new API. The tutorial code however <b>IS</b> up to date!</font></p>
+
 
 <p>The epub version is still experimental. We strongly recommend <a href="http://calibre-ebook.com/">calibre (ebook-viewer)</a> whenever possible to view the epub version. 
 With this version, you should be able to convert the manual to the right format for your preferred hand-held device.For instance, to transform the epub version 
@@ -384,123 +388,26 @@ as you will erase the generated files for the whole library!
 
 <h5>Code:</h5> 
 
-<p>Everything: <a href="http://or-tools.googlecode.com/files/tutorials_all_examples.zip">tutorial_all_examples.zip</a></p>
-<p>Jump to: </p>
+<p>You can download the tutorial code <a href="https://drive.google.com/folderview?id=0B2yUSpEp04BNUTgwNVRkU0lXcUE&usp=sharing">here</a>.</p>
+
+<p>Content as of September 4, 2014:</p>
 
 <p>
-
-<div class="examples_list">
-
 <ul>
-<li class="language" id="tutorial_C++">C++: <a href="javascript:unhide('tutorial_C++_block', 'tutorial_C++_button')"><img id="tutorial_C++_button" src="static/icon_show.gif" alt="" /></a></li>
-<div id="tutorial_C++_block" class="hidden">
-<dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_c++_examples.zip">tutorial_c++_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/cplusplus/chap2/Makefile">Makefile</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/cplusplus/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a> </dd>
-	<dt>chap3:</dt><dd><a href="tutorials/cplusplus/chap3/Makefile">Makefile</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/cplusplus/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb5.cc">golomb5.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap3/golomb6.cc">golomb6.cc</a></dd>
-	 <dt>chap4:</dt><dd>-</dd>
-	 <dt>chap5:</dt><dd>-</dd>
-	 <dt>chap6:</dt><dd><a href="tutorials/cplusplus/chap6/Makefile">Makefile</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap6/jobshop.h">jobshop.h</a> &nbsp; | &nbsp; <a href="tutorials/cplusplus/chap6/report_jobshopdata.cc">report_jobshopdata.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/cplusplus/chap6/abz9">abz9</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/20_5_01_ta001.txt">20_5_01_ta001.txt</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/jobshop.cc">jobshop.cc</a> &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/dummy_ls.cc">dummy_ls.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/jobshop_ls.h">jobshop_ls.h</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/jobshop_ls1.cc">jobshop_ls1.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/jobshop_ls1.cc">jobshop_ls2.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/jobshop_ls3.cc">jobshop_ls3.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/cplusplus/chap6/dummy_ls_filtering.cc">dummy_ls_filtering.cc</a></dd>
-	 <dt>chap7:</dt><dd>-</dd>
-	 <dt>chap8:</dt><dd>-</dd>
-	 <dt>chap9:</dt><dd>-</dd>
-	 <dt>chap10:</dt><dd>[NOT READY YET]<a href="tutorials/c++/chap9/tsp.h">tsp.h</a> &nbsp; |  &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsp_epix.h</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap9/tsplib.h">tsplib.h</a> &nbsp; | &nbsp;
-	 <a href="tutorials/c++/chap9/tsplib_solution_to_epix.cc">tsplib_solution_to_epix.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp_minimal.cc">tsp_minimal.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp.cc">tsp.cc</a> &nbsp; 
-	  | &nbsp;	<a href="tutorials/c++/chap9/tsp_forbidden_arcs.cc">tsp_forbidden_arcs.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp_exact.cc">tsp_exact.cc</a>
-	  &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw.h">tsptw.h</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw_epix.h">tsptw_epix.h</a> 
-	  &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw.cc">tsptw.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw_ls.cc">tsptw_ls.cc</a></dd>
-	 <dt>chap11:</dt><dd>-</dd>
-	 <dt>chap12:</dt><dd>-</dd>
-	 <dt>chap13:</dt><dd>-</dd>
-	 <dt>chap14:</dt><dd>-</dd>
-	 <dt>chap15:</dt><dd>-</dd>
-</dl>
-</div>
-
-
-
-
-<li class="language" id="tutorial_Python">Python:  <a href="javascript:unhide('tutorial_Python_block', 'tutorial_Python_button')"><img id="tutorial_Python_button" src="static/icon_show.gif" alt="" /></a></li>
-<div id="tutorial_Python_block" class="hidden">
-<dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_python_examples.zip">tutorial_python_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/python/chap2/cp_is_fun1.py">cp_is_fun1.py</a> &nbsp; | &nbsp; <a href="tutorials/python/chap2/cp_is_fun2.py">cp_is_fun2.py</a> &nbsp; | &nbsp;
-	 <a href="tutorials/python/chap2/cp_is_fun3.py">cp_is_fun3.py</a> &nbsp; | &nbsp;	<a href="tutorials/python/chap2/cp_is_fun4.py">cp_is_fun4.py</a> </dd>
-	<dt>chap3:</dt><dd>-</dd>
-	<dt>chap4:</dt><dd>-</dd>
-	 <dt>chap5:</dt><dd>-</dd>
-	 <dt>chap6:</dt><dd>-</dd>
-	 <dt>chap7:</dt><dd>-</dd>
-	 <dt>chap8:</dt><dd>-</dd>
-	 <dt>chap9:</dt><dd>-</dd>	 
-	 <dt>chap10:</dt><dd>-</dd>
-	 <dt>chap11:</dt><dd>-</dd>
-	 <dt>chap12:</dt><dd>-</dd>
-	 <dt>chap13:</dt><dd>-</dd>	 
-</dl>
-</div>
-
-
-
-<li class="language" id="tutorial_Java">Java: <a href="javascript:unhide('tutorial_Java_block', 'tutorial_Java_button')"><img id="tutorial_Java_button" src="static/icon_show.gif" alt="" /></a></li>
-<div id="tutorial_Java_block" class="hidden">
-<dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_java_examples.zip">tutorial_java_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun1.java">CpIsFun1.java</a> &nbsp; | &nbsp; <a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun2.java">CpIsFun2.java</a> &nbsp; | &nbsp;
-	 <span class="empty">CpIsFun3.java</span> &nbsp; | &nbsp;	<a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun4.java">CpIsFun4.java</a> </dd>
-	<dt>chap3:</dt><dd>-</dd>
-	<dt>chap4:</dt><dd>-</dd>
-	 <dt>chap5:</dt><dd>-</dd>
-	 <dt>chap6:</dt><dd>-</dd>
-	 <dt>chap7:</dt><dd>-</dd>
-	 <dt>chap8:</dt><dd>-</dd>
-	 <dt>chap9:</dt><dd>-</dd>	 
-	 <dt>chap10:</dt><dd>-</dd>
-	 <dt>chap11:</dt><dd>-</dd>
-	 <dt>chap12:</dt><dd>-</dd>
-	 <dt>chap13:</dt><dd>-</dd>	 
-</dl>
-
-</div>
-
-
-
-<li class="language" id="tutorial_Csharp">C#: <a href="javascript:unhide('tutorial_Csharp_block', 'tutorial_Csharp_button')"><img id="tutorial_Csharp_button" src="static/icon_show.gif" alt="" /></a></li>
-<div id="tutorial_Csharp_block" class="hidden">
-<dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_csharp_examples.zip">tutorial_csharp_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/csharp/chap2/cp_is_fun1.cs">cp_is_fun1.cs</a> &nbsp; | &nbsp; <a href="tutorials/csharp/chap2/cp_is_fun2.cs">cp_is_fun2.cs</a> &nbsp; | &nbsp;
-	 <span class="empty">cp_is_fun3.cs</span> &nbsp; | &nbsp;	<a href="tutorials/csharp/chap2/cp_is_fun4.cs">cp_is_fun4.cs</a> </dd>
-	<dt>chap3:</dt><dd>-</dd>
-	<dt>chap4:</dt><dd>-</dd>
-	 <dt>chap5:</dt><dd>-</dd>
-	 <dt>chap6:</dt><dd>-</dd>
-	 <dt>chap7:</dt><dd>-</dd>
-	 <dt>chap8:</dt><dd>-</dd>
-	 <dt>chap9:</dt><dd>-</dd>	 
-	 <dt>chap10:</dt><dd>-</dd>
-	 <dt>chap11:</dt><dd>-</dd>
-	 <dt>chap12:</dt><dd>-</dd>
-	 <dt>chap13:</dt><dd>-</dd>	 
-</dl>
-</div>
+<li><strong>C++:</strong> chapters 2, 3 and 6.</li>
+<li><strong>Python:</strong> chapter 2.</li>
+<li><strong>Java:</strong> chapter 2.</li>
+<li><strong>C#:</strong> chapter 2.</li>
 </ul>
+
+</p>
+
 
 </div>
 </p>
 
 <hr>
-<div class="footer">© Copyright 2012-2013, Google</div>
+<div class="footer">© Copyright 2012-2014, Google</div>
 
 </div>
 </body>

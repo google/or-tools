@@ -1,4 +1,9 @@
 
+v.0.2.10: (2014-09-04 16:09:13)
+-------------------------------
+* Quick update of the tutorial codes in chapters 2, 3 and 6: code adapted to the new API; the manual is NOT up to date!
+* Licenses updated;
+
 v.0.2.9: (2014-08-22 14:02:09)
 ------------------------------
 * regaining control - NO CHANGE
