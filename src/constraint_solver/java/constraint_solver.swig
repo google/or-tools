@@ -277,9 +277,7 @@ namespace operations_research {
   }
   $1 = &result;
 }
-%typemap(freearg) const std::vector<type*>& {
-  delete $1;
-}
+
 %typemap(out) const std::vector<type*>& {
   jclass object_class =
       jenv->FindClass("com/google/ortools/constraintsolver/type");

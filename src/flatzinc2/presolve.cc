@@ -838,8 +838,7 @@ bool FzPresolver::RegroupLinear(FzConstraint* ct) {
 
 // Bound propagation: int_lin_eq, int_lin_le, int_lin_ge
 //   - If a scalar product only contains positive constant and variables, then
-//   we
-//     can propagate an upper bound on all variables.
+//   we can propagate an upper bound on all variables.
 //   - If a scalar product has one term, we can also propagate a lower bound.
 bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
   const int64 rhs = ct->Arg(2).Value();
