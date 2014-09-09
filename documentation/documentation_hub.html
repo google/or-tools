@@ -84,10 +84,11 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.2.10: (2014-09-04 16:09:13)
+<pre id="verbatim">v.0.2.11: (2014-09-09 13:57:19)
 -------------------------------
-* Quick update of the tutorial codes in chapters 2, 3 and 6: code adapted to the new API; the manual is NOT up to date!
-* Licenses updated;
+* Quick update of the tutorial codes in chapter 10 and one file for chap13: code adapted to the new API; the manual is NOT up to date!
+* Tutorial code for common and routing_common added.
+
 </pre>
 <p>This is the <a href="changes_list.txt">list of changes</a>.</p>
 <h5>Legend:</h5>
@@ -341,6 +342,12 @@ to use these makefiles.</p>
 You can also overwrite this variable when invoking make:
 <div class="code_line">make OR_TOOLS_TOP=/home/username/or-tools-read-only</div>
 </li>
+
+<li>If you want to play with the routing examples, the <code>TUTORIAL</code> variable must point to the C++ tutorial directory. By default, it is defined as:
+<div class="code_line">TUTORIAL=($OR_TOOLS_TOP)/documentation/tutorials/cplusplus</div>
+If you deploy the tutorial examples somewhere else, update this variable accordingly.
+</li>
+
 <li>If you want to compile all examples:
 <div class="code_line">make all</div>
 </li>
@@ -354,11 +361,11 @@ You can also overwrite this variable when invoking make:
 </li>
 </ul>
 </li>
-<li>To delete the created files:
+<li>To delete all generated files:
 <div class="code_line">make local_clean</div>
-Don't use
+<font color="red">Don't use</font>
 <div class="code_line">make clean</div>
-as you will erase the generated files for the whole library!
+<font color="red">as you will erase the generated files for the whole library!</font>
 </li>
 </ol>
 
@@ -394,7 +401,7 @@ as you will erase the generated files for the whole library!
 
 <p>
 <ul>
-<li><strong>C++:</strong> chapters 2, 3 and 6.</li>
+<li><strong>C++:</strong> chapters 2, 3, 6 and almost all of chapter 10.</li>
 <li><strong>Python:</strong> chapter 2.</li>
 <li><strong>Java:</strong> chapter 2.</li>
 <li><strong>C#:</strong> chapter 2.</li>

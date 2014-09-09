@@ -1,4 +1,10 @@
 
+v.0.2.11: (2014-09-09 13:57:19)
+-------------------------------
+* Quick update of the tutorial codes in chapter 10 and one file for chap13: code adapted to the new API; the manual is NOT up to date!
+* Tutorial code for common and routing_common added.
+
+
 v.0.2.10: (2014-09-04 16:09:13)
 -------------------------------
 * Quick update of the tutorial codes in chapters 2, 3 and 6: code adapted to the new API; the manual is NOT up to date!
