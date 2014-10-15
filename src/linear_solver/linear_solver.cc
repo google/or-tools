@@ -341,6 +341,10 @@ extern MPSolverInterface* BuildSLMInterface(MPSolver* const solver, bool mip);
 extern MPSolverInterface* BuildGurobiInterface(bool mip,
                                                MPSolver* const solver);
 #endif
+#if defined(USE_CPLEX)
+extern MPSolverInterface* BuildCplexInterface(bool mip,
+                                              MPSolver* const solver);
+#endif
 
 
 namespace {
@@ -380,6 +384,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildGurobiInterface(false, solver);
     case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
       return BuildGurobiInterface(true, solver);
+#endif
+#if defined(USE_CPLEX)
+    case MPSolver::CPLEX_LINEAR_PROGRAMMING:
+      return BuildCplexInterface(false, solver);
+    case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
+      return BuildCplexInterface(true, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
@@ -439,6 +449,10 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   #ifdef USE_GUROBI
   if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
   if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
+  #endif
+  #ifdef USE_CPLEX
+  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
+  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
   #endif
   #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;

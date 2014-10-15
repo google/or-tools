@@ -111,6 +111,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
   #endif  // USE_GUROBI
+  #if defined(USE_CPLEX)
+  LOG(INFO) << "---- Linear programming example with CPLEX ----";
+  RunLinearProgrammingExample(MPSolver::CPLEX_LINEAR_PROGRAMMING);
+  #endif  // USE_CPLEX
 }
 }  // namespace operations_research
 

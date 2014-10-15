@@ -601,6 +601,7 @@ endif
 LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/glop_interface.$O \
 	$(OBJ_DIR)/linear_solver/cbc_interface.$O \
+  $(OBJ_DIR)/linear_solver/cplex_interface.$O \
 	$(OBJ_DIR)/linear_solver/clp_interface.$O \
 	$(OBJ_DIR)/linear_solver/glpk_interface.$O \
 	$(OBJ_DIR)/linear_solver/gurobi_interface.$O \
@@ -616,6 +617,9 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface
 
 $(OBJ_DIR)/linear_solver/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
+
+$(OBJ_DIR)/linear_solver/cplex_interface.$O:$(SRC_DIR)/linear_solver/cplex_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/cplex_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Scplex_interface.$O
 
 $(OBJ_DIR)/linear_solver/glop_interface.$O:$(SRC_DIR)/linear_solver/glop_interface.cc $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sglop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O

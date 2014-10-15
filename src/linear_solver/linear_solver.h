@@ -185,6 +185,9 @@ class MPSolver {
     #ifdef USE_GUROBI
     GUROBI_LINEAR_PROGRAMMING = 6,
     #endif
+    #ifdef USE_CPLEX
+    CPLEX_LINEAR_PROGRAMMING = 10,
+    #endif
 
     // Integer programming problems.
     #ifdef USE_SCIP
@@ -201,6 +204,9 @@ class MPSolver {
     #endif
     #if defined(USE_GUROBI)
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
+    #endif
+    #if defined(USE_CPLEX)
+    CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
     #endif
   };
 
@@ -515,6 +521,7 @@ class MPSolver {
   friend class CBCInterface;
   friend class SCIPInterface;
   friend class GurobiInterface;
+  friend class CplexInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -646,6 +653,7 @@ class MPObjective {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class CplexInterface;
   friend class GLOPInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
@@ -717,6 +725,7 @@ class MPVariable {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class CplexInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
 
@@ -817,6 +826,7 @@ class MPConstraint {
   friend class SCIPInterface;
   friend class SLMInterface;
   friend class GurobiInterface;
+  friend class CplexInterface;
   friend class GLOPInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface

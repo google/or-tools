@@ -230,6 +230,10 @@ def test_sum_constraint():
     print '%d + %d == %d' % (x.Value(), y.Value(), z.Value())
   solver.EndSearch()
 
+def test_size_1_var():
+  solver = pywrapcp.Solver('test_size_1_var')
+  x = solver.IntVar([0], 'x')
+
 
 def main():
   test_member()
@@ -244,6 +248,7 @@ def main():
   test_domain_iterator()
   test_hole_iterator()
   test_sum_constraint()
+  test_size_1_var()
 
 
 if __name__ == '__main__':

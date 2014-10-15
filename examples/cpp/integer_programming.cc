@@ -75,6 +75,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Integer programming example with Gurobi ----";
   RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
   #endif  // USE_GUROBI
+  #if defined(USE_CPLEX)
+  LOG(INFO) << "---- Integer programming example with CPLEX ----";
+  RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
+  #endif  // USE_CPLEX
 }
 }  // namespace operations_research
 
