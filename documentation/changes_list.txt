@@ -1,4 +1,10 @@
 
+v.0.2.12: (2014-10-16 17:38:19)
+-------------------------------
+* Update of download links in the documentation hub page.
+* update FAQ
+
+
 v.0.2.11: (2014-09-09 13:57:19)
 -------------------------------
 * Quick update of the tutorial codes in chapter 10 and one file for chap13: code adapted to the new API; the manual is NOT up to date!
