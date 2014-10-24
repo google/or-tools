@@ -182,8 +182,8 @@ ifeq ($(PLATFORM),LINUX)
       DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86-64_linux/libcplex.a -lm -lpthread
       STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86-64_linux/libcplex.a -lm -lpthread
     else
-      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
-      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
+      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/libcplex.a -lm -lpthread
+      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/libcplex.a -lm -lpthread
     endif
   endif
   SYS_LNK = -lrt -lpthread
