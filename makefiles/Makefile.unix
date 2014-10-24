@@ -270,7 +270,7 @@ ifeq ($(PLATFORM),MACOSX)
     STATIC_GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
   endif
   ifdef UNIX_CPLEX_DIR
-    STATIC_CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -m64 -lm -lpthread -framework CoreFoundation -framework IOKit
+    STATIC_CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
     DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
   endif
   BISON = dependencies/install/bin/bison

@@ -17,6 +17,7 @@ package com.google.ortools.samples;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
+import com.google.ortools.linearsolver.MPSolverParameters;
 import com.google.ortools.linearsolver.MPVariable;
 
 /**
@@ -82,7 +83,8 @@ public class LinearProgramming {
       System.out.println(model);
     }
 
-    final MPSolver.ResultStatus resultStatus = solver.solve();
+    MPSolverParameters parameters = new MPSolverParameters();
+    final MPSolver.ResultStatus resultStatus = solver.solve(parameters);
 
     // Check that the problem has an optimal solution.
     if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {

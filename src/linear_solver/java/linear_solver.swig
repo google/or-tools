@@ -227,6 +227,7 @@ import java.lang.reflect.*;
 
 // MPSolverParameters API. For expert users only.
 // TODO(user): unit test all of it.
+%unignore operations_research::MPSolverParameters::MPSolverParameters;  // no test
 %unignore operations_research::MPSolverParameters::DoubleParam;  // no test
 %unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;  // no test
 %rename (getDoubleParam) operations_research::MPSolverParameters::GetDoubleParam;  // no test
