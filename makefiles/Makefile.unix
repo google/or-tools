@@ -184,6 +184,7 @@ ifeq ($(PLATFORM),LINUX)
     else
       DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
       STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
+    endif
   endif
   SYS_LNK = -lrt -lpthread
   JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
