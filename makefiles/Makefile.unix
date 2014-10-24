@@ -177,6 +177,14 @@ ifeq ($(PLATFORM),LINUX)
       STATIC_GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
     endif
   endif
+  ifdef UNIX_CPLEX_DIR
+    ifeq ($(PTRLENGTH),64)
+      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86-64_linux/libcplex.a -lm -lpthread
+      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86-64_linux/libcplex.a -lm -lpthread
+    else
+      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
+      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/lib/x86_linux/libcplex.a -lm -lpthread
+  endif
   SYS_LNK = -lrt -lpthread
   JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
   JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
