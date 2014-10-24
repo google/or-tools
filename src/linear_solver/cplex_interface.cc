@@ -72,7 +72,7 @@ class CplexInterface : public MPSolverInterface {
 
   // ----- Misc -----
   // Write model
-  virtual void WriteModel(const string& filename);
+  virtual void WriteModel(const std::string& filename);
 
   // Query problem type.
   virtual bool IsContinuous() const { return IsLP(); }
@@ -83,7 +83,7 @@ class CplexInterface : public MPSolverInterface {
   virtual void ExtractNewConstraints();
   virtual void ExtractObjective();
 
-  virtual string SolverVersion() const {
+  virtual std::string SolverVersion() const {
     const char* version = CPXversion(_cplexenv);
     return StringPrintf("CPLEX %s", version);
   }
@@ -144,7 +144,7 @@ CplexInterface::~CplexInterface() {
   assert(status == 0);
 }
 
-void CplexInterface::WriteModel(const string& filename) {
+void CplexInterface::WriteModel(const std::string& filename) {
   int status;
   status = CPXwriteprob(_cplexenv, _cplex, filename.c_str(), NULL);
   assert(status == 0);
@@ -714,7 +714,7 @@ MPSolver::ResultStatus CplexInterface::Solve(const MPSolverParameters& param) {
 
   // WriteModelToPredefinedFiles();
 
-  string filename = solver_->name_ + ".lp";
+  const std::string filename = solver_->name_ + ".lp";
   WriteModel(filename);
 
   // Time limit.
