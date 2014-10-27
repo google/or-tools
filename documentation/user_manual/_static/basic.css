@@ -368,9 +368,14 @@ div.body p.centered {
 table.docutils {
     border: 0;
     border-collapse: collapse;
-    align: center;
     margin: auto;
 }
+
+div.footnote_table {
+	margin: 0;
+	text-align: left;
+}
+ 
 
 table.docutils td, table.docutils th {
     padding: 1px 8px 1px 5px;
@@ -478,9 +483,11 @@ dl.glossary dt {
     border: 3px solid red;
 }
 
+/*
 .footnote:target  {
     background-color: #ffa;
 }
+*/
 
 .line-block {
     display: block;

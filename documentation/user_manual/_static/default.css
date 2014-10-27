@@ -23,7 +23,8 @@ body {
 }
 
 div.document {
-    background-color: #D8D8D8 ;
+    background-color: #D8D8D8 ; 
+    /* background-color: #FFFFFF ; */
 }
 
 div.documentwrapper {
@@ -276,13 +277,13 @@ div.seealso {
 
 div.topic {
     color: #00529B;
-    background-color: #BDE5F8;
+    background-color: #E9F8FF; /* #BDE5F8 */
     background-image: url('dialog-topic.png');
 }
 
 div.warning {
     color: #AD1B01; /*#000000;#D8000C;*/
-    background-color: #FFC0C0;  /* #FFFFFF; #EFC2C2; #FFD2CE; #FFBABA; */
+    background-color: #FFDCDC ;  /* #FFC0C0; #FFFFFF; #EFC2C2; #FFD2CE; #FFBABA; */
     background-image:url('dialog-warning.png');
 }
 

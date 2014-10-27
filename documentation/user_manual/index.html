@@ -99,13 +99,12 @@ manual or the documentation in general, see the section <a class="reference inte
 </div>
 <ul class="simple">
 <li><a class="reference internal" href="#foreword-what"><em>What is or-tools?</em></a></li>
-<li><a class="reference internal" href="#foreword-will-learn"><em>What you will learn in this document</em></a></li>
+<li><a class="reference internal" href="#foreword-will-learn"><em>Optimization tools at Google</em></a></li>
 <li><a class="reference internal" href="#foreword-will-not-learn"><em>What you will not learn in this document</em></a></li>
 <li><a class="reference internal" href="#foreword-how-read"><em>How to read this document?</em></a></li>
 <li><a class="reference internal" href="#foreword-targeted-audience"><em>Targeted audience</em></a></li>
 <li><a class="reference internal" href="#foreword-conventions"><em>Conventions used in this manual</em></a></li>
 <li><a class="reference internal" href="#foreword-accompanying-code"><em>Accompanying code for this manual</em></a></li>
-<li><a class="reference internal" href="#foreword-lab-sessions"><em>Lab sessions</em></a></li>
 <li><a class="reference internal" href="#foreword-how-to-reach-us"><em>How to reach us?</em></a></li>
 <li><a class="reference internal" href="#foreword-how-to-reference-doc"><em>How to reference this document?</em></a></li>
 <li><a class="reference internal" href="#foreword-comments"><em>Do you have comments?</em></a></li>
@@ -117,7 +116,10 @@ manual or the documentation in general, see the section <a class="reference inte
 <ul class="simple">
 <li>A Constraint Programming solver.</li>
 <li>A simple and unified interface to several linear programming and mixed integer
-programming solvers (GLPK, CLP, CBC and SCIP).</li>
+programming solvers (<a class="reference external" href="https://projects.coin-or.org/Cbc">CBC</a>, <a class="reference external" href="https://projects.coin-or.org/Clp">CLP</a>,
+<a class="reference external" href="https://developers.google.com/optimization/docs/lp/glop">GLOP</a>, <a class="reference external" href="https://www.gnu.org/software/glpk/">GLPK</a>,
+<a class="reference external" href="http://www.gurobi.com/">Gurobi</a>,
+<a class="reference external" href="http://scip.zib.de/">SCIP</a> and <a class="reference external" href="http://sulumoptimization.com/">Sulum</a>).</li>
 <li>Knapsack algorithms.</li>
 <li>Graph algorithms (shortest paths, min cost flow, max flow, linear sum assignment).</li>
 <li><em>FlatZinc</em> support.</li>
@@ -139,9 +141,9 @@ examples written in C++, Python, Java and C#!</p>
 <li><p class="first"><strong>Portable</strong> Because it is made by Google, the code conforms strictly to the Google coding
 styles. The code is known to compile on:</p>
 <ul class="simple">
-<li>gcc 4.4.x on ubuntu 10.04 and up (10.10, 11.04, 11.10 and 12.04).</li>
-<li>xcode &gt;= 3.2.3 on Mac OS X Snow Leopard and Mac OS X Lion (gcc 4.2.1).</li>
-<li>Microsoft Visual Studio 10.</li>
+<li>gcc 4.7.x and above on Ubuntu 12.04 and up (12.04, 12.10, 13.04, 13.10)</li>
+<li>XCode &gt;= 5.0 (clang++ with C++11 support)</li>
+<li>Microsoft Visual Studio 2012 and 2013 (2010 is not supported as it lacks support for C++11)</li>
 </ul>
 <p>Both 32 bit and 64 bit architectures are supported, although the code is optimized to run in
 64 bit mode.</p>
@@ -159,8 +161,13 @@ several basic concepts, it is quite straightforward to code with the or-tools li
 growing.</p>
 </li>
 </ul>
+<div class="section" id="optimization-tools-at-google">
+<span id="foreword-will-learn"></span><h2>Optimization tools at Google</h2>
+<p>If you want to know more about optimization at Google, we refer the interested read to our
+<a class="reference external" href="https://developers.google.com/optimization/">Google Optimization</a> page.</p>
+</div>
 <div class="section" id="what-you-will-learn-in-this-document">
-<span id="foreword-will-learn"></span><h2>What you will learn in this document</h2>
+<h2>What you will learn in this document</h2>
 <p>This manual is intended to give you the necessary knowledge to use the library and explore the
 reference manual by yourself. We describe the basic concepts but also how to customize your
 search in Constraint Programming (CP). One of the strength of our library is its routing solver in
@@ -257,27 +264,13 @@ find complete examples on the documentation hub:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">documentation/tutorials/C++</span></tt></li>
 </ul>
-<p>If you prefer to code in Python, Java or C#, we have translated all the examples in your
+<p>If you prefer to code in Python, Java or C#, we have translated (will translate) all the examples in your
 favourite language. You can find the complete examples on the documentation hub or under the
 directories:</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">documentation/tutorials/Python</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">documentation/tutorials/Java</span></tt></li>
 <li><tt class="docutils literal"><span class="pre">documentation/tutorials/Csharp</span></tt>.</li>
-</ul>
-</div>
-<div class="section" id="lab-sessions">
-<span id="foreword-lab-sessions"></span><h2>Lab sessions</h2>
-<p>Theory is good but useless without practice and experience. For each chapter, we provide exercises.
-Most of them are practical and consist in completing some C++ code. Even if you don’t (like to)
-code in C++, these lab sessions are helpful as we develop some concepts seen in the manual more
-in details. Exercises vary between simple and straightforward to sometimes really challenging. In
-the latter case, we mark these exercises as such. For all the exercises, we provide solutions.</p>
-<p>You can find (soon!) the exercises and their solutions on the documentation hub:</p>
-<p><a class="reference external" href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#lab_sessions">http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#lab_sessions</a></p>
-<p>or under the following directory of the or-tools library:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">documentation/labs/C++</span></tt></li>
 </ul>
 </div>
 <div class="section" id="how-to-reach-us">

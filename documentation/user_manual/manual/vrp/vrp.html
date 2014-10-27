@@ -428,12 +428,12 @@ to create a <tt class="docutils literal"><span class="pre">CVRPData</span></tt> 
 </div>
 <p>For your (and our!) convenience, we have written the small program <strong class="program">cvrp_solution_to_epix</strong>
 to visualize a CVRP solution. To create a pdf image of the <tt class="file docutils literal"><span class="pre">opt-A-n32-k5</span></tt> solution, invoke it as follows:</p>
-<div class="highlight-bash"><div class="highlight"><pre>cvrp_solution_to_epix -instance_file<span class="o">=</span>A-n32-k5.vrp
+<div class="highlight-bash"><div class="highlight"><pre>./cvrp_solution_to_epix -instance_file<span class="o">=</span>A-n32-k5.vrp
                       -solution_file<span class="o">=</span>opt-A-n32-k5 &gt; opt-A-n32-k5.xp
 </pre></div>
 </div>
 <p>then process the <tt class="docutils literal"><span class="pre">xp</span></tt> file with <strong class="program">elaps</strong>:</p>
-<div class="highlight-bash"><div class="highlight"><pre>./elaps -pdf opt-A-n32-k5.xp
+<div class="highlight-bash"><div class="highlight"><pre>elaps -pdf opt-A-n32-k5.xp
 </pre></div>
 </div>
 <p>to obtain the following image:</p>

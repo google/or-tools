@@ -1,4 +1,15 @@
 
+v.0.2.12: (2014-10-27 11:48:49)
+-------------------------------
+* pgn images with transparent background now;
+* Sphinx conf.py modified;
+* Update of Foreword
+* complete replacement of global.rst: substitutions only works with elements WITHOUT any relative paths...
+  use of :math:`\bigstar` and :math:`\smiley` for substitution.
+* lots of html, latex and Sphinx debugging.
+* Complete rewrite of section "A little bit of theory".
+* html footnotes on bottom page
+
 v.0.2.12: (2014-10-16 17:38:19)
 -------------------------------
 * Update of download links in the documentation hub page.

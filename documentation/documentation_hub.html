@@ -84,11 +84,16 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.2.12: (2014-10-16 17:38:19)
+<pre id="verbatim">v.0.2.12: (2014-10-27 11:48:49)
 -------------------------------
-* Update of download links in the documentation hub page.
-* update FAQ
-
+* pgn images with transparent background now;
+* Sphinx conf.py modified;
+* Update of Foreword
+* complete replacement of global.rst: substitutions only works with elements WITHOUT any relative paths...
+  use of :math:`\bigstar` and :math:`\smiley` for substitution.
+* lots of html, latex and Sphinx debugging.
+* Complete rewrite of section "A little bit of theory".
+* html footnotes on bottom page
 </pre>
 <p>This is the <a href="changes_list.txt">list of changes</a>.</p>
 <h5>Legend:</h5>
@@ -143,8 +148,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td width="25%">Foreword</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_green" style="width:95%;">
-    <span>95%</span>
+  <div class="progress_foreground_green" style="width:100%;">
+    <span>100%</span>
   </div>
 </div>
 </td>
@@ -312,7 +317,7 @@ The following percentages show you the completion status of the manual. Note tha
 <hr>
 <h2 id="tutorial_examples">The tutorial examples</h2>
 <hr>
-<p>You can download all the code at once or pick a single file in the list below. All files are encoded in UTF-8 and we use LF (Unix) newlines. The code is cross-platform though.</p>
+<p>You can download all the code at once or pick the code corresonding to your favorite language. You'll find the code <a href="https://drive.google.com/folderview?id=0B2yUSpEp04BNUTgwNVRkU0lXcUE&usp=sharing">here</a>. All files are encoded in UTF-8 and we use LF (Unix) newlines. The code is cross-platform though.</p>
 <p>The code is not well documented inside the source files as we explain it in great details in the <a href="#user_manual">user's manual</a>. Some files only exist 
 in some languages since some features do not have equivalents in all languages (for instance, the Google gflags library is missing in Java and C#).</p>
 
@@ -320,7 +325,39 @@ in some languages since some features do not have equivalents in all languages (
 be more functional. 
 </p>
 
-<h5>Note for the C++ tutorials</h5>
+<h4>Code</h4>
+
+<p>Content as of September 4, 2014:</p>
+
+<p>
+<ul>
+<li><strong>C++:</strong> chapters 2, 3, 6 and almost all of chapter 10.</li>
+<li><strong>Python:</strong> chapter 2.</li>
+<li><strong>Java:</strong> chapter 2.</li>
+<li><strong>C#:</strong> chapter 2.</li>
+</ul>
+
+</p>
+
+
+<h4>Coding styles</h4>
+
+<h5>Coding styles we follow:</h5> 
+<p>
+<dl>
+  <dt>C++</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml">Google C++ Style Guide</a></dd>
+  <dt>Python</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/pyguide.html">Google Python Style Guide</a></dd>
+</dl>
+</p>
+<h5>Coding styles we try to follow:</h5> 
+<p>
+<dl>
+  <dt>Java</dt><dd><a href="https://sites.google.com/a/android.com/opensource/submit-patches/code-style-guide">Android Code Style Rules</a></dd>
+  <dt>C#</dt><dd><a href="http://code.google.com/p/google-api-dotnet-client/wiki/CodingStandards">google-api-dotnet-client Coding standards</a></dd>
+</dl>
+</p>
+
+<h4 id="tutorial_C++">C++ tutorials</h4>
 <p>
 We've filled the code with <code>VLOG(x)</code>s which allow to follow in real time what the programs do. <code>x</code> varies between <code>1</code>
 and <code>4</code>. The higher the value of <code>x</code>, the more detailed informations on screen. You can trigger these logs with the <code>log_level</code>
@@ -369,49 +406,20 @@ If you deploy the tutorial examples somewhere else, update this variable accordi
 </li>
 </ol>
 
-
-<p>
-</p>
-
-
-
-
 <p>Last but not least, you might wonder why we don't use (or rather minimize the use of) <code>streams</code> in our examples. This is an internal requirement.</p>
 
-<h5>Coding styles we follow:</h5> 
-<p>
-<dl>
-	<dt>C++</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml">Google C++ Style Guide</a></dd>
-	<dt>Python</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/pyguide.html">Google Python Style Guide</a></dd>
-</dl>
-</p>
-<h5>Coding styles we try to follow:</h5> 
-<p>
-<dl>
-	<dt>Java</dt><dd><a href="https://sites.google.com/a/android.com/opensource/submit-patches/code-style-guide">Android Code Style Rules</a></dd>
-	<dt>C#</dt><dd><a href="http://code.google.com/p/google-api-dotnet-client/wiki/CodingStandards">google-api-dotnet-client Coding standards</a></dd>
-</dl>
-</p>
-
-<h5>Code:</h5> 
-
-<p>You can download the tutorial code <a href="https://drive.google.com/folderview?id=0B2yUSpEp04BNUTgwNVRkU0lXcUE&usp=sharing">here</a>.</p>
-
-<p>Content as of September 4, 2014:</p>
-
-<p>
-<ul>
-<li><strong>C++:</strong> chapters 2, 3, 6 and almost all of chapter 10.</li>
-<li><strong>Python:</strong> chapter 2.</li>
-<li><strong>Java:</strong> chapter 2.</li>
-<li><strong>C#:</strong> chapter 2.</li>
-</ul>
-
-</p>
+<h4 id="tutorial_Python">Python tutorials</h4>
 
 
-</div>
-</p>
+<h4 id="tutorial_Java">Java tutorials</h4>
+
+
+<h4 id="tutorial_Csharp">C# tutorials</h4>
+
+
+
+
+
 
 <hr>
 <div class="footer">© Copyright 2012-2014, Google</div>
