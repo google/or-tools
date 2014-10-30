@@ -56,6 +56,17 @@
             
   <div class="section" id="the-google-or-tools-library">
 <span id="or-tools-library"></span><h1>1.7. The Google or-tools library</h1>
+<p>The Google <em>or-tools</em> open source library was publicly released in September 2010.
+Since then it has evolved to be a huge project containing more than 65K lines of code written in <tt class="docutils literal"><span class="pre">C++</span></tt><a class="footnote-reference" href="#beside-cplusplus" id="id1">[1]</a>! The constraint programming part
+- including the important vehicle routing engine  - has the lion&#8217;s share with approximatively 55K lines of code. That&#8217;s right, the <em>or-tools</em> library is really
+a constraint programming library. More specifically, a <em>finite-domain</em> constraint programming library<a class="footnote-reference" href="#or-tools-finite-domain" id="id2">[2]</a>.</p>
+<p>Contrary to other constraint programming libraries, our goal is not to provide a complete
+set of algorithms, constraints, etc. We use our code internally at Google and we adapt it to our needs. From time to time we open source some parts and share it
+with the world. As our goal is to solve specific (and sometimes really challenging problems), we use a generic and lightweight approach. We believe that specialized problems need specialized code. Our library aims at simplicity because simple code,
+when well-written, is efficient and can be easily adapted to solve complex problems. As an example of this lightweight approach, we don&#8217;t really offer a matrix API.
+If you look at the results of the <a class="reference external" href="http://www.minizinc.org/challenge2014/results2014.html">2014 MiniZinc challenge</a>, it seems our approach is not too bad<a class="footnote-reference" href="#use-of-flatzinc" id="id3">[3]</a>.</p>
+<p>That said, our library is quite robust and can be used to solve a trove of problems. If you are missing a known constraint programming algorithm, ask us on the
+<a class="reference external" href="https://groups.google.com/forum/#!forum/or-tools-discuss">OR Tools Discussion group</a>, we might have what you are looking for in store or even surprise you and implement it if we see a good fit for our needs.</p>
 <h4>Footnotes</h4><table class="docutils footnote" frame="void" id="beside-cplusplus" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -77,7 +88,7 @@ a finite domain.</td></tr>
 </td></tr>
 </tbody>
 </table>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></br></div>
 
 
           </div>

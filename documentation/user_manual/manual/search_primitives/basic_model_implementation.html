@@ -348,7 +348,20 @@ perfectly normal because we didn&#8217;t use a specific search strategy. In the
 rest of this chapter, we will try other search strategies and compare them.
 We will also customize our strategies, i.e. define strategies of our own but before
 we do so, we need to learn a little bit about the basic working of the solver.</p>
+<p><tt class="docutils literal"><span class="pre">Wikipedia</span></tt> presents a very nice animation of our search strategy (<tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt> and
+<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>) to find the first feasible solution:</p>
+<div align="center">
+<a href="https://en.wikipedia.org/wiki/Eight_queens_puzzle#Animation_of_the_recursive_solution" >
+<img src="../../_static/Eight-queens-animation.gif"  alt="Beautiful animation of a backtracking for the 8-queens problem"/></a>
+</div><p>Compare the output of:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./nqueens1 -size<span class="o">=</span>8 -print
+</pre></div>
 </div>
+with the solution of the animation:
+
+<div align="center"><img alt="../../_images/output_nqueens1_8.png" src="../../_images/output_nqueens1_8.png" style="height: 159pt;" />
+<img alt="../../_images/Eight-queens-animation.gif" src="../../_images/Eight-queens-animation.gif" style="height: 159pt;" />
+</div></div>
 </div>
 
 

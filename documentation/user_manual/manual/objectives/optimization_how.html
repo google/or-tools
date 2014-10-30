@@ -56,6 +56,41 @@
             
   <div class="section" id="how-does-the-solver-optimize">
 <span id="golomb-ruler-optimization-how"></span><h1>3.9. How does the solver optimize?</h1>
+<p>The main idea is simple. When you define an <em>objective function</em>, like in <tt class="file docutils literal"><span class="pre">golom1.cc</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">OptimizeVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">length</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeMinimize</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">num_vars</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>you tell the solver basically three things:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>you want to minimize the objective function;</li>
+<li>the objective function is defined by the variable <tt class="docutils literal"><span class="pre">Y[num_vars</span> <span class="pre">-</span> <span class="pre">1]</span></tt> and</li>
+<li>the improvement step is <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>.</li>
+</ol>
+</div></blockquote>
+<p>What the last part means is that the solver will try each time it has found a feasible solution
+with a value <img class="math" src="../../_images/math/b13f21416d84e13708696f34dea81026cda583c9.png" alt="z" style="vertical-align: 0px"/>, to find another better solution with value <img class="math" src="../../_images/math/50e0412f1e4c5bde18c5a76f43bd0c5256c8fb2a.png" alt="z-1" style="vertical-align: -1px"/> and so on until
+it cannot find a feasible solution with a give value <img class="math" src="../../_images/math/10f32377ac67d94f764f12a15ea987e88c85d3e1.png" alt="\alpha" style="vertical-align: 0px"/>. The optimal value is thus
+in this case <img class="math" src="../../_images/math/7949bb0b9c3bccea47cc7da0acfcb4742af6d638.png" alt="\alpha + 1" style="vertical-align: -1px"/>.</p>
+<p>You can give whatever (positive) integer value as improvement step to the solver:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">OptimizeVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeMaximize</span><span class="p">(</span><span class="n">obj_var</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>but beware that by default, there isn&#8217;t any smart algorithm implemented in or-tools
+to change this improvement step during the search. If the solver finds a solution with an objective value of <img class="math" src="../../_images/math/df47bd6423e18bb7a0275cc3ebb3e91c5fc72455.png" alt="237" style="vertical-align: 0px"/>, it
+will try next to find a solution with an objective value of <img class="math" src="../../_images/math/4fc91a74e299a11765b50170bfa253f2de6d36f6.png" alt="195" style="vertical-align: -1px"/><a class="footnote-reference" href="#trust-me-on-this-one1" id="id1">[1]</a>. If it finds one,
+it will try to find another solution with an objective value of <img class="math" src="../../_images/math/f152e2688863b88e971932e82c28adec9063a05e.png" alt="153" style="vertical-align: -1px"/> but if didn&#8217;t find any feasible solution
+with a value of <img class="math" src="../../_images/math/4fc91a74e299a11765b50170bfa253f2de6d36f6.png" alt="195" style="vertical-align: -1px"/>, it will stop the search and return the &#8220;best&#8221; solution with a value of <img class="math" src="../../_images/math/df47bd6423e18bb7a0275cc3ebb3e91c5fc72455.png" alt="237" style="vertical-align: 0px"/>!</p>
+<table class="docutils footnote" frame="void" id="trust-me-on-this-one1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>It took us a while but we are pretty sure that <img class="math" src="../../_images/math/513d17aef45c40770e35a6f22db41cde4b714da8.png" alt="237 - 42 = 195" style="vertical-align: -1px"/>.</td></tr>
+</tbody>
+</table>
+<p>If you use an improvement step of <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>, you can be sure to reach an optimal solution if you give enough time an memory to the
+solver but you could devise you own algorithm to change this improvement step during the search.</p>
+<p>In chapter &#8220;8. Implementing custom constraints&#8221;, we will use a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> to change dynamically the improvement step during
+the search.</p>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 

@@ -58,12 +58,20 @@
 <span id="hood-classes"></span><h1>13.3. Main classes, structures and typedefs</h1>
 <div class="section" id="baseobjects">
 <h2>13.3.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt>s</h2>
+<p>Almost all objects in the or-tools library derive from <tt class="docutils literal"><span class="pre">BaseObject</span></tt>.
+A BaseObject is the root of all reversibly allocated objects.
+A <tt class="docutils literal"><span class="pre">virtual</span></tt> <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and the associated <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt> operator are implemented
+as a convenience.</p>
 </div>
 <div class="section" id="propagationbaseobjects">
 <h2>13.3.2. <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>s</h2>
+<p>The PropagationBaseObject is a subclass of BaseObject that is also
+friend to the Solver class. It allows accessing methods useful when
+writing new constraints or new expressions.</p>
 </div>
 <div class="section" id="callbacks">
 <span id="under-the-hood-callbacks"></span><h2>13.3.3. Callbacks</h2>
+<p>dd</p>
 <div class="section" id="newpermanentcallback">
 <h3>13.3.3.1. <tt class="docutils literal"><span class="pre">NewPermanentCallback()</span></tt></h3>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>

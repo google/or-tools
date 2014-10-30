@@ -59,6 +59,8 @@
 <p>In the section <a class="reference internal" href="objective_functions.html#objective-functions"><em>Objective functions and how to compare search strategies</em></a>, we talked about some global statistics about the search.
 In this section we review them one by one.</p>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb2.cc">tutorials/cplusplus/chap3/golomb2.cc</a></p>
+<p>To have a very precise idea of the statistics we are talking about in this section, we refer the reader to
+section XXX were a more detailed discussion is provided about them.</p>
 <div class="section" id="time">
 <span id="index-0"></span><h2>3.5.1. Time</h2>
 <p>This is probably the most common statistic. There exist several timing libraries or tools to measure the duration of an algorithm. The or-tools
@@ -87,12 +89,130 @@ finishes and the time at which the task started and not the actual time spent by
 </div>
 <div class="section" id="failures">
 <h2>3.5.2. Failures</h2>
+<p>A failure occurs whenever the solver has to backtrack whether it is because of a real failure, a success or because the
+search is restarted or continued.
+There are two main statistics about failures given by:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;Global statistics&quot;</span><span class="p">);</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Failures: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">failures</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Fail stamps: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">fail_stamp</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">failures()</span></tt> gives the number of leaves in the search tree because this is exactly the number of time the solver
+has to backtrack whenever it doesn&#8217;t find a solution or it does find a solution. Indeed, whenever a solution is found,
+that branch of the tree doesn&#8217;t need any development any more and the solver needs to backtrack to other branches to find
+other solutions.</p>
+<p><tt class="docutils literal"><span class="pre">fail_stamp()</span></tt> counts the failures counted by <tt class="docutils literal"><span class="pre">failure()</span></tt> but add some more when the solver internally needs to backtrack
+for some reason.</p>
 </div>
 <div class="section" id="branches">
 <h2>3.5.3. Branches</h2>
+<p>This one is easy as <tt class="docutils literal"><span class="pre">branches()</span></tt> returns exactly the number of branches in the search tree:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;I count my branches&quot;</span><span class="p">);</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Branches: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">branches</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="searchlimits">
 <span id="search-limits"></span><span id="index-1"></span><h2>3.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</h2>
+<p>When you try to solve a difficult problem, it might happen that the solver runs for a long time without finding
+a solution or a good enough solution. In those case, you might want to limit the behaviour of the solver. We have
+already seen how to limit the time allowed to the solver in section XXX. Some other statistics can be bounded during the search.</p>
+<p>The class <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> permits to limit</p>
+<blockquote>
+<div><ul class="simple">
+<li>the time;</li>
+<li>the number of visited branches;</li>
+<li>the number of failures;</li>
+<li>the number of solutions found;</li>
+<li>another stopping criteria you define yourself.</li>
+</ul>
+</div></blockquote>
+<p>You can limit these statistics for the whole search or for each sub-searches were the solver tries to find the next
+feasible solution.</p>
+<p>If you are only interested in limiting one of these statistics, individual methods are provided:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchLimit</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeTimeLimit</span><span class="p">(</span><span class="n">int64</span> <span class="n">time</span><span class="p">);</span>
+<span class="n">SearchLimit</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeBranchesLimit</span><span class="p">(</span><span class="n">int64</span> <span class="n">branches</span><span class="p">);</span>
+<span class="n">SearchLimit</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeFailuresLimit</span><span class="p">(</span><span class="n">int64</span> <span class="n">failures</span><span class="p">);</span>
+<span class="n">SearchLimit</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeSolutionsLimit</span><span class="p">(</span><span class="n">int64</span> <span class="n">solutions</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>These methods only apply to the individual sub-searches and each time a sub-search is started, counters are set to 0 again.</p>
+<p>As <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s are <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s, you can pass them as arguments to the solver&#8217;s <tt class="docutils literal"><span class="pre">NewSearch()</span></tt> or
+<tt class="docutils literal"><span class="pre">Solve()</span></tt> methods:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;Don&#39;t want to fail too much&quot;</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">SearchLimit</span> <span class="o">*</span> <span class="k">const</span> <span class="n">fail_limit</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeFailuresLimit</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+<span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakePhase</span><span class="p">(...);</span>
+<span class="p">...</span>
+<span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">fail_limit</span><span class="p">,</span> <span class="p">...);</span>
+</pre></div>
+</div>
+<p>If you want to limit some statistics for the whole search, you can use the following method:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchLimit</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeLimit</span><span class="p">(</span><span class="n">int64</span> <span class="n">time</span><span class="p">,</span>
+                       <span class="n">int64</span> <span class="n">branches</span><span class="p">,</span>
+                       <span class="n">int64</span> <span class="n">failures</span><span class="p">,</span>
+                       <span class="n">int64</span> <span class="n">solutions</span><span class="p">,</span>
+                       <span class="kt">bool</span> <span class="n">smart_time_check</span><span class="p">,</span>
+                       <span class="kt">bool</span> <span class="n">cumulative</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>If you set <tt class="docutils literal"><span class="pre">smart_time_check</span></tt> to <tt class="docutils literal"><span class="pre">true</span></tt>, this means that there is a certain number<a class="footnote-reference" href="#number-passed-calls-with-smart-time-check" id="id1">[1]</a>
+of calls where the real time limit is not
+tested. This is to reduce the costly call to <tt class="docutils literal"><span class="pre">wall_time()</span></tt>. If you want the statistics to be tested globally, set <tt class="docutils literal"><span class="pre">cumulative</span></tt>
+to <tt class="docutils literal"><span class="pre">true</span></tt>. If you don&#8217;t want to impose some limit say on the number of failures, pass the maximum number of failures (<tt class="docutils literal"><span class="pre">kint64max</span></tt>).</p>
+<table class="docutils footnote" frame="void" id="number-passed-calls-with-smart-time-check" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>See the method <tt class="docutils literal"><span class="pre">RegularLimit::TimeDelta()</span></tt> in file <tt class="file docutils literal"><span class="pre">search.cc</span></tt> if you want
+to know the details.</td></tr>
+</tbody>
+</table>
+<p>You might wonder when these limits are tested? We pass some (big) steps and tell you right away that the limits are
+tested<a class="footnote-reference" href="#where-are-limits-tested-really" id="id2">[2]</a> in
+<tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">BeginNextDecision()</span></tt> and <tt class="docutils literal"><span class="pre">RefuteDecision()</span></tt> methods. You&#8217;ll learn about these two methods (and a bunch of
+others) in the section XXX.</p>
+<table class="docutils footnote" frame="void" id="where-are-limits-tested-really" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>To be precise, some limits are tested at some other places of the search algorithm depending on
+the type of search.</td></tr>
+</tbody>
+</table>
+<p>[NEED TO BE REREAD]</p>
+<p>These are the logical places to test for the number of branches, failures and solutions but it is good to know if you want
+to implement you own custom limit. We delay the use of custom limits until the second part (Customization) section 5.3.1.2. Callbacks
+where we will use custom <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s to illustrate one of the callback mechanism used to customize the search.</p>
+<p><tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s can be combined:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;I combine my limits&quot;</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">SearchLimit</span> <span class="o">*</span> <span class="k">const</span> <span class="n">limit1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLimit</span><span class="p">(...);</span>
+<span class="n">SearchLimit</span> <span class="o">*</span> <span class="k">const</span> <span class="n">limit2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLimit</span><span class="p">(...);</span>
+<span class="n">SearchLimit</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ORLimit</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLimit</span><span class="p">(</span><span class="n">limit1</span><span class="p">,</span> <span class="n">limit2</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ORLimit</span></tt> is reached when either of the underlying <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>
+<tt class="docutils literal"><span class="pre">limit1</span></tt> or <tt class="docutils literal"><span class="pre">limit2</span></tt>  is reached.</p>
+<p>You also can implement your own <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> with a callback:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchLimit</span><span class="o">*</span> <span class="nf">MakeCustomLimit</span><span class="p">(</span><span class="n">ResultCallback</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;*</span> <span class="n">limiter</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ResultCallback&lt;bool&gt;</span></tt> is a <em>functor</em> that implements the <tt class="docutils literal"><span class="pre">Run()</span></tt> method returning a <tt class="docutils literal"><span class="pre">bool</span></tt>. See XXX for more
+on callbacks and functors.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If the <tt class="docutils literal"><span class="pre">Run()</span></tt> method returns <tt class="docutils literal"><span class="pre">true</span></tt> at a leaf of the search tree, the corresponding
+solution will be rejected!</p>
+</div>
+<p>In the subsection <a class="reference internal" href="../ls/jobshop_ls.html#jobshop-ls-can-we-do-better"><em>Can we do better?</em></a> about solving the job-shop problem with local search,
+we will construct our own <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s can also be updated during the search using the following method:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">Solver</span><span class="o">::</span><span class="n">UpdateLimits</span><span class="p">(</span><span class="n">int64</span> <span class="n">time</span><span class="p">,</span>
+                  <span class="n">int64</span> <span class="n">branches</span><span class="p">,</span>
+                  <span class="n">int64</span> <span class="n">failures</span><span class="p">,</span>
+                  <span class="n">int64</span> <span class="n">solutions</span><span class="p">,</span>
+                  <span class="n">SearchLimit</span><span class="o">*</span> <span class="n">limit</span><span class="p">);</span>
+</pre></div>
+</div>
 </div>
 </div>
 

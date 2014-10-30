@@ -56,17 +56,54 @@
             
   <div class="section" id="searchmonitors">
 <span id="hood-search-monitors"></span><h1>13.8. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h1>
+<p>To monitor the search internally, the <tt class="docutils literal"><span class="pre">Solver</span></tt> uses the <tt class="docutils literal"><span class="pre">Search</span></tt> class. When
+you pass several <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s to the solver, they are passed to a
+<tt class="docutils literal"><span class="pre">Search</span></tt> object that ensures that some of the callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
+are called at the right places (in the same order the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s were added to
+the solver). For instance, at the beginning of the search, each installed
+<tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> has its <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> callback method called.</p>
+<p>Solve will terminate whenever any of the following event arise:</p>
+<ul class="simple">
+<li>A search monitor asks the solver to terminate the search by calling
+SearchMonitor::FinishCurrentSearch().</li>
+<li>A solution is found that is accepted by all search monitors, and none of
+the search monitors decides to search for another one.</li>
+</ul>
+<p>Upon search termination, there will be a series of backtracks all the way
+to the top level. This means that a user cannot expect to inspect the
+solution by querying variables after a call to Solve(): all the information
+will be lost. In order to do something with the solution, the user must
+either:</p>
+<ul class="simple">
+<li>Use a search monitor that can process such a leaf. See, in particular,
+the SolutionCollector class.</li>
+<li>Do not use Solve. Instead, use the more fine-grained approach using
+methods NewSearch(...), NextSolution(), and EndSearch().</li>
+</ul>
 <div class="section" id="list-of-callbacks">
 <h2>13.8.1. List of callbacks</h2>
+<p>Here is the complete list of callbacks you can define for a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</p>
 <div class="section" id="for-one-phase">
 <h3>13.8.1.1. For one phase</h3>
+<p>dada</p>
 </div>
 <div class="section" id="for-local-search">
 <h3>13.8.1.2. For local search</h3>
+<p>The communication between the <tt class="docutils literal"><span class="pre">Search</span></tt> and the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s in local search is done througt 3 global functions:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="nf">LocalOptimumReached</span><span class="p">(</span><span class="n">Search</span><span class="o">*</span> <span class="k">const</span> <span class="n">search</span><span class="p">);</span>
+<span class="kt">bool</span> <span class="nf">AcceptDelta</span><span class="p">(</span><span class="n">Search</span><span class="o">*</span> <span class="k">const</span> <span class="n">search</span><span class="p">,</span>
+                 <span class="n">Assignment</span><span class="o">*</span> <span class="n">delta</span><span class="p">,</span>
+                 <span class="n">Assignment</span><span class="o">*</span> <span class="n">deltadelta</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">AcceptNeighbor</span><span class="p">(</span><span class="n">Search</span><span class="o">*</span> <span class="k">const</span> <span class="n">search</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>These 3 functions simply call the corresponding methods of the <tt class="docutils literal"><span class="pre">Search</span></tt> class which in turn dispatches these calls
+to the attached <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s.</p>
 </div>
 </div>
 <div class="section" id="ending-or-restarting-the-current-search">
 <h2>13.8.2. Ending or restarting the current <tt class="docutils literal"><span class="pre">Search</span></tt></h2>
+<p>Talk about <tt class="docutils literal"><span class="pre">FinishCurrentSearch()</span></tt> and <tt class="docutils literal"><span class="pre">RestartCurrentSearch()</span></tt>.</p>
 <p>XXXXXXXXXXXXXXXXxxxx</p>
 <blockquote>
 <div><p>// Beginning of the search.

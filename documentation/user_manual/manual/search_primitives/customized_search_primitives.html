@@ -56,8 +56,159 @@
             
   <div class="section" id="customized-search-primitives">
 <span id="id1"></span><h1>5.7. Customized search primitives</h1>
+<p>The search tree is traversed in a &#8220;linear&#8221; fashion: you go down left to &#8220;assign&#8221; values as long as possible and
+you backtrack whenever necessary. This means that you cannot jump from one branch of the tree to another.</p>
+<p>But want you can do however is define the tree thanks to combinations of <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s<a class="footnote-reference" href="#other-primitives-to-shape-the-search-tree" id="id2">[1]</a>.</p>
+<table class="docutils footnote" frame="void" id="other-primitives-to-shape-the-search-tree" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>And other primitives like <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s,
+subject of the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>.</td></tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Some <em>search primitives</em> you can customize are declared in the header
+<tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solveri.h</span></tt> (notice the <em>i</em> at the end).</p>
+</div>
 <div class="section" id="the-basic-search-strategy-visualized">
 <h2>5.7.1. The basic search strategy visualized</h2>
+<div class="topic">
+<p class="topic-title first">How did we produce these wonderful images?</p>
+<p>All the images of search trees were produced with <strong class="program">cpviz</strong> and <strong class="program">nqueens4</strong>.
+See the section <a class="reference internal" href="cpviz.html#cpviz"><em>cpviz: how to visualize the search</em></a> for more details on how
+to obtain them.</p>
+</div>
+<p>Let&#8217;s have a look at our default strategy:</p>
+<blockquote>
+<div><ul class="simple">
+<li>We first choose the first unbound variable: <tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt>.</li>
+<li>Then we assign it the smallest available value: <tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>.</li>
+</ul>
+</div></blockquote>
+<p>The complete search tree for <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4" style="vertical-align: -1px"/> looks nice:</p>
+<img alt="../../_images/complete_search_tree_n_4.png" class="align-center" src="../../_images/complete_search_tree_n_4.png" style="height: 110pt;" />
+<p>There are indeed two feasible solutions:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="o">============================</span>
+size: 4
+The Solve method took 0.001 seconds
+Number of solutions: 2
+Failures: 6
+Branches: 10
+Backtracks: 9
+Stamps: 29
+</pre></div>
+</div>
+<p>The complete search tree for <img class="math" src="../../_images/math/ec37f4048b4f92c2227c9bfe79fcb7d52ab99c9c.png" alt="n = 5" style="vertical-align: 0px"/> looks even better:</p>
+<img alt="../../_images/complete_search_tree_n_5.png" class="align-center" src="../../_images/complete_search_tree_n_5.png" style="width: 300pt;" />
+<p>The solver seems to find the 10 feasible solutions quite quickly:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="o">============================</span>
+size: 5
+The Solve method took 0.07 seconds
+Number of solutions: 10
+Failures: 14
+Branches: 26
+Backtracks: 17
+Stamps: 61
+</pre></div>
+</div>
+<p>But then, <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4" style="vertical-align: -1px"/> and <img class="math" src="../../_images/math/ec37f4048b4f92c2227c9bfe79fcb7d52ab99c9c.png" alt="n = 5" style="vertical-align: 0px"/> are really small numbers. And indeed, with <img class="math" src="../../_images/math/e326b48726d4c73525c3b980409600fd87ea9846.png" alt="n = 6" style="vertical-align: 0px"/>, things start to
+look really ugly:</p>
+<img alt="../../_images/complete_search_tree_n_6.png" class="align-center" src="../../_images/complete_search_tree_n_6.png" style="width: 500pt;" />
+<p>That&#8217;s a real nightmare! The statistics collected during the search confirm this:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="o">============================</span>
+size: 6
+The Solve method took 0.005 seconds
+Number of solutions: 4
+Failures: 36
+Branches: 70
+Backtracks: 39
+Stamps: 149
+</pre></div>
+</div>
+<p>To only find 4 solutions, we need 70 branches and backtrack 39 times!</p>
+<p>This trend is confirmed if we look at larger values of <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/>:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+<col width="15%" />
+<col width="15%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/></th>
+<th class="head">7</th>
+<th class="head">8</th>
+<th class="head">9</th>
+<th class="head">10</th>
+<th class="head">11</th>
+<th class="head">12</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Time (s)</td>
+<td>0,014</td>
+<td>0,052</td>
+<td>0,25</td>
+<td>0,899</td>
+<td>4,236</td>
+<td>21,773</td>
+</tr>
+<tr class="row-odd"><td>Number of sol.</td>
+<td>40</td>
+<td>92</td>
+<td>352</td>
+<td>724</td>
+<td>2680</td>
+<td>14200</td>
+</tr>
+<tr class="row-even"><td>Failures</td>
+<td>110</td>
+<td>396</td>
+<td>1546</td>
+<td>6079</td>
+<td>27246</td>
+<td>131006</td>
+</tr>
+<tr class="row-odd"><td>Branches</td>
+<td>218</td>
+<td>790</td>
+<td>3090</td>
+<td>12156</td>
+<td>54490</td>
+<td>262010</td>
+</tr>
+<tr class="row-even"><td>Backtracks</td>
+<td>113</td>
+<td>399</td>
+<td>1549</td>
+<td>6082</td>
+<td>27249</td>
+<td>131009</td>
+</tr>
+<tr class="row-odd"><td>Stamps</td>
+<td>445</td>
+<td>1583</td>
+<td>6189</td>
+<td>24321</td>
+<td>108989</td>
+<td>524029</td>
+</tr>
+</tbody>
+</table>
+<p>We clearly see the exponential pattern of intractable problems<a class="footnote-reference" href="#not-proof-exponential-behaviour" id="id3">[2]</a>.</p>
+<table class="docutils footnote" frame="void" id="not-proof-exponential-behaviour" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>This is not a proof of course. Maybe another search strategy would yield a better
+algorithm but we do know that this problem <strong>is</strong> intractable.</td></tr>
+</tbody>
+</table>
+<p>We have seen in the previous section that the other implemented search strategies didn&#8217;t seem to do better.
+Can we do better? Let&#8217;s try!</p>
 </div>
 <div class="section" id="first-try-start-from-the-center">
 <h2>5.7.2. First try: start from the center</h2>
@@ -69,8 +220,16 @@
 <h2>5.7.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s more in details</h2>
 <div class="section" id="baseassignvariables-as-an-example">
 <h3>5.7.4.1. <tt class="docutils literal"><span class="pre">BaseAssignVariables</span></tt> as an example</h3>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<p>An example of a basic <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is the <tt class="docutils literal"><span class="pre">BaseAssignVariables</span></tt> class who assigns
+variables one by one<a class="footnote-reference" href="#base-assign-variables-more-flexible" id="id4">[3]</a>.</p>
+<table class="docutils footnote" frame="void" id="base-assign-variables-more-flexible" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Actually, it is flexible enough to also be able to split
+one variable&#8217;s domain in two but let&#8217;s keep things simple.</td></tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 

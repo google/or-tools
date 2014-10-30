@@ -127,6 +127,36 @@ used in this manual fall into this category. In this manual, we&#8217;ll discuss
 </div>
 <div class="section" id="problems-instances-and-solutions">
 <span id="problems-instances-solutions"></span><h2>1.4.2. Problems, instances and solutions</h2>
+<p id="index-2">We will not go into details about what a <em>mathematical</em> problem exactly is. As an example, we met the n-Queens Problem in the section <a class="reference internal" href="4queens.html#four-queens-problem"><em>The 4-Queens Problem</em></a>. We would like to take the time
+to differentiate <em>mathematical</em> problems from <em>real</em> problems though. Let&#8217;s take an example. Let&#8217;s say you are a company and want to give your users the ability to view streets from the comfort
+of their browsers as if they were physically present in those remote locations. To provide such a service, you might want to scour the globe with special cars and other mobile means to take some pictures.
+This is a <em>real</em> problem from <em>real</em> life. How do you provide such a service? Mathematical optimization to the rescue! Subdivide this real (and challenging!) problem into smaller ones and translate
+them into (solvable) mathematical problems:</p>
+<ul class="simple">
+<li>Taking pictures? All and well but how do you actually do this? How many pictures do you need to take? At what angle? How do you morph them together and minimize distortion? Etc....</li>
+<li>How do you scour the streets of a city? At what speed? How close to pictured objects? With how many cars? At what time of the day? After covering a street, where should the car head next? What about turns? Etc....</li>
+<li>How do you keep such information on the servers? How do you match the pictures with the correct locations? How do you respond to a user request such that she gets the most relevant information as quickly
+as possible? Etc....</li>
+<li>...</li>
+</ul>
+<p>Believe it or not, you can translate those questions into mathematical problems. And these (some of them at least) mathematical problems can be (and are!) solved with tools like the <em>or-tools</em> library.</p>
+<p>Mathematical problems are a translation of such real problems into mathematical terms. We&#8217;ll see many of them in this manual. Interestingly enough, the <em>or-tools</em> CP solver doesn&#8217;t have a <tt class="docutils literal"><span class="pre">Model</span></tt> class
+on its own as the model is constructed in/by the solver itself but you have some classes that relate to the mathematical model the solver is trying to solve. Among them, you have a <tt class="docutils literal"><span class="pre">ModelVisitor</span></tt> class that lets you <em>visit</em> the model and act upon it.</p>
+<p id="index-3">These mathematical problems are sort of theoretical templates. What you want to solve with a computer are specific versions of a problem. For instance, the n-Queens problem with <img class="math" src="../../_images/math/3bd075cc63abd292fe7a0f0fb52afd8390ca5649.png" alt="n=37" style="vertical-align: 0px"/> or
+<img class="math" src="../../_images/math/49526bc5b02da6810703a5620d7854599938ee9d.png" alt="n=6484" style="vertical-align: -1px"/>, or a Travelling Salesman Problem on a particular graph representing the city of New York. We call these practical materialization of a mathematical problem <strong>instances</strong>. You try
+to find mathematical theoretical methods to solve mathematical problems and solve specific instances on your computer<a class="footnote-reference" href="#instances-vs-problems" id="id5">[4]</a>. When you ask the CP solver to print a model, you
+are in fact asking for a specific instance.</p>
+<p id="index-4">A <strong>solution</strong> of an instance is an assignment of the variables: each variable is assigned a value of its domain. This doesn&#8217;t mean that a <em>solution</em> solves your problem: the assignment doesn&#8217;t need
+to respect the constraints! A <strong>feasible solution</strong> to a CSP or a COP is a <em>feasible</em> assignment: every variable has been assigned a value from its domain
+in such a way that <strong>all</strong> the constraints of the model are satisfied. The <em>or-tools</em> CP solver uses the class <tt class="docutils literal"><span class="pre">Assignment</span></tt> to represent a solution. As its mathematical counterpart, it can represent a valid (i.e. a feasible) solution or not. When we have a feasible solution, we&#8217;ll talk about a <tt class="docutils literal"><span class="pre">Solution</span></tt> (<tt class="docutils literal"><span class="pre">SolutionCollector</span></tt> and <tt class="docutils literal"><span class="pre">SolutionPool</span></tt> classes or the <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> method for instance) in <em>or-tools</em> although there is no
+<tt class="docutils literal"><span class="pre">Solution</span></tt> class. The <strong>objective value</strong> of a feasible solution is
+the value of the objective function for this solution. In <em>or-tools</em>, the objective function is modeled by the <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> class, i.e. it is a variable.
+An <strong>optimal solution</strong> to a COP is a feasible solution such
+that there are no other solutions with better objective values. Note that an optimal solution doesn&#8217;t need to exist nor is it
+unique in general. For instance, we&#8217;ll see that the n-Queens Problem or the Golomb Ruler Problem both possess several optimal solutions.</p>
+<p>Let us emphasize that the or-tools CP-solver deals only with discrete and finite variables, i.e. the values
+a variable can take are elements of a finite set. If you want to solve a continuous problem,
+you need to <em>discretize</em> it, i.e. model your problem with variables over a finite domain.</p>
 </div>
 <div class="section" id="complexity-theory-for-the-hurried-reader">
 <span id="two-important-ideas-complexity-theory-hurried-reader"></span><h2>1.4.3. Complexity theory for the hurried reader</h2>
@@ -302,6 +332,20 @@ you soften a constraint by allowing this constraint to be violated. In a approxi
 violated, you penalize the objective function by a certain amount corresponding to the violation. The bigger the
 violation, the bigger the penalty. The idea is to find a solution that doesn&#8217;t violate too much the soft constraints in
 the hope that such approximate solution isn&#8217;t that different from an exact or optimal solution<a class="footnote-reference" href="#different-solution-optimization" id="id27">[22]</a>.</p>
+<p>Another possible research avenue is to use <em>(meta-)heuristics</em>: algorithms that hopefully return good or even near-optimal
+solutions. Some of these algorithms give a guarantee on the quality of the produced solutions, some don&#8217;t
+and you just hope for the best. You can also monitor the quality of the solutions by trying to close the <em>optimality gap</em> as
+much as possible. Given an instance, compute a <em>lower bound</em> <img class="math" src="../../_images/math/10f32377ac67d94f764f12a15ea987e88c85d3e1.png" alt="\alpha" style="vertical-align: 0px"/> and an <em>upper bound</em> <img class="math" src="../../_images/math/fdb63b9e51abe6bbb16acfb5d7b773ddbb5bf4a8.png" alt="\beta" style="vertical-align: -4px"/> on the
+optimal value <img class="math" src="../../_images/math/59f327b60c02506ded1dccdc34b1df7a509e8044.png" alt="z^*" style="vertical-align: 0px"/>. So you know that <img class="math" src="../../_images/math/6d76de0e4f0ec475d7d710d006b1d25e2164910a.png" alt="z^* \in [\alpha, \beta]" style="vertical-align: -5px"/>. <em>Closing the optimality gap</em> is trying
+to shrink this interval by producing better upper and lower bounds. If you manage to produce solutions with
+objective values belonging to this interval, you know how close (or not) these values are from the optimal value of your
+instance.</p>
+<p>As with exact optimization, an approximation complexity theory emerged. It started in the &#8216;90 and is now a mature domain that improves greatly our comprehension
+of what we can or can not (theorically) compute. There is a whole zoo of complexity classes. Some problems can be approximated but without any
+guarantee on the quality of the solutions, others can be approximated with as much precision as you desire but
+you have to pay the price for this precision: the more precision you want the slower your algorithms will be.
+For some problems it is hard to find approximations and for others, it is even impossible to find an approximation with
+any guarantee whatsoever on its quality!</p>
 <h4>Footnotes</h4><table class="docutils footnote" frame="void" id="time-complexity" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">

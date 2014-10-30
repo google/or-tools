@@ -58,11 +58,96 @@
 <span id="hood-metaheuristics"></span><h1>13.10. Meta-heuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h1>
 <div class="section" id="the-metaheuristic-class">
 <h2>13.10.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class</h2>
+<p>The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class is declared and defined in the file <tt class="file docutils literal"><span class="pre">constraint_solver/search.cc</span></tt>.</p>
+<p>Some procedures are so common when implementing a meta-heuristic that we defined a common base class <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt>.
+By itself, it only updates the objective function.</p>
+<p>The constructor is declared by</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">Metaheuristic</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">solver</span><span class="p">,</span>
+              <span class="kt">bool</span> <span class="n">maximize</span><span class="p">,</span>
+              <span class="n">IntVar</span><span class="o">*</span> <span class="n">objective</span><span class="p">,</span>
+              <span class="n">int64</span> <span class="n">step</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>All arguments are self-explanatory. The last argument <tt class="docutils literal"><span class="pre">step</span></tt> lets you improve the objective function
+by a certain (positive) step. Again, as in the case of an <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> there is no fancy algorithm to change dynamically this
+step but you can implement one yourself.</p>
+<p>Three callbacks were defined:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">EnterSearch()</span></tt>:</dt>
+<dd><p class="first">We initialize the objective function:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">Metaheuristic</span><span class="o">::</span><span class="n">EnterSearch</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">maximize_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">best_</span> <span class="o">=</span> <span class="n">objective_</span><span class="o">-&gt;</span><span class="n">Min</span><span class="p">();</span>
+    <span class="n">current_</span> <span class="o">=</span> <span class="n">kint64min</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">best_</span> <span class="o">=</span> <span class="n">objective_</span><span class="o">-&gt;</span><span class="n">Max</span><span class="p">();</span>
+    <span class="n">current_</span> <span class="o">=</span> <span class="n">kint64max</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p class="last">This implementation takes into account that no initial solution was provided, so the current
+best value is <img class="math" src="../../_images/math/0852124cd026a4c2e9855265258fc4b1168f6564.png" alt="\pm \infty" style="vertical-align: -1px"/> (i.e. <tt class="docutils literal"><span class="pre">kint64min</span></tt> or <tt class="docutils literal"><span class="pre">kint64max</span></tt>) depending
+if we maximize or minimize the objective function.</p>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">AtSolution()</span></tt>:</dt>
+<dd><p class="first">Remember that this callback is triggered when a solution has been accepted (by the <tt class="docutils literal"><span class="pre">AcceptSolution()</span></tt> callback).
+We simply update the best solution value and return <tt class="docutils literal"><span class="pre">true</span></tt> to continue the search:</p>
+<div class="last highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">Metaheuristic</span><span class="o">::</span><span class="n">AtSolution</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">current_</span> <span class="o">=</span> <span class="n">objective_</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">maximize_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">best_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="p">(</span><span class="n">current_</span><span class="p">,</span> <span class="n">best_</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">best_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">current_</span><span class="p">,</span> <span class="n">best_</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">RefuteDecision()</span></tt>:</dt>
+<dd><p class="first">We are about to refute a <tt class="docutils literal"><span class="pre">Decision</span></tt> and go right in the search tree. If we can not improve enough our current solution, we
+fail:</p>
+<div class="last highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="n">Metaheuristic</span><span class="o">::</span><span class="n">RefuteDecision</span><span class="p">(</span><span class="n">Decision</span><span class="o">*</span> <span class="n">d</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">maximize_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">objective_</span><span class="o">-&gt;</span><span class="n">Max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">best_</span> <span class="o">+</span> <span class="n">step_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">solver</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Fail</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">objective_</span><span class="o">-&gt;</span><span class="n">Min</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">best_</span> <span class="o">-</span> <span class="n">step_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">solver</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Fail</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
 </div>
 <div class="section" id="callbacks-to-implement">
 <h2>13.10.2. Callbacks to implement</h2>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<p>Here are several callbacks you might want to implement:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">EnterSearch()</span></tt>:</dt>
+<dd>This is the method to initialize your meta-heuristic. You can call <tt class="docutils literal"><span class="pre">Metaheuristic::EnterSearch()</span></tt> to update the
+objective function. If you have an initial solution at hand, see the
+box <em>What about an initial solution?</em> (to be done).</dd>
+<dt><tt class="docutils literal"><span class="pre">RefuteDecision()</span></tt>:</dt>
+<dd>Blabla</dd>
+<dt><tt class="docutils literal"><span class="pre">ApplyDecision()</span></tt>:</dt>
+<dd>Blabla</dd>
+<dt><tt class="docutils literal"><span class="pre">AtSolution()</span></tt>:</dt>
+<dd>Blabla</dd>
+<dt><tt class="docutils literal"><span class="pre">LocalOptimum()</span></tt>:</dt>
+<dd>Blabla</dd>
+<dt><tt class="docutils literal"><span class="pre">AcceptNeighbor()</span></tt>:</dt>
+<dd>Blabla</dd>
+<dt><tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt>:</dt>
+<dd>Blabla</dd>
+</dl>
+</div></blockquote>
+</div>
 </div>
 
 
