@@ -371,11 +371,11 @@ table.docutils {
     margin: auto;
 }
 
-div.footnote_table {
-	margin: 0;
-	text-align: left;
+table.docutils.footnote {
+    margin-left: 0;
+    margin-right: auto;
+
 }
- 
 
 table.docutils td, table.docutils th {
     padding: 1px 8px 1px 5px;

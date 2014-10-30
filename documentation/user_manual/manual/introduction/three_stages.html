@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="1. Introduction to constraint programming" href="../introduction.html" />
     <link rel="next" title="1.6. It’s always a matter of tradeoffs" href="tradeoffs.html" />
-    <link rel="prev" title="1.4. Real examples" href="real_examples.html" /> 
+    <link rel="prev" title="1.4. A little bit of theory" href="theory.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="tradeoffs.html" title="1.6. It’s always a matter of tradeoffs"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="real_examples.html" title="1.4. Real examples"
+          <a href="theory.html" title="1.4. A little bit of theory"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../introduction.html" accesskey="U">1. Introduction to constraint programming</a> &raquo;</li> 
@@ -59,13 +59,6 @@
 <p>We propose a recipe that belongs to the folklore. Like all recipes it is
 only a guide and should not be followed blindly<a class="footnote-reference" href="#three-stage-method-stop" id="id1">[1]</a>. When it comes to research, everything is permitted
 and your imagination is the limit.</p>
-<table class="docutils footnote" frame="void" id="three-stage-method-stop" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If you are allergic to this &#8220;academic&#8221; approach, you probably will be happy to know that
-we only use this three-stage method in the first two partsc of this manual.</td></tr>
-</tbody>
-</table>
 <p>As Feyerabend (<a class="reference external" href="http://en.wikipedia.org/wiki/Paul_Feyerabend">Wikipedia</a>) once said:</p>
 <blockquote>
 <div><em>Anything goes</em></div></blockquote>
@@ -81,7 +74,7 @@ You cannot propose a model without anticipating the way you will solve this mode
 <p>Conversely, when you are used to model some types of problems, you will probably try to cast a real problem into a problem that
 is known and well-solved. Problems do evolve with time as does your knowledge of them. Accordingly, you will change your description of the problem, the models you use
 and the way you solve these models.</p>
-<p>One of the strength of <em>constraint programming</em> is its ability to <em>describe</em> quite <em>naturally</em> problems.
+<p>One of the strength of <em>constraint programming</em> is its ability to <em>describe</em> problems quite <em>naturally</em>.
 For instance, if you need to ensure
 that some variables must hold different values, simply use the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on these variables. Reification allows you
 to express some constraints that are simply unavailable in other solving paradigms. Another strength of <em>constraint programming</em> is its
@@ -105,12 +98,11 @@ can you approximate it?</p>
 <div class="section" id="model">
 <h2>1.5.2. Model</h2>
 <p>Again a difficult stage if not the most challenging part of the solving process.
-Modelling is more of an <em>Art</em> than anything else. With experience, you will be able
+Modeling is more of an <em>art</em> than anything else. With experience, you will be able
 to model more easily and use known and effective tricks. If you are a novice in Operations Research/Constraint Programming,
 pay attention to the proposed models in this manual as they
 involve a lot of knowledge and subtleties. Do not be discouraged if you do not understand them at first. This is perfectly
-normal. Take the time to read them several times until you master them. Beside, it could be our fault if you do not
-understand them: maybe we did not explain them well?</p>
+normal. Take the time to read them several times until you master them.</p>
 <p>When confronted with a new problem, you might not know what do to. We all face this situation.
 This is what research is all about!</p>
 </div>
@@ -120,6 +112,13 @@ This is what research is all about!</p>
 waiting for the results to be delivered by the solver. The solve stage involves reasoning to find the best way
 to solve a given model, i.e. how to traverse the search tree in a efficient way.</p>
 <p>We discuss this stage in details in the chapter <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives: the n-Queens Problem</em></a>.</p>
+<h4>Footnote</h4><table class="docutils footnote" frame="void" id="three-stage-method-stop" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If you are allergic to this &#8220;academic&#8221; approach, you probably will be happy to know that
+we only use this three-stage method in the first two parts of this manual.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -198,8 +197,8 @@ Search:
   <p class="topless"><a href="../introduction.html"
                         title="previous chapter">1. Introduction to constraint programming</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="real_examples.html"
-                        title="previous chapter">1.4. Real examples</a></p>
+  <p class="topless"><a href="theory.html"
+                        title="previous chapter">1.4. A little bit of theory</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="tradeoffs.html"
                         title="next chapter">1.6. It&#8217;s always a matter of tradeoffs</a></p>
@@ -227,7 +226,7 @@ Search:
           <a href="tradeoffs.html" title="1.6. It’s always a matter of tradeoffs"
              >next</a> |</li>
         <li class="right" >
-          <a href="real_examples.html" title="1.4. Real examples"
+          <a href="theory.html" title="1.4. A little bit of theory"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../introduction.html" >1. Introduction to constraint programming</a> &raquo;</li> 

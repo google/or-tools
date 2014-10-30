@@ -1,4 +1,11 @@
 
+v.0.2.12: (2014-10-29 23:49:06)
+-------------------------------
+* html admonitions color changes;
+* lots of css, html debugging;
+* html bibliography now at bottom of page;
+* chapter 1 finished (except last section);
+
 v.0.2.12: (2014-10-27 11:48:49)
 -------------------------------
 * pgn images with transparent background now;

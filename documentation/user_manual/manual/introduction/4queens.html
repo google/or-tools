@@ -70,15 +70,15 @@ That is, no two queens are allowed to be placed on the same row, the same column
 </div>
 <div class="section" id="a-mathematical-translation-of-the-problem">
 <h2>1.1.2. A mathematical translation of the problem</h2>
-<p>In Constraint Programming we translate a real problem to a <em>mathematical model</em> with <em>variables</em> and <em>constraints</em>. Variables
-represent decisions and constraints restraint the variables of taking arbitrary values altogether. For instance, to model the
+<p>In Constraint Programming we translate a real problem into a <em>mathematical model</em> with <em>variables</em> and <em>constraints</em>. Variables
+represent decisions and constraints restrain the variables from taking arbitrary values. For instance, to model the
 4-Queens Problem, we could use a binary variable <img class="math" src="../../_images/math/9ff77ee087b4287c6e82e414efbe4d79aba8c012.png" alt="x_{ij}" style="vertical-align: -6px"/> that indicates if a queen is present on the given
 <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> square (<img class="math" src="../../_images/math/2178703bbe8371a2db45b9e8dc3307139204b993.png" alt="x_{ij} = 1" style="vertical-align: -6px"/>) or not (<img class="math" src="../../_images/math/0d6a81bd6eb475ba4856e44909188b9313619485.png" alt="x_{ij} = 0" style="vertical-align: -6px"/>). The first index <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> denotes the <img class="math" src="../../_images/math/a05d572e6788d51f43954dbe53d49dece87c13ad.png" alt="i^\text{th}" style="vertical-align: 0px"/> row
 and the second index <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> the <img class="math" src="../../_images/math/233a06a133046e97fbd014afb05b38f237d1e39d.png" alt="j^\text{th}" style="vertical-align: -4px"/> column. We need several constraints to model that no two queens
-can capture each other. We also need to constraint the need for 4 queens. We could add the constraint:</p>
+can capture each other. To limit the number of queens to 4, we can add the following constraint:</p>
 <div class="math">
 <p><img src="../../_images/math/05dee08de9db5789c7308033f57702c49e1f204f.png" alt="\sum_{(i,j) \in \, \textrm{squares}} x_{ij} = 4."/></p>
-</div><p>This constraints ensure that we place 4 queens on the chessboard. In general, constraints only permit possible combinations of values
+</div><p>This constraint ensures that we place 4 queens on the chessboard. In general, constraints only permit possible combinations of values
 of variables corresponding to real solutions<a class="footnote-reference" href="#model-more-complicated-than-that" id="id2">[2]</a>.</p>
 <p>In the next section, we will see how the or-tools&#8217; CP solver tries to solve this problem. More precisely,
 how the solver will try to solve the model we will develop and explain in the sections <a class="reference internal" href="../search_primitives/nqueens.html#nqueen-problem"><em>The n-queens problem</em></a> and
@@ -104,7 +104,7 @@ Figures, crosses represent the action of removing values from variables&#8217; d
 separated from the following one by an horizontal line.</p>
 <hr><p>The solver starts by placing the first queen in the upper left corner.
 Because of the model we gave to the solver, it knows that there cannot be any other queen in the
-same column, hence the grey crosses on the following Figure.
+same column, hence the gray crosses on the following Figure.
 One constraint tells the solver that there cannot be
 another queen on the same diagonal with a negative slope (the diagonals going down then right). The red crosses show
 this impossibility.</p>
@@ -113,9 +113,9 @@ this impossibility.</p>
 <img alt="alternate text" class="align-center" src="../../_images/propagation2.png" style="width: 162px; height: 162px;" />
 <p>After this first step, only the white squares are still available to place the three remaining queens.
 The process of excluding some squares is what is called <em>propagation</em>.</p>
-<hr><p>The second step starts with the solver trying to place a second queen. It does so in the first available square from above
+<hr><p>The second step starts with the solver trying to place a second queen. It does so in the first available square from the top
 in the second column. As in the first step, the solver knows that no other queen can be placed in a column where it just placed
-a queen, hence the new grey crosses in the next Figure.</p>
+a queen, hence the new gray crosses in the next Figure.</p>
 <p>The propagation is as follow:</p>
 <p>The same negative diagonal constraint as in step 1 tells the solver that no queen can be on the negative diagonal of the second
 queen, hence the red cross.</p>
@@ -125,7 +125,7 @@ tells the solver that no queen can be placed on the positive diagonal of second 
 <img alt="alternate text" class="align-center" src="../../_images/propagation4.png" style="width: 162px; height: 162px;" />
 <p>Now, we have a failure as there is no possibility to place a third queen in the third column: there simply can not be
 a solution with this configuration. The solver has to backtrack!</p>
-<hr><p>The solver decides to challenge its last decision to place the second queen in the third row from above and places it in the
+<hr><p>The solver decides to challenge its last decision to place the second queen in the third row from the top and places it in the
 fourth row.</p>
 <p>The propagation is as follow:</p>
 <p>First, the square with the red cross is removed because of the positive diagonal constraint. This leaves only one possibility to place
@@ -146,7 +146,7 @@ the first queen in the first column second row.</p>
 <p>while the positive diagonal constraint one:</p>
 <img alt="alternate text" class="align-center" src="../../_images/propagation8.png" style="width: 162px; height: 162px;" />
 <p>Now comes the turn of the &#8220;no two queen on the same row&#8221; constraint and it is responsible of removing
-the next three red crosses:</p>
+the next three squares marked by red crosses:</p>
 <img alt="alternate text" class="align-center" src="../../_images/propagation9.png" style="width: 162px; height: 162px;" />
 <p>The positive diagonal constraint kicks in and forbids the red square leaving no choice to place
 a third queen in the third column first row.</p>
