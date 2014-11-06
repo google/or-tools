@@ -28,13 +28,15 @@ namespace base {
 
 int64 GetCurrentTimeNanos() {
 #if defined(_MSC_VER)
-  const int64 kSecInNanoSeconds = 1000000000LL;
+  const double kSecInNanoSeconds = 1000000000.0;
+  LARGE_INTEGER l_freq;
+  if (!QueryPerformanceFrequency(&l_freq)) {
+    return 0;
+  }
+  const double freq = static_cast<double>(l_freq.QuadPart)/kSecInNanoSeconds;
   LARGE_INTEGER now;
-  LARGE_INTEGER freq;
-
   QueryPerformanceCounter(&now);
-  QueryPerformanceFrequency(&freq);
-  return now.QuadPart * kSecInNanoSeconds / freq.QuadPart;
+  return static_cast<int64>(now.QuadPart / freq);
 #elif defined(__APPLE__) && defined(__GNUC__)
   int64 time = mach_absolute_time();
   mach_timebase_info_data_t info;
