@@ -75,7 +75,7 @@ void SatTableConstraint::Post() {
       clause.clear();
       clause.push_back(literal_getter.IsNotEqualTo(value));
       for (; column_index < column_values.size(); ++column_index) {
-        std::pair<int64, int> entry = column_values[column_index];
+        const std::pair<int64, int>& entry = column_values[column_index];
         if (entry.first != value) break;
         clause.push_back(sat::Literal(first_tuple_var + entry.second, true));
       }
