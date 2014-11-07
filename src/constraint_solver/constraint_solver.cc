@@ -1436,6 +1436,7 @@ void Solver::Init() {
   fail_decision_.reset(new FailDecision());
   constraint_index_ = 0;
   additional_constraint_index_ = 0;
+  num_int_vars_ = 0;
   propagation_monitor_.reset(BuildTrace(this));
   print_trace_ = nullptr;
   anonymous_variable_index_ = 0;

@@ -69,6 +69,23 @@ static int64 PyCallback2NodeIndexNodeIndex(
   }
   $1 = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, $input);
 }
+// Create conversion of vectors of NodeEvaluator2
+%{
+template<>
+bool PyObjAs(PyObject* py_obj,
+             operations_research::RoutingModel::NodeEvaluator2** b) {
+  if (!PyCallable_Check(py_obj)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    return false;
+  }
+  *b = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, py_obj);
+  return true;
+}
+%}
+// Passing an empty parameter as converter is ok here since no API outputs
+// a vector of NodeEvaluator2*.
+PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
+                       PyCallable_Check, );
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
@@ -85,8 +102,8 @@ static int64 PyCallback2NodeIndexNodeIndex(
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
                           const std::string& name) {
-    DCHECK_EQ(values.size(), self->nodes());
-    self->AddVectorDimension(values.data(), capacity,
+    DCHECK_EQ(values.size(), $self->nodes());
+    $self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
   }
 }
@@ -99,4 +116,4 @@ static int64 PyCallback2NodeIndexNodeIndex(
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 // Wrap cp includes
-%include constraint_solver/routing.h
+%include "constraint_solver/routing.h"

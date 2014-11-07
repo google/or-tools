@@ -1407,7 +1407,11 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
   bool FindIndex(IntVar* const var, int64* index) const {
     DCHECK(index != nullptr);
-    return FindCopy(var_to_index_, var, index);
+    const int var_index = var->index();
+    *index = (var_index < var_index_to_index_.size())
+                 ? var_index_to_index_[var_index]
+                 : kUnassigned;
+    return *index != kUnassigned;
   }
 
   // Add variables to "track" to the filter.
@@ -1428,7 +1432,8 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
   std::vector<bool> var_synced_;
-  dense_hash_map<const IntVar*, int64> var_to_index_;
+  std::vector<int> var_index_to_index_;
+  static const int kUnassigned;
 };
 
 // ---------- PropagationMonitor ----------
@@ -1500,7 +1505,7 @@ class BooleanVar : public IntVar {
  public:
   static const int kUnboundBooleanVarValue;
 
-  BooleanVar(Solver* const s, const std::string& name = "")
+  explicit BooleanVar(Solver* const s, const std::string& name = "")
       : IntVar(s, name), value_(kUnboundBooleanVarValue) {}
 
   virtual ~BooleanVar() {}
@@ -2513,7 +2518,6 @@ inline int64 PosIntDivDown(int64 e, int64 v) {
 
 // ----- Vector of integer manipulations -----
 std::vector<int64> ToInt64Vector(const std::vector<int>& input);
-std::vector<int64> SortedNoDuplicates(const std::vector<int64>& input);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

@@ -680,7 +680,11 @@ class RoutingModel {
   // node is only part of a single Disjunction involving only itself, and that
   // disjunction has a penalty. In all other cases, including forced active
   // nodes, this returns 0.
-  int64 UnperformedPenalty(int64 var_index);
+  int64 UnperformedPenalty(int64 var_index) const;
+  // Same as above except that it returns default_value instead of 0 when
+  // penalty is not well defined (default value is passed as first argument to
+  // simplify the usage of the method in a callback).
+  int64 UnperformedPenaltyOrValue(int64 default_value, int64 var_index) const;
   // Returns the variable index of the first starting or ending node of all
   // routes. If all routes start  and end at the same node (single depot), this
   // is the node returned.
@@ -869,6 +873,18 @@ class RoutingModel {
   // Returns the sweep arranger to be used by routing heuristics.
   SweepArranger* sweep_arranger() const { return sweep_arranger_.get(); }
 #endif
+  // Adds a custom local search filter to the list of filters used to speed up
+  // local search by pruning unfeasible variable assignments.
+  // Calling this method after the routing model has been closed (CloseModel()
+  // or Solve() has been called) has no effect.
+  // The routing model does not take ownership of the filter.
+  void AddLocalSearchFilter(LocalSearchFilter* filter) {
+    CHECK(filter != nullptr);
+    if (closed_) {
+      LOG(WARNING) << "Model is closed, filter addition will be ignored.";
+    }
+    extra_filters_.push_back(filter);
+  }
 
   // Model inspection.
   // Returns the variable index of the starting node of a vehicle route.
@@ -1201,6 +1217,7 @@ class RoutingModel {
   // - IsEnd(i) is true
   // - or nexts_[i] is bound and is_bound_to_end_[nexts_[i].Value()] is true.
   std::vector<IntVar*> is_bound_to_end_;
+  RevSwitch is_bound_to_end_ct_added_;
   // Dimensions
   hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
@@ -1259,6 +1276,7 @@ class RoutingModel {
   std::vector<LocalSearchOperator*> extra_operators_;
   std::vector<LocalSearchFilter*> filters_;
   std::vector<LocalSearchFilter*> feasibility_filters_;
+  std::vector<LocalSearchFilter*> extra_filters_;
   std::vector<IntVar*> variables_maximized_by_finalizer_;
   std::vector<IntVar*> variables_minimized_by_finalizer_;
 #ifndef SWIG
@@ -1666,6 +1684,7 @@ class CheapestInsertionFilteredDecisionBuilder
   CheapestInsertionFilteredDecisionBuilder(
       RoutingModel* model,
       ResultCallback3<int64, int64, int64, int64>* evaluator,
+      ResultCallback1<int64, int64>* penalty_evaluator,
       const std::vector<LocalSearchFilter*>& filters);
   virtual ~CheapestInsertionFilteredDecisionBuilder() {}
 
@@ -1683,22 +1702,28 @@ class CheapestInsertionFilteredDecisionBuilder
   void AppendEvaluatedPositionsAfter(int64 node_to_insert, int64 start,
                                      int64 next_after_start, int64 vehicle,
                                      std::vector<ValuedPosition>* valued_positions);
+  // Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
+  // if penalty callback is null or if the node cannot be unperformed.
+  int64 GetUnperformedValue(int64 node_to_insert) const;
 
   std::unique_ptr<ResultCallback3<int64, int64, int64, int64> > evaluator_;
+  std::unique_ptr<ResultCallback1<int64, int64> > penalty_evaluator_;
 };
 
 // Filter-based decision builder which builds a solution by inserting
 // nodes at their cheapest position on any route; potentially several routes can
 // be built in parallel. The cost of a position is computed from an arc-based
 // cost callback. The node selected for insertion is the one which minimizes
-// insertion cost.
+// insertion cost. If a non null penalty evaluator is passed, making nodes
+// unperformed is also taken into account with the corresponding penalty cost.
 class GlobalCheapestInsertionFilteredDecisionBuilder
     : public CheapestInsertionFilteredDecisionBuilder {
  public:
-  // Takes ownership of evaluator.
+  // Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredDecisionBuilder(
       RoutingModel* model,
       ResultCallback3<int64, int64, int64, int64>* evaluator,
+      ResultCallback1<int64, int64>* penalty_evaluator,
       const std::vector<LocalSearchFilter*>& filters);
   virtual ~GlobalCheapestInsertionFilteredDecisionBuilder() {}
   virtual bool BuildSolution();
@@ -1944,6 +1969,54 @@ class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
 
  private:
   std::unique_ptr<Callback1<int64> > objective_callback_;
+};
+
+// Generic path-based filter class.
+
+class BasePathFilter : public RoutingLocalSearchFilter {
+ public:
+  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
+                 Callback1<int64>* objective_callback);
+  virtual ~BasePathFilter() {}
+  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
+  virtual void OnSynchronize(const Assignment* delta);
+
+ protected:
+  static const int64 kUnassigned;
+
+  int64 GetNext(int64 node) const {
+    return (new_nexts_[node] == kUnassigned)
+               ? (IsVarSynced(node) ? Value(node) : kUnassigned)
+               : new_nexts_[node];
+  }
+  int NumPaths() const { return starts_.size(); }
+  int64 Start(int i) const { return starts_[i]; }
+  int GetPath(int64 node) const { return paths_[node]; }
+
+ private:
+  virtual void OnBeforeSynchronizePaths() {}
+  virtual void OnAfterSynchronizePaths() {}
+  virtual void OnSynchronizePathFromStart(int64 start) {}
+  virtual void InitializeAcceptPath() {}
+  virtual bool AcceptPath(int64 path_start, int64 chain_start,
+                          int64 chain_end) = 0;
+  virtual bool FinalizeAcceptPath() { return true; }
+  // Detects path starts, used to track which node belongs to which path.
+  void ComputePathStarts(std::vector<int64>* path_starts,
+                         std::vector<int>* index_to_path);
+  bool HavePathsChanged();
+  void SynchronizeFullAssignment();
+  void UpdateAllRanks();
+  void UpdatePathRanksFromStart(int start);
+
+  std::vector<int64> node_path_starts_;
+  std::vector<int64> starts_;
+  std::vector<int> paths_;
+  std::vector<int64> new_nexts_;
+  std::vector<int> delta_touched_;
+  SparseBitset<> touched_paths_;
+  SparseBitset<> touched_path_nodes_;
+  std::vector<int> ranks_;
 };
 
 RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(

@@ -847,7 +847,7 @@ namespace operations_research {
 %rename (Min) Solver::MakeMin;
 %rename (SemiContinuousExpr) Solver::MakeSemiContinuousExpr;
 %rename (MonotonicElement) Solver::MakeMonotonicElement;
-%rename (IndexEpression) Solver::MakeIndexEpression;
+%rename (IndexExpression) Solver::MakeIndexExpression;
 %rename (ConvexPiecewiseExpr) Solver::MakeConvexPiecewiseExpr;
 %rename (ConditionalExpression) Solver::MakeConditionalExpression;
 %rename (Element) Solver::MakeElement;
@@ -1992,7 +1992,6 @@ namespace operations_research {
 // - PosIntDivUp()
 // - PosIntDivDown()
 // - ToInt64Vector()
-// - SortedNoDuplicates()
 
 // LocalSearchOperator
 // Ignored:
@@ -2218,3 +2217,4 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
+

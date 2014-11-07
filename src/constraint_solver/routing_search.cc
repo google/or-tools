@@ -160,56 +160,6 @@ RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(
       new NodeDisjunctionFilter(routing_model, objective_callback));
 }
 
-namespace {
-
-// Generic path-based filter class.
-
-class BasePathFilter : public RoutingLocalSearchFilter {
- public:
-  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
-                 Callback1<int64>* objective_callback);
-  virtual ~BasePathFilter() {}
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void OnSynchronize(const Assignment* delta);
-
- protected:
-  static const int64 kUnassigned;
-
-  int64 GetNext(int64 node) const {
-    return (new_nexts_[node] == kUnassigned)
-               ? (IsVarSynced(node) ? Value(node) : kUnassigned)
-               : new_nexts_[node];
-  }
-  int NumPaths() const { return starts_.size(); }
-  int64 Start(int i) const { return starts_[i]; }
-  int GetPath(int64 node) const { return paths_[node]; }
-
- private:
-  virtual void OnBeforeSynchronizePaths() {}
-  virtual void OnAfterSynchronizePaths() {}
-  virtual void OnSynchronizePathFromStart(int64 start) {}
-  virtual void InitializeAcceptPath() {}
-  virtual bool AcceptPath(int64 path_start, int64 chain_start,
-                          int64 chain_end) = 0;
-  virtual bool FinalizeAcceptPath() { return true; }
-  // Detects path starts, used to track which node belongs to which path.
-  void ComputePathStarts(std::vector<int64>* path_starts,
-                         std::vector<int>* index_to_path);
-  bool HavePathsChanged();
-  void SynchronizeFullAssignment();
-  void UpdateAllRanks();
-  void UpdatePathRanksFromStart(int start);
-
-  std::vector<int64> node_path_starts_;
-  std::vector<int64> starts_;
-  std::vector<int> paths_;
-  std::vector<int64> new_nexts_;
-  std::vector<int> delta_touched_;
-  SparseBitset<> touched_paths_;
-  SparseBitset<> touched_path_nodes_;
-  std::vector<int> ranks_;
-};
-
 const int64 BasePathFilter::kUnassigned = -1;
 
 BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
@@ -424,6 +374,8 @@ void BasePathFilter::UpdatePathRanksFromStart(int start) {
   }
   ranks_[node] = rank;
 }
+
+namespace {
 
 // ChainCumul filter. Version of dimension path filter which is O(delta) rather
 // than O(length of touched paths). Currently only supports dimensions without
@@ -1441,9 +1393,14 @@ CheapestInsertionFilteredDecisionBuilder::
     CheapestInsertionFilteredDecisionBuilder(
         RoutingModel* model,
         ResultCallback3<int64, int64, int64, int64>* evaluator,
+        ResultCallback1<int64, int64>* penalty_evaluator,
         const std::vector<LocalSearchFilter*>& filters)
-    : RoutingFilteredDecisionBuilder(model, filters), evaluator_(evaluator) {
+    : RoutingFilteredDecisionBuilder(model, filters), evaluator_(evaluator),
+      penalty_evaluator_(penalty_evaluator) {
   evaluator_->CheckIsRepeatable();
+  if (penalty_evaluator_ != nullptr) {
+    penalty_evaluator_->CheckIsRepeatable();
+  }
 }
 
 void CheapestInsertionFilteredDecisionBuilder::InsertBetween(int64 node,
@@ -1469,6 +1426,14 @@ void CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
                   insert_after));
     insert_after = insert_before;
   }
+}
+
+int64 CheapestInsertionFilteredDecisionBuilder::GetUnperformedValue(
+    int64 node_to_insert) const {
+  if (penalty_evaluator_ != nullptr) {
+    return penalty_evaluator_->Run(node_to_insert);
+  }
+  return kint64max;
 }
 
 namespace {
@@ -1578,8 +1543,10 @@ GlobalCheapestInsertionFilteredDecisionBuilder::
     GlobalCheapestInsertionFilteredDecisionBuilder(
         RoutingModel* model,
         ResultCallback3<int64, int64, int64, int64>* evaluator,
+        ResultCallback1<int64, int64>* penalty_evaluator,
         const std::vector<LocalSearchFilter*>& filters)
-    : CheapestInsertionFilteredDecisionBuilder(model, evaluator, filters) {}
+    : CheapestInsertionFilteredDecisionBuilder(
+        model, evaluator, penalty_evaluator, filters) {}
 
 bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
   if (!InitializeRoutes()) {
@@ -1604,40 +1571,53 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InsertPairs() {
       DeletePairEntry(entry, &priority_queue, &pickup_to_entries,
                       &delivery_to_entries);
     } else {
-      const int64 pickup_insert_before = Value(entry->pickup_insert_after());
-      InsertBetween(entry->pickup_to_insert(), entry->pickup_insert_after(),
-                    pickup_insert_before);
-      const int64 delivery_insert_before =
-          (entry->pickup_to_insert() == entry->delivery_insert_after())
-              ? pickup_insert_before
-              : Value(entry->delivery_insert_after());
-      InsertBetween(entry->delivery_to_insert(), entry->delivery_insert_after(),
-                    delivery_insert_before);
-      if (Commit()) {
-        const int64 pickup_after = entry->pickup_insert_after();
-        const int64 pickup = entry->pickup_to_insert();
-        const int64 delivery_after = entry->delivery_insert_after();
-        const int64 delivery = entry->delivery_to_insert();
-        const int vehicle = entry->vehicle();
-        UpdatePairPositions(vehicle, pickup_after, &priority_queue,
-                            &pickup_to_entries, &delivery_to_entries);
-        UpdatePairPositions(vehicle, pickup, &priority_queue,
-                            &pickup_to_entries, &delivery_to_entries);
-        UpdatePairPositions(vehicle, delivery, &priority_queue,
-                            &pickup_to_entries, &delivery_to_entries);
-        if (pickup != delivery_after) {
-          UpdatePairPositions(vehicle, delivery_after, &priority_queue,
-                              &pickup_to_entries, &delivery_to_entries);
+      if (entry->vehicle() == -1) {
+        // Pair is unperformed.
+        SetValue(entry->pickup_to_insert(), entry->pickup_to_insert());
+        SetValue(entry->delivery_to_insert(), entry->delivery_to_insert());
+        if (!Commit()) {
+          DeletePairEntry(entry, &priority_queue, &pickup_to_entries,
+                          &delivery_to_entries);
         }
       } else {
-        DeletePairEntry(entry, &priority_queue, &pickup_to_entries,
-                        &delivery_to_entries);
+        // Pair is performed.
+        const int64 pickup_insert_before = Value(entry->pickup_insert_after());
+        InsertBetween(entry->pickup_to_insert(), entry->pickup_insert_after(),
+                      pickup_insert_before);
+        const int64 delivery_insert_before =
+            (entry->pickup_to_insert() == entry->delivery_insert_after())
+                ? pickup_insert_before
+                : Value(entry->delivery_insert_after());
+        InsertBetween(entry->delivery_to_insert(),
+                      entry->delivery_insert_after(),
+                      delivery_insert_before);
+        if (Commit()) {
+          const int64 pickup_after = entry->pickup_insert_after();
+          const int64 pickup = entry->pickup_to_insert();
+          const int64 delivery_after = entry->delivery_insert_after();
+          const int64 delivery = entry->delivery_to_insert();
+          const int vehicle = entry->vehicle();
+          UpdatePairPositions(vehicle, pickup_after, &priority_queue,
+                              &pickup_to_entries, &delivery_to_entries);
+          UpdatePairPositions(vehicle, pickup, &priority_queue,
+                              &pickup_to_entries, &delivery_to_entries);
+          UpdatePairPositions(vehicle, delivery, &priority_queue,
+                              &pickup_to_entries, &delivery_to_entries);
+          if (pickup != delivery_after) {
+            UpdatePairPositions(vehicle, delivery_after, &priority_queue,
+                                &pickup_to_entries, &delivery_to_entries);
+          }
+        } else {
+          DeletePairEntry(entry, &priority_queue, &pickup_to_entries,
+                          &delivery_to_entries);
+        }
       }
     }
   }
 }
 
 void GlobalCheapestInsertionFilteredDecisionBuilder::InsertNodes() {
+  // TODO(user): Add support for making node unperformed.
   AdjustablePriorityQueue<NodeEntry> priority_queue;
   std::vector<NodeEntries> position_to_node_entries;
   InitializePositions(&priority_queue, &position_to_node_entries);
@@ -1682,6 +1662,15 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
     if (Contains(pickup) || Contains(delivery)) {
       continue;
     }
+    // Add insertion entry making pair unperformed.
+    const int64 pickup_penalty = GetUnperformedValue(pickup);
+    const int64 delivery_penalty = GetUnperformedValue(delivery);
+    if (pickup_penalty != kint64max && delivery_penalty != kint64max) {
+      PairEntry* const entry = new PairEntry(pickup, -1, delivery, -1, -1);
+      entry->set_value(pickup_penalty + delivery_penalty);
+      priority_queue->Add(entry);
+    }
+    // Add all other insertion entries with pair performed.
     std::vector<std::pair<std::pair<int64, int>, std::pair<int64, int64>>> valued_positions;
     for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
       std::vector<ValuedPosition> valued_pickup_positions;
@@ -1916,8 +1905,12 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::DeletePairEntry(
     std::vector<PairEntries>* pickup_to_entries,
     std::vector<PairEntries>* delivery_to_entries) {
   priority_queue->Remove(entry);
-  pickup_to_entries->at(entry->pickup_insert_after()).erase(entry);
-  delivery_to_entries->at(entry->delivery_insert_after()).erase(entry);
+  if (entry->pickup_insert_after() != -1) {
+    pickup_to_entries->at(entry->pickup_insert_after()).erase(entry);
+  }
+  if (entry->delivery_insert_after() != -1) {
+    delivery_to_entries->at(entry->delivery_insert_after()).erase(entry);
+  }
   delete entry;
 }
 
@@ -2018,13 +2011,14 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::DeleteNodeEntry(
 }
 
 // LocalCheapestInsertionFilteredDecisionBuilder
-
+// TODO(user): Add support for penalty costs.
 LocalCheapestInsertionFilteredDecisionBuilder::
     LocalCheapestInsertionFilteredDecisionBuilder(
         RoutingModel* model,
         ResultCallback3<int64, int64, int64, int64>* evaluator,
         const std::vector<LocalSearchFilter*>& filters)
-    : CheapestInsertionFilteredDecisionBuilder(model, evaluator, filters) {}
+    : CheapestInsertionFilteredDecisionBuilder(
+        model, evaluator, nullptr, filters) {}
 
 bool LocalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
   if (!InitializeRoutes()) {

@@ -2043,70 +2043,64 @@ LocalSearchOperator* Solver::MakeOperator(
 }
 
 namespace {
-// Abstract class for Local Search Operation. It is passed to Local Search
-// Filter.
+// Classes for Local Search Operation used in Local Search filters.
 
-class LSOperation {
+class SumOperation {
  public:
-  LSOperation() {}
-  virtual ~LSOperation() {}
-  virtual void Init() = 0;
-  virtual void Update(int64 update) = 0;
-  virtual void Remove(int64 remove) = 0;
-  virtual int64 value() = 0;
-  virtual void set_value(int64 new_value) = 0;
-};
-
-class SumOperation : public LSOperation {
- public:
-  virtual void Init() { value_ = 0; }
-  virtual void Update(int64 update) { value_ = CapAdd(value_, update); }
-  virtual void Remove(int64 remove) { value_ = CapSub(value_, remove); }
-  virtual int64 value() { return value_; }
-  virtual void set_value(int64 new_value) { value_ = new_value; }
+  SumOperation() : value_(0) {}
+  void Init() { value_ = 0; }
+  void Update(int64 update) { value_ = CapAdd(value_, update); }
+  void Remove(int64 remove) { value_ = CapSub(value_, remove); }
+  int64 value() const { return value_; }
+  void set_value(int64 new_value) { value_ = new_value; }
 
  private:
   int64 value_;
 };
 
-class ProductOperation : public LSOperation {
+class ProductOperation {
  public:
-  virtual void Init() { value_ = 1; }
-  virtual void Update(int64 update) { value_ *= update; }
-  virtual void Remove(int64 remove) {
+  ProductOperation() : value_(1) {}
+  void Init() { value_ = 1; }
+  void Update(int64 update) { value_ *= update; }
+  void Remove(int64 remove) {
     if (remove != 0) {
       value_ /= remove;
     }
   }
-  virtual int64 value() { return value_; }
-  virtual void set_value(int64 new_value) { value_ = new_value; }
+  int64 value() const { return value_; }
+  void set_value(int64 new_value) { value_ = new_value; }
 
  private:
   int64 value_;
 };
 
-class MaxMinOperation : public LSOperation {
+class MinOperation {
  public:
-  explicit MaxMinOperation(bool max) : max_(max) {}
-  virtual void Init() { values_set_.clear(); }
-  virtual void Update(int64 update) { values_set_.insert(update); }
-  virtual void Remove(int64 remove) { values_set_.erase(remove); }
-  virtual int64 value() {
-    if (!values_set_.empty()) {
-      if (max_) {
-        return *values_set_.rbegin();
-      } else {
-        return *values_set_.begin();
-      }
-    } else {
-      return 0;
-    }
+  void Init() { values_set_.clear(); }
+  void Update(int64 update) { values_set_.insert(update); }
+  void Remove(int64 remove) { values_set_.erase(remove); }
+  int64 value() const {
+    return (!values_set_.empty()) ? *values_set_.begin() : 0;
   }
-  virtual void set_value(int64 new_value) {}
+  void set_value(int64 new_value) {}
 
  private:
   std::set<int64> values_set_;
-  bool max_;
+};
+
+class MaxOperation {
+ public:
+  void Init() { values_set_.clear(); }
+  void Update(int64 update) { values_set_.insert(update); }
+  void Remove(int64 remove) { values_set_.erase(remove); }
+  int64 value() const {
+    return (!values_set_.empty()) ? *values_set_.rbegin() : 0;
+  }
+  void set_value(int64 new_value) {}
+
+ private:
+  std::set<int64> values_set_;
 };
 
 // ----- Variable domain filter -----
@@ -2143,15 +2137,20 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 
 // ----- IntVarLocalSearchFilter -----
 
+const int IntVarLocalSearchFilter::kUnassigned = -1;
+
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(const std::vector<IntVar*>& vars) {
-  var_to_index_.set_empty_key(nullptr);
   AddVars(vars);
 }
 
 void IntVarLocalSearchFilter::AddVars(const std::vector<IntVar*>& vars) {
   if (!vars.empty()) {
     for (int i = 0; i < vars.size(); ++i) {
-      var_to_index_[vars[i]] = i + vars_.size();
+      const int index = vars[i]->index();
+      if (index >= var_index_to_index_.size()) {
+        var_index_to_index_.resize(index + 1, kUnassigned);
+      }
+      var_index_to_index_[index] = i + vars_.size();
     }
     vars_.insert(vars_.end(), vars.begin(), vars.end());
     values_.resize(vars_.size(), /*junk*/ 0);
@@ -2204,14 +2203,83 @@ void IntVarLocalSearchFilter::SynchronizeOnAssignment(
 // can be represented by any variable.
 
 namespace {
+template <typename Operator>
 class ObjectiveFilter : public IntVarLocalSearchFilter {
  public:
   ObjectiveFilter(const std::vector<IntVar*>& vars,
                   Callback1<int64>* delta_objective_callback,
                   const IntVar* const objective,
-                  Solver::LocalSearchFilterBound filter_enum, LSOperation* op);
-  virtual ~ObjectiveFilter();
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
+                  Solver::LocalSearchFilterBound filter_enum)
+      : IntVarLocalSearchFilter(vars),
+        primary_vars_size_(vars.size()),
+        cache_(new int64[vars.size()]),
+        delta_cache_(new int64[vars.size()]),
+        delta_objective_callback_(delta_objective_callback),
+        objective_(objective),
+        filter_enum_(filter_enum),
+        op_(),
+        old_value_(0),
+        old_delta_value_(0),
+        incremental_(false) {
+    for (int i = 0; i < Size(); ++i) {
+      cache_[i] = 0;
+      delta_cache_[i] = 0;
+    }
+    op_.Init();
+    old_value_ = op_.value();
+  }
+  virtual ~ObjectiveFilter() {
+    delete[] cache_;
+    delete[] delta_cache_;
+  }
+  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta) {
+    if (delta == nullptr) {
+      return false;
+    }
+    int64 value = 0;
+    if (!deltadelta->Empty()) {
+      if (!incremental_) {
+        value = Evaluate(delta, old_value_, cache_, true);
+      } else {
+        value = Evaluate(deltadelta, old_delta_value_, delta_cache_, true);
+      }
+      incremental_ = true;
+    } else {
+      if (incremental_) {
+        for (int i = 0; i < primary_vars_size_; ++i) {
+          delta_cache_[i] = cache_[i];
+        }
+        old_delta_value_ = old_value_;
+      }
+      incremental_ = false;
+      value = Evaluate(delta, old_value_, cache_, false);
+    }
+    old_delta_value_ = value;
+    int64 var_min = objective_->Min();
+    int64 var_max = objective_->Max();
+    if (delta->Objective() == objective_) {
+      var_min = std::max(var_min, delta->ObjectiveMin());
+      var_max = std::min(var_max, delta->ObjectiveMax());
+    }
+    if (delta_objective_callback_ != nullptr) {
+      delta_objective_callback_->Run(value);
+    }
+    switch (filter_enum_) {
+      case Solver::LE: {
+        return value <= var_max;
+      }
+      case Solver::GE: {
+        return value >= var_min;
+      }
+      case Solver::EQ: {
+        return value <= var_max && value >= var_min;
+      }
+      default: {
+        LOG(ERROR) << "Unknown local search filter enum value";
+        return false;
+      }
+    }
+  }
   virtual int64 SynchronizedElementValue(int64 index) = 0;
   virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
                                     int index, int* container_index,
@@ -2227,112 +2295,31 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   std::unique_ptr<Callback1<int64> > delta_objective_callback_;
   const IntVar* const objective_;
   Solver::LocalSearchFilterBound filter_enum_;
-  std::unique_ptr<LSOperation> op_;
+  Operator op_;
   int64 old_value_;
   int64 old_delta_value_;
   bool incremental_;
 
  private:
-  virtual void OnSynchronize(const Assignment* delta);
-  int64 Evaluate(const Assignment* delta, int64 current_value,
-                 const int64* const out_values, bool cache_delta_values);
-};
-
-ObjectiveFilter::ObjectiveFilter(const std::vector<IntVar*>& vars,
-                                 Callback1<int64>* delta_objective_callback,
-                                 const IntVar* const objective,
-                                 Solver::LocalSearchFilterBound filter_enum,
-                                 LSOperation* op)
-    : IntVarLocalSearchFilter(vars),
-      primary_vars_size_(vars.size()),
-      cache_(new int64[vars.size()]),
-      delta_cache_(new int64[vars.size()]),
-      delta_objective_callback_(delta_objective_callback),
-      objective_(objective),
-      filter_enum_(filter_enum),
-      op_(op),
-      old_value_(0),
-      old_delta_value_(0),
-      incremental_(false) {
-  CHECK(op_ != nullptr);
-  for (int i = 0; i < Size(); ++i) {
-    cache_[i] = 0;
-    delta_cache_[i] = 0;
-  }
-  op_->Init();
-  old_value_ = op_->value();
-}
-
-ObjectiveFilter::~ObjectiveFilter() {
-  delete[] cache_;
-  delete[] delta_cache_;
-}
-
-bool ObjectiveFilter::Accept(const Assignment* delta,
-                             const Assignment* deltadelta) {
-  if (delta == nullptr) {
-    return false;
-  }
-  int64 value = 0;
-  if (!deltadelta->Empty()) {
-    if (!incremental_) {
-      value = Evaluate(delta, old_value_, cache_, true);
-    } else {
-      value = Evaluate(deltadelta, old_delta_value_, delta_cache_, true);
-    }
-    incremental_ = true;
-  } else {
-    if (incremental_) {
-      for (int i = 0; i < primary_vars_size_; ++i) {
-        delta_cache_[i] = cache_[i];
-      }
-      old_delta_value_ = old_value_;
-    }
-    incremental_ = false;
-    value = Evaluate(delta, old_value_, cache_, false);
-  }
-  old_delta_value_ = value;
-  int64 var_min = objective_->Min();
-  int64 var_max = objective_->Max();
-  if (delta->Objective() == objective_) {
-    var_min = std::max(var_min, delta->ObjectiveMin());
-    var_max = std::min(var_max, delta->ObjectiveMax());
-  }
-  if (delta_objective_callback_ != nullptr) {
-    delta_objective_callback_->Run(value);
-  }
-  switch (filter_enum_) {
-    case Solver::LE: { return value <= var_max; }
-    case Solver::GE: { return value >= var_min; }
-    case Solver::EQ: { return value <= var_max && value >= var_min; }
-    default: {
-      LOG(ERROR) << "Unknown local search filter enum value";
-      return false;
-    }
-  }
-}
-
-void ObjectiveFilter::OnSynchronize(const Assignment* delta) {
-  op_->Init();
+  virtual void OnSynchronize(const Assignment* delta) {
+    op_.Init();
   for (int i = 0; i < primary_vars_size_; ++i) {
     const int64 obj_value = SynchronizedElementValue(i);
     cache_[i] = obj_value;
     delta_cache_[i] = obj_value;
-    op_->Update(obj_value);
+    op_.Update(obj_value);
   }
-  old_value_ = op_->value();
+  old_value_ = op_.value();
   old_delta_value_ = old_value_;
   incremental_ = false;
   if (delta_objective_callback_ != nullptr) {
-    delta_objective_callback_->Run(op_->value());
+    delta_objective_callback_->Run(op_.value());
   }
 }
-
-int64 ObjectiveFilter::Evaluate(const Assignment* delta, int64 current_value,
-                                const int64* const out_values,
-                                bool cache_delta_values) {
+int64 Evaluate(const Assignment* delta, int64 current_value,
+               const int64* const out_values, bool cache_delta_values) {
   if (current_value == kint64max) return current_value;
-  op_->set_value(current_value);
+  op_.set_value(current_value);
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int size = container.Size();
   for (int i = 0; i < size; ++i) {
@@ -2340,175 +2327,177 @@ int64 ObjectiveFilter::Evaluate(const Assignment* delta, int64 current_value,
     IntVar* const var = new_element.Var();
     int64 index = -1;
     if (FindIndex(var, &index) && index < primary_vars_size_) {
-      op_->Remove(out_values[index]);
+      op_.Remove(out_values[index]);
       int64 obj_value = 0LL;
       if (EvaluateElementValue(container, index, &i, &obj_value)) {
-        op_->Update(obj_value);
+        op_.Update(obj_value);
         if (cache_delta_values) {
           delta_cache_[index] = obj_value;
         }
       }
     }
   }
-  return op_->value();
+  return op_.value();
 }
+};
 
-class BinaryObjectiveFilter : public ObjectiveFilter {
+template <typename Operator>
+class BinaryObjectiveFilter : public ObjectiveFilter<Operator> {
  public:
   BinaryObjectiveFilter(const std::vector<IntVar*>& vars,
-                        Solver::IndexEvaluator2* values,
+                        Solver::IndexEvaluator2* value_evaluator,
                         Callback1<int64>* delta_objective_callback,
                         const IntVar* const objective,
-                        Solver::LocalSearchFilterBound filter_enum,
-                        LSOperation* op);
+                        Solver::LocalSearchFilterBound filter_enum)
+      : ObjectiveFilter<Operator>(vars, delta_objective_callback, objective,
+                                  filter_enum),
+        value_evaluator_(value_evaluator) {
+    value_evaluator_->CheckIsRepeatable();
+  }
   virtual ~BinaryObjectiveFilter() {}
-  virtual int64 SynchronizedElementValue(int64 index);
+  virtual int64 SynchronizedElementValue(int64 index) {
+    return IntVarLocalSearchFilter::IsVarSynced(index)
+               ? value_evaluator_->Run(index,
+                                       IntVarLocalSearchFilter::Value(index))
+               : 0;
+  }
   virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
                                     int index, int* container_index,
-                                    int64* obj_value);
+                                    int64* obj_value) {
+    const IntVarElement& element = container.Element(*container_index);
+    if (element.Activated()) {
+      *obj_value = value_evaluator_->Run(index, element.Value());
+      return true;
+    } else {
+      const IntVar* var = element.Var();
+      if (var->Bound()) {
+        *obj_value = value_evaluator_->Run(index, var->Min());
+        return true;
+      }
+    }
+    return false;
+  }
 
  private:
   std::unique_ptr<Solver::IndexEvaluator2> value_evaluator_;
 };
 
-BinaryObjectiveFilter::BinaryObjectiveFilter(
-    const std::vector<IntVar*>& vars, Solver::IndexEvaluator2* value_evaluator,
-    Callback1<int64>* delta_objective_callback, const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum, LSOperation* op)
-    : ObjectiveFilter(vars, delta_objective_callback, objective, filter_enum,
-                      op),
-      value_evaluator_(value_evaluator) {
-  value_evaluator_->CheckIsRepeatable();
-}
-
-int64 BinaryObjectiveFilter::SynchronizedElementValue(int64 index) {
-  return IsVarSynced(index) ? value_evaluator_->Run(index, Value(index)) : 0;
-}
-
-bool BinaryObjectiveFilter::EvaluateElementValue(
-    const Assignment::IntContainer& container, int index, int* container_index,
-    int64* obj_value) {
-  const IntVarElement& element = container.Element(*container_index);
-  if (element.Activated()) {
-    *obj_value = value_evaluator_->Run(index, element.Value());
-    return true;
-  } else {
-    const IntVar* var = element.Var();
-    if (var->Bound()) {
-      *obj_value = value_evaluator_->Run(index, var->Min());
-      return true;
-    }
-  }
-  return false;
-}
-
-class TernaryObjectiveFilter : public ObjectiveFilter {
+template <typename Operator>
+class TernaryObjectiveFilter : public ObjectiveFilter<Operator> {
  public:
   TernaryObjectiveFilter(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
                          Solver::IndexEvaluator3* value_evaluator,
                          Callback1<int64>* delta_objective_callback,
                          const IntVar* const objective,
-                         Solver::LocalSearchFilterBound filter_enum,
-                         LSOperation* op);
+                         Solver::LocalSearchFilterBound filter_enum)
+      : ObjectiveFilter<Operator>(vars, delta_objective_callback, objective,
+                                  filter_enum),
+        secondary_vars_offset_(vars.size()),
+        value_evaluator_(value_evaluator) {
+    value_evaluator_->CheckIsRepeatable();
+    IntVarLocalSearchFilter::AddVars(secondary_vars);
+    CHECK_GE(IntVarLocalSearchFilter::Size(), 0);
+  }
   virtual ~TernaryObjectiveFilter() {}
-  virtual int64 SynchronizedElementValue(int64 index);
+  virtual int64 SynchronizedElementValue(int64 index) {
+    DCHECK_LT(index, secondary_vars_offset_);
+    return IntVarLocalSearchFilter::IsVarSynced(index)
+               ? value_evaluator_->Run(index,
+                                       IntVarLocalSearchFilter::Value(index),
+                                       IntVarLocalSearchFilter::Value(
+                                           index + secondary_vars_offset_))
+               : 0;
+  }
   bool EvaluateElementValue(const Assignment::IntContainer& container,
-                            int index, int* container_index, int64* obj_value);
+                            int index, int* container_index, int64* obj_value) {
+    DCHECK_LT(index, secondary_vars_offset_);
+    *obj_value = 0LL;
+    const IntVarElement& element = container.Element(*container_index);
+    const IntVar* secondary_var =
+        IntVarLocalSearchFilter::Var(index + secondary_vars_offset_);
+    if (element.Activated()) {
+      const int64 value = element.Value();
+      int hint_index = *container_index + 1;
+      if (hint_index < container.Size() &&
+          secondary_var == container.Element(hint_index).Var()) {
+        *obj_value = value_evaluator_->Run(
+            index, value, container.Element(hint_index).Value());
+        *container_index = hint_index;
+      } else {
+        *obj_value = value_evaluator_->Run(
+            index, value, container.Element(secondary_var).Value());
+      }
+      return true;
+    } else {
+      const IntVar* var = element.Var();
+      if (var->Bound() && secondary_var->Bound()) {
+        *obj_value =
+            value_evaluator_->Run(index, var->Min(), secondary_var->Min());
+        return true;
+      }
+    }
+    return false;
+  }
 
  private:
   int secondary_vars_offset_;
   std::unique_ptr<Solver::IndexEvaluator3> value_evaluator_;
 };
-
-TernaryObjectiveFilter::TernaryObjectiveFilter(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3* value_evaluator,
-    Callback1<int64>* delta_objective_callback, const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum, LSOperation* op)
-    : ObjectiveFilter(vars, delta_objective_callback, objective, filter_enum,
-                      op),
-      secondary_vars_offset_(vars.size()),
-      value_evaluator_(value_evaluator) {
-  value_evaluator_->CheckIsRepeatable();
-  AddVars(secondary_vars);
-  CHECK_GE(Size(), 0);
-}
-
-int64 TernaryObjectiveFilter::SynchronizedElementValue(int64 index) {
-  DCHECK_LT(index, secondary_vars_offset_);
-  return IsVarSynced(index)
-             ? value_evaluator_->Run(index, Value(index),
-                                     Value(index + secondary_vars_offset_))
-             : 0;
-}
-
-bool TernaryObjectiveFilter::EvaluateElementValue(
-    const Assignment::IntContainer& container, int index, int* container_index,
-    int64* obj_value) {
-  DCHECK_LT(index, secondary_vars_offset_);
-  *obj_value = 0LL;
-  const IntVarElement& element = container.Element(*container_index);
-  const IntVar* secondary_var = Var(index + secondary_vars_offset_);
-  if (element.Activated()) {
-    const int64 value = element.Value();
-    int hint_index = *container_index + 1;
-    if (hint_index < container.Size() &&
-        secondary_var == container.Element(hint_index).Var()) {
-      *obj_value = value_evaluator_->Run(index, value,
-                                         container.Element(hint_index).Value());
-      *container_index = hint_index;
-    } else {
-      *obj_value = value_evaluator_->Run(
-          index, value, container.Element(secondary_var).Value());
-    }
-    return true;
-  } else {
-    const IntVar* var = element.Var();
-    if (var->Bound() && secondary_var->Bound()) {
-      *obj_value =
-          value_evaluator_->Run(index, var->Min(), secondary_var->Min());
-      return true;
-    }
-  }
-  return false;
-}
+}  // namespace
 
 // ---- Local search filter factory ----
 
-LSOperation* OperationFromEnum(Solver::LocalSearchOperation op_enum) {
-  LSOperation* operation = nullptr;
-  switch (op_enum) {
-    case Solver::SUM: {
-      operation = new SumOperation();
-      break;
-    }
-    case Solver::PROD: {
-      operation = new ProductOperation();
-      break;
-    }
-    case Solver::MAX: {
-      operation = new MaxMinOperation(true);
-      break;
-    }
-    case Solver::MIN: {
-      operation = new MaxMinOperation(false);
-      break;
-    }
-    default:
-      LOG(FATAL) << "Unknown operator " << op_enum;
-  }
-  return operation;
-}
-}  // namespace
+#define ReturnObjectiveFilter5(Filter, op_enum, arg0, arg1, arg2, arg3, arg4)  \
+  switch (op_enum) {                                                           \
+    case Solver::SUM: {                                                        \
+      return RevAlloc(new Filter<SumOperation>(arg0, arg1, arg2, arg3, arg4)); \
+    }                                                                          \
+    case Solver::PROD: {                                                       \
+      return RevAlloc(                                                         \
+          new Filter<ProductOperation>(arg0, arg1, arg2, arg3, arg4));         \
+    }                                                                          \
+    case Solver::MAX: {                                                        \
+      return RevAlloc(new Filter<MaxOperation>(arg0, arg1, arg2, arg3, arg4)); \
+    }                                                                          \
+    case Solver::MIN: {                                                        \
+      return RevAlloc(new Filter<MinOperation>(arg0, arg1, arg2, arg3, arg4)); \
+    }                                                                          \
+    default:                                                                   \
+      LOG(FATAL) << "Unknown operator " << op_enum;                            \
+  }                                                                            \
+  return nullptr;
+
+#define ReturnObjectiveFilter6(Filter, op_enum, arg0, arg1, arg2, arg3, arg4, \
+                               arg5)                                          \
+  switch (op_enum) {                                                          \
+    case Solver::SUM: {                                                       \
+      return RevAlloc(                                                        \
+          new Filter<SumOperation>(arg0, arg1, arg2, arg3, arg4, arg5));      \
+    }                                                                         \
+    case Solver::PROD: {                                                      \
+      return RevAlloc(                                                        \
+          new Filter<ProductOperation>(arg0, arg1, arg2, arg3, arg4, arg5));  \
+    }                                                                         \
+    case Solver::MAX: {                                                       \
+      return RevAlloc(                                                        \
+          new Filter<MaxOperation>(arg0, arg1, arg2, arg3, arg4, arg5));      \
+    }                                                                         \
+    case Solver::MIN: {                                                       \
+      return RevAlloc(                                                        \
+          new Filter<MinOperation>(arg0, arg1, arg2, arg3, arg4, arg5));      \
+    }                                                                         \
+    default:                                                                  \
+      LOG(FATAL) << "Unknown operator " << op_enum;                           \
+  }                                                                           \
+  return nullptr;
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator2* const values,
     IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new BinaryObjectiveFilter(vars, values, nullptr, objective,
-                                            filter_enum,
-                                            OperationFromEnum(op_enum)));
+  ReturnObjectiveFilter5(BinaryObjectiveFilter, op_enum, vars, values, nullptr,
+                         objective, filter_enum);
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
@@ -2516,9 +2505,8 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     Callback1<int64>* delta_objective_callback, IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new BinaryObjectiveFilter(
-      vars, values, delta_objective_callback, objective, filter_enum,
-      OperationFromEnum(op_enum)));
+  ReturnObjectiveFilter5(BinaryObjectiveFilter, op_enum, vars, values,
+                         delta_objective_callback, objective, filter_enum);
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
@@ -2526,9 +2514,8 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     Solver::IndexEvaluator3* const values, IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(vars, secondary_vars, values,
-                                             nullptr, objective, filter_enum,
-                                             OperationFromEnum(op_enum)));
+  ReturnObjectiveFilter6(TernaryObjectiveFilter, op_enum, vars, secondary_vars,
+                         values, nullptr, objective, filter_enum);
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
@@ -2537,10 +2524,12 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     Callback1<int64>* delta_objective_callback, IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(
-      vars, secondary_vars, values, delta_objective_callback, objective,
-      filter_enum, OperationFromEnum(op_enum)));
+  ReturnObjectiveFilter6(TernaryObjectiveFilter, op_enum, vars, secondary_vars,
+                         values, delta_objective_callback, objective,
+                         filter_enum);
 }
+#undef ReturnObjectiveFilter6
+#undef ReturnObjectiveFilter5
 
 // ----- Finds a neighbor of the assignment passed -----
 

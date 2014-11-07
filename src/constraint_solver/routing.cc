@@ -436,6 +436,7 @@ class MakePairActiveOperator : public PathOperator {
         inactive_pair_(0),
         pairs_(pairs) {}
   virtual ~MakePairActiveOperator() {}
+  virtual std::string DebugString() const { return "MakePairActive"; }
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
 
@@ -453,6 +454,9 @@ class MakePairActiveOperator : public PathOperator {
       return BaseNode(base_index - 1);
     }
   }
+  // Required to ensure that after synchronization the operator is in a state
+  // compatible with GetBaseNodeRestartPosition.
+  virtual bool RestartAtPathStartOnSynchronize() { return true; }
 
  private:
   virtual void OnNodeInitialization();
@@ -506,15 +510,13 @@ LocalSearchOperator* MakePairActive(
       vars, secondary_vars, start_empty_path_class, pairs));
 }
 
-// Operator which moves a pair of nodes to another position.
+// Operator which moves a pair of nodes to another position where the first
+// node of the pair must be before the second node on the same path.
 // Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
 // first and last nodes of the path and can therefore not be moved, and (A, B)
 // is a pair of nodes):
 //   1 -> [A] ->  2  -> [B] -> 3
 //   1 ->  2  -> [A] -> [B] -> 3
-//   1 -> [B] -> [A] ->  2  -> 3
-//   1 -> [B] ->  2  -> [A] -> 3
-//   1 ->  2  -> [B] -> [A] -> 3
 class PairRelocateOperator : public PathOperator {
  public:
   PairRelocateOperator(const std::vector<IntVar*>& vars,
@@ -545,20 +547,14 @@ class PairRelocateOperator : public PathOperator {
 
  protected:
   virtual bool OnSamePathAsPreviousBase(int64 base_index) {
-    // Base node of index 0 and its sibling are the pair of nodes to move.
-    // They are being moved after base nodes index 1 and 2 which must be on the
-    // same path.
-    return base_index == 2;
+    // Both destination nodes must be on the same path.
+    return base_index == kPairSecondNodeDestination;
   }
   virtual int64 GetBaseNodeRestartPosition(int base_index) {
-    // Base node 2 must be after base node 1 if they are both on the same path
-    // and if the operator is about to move a "second" node (second node in a
-    // node pair, ie. a delivery in a pickup and delivery pair).
-    DCHECK_LT(BaseNode(0), is_first_.size());
-    const bool moving_first = is_first_[BaseNode(0)];
-    if (!moving_first && base_index == 2 &&
-        StartNode(base_index) == StartNode(base_index - 1)) {
-      return BaseNode(base_index - 1);
+    // Destination node of the second node of a pair must be after the
+    // destination node of the first node of a pair.
+    if (base_index == kPairSecondNodeDestination) {
+      return BaseNode(kPairFirstNodeDestination);
     } else {
       return StartNode(base_index);
     }
@@ -571,24 +567,33 @@ class PairRelocateOperator : public PathOperator {
   std::vector<int> pairs_;
   std::vector<int> prevs_;
   std::vector<bool> is_first_;
+  static const int kPairFirstNode = 0;
+  static const int kPairFirstNodeDestination = 1;
+  static const int kPairSecondNodeDestination = 2;
 };
 
 bool PairRelocateOperator::MakeNeighbor() {
   DCHECK_EQ(StartNode(1), StartNode(2));
-  const int64 prev = prevs_[BaseNode(0)];
+  const int64 first_pair_node = BaseNode(kPairFirstNode);
+  const int64 prev = prevs_[first_pair_node];
   if (prev < 0) {
     return false;
   }
-  const int sibling = BaseNode(0) < pairs_.size() ? pairs_[BaseNode(0)] : -1;
+  const int sibling =
+      first_pair_node < pairs_.size() ? pairs_[first_pair_node] : -1;
   if (sibling < 0) {
+    return false;
+  }
+  if (!is_first_[first_pair_node]) {
     return false;
   }
   const int64 prev_sibling = prevs_[sibling];
   if (prev_sibling < 0) {
     return false;
   }
-  return MoveChain(prev_sibling, sibling, BaseNode(1)) &&
-         MoveChain(prev, BaseNode(0), BaseNode(2));
+  return
+      MoveChain(prev_sibling, sibling, BaseNode(kPairSecondNodeDestination)) &&
+      MoveChain(prev, first_pair_node, BaseNode(kPairFirstNodeDestination));
 }
 
 void PairRelocateOperator::OnNodeInitialization() {
@@ -1567,9 +1572,17 @@ void RoutingModel::CloseModel() {
     solver_->AddConstraint(solver_->MakeEquality(vehicle_vars_[ends_[i]],
                                                  solver_->MakeIntConst(i)));
   }
-  std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
-  solver_->AddConstraint(solver_->MakeDelayedPathCumul(
-      nexts_, active_, vehicle_vars_, zero_transit));
+
+  // If there is only one vehicle in the model the vehicle variables will have
+  // a maximum domain of [-1, 0]. If a node is performed/active then its vehicle
+  // variable will be reduced to [0] making the path-cumul constraint below
+  // useless. If the node is unperformed/unactive then its vehicle variable will
+  // be reduced to [-1] in any case.
+  if (vehicles_ > 1) {
+    std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
+    solver_->AddConstraint(solver_->MakeDelayedPathCumul(
+        nexts_, active_, vehicle_vars_, zero_transit));
+  }
 
   // Add constraints to bind vehicle_vars_[i] to -1 in case that node i is not
   // active.
@@ -1592,9 +1605,7 @@ void RoutingModel::CloseModel() {
     }
   }
 
-  // is_bound_to_end_ variables constraints.
-  solver_->AddConstraint(solver_->MakeDelayedPathCumul(
-      nexts_, active_, is_bound_to_end_, zero_transit));
+  // Constraining is_bound_to_end_ variables.
   for (const int64 end : ends_) {
     is_bound_to_end_[end]->SetValue(1);
   }
@@ -2445,31 +2456,33 @@ class FastOnePathBuilder : public DecisionBuilder {
     IntVar* const* nexts = model_->Nexts().data();
     // Need to allocate in a reversible way so that if restoring the assignment
     // fails, the assignment gets de-allocated.
-    Assignment* assignment = solver->MakeAssignment();
-    int64 next = FindCheapestValue(index, *assignment);
+    Assignment* const assignment = solver->MakeAssignment();
+    Assignment::IntContainer* const container =
+        assignment->MutableIntVarContainer();
+    int64 next = FindCheapestValue(index, *container);
     while (next >= 0) {
-      assignment->Add(nexts[index]);
-      assignment->SetValue(nexts[index], next);
+      container->Add(nexts[index]);
+      container->MutableElement(nexts[index])->SetValue(next);
       index = next;
       std::vector<int> alternates;
       model_->GetDisjunctionIndicesFromIndex(index, &alternates);
       for (const int alternate : alternates) {
         if (index != alternate) {
-          assignment->Add(nexts[alternate]);
-          assignment->SetValue(nexts[alternate], alternate);
+          container->Add(nexts[alternate]);
+          container->MutableElement(nexts[alternate])->SetValue(alternate);
         }
       }
-      next = FindCheapestValue(index, *assignment);
+      next = FindCheapestValue(index, *container);
     }
     // Make unassigned nexts loop to themselves.
     // TODO(user): Make finalization more robust, might have some next
     // variables non-instantiated.
     for (int index = 0; index < model_->Size(); ++index) {
       IntVar* const next = nexts[index];
-      if (!assignment->Contains(next)) {
-        assignment->Add(next);
+      if (!container->Contains(next)) {
+        container->Add(next);
         if (next->Contains(index)) {
-          assignment->SetValue(next, index);
+          container->MutableElement(next)->SetValue(index);
         }
       }
     }
@@ -2517,7 +2530,8 @@ class FastOnePathBuilder : public DecisionBuilder {
     return false;
   }
 
-  int64 FindCheapestValue(int index, const Assignment& assignment) const {
+  int64 FindCheapestValue(int index,
+                          const Assignment::IntContainer& container) const {
     IntVar* const* nexts = model_->Nexts().data();
     const int size = model_->Size();
     int64 best_evaluation = kint64max;
@@ -2527,7 +2541,7 @@ class FastOnePathBuilder : public DecisionBuilder {
       std::unique_ptr<IntVarIterator> it(next->MakeDomainIterator(false));
       for (const int64 value : InitAndGetValues(it.get())) {
         if (value != index &&
-            (value >= size || !assignment.Contains(nexts[value]))) {
+            (value >= size || !container.Contains(nexts[value]))) {
           const int64 evaluation = evaluator_->Run(index, value);
           if (evaluation <= best_evaluation) {
             best_evaluation = evaluation;
@@ -3328,6 +3342,14 @@ int64 RoutingModel::GetArcCostForFirstSolution(int64 i, int64 j) {
   // Return high cost if connecting to an end (or bound-to-end) node;
   // this is used in the cost-based first solution strategies to avoid closing
   // routes too soon.
+  if (!is_bound_to_end_ct_added_.Switched()) {
+    // Lazily adding path-cumul constraint propagating connection to route end,
+    // as it can be pretty costly in the general case.
+    std::vector<IntVar*> zero_transit(Size(), solver_->MakeIntConst(Zero()));
+    solver_->AddConstraint(solver_->MakeDelayedPathCumul(
+        nexts_, active_, is_bound_to_end_, zero_transit));
+    is_bound_to_end_ct_added_.Switch(solver_.get());
+  }
   if (is_bound_to_end_[j]->Min() == 1) return kint64max;
   // TODO(user): Take vehicle into account.
   return GetHomogeneousCost(i, j);
@@ -3438,12 +3460,17 @@ bool RoutingModel::ArcIsMoreConstrainedThanArc(int64 from, int64 to1,
   return to1 < to2;
 }
 
-int64 RoutingModel::UnperformedPenalty(int64 var_index) {
-  if (active_[var_index]->Min() == 1) return 0;  // Forced active.
+int64 RoutingModel::UnperformedPenalty(int64 var_index) const {
+  return UnperformedPenaltyOrValue(0, var_index);
+}
+
+int64 RoutingModel::UnperformedPenaltyOrValue(
+    int64 default_value, int64 var_index) const {
+  if (active_[var_index]->Min() == 1) return default_value;  // Forced active.
   DisjunctionIndex disjunction_index = kNoDisjunction;
   GetDisjunctionIndexFromVariableIndex(var_index, &disjunction_index);
-  if (disjunction_index == kNoDisjunction) return 0;
-  if (disjunctions_[disjunction_index].nodes.size() != 1) return 0;
+  if (disjunction_index == kNoDisjunction) return default_value;
+  if (disjunctions_[disjunction_index].nodes.size() != 1) return default_value;
   DCHECK_EQ(var_index, disjunctions_[disjunction_index].nodes[0]);
   // The disjunction penalty can't be kNoPenalty, otherwise we would have
   // caught it earlier (the node would be forced active).
@@ -3797,13 +3824,15 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
           MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
     }
     if (FLAGS_routing_use_vehicle_var_filter) {
-      feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+      filters_.push_back(MakeVehicleVarFilter(*this));
     }
     if (FLAGS_routing_use_path_cumul_filter) {
       // Must be added after NodeDisjunctionFilter and ObjectiveFilter.
       filters_.insert(filters_.end(), path_cumul_filters.begin(),
                       path_cumul_filters.end());
     }
+    filters_.insert(filters_.end(),
+                    extra_filters_.begin(), extra_filters_.end());
   }
   return filters_;
 }
@@ -3828,6 +3857,8 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
     if (FLAGS_routing_use_vehicle_var_filter) {
       feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
     }
+    feasibility_filters_.insert(feasibility_filters_.end(),
+                                extra_filters_.begin(), extra_filters_.end());
   }
   return feasibility_filters_;
 }
@@ -3951,6 +3982,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
           solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
               this,
               NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
+              NewPermanentCallback(this,
+                                   &RoutingModel::UnperformedPenaltyOrValue,
+                                   kint64max),
               GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_INSERTION] =
       solver_->Try(

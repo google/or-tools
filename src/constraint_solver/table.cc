@@ -870,8 +870,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if (mask) {
       const int start =
           std::max(first_active_.Value(), starts_[var_index][value_index]);
-      const int end =
-          std::min(ends_[var_index][value_index], last_active_.Value());
+      const int end = std::min(ends_[var_index][value_index], last_active_.Value());
       for (int offset = start; offset <= end; ++offset) {
         temp_mask_[offset] |= mask[offset];
       }
@@ -1154,7 +1153,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
       case 2: {
         ApplyMask(var_index, masks_[var_index][var->Min() - original_min] |
-                  masks_[var_index][var->Max() - original_min]);
+                                 masks_[var_index][var->Max() - original_min]);
         return;
       }
       default: {

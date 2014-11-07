@@ -25,6 +25,7 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/map_util.h"
+#include "base/stl_util.h"
 #include "base/mathutil.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -52,9 +53,10 @@ IntVar* IntExpr::VarWithName(const std::string& name) {
 
 // ---------- IntVar ----------
 
-IntVar::IntVar(Solver* const s) : IntExpr(s) {}
+IntVar::IntVar(Solver* const s) : IntExpr(s), index_(s->GetNewIntVarIndex()) {}
 
-IntVar::IntVar(Solver* const s, const std::string& name) : IntExpr(s) {
+IntVar::IntVar(Solver* const s, const std::string& name)
+    : IntExpr(s), index_(s->GetNewIntVarIndex()) {
   set_name(name);
 }
 
@@ -6432,7 +6434,7 @@ void RestoreBoolValue(IntVar* const var) {
 
 IntVar* Solver::MakeIntVar(int64 min, int64 max, const std::string& name) {
   if (min == max) {
-    return RevAlloc(new IntConst(this, min, name));
+    return MakeIntConst(min, name);
   }
   if (min == 0 && max == 1) {
     return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
@@ -6460,43 +6462,52 @@ IntVar* Solver::MakeBoolVar() {
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
   DCHECK(!values.empty());
-  const std::vector<int64> cleaned = SortedNoDuplicates(values);
-  if (cleaned.size() == 1) {
-    return RevAlloc(new IntConst(this, cleaned[0], name));
+  // Fast-track the case where we have a single value.
+  if (values.size() == 1) return MakeIntConst(values[0], name);
+  // Sort and remove duplicates.
+  std::vector<int64> unique_sorted_values = values;
+  STLSortAndRemoveDuplicates(&unique_sorted_values);
+  // Case when we have a single value, after clean-up.
+  if (unique_sorted_values.size() == 1) return MakeIntConst(values[0], name);
+  // Case when the values are a dense interval of integers.
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    return MakeIntVar(unique_sorted_values.front(), unique_sorted_values.back(),
+                      name);
   }
+  // Compute the GCD: if it's not 1, we can express the variable's domain as
+  // the product of the GCD and of a domain with smaller values.
   int64 gcd = 0;
-  for (int64 v : cleaned) {
-    if (v == 0) {
-      continue;
-    }
+  for (const int64 v : unique_sorted_values) {
     if (gcd == 0) {
       gcd = std::abs(v);
     } else {
-      gcd = MathUtil::GCD64(gcd, std::abs(v));
+      gcd = MathUtil::GCD64(gcd, std::abs(v));  // Supports v==0.
     }
     if (gcd == 1) {
-      break;
+      // If it's 1, though, we can't do anything special, so we
+      // immediately return a new DomainIntVar.
+      return RegisterIntVar(
+          RevAlloc(new DomainIntVar(this, unique_sorted_values, name)));
     }
   }
-  if (gcd == 1) {
-    if (cleaned.size() == cleaned.back() - cleaned.front() + 1) {
-      // cleaned is a continuous set of integers.
-      return MakeIntVar(cleaned.front(), cleaned.back(), name);
-    } else {
-      return RegisterIntVar(RevAlloc(new DomainIntVar(this, cleaned, name)));
-    }
+  DCHECK_GT(gcd, 1);
+  for (int64& v : unique_sorted_values) {
+    DCHECK_EQ(0, v % gcd);
+    v /= gcd;
+  }
+  const std::string new_name = name.empty() ? "" : "inner_" + name;
+  // Catch the case where the divided values are a dense set of integers.
+  IntVar* inner_intvar = nullptr;
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    inner_intvar = MakeIntVar(unique_sorted_values.front(),
+                              unique_sorted_values.back(), new_name);
   } else {
-    std::vector<int64> new_values;
-    new_values.reserve(values.size());
-    for (int64 v : cleaned) {
-      DCHECK_EQ(0, v % gcd);
-      new_values.push_back(v / gcd);
-    }
-    const std::string new_name = name.empty() ? "" : "inner_" + name;
-    IntVar* const inner =
-        RegisterIntVar(RevAlloc(new DomainIntVar(this, new_values, new_name)));
-    return MakeProd(inner, gcd)->Var();
+    inner_intvar = RegisterIntVar(
+        RevAlloc(new DomainIntVar(this, unique_sorted_values, new_name)));
   }
+  return MakeProd(inner_intvar, gcd)->Var();
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {

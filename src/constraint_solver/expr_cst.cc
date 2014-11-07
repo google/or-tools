@@ -24,6 +24,7 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/join.h"
+#include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
@@ -852,34 +853,45 @@ class BetweenCt : public Constraint {
   int64 max_;
   Demon* demon_;
 };
+
+int64 ExtractExprProductCoeff(IntExpr** expr) {
+  int64 prod = 1;
+  int64 coeff = 1;
+  while ((*expr)->solver()->IsProduct(*expr, expr, &coeff)) prod *= coeff;
+  return prod;
+}
 }  // namespace
 
-Constraint* Solver::MakeBetweenCt(IntExpr* const e, int64 l, int64 u) {
-  CHECK_EQ(this, e->solver());
+Constraint* Solver::MakeBetweenCt(IntExpr* e, int64 l, int64 u) {
+  DCHECK_EQ(this, e->solver());
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeFalseConstraint();
+    return MakeEquality(e, l);
+  }
   int64 emin = 0;
   int64 emax = 0;
   e->Range(&emin, &emax);
-  if (emax < l || emin > u) {
-    return MakeFalseConstraint();
-  }
-  if (emin < l || emax > u) {
-    IntExpr* sub = nullptr;
-    int64 coef = 1;
-    if (IsProduct(e, &sub, &coef)) {
-      if (coef < 0) {
-        const int64 tmp = l;
-        l = -u;
-        u = -tmp;
-        coef = -coef;
-      }
-      CHECK_NE(coef, 0);
-      CHECK_NE(coef, 1);
-      return MakeBetweenCt(sub, PosIntDivUp(l, coef), PosIntDivDown(u, coef));
-    } else {
-      return RevAlloc(new BetweenCt(this, e, l, u));
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeFalseConstraint();
+  if (emin >= l && emax <= u) return MakeTrueConstraint();
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeGreaterOrEqual(e, l);
+  if (emin >= l) return MakeLessOrEqual(e, u);
+  // Simplify the common factor, if any.
+  int64 coeff = ExtractExprProductCoeff(&e);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
     }
+    return MakeBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
   } else {
-    return MakeTrueConstraint();
+    // No further reduction is possible.
+    return RevAlloc(new BetweenCt(this, e, l, u));
   }
 }
 
@@ -958,34 +970,40 @@ class IsBetweenCt : public Constraint {
   Demon* demon_;
 };
 }  // namespace
-Constraint* Solver::MakeIsBetweenCt(IntExpr* const e, int64 l, int64 u,
+
+Constraint* Solver::MakeIsBetweenCt(IntExpr* e, int64 l, int64 u,
                                     IntVar* const b) {
   CHECK_EQ(this, e->solver());
   CHECK_EQ(this, b->solver());
-  if (e->Min() >= l && e->Max() <= u) {
-    return MakeEquality(b, 1);
-  } else if (e->Min() > u || e->Max() < l) {
-    return MakeEquality(b, Zero());
-  } else {
-    IntExpr* sub = nullptr;
-    int64 coef = 1;
-    if (IsProduct(e, &sub, &coef)) {
-      if (coef < 0) {
-        const int64 tmp = l;
-        l = -u;
-        u = -tmp;
-        coef = -coef;
-      }
-      CHECK_NE(coef, 0);
-      if (coef == 1) {
-        return RevAlloc(new IsBetweenCt(this, e, l, u, b));
-      } else {
-        return MakeIsBetweenCt(sub, PosIntDivUp(l, coef),
-                               PosIntDivDown(u, coef), b);
-      }
-    } else {
-      return RevAlloc(new IsBetweenCt(this, e, l, u, b));
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeEquality(b, Zero());
+    return MakeIsEqualCstCt(e, l, b);
+  }
+  int64 emin = 0;
+  int64 emax = 0;
+  e->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeEquality(b, Zero());
+  if (emin >= l && emax <= u) return MakeEquality(b, 1);
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeIsGreaterOrEqualCstCt(e, l, b);
+  if (emin >= l) return MakeIsLessOrEqualCstCt(e, u, b);
+  // Simplify the common factor, if any.
+  int64 coeff = ExtractExprProductCoeff(&e);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
     }
+    return MakeIsBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff),
+                           b);
+  } else {
+    // No further reduction is possible.
+    return RevAlloc(new IsBetweenCt(this, e, l, u, b));
   }
 }
 
@@ -1065,43 +1083,70 @@ class NotMemberCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeMemberCt(IntExpr* const expr,
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
                                  const std::vector<int64>& values) {
-  IntExpr* sub = nullptr;
-  int64 coef = 1;
-  if (IsProduct(expr, &sub, &coef) && coef != 0 && coef != 1) {
-    std::vector<int64> new_values;
-    new_values.reserve(values.size());
-    for (const int64 value : values) {
-      if (value % coef == 0) {
-        new_values.push_back(value / coef);
-      }
-    }
-    return MakeMemberCt(sub, new_values);
+  const int64 coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return std::find(values.begin(), values.end(), 0) == values.end()
+        ? MakeFalseConstraint()
+        : MakeTrueConstraint();
   }
-  std::vector<int64> sorted = SortedNoDuplicates(values);
-  if (IsIncreasingContiguous(sorted)) {
-    return MakeBetweenCt(expr, sorted.front(), sorted.back());
-  } else {
-    // Let's build the reverse vector.
-    if (expr->Max() - expr->Min() < 2 * values.size()) {
-      hash_set<int64> value_set(values.begin(), values.end());
-      std::vector<int64> remaining;
-      for (int64 value = expr->Min(); value <= expr->Max(); ++value) {
-        if (!ContainsKey(value_set, value)) {
-          remaining.push_back(value);
-        }
-      }
-      if (remaining.empty()) {
-        return MakeTrueConstraint();
-      } else if (remaining.size() == 1) {
-        return MakeNonEquality(expr, remaining.back());
-      } else if (remaining.size() < values.size()) {
-        return RevAlloc(new NotMemberCt(this, expr->Var(), remaining));
-      }
+  std::vector<int64> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64 v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
     }
-    return RevAlloc(new MemberCt(this, expr->Var(), sorted));
+    copied_values.resize(num_kept);
   }
+  // Filter out the values that are outside the [Min, Max] interval.
+  {
+    int num_kept = 0;
+    const int64 min = expr->Min();
+    const int64 max = expr->Max();
+    for (const int64 v : copied_values) {
+      if (v >= min && v <= max) copied_values[num_kept++] = v;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Catch singletons or empty value sets.
+  if (copied_values.empty()) return MakeFalseConstraint();
+  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
+  // Sort and remove duplicates.
+  STLSortAndRemoveDuplicates(&copied_values);
+  // Re-catch singletons.
+  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    // Note: MakeBetweenCt() has a fast-track for trivially true constraints.
+    return MakeBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // NotMemberCt. Catch that case here.
+  const int64 min = expr->Min();
+  const int64 max = expr->Max();
+  if (max - min < 2 * copied_values.size()) {
+    // Convert "copied_values" to list the values *not* allowed.
+    std::vector<bool> is_among_input_values(max - min + 1, false);
+    for (const int64 v : copied_values) is_among_input_values[v - min] = true;
+    copied_values.clear();
+    for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + min);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeNonEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use MemberCt. No further reduction is possible.
+  return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
 }
 
 Constraint* Solver::MakeMemberCt(IntExpr* const expr,
@@ -1234,6 +1279,7 @@ class IsMemberCt : public Constraint {
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
                             const std::vector<T>& values, IntVar* const boolvar) {
+  // TODO(user): optimize this by copying the code from MakeMemberCt.
   // Simplify and filter if expr is a product.
   IntExpr* sub = nullptr;
   int64 coef = 1;

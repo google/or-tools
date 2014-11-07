@@ -3246,6 +3246,7 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s, IntVar* objective,
       penalty_factor_(penalty_factor),
       incremental_(false) {
   if (!vars.empty()) {
+    // TODO(user): Remove scoped_array.
     assignment_.Add(vars_);
     current_penalized_values_.reset(new int64[vars_.size()]);
     delta_cache_.reset(new int64[vars_.size()]);

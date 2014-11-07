@@ -3022,6 +3022,10 @@ class Solver {
   std::string GetName(const PropagationBaseObject* object);
   void SetName(const PropagationBaseObject* object, const std::string& name);
 
+  // Variable indexing (note that indexing is not reversible).
+  // Returns a new index for an IntVar.
+  int GetNewIntVarIndex() { return num_int_vars_++; }
+
   // Internal.
   bool IsADifference(IntExpr* expr, IntExpr** const left,
                      IntExpr** const right);
@@ -3068,6 +3072,7 @@ class Solver {
   std::unique_ptr<Decision> fail_decision_;
   int constraint_index_;
   int additional_constraint_index_;
+  int num_int_vars_;
 
   // Support for model loading.
   hash_map<std::string, IntegerExpressionBuilder*> expression_builders_;
@@ -3993,7 +3998,11 @@ class IntVar : public IntExpr {
   virtual IntVar* IsGreaterOrEqual(int64 constant) = 0;
   virtual IntVar* IsLessOrEqual(int64 constant) = 0;
 
+  // Returns the index of the variable.
+  int index() const { return index_; }
+
  private:
+  const int index_;
   DISALLOW_COPY_AND_ASSIGN(IntVar);
 };
 
@@ -4463,7 +4472,11 @@ class IntVarElement : public AssignmentElement {
     min_ = var_->Min();
     max_ = var_->Max();
   }
-  void Restore() { var_->SetRange(min_, max_); }
+  void Restore() {
+    if (var_ != nullptr) {
+      var_->SetRange(min_, max_);
+    }
+  }
   void LoadFromProto(const IntVarAssignmentProto& int_var_assignment_proto);
   void WriteToProto(IntVarAssignmentProto* int_var_assignment_proto) const;
 

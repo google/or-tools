@@ -731,12 +731,4 @@ std::vector<int64> ToInt64Vector(const std::vector<int>& input) {
   }
   return result;
 }
-
-std::vector<int64> SortedNoDuplicates(const std::vector<int64>& input) {
-  std::vector<int64> result(input);
-  std::sort(result.begin(), result.end());
-  std::vector<int64>::iterator it = std::unique(result.begin(), result.end());
-  result.resize(std::distance(result.begin(), it));
-  return result;
-}
 }  // namespace operations_research
