@@ -1602,7 +1602,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cp tools/Makefile.cc temp/or-tools.$(PORT)/Makefile
 	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/or-tools.$(PORT)/lib
 ifeq ($(PLATFORM),MACOSX)
-	cp tools/install_libortools_mac.sh temp/or-tools.$(PORT)/lib
+	cp tools/install_libortools_mac.sh temp/or-tools.$(PORT)
 endif
 	cp examples/cpp/*.cc temp/or-tools.$(PORT)/examples
 	cp examples/cpp/*.h temp/or-tools.$(PORT)/examples
