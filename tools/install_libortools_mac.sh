@@ -5,4 +5,4 @@ export N=`pwd`/lib
 echo install library in path $N
 install_name_tool -id $N/libortools.dylib lib/libortools.dylib
 export P=`otool -L lib/libortools.dylib | grep -v ':' | grep libortools | cut -d '(' -f 1`
-echo the library was installed in $P
+echo the new path of the or-tools library is $P
