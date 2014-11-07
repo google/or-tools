@@ -14,12 +14,12 @@
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
 #define OR_TOOLS_BASE_THREADPOOL_H_
 
-#include <condition_variable>
+#include <condition_variable>  // NOLINT
 #include <list>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include <string>
 #include <vector>
-#include <thread>
+#include <thread>  // NOLINT
 
 #include "base/callback.h"
 

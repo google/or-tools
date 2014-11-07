@@ -227,7 +227,8 @@ class MergingPartition {
   // (a number in 0..K-1) of node #i. Parts will be sorted by their first node
   // (i.e. node 0 will always be in part 0; then the next node that isn't in
   // part 0 will be in part 1, and so on).
-  void FillEquivalenceClasses(std::vector<int>* node_equivalence_classes);
+  // Returns the number K of classes.
+  int FillEquivalenceClasses(std::vector<int>* node_equivalence_classes);
 
   // Dump all components, with nodes sorted within each part and parts
   // sorted lexicographically. Eg. "0 1 3 4 | 2 5 | 6 7 8".

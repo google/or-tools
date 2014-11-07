@@ -24,9 +24,7 @@ void RunWorker(void* data) {
 }
 
 ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
-    : num_workers_(num_workers),
-      waiting_to_finish_(false),
-      started_(false) {}
+    : num_workers_(num_workers), waiting_to_finish_(false), started_(false) {}
 
 ThreadPool::~ThreadPool() {
   if (started_) {
@@ -69,7 +67,7 @@ void ThreadPool::Add(Closure* const closure) {
   tasks_.push_back(closure);
   if (started_) {
     lock.unlock();
-    condition_.notify_one();
+    condition_.notify_all();
   }
 }
 }  // namespace operations_research

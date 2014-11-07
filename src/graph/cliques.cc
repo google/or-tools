@@ -122,7 +122,8 @@ void Search(ResultCallback2<bool, int, int>* const graph,
     if (nod > 1) {
       // Select a candidate disgraph to the fixed point
       start = input_size;
-      while (graph->Run(pivot, input_candidates[start])) {
+      while (start < input_candidate_size &&
+             graph->Run(pivot, input_candidates[start])) {
         start++;
       }
     }

@@ -66,7 +66,7 @@ def test_proto():
 
 
 def test_external_api():
-  solver = pywraplp.Solver('RunLinearExampleNaturalLanguageAPI',
+  solver = pywraplp.Solver('TestExternalAPI',
                            pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
   infinity = solver.Infinity()
   infinity2 = solver.infinity()

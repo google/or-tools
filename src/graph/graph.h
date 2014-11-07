@@ -78,29 +78,29 @@
 //   }
 //
 // Storing and using arc annotations:
-//   std::vector<int> weigths;
+//   std::vector<int> weights;
 //   for (...) {
 //     graph.AddArc(tail, head);
-//     weigths.push_back(arc_weight);
+//     weights.push_back(arc_weight);
 //   }
 //   ...
 //   for (const int arc : graph.OutgoingArcs(node)) {
-//     ... weigths[arc] ...;
+//     ... weights[arc] ...;
 //   }
 //
 // More efficient version:
 //   typedef StaticGraph<> Graph;
 //   Graph graph(num_nodes, arc_capacity);  // Optional, but help memory usage.
-//   std::vector<int> weigths;
-//   weigth.reserve(arc_capacity);  // Optional, but help memory usage.
+//   std::vector<int> weights;
+//   weights.reserve(arc_capacity);  // Optional, but help memory usage.
 //   for (...) {
 //     graph.AddArc(tail, head);
-//     weigths.push_back(arc_weight);
+//     weights.push_back(arc_weight);
 //   }
 //   ...
 //   std::vector<Graph::ArcIndex> permutation;
 //   graph.Build(&permutation);  // A static graph must be Build() before usage.
-//   Permute(permutation, &weigths);  // Build() may permute the arc index.
+//   Permute(permutation, &weights);  // Build() may permute the arc index.
 //   ...
 //
 // Encoding an undirected graph:
@@ -763,7 +763,6 @@ class SVector {
       CHECK(new_storage != NULL);
       size_t block_size = requested_block_size;
       if (block_size > 0) {
-        DCHECK_GE(block_size, requested_block_size);
         new_capacity = static_cast<int>(
             std::min(static_cast<size_t>(max_size()), block_size / (2 * sizeof(T))));
       }

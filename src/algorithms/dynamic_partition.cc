@@ -256,7 +256,7 @@ void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int>* nodes) {
   for (const int node : *nodes) tmp_part_bit_[GetRoot(node)] = false;
 }
 
-void MergingPartition::FillEquivalenceClasses(
+int MergingPartition::FillEquivalenceClasses(
     std::vector<int>* node_equivalence_classes) {
   node_equivalence_classes->assign(NumNodes(), -1);
   int num_roots = 0;
@@ -268,6 +268,7 @@ void MergingPartition::FillEquivalenceClasses(
     }
     (*node_equivalence_classes)[node] = (*node_equivalence_classes)[root];
   }
+  return num_roots;
 }
 
 std::string MergingPartition::DebugString() {

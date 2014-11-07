@@ -245,7 +245,7 @@ class PairPairInt64Hasher
   }
 };
 
-// The following class defines a hash function for std::pair<int, int64>.
+// The following class defines a hash function for std::pair<int64, int64>.
 class PairIntInt64Hasher : public stdext::hash_compare<std::pair<int, int64> > {
  public:
   size_t operator()(const std::pair<int, int64>& a) const {

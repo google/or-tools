@@ -62,6 +62,10 @@ DEFINE_string(params, "",
               "Parameters for the sat solver in a text format of the "
               "SatParameters proto, example: --params=use_conflicts:true.");
 
+DEFINE_bool(strict_validity, false,
+            "If true, stop if the given input is invalid (duplicate literals, "
+            "out of range, zero cofficients, etc.)");
+
 DEFINE_string(
     lower_bound, "",
     "If not empty, look for a solution with an objective value >= this bound.");
@@ -98,6 +102,8 @@ DEFINE_bool(use_symmetry, false,
 DEFINE_bool(presolve, false,
             "Only work on pure SAT problem. If true, presolve the problem.");
 
+DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
+
 
 DEFINE_bool(refine_core, false,
             "If true, turn on the unsat_proof parameters and if the problem is "
@@ -108,11 +114,15 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// Returns the scaled objective.
-double GetScaledObjective(const LinearBooleanProblem& problem,
-                          Coefficient objective) {
-  return objective.value() * problem.objective().scaling_factor() +
-         problem.objective().offset();
+// Returns a trivial best bound. The best bound corresponds to the lower bound
+// (resp. upper bound) in case of a minimization (resp. maximization) problem.
+double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
+  Coefficient best_bound(0);
+  const LinearObjective& objective = problem.objective();
+  for (const int64 value : objective.coefficients()) {
+    if (value < 0) best_bound += Coefficient(value);
+  }
+  return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
 
 void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
@@ -123,7 +133,9 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
   } else if (HasSuffixString(filename, ".cnf") ||
-             HasSuffixString(filename, ".wcnf")) {
+             HasSuffixString(filename, ".cnf.gz") ||
+             HasSuffixString(filename, ".wcnf") ||
+             HasSuffixString(filename, ".wcnf.gz")) {
     SatCnfReader reader;
     if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
         FLAGS_core_enc) {
@@ -179,16 +191,33 @@ int Run() {
   // Read the problem.
   LinearBooleanProblem problem;
   LoadBooleanProblem(FLAGS_input, &problem);
+  if (FLAGS_strict_validity) {
+    const util::Status status = ValidateBooleanProblem(problem);
+    if (!status.ok()) {
+      LOG(ERROR) << "Invalid Boolean problem: " << status.error_message();
+      return EXIT_FAILURE;
+    }
+  }
 
   // Count the time from there.
   WallTimer wall_timer;
   UserTimer user_timer;
   wall_timer.Start();
   user_timer.Start();
+  double scaled_best_bound = GetScaledTrivialBestBound(problem);
+
+  // Probing.
+  SatPostsolver probing_postsolver(problem.num_variables());
+  LinearBooleanProblem original_problem;
+  if (FLAGS_probing) {
+    // TODO(user): This is nice for testing, but consumes memory.
+    original_problem = problem;
+    ProbeAndSimplifyProblem(&probing_postsolver, &problem);
+  }
 
   // Load the problem into the solver.
   if (!LoadBooleanProblem(problem, solver.get())) {
-    LOG(FATAL) << "Couldn't load problem '" << FLAGS_input << "'.";
+    LOG(INFO) << "UNSAT when loading the problem.";
   }
   if (!AddObjectiveConstraint(
           problem, !FLAGS_lower_bound.empty(),
@@ -240,75 +269,67 @@ int Run() {
 
     // Presolve.
     if (FLAGS_presolve) {
-      // Copy the fixed variables.
-      // TODO(user): move this and the code to postsolve a SAT problem into
-      // the simplification.h/cc files.
-      VariablesAssignment assignment;
-      assignment.Resize(problem.num_variables());
-      for (int i = 0; i < solver->LiteralTrail().Index(); ++i) {
-        assignment.AssignFromTrueLiteral(solver->LiteralTrail()[i]);
-      }
+      SatPostsolver postsolver(problem.num_variables());
 
-      SatPresolver presolver;
-      presolver.SetParameters(parameters);
-      solver->ExtractClauses(&presolver);
-      solver.release();
-      if (!presolver.Presolve()) {
-        printf("c unsat during presolve!");
-        printf("c status: %s\n",
-               SatStatusString(SatSolver::MODEL_UNSAT).c_str());
-        return EXIT_SUCCESS;
-      }
+      // We use a new block so the memory used by the presolver can be
+      // reclaimed as soon as it is no longer needed.
+      //
+      // TODO(user): Automatically adapt the number of iterations.
+      result = SatSolver::MODEL_SAT;
+      for (int i = 0; i < 4; ++i) {
+        const int saved_num_variables = solver->NumVariables();
 
-      // Load the presolved problem in a new solver.
-      solver.reset(new SatSolver());
-      solver->SetParameters(parameters);
+        // Probe + find equivalent literals.
+        ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+        ProbeAndFindEquivalentLiteral(solver.get(), &postsolver, &equiv_map);
 
-      int new_size = 0;
-      const ITIVector<VariableIndex, VariableIndex> mapping =
-          presolver.GetMapping(&new_size);
-
-      // We need to remap all the clauses so that the domain of the used
-      // variable is dense.
-      std::vector<Literal> temp;
-      solver->SetNumVariables(new_size);
-      for (const std::vector<Literal>& clause : presolver) {
-        temp.clear();
-        for (Literal l : clause) {
-          CHECK_NE(mapping[l.Variable()], VariableIndex(-1));
-          temp.push_back(Literal(mapping[l.Variable()], l.IsPositive()));
+        // Register the fixed variables with the presolver.
+        // TODO(user): Find a better place for this?
+        solver->Backtrack(0);
+        for (int i = 0; i < solver->LiteralTrail().Index(); ++i) {
+          postsolver.FixVariable(solver->LiteralTrail()[i]);
         }
-        if (!temp.empty()) solver->AddProblemClause(temp);
+
+        SatPresolver presolver(&postsolver);
+        presolver.SetParameters(parameters);
+        presolver.SetEquivalentLiteralMapping(equiv_map);
+        solver->ExtractClauses(&presolver);
+        solver.release();
+        if (!presolver.Presolve()) {
+          printf("c unsat during presolve!\n");
+
+          // This is just here for the satistics display below to work.
+          solver.reset(new SatSolver());
+          result = SatSolver::MODEL_UNSAT;
+          break;
+        }
+
+        // Load the presolved problem in a new solver.
+        solver.reset(new SatSolver());
+        solver->SetParameters(parameters);
+        presolver.LoadProblemIntoSatSolver(solver.get());
+        postsolver.ApplyMapping(presolver.VariableMapping());
+
+        // Stop if a fixed point has been reached.
+        if (solver->NumVariables() == saved_num_variables) break;
       }
 
       // Solve.
-      result = solver->Solve();
+      if (result != SatSolver::MODEL_UNSAT) {
+        result = solver->Solve();
+      }
+
+      // Recover the solution.
+      if (result == SatSolver::MODEL_SAT) {
+        solution = postsolver.ExtractAndPostsolveSolution(*solver.get());
+        CHECK(IsAssignmentValid(problem, solution));
+      }
 
       // Statistics of the solver on the presolved problem.
       printf("c status: %s\n", SatStatusString(result).c_str());
       printf("c conflicts: %lld\n", solver->num_failures());
       printf("c branches: %lld\n", solver->num_branches());
       printf("c propagations: %lld\n", solver->num_propagations());
-
-      // Recover the solution.
-      if (result == SatSolver::MODEL_SAT) {
-        // Copy the assigned variable from the presolved problem.
-        for (VariableIndex var(0); var < mapping.size(); ++var) {
-          const VariablesAssignment& result = solver->Assignment();
-          if (mapping[var] != VariableIndex(-1)) {
-            CHECK(!assignment.IsVariableAssigned(var));
-            assignment.AssignFromTrueLiteral(Literal(
-                var, result.IsLiteralTrue(Literal(mapping[var], true))));
-          }
-        }
-        presolver.Postsolve(&assignment);
-        solution.clear();
-        for (int i = 0; i < assignment.NumberOfVariables(); ++i) {
-          solution.push_back(
-              assignment.IsLiteralTrue(Literal(VariableIndex(i), true)));
-        }
-        CHECK(IsAssignmentValid(problem, solution));
-      }
 
       // Overall time.
       printf("c walltime: %f\n", wall_timer.Get());
@@ -373,8 +394,17 @@ int Run() {
 
   // Print the solution status.
   if (result == SatSolver::MODEL_SAT) {
-    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1) {
+    if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_core_enc) {
       printf("s OPTIMUM FOUND\n");
+      CHECK(!solution.empty());
+      const Coefficient objective = ComputeObjectiveValue(problem, solution);
+      scaled_best_bound = AddOffsetAndScaleObjectiveValue(problem, objective);
+
+      // Postsolve.
+      if (FLAGS_probing) {
+        solution = probing_postsolver.PostsolveSolution(solution);
+        problem = original_problem;
+      }
     } else {
       printf("s SAT\n");
     }
@@ -389,15 +419,14 @@ int Run() {
     if (FLAGS_output_cnf_solution) {
       printf("v %s\n", SolutionString(problem, solution).c_str());
     }
-    if (problem.type() != LinearBooleanProblem::SATISFIABILITY) {
+    if (problem.objective().coefficients_size() > 0) {
       const Coefficient objective = ComputeObjectiveValue(problem, solution);
-      printf("c objective: %.16g\n", GetScaledObjective(problem, objective));
+      printf("c objective: %.16g\n",
+             AddOffsetAndScaleObjectiveValue(problem, objective));
+      printf("c best bound: %.16g\n", scaled_best_bound);
     }
   } else {
-    // No solutionof an optimization problem? we output kint64max by convention.
-    if (problem.type() != LinearBooleanProblem::SATISFIABILITY) {
-      printf("c objective: %lld\n", kint64max);
-    }
+    printf("c objective: na\n");
   }
 
   // Print final statistics.
@@ -407,6 +436,7 @@ int Run() {
   printf("c propagations: %lld\n", solver->num_propagations());
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
+  printf("c deterministic time: %f\n", solver->deterministic_time());
   return EXIT_SUCCESS;
 }
 

@@ -84,11 +84,13 @@ void ReadGlopParameters(GlopParameters* parameters) {
   }
 }
 
+
 int main(int argc, char* argv[]) {
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);
+
 
   LinearProgram linear_program;
   std::vector<std::string> file_list;

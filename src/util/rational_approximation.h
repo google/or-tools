@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
 #define OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
 
+#include <utility>
+
 #include "base/integral_types.h"
 
 namespace operations_research {
