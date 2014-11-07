@@ -267,7 +267,7 @@ class BinaryClauseManager {
   // Adds a new binary clause to the manager and returns true if it wasn't
   // already present.
   bool Add(BinaryClause c) {
-    std::pair<int32, int32> p(c.a.SignedValue(), c.b.SignedValue());
+    std::pair<int, int> p(c.a.SignedValue(), c.b.SignedValue());
     if (p.first > p.second) std::swap(p.first, p.second);
     if (set_.find(p) == set_.end()) {
       set_.insert(p);
@@ -282,7 +282,7 @@ class BinaryClauseManager {
   void ClearNewlyAdded() { newly_added_.clear(); }
 
  private:
-  hash_set<std::pair<int32, int32>> set_;
+  hash_set<std::pair<int, int>> set_;
   std::vector<BinaryClause> newly_added_;
   DISALLOW_COPY_AND_ASSIGN(BinaryClauseManager);
 };
