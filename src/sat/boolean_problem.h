@@ -16,10 +16,26 @@
 
 #include "sat/boolean_problem.pb.h"
 #include "sat/sat_solver.h"
+#include "sat/simplification.h"
 #include "algorithms/sparse_permutation.h"
+#include "base/status.h"
 
 namespace operations_research {
 namespace sat {
+
+// Adds the offset and returns the scaled version of the given objective value.
+inline double AddOffsetAndScaleObjectiveValue(
+    const LinearBooleanProblem& problem, Coefficient v) {
+  return (static_cast<double>(v.value()) + problem.objective().offset()) *
+         problem.objective().scaling_factor();
+}
+
+// Keeps the same objective but change the optimization direction from a
+// minimization problem to a maximization problem.
+//
+// Ex: if the problem was to minimize 2 + x, the new problem will be to maximize
+// 2 + x subject to exactly the same constraints.
+void ChangeOptimizationDirection(LinearBooleanProblem* problem);
 
 // Copies the assignment from the solver into the given Boolean vector. Note
 // that variables with a greater index that the given num_variables are ignored.
@@ -27,8 +43,8 @@ void ExtractAssignment(const LinearBooleanProblem& problem,
                        const SatSolver& solver, std::vector<bool>* assignment);
 
 // Tests the preconditions of the given problem (as described in the proto) and
-// returns true iff they are all satisfied.
-bool BooleanProblemIsValid(const LinearBooleanProblem& problem);
+// returns an error if they are not all satisfied.
+util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem);
 
 // Loads a BooleanProblem into a given SatSolver instance.
 bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);
@@ -37,6 +53,10 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);
 // heuristically better solution.
 void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
                                             SatSolver* solver);
+
+// Adds the constraint that the objective is smaller than the given upper bound.
+bool AddObjectiveUpperBound(const LinearBooleanProblem& problem,
+                            Coefficient upper_bound, SatSolver* solver);
 
 // Adds the constraint that the objective is smaller or equals to the given
 // upper bound.
@@ -80,6 +100,23 @@ void MakeAllLiteralsPositive(LinearBooleanProblem* problem);
 void FindLinearBooleanProblemSymmetries(
     const LinearBooleanProblem& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators);
+// Maps all the literals of the problem. Note that this converts the cost of a
+// variable correctly, that is if a variable with cost is mapped to another, the
+// cost of the later is updated.
+//
+// Preconditions: the mapping must map l and not(l) to the same variable and be
+// of the correct size. It can also map a literal index to kTrueLiteralIndex
+// or kFalseLiteralIndex in order to fix the variable.
+void ApplyLiteralMappingToBooleanProblem(
+    const ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    LinearBooleanProblem* problem);
+
+// A simple preprocessing step that does basic probing and removes the fixed and
+// equivalent variables. Note that the variable indices will also be remapped in
+// order to be dense. The given postsolver will be updated with the information
+// needed during postsolve.
+void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
+                             LinearBooleanProblem* problem);
 
 }  // namespace sat
 }  // namespace operations_research

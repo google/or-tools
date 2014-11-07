@@ -93,6 +93,39 @@ bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* 
   return true;
 }
 
+bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
+                         std::vector<LiteralWithCoeff>* cst,
+                         Coefficient* bound_shift, Coefficient* max_value) {
+  int index = 0;
+  Coefficient shift_due_to_fixed_variables(0);
+  for (const LiteralWithCoeff& entry : *cst) {
+    if (mapping[entry.literal.Index()] >= 0) {
+      VLOG(0) << entry.literal << " -> "
+              << Literal(mapping[entry.literal.Index()]);
+      (*cst)[index] = LiteralWithCoeff(Literal(mapping[entry.literal.Index()]),
+                                       entry.coefficient);
+      ++index;
+    } else if (mapping[entry.literal.Index()] == kTrueLiteralIndex) {
+      if (!SafeAddInto(-entry.coefficient, &shift_due_to_fixed_variables)) {
+        return false;
+      }
+    } else {
+      // Nothing to do if the literal is false.
+      DCHECK_EQ(mapping[entry.literal.Index()], kFalseLiteralIndex);
+    }
+  }
+  cst->resize(index);
+  if (cst->empty()) {
+    *bound_shift = shift_due_to_fixed_variables;
+    *max_value = 0;
+    return true;
+  }
+  const bool result =
+      ComputeBooleanLinearExpressionCanonicalForm(cst, bound_shift, max_value);
+  if (!SafeAddInto(shift_due_to_fixed_variables, bound_shift)) return false;
+  return result;
+}
+
 // TODO(user): Also check for no duplicates literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst) {
   Coefficient previous(1);
@@ -865,20 +898,23 @@ bool PbConstraints::PropagateNext() {
         thresholds_[update.index] - update.coefficient;
     thresholds_[update.index] = threshold;
     if (threshold < 0 && !conflict) {
+      UpperBoundedLinearConstraint* const cst =
+          constraints_[update.index.value()].get();
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
-      if (!constraints_[update.index.value()]->Propagate(
-              order, &thresholds_[update.index], trail_,
-              &conflict_scratchpad_)) {
+      const int old_value = cst->already_propagated_end();
+      if (!cst->Propagate(order, &thresholds_[update.index], trail_,
+                          &conflict_scratchpad_)) {
         trail_->SetFailingClause(ClauseRef(conflict_scratchpad_));
-        trail_->SetFailingResolutionNode(
-            constraints_[update.index.value()]->ResolutionNodePointer());
+        trail_->SetFailingResolutionNode(cst->ResolutionNodePointer());
         conflicting_constraint_index_ = update.index;
         conflict = true;
 
         // We bump the activity of the conflict.
         BumpActivity(constraints_[update.index.value()].get());
       }
+      num_inspected_constraint_literals_ +=
+          old_value - cst->already_propagated_end();
     }
   }
   return !conflict;

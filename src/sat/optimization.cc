@@ -46,8 +46,7 @@ class Logger {
 std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
                         Coefficient objective) {
   const double scaled_objective =
-      objective.value() * problem.objective().scaling_factor() +
-      problem.objective().offset();
+      AddOffsetAndScaleObjectiveValue(problem, objective);
   return StringPrintf("o %lld", static_cast<int64>(scaled_objective));
 }
 
@@ -224,7 +223,6 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
                                    SatSolver* solver, std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
-  CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
 
   // blocking_clauses will contains a set of clauses that are currently added to
   // the initial problem.
@@ -418,7 +416,6 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
                                 SatSolver* solver, std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
-  CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
 
   // The curent lower_bound on the cost.
   // It will be correct after the initialization.
@@ -734,7 +731,6 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
                                             int num_times, SatSolver* solver,
                                             std::vector<bool>* solution) {
   Logger logger(log);
-  CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
   const SatParameters initial_parameters = solver->parameters();
 
   MTRandom random("A random seed.");
@@ -815,7 +811,6 @@ SatSolver::Status SolveWithLinearScan(LogBehavior log,
                                       SatSolver* solver,
                                       std::vector<bool>* solution) {
   Logger logger(log);
-  CHECK_EQ(problem.type(), LinearBooleanProblem::MINIMIZATION);
 
   // This has a big positive impact on most problems.
   UseObjectiveForSatAssignmentPreference(problem, solver);

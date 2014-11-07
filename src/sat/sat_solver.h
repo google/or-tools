@@ -38,6 +38,7 @@
 #include "sat/symmetry.h"
 #include "sat/unsat_proof.h"
 #include "util/bitset.h"
+#include "util/running_stat.h"
 #include "util/stats.h"
 #include "util/time_limit.h"
 #include "base/adjustable_priority_queue.h"
@@ -120,6 +121,7 @@ class SatSolver {
   //
   // TODO(user): This currently can't be used with unsat_proof() on. Fix it.
   void AddSymmetries(std::vector<std::unique_ptr<SparsePermutation>>* generators) {
+    DCHECK(!is_model_unsat_);
     for (int i = 0; i < generators->size(); ++i) {
       symmetry_propagator_.AddSymmetry(std::move((*generators)[i]));
     }
@@ -131,6 +133,7 @@ class SatSolver {
   // ignored (and thus save memory during the solve). This starts with a value
   // of true.
   void SetNextConstraintsRelevanceForUnsatCore(bool value) {
+    DCHECK(!is_model_unsat_);
     is_relevant_for_core_computation_ = value;
   }
 
@@ -138,7 +141,7 @@ class SatSolver {
   // will also be the unique index associated to the next constraint that will
   // be added. This unique index is used by UnsatCore() to indicates what
   // constraints are part of the core.
-  int NumAddedConstraints() const { return num_constraints_; }
+  int NumAddedConstraints() { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
@@ -160,12 +163,17 @@ class SatSolver {
 
   // Solves the problem and returns its status.
   //
-  // Note that the time or conflict limit applies only to this function and
-  // starts counting from the time it is called.
+  // Note that the conflict limit applies only to this function and starts
+  // counting from the time it is called.
   //
   // This will restart from the current solver configuration. If a previous call
   // to Solve() was interupted by a conflict or time limit, calling this again
   // will resume the search exactly as it would have continued.
+  //
+  // Note that if a time limit has been defined earlier, using the SAT
+  // parameters or the SolveWithTimeLimit() method, it is still in use in this
+  // solve. To override the timelimit one should reset the parameters or use the
+  // SolveWithTimeLimit() with a new time limit.
   enum Status {
     ASSUMPTIONS_UNSAT,
     MODEL_UNSAT,
@@ -174,11 +182,12 @@ class SatSolver {
   };
   Status Solve();
 
-  // Same as Solve(), but with a given time limit in seconds. Note that this is
-  // slightly redundant with the max_time_in_seconds() parameter, but because
-  // SetParameters() resets more than just the time limit, it is useful to have
-  // this more specific api.
-  Status SolveWithTimeLimit(double max_time_in_seconds);
+  // Same as Solve(), but with a given time limit. Note that this is slightly
+  // redundant with the max_time_in_seconds() and
+  // max_time_in_deterministic_seconds() parameters, but because SetParameters()
+  // resets more than just the time limit, it is useful to have this more
+  // specific api.
+  Status SolveWithTimeLimit(TimeLimit* time_limit);
 
   // Simple interface to solve a problem under the given assumptions. This
   // simply ask the solver to solve a problem given a set of variables fixed to
@@ -288,7 +297,7 @@ class SatSolver {
     // currently process the clauses in order.
     binary_implication_graph_.ExtractAllBinaryClauses(out);
     for (SatClause* clause : clauses_) {
-      if (clause->MustBeKept()) {
+      if (!clause->IsRedundant()) {
         out->AddClause(ClauseRef(clause->begin(), clause->end()));
       }
     }
@@ -318,6 +327,11 @@ class SatSolver {
   int64 num_failures() const;
   int64 num_propagations() const;
 
+  // A deterministic number that should be correlated with the time spent in
+  // the Solve() function. The order of magnitude should be close to the time
+  // in seconds.
+  double deterministic_time() const;
+
   // Only used for debugging. Save the current assignment in debug_assignment_.
   // The idea is that if we know that a given assignment is satisfiable, then
   // all the learned clauses or PB constraints must be satisfiable by it. In
@@ -326,6 +340,9 @@ class SatSolver {
   void SaveDebugAssignment();
 
  private:
+  // All Solve() functions end up calling this one.
+  Status SolveInternal(TimeLimit* time_limit);
+
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
   void AddBinaryClauseInternal(Literal a, Literal b);
@@ -366,7 +383,7 @@ class SatSolver {
   bool IsMemoryLimitReached() const;
 
   // Sets is_model_unsat_ to true and return false.
-  bool ModelUnsat();
+  bool SetModelUnsat();
 
   // Utility function to insert spaces proportional to the search depth.
   // It is used in the pretty print of the search.
@@ -387,6 +404,7 @@ class SatSolver {
   // better to do as little work as possible during Enqueue() and more work
   // here. In particular, generating a reason clause lazily make sense.
   ClauseRef Reason(VariableIndex var);
+  SatClause* ReasonClauseOrNull(VariableIndex var) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -414,15 +432,11 @@ class SatSolver {
            trail_.Info(var).sat_clause == clause;
   }
 
-  // Predicate used by ProcessNewlyFixedVariables().
-  bool IsClauseAttachedOrUsedAsReason(SatClause* clause) const {
-    return clause->IsAttached() || IsClauseUsedAsReason(clause);
-  }
-
-  // Predicate used by CompressLearnedClausesIfNeeded().
+  // Predicate used by CleanClauseDatabaseIfNeeded().
   bool ClauseShouldBeKept(SatClause* clause) const {
-    return clause->MustBeKept() || clause->Lbd() <= 2 || clause->Size() <= 2 ||
-           IsClauseUsedAsReason(clause);
+    return !clause->IsRedundant() ||
+           clause->Lbd() <= parameters_.clause_cleanup_lbd_bound() ||
+           clause->Size() <= 2 || IsClauseUsedAsReason(clause);
   }
 
   // Add a problem clause. Not that the clause is assumed to be "cleaned", that
@@ -441,7 +455,7 @@ class SatSolver {
   // literals of the learned close except one will be false. Thus the last one
   // will be implied True. This function also Enqueue() the implied literal.
   void AddLearnedClauseAndEnqueueUnitPropagation(
-      const std::vector<Literal>& literals, ResolutionNode* node);
+      const std::vector<Literal>& literals, bool must_be_kept, ResolutionNode* node);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -463,6 +477,9 @@ class SatSolver {
   // each node expresses the reason why this variable was assigned. This is
   // needed because level zero variables are treated differently by the solver.
   void ProcessNewlyFixedVariableResolutionNodes();
+
+  // Deletes all the clauses that are detached.
+  void DeleteDetachedClauses();
 
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
@@ -487,8 +504,9 @@ class SatSolver {
   // IEEE/ACM international conference on Computer-aided design, Pages 279-285.
   // http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
   void ComputeFirstUIPConflict(
-      ClauseRef failing_clause, int max_trail_index, std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict);
+      int max_trail_index, std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict,
+      std::vector<SatClause*>* subsumed_clauses);
 
   // Given an assumption (i.e. literal) currently assigned to false, this will
   // returns the set of all assumptions that caused this particular assignment.
@@ -565,7 +583,7 @@ class SatSolver {
 
   // Checks if we need to reduce the number of learned clauses and do
   // it if needed. The second function updates the learned clause limit.
-  void CompressLearnedClausesIfNeeded();
+  void CleanClauseDatabaseIfNeeded();
   void InitLearnedClauseLimit(int current_num_learned);
 
   // Bumps the activity of all variables appearing in the conflict.
@@ -672,6 +690,7 @@ class SatSolver {
     // Clause learning /deletion stats.
     int64 num_literals_learned;
     int64 num_literals_forgotten;
+    int64 num_subsumed_clauses;
 
     Counters()
         : num_branches(0),
@@ -681,7 +700,8 @@ class SatSolver {
           num_literals_removed(0),
           num_learned_pb_literals_(0),
           num_literals_learned(0),
-          num_literals_forgotten(0) {}
+          num_literals_forgotten(0),
+          num_subsumed_clauses(0) {}
   };
   Counters counters_;
 
@@ -801,6 +821,7 @@ class SatSolver {
   // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
   std::vector<Literal> learned_conflict_;
   std::vector<Literal> reason_used_to_infer_the_conflict_;
+  std::vector<SatClause*> subsumed_clauses_;
 
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
@@ -830,8 +851,18 @@ class SatSolver {
   // The current pseudo-Boolean conflict used in PB conflict analysis.
   MutableUpperBoundedLinearConstraint pb_conflict_;
 
+  // Running average used by some restart algorithms.
+  RunningAverage dl_running_average_;
+  RunningAverage lbd_running_average_;
+  RunningAverage trail_size_running_average_;
+
   // The solver time limit.
   std::unique_ptr<TimeLimit> time_limit_;
+
+  // The deterministic time when the time limit was updated.
+  // As the deterministic time in the time limit has to be advanced manually,
+  // it is necessary to keep track of the last time the time was advanced.
+  double deterministic_time_at_last_advanced_time_limit_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);

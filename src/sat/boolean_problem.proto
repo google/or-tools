@@ -43,22 +43,24 @@ message LinearBooleanConstraint {
   optional string name = 5 [default = ""];
 }
 
-// The objective of an optimization problem. The goal will be to minimize (resp.
-// maximize) this linear Boolean formula. The direction is given by the problem
-// type (see below).
+// The objective of an optimization problem.
 message LinearObjective {
+  // The goal is always to minimize the linear Boolean formula defined by these
+  // two fields: sum_i literal_i * coefficient_i where literal_i is 1 iff
+  // literal_i is true in a given assignment.
+  //
   // Note that the same variable shouldn't appear twice and that zero
   // coefficients are not allowed.
   repeated int32 literals = 1;
   repeated int64 coefficients = 2;
 
-  // For a given variable assignment, the problem objective value is
-  // 'scaling_factor * (sum literal * coefficient) + offset'
-  // where literal_i is 1 iff literal_i is true.
+  // For a given variable assignment, the "real" problem objective value is
+  // 'scaling_factor * (minimization_objective + offset)' where
+  // 'minimization_objective is the one defined just above.
   //
-  // Note: the scaling_factor must be positive. This is important because the
-  // solver just minimize (resp. maximize) the expression
-  // 'sum literal * coefficient'.
+  // Note that this is not what we minimize, but it is what we display.
+  // In particular if scaling_factor is negative, then the "real" problem is
+  // a maximization problem, even if the "internal" objective is minimized.
   optional double offset = 3 [default = 0.0];
   optional double scaling_factor = 4 [default = 1.0];
 }
@@ -77,14 +79,6 @@ message LinearBooleanProblem {
   // The name of the problem.
   optional string name = 1 [default = ""];
 
-  // The type of the problem.
-  enum ProblemType {
-    SATISFIABILITY = 0;
-    MAXIMIZATION = 1;
-    MINIMIZATION = 2;
-  }
-  optional ProblemType type = 2 [default = SATISFIABILITY];
-
   // The number of variables in the problem.
   // All the signed representation of the problem literals must be in
   // [-num_variables, num_variables], excluding 0.
@@ -93,7 +87,8 @@ message LinearBooleanProblem {
   // The constraints of the problem.
   repeated LinearBooleanConstraint constraints = 4;
 
-  // The objective of the problem (for the MINIMIZATION or MAXIMIZATION types).
+  // The objective of the problem.
+  // If left empty, we just have a satisfiability problem.
   optional LinearObjective objective = 5;
 
   // The names of the problem variables. The variables index are 0-based and

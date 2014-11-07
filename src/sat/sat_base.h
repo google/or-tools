@@ -125,6 +125,9 @@ class VariablesAssignment {
   bool IsLiteralTrue(Literal literal) const {
     return assignment_.IsSet(literal.Index());
   }
+  bool IsLiteralAssigned(Literal literal) const {
+    return assignment_.AreOneOfTwoBitsSet(literal.Index());
+  }
 
   // Returns true iff the given variable is assigned.
   bool IsVariableAssigned(VariableIndex var) const {
@@ -378,7 +381,11 @@ class Trail {
   int Index() const { return trail_index_; }
   const Literal operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
-  const AssignmentInfo& Info(VariableIndex var) const { return info_[var]; }
+  const AssignmentInfo& Info(VariableIndex var) const {
+    DCHECK_GE(var, 0);
+    DCHECK_LT(var, info_.size());
+    return info_[var];
+  }
 
   // Sets the new resolution node for a variable that is fixed.
   void SetFixedVariableInfo(VariableIndex var, ResolutionNode* node) {

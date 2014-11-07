@@ -17,7 +17,13 @@ package operations_research.sat;
 
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
+//
+// NEXT TAG: 68
 message SatParameters {
+  // ==========================================================================
+  // Branching and polarity
+  // ==========================================================================
+
   // Variables without activity (i.e. at the beginning of the search) will be
   // tried in this preferred order.
   enum VariableOrder {
@@ -66,6 +72,11 @@ message SatParameters {
   // initially and then always taking this choice.
   optional double random_polarity_ratio = 45 [default = 0.0];
 
+  // A number between 0 and 1 that indicates the proportion of branching
+  // variables that are selected randomly instead of choosing the first variable
+  // from the given variable_ordering strategy.
+  optional double random_branches_ratio = 32 [default = 0];
+
   // Specifies how literals should be initially sorted in a clause.
   enum LiteralOrdering {
     // Do nothing and keep literals in their current order.
@@ -79,6 +90,10 @@ message SatParameters {
   }
   optional LiteralOrdering literal_ordering = 3 [default = LITERAL_IN_ORDER];
 
+  // ==========================================================================
+  // Conflict analysis
+  // ==========================================================================
+
   // Do we try to minimize conflicts (greedily) when creating them.
   enum ConflictMinimizationAlgorithm {
     NONE = 0;
@@ -89,20 +104,63 @@ message SatParameters {
   optional ConflictMinimizationAlgorithm minimization_algorithm = 4
       [default = RECURSIVE];
 
-  // Each time the learned clause database is cleaned, we want the target size
-  // of the next cleaning to be equals to the current database after it has just
-  // been cleaned plus this parameter.
-  optional double clause_cleanup_increment = 11 [default = 1500];
+  // Whether to expoit the binary clause to minimize learned clauses further.
+  // This will have an effect only if treat_binary_clauses_separately is true.
+  enum BinaryMinizationAlgorithm {
+    NO_BINARY_MINIMIZATION = 0;
+    BINARY_MINIMIZATION_FIRST = 1;
+    BINARY_MINIMIZATION_WITH_REACHABILITY = 2;
+    EXPERIMENTAL_BINARY_MINIMIZATION = 3;
+  }
+  optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
+      [default = BINARY_MINIMIZATION_FIRST];
 
-  // Deletes this ratio of clauses during each cleanup.
+  // At a really low cost, during the 1-UIP conflict computation, it is easy to
+  // detect if some of the involved reasons are subsumed by the current
+  // conflict. When this is true, such clauses are detached and later removed
+  // from the problem.
+  optional bool subsumption_during_conflict_analysis = 56 [default = true];
+
+  // ==========================================================================
+  // Clause database management
+  // ==========================================================================
+
+  // During a cleanup, we will always keep that number of "deletable" clauses.
+  // Note that this only influences the start of the search if
+  // clause_cleanup_increment is not zero.
+  optional int32 clause_cleanup_min_target = 58 [default = 15000];
+
+  // Each time the learned clause database is cleaned, we want to keep this
+  // number of extra "deletable" clauses after the next cleaning.
+  optional int32 clause_cleanup_increment = 11 [default = 0];
+
+  // All the clauses with a LBD (literal blocks distance) lower or equal to this
+  // parameters will always be kept.
+  optional int32 clause_cleanup_lbd_bound = 59 [default = 5];
+
+  // The next cleanup phase will happen when the number of new "deletable"
+  // clause goes over 1 / ratio times the target number.
   optional double clause_cleanup_ratio = 13 [default = 0.5];
+
+  // The clauses that will be kept during a cleanup are the ones that come
+  // first under this order.
+  enum ClauseOrdering {
+    // Order clause by decreasing activity.
+    CLAUSE_ACTIVITY = 0;
+    // Order clause by increasing LBD, then by decreasing activity.
+    CLAUSE_LBD = 1;
+  }
+  optional ClauseOrdering clause_cleanup_ordering = 60
+      [default = CLAUSE_ACTIVITY];
 
   // Same as for the clauses, but for the learned pseudo-Boolean constraints.
   optional double pb_cleanup_increment = 46 [default = 200];
   optional double pb_cleanup_ratio = 47 [default = 0.5];
 
-  // Variable activity parameters.
-  //
+  // ==========================================================================
+  // Variable and clause activities
+  // ==========================================================================
+
   // Each time a conflict is found, the activities of some variables are
   // increased by one. Then, the activity of all variables are multiplied by
   // variable_activity_decay.
@@ -127,60 +185,68 @@ message SatParameters {
   optional double clause_activity_decay = 17 [default = 0.999];
   optional double max_clause_activity_value = 18 [default = 1e20];
 
-  // Whether or not we take the LBD (literal blocks distance) into account
-  // during the conflict cleaning phase. If true, then clauses with an LBD of
-  // 2 will not be deleted and clauses will be ordered by increasing LBD first
-  // with a tie breaking given by decreasing activity.
-  optional bool use_lbd = 20 [default = true];
-
   // To try to reward good variables, Glucose bumps again the variable from the
   // last decision level and with a learned reason of smaller LBD than the 1 UIP
   // conflict. This needs use_lbd() to be true.
   optional bool use_glucose_bump_again_strategy = 21 [ default = false];
 
-  // Frequecy of periodic restart if > 0. A negative value indicates
-  // no restart.
-  optional int32 restart_period = 30 [default = 100];
+  // ==========================================================================
+  // Restart
+  // ==========================================================================
 
-  // At the beginning of each solve, the random number generator used in some
-  // part of the solver is reinitialized to this seed. If you change the random
-  // seed, the solver may make different choices during the solving process.
+  // Restart algorithms.
   //
-  // For some problems, the running time may vary a lot depending on small
-  // change in the solving algorithm. Running the solver with different seeds
-  // enables to have more robust benchmarks when evaluating new features.
-  optional int32 random_seed = 31 [default = 1];
+  // A reference for the more advanced ones is:
+  // Gilles Audemard, Laurent Simon, "Refining Restarts Strategies for SAT
+  // and UNSAT", Principles and Practice of Constraint Programming Lecture
+  // Notes in Computer Science 2012, pp 118-126
+  enum RestartAlgorithm {
+    NO_RESTART = 0;
 
-  // A number between 0 and 1 that indicates the proportion of branching
-  // variables that are selected randomly instead of choosing the first variable
-  // from the given variable_ordering strategy.
-  optional double random_branches_ratio = 32 [default = 0];
+    // Just follow a Luby sequence times luby_restart_period.
+    LUBY_RESTART = 1;
 
-  // If true, the binary clauses are treated separately from the others. This
-  // should be faster and uses less memory. However it changes the propagation
-  // order.
-  optional bool treat_binary_clauses_separately = 33 [default = true];
+    // Moving average restart based on the decision level of conflicts.
+    DL_MOVING_AVERAGE_RESTART = 2;
 
-  // Whether to expoit the binary clause to minimize learned clauses further.
-  // This will have an effect only if treat_binary_clauses_separately is true.
-  enum BinaryMinizationAlgorithm {
-    NO_BINARY_MINIMIZATION = 0;
-    BINARY_MINIMIZATION_FIRST = 1;
-    BINARY_MINIMIZATION_WITH_REACHABILITY = 2;
-    EXPERIMENTAL_BINARY_MINIMIZATION = 3;
+    // Moving average restart based on the LBD of conflicts.
+    LBD_MOVING_AVERAGE_RESTART = 3;
   }
-  optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
-      [default = BINARY_MINIMIZATION_FIRST];
+  optional RestartAlgorithm restart_algorithm = 61
+      [default = DL_MOVING_AVERAGE_RESTART];
 
-  // For an optimization problem, whether we follow some hints in order to find
-  // a better first solution. For a variable with hint, the solver will always
-  // try to follow the hint. It will revert to the variable_branching default
-  // otherwise.
-  optional bool use_optimization_hints = 35 [default = true];
+  // Multiplier for the LUBY_RESTART algorithm.
+  optional int32 luby_restart_period = 30 [default = 100];
+
+  // Size of the window for the moving average restarts.
+  optional int32 restart_running_window_size = 62 [default = 50];
+
+  // In the moving average restart algorithms, a restart is triggered if the
+  // window average times this ratio is greater that the global average.
+  optional double restart_average_ratio = 63 [default = 1.0];
+
+  // Block a moving restart algorithm if the trail size of the current conflict
+  // is greater than the multiplier times the moving average of the trail size
+  // at the previous conflicts.
+  optional bool use_blocking_restart = 64 [default = false];
+  optional int32 blocking_restart_window_size = 65 [default = 5000];
+  optional double blocking_restart_multiplier = 66 [default = 1.4];
+
+  // ==========================================================================
+  // Limits
+  // ==========================================================================
 
   // Maximum time allowed in seconds to solve a problem.
-  // The counter will starts as soon as Solve() is called.
+  // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
+  // is called.
   optional double max_time_in_seconds = 36 [default = inf];
+
+  // Maximum time allowed in deterministic time to solve a problem.
+  // The deterministic time should be correlated with the real time used by the
+  // solver, the time unit being as close as possible to a second.
+  // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
+  // is called.
+  optional double max_deterministic_time = 67 [default = inf];
 
   // Maximum number of conflicts allowed to solve a problem.
   optional int64 max_number_of_conflicts = 37
@@ -191,6 +257,24 @@ message SatParameters {
   // result, this limit is approximative, but usually the solver will not go too
   // much over.
   optional int64 max_memory_in_mb = 40 [default = 6000];
+
+  // ==========================================================================
+  // Other parameters
+  // ==========================================================================
+
+  // If true, the binary clauses are treated separately from the others. This
+  // should be faster and uses less memory. However it changes the propagation
+  // order.
+  optional bool treat_binary_clauses_separately = 33 [default = true];
+
+  // At the beginning of each solve, the random number generator used in some
+  // part of the solver is reinitialized to this seed. If you change the random
+  // seed, the solver may make different choices during the solving process.
+  //
+  // For some problems, the running time may vary a lot depending on small
+  // change in the solving algorithm. Running the solver with different seeds
+  // enables to have more robust benchmarks when evaluating new features.
+  optional int32 random_seed = 31 [default = 1];
 
   // Whether the solver should log the search progress to LOG(INFO).
   optional bool log_search_progress = 41 [default = false];
@@ -224,14 +308,31 @@ message SatParameters {
   // in Computer Science Volume 7962, 2013, pp 309-317.
   optional bool count_assumption_levels_in_lbd = 49 [default = true];
 
-  // During presolve, only try to perform the bounded variable elimination of a
-  // variable x if the number of occurences of x times the number of occurences
-  // of not(x) is not greater than this parameter.
-  optional int32 presolve_bce_threshold = 54 [default = 100];
+  // ==========================================================================
+  // Presolve
+  // ==========================================================================
+
+  // During presolve, only try to perform the bounded variable elimination (BVE)
+  // of a variable x if the number of occurences of x times the number of
+  // occurences of not(x) is not greater than this parameter.
+  optional int32 presolve_bve_threshold = 54 [default = 500];
+
+  // During presolve, we apply BVE only if this weight times the number of
+  // clauses plus the number of clause literals is not increased.
+  optional int32 presolve_bve_clause_weight = 55 [default = 3];
+
+  // The "deterministic" time limit to spend in probing.
+  optional double presolve_probing_deterministic_time_limit = 57 [default = 10];
 
   // ==========================================================================
-  // Max-sat parameters.
+  // Max-sat parameters
   // ==========================================================================
+
+  // For an optimization problem, whether we follow some hints in order to find
+  // a better first solution. For a variable with hint, the solver will always
+  // try to follow the hint. It will revert to the variable_branching default
+  // otherwise.
+  optional bool use_optimization_hints = 35 [default = true];
 
   // Whether we use a simple heuristic to try to minimize an UNSAT core.
   optional bool minimize_core = 50 [default = true];
@@ -249,7 +350,7 @@ message SatParameters {
   // max_sat_assumption_order.
   optional bool max_sat_reverse_assumption_order = 52 [default = false];
 
-  // What stratification algorithm we use in the presence of weigth.
+  // What stratification algorithm we use in the presence of weight.
   enum MaxSatStratificationAlgorithm {
     // No stratification of the problem.
     STRATIFICATION_NONE = 0;

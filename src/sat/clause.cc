@@ -60,6 +60,7 @@ bool CleanUpPredicate(const Watcher& watcher) {
 LiteralWatchers::LiteralWatchers()
     : is_clean_(true),
       num_inspected_clauses_(0),
+      num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
       stats_("LiteralWatchers") {}
 
@@ -70,7 +71,7 @@ LiteralWatchers::~LiteralWatchers() {
 void LiteralWatchers::Resize(int num_variables) {
   DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
-  needs_cleaning_.resize(num_variables << 1, false);
+  needs_cleaning_.Resize(LiteralIndex(num_variables << 1));
   statistics_.resize(num_variables);
 }
 
@@ -100,6 +101,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       *new_it++ = *it;
       continue;
     }
+    ++num_inspected_clauses_;
 
     // If the other watched literal is true, just change the blocking literal.
     Literal* literals = it->clause->literals();
@@ -108,6 +110,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     if (other_watched_literal != it->blocking_literal &&
         assignment.IsLiteralTrue(other_watched_literal)) {
       *new_it++ = Watcher(it->clause, other_watched_literal);
+      ++num_inspected_clause_literals_;
       continue;
     }
 
@@ -116,6 +119,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       int i = 2;
       const int size = it->clause->Size();
       while (i < size && assignment.IsLiteralFalse(literals[i])) ++i;
+      num_inspected_clause_literals_ += i;
       if (i < size) {
         // literal[i] is undefined or true, it's now the new literal to watch.
         // Note that by convention, we always keep the two watched literals at
@@ -135,7 +139,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       trail->SetFailingSatClause(
           ClauseRef(it->clause->begin(), it->clause->end()), it->clause);
       trail->SetFailingResolutionNode(it->clause->ResolutionNodePointer());
-      num_inspected_clauses_ += it - watchers.begin() + 1;
+      num_inspected_clause_literals_ += it - watchers.begin() + 1;
       watchers.erase(new_it, it);
       return false;
     } else {
@@ -149,7 +153,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       *new_it++ = *it;
     }
   }
-  num_inspected_clauses_ += watchers.size();
+  num_inspected_clause_literals_ += watchers.size();
   watchers.erase(new_it, watchers.end());
   return true;
 }
@@ -166,7 +170,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   // Find a better way for the "initial" polarity choice and tie breaking
   // between literal choices. Note that it seems none of the modern SAT solver
   // relies on this.
-  if (clause->MustBeKept()) UpdateStatistics(*clause, /*added=*/true);
+  if (!clause->IsRedundant()) UpdateStatistics(*clause, /*added=*/true);
   clause->SortLiterals(statistics_, parameters_);
   return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
 }
@@ -174,22 +178,21 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
-  if (clause->MustBeKept()) UpdateStatistics(*clause, /*added=*/false);
+  if (!clause->IsRedundant()) UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
   is_clean_ = false;
-  needs_cleaning_[clause->FirstLiteral().Index()] = true;
-  needs_cleaning_[clause->SecondLiteral().Index()] = true;
+  needs_cleaning_.Set(clause->FirstLiteral().Index());
+  needs_cleaning_.Set(clause->SecondLiteral().Index());
 }
 
 void LiteralWatchers::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
-  for (int i = 0; i < needs_cleaning_.size(); ++i) {
-    if (needs_cleaning_[LiteralIndex(i)]) {
-      RemoveIf(&(watchers_on_false_[LiteralIndex(i)]),
-               CleanUpPredicate<Watcher>);
-      needs_cleaning_[LiteralIndex(i)] = false;
-    }
+  for (LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
+    DCHECK(needs_cleaning_[index]);
+    RemoveIf(&(watchers_on_false_[index]), CleanUpPredicate<Watcher>);
+    needs_cleaning_.Clear(index);
   }
+  needs_cleaning_.NotifyAllClear();
   is_clean_ = true;
 }
 
@@ -237,6 +240,12 @@ void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
 bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
                                              Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
+
+  // Note(user): This update is not exactly correct because in case of conflict
+  // we don't inspect that much clauses. But doing ++num_inspections_ inside the
+  // loop does slow down the code by a few percent.
+  num_inspections_ += implications_[true_literal.Index()].size();
+
   const VariablesAssignment& assignment = trail->Assignment();
   for (Literal literal : implications_[true_literal.Index()]) {
     if (assignment.IsLiteralTrue(literal)) {
@@ -464,7 +473,7 @@ void BinaryImplicationGraph::RemoveFixedVariables(
 // ----- SatClause -----
 
 // static
-SatClause* SatClause::Create(const std::vector<Literal>& literals, ClauseType type,
+SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redundant,
                              ResolutionNode* node) {
   CHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
@@ -473,7 +482,7 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, ClauseType ty
   for (int i = 0; i < literals.size(); ++i) {
     clause->literals_[i] = literals[i];
   }
-  clause->must_be_kept_ = (type == PROBLEM_CLAUSE);
+  clause->is_redundant_ = is_redundant;
   clause->is_attached_ = false;
   clause->activity_ = 0.0;
   clause->lbd_ = 0;

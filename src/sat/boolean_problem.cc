@@ -45,50 +45,93 @@ namespace {
 
 // Used by BooleanProblemIsValid() to test that there is no duplicate literals,
 // that they are all within range and that there is no zero coefficient.
+//
+// A non-empty std::string indicates an error.
 template <typename LinearTerms>
-bool IsValid(const LinearTerms& terms, std::vector<bool>* variable_seen) {
+std::string ValidateLinearTerms(const LinearTerms& terms,
+                           std::vector<bool>* variable_seen) {
+  // variable_seen already has all items false and is reset before return.
+  std::string err_str;
+  int num_errs = 0;
+  const int max_num_errs = 100;
   for (int i = 0; i < terms.literals_size(); ++i) {
     if (terms.literals(i) == 0) {
-      LOG(INFO) << "Zero literal at position " << i;
-      return false;
+      if (++num_errs <= max_num_errs)
+        err_str += StringPrintf("Zero literal at position %d\n", i);
     }
     if (terms.coefficients(i) == 0) {
-      LOG(INFO) << "Literal " << terms.literals(i) << " has a zero coefficient";
-      return false;
+      if (++num_errs <= max_num_errs)
+        err_str += StringPrintf("Literal %d has a zero coefficient\n",
+                                terms.literals(i));
     }
     const int var = Literal(terms.literals(i)).Variable().value();
     if (var >= variable_seen->size()) {
-      LOG(INFO) << "Out of bound variable " << var;
-      return false;
+      if (++num_errs <= max_num_errs)
+        err_str += StringPrintf("Out of bound variable %d\n", var);
     }
     if ((*variable_seen)[var]) {
-      LOG(INFO) << "Duplicated variable " << var;
-      return false;
+      if (++num_errs <= max_num_errs)
+        err_str += StringPrintf("Duplicated variable %d\n", var);
     }
     (*variable_seen)[var] = true;
   }
+
   for (int i = 0; i < terms.literals_size(); ++i) {
     const int var = Literal(terms.literals(i)).Variable().value();
     (*variable_seen)[var] = false;
   }
-  return true;
+  if (num_errs) {
+    if (num_errs <= max_num_errs) {
+      err_str = StringPrintf("%d validation errors:\n", num_errs) + err_str;
+    } else {
+      err_str = StringPrintf("%d validation errors; here are the first %d:\n",
+                             num_errs, max_num_errs) + err_str;
+    }
+  }
+  return err_str;
+}
+
+// Converts a linear expression from the protocol buffer format to a vector
+// of LiteralWithCoeff.
+template <typename ProtoFormat>
+std::vector<LiteralWithCoeff> ConvertLinearExpression(const ProtoFormat& input) {
+  std::vector<LiteralWithCoeff> cst;
+  for (int i = 0; i < input.literals_size(); ++i) {
+    const Literal literal(input.literals(i));
+    cst.push_back(LiteralWithCoeff(literal, input.coefficients(i)));
+  }
+  return cst;
 }
 
 }  // namespace
 
-bool BooleanProblemIsValid(const LinearBooleanProblem& problem) {
+util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
   std::vector<bool> variable_seen(problem.num_variables(), false);
-  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    if (!IsValid(constraint, &variable_seen)) {
-      LOG(INFO) << "Invalid constraint " << constraint.name();
-      return false;
+  for (int i = 0; i < problem.constraints_size(); ++i) {
+    const LinearBooleanConstraint& constraint = problem.constraints(i);
+    const std::string error = ValidateLinearTerms(constraint, &variable_seen);
+    if (!error.empty()) {
+      return util::Status(util::error::INVALID_ARGUMENT,
+                          StringPrintf("Invalid constraint %i: ", i) + error);
     }
   }
-  if (!IsValid(problem.objective(), &variable_seen)) {
-    LOG(INFO) << "Invalid objective.";
-    return false;
+  const std::string error = ValidateLinearTerms(problem.objective(), &variable_seen);
+  if (!error.empty()) {
+    return util::Status(util::error::INVALID_ARGUMENT,
+                        StringPrintf("Invalid objective: ") + error);
   }
-  return true;
+  return util::Status::OK;
+}
+
+void ChangeOptimizationDirection(LinearBooleanProblem* problem) {
+  LinearObjective* objective = problem->mutable_objective();
+  objective->set_scaling_factor(-objective->scaling_factor());
+  objective->set_offset(-objective->offset());
+  // We need 'auto' here to keep the open-source compilation happy
+  // (it uses the public protobuf release).
+  for (auto& coefficients_ref : *objective->mutable_coefficients()) {
+    coefficients_ref = -coefficients_ref;
+  }
 }
 
 bool LoadBooleanProblem(const LinearBooleanProblem& problem,
@@ -97,8 +140,10 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   // constraints with duplicate variables, so we just output a warning if the
   // problem is not "valid". Make this a strong check once we have some
   // preprocessing step to remove duplicates variable in the constraints.
-  if (!BooleanProblemIsValid(problem)) {
-    LOG(WARNING) << "The given problem is invalid!";
+  const util::Status status = ValidateBooleanProblem(problem);
+  if (!status.ok()) {
+    // LOG(WARNING) << "The given problem is invalid! " << status.error_message();
+    LOG(WARNING) << "The given problem is invalid! ";
   }
 
   if (solver->parameters().log_search_progress()) {
@@ -109,19 +154,20 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   solver->SetNumVariables(problem.num_variables());
   std::vector<LiteralWithCoeff> cst;
   int64 num_terms = 0;
+  int num_constraints = 0;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    cst.clear();
     num_terms += constraint.literals_size();
-    for (int i = 0; i < constraint.literals_size(); ++i) {
-      const Literal literal(constraint.literals(i));
-      cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
-    }
+    cst = ConvertLinearExpression(constraint);
     if (!solver->AddLinearConstraint(
             constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
             constraint.has_upper_bound(), Coefficient(constraint.upper_bound()),
             &cst)) {
+      LOG(INFO) << "Problem detected to be UNSAT when "
+                << "adding the constraint #" << num_constraints
+                << " with name '" << constraint.name() << "'";
       return false;
     }
+    ++num_constraints;
   }
   if (solver->parameters().log_search_progress()) {
     LOG(INFO) << "The problem contains " << num_terms << " terms.";
@@ -131,48 +177,36 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
 
 void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
                                             SatSolver* solver) {
-  // Initialize the heuristic to look for a good solution.
-  if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
-      problem.type() == LinearBooleanProblem::MAXIMIZATION) {
-    const int sign =
-        (problem.type() == LinearBooleanProblem::MAXIMIZATION) ? -1 : 1;
-    const LinearObjective& objective = problem.objective();
-    double max_weight = 0;
-    for (int i = 0; i < objective.literals_size(); ++i) {
-      max_weight =
-          std::max(max_weight, fabs(static_cast<double>(objective.coefficients(i))));
-    }
-    for (int i = 0; i < objective.literals_size(); ++i) {
-      const double weight =
-          fabs(static_cast<double>(objective.coefficients(i))) / max_weight;
-      if (sign * objective.coefficients(i) > 0) {
-        solver->SetAssignmentPreference(
-            Literal(objective.literals(i)).Negated(), weight);
-      } else {
-        solver->SetAssignmentPreference(Literal(objective.literals(i)), weight);
-      }
+  const LinearObjective& objective = problem.objective();
+  double max_weight = 0;
+  for (int i = 0; i < objective.literals_size(); ++i) {
+    max_weight =
+        std::max(max_weight, fabs(static_cast<double>(objective.coefficients(i))));
+  }
+  for (int i = 0; i < objective.literals_size(); ++i) {
+    const double weight =
+        fabs(static_cast<double>(objective.coefficients(i))) / max_weight;
+    if (objective.coefficients(i) > 0) {
+      solver->SetAssignmentPreference(Literal(objective.literals(i)).Negated(),
+                                      weight);
+    } else {
+      solver->SetAssignmentPreference(Literal(objective.literals(i)), weight);
     }
   }
+}
+
+bool AddObjectiveUpperBound(const LinearBooleanProblem& problem,
+                            Coefficient upper_bound, SatSolver* solver) {
+  std::vector<LiteralWithCoeff> cst = ConvertLinearExpression(problem.objective());
+  return solver->AddLinearConstraint(false, Coefficient(0), true, upper_bound,
+                                     &cst);
 }
 
 bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
                             bool use_lower_bound, Coefficient lower_bound,
                             bool use_upper_bound, Coefficient upper_bound,
                             SatSolver* solver) {
-  if (problem.type() != LinearBooleanProblem::MINIMIZATION &&
-      problem.type() != LinearBooleanProblem::MAXIMIZATION) {
-    return true;
-  }
-  std::vector<LiteralWithCoeff> cst;
-  const LinearObjective& objective = problem.objective();
-  for (int i = 0; i < objective.literals_size(); ++i) {
-    const Literal literal(objective.literals(i));
-    if (literal.Variable() >= problem.num_variables()) {
-      LOG(WARNING) << "Literal out of bound: " << literal;
-      return false;
-    }
-    cst.push_back(LiteralWithCoeff(literal, objective.coefficients(i)));
-  }
+  std::vector<LiteralWithCoeff> cst = ConvertLinearExpression(problem.objective());
   return solver->AddLinearConstraint(use_lower_bound, lower_bound,
                                      use_upper_bound, upper_bound, &cst);
 }
@@ -223,7 +257,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 // form >= 1) and all objective weights must be strictly positive.
 std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem) {
   std::string output;
-  const bool is_wcnf = (problem.type() == LinearBooleanProblem::MINIMIZATION);
+  const bool is_wcnf = (problem.objective().coefficients_size() > 0);
   const LinearObjective& objective = problem.objective();
 
   // Hack: We know that all the variables with index greater than this have been
@@ -375,11 +409,7 @@ Graph* GenerateGraphForSymmetryDetection(
   CanonicalBooleanLinearProblem canonical_problem;
   std::vector<LiteralWithCoeff> cst;
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    cst.clear();
-    for (int i = 0; i < constraint.literals_size(); ++i) {
-      const Literal literal(constraint.literals(i));
-      cst.push_back(LiteralWithCoeff(literal, constraint.coefficients(i)));
-    }
+    cst = ConvertLinearExpression(constraint);
     CHECK(canonical_problem.AddLinearConstraint(
         constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
         constraint.has_upper_bound(), Coefficient(constraint.upper_bound()),
@@ -414,25 +444,18 @@ Graph* GenerateGraphForSymmetryDetection(
       id_generator.GetId(NodeType::LITERAL_NODE, Coefficient(0)));
 
   // Literals with different objective coeffs shouldn't be in the same class.
-  if (problem.type() == LinearBooleanProblem::MINIMIZATION ||
-      problem.type() == LinearBooleanProblem::MAXIMIZATION) {
-    // We need to canonicalize the objective to regroup literals corresponding
-    // to the same variables.
-    std::vector<LiteralWithCoeff> expr;
-    const LinearObjective& objective = problem.objective();
-    for (int i = 0; i < objective.literals_size(); ++i) {
-      const Literal literal(objective.literals(i));
-      expr.push_back(LiteralWithCoeff(literal, objective.coefficients(i)));
-    }
-    // Note that we don't care about the offset or optimization direction here,
-    // we just care about literals with the same canonical coefficient.
-    Coefficient shift;
-    Coefficient max_value;
-    ComputeBooleanLinearExpressionCanonicalForm(&expr, &shift, &max_value);
-    for (LiteralWithCoeff term : expr) {
-      (*initial_equivalence_classes)[term.literal.Index().value()] =
-          id_generator.GetId(NodeType::LITERAL_NODE, term.coefficient);
-    }
+  //
+  // We need to canonicalize the objective to regroup literals corresponding
+  // to the same variables. Note that we don't care about the offset or
+  // optimization direction here, we just care about literals with the same
+  // canonical coefficient.
+  Coefficient shift;
+  Coefficient max_value;
+  std::vector<LiteralWithCoeff> expr = ConvertLinearExpression(problem.objective());
+  ComputeBooleanLinearExpressionCanonicalForm(&expr, &shift, &max_value);
+  for (LiteralWithCoeff term : expr) {
+    (*initial_equivalence_classes)[term.literal.Index().value()] =
+        id_generator.GetId(NodeType::LITERAL_NODE, term.coefficient);
   }
 
   // Then, for each constraint, we will have one or more nodes.
@@ -585,6 +608,146 @@ void FindLinearBooleanProblemSymmetries(
   average_support_size /= num_generators;
   LOG(INFO) << "# of generators: " << num_generators;
   LOG(INFO) << "Average support size: " << average_support_size;
+}
+
+void ApplyLiteralMappingToBooleanProblem(
+    const ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    LinearBooleanProblem* problem) {
+  Coefficient bound_shift;
+  Coefficient max_value;
+  std::vector<LiteralWithCoeff> cst;
+
+  // First the objective.
+  cst = ConvertLinearExpression(problem->objective());
+  ApplyLiteralMapping(mapping, &cst, &bound_shift, &max_value);
+  LinearObjective* mutable_objective = problem->mutable_objective();
+  mutable_objective->clear_literals();
+  mutable_objective->clear_coefficients();
+  mutable_objective->set_offset(mutable_objective->offset() -
+                                bound_shift.value());
+  for (const LiteralWithCoeff& entry : cst) {
+    mutable_objective->add_literals(entry.literal.SignedValue());
+    mutable_objective->add_coefficients(entry.coefficient.value());
+  }
+
+  // Now the clauses.
+  for (LinearBooleanConstraint& constraint : *problem->mutable_constraints()) {
+    cst = ConvertLinearExpression(constraint);
+    constraint.clear_literals();
+    constraint.clear_coefficients();
+    ApplyLiteralMapping(mapping, &cst, &bound_shift, &max_value);
+
+    // Add bound_shift to the bounds and remove a bound if it is now trivial.
+    if (constraint.has_upper_bound()) {
+      constraint.set_upper_bound(constraint.upper_bound() +
+                                 bound_shift.value());
+      if (max_value <= constraint.upper_bound()) {
+        constraint.clear_upper_bound();
+      }
+    }
+    if (constraint.has_lower_bound()) {
+      constraint.set_lower_bound(constraint.lower_bound() +
+                                 bound_shift.value());
+      // This is because ApplyLiteralMapping make all coefficient positive.
+      if (constraint.lower_bound() <= 0) {
+        constraint.clear_lower_bound();
+      }
+    }
+
+    // If the constraint is always true, we just leave it empty.
+    if (constraint.has_lower_bound() || constraint.has_upper_bound()) {
+      for (const LiteralWithCoeff& entry : cst) {
+        constraint.add_literals(entry.literal.SignedValue());
+        constraint.add_coefficients(entry.coefficient.value());
+      }
+    }
+  }
+
+  // Remove empty constraints.
+  int new_index = 0;
+  const int num_constraints = problem->constraints_size();
+  for (int i = 0; i < num_constraints; ++i) {
+    if (!(problem->constraints(i).literals_size() == 0)) {
+      problem->mutable_constraints()->SwapElements(i, new_index);
+      ++new_index;
+    }
+  }
+  problem->mutable_constraints()->DeleteSubrange(new_index,
+                                                 num_constraints - new_index);
+
+  // Computes the new number of variables and set it.
+  int num_vars = 0;
+  for (LiteralIndex index : mapping) {
+    if (index >= 0) {
+      num_vars = std::max(num_vars, Literal(index).Variable().value() + 1);
+    }
+  }
+  problem->set_num_variables(num_vars);
+
+  // TODO(user): The names is currently all scrambled. Do something about it
+  // so that non-fixed variables keep their names.
+  problem->mutable_var_names()->DeleteSubrange(
+      num_vars, problem->var_names_size() - num_vars);
+}
+
+// A simple preprocessing step that does basic probing and removes the
+// equivalent literals.
+void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
+                             LinearBooleanProblem* problem) {
+  // TODO(user): expose the number of iterations as a parameter.
+  for (int iter = 0; iter < 6; ++iter) {
+    SatSolver solver;
+    if (!LoadBooleanProblem(*problem, &solver)) {
+      LOG(INFO) << "UNSAT when loading the problem.";
+    }
+
+    ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    ProbeAndFindEquivalentLiteral(&solver, postsolver, &equiv_map);
+
+    // We can abort if no information is learned.
+    if (equiv_map.empty() && solver.LiteralTrail().Index() == 0) break;
+
+    if (equiv_map.empty()) {
+      const int num_literals = 2 * solver.NumVariables();
+      for (LiteralIndex index(0); index < num_literals; ++index) {
+        equiv_map.push_back(index);
+      }
+    }
+
+    // Fix fixed variables in the equivalence map and in the postsolver.
+    solver.Backtrack(0);
+    for (int i = 0; i < solver.LiteralTrail().Index(); ++i) {
+      const Literal l = solver.LiteralTrail()[i];
+      equiv_map[l.Index()] = kTrueLiteralIndex;
+      equiv_map[l.NegatedIndex()] = kFalseLiteralIndex;
+      postsolver->FixVariable(l);
+    }
+
+    // Remap the variables into a dense set. All the variables for which the
+    // equiv_map is not the identity are no longer needed.
+    VariableIndex new_var(0);
+    ITIVector<VariableIndex, VariableIndex> var_map;
+    for (VariableIndex var(0); var < solver.NumVariables(); ++var) {
+      if (equiv_map[Literal(var, true).Index()] == Literal(var, true).Index()) {
+        var_map.push_back(new_var);
+        ++new_var;
+      } else {
+        var_map.push_back(VariableIndex(-1));
+      }
+    }
+
+    // Apply the variable mapping.
+    postsolver->ApplyMapping(var_map);
+    for (LiteralIndex index(0); index < equiv_map.size(); ++index) {
+      if (equiv_map[index] >= 0) {
+        const Literal l(equiv_map[index]);
+        const VariableIndex image = var_map[l.Variable()];
+        CHECK_NE(image, VariableIndex(-1));
+        equiv_map[index] = Literal(image, l.IsPositive()).Index();
+      }
+    }
+    ApplyLiteralMappingToBooleanProblem(equiv_map, problem);
+  }
 }
 
 }  // namespace sat

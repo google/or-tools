@@ -61,13 +61,10 @@ struct VariableInfo {
 // the solver needs to keep a few extra fields attached to each clause.
 class SatClause {
  public:
-  // Creates a sat clause. There must be at least 2 literals.
-  // Smaller clause are treated separatly and never constructed.
-  enum ClauseType {
-    PROBLEM_CLAUSE,
-    LEARNED_CLAUSE,
-  };
-  static SatClause* Create(const std::vector<Literal>& literals, ClauseType type,
+  // Creates a sat clause. There must be at least 2 literals. Smaller clause are
+  // treated separatly and never constructed. A redundant clause can be removed
+  // without changing the problem.
+  static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant,
                            ResolutionNode* node);
 
   // Number of literals in the clause.
@@ -101,10 +98,10 @@ class SatClause {
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment,
                                         std::vector<Literal>* removed_literals);
 
-  // True if the clause must be kept for the problem to remain the same. Usually
-  // the clause we learn during the search can be deleted if needed, so this
-  // will be false for them.
-  bool MustBeKept() const { return must_be_kept_; }
+  // True if the clause can be safely removed without changing the current
+  // problem. Usually the clause we learn during the search are redundant since
+  // the original clauses are enough to define the problem.
+  bool IsRedundant() const { return is_redundant_; }
 
   // Returns true if the clause is satisfied for the given assignment. Note that
   // the assignment may be partial, so false does not mean that the clause can't
@@ -153,7 +150,7 @@ class SatClause {
   // Note that the max lbd is the maximum depth of the search tree (decision
   // levels), so it should fit easily in 30 bits. Note that we can also upper
   // bound it without hurting too much the clause cleaning heuristic.
-  bool must_be_kept_ : 1;
+  bool is_redundant_ : 1;
   bool is_attached_ : 1;
   int lbd_ : 30;
   int size_ : 32;
@@ -205,6 +202,9 @@ class LiteralWatchers {
 
   // Total number of clauses inspected during calls to PropagateOnFalse().
   int64 num_inspected_clauses() const { return num_inspected_clauses_; }
+  int64 num_inspected_clause_literals() const {
+    return num_inspected_clause_literals_;
+  }
 
   // Number of clauses currently watched.
   int64 num_watched_clauses() const { return num_watched_clauses_; }
@@ -237,12 +237,13 @@ class LiteralWatchers {
 
   // Indicates if the corresponding watchers_on_false_ list need to be
   // cleaned. The boolean is_clean_ is just used in DCHECKs.
-  ITIVector<LiteralIndex, bool> needs_cleaning_;
+  SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_;
 
   ITIVector<VariableIndex, VariableInfo> statistics_;
   SatParameters parameters_;
   int64 num_inspected_clauses_;
+  int64 num_inspected_clause_literals_;
   int64 num_watched_clauses_;
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(LiteralWatchers);
@@ -281,11 +282,7 @@ class BinaryClauseManager {
   void ClearNewlyAdded() { newly_added_.clear(); }
 
  private:
-#if defined(_MSC_VER)
-  hash_set<std::pair<int32, int32>, PairIntHasher> set_;
-#else
   hash_set<std::pair<int32, int32>> set_;
-#endif
   std::vector<BinaryClause> newly_added_;
   DISALLOW_COPY_AND_ASSIGN(BinaryClauseManager);
 };
@@ -327,6 +324,7 @@ class BinaryImplicationGraph {
   BinaryImplicationGraph()
       : num_implications_(0),
         num_propagations_(0),
+        num_inspections_(0),
         num_minimization_(0),
         num_literals_removed_(0),
         num_redundant_implications_(0),
@@ -377,6 +375,9 @@ class BinaryImplicationGraph {
   // Number of literal propagated by this class (including conflicts).
   int64 num_propagations() const { return num_propagations_; }
 
+  // Number of literals inspected by this class during propagation.
+  int64 num_inspections() const { return num_inspections_; }
+
   // MinimizeClause() stats.
   int64 num_minimization() const { return num_minimization_; }
   int64 num_literals_removed() const { return num_literals_removed_; }
@@ -412,6 +413,7 @@ class BinaryImplicationGraph {
 
   // Some stats.
   int64 num_propagations_;
+  int64 num_inspections_;
   int64 num_minimization_;
   int64 num_literals_removed_;
   int64 num_redundant_implications_;

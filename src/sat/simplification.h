@@ -24,29 +24,66 @@
 
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
+#include "sat/sat_solver.h"
 
 #include "base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace sat {
 
-// A really simple postsolver that process the clause added in reverse order.
-// If a clause has all its literals at false, it simply sets the literal
-// that was registered with the clause to true.
+// A simple sat postsolver.
+//
+// The idea is that any presolve algorithm can just update this class, and at
+// the end, this class will recover a solution of the initial problem from a
+// solution of the presolved problem.
 class SatPostsolver {
  public:
-  SatPostsolver() {}
-  void Add(Literal x, std::vector<Literal>* clause) {
-    CHECK(!clause->empty());
-    clauses_.push_back(std::vector<Literal>());
-    clauses_.back().swap(*clause);
-    associated_literal_.push_back(x);
-  }
-  void Postsolve(VariablesAssignment* assignment) const;
+  explicit SatPostsolver(int num_variables);
+
+  // The postsolver will process the Add() calls in reverse order. If the given
+  // clause has all its literals at false, it simply sets the literal x to true.
+  // Note that x must be a literal of the given clause, and that the clause will
+  // be cleared.
+  void Add(Literal x, std::vector<Literal>* clause);
+
+  // Tells the postsolver that the given literal must be true in any solution.
+  // We currently check that the variable is not already fixed.
+  void FixVariable(Literal x);
+
+  // This assumes that the given variable mapping has been applied to the
+  // problem. All the subsequent Add() and FixVariable() will refer to the new
+  // problem. During postsolve, the initial solution must also correspond to
+  // this new problem. Note that if mapping[v] == -1, then the literal v is
+  // assumed to be deleted.
+  //
+  // This can be called more than once. But each call must refer to the current
+  // variables set (after all the previous mapping have been applied).
+  void ApplyMapping(const ITIVector<VariableIndex, VariableIndex>& mapping);
+
+  // Extracts the current assignment of the given solver and postsolve it.
+  //
+  // Node(fdid): This can currently be called only once (but this is easy to
+  // change since only some CHECK will fail).
+  std::vector<bool> ExtractAndPostsolveSolution(const SatSolver& solver);
+  std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
 
  private:
+  Literal ApplyReverseMapping(Literal l);
+  void Postsolve(VariablesAssignment* assignment) const;
+
+  // Stores the arguments of the Add() calls.
   std::vector<std::vector<Literal>> clauses_;
   std::vector<Literal> associated_literal_;
+
+  // All the added clauses will be mapped back to the initial variables using
+  // this reverse mapping. This way, clauses_ and associated_literal_ are only
+  // in term of the initial problem.
+  ITIVector<VariableIndex, VariableIndex> reverse_mapping_;
+
+  // This will stores the fixed variables value and later the postsolved
+  // assignment.
+  VariablesAssignment assignment_;
+
   DISALLOW_COPY_AND_ASSIGN(SatPostsolver);
 };
 
@@ -69,8 +106,16 @@ class SatPresolver {
   // it is not really needed here.
   typedef int32 ClauseIndex;
 
-  SatPresolver() {}
+  explicit SatPresolver(SatPostsolver* postsolver)
+      : postsolver_(postsolver), num_trivial_clauses_(0) {}
   void SetParameters(const SatParameters& params) { parameters_ = params; }
+
+  // Registers a mapping to encode equivalent literals.
+  // See ProbeAndFindEquivalentLiteral().
+  void SetEquivalentLiteralMapping(
+      const ITIVector<LiteralIndex, LiteralIndex>& mapping) {
+    equiv_mapping_ = mapping;
+  }
 
   // Adds new clause to the SatPresolver.
   void AddBinaryClause(Literal a, Literal b);
@@ -82,11 +127,6 @@ class SatPresolver {
   // TODO(user): Add support for a time limit and some kind of iterations limit
   // so that this can never take too much time.
   bool Presolve();
-
-  // Postsolve a SAT assignment of the presolved problem.
-  void Postsolve(VariablesAssignment* assignemnt) const {
-    postsolver_.Postsolve(assignemnt);
-  }
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
@@ -105,9 +145,14 @@ class SatPresolver {
 
   // After presolving, Some variables in [0, NumVariables()) have no longer any
   // clause pointing to them. This return a mapping that maps this interval to
-  // [0, *new_size) such that now all variables are used. The unused variable
+  // [0, new_size) such that now all variables are used. The unused variable
   // will be mapped to VariableIndex(-1).
-  ITIVector<VariableIndex, VariableIndex> GetMapping(int* new_size) const;
+  ITIVector<VariableIndex, VariableIndex> VariableMapping() const;
+
+  // Loads the current presolved problem in to the given sat solver.
+  // Note that the variables will be re-indexed according to the mapping given
+  // by GetMapping() so that they form a dense set.
+  void LoadProblemIntoSatSolver(SatSolver* solver) const;
 
   // Visible for Testing. Takes a given clause index and looks for clause that
   // can be subsumed or strengthened using this clause. Returns false if the
@@ -123,6 +168,11 @@ class SatPresolver {
   bool CrossProduct(Literal x);
 
  private:
+  // Internal function to add clauses generated during the presolve. The clause
+  // must already be sorted with the default Literal order and will be cleared
+  // after this call.
+  void AddClauseInternal(std::vector<Literal>* clause);
+
   // Clause removal function.
   void Remove(ClauseIndex ci);
   void RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x);
@@ -181,10 +231,15 @@ class SatPresolver {
 
   // Because we only lazily clean the occurence list after clause deletions,
   // we keep the size of the occurence list (without the deleted clause) here.
-  ITIVector<LiteralIndex, int> literal_to_clauses_sizes_;
+  ITIVector<LiteralIndex, int> literal_to_clause_sizes_;
 
   // Used for postsolve.
-  SatPostsolver postsolver_;
+  SatPostsolver* postsolver_;
+
+  // Equivalent literal mapping.
+  ITIVector<LiteralIndex, LiteralIndex> equiv_mapping_;
+
+  int num_trivial_clauses_;
 
   SatParameters parameters_;
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
@@ -212,6 +267,22 @@ bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
 // distribution.
 bool ComputeResolvant(Literal x, const std::vector<Literal>& a,
                       const std::vector<Literal>& b, std::vector<Literal>* out);
+
+// Presolver that does literals probing and finds equivalent literals by
+// computing the strongly connected components of the graph:
+//   literal l -> literals propagated by l.
+//
+// Clears the mapping if there are no equivalent literals. Otherwise, mapping[l]
+// is the representative of the equivalent class of l. Note that mapping[l] may
+// be equal to l.
+//
+// The postsolver will be updated so it can recover a solution of the mapped
+// problem. Note that this works on any problem the SatSolver can handle, not
+// only pure SAT problem, but the returned mapping do need to be applied to all
+// constraints.
+void ProbeAndFindEquivalentLiteral(
+    SatSolver* solver, SatPostsolver* postsolver,
+    ITIVector<LiteralIndex, LiteralIndex>* mapping);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -69,6 +69,22 @@ bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* 
                                                  Coefficient* bound_shift,
                                                  Coefficient* max_value);
 
+// Maps all the literals of the given constraint using the given mapping. The
+// mapping may map a literal index to kTrueLiteralIndex or kFalseLiteralIndex in
+// which case the literal will be considered fixed to the appropriate value.
+//
+// Note that this function also canonicalizes the constraint and updates
+// bound_shift and max_value like ComputeBooleanLinearExpressionCanonicalForm()
+// does.
+//
+// Finally, this will return false if some integer overflow or underflow occured
+// during the constraint simplification.
+const LiteralIndex kTrueLiteralIndex(-1);
+const LiteralIndex kFalseLiteralIndex(-2);
+bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
+                         std::vector<LiteralWithCoeff>* cst,
+                         Coefficient* bound_shift, Coefficient* max_value);
+
 // From a constraint 'expr <= ub' and the result (bound_shift, max_value) of
 // calling ComputeBooleanLinearExpressionCanonicalForm() on 'expr', this returns
 // a new rhs such that 'canonical expression <= rhs' is an equivalent
@@ -421,6 +437,10 @@ class UpperBoundedLinearConstraint {
   // This is used for duplicate detection.
   int64 hash() const { return hash_; }
 
+  // This is used to get statistics of the number of literals inspected by a
+  // Propagate() call.
+  int already_propagated_end() const { return already_propagated_end_; }
+
  private:
   Coefficient GetSlackFromThreshold(Coefficient threshold) {
     return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
@@ -471,6 +491,7 @@ class PbConstraints {
         constraint_activity_increment_(1.0),
         stats_("PbConstraints"),
         num_constraint_lookups_(0),
+        num_inspected_constraint_literals_(0),
         num_threshold_updates_(0) {}
   ~PbConstraints() {
     IF_STATS_ENABLED({
@@ -557,6 +578,13 @@ class PbConstraints {
     DeleteConstraintMarkedForDeletion();
   }
 
+  // Some statistics.
+  int64 num_constraint_lookups() const { return num_constraint_lookups_; }
+  int64 num_inspected_constraint_literals() const {
+    return num_inspected_constraint_literals_;
+  }
+  int64 num_threshold_updates() const { return num_threshold_updates_; }
+
  private:
   // Same function as the clause related one is SatSolver().
   // TODO(user): Remove duplication.
@@ -628,6 +656,7 @@ class PbConstraints {
   // Some statistics.
   mutable StatsGroup stats_;
   int64 num_constraint_lookups_;
+  int64 num_inspected_constraint_literals_;
   int64 num_threshold_updates_;
   DISALLOW_COPY_AND_ASSIGN(PbConstraints);
 };
