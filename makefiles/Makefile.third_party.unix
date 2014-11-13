@@ -16,7 +16,7 @@ SWIG_TAG = 18238
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
-MONO_TAG = 3.2.8
+MONO_TAG = 3.10.0
 # BISON, FLEX
 BISON_TAG = 3.0.2
 FLEX_TAG = 2.5.37
