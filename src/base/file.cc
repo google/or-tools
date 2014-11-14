@@ -95,7 +95,6 @@ int64 File::ReadToString(std::string* const output, uint64 max_length) {
   output->clear();
 
   if (max_length == 0) return 0;
-  if (max_length < 0) return -1;
 
   int64 needed = max_length;
   int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
