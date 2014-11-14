@@ -611,7 +611,7 @@ template <typename CostType> void HamiltonianPathSolver<CostType>::Solve() {
   if (solved_) return;
   if (num_nodes_ == 0) {
     tsp_cost_ = 0;
-    tsp_path_ = .clear();
+    tsp_path_.clear();
     tsp_path_.push_back(0);
     hamiltonian_paths_.resize(1);
     hamiltonian_costs_.resize(1);
