@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//
 // Cryptoarithmetic puzzle
 //
 // First attempt to solve equation CP + IS + FUN = TRUE
@@ -41,16 +40,16 @@ IntVar* const MakeBaseLine3(Solver* s,
                             IntVar* const v2,
                             IntVar* const v3,
                             const int64 base) {
-  std::vector<IntVar*> tmp_vars;
+  std::vector<IntVar*> vars;
   std::vector<int64> coefficients;
-  tmp_vars.push_back(v1);
+  vars.push_back(v1);
   coefficients.push_back(base * base);
-  tmp_vars.push_back(v2);
+  vars.push_back(v2);
   coefficients.push_back(base);
-  tmp_vars.push_back(v3);
+  vars.push_back(v3);
   coefficients.push_back(1);
 
-  return s->MakeScalProd(tmp_vars, coefficients)->Var();
+  return s->MakeScalProd(vars, coefficients)->Var();
 }
 
 IntVar* const MakeBaseLine4(Solver* s,
@@ -59,22 +58,22 @@ IntVar* const MakeBaseLine4(Solver* s,
                             IntVar* const v3,
                             IntVar* const v4,
                             const int64 base) {
-  std::vector<IntVar*> tmp_vars;
+  std::vector<IntVar*> vars;
   std::vector<int64> coefficients;
-  tmp_vars.push_back(v1);
+  vars.push_back(v1);
   coefficients.push_back(base * base * base);
-  tmp_vars.push_back(v2);
+  vars.push_back(v2);
   coefficients.push_back(base * base);
-  tmp_vars.push_back(v3);
+  vars.push_back(v3);
   coefficients.push_back(base);
-  tmp_vars.push_back(v4);
+  vars.push_back(v4);
   coefficients.push_back(1);
 
-  return s->MakeScalProd(tmp_vars, coefficients)->Var();
+  return s->MakeScalProd(vars, coefficients)->Var();
 }
 
 void CPIsFun() {
-  // Constraint Programming engine
+  // Constraint programming engine
   Solver solver("CP is fun!");
 
   const int64 kBase = 10;
@@ -109,9 +108,9 @@ void CPIsFun() {
   CHECK_GE(kBase, letters.size());
 
   // Constraints
-  solver.AddConstraint(solver.MakeAllDifferent(letters));
+  solver.AddConstraint(solver.MakeAllDifferent(letters, false));
 
-  // CP + IS + FUN = TRUE
+  // CP + IS + FUN = FUN
   IntVar* const term1 = MakeBaseLine2(&solver, c, p, kBase);
   IntVar* const term2 = MakeBaseLine2(&solver, i, s, kBase);
   IntVar* const term3 = MakeBaseLine3(&solver, f, u, n, kBase);
@@ -123,7 +122,7 @@ void CPIsFun() {
 
   solver.AddConstraint(solver.MakeEquality(sum_terms, sum));
 
-  //  Decision Builder: how to scour the search tree
+
   DecisionBuilder* const db = solver.MakePhase(letters,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);

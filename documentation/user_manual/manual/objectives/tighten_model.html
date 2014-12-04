@@ -56,23 +56,16 @@
             
   <div class="section" id="how-to-tighten-the-model">
 <span id="golomb-ruler-tighten-model"></span><h1>3.8. How to tighten the model?</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb4.cc">golomb7.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>Generally speaking, if we are able to reduce the size of the search tree (to <em>tighten</em> the model), we can speed up the search. We are talking about
-visiting (preferably implicitly) the whole search tree to be able to prove optimality (other techniques exist to find good nodes in the search tree). We present two<a class="footnote-reference" href="#two-techniques-tighten-model" id="id1">[1]</a> such techniques here. <em>Breaking symmetries</em> allows to disregard entire subtrees in the search tree that wouldn&#8217;t bring any new information to the search while <em>bounding</em> reduces the variable domains and thus reduces the number of branching and augments the efficiency of the propagation techniques<a class="footnote-reference" href="#explanation-tighten-model" id="id2">[2]</a>.</p>
-<table class="docutils footnote" frame="void" id="two-techniques-tighten-model" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>There exist other techniques. Later, in section XXX, we will see how <em>over-constraining</em> can improve the
-search.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="explanation-tighten-model" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>This short explanation is certainly too simple to describe all the subtleties of search strategies. After
-all, modelling is an art!</td></tr>
-</tbody>
-</table>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb6.cc">tutorials/cplusplus/chap3/golomb6.cc</a></p>
+visiting (preferably implicitly) the whole search tree to be able to prove optimality (other techniques exist to find good nodes in the search tree). We present two<a class="footnote-reference" href="#two-techniques-tighten-model" id="id1">[2]</a> such techniques here. <em>Breaking symmetries</em> allows to disregard entire subtrees in the search tree that wouldn&#8217;t bring any new information to the search while <em>bounding</em> reduces the variable domains and thus reduces the number of branching and augments the efficiency of the propagation techniques<a class="footnote-reference" href="#explanation-tighten-model" id="id2">[3]</a>.</p>
 <div class="section" id="breaking-symmetries-with-constraints">
 <span id="objectives-breaking-symmetries"></span><h2>3.8.1. Breaking symmetries with constraints</h2>
 <p>In the section <a class="reference internal" href="second_implementation.html#golomb-ruler-second-implementation"><em>A second model and its implementation</em></a>, when we declared the variables <tt class="docutils literal"><span class="pre">X</span></tt>
@@ -99,7 +92,7 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 </pre></div>
 </div>
 <p>In trying to avoid duplicating certain quaternary constraints, we actually declared implicitly to the solver that
-<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id3">[3]</a>. For the solver, the solution</p>
+<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id3">[1]</a>. For the solver, the solution</p>
 <div class="math" id="equation-solution1">
 <p><span class="eqno">(1)</span><img src="../../_images/math/ec8733fe984f502b1c6bb5f70c9c048765130193.png" alt="X[1] = 0, X[2] = 1, X[3] = 4, X[4] = 6"/></p>
 </div><p>and the solution</p>
@@ -111,12 +104,6 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 <span class="p">}</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="solver-guessing-sequence-golomb" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
-</tbody>
-</table>
 <p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops, the ordered variables <img class="math" src="../../_images/math/65b572143ef64e24707414197ab3ff0acaf95aa3.png" alt="X[1], X[2], X[3], X[4]" style="vertical-align: -5px"/>
 have only increasing values, i.e. if <img class="math" src="../../_images/math/c1d952598000cf900d21f6e5054c1fc4237d2282.png" alt="i \leqslant j" style="vertical-align: -4px"/> then <img class="math" src="../../_images/math/29679f51e9632ea0ee4845b2e4b3ec86ae837bec.png" alt="X[i] \leqslant X[j]" style="vertical-align: -5px"/>. Solutions <a href="#equation-solution1">(1)</a> and <a href="#equation-solution2">(2)</a> are said to be symmetric and avoiding the second one while accepting the first one is called <em>breaking symmetry</em>.</p>
 <p>There is a well-known symmetry in the Golomb Ruler Problem that we didn&#8217;t break. Whenever you have a Golomb ruler, there exist another Golomb
@@ -140,13 +127,6 @@ These constraints are generated <em>on the fly</em> during the search!</p>
 <div class="section" id="better-bounds-helps">
 <h2>3.8.2. Better bounds helps</h2>
 <p>In all implementations, we used <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1" style="vertical-align: -1px"/> as an upper bound on <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>. In the case of the Golomb Ruler Problem, finding good upper bounds is a false problem. Very efficient techniques exist to find optimal or near optimal upper bounds. If we use those bounds, we reduce dramatically the domains of the variables. We can actually use <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/> as an upper bound for <img class="math" src="../../_images/math/7ca098493594079f39bf0a7b50d859d1d8a7decc.png" alt="n \leqslant 25" style="vertical-align: -3px"/> as these bounds can be obtained by projective and affine projections in the plane<a class="footnote-reference" href="#projective-affine-transformation-golomb" id="id4">[4]</a>.</p>
-<table class="docutils footnote" frame="void" id="projective-affine-transformation-golomb" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century without any computer!
-See <a class="reference external" href="http://www.research.ibm.com/people/s/shearer/grtab.html">http://www.research.ibm.com/people/s/shearer/grtab.html</a>.</td></tr>
-</tbody>
-</table>
 <p>The search can also benefit from lower bounds. Every difference must in itself be a Golomb ruler. Thus <tt class="docutils literal"><span class="pre">Y[i][j]</span></tt> can be bounded by below by the corresponding optimal Golomb ruler.</p>
 <p>In this section, we use a 2-dimensional array to collect the differences: <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="n">Y</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
@@ -250,11 +230,38 @@ If we minimize the sum of these consecutive differences, we actually maximize th
 </tbody>
 </table>
 <p>The interested reader can find other dynamic bounds in <a class="reference internal" href="#galinieretal">[GalinierEtAl]</a>.</p>
-<table class="docutils citation" frame="void" id="galinieretal" rules="none">
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="solver-guessing-sequence-golomb" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="two-techniques-tighten-model" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[2]</a></td><td>There exist other techniques. Later, we will see how <em>over-constraining</em> can improve the
+search.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="explanation-tighten-model" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[3]</a></td><td>This short explanation is certainly too simple to describe all the subtleties of search strategies. After
+all, modelling is an art!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="projective-affine-transformation-golomb" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century without any computer!
+See <a class="reference external" href="http://www.research.ibm.com/people/s/shearer/grtab.html">http://www.research.ibm.com/people/s/shearer/grtab.html</a>.</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="galinieretal" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id5">[GalinierEtAl]</a></td><td>Philippe Galinier, Brigitte Jaumard, Rodrigo Morales and Gilles Pesant. <em>A Constraint-Based Approach to the
-Golomb Ruler Problem</em>, XXX, 2007.</td></tr>
+Golomb Ruler Problem</em>, 3rd International Workshop on the Integration of AI and OR Techniques in Constraint Programming for Combinatorial Optimization Problems (CPAIOR01), 2001.</td></tr>
 </tbody>
 </table>
 </div>

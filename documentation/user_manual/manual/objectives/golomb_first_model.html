@@ -123,38 +123,6 @@ The next table compares the number of days, the number of participants on the In
 <p>The search for <img class="math" src="../../_images/math/bf6fccb6e87ec7d41e0a872e346bc93e18b1f192.png" alt="G(27)" style="vertical-align: -4px"/> started on February 24, 2009 and at that time was expected to take... 7 years!
 Still think it is an easy<a class="footnote-reference" href="#gr-complexity" id="id4">[1]</a> problem? You too can participate: <a class="reference external" href="http://www.distributed.net/OGR">The OGR Project</a>.</p>
 <p>You can find all the known optimal Golomb rulers and more information on <a class="reference external" href="http://en.wikipedia.org/wiki/Golomb_ruler">Wikipedia</a>.</p>
-<table class="docutils footnote" frame="void" id="gr-complexity" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[1]</a></td><td>Although it is strongly suspected that the Golomb Ruler Problem is a very difficult problem,
-the computational complexity of this problem is unknown (see <a class="reference internal" href="#meyer-papakonstantinou">[Meyer-Papakonstantinou]</a>).</td></tr>
-</tbody>
-</table>
-<table class="docutils citation" frame="void" id="meyer-papakonstantinou" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[Meyer-Papakonstantinou]</a></td><td>Christophe Meyer and Periklis A. Papakonstantinou. <em>On the complexity of constructing
-Golomb Rulers</em>, Discrete Applied Mathematics, 57, pp 738–748, 2009.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="ogr24" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[2]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=24">http://stats.distributed.net/projects.php?project_id=24</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="ogr25" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[3]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=25">http://stats.distributed.net/projects.php?project_id=25</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="ogr26" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[4]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=26">http://stats.distributed.net/projects.php?project_id=26</a></td></tr>
-</tbody>
-</table>
 <div class="topic">
 <p class="topic-title first">Why Golomb Rulers?</p>
 <p>Golomb rulers have a wide variety of applications, including radio astronomy and information theory.
@@ -196,7 +164,7 @@ we force <img class="math" src="../../_images/math/90fb0c8e5c45e248d9a1f8b1d1e76
 <img alt="The inner structure of a Golomb ruler of order 5." src="../../_images/GR_first_sum.png" />
 <p class="caption">The inner structure of a Golomb ruler of order 5.</p>
 </div>
-<p>An easy way to construct these equality constraints is to use an index <cite>index</cite> going from <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9" style="vertical-align: 0px"/><a class="footnote-reference" href="#explanation-index-4-to-9" id="id6">[5]</a>, an
+<p>An easy way to construct these equality constraints is to use an index <cite>index</cite> going from <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9" style="vertical-align: 0px"/><a class="footnote-reference" href="#explanation-index-4-to-9" id="id5">[5]</a>, an
 index <cite>i</cite> to count the number of terms in a given equality and an index <cite>j</cite> to indicate the rank of the starting term in each
 equality:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">;</span>
@@ -208,13 +176,6 @@ equality:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="explanation-index-4-to-9" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Or more generally from the index of the first difference that is the sum of two differences in our sequence
-<img class="math" src="../../_images/math/7955459cf8b75c3ac12c23c393024177d7d56412.png" alt="(n-1)" style="vertical-align: -4px"/> to the index of the last difference <img class="math" src="../../_images/math/4eb116b498702e1fcf175d2b1e5641edfe5d0221.png" alt="\left( \frac{n(n-1)}{2} - 1 \right)" style="vertical-align: -13px"/>.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="solve">
 <h3>3.2.2.3. Solve</h3>
@@ -222,6 +183,45 @@ equality:</p>
 A default basic strategy will do for the moment.</p>
 <p>The next chapter <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to the subject
 of search strategies.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="gr-complexity" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[1]</a></td><td>Although it is strongly suspected that the Golomb Ruler Problem is a very difficult problem,
+the computational complexity of this problem is unknown (see <a class="reference internal" href="#meyer-papakonstantinou">[Meyer-Papakonstantinou]</a>).</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="ogr24" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[2]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=24">http://stats.distributed.net/projects.php?project_id=24</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="ogr25" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[3]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=25">http://stats.distributed.net/projects.php?project_id=25</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="ogr26" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[4]</a></td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=26">http://stats.distributed.net/projects.php?project_id=26</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="explanation-index-4-to-9" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[5]</a></td><td>Or more generally from the index of the first difference that is the sum of two differences in our sequence
+<img class="math" src="../../_images/math/7955459cf8b75c3ac12c23c393024177d7d56412.png" alt="(n-1)" style="vertical-align: -4px"/> to the index of the last difference <img class="math" src="../../_images/math/4eb116b498702e1fcf175d2b1e5641edfe5d0221.png" alt="\left( \frac{n(n-1)}{2} - 1 \right)" style="vertical-align: -13px"/>.</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="meyer-papakonstantinou" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[Meyer-Papakonstantinou]</a></td><td>Christophe Meyer and Periklis A. Papakonstantinou. <em>On the complexity of constructing
+Golomb Rulers</em>, Discrete Applied Mathematics, 57, pp 738–748, 2009.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>

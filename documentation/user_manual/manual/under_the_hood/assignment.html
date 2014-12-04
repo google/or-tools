@@ -56,96 +56,16 @@
             
   <div class="section" id="variables-and-assignments">
 <span id="hood-assignment"></span><h1>13.7. Variables and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</h1>
-<p>TO BE WRITTEN.</p>
 <div class="section" id="variables">
 <h2>13.7.1. Variables</h2>
-<p>There are <strong>four</strong> (3 + 1) types of variables:</p>
-<ul>
-<li><p class="first"><tt class="docutils literal"><span class="pre">IntVar</span></tt>:</p>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">IntervalVar</span></tt>: Inherits <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>.</dt>
-<dd><p class="first last">An interval var is often used in scheduling. Its main
-characteristics are its start position, its duration and its end
-date. All these characteristics can be queried, set and demons can
-be posted on their modifications.  An important aspect is
-optionality. An interval var can be performed or not. If
-unperformed, then it simply does not exist. Its characteristics
-cannot be accessed anymore. An interval var is automatically marked
-as unperformed when it is not consistent anymore (start greater
-than end, duration &lt; 0...)</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">SequenceVar</span></tt>: Inherits <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>.</dt>
-<dd><p class="first last">A sequence variable is a variable which domain is a set of possible
-orderings of the interval variables. It allows ordering tasks.  It
-has two sets of methods: ComputePossibleFirstsAndLasts() which
-returns the list of interval variables thant can be ranked first or
-lasts, and RankFirst/RankNotFirst/RankLast/RankNotLast which can be
-used to create the search decision.</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">OptimizeVar</span></tt>: Inherits from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</dt>
-<dd><p class="first last">This class encapsulate an objective. It requires the direction
-(minimize or maximize), the variable to optimize and the
-improvement step.</p>
-</dd>
-</dl>
-</li>
-</ul>
-<div class="topic">
-<p class="topic-title first">What is <tt class="docutils literal"><span class="pre">SetVar</span></tt>?</p>
-<p>You might have seen a <tt class="docutils literal"><span class="pre">SetVar</span></tt> that inherits from <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt>. The purpose of this &#8220;variable&#8221;
-is to ...</p>
-</div>
 <div class="section" id="intexpr">
 <h3>13.7.1.1. <tt class="docutils literal"><span class="pre">IntExpr</span></tt></h3>
-<p>The class IntExpr is the base of all integer expressions in
-constraint programming.</p>
-<p>It contains the basic protocol for an expression:</p>
-<ul class="simple">
-<li>setting and modifying its bound</li>
-<li>querying if it is bound</li>
-<li>listening to events modifying its bounds</li>
-<li>casting it into a variable (instance of IntVar)</li>
-</ul>
-<p>class IntExpr : public PropagationBaseObject</p>
 </div>
 </div>
 <div class="section" id="assignments">
 <h2>13.7.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</h2>
-<p>The <tt class="docutils literal"><span class="pre">Assignment</span></tt> class is declared in the header <tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solver.h</span></tt>
-and additional definitions can be found in the file <tt class="file docutils literal"><span class="pre">constraint_solver/assignment.cc</span></tt>.</p>
-<p id="index-0">An <tt class="docutils literal"><span class="pre">Assignment</span></tt> is basically a mapping between some variables and their domains. It is used
-to report solutions to the user and let the user store solutions (and eventually pass them back to the solver).</p>
-<p>For efficiency, an <tt class="docutils literal"><span class="pre">Assignment</span></tt> contains simplified versions of the
-variables:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">IntVar</span></tt>s are replaced by <tt class="docutils literal"><span class="pre">IntVarElement</span></tt>s;</li>
-<li><tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s are replaced by <tt class="docutils literal"><span class="pre">IntervalVarElement</span></tt>s;</li>
-<li><tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s are replaced by <tt class="docutils literal"><span class="pre">SequenceVarElement</span></tt>s and</li>
-<li><tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> is replaced by an <tt class="docutils literal"><span class="pre">IntVarElement</span></tt>.</li>
-</ul>
 <div class="section" id="store-versus-restore">
 <h3>13.7.2.1. <tt class="docutils literal"><span class="pre">Store()</span></tt> versus <tt class="docutils literal"><span class="pre">Restore()</span></tt></h3>
-<p>To bridge the gap between the real variables and the simplified versions used in the <tt class="docutils literal"><span class="pre">Assignment</span></tt> class, use
-the <tt class="docutils literal"><span class="pre">Store()</span></tt> and <tt class="docutils literal"><span class="pre">Restore()</span></tt> methods:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Store()</span></tt> takes the values stored in the <tt class="docutils literal"><span class="pre">xxxElement</span></tt>s and transfer them (if the variables are <em>activated</em>)
-to the real variables;</li>
-<li><tt class="docutils literal"><span class="pre">ReStore()</span></tt> does the opposite and put the values hold in the real variables in the simplified variables.</li>
-</ul>
-<p>Explain:</p>
-<ul class="simple">
-<li>Store &lt;-&gt; Restore mechanism.</li>
-<li>Activated or not</li>
-<li>Load, Save -&gt; in utilities, Serializing.</li>
-<li></li>
-</ul>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3.1. Objective functions and how to compare search strategies &mdash; or-tools User&#39;s Manual</title>
+    <title>1.9. Summary &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="3. Using objectives in constraint programming: the Golomb ruler problem" href="../objectives.html" />
-    <link rel="next" title="3.2. The Golomb ruler problem and a first model" href="golomb_first_model.html" />
-    <link rel="prev" title="3. Using objectives in constraint programming: the Golomb ruler problem" href="../objectives.html" /> 
+    <link rel="up" title="1. Introduction to constraint programming" href="../introduction.html" />
+    <link rel="next" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
+    <link rel="prev" title="1.8. The content of the manual" href="manual_content.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="golomb_first_model.html" title="3.2. The Golomb ruler problem and a first model"
+          <a href="../first_steps.html" title="2. First steps with or-tools: cryptarithmetic puzzles"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../objectives.html" title="3. Using objectives in constraint programming: the Golomb ruler problem"
+          <a href="manual_content.html" title="1.8. The content of the manual"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../objectives.html" accesskey="U">3. Using objectives in constraint programming: the Golomb ruler problem</a> &raquo;</li> 
+          <li><a href="../introduction.html" accesskey="U">1. Introduction to constraint programming</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,36 +54,10 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="objective-functions-and-how-to-compare-search-strategies">
-<span id="objective-functions"></span><h1>3.1. Objective functions and how to compare search strategies</h1>
-<p id="index-0">In this chapter, we want to construct a ruler with minimal
-length. Not any ruler, a Golomb ruler. The ruler we seek has to obey
-certain constraints, i.e. it has to be a feasible solutions of the models
-we develop to represent the Golomb Ruler Problem.</p>
-<p>The objective function to minimize is the length of the Golomb ruler.
-You can see the objective function as a variable: you want to find out what is the
-minimum or maximum value this variable can hold for any given feasible
-solution.</p>
-<p>Don&#8217;t worry if this is not all
-too clear. There are numerous examples in this manual and you will quickly
-learn these concepts without even realizing it.</p>
-<p>We search for the smallest Golomb ruler but we also want to do it fast<a class="footnote-reference" href="#golom-honesty" id="id1">[1]</a>. We
-will devise different models and compare them.
-To do so, we will look at the following statistics:</p>
-<ul class="simple">
-<li><strong>time:</strong> This our main criteria. The faster the better!</li>
-<li><strong>failures:</strong> How many times do we need to backtrack in the search tree? Many failures might be an indication that there exist better search strategies and/or models.</li>
-<li><strong>branches:</strong> How many times do we need to branch? Faster algorithms tend to visit fewer branches and better models tend to have smaller search trees.</li>
-</ul>
-<p>Later, in the chapter <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives: the n-Queens Problem</em></a>, we will devise different search strategies and compare them using the same statistics.</p>
-<h4>Footnote</h4><table class="docutils footnote" frame="void" id="golom-honesty" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>To be honest, if you really want to solve the Golomb Ruler Problem, you
-shouldn&#8217;t use CP as, until now, no one found how to use CP in an efficient manner to solve this difficult
-problem.</td></tr>
-</tbody>
-</table>
+  <div class="section" id="summary">
+<span id="introduction-summary"></span><h1>1.9. Summary</h1>
+<p>In this introductory chapter, we covered quite a lot of material. We introduced a mathematical problem, the 4-Queens Problem, and saw in details how the solver manages to find a solution to this problem. We then presented a brief overview of constraint programming and its strengths and weaknesses. The <strong>or-tools</strong> library essentially uses constraint programming. We also gave you
+an overview of the beautiful <em>complexity</em> theory. And finally, we proposed a school book approach to solve a real problem if you are stuck.</p>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
@@ -158,14 +132,14 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../objectives.html"
-                        title="previous chapter">3. Using objectives in constraint programming: the Golomb ruler problem</a></p>
+  <p class="topless"><a href="../introduction.html"
+                        title="previous chapter">1. Introduction to constraint programming</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="../objectives.html"
-                        title="previous chapter">3. Using objectives in constraint programming: the Golomb ruler problem</a></p>
+  <p class="topless"><a href="manual_content.html"
+                        title="previous chapter">1.8. The content of the manual</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="golomb_first_model.html"
-                        title="next chapter">3.2. The Golomb ruler problem and a first model</a></p>
+  <p class="topless"><a href="../first_steps.html"
+                        title="next chapter">2. First steps with or-tools: cryptarithmetic puzzles</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -177,13 +151,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="golomb_first_model.html" title="3.2. The Golomb ruler problem and a first model"
+          <a href="../first_steps.html" title="2. First steps with or-tools: cryptarithmetic puzzles"
              >next</a> |</li>
         <li class="right" >
-          <a href="../objectives.html" title="3. Using objectives in constraint programming: the Golomb ruler problem"
+          <a href="manual_content.html" title="1.8. The content of the manual"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../objectives.html" >3. Using objectives in constraint programming: the Golomb ruler problem</a> &raquo;</li> 
+          <li><a href="../introduction.html" >1. Introduction to constraint programming</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

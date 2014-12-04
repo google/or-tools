@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.7. Summary &mdash; or-tools User&#39;s Manual</title>
+    <title>2.8. Summary &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
     <link rel="next" title="3. Using objectives in constraint programming: the Golomb ruler problem" href="../objectives.html" />
-    <link rel="prev" title="2.6. Other supported languages" href="supported_languages.html" /> 
+    <link rel="prev" title="2.7. Other supported languages" href="supported_languages.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="../objectives.html" title="3. Using objectives in constraint programming: the Golomb ruler problem"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="supported_languages.html" title="2.6. Other supported languages"
+          <a href="supported_languages.html" title="2.7. Other supported languages"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
@@ -55,9 +55,19 @@
           <div class="body">
             
   <div class="section" id="summary">
-<span id="first-steps-summary"></span><h1>2.7. Summary</h1>
-<p>summary</p>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<span id="first-steps-summary"></span><h1>2.8. Summary</h1>
+<p>This chapter helped you make your first steps with the CP solver. We used the Cryptarithmetic Puzzle Problem to illustrate the basic working of the solver. Basically, we saw how:</p>
+<ul class="simple">
+<li>a mathematical model is designed (variables and constraints through factory methods);</li>
+<li>the solver simplifies memory management (the solver takes ownership of (almost) all objects and deletes them when it doesn&#8217;t need them anymore);</li>
+<li>the search is defined (through one (or more) <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s);</li>
+<li>the solving process is launched (<tt class="docutils literal"><span class="pre">NewSearch</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt> or <tt class="docutils literal"><span class="pre">Solve()</span></tt>);</li>
+<li>solution values are collected (through <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s);</li>
+<li>all or the best solution is collected (again through <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s);</li>
+<li>solutions are stored (through <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assigment</span></tt>s);</li>
+<li>parameters are passed to the solver (use of Google’s gflags on the command line, with a <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct given to a solver and through <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s that guides the search).</li>
+</ul>
+<p>These are the building blocks to use the CP solver. All these concepts were just touched and will be detailed with care in the next chapters.</p>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
@@ -136,7 +146,7 @@ Search:
                         title="previous chapter">2. First steps with or-tools: cryptarithmetic puzzles</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="supported_languages.html"
-                        title="previous chapter">2.6. Other supported languages</a></p>
+                        title="previous chapter">2.7. Other supported languages</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="../objectives.html"
                         title="next chapter">3. Using objectives in constraint programming: the Golomb ruler problem</a></p>
@@ -154,7 +164,7 @@ Search:
           <a href="../objectives.html" title="3. Using objectives in constraint programming: the Golomb ruler problem"
              >next</a> |</li>
         <li class="right" >
-          <a href="supported_languages.html" title="2.6. Other supported languages"
+          <a href="supported_languages.html" title="2.7. Other supported languages"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 

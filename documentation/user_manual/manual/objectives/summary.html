@@ -56,17 +56,25 @@
             
   <div class="section" id="summary">
 <span id="golomb-ruler-summary"></span><h1>3.10. Summary</h1>
-<p>Not a good approach. For example with our tightened implementation 3 we need <tt class="docutils literal"><span class="pre">35.679</span></tt>  seconds to solve <img class="math" src="../../_images/math/7f3c0d03225cdc3cc82b59a8f511bfdd34dcadcc.png" alt="G(11)" style="vertical-align: -4px"/>.</p>
-<p>Further reading: see <a class="reference internal" href="#smithetal">[SmithEtAl]</a></p>
-<table class="docutils citation" frame="void" id="smithetal" rules="none">
+<p>In this chapter, we used some statistics to compare different algorithms:</p>
+<ul class="simple">
+<li>time: This our main criteria. The faster the better!</li>
+<li>failures: How many times do we need to backtrack in the search tree? Many failures might be an indication that there exist better search strategies and/or models.</li>
+<li>branches: How many times do we need to branch? Faster algorithms tend to visit fewer branches and better models tend to have smaller search trees.</li>
+</ul>
+<p>To compare these statistics, we introduced the Golomb Ruler Problem and presented 3 different models of this problem. Different models are solved differently by the solver, and choosing a good model can sometimes drastically speed up the search process. We saw how to
+test if the model given to the solver is indeed our intended model with the help of the <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and the use of some command line flags. We also saw how to break symmetries with constraints
+to make the search tree smaller and gain important improvements in the overall speed of the search algorithm. Finally, we saw how the Constraint Programming solver does to optimize a problem by adding some
+additional constraints every time it finds a feasible solution.</p>
+<p>A final word about the Golomb Ruler Problem. Despite its simplicity and inherent symmetry, no one ever came with a clever algorithm. The best algorithms are <strong>not</strong> based on Constraint Programming. For instance, we need <tt class="docutils literal"><span class="pre">35.679</span></tt>  seconds to solve <img class="math" src="../../_images/math/7f3c0d03225cdc3cc82b59a8f511bfdd34dcadcc.png" alt="G(11)" style="vertical-align: -4px"/> with our best tightened implementation of our third model. This doesn&#8217;t compare favorably with the state of the art (a few milliseconds on the same computer). Interested readers are invited to  further read  <a class="reference internal" href="#smithetal">[SmithEtAl]</a> to learn more about some modeling tricks for this beautiful but difficult problem.</p>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="smithetal" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id1">[SmithEtAl]</a></td><td>Barbara M. Smith, Kostas Stergiou and Toby Walsh. <em>Modelling the Golomb Ruler Problem</em>. Report 1999.12,
 School of computer studies, University of Leeds, 1999.</td></tr>
 </tbody>
 </table>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
           </div>

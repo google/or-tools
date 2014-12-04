@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
     <link rel="next" title="2.1. Getting started" href="first_steps/getting_started.html" />
-    <link rel="prev" title="1.8. The content of the manual" href="introduction/manual_content.html" /> 
+    <link rel="prev" title="1.9. Summary" href="introduction/summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,7 +41,7 @@
           <a href="first_steps/getting_started.html" title="2.1. Getting started"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="introduction/manual_content.html" title="1.8. The content of the manual"
+          <a href="introduction/summary.html" title="1.9. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -74,57 +74,54 @@ steps to write a basic program.</p>
 <li>basic knowledge of C++.</li>
 <li>basic knowledge of Constraint Programming (see the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
 </ul>
+<p class="rubric">Classes under scrutiny:</p>
+<p><tt class="docutils literal"><span class="pre">IntVar</span></tt>, <tt class="docutils literal"><span class="pre">AllDifferent</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>, <tt class="docutils literal"><span class="pre">Assignment</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>.</p>
 <p class="rubric">Files:</p>
-<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap2</span></tt>.</p>
-<p>The files inside this directory are:</p>
+<p>The files used in this chapter are:</p>
 <ul class="simple">
-<li>cp_is_fun1.cc: Our first example: a simple cryptarithmetic puzzle to show the basics.</li>
-<li>cp_is_fun2.cc: Use of <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s to collect some or all solutions.</li>
-<li>cp_is_fun3.cc: Use of the <a class="reference external" href="http://code.google.com/p/gflags/">Google gflags library</a> to parse command line parameters.</li>
-<li>cp_is_fun4.cc: Use of read-only solver parameters.</li>
+<li><a class="reference internal" href="first_steps/anatomy.html#anatomy-c"><em>cp_is_fun1.cc</em></a>: Our first example: a simple cryptarithmetic puzzle to show the basics.</li>
+<li><a class="reference internal" href="first_steps/monitors.html#monitors-solutions"><em>cp_is_fun2.cc</em></a>: Use of <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s to collect some or all solutions.</li>
+<li><a class="reference internal" href="first_steps/parameters.html#parameters"><em>cp_is_fun3.cc</em></a>: Use of the <a class="reference external" href="http://code.google.com/p/gflags/">Google gflags library</a> to parse command line parameters.</li>
+<li><a class="reference internal" href="first_steps/parameters.html#cp-solver-parameters"><em>cp_is_fun4.cc</em></a>: Use of read-only solver parameters.</li>
 </ul>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/getting_started.html">2.1. Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#getting-the-source">2.1.1. Getting the source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#content-of-the-archive">2.1.2. Content of the Archive</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#installation-on-unix-platforms">2.1.3. Installation on unix platforms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#installation-on-windows">2.1.4. Installation on Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#running-tests">2.1.5. Running tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#compiling-libraries-and-running-examples">2.1.6. Compiling libraries and running examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/getting_started.html">2.1. Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/getting_started.html#running-the-tutorial-examples">2.2. Running the tutorial examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#c-examples">2.2.1. C++ examples</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/cryptarithmetic.html">2.2. The cryptarithmetic puzzle problem and a first model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/cryptarithmetic.html#description-of-the-problem">2.2.1. Description of the problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/cryptarithmetic.html#how-to-solve-the-problem">2.2.2. How to solve the problem?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/cryptarithmetic.html">2.3. The cryptarithmetic puzzle problem and a first model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/cryptarithmetic.html#description-of-the-problem">2.3.1. Description of the problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/cryptarithmetic.html#how-to-solve-the-problem">2.3.2. How to solve the problem?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/anatomy.html">2.3. Anatomy of a basic C++ code</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#at-a-glance">2.3.1. At a glance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#headers">2.3.2. Headers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-namespace-operations-research">2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-cp-solver">2.3.4. The CP solver</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#variables">2.3.5. Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#assert-like-macros">2.3.6. Assert-like macros</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#constraints">2.3.7. Constraints</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-decision-builder">2.3.8. The Decision Builder</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-search-and-the-solutions">2.3.9. The search and the solutions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-end-of-the-search">2.3.10. The end of the search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/anatomy.html">2.4. Anatomy of a basic C++ code</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#at-a-glance">2.4.1. At a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#headers">2.4.2. Headers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-namespace-operations-research">2.4.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-cp-solver">2.4.4. The CP solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#variables">2.4.5. Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#assert-like-macros">2.4.6. Assert-like macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#constraints">2.4.7. Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-decision-builder">2.4.8. The Decision Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-search-and-the-solutions">2.4.9. The search and the solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/anatomy.html#the-end-of-the-search">2.4.10. The end of the search</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/monitors.html">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/monitors.html#solutioncollectors">2.4.1. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/monitors.html#assignments">2.4.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/monitors.html">2.5. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/monitors.html#solutioncollectors">2.5.1. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/monitors.html#assignments">2.5.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/parameters.html">2.5. Parameters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/parameters.html#google-s-gflags">2.5.1. Google&#8217;s gflags</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/parameters.html#cp-solver-s-parameters">2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/parameters.html">2.6. Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/parameters.html#google-s-gflags">2.6.1. Google&#8217;s gflags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/parameters.html#cp-solver-s-parameters">2.6.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/supported_languages.html">2.6. Other supported languages</a></li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/summary.html">2.7. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/supported_languages.html">2.7. Other supported languages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/summary.html">2.8. Summary</a></li>
 </ul>
 </div>
 </div>
@@ -249,7 +246,7 @@ Search:
           <a href="first_steps/getting_started.html" title="2.1. Getting started"
              >next</a> |</li>
         <li class="right" >
-          <a href="introduction/manual_content.html" title="1.8. The content of the manual"
+          <a href="introduction/summary.html" title="1.9. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

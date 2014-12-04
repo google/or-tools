@@ -56,11 +56,18 @@
             
   <div class="section" id="a-second-model-and-its-implementation">
 <span id="golomb-ruler-second-implementation"></span><h1>3.6. A second model and its implementation</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb4.cc">golomb4.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>Our first model is really bad. One of the reasons is that we use too many variables: <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}" style="vertical-align: -6px"/> differences.
 What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> marks as variables instead of the differences?</p>
 <div class="section" id="variables">
 <h2>3.6.1. Variables</h2>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb3.cc">tutorials/cplusplus/chap3/golomb3.cc</a></p>
 <p>Before we dive into the code, let&#8217;s be practical and ease our life a bit. One of the difficulties of the code in <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt>
 is that we use the first element of the array <tt class="docutils literal"><span class="pre">Y</span></tt>. There is no need to do so. In <tt class="file docutils literal"><span class="pre">golomb3.cc</span></tt>, we use <tt class="docutils literal"><span class="pre">X[1]</span></tt> as the first mark (and not <tt class="docutils literal"><span class="pre">X[0]</span></tt>).
 In the same vain, we redefine the array <tt class="docutils literal"><span class="pre">kG</span></tt> such that <tt class="docutils literal"><span class="pre">kG(n)</span> <span class="pre">=</span> <span class="pre">G(n)</span></tt> (and not <tt class="docutils literal"><span class="pre">kG(n-1)</span> <span class="pre">=</span> <span class="pre">G(n)</span></tt>). Thus:</p>
@@ -87,20 +94,8 @@ to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span><
 <p>To express that all the differences between all pairs of marks must be distinct, we use the quaternary constraints<a class="footnote-reference" href="#quaternary-constraint" id="id1">[1]</a>:</p>
 <div class="math">
 <p><img src="../../_images/math/78ba869bfa5df8e9b54022e31800ae646342ca84.png" alt="X[j] - X[i] \neq X[l] - X[k] \qquad \forall \ 1 \leqslant i,k,j,l \leqslant n."/></p>
-</div><table class="docutils footnote" frame="void" id="quaternary-constraint" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><em>Quaternary constraints</em> is just a fancy way to say that the constraints each involves four variables.</td></tr>
-</tbody>
-</table>
-<p>We don&#8217;t need all combinations of <img class="math" src="../../_images/math/1802156f8c045c22ccbfaead68d03f8bb45d2659.png" alt="(i,j,k,l)" style="vertical-align: -4px"/> with <img class="math" src="../../_images/math/cdb5a7c36506631cce673e83f91f85c5ae55c604.png" alt="i \neq k" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/7a03116e0235065914fdb54d1b30c5d6383cdf43.png" alt="j \neq l" style="vertical-align: -4px"/>. For instance, combination <img class="math" src="../../_images/math/21ef0b34f891eda9d44a9ec8f96fb7f860d55925.png" alt="(3,2,6,4)" style="vertical-align: -4px"/>
+</div><p>We don&#8217;t need all combinations of <img class="math" src="../../_images/math/1802156f8c045c22ccbfaead68d03f8bb45d2659.png" alt="(i,j,k,l)" style="vertical-align: -4px"/> with <img class="math" src="../../_images/math/cdb5a7c36506631cce673e83f91f85c5ae55c604.png" alt="i \neq k" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/7a03116e0235065914fdb54d1b30c5d6383cdf43.png" alt="j \neq l" style="vertical-align: -4px"/>. For instance, combination <img class="math" src="../../_images/math/21ef0b34f891eda9d44a9ec8f96fb7f860d55925.png" alt="(3,2,6,4)" style="vertical-align: -4px"/>
 and combination <img class="math" src="../../_images/math/6c3eabdda7802e47a6fb72984f523bf152ef5dfd.png" alt="(2,3,4,6)" style="vertical-align: -4px"/> would both give the same constraint. One way to avoid such redundancy is to impose an order on unique positive differences<a class="footnote-reference" href="#avoid-redundancy-unique-difference" id="id2">[2]</a>.</p>
-<table class="docutils footnote" frame="void" id="avoid-redundancy-unique-difference" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In section <a class="reference internal" href="tighten_model.html#objectives-breaking-symmetries"><em>Breaking symmetries with constraints</em></a> we&#8217;ll use another trick.</td></tr>
-</tbody>
-</table>
 <p>Take again <img class="math" src="../../_images/math/39cf3e35a4981583288d2a7c4b34989916fb7360.png" alt="n=4" style="vertical-align: -1px"/> and define the sequence of differences as in Figure <a class="reference internal" href="#gr-order2"><em>Another ordered sequence of differences for the Golomb ruler of order 4.</em></a>.</p>
 <div class="figure align-center" id="gr-order2">
 <img alt="Another ordered sequence of differences for the Golomb ruler of order 4." src="../../_images/GR_order2.png" />
@@ -165,12 +160,6 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <span class="p">}</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="again-remark" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Remember again the remark at the beginning of this chapter about the tricky sums.</td></tr>
-</tbody>
-</table>
 <p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>, to ensure that the differences are positive and <img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1" style="vertical-align: -3px"/>. Note also that the method
 <tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow us to give a name to the new variable, which is normal as this new variable is the difference of two
 existing variables. Its name is simply <tt class="docutils literal"><span class="pre">name1</span> <span class="pre">-</span> <span class="pre">name2</span></tt>.</p>
@@ -209,8 +198,15 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <p>If the first model was bad, what can we say about this one? What went wrong? The quaternary constraints... These constraints are all disparate and thus don&#8217;t allow efficient propagation.</p>
 </div>
 <div class="section" id="an-improved-version">
-<h2>3.6.3. An improved version</h2>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb4.cc">tutorials/cplusplus/chap3/golomb4.cc</a></p>
+<span id="golomb-ruler-improved-verison"></span><h2>3.6.3. An improved version</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb4.cc">golomb5.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>Let&#8217;s improve our second model by using variables to denote the differences and define variables <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span><span class="n">Y</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
                                           <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">));</span>
@@ -276,6 +272,24 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 </table>
 <p>Although we have more failures, more branches and we do backtrack more than in the first model, we were able to divide the time by 2!
 Can we do better? You bet!</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="quaternary-constraint" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><em>Quaternary constraints</em> is just a fancy way to say that the constraints each involves four variables.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="avoid-redundancy-unique-difference" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In section <a class="reference internal" href="tighten_model.html#objectives-breaking-symmetries"><em>Breaking symmetries with constraints</em></a> we&#8217;ll use another trick.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="again-remark" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Remember again the remark at the beginning of this chapter about the tricky sums.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.3. Anatomy of a basic C++ code &mdash; or-tools User&#39;s Manual</title>
+    <title>2.4. Anatomy of a basic C++ code &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
-    <link rel="next" title="2.4. SolutionCollectors and Assignments to collect solutions" href="monitors.html" />
-    <link rel="prev" title="2.2. The cryptarithmetic puzzle problem and a first model" href="cryptarithmetic.html" /> 
+    <link rel="next" title="2.5. SolutionCollectors and Assignments to collect solutions" href="monitors.html" />
+    <link rel="prev" title="2.3. The cryptarithmetic puzzle problem and a first model" href="cryptarithmetic.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
+          <a href="monitors.html" title="2.5. SolutionCollectors and Assignments to collect solutions"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="cryptarithmetic.html" title="2.2. The cryptarithmetic puzzle problem and a first model"
+          <a href="cryptarithmetic.html" title="2.3. The cryptarithmetic puzzle problem and a first model"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
@@ -55,19 +55,26 @@
           <div class="body">
             
   <div class="section" id="anatomy-of-a-basic-c-code">
-<span id="anatomy-c"></span><h1>2.3. Anatomy of a basic C++ code</h1>
+<span id="anatomy-c"></span><h1>2.4. Anatomy of a basic C++ code</h1>
 <p>In this section, we code the model developed in <a class="reference internal" href="cryptarithmetic.html#cryptarithmetic-problem"><em>The problem and a first model</em></a>.</p>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap2/cp_is_fun1.cc">tutorials/cplusplus/chap2/cp_is_fun1.cc</a></p>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>We quickly scan through the code and describe the basic constituents needed to solve
-the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of them
+a cryptarithmetic puzzle in C++. In the next chapters, we will cover some of them
 in more details.</p>
 <div class="section" id="at-a-glance">
-<span id="anatomy-at-a-glance"></span><h2>2.3.1. At a glance</h2>
+<span id="anatomy-at-a-glance"></span><h2>2.4.1. At a glance</h2>
 <img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" />
 <img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" />
 </div>
 <div class="section" id="headers">
-<h2>2.3.2. Headers</h2>
+<h2>2.4.2. Headers</h2>
 <p>To use the library, we need to include a few headers:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &quot;base/logging.h&quot;</span>
 <span class="cp">#include &quot;constraint_solver/constraint_solver.h&quot;</span>
@@ -76,15 +83,9 @@ in more details.</p>
 <p>The header <tt class="docutils literal"><span class="pre">logging.h</span></tt> is needed for some logging facilities and some
 assert-like macros. The header <tt class="docutils literal"><span class="pre">constraint_solver.h</span></tt> is the main entry point
 to the CP solver and must be included<a class="footnote-reference" href="#including-headers" id="id1">[1]</a> whenever you intend to use it.</p>
-<table class="docutils footnote" frame="void" id="including-headers" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Directly or indirectly when it is included in another header you include.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="the-namespace-operations-research">
-<span id="index-0"></span><h2>2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
+<span id="index-0"></span><h2>2.4.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
 <p>The whole library is nested in the namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt>. We follow
 the same convention in all our examples and code inside this namespace:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">namespace</span> <span class="n">operations_research</span> <span class="p">{</span>
@@ -109,17 +110,9 @@ function:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="main-not-inside-namespace" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The main function does not lie inside the namespace
-<tt class="docutils literal"><span class="pre">operations_research</span></tt>, hence the use of the <tt class="docutils literal"><span class="pre">operations_research</span></tt> identifier to call
-the function <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt>.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="the-cp-solver">
-<span id="index-1"></span><h2>2.3.4. The CP solver</h2>
+<span id="index-1"></span><h2>2.4.4. The CP solver</h2>
 <p>The CP solver is the main engine to solve a problem
 instance. It is also responsible for the creation of the model. It has a very
 rich Application Programming Interface (API) and provides a lots of
@@ -132,7 +125,7 @@ functionalities.</p>
 <p>The <tt class="docutils literal"><span class="pre">Solver</span></tt> class has one additional constructor covered  in <a class="reference internal" href="parameters.html#parameters"><em>Parameters</em></a>.</p>
 </div>
 <div class="section" id="variables">
-<span id="index-2"></span><h2>2.3.5. Variables</h2>
+<span id="index-2"></span><h2>2.4.5. Variables</h2>
 <p>To create the model, we first need to create the decision variables:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">kBase</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">c</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">kBase</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">);</span>
@@ -162,18 +155,12 @@ them appropriately.</p>
 a factory method! First, the solver deletes all the objects for you.
 Second, deleting a pointer twice in C++ gives undefined behaviour<a class="footnote-reference" href="#dont-delete-pointers" id="id3">[3]</a>!</p>
 </div>
-<table class="docutils footnote" frame="void" id="dont-delete-pointers" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>It is possible to bypass the undefined behaviour but you don&#8217;t know what the solver needs to do, so keep your hands off of the object pointers! ;-)</td></tr>
-</tbody>
-</table>
 <p>Beside integer variables, the solver provides factory methods to create
 interval variables (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt>), sequence variables (<tt class="docutils literal"><span class="pre">SequenceVar</span></tt>)
 and variables to encapsulate objectives (<tt class="docutils literal"><span class="pre">OptimizeVar</span></tt>).</p>
 </div>
 <div class="section" id="assert-like-macros">
-<h2>2.3.6. Assert-like macros</h2>
+<h2>2.4.6. Assert-like macros</h2>
 <p>It is always a good idea to program defensively. We use several assert-like macros
 defined in the header <tt class="docutils literal"><span class="pre">logging.h</span></tt> to assert some expressions. We know that
 the base has to be greater than or equal to 10, so we add a check for this:</p>
@@ -190,7 +177,7 @@ Aborted</pre>
 <p>In <a class="reference internal" href="../utilities/asserting.html#asserting"><em>Asserting</em></a>, we cover assert-like macros in more details.</p>
 </div>
 <div class="section" id="constraints">
-<span id="index-5"></span><span id="id4"></span><h2>2.3.7. Constraints</h2>
+<span id="index-5"></span><span id="id4"></span><h2>2.4.7. Constraints</h2>
 <p>To create an integer linear constraint, we need to know how to multiply an integer variable
 with an integer constant and how to add two integer variables. We have seen that
 the solver creates a variable and only provides a pointer to that variable.
@@ -307,7 +294,7 @@ provides a factory method <tt class="docutils literal"><span class="pre">MakeAll
 </div>
 </div>
 <div class="section" id="the-decision-builder">
-<span id="index-10"></span><h2>2.3.8. The Decision Builder</h2>
+<span id="index-10"></span><h2>2.4.8. The Decision Builder</h2>
 <p>A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is responsible for creating the actual search tree, i.e.
 it is responsible for the search. The solver provides a factory method
 <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> that returns a pointer to the newly created  <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> object:</p>
@@ -320,7 +307,7 @@ it is responsible for the search. The solver provides a factory method
 the <tt class="docutils literal"><span class="pre">IntVar</span></tt> decision variables. The second parameter specifies how to choose the next <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable to be selected in the search. Here we choose the first unbounded variable. The third parameter indicates what value to assign to the selected <tt class="docutils literal"><span class="pre">IntVar</span></tt>. The solver will assign the smallest available value.</p>
 </div>
 <div class="section" id="the-search-and-the-solutions">
-<span id="index-11"></span><h2>2.3.9. The search and the solutions</h2>
+<span id="index-11"></span><h2>2.4.9. The search and the solutions</h2>
 <p>To prepare for a new search:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="p">...</span>
 <span class="n">solver</span><span class="p">.</span><span class="n">NewSearch</span><span class="p">(</span><span class="n">db</span><span class="p">);</span>
@@ -365,16 +352,6 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
 </div>
 <p>We check the validity of the solution <em>after</em> printing: if the solution is not valid, we can see what
 was found by the solver.</p>
-<table class="docutils footnote" frame="void" id="solution-not-necessarily-feasible" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Actually and contrary to the intuition, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt>
-doesn&#8217;t return a feasible solution per se. It all depends of the involved <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. The solver
-considers any leaf of the search tree as a solution if it doesn&#8217;t fail (i.e.
-if it is accepted by several control mechanisms). See the section <a class="reference internal" href="../search_primitives/basic_working_search_algorithm.html#basic-working-search-algorithm"><em>Basic working of the solver: the search algorithm</em></a> for more
-details.</td></tr>
-</tbody>
-</table>
 <p>To obtain all the solutions, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> can be called repeatedly:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">while</span> <span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">NextSolution</span><span class="p">())</span> <span class="p">{</span>
   <span class="c1">// Do something with the current solution</span>
@@ -385,7 +362,7 @@ details.</td></tr>
 </div>
 </div>
 <div class="section" id="the-end-of-the-search">
-<span id="index-12"></span><h2>2.3.10. The end of the search</h2>
+<span id="index-12"></span><h2>2.4.10. The end of the search</h2>
 <p>To finish the search, invoke:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">EndSearch</span><span class="p">();</span>
 </pre></div>
@@ -395,6 +372,36 @@ details.</td></tr>
 <p>What happens if you forget to end the search and didn&#8217;t ask for a profile file? If you don&#8217;t ask the solver to start a new search, nothing
 bad will happen. It is just better practice to finish the search with the method <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>.</p>
 <p>See also <a class="reference internal" href="monitors.html#topic-difference-between-newsearch-and-solve"><em>What is the difference between NewSearch() and Solve()?</em></a>.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="including-headers" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Directly or indirectly when it is included in another header you include.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="main-not-inside-namespace" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The main function does not lie inside the namespace
+<tt class="docutils literal"><span class="pre">operations_research</span></tt>, hence the use of the <tt class="docutils literal"><span class="pre">operations_research</span></tt> identifier to call
+the function <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="dont-delete-pointers" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>It is possible to bypass the undefined behaviour but you don&#8217;t know what the solver needs to do, so keep your hands off of the object pointers! ;-)</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="solution-not-necessarily-feasible" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Actually and contrary to the intuition, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt>
+doesn&#8217;t return a feasible solution per se. It all depends of the involved <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. The solver
+considers any leaf of the search tree as a solution if it doesn&#8217;t fail (i.e.
+if it is accepted by several control mechanisms). See the section <a class="reference internal" href="../search_primitives/basic_working_search_algorithm.html#basic-working-search-algorithm"><em>Basic working of the solver: the search algorithm</em></a> for more
+details.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -474,23 +481,23 @@ Search:
                         title="previous chapter">2. First steps with or-tools: cryptarithmetic puzzles</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="cryptarithmetic.html"
-                        title="previous chapter">2.2. The cryptarithmetic puzzle problem and a first model</a></p>
+                        title="previous chapter">2.3. The cryptarithmetic puzzle problem and a first model</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="monitors.html"
-                        title="next chapter">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
+                        title="next chapter">2.5. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">2.3. Anatomy of a basic C++ code</a><ul>
-<li><a class="reference internal" href="#at-a-glance">2.3.1. At a glance</a></li>
-<li><a class="reference internal" href="#headers">2.3.2. Headers</a></li>
-<li><a class="reference internal" href="#the-namespace-operations-research">2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></a></li>
-<li><a class="reference internal" href="#the-cp-solver">2.3.4. The CP solver</a></li>
-<li><a class="reference internal" href="#variables">2.3.5. Variables</a></li>
-<li><a class="reference internal" href="#assert-like-macros">2.3.6. Assert-like macros</a></li>
-<li><a class="reference internal" href="#constraints">2.3.7. Constraints</a></li>
-<li><a class="reference internal" href="#the-decision-builder">2.3.8. The Decision Builder</a></li>
-<li><a class="reference internal" href="#the-search-and-the-solutions">2.3.9. The search and the solutions</a></li>
-<li><a class="reference internal" href="#the-end-of-the-search">2.3.10. The end of the search</a></li>
+<li><a class="reference internal" href="#">2.4. Anatomy of a basic C++ code</a><ul>
+<li><a class="reference internal" href="#at-a-glance">2.4.1. At a glance</a></li>
+<li><a class="reference internal" href="#headers">2.4.2. Headers</a></li>
+<li><a class="reference internal" href="#the-namespace-operations-research">2.4.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></a></li>
+<li><a class="reference internal" href="#the-cp-solver">2.4.4. The CP solver</a></li>
+<li><a class="reference internal" href="#variables">2.4.5. Variables</a></li>
+<li><a class="reference internal" href="#assert-like-macros">2.4.6. Assert-like macros</a></li>
+<li><a class="reference internal" href="#constraints">2.4.7. Constraints</a></li>
+<li><a class="reference internal" href="#the-decision-builder">2.4.8. The Decision Builder</a></li>
+<li><a class="reference internal" href="#the-search-and-the-solutions">2.4.9. The search and the solutions</a></li>
+<li><a class="reference internal" href="#the-end-of-the-search">2.4.10. The end of the search</a></li>
 </ul>
 </li>
 </ul>
@@ -506,10 +513,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
+          <a href="monitors.html" title="2.5. SolutionCollectors and Assignments to collect solutions"
              >next</a> |</li>
         <li class="right" >
-          <a href="cryptarithmetic.html" title="2.2. The cryptarithmetic puzzle problem and a first model"
+          <a href="cryptarithmetic.html" title="2.3. The cryptarithmetic puzzle problem and a first model"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 

@@ -56,9 +56,16 @@
             
   <div class="section" id="a-third-model-and-its-implementation">
 <span id="golomb-ruler-third-implementation"></span><h1>3.7. A third model and its implementation</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb4.cc">golomb6.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>By using the same variables <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt> in our improved version of our second model in the previous section, we were able to couple the effect of the
 propagations of the &#8220;quaternary constraints&#8221;. But these constraints lack a global vision of the propagation and this is were the global <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint comes into the picture.</p>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb5.cc">tutorials/cplusplus/chap3/golomb5.cc</a></p>
 <p>Let&#8217;s replace the quaternary constraints by the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on the <tt class="docutils literal"><span class="pre">Y</span></tt> variables:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">Y</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -116,7 +123,7 @@ propagations of the &#8220;quaternary constraints&#8221;. But these constraints 
 </tbody>
 </table>
 <p>What an improvement! In the next section, we present two strategies that generally allow to tighten a given model and thus improve, sometimes dramatically, the search time.</p>
-</div>
+</br></br></br></br></br></br></br></br></br></br></div>
 
 
           </div>

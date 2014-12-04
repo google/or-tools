@@ -56,11 +56,18 @@
             
   <div class="section" id="what-model-did-i-pass-to-the-solver">
 <span id="what-model"></span><h1>3.4. What model did I pass to the solver?</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb2.cc">golomb2.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>The model we developed to solve the cryptarithmetic puzzle (see <a class="reference internal" href="../first_steps/cryptarithmetic.html#cryptarithmetic-problem"><em>The cryptarithmetic puzzle problem and a first model</em></a>) was quite simple.</p>
 <p>The first model proposed to solve the Golumb Ruler Problem in the two previous sections is more complex. We suppose our model is theoretically correct. How do we know we gave the right model to the solver, i.e. how do we know that our implementation is correct? In this section, we present two tools to debug the model we passed to the solver: the <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and via the default command line flags of the CP solver.</p>
 <span class="target" id="inspect-object-with-debugstring"></span><div class="section" id="inspect-objects-with-debugstring">
 <span id="index-0"></span><h2>3.4.1. Inspect objects with <tt class="docutils literal"><span class="pre">DebugString()</span></tt></h2>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb2.cc">tutorials/cplusplus/chap3/golomb2.cc</a></p>
 <p>Most of the mathematical classes in or-tools inherit from the <tt class="docutils literal"><span class="pre">BaseObject</span></tt> class. Its only
 public method is a <tt class="docutils literal"><span class="pre">virtual</span> <span class="pre">DebugString()</span></tt>. If you are curious or just in doubt about
 the object you just constructed, <tt class="docutils literal"><span class="pre">DebugString()</span></tt> is for you.</p>

@@ -56,50 +56,10 @@
             
   <div class="section" id="search-limits-and-searchlimits">
 <span id="search-limits-more-details"></span><h1>7.2. Search limits and <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</h1>
-<p>To control the search, we also need a way to stop the search when some criteria are met.</p>
 <div class="section" id="an-example-of-a-custom-searchlimit">
 <span id="no-improvement-limit-searchlimit"></span><h2>7.2.1. An example of a custom <tt class="docutils literal"><span class="pre">Searchlimit</span></tt></h2>
-<p>We have already met <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s in the sub-section <a class="reference internal" href="../objectives/data_search.html#search-limits"><em>SearchLimits</em></a>. We go a little bit more into details here.</p>
-<p>You&#8217;ll find the code in the file <tt class="file docutils literal"><span class="pre">common/limits.h</span></tt>.</p>
-<p>It is not always possible to create a <tt class="docutils literal"><span class="pre">CustomLimit</span></tt> with an appropriate callback to meet a desired end search criterion.
-For instance, let&#8217;s say we would like to stop the search after a certain number of solutions have been found but without
-any improvements of the objective value. To do so, we need to have access to the objective value every time a new solution
-has been found. The <tt class="docutils literal"><span class="pre">Solver</span></tt> class doesn&#8217;t provide any method to access its current objective value. What we need is a
-custom <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>! Or more precisely, a custom <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>.</p>
-<p><tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s are specialized <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s to end a <tt class="docutils literal"><span class="pre">Search</span></tt>. The <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> class itself is a pure virtual
-base class for all <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s. It&#8217;s only constructor is:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">explicit</span> <span class="nf">SearchLimit</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">);</span>
-</pre></div>
-</div>
-<p>Several methods <strong>must</strong> be defined:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">Check()</span></tt>: This method is called to check the status of the limit.
-A return value of <tt class="docutils literal"><span class="pre">true</span></tt> indicates that we have indeed crossed the limit. In
-that case, this method will not be called again and the remaining search will be discarded. This method is called
-in the <tt class="docutils literal"><span class="pre">BeginNextDecision()</span></tt> and <tt class="docutils literal"><span class="pre">RefuteDecision()</span></tt> callbacks.</li>
-<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">Init()</span></tt>: This method is called when the search limit is initialized in the <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> callback.</li>
-<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">Copy(const</span> <span class="pre">SearchLimit*</span> <span class="pre">const</span> <span class="pre">limit)</span></tt>: Copy a limit. Warning: leads to a direct (no check) downcasting
-of <tt class="docutils literal"><span class="pre">limit</span></tt>, so one needs to be sure both <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s are of the same type.</li>
-<li><tt class="docutils literal"><span class="pre">SearchLimit*</span> <span class="pre">MakeClone()</span> <span class="pre">const</span></tt>: Allocates a clone of the limit.</li>
-</ul>
-<p>OK, let&#8217;s get our hands dirty and let&#8217;s code!</p>
-<p>Our class inherits publicly from a <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NoImprovementLimit</span> <span class="o">:</span> <span class="k">public</span> <span class="n">SearchLimit</span> <span class="p">{</span>
-  <span class="p">...</span>
-<span class="p">};</span>
-</pre></div>
-</div>
-<p>We&#8217;ll consider both minimizing and maximazing depending on a <tt class="docutils literal"><span class="pre">bool</span></tt> in the constructor:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NoImprovementLimit</span> <span class="o">:</span> <span class="k">public</span> <span class="n">SearchLimit</span> <span class="p">{</span>
-<span class="nl">public:</span>
-  <span class="n">NoImprovementLimit</span><span class="p">(</span><span class="n">Solver</span> <span class="o">*</span> <span class="n">solver</span><span class="p">,</span>
-                     <span class="kt">int</span> <span class="n">solution_nbr_tolerance</span><span class="p">,</span>
-                     <span class="kt">bool</span> <span class="n">minimize</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
-</pre></div>
-</div>
-<p><tt class="docutils literal"><span class="pre">solution_nbr_tolerance</span></tt> represents the number of solutions we allow to be found without any improvements in the
-objective value. If more solutions are found without any improvements in the objective value, we end the search.</p>
-</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
 
 

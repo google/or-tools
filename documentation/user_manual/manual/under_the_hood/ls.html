@@ -56,18 +56,6 @@
             
   <div class="section" id="local-search-ls">
 <span id="hood-ls"></span><h1>13.9. Local Search (LS)</h1>
-<p>We discuss in this section the local search mechanism.</p>
-<p>To ensure the communication between the local search and the global search, three utility functions are defined:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">LocalOptimumReached()</span></tt>:
-Returns true if a local optimum has been reached and cannot be improved.</li>
-<li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">AcceptDelta()</span></tt>:
-Returns true if the search accepts the deltas.</li>
-<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">AcceptNeighbor()</span></tt>:
-Notifies the search that a neighbor has been accepted by local search.</li>
-</ul>
-<p>These functions simply call their <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>&#8216;s counterparts, i.e. they call the corresponding methods of the
-involved <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s.</p>
 </div>
 
 

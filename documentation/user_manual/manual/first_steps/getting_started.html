@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
-    <link rel="next" title="2.2. The cryptarithmetic puzzle problem and a first model" href="cryptarithmetic.html" />
+    <link rel="next" title="2.3. The cryptarithmetic puzzle problem and a first model" href="cryptarithmetic.html" />
     <link rel="prev" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="cryptarithmetic.html" title="2.2. The cryptarithmetic puzzle problem and a first model"
+          <a href="cryptarithmetic.html" title="2.3. The cryptarithmetic puzzle problem and a first model"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../first_steps.html" title="2. First steps with or-tools: cryptarithmetic puzzles"
@@ -56,263 +56,80 @@
             
   <div class="section" id="getting-started">
 <span id="id1"></span><h1>2.1. Getting started</h1>
-<p>In case of conflict with the <a class="reference external" href="http://code.google.com/p/or-tools/wiki/AGettingStarted">http://code.google.com/p/or-tools/wiki/AGettingStarted</a> page, please disregard this section.</p>
-<p>Last updated: May 04, 2012</p>
-<ul class="simple">
-<li><a class="reference internal" href="#first-steps-getting-source"><em>Getting the source</em></a></li>
-<li><a class="reference internal" href="#first-steps-content-archive"><em>Content of the Archive</em></a></li>
-<li><a class="reference internal" href="#first-steps-install-unix"><em>Installation on unix platforms</em></a></li>
-<li><a class="reference internal" href="#first-steps-install-windows"><em>Installation on Windows</em></a></li>
-<li><a class="reference internal" href="#first-steps-running-tests"><em>Running tests</em></a></li>
-<li><a class="reference internal" href="#first-steps-compiling-running-examples"><em>Compiling libraries and running examples</em></a></li>
+<p>You&#8217;ll find all what is needed to compile the or-tools library and its third-party libraries in the wiki page <a class="reference external" href="http://code.google.com/p/or-tools/wiki/AGettingStarted">Getting Started</a>.</p>
+<p>This wiki page is always up to date with the most current instructions on how to install the library, whether from binaries or when compiling the source code.
+You will also find instructions on how to run the examples.</p>
+<p>Pay attention to the fact that this wiki page (and thus the installation procedure) changes regularly and that you might have to reinstall the library and its third-party dependencies from scratch from time to time. If you use the variables defined in our <tt class="docutils literal"><span class="pre">makefiles</span></tt>, and your code doesn&#8217;t compile or cannot be linked after an update or reinstallation of the or-tools library, you might have to adapt your own <tt class="docutils literal"><span class="pre">makefiles</span></tt> accordingly.</p>
+</div>
+<div class="section" id="running-the-tutorial-examples">
+<h1>2.2. Running the tutorial examples</h1>
+<p>The tutorial examples are the examples provided with this manual. You can find them in <a class="reference external" href="http://or-tools.googlecode.com/svn/trunk/documentation/tutorials/cplusplus/">documentation/tutorials/cplusplus</a> . For the moment, we only provide a C++ version. For each chapter in this manual (except for the first chapter and the last part of the manual), we provide tutorial examples and a <tt class="docutils literal"><span class="pre">makefile</span></tt> to use them.</p>
+<div class="section" id="c-examples">
+<h2>2.2.1. C++ examples</h2>
+<div class="section" id="compiling-and-linking">
+<h3>2.2.1.1. Compiling and linking</h3>
+<p>You can compile and link the tutorial examples by invoking:</p>
+<div class="highlight-bash"><div class="highlight"><pre>make tutorials <span class="nv">OR_TOOLS_TOP</span><span class="o">=</span>/directory/to/the/Google/or-tools/directory
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">/directory/to/the/Google/or-tools/directory</span></tt> is the absolute or relative directory to the or-tools library. On my disk, this is:</p>
+<div class="highlight-bash"><div class="highlight"><pre>/home/username/.../or-tools-read-only
+</pre></div>
+</div>
+<p>You can also fill in this variable inside the <tt class="docutils literal"><span class="pre">Makefile</span></tt>.</p>
+<p>Instead of compiling (and linking) all tutorial examples at once, you can select a specific example by invoking its target, like so:</p>
+<ul>
+<li><p class="first">Windows:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>make cp_is_fun1.exe <span class="nv">OR_TOOLS_TOP</span><span class="o">=</span>/directory/to/the/Google/...
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">MacOS and Unix:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>make cp_is_fun1 <span class="nv">OR_TOOLS_TOP</span><span class="o">=</span>/directory/to/the/Google/...
+</pre></div>
+</div>
+</div></blockquote>
+</li>
 </ul>
-<div class="section" id="getting-the-source">
-<span id="first-steps-getting-source"></span><h2>2.1.1. Getting the source</h2>
-<p>Please visit <a class="reference external" href="http://code.google.com/p/or-tools/source/checkout">http://code.google.com/p/or-tools/source/checkout</a> to checkout the sources of or-tools.</p>
+<p>where <tt class="docutils literal"><span class="pre">cp_is_fun1</span></tt> is the target for the example <tt class="docutils literal"><span class="pre">cp_is_fun1</span></tt>.</p>
 </div>
-<div class="section" id="content-of-the-archive">
-<span id="first-steps-content-archive"></span><h2>2.1.2. Content of the Archive</h2>
-<p>Upon untarring the given operation_research tar file, you will get the following structure:</p>
-<p><tt class="docutils literal"><span class="pre">or-tools/</span></tt></p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="23%" />
-<col width="77%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Files/directories</th>
-<th class="head">Descriptions</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">LICENSE-2.0.txt</span></tt></td>
-<td>Apache License</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">Makefile</span></tt></td>
-<td>Main Makefile</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">README</span></tt></td>
-<td>This file</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">bin/</span></tt></td>
-<td>Where all binary files will be created</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">dependencies/</span></tt></td>
-<td>Where third_party code will be downloaded and installed</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">examples/com/</span></tt></td>
-<td>Directory containing all java samples</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">examples/csharp/</span></tt></td>
-<td>Directory containing C# examples and a visual studio 2010 solution to build them</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">examples/cpp/</span></tt></td>
-<td>C++ examples</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">examples/python/</span></tt></td>
-<td>Python examples</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">examples/tests/</span></tt></td>
-<td>Unit tests</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">lib/</span></tt></td>
-<td>Where libraries and jar files will be created</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">makefiles/</span></tt></td>
-<td>Directory that contains sub-makefiles</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">objs/</span></tt></td>
-<td>Where C++ objs files will be stored</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">src/algorithms/</span></tt></td>
-<td>A collection of OR algorithms (non graph related)</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">src/base/</span></tt></td>
-<td>Directory containing basic utilities</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">src/com/</span></tt></td>
-<td>Directory containing java and C# source code for the libraries</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">src/constraint_solver/</span></tt></td>
-<td>The main directory for the constraint solver library</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">src/gen/</span></tt></td>
-<td>The root directory for all generated code (java classes, protocol buffers, swig files)</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">src/graph/</span></tt></td>
-<td>Standard OR graph algorithms</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">src/linear_solver/</span></tt></td>
-<td>The main directory for the linear solver wrapper library</td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">src/util/</span></tt></td>
-<td>More utilities needed by various libraries</td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">tools/</span></tt></td>
-<td>Binaries and scripts needed by various platforms</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="installation-on-unix-platforms">
-<span id="first-steps-install-unix"></span><h2>2.1.3. Installation on unix platforms</h2>
-<p>For linux users, please intall zlib-devel, bison, flex, autoconf, libtool, python-setuptools, and python-dev.</p>
-<p>The command on ubuntu is the following:</p>
-<div class="highlight-bash"><div class="highlight"><pre>sudo apt-get install bison flex python-setuptools python-dev autoconf <span class="se">\</span>
-                                                      libtool zlib-devel
+<div class="section" id="executing">
+<h3>2.2.1.2. Executing</h3>
+<p>You can execute C++ examples just by running them:</p>
+<ul>
+<li><p class="first">Windows:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>cp_is_fun1
 </pre></div>
 </div>
-<p>The fedora command is:</p>
-<div class="highlight-bash"><div class="highlight"><pre>sudo yum install subversion bison flex python-setuptools python-dev <span class="se">\</span>
-                                             autoconf libtool zlib-devel
+</div></blockquote>
+</li>
+<li><p class="first">MacOS and Unix:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre>./cp_is_fun1
 </pre></div>
 </div>
-<p>If you wish to use <strong class="program">glpk</strong>, please download <strong class="program">glpk</strong> from <a class="reference external" href="http://ftp.gnu.org/gnu/glpk/glpk-4.47.tar.gz">http://ftp.gnu.org/gnu/glpk/glpk-4.47.tar.gz</a> and put the archive in <tt class="file docutils literal"><span class="pre">or-tools/dependencies/archives</span></tt>. If you have the license, please download <tt class="docutils literal"><span class="pre">ziboptsuite-2.1.1.tgz</span></tt> from <a class="reference external" href="http://zibopt.zib.de/download.shtml">http://zibopt.zib.de/download.shtml</a> and put the archive in <tt class="docutils literal"><span class="pre">or-tools/dependencies/archives</span></tt>.</p>
-<p>If you wish to use <tt class="docutils literal"><span class="pre">.NET</span></tt>, you need to install <strong class="program">mono</strong>. On linux platforms, just install the <tt class="docutils literal"><span class="pre">mono-devel</span></tt> package. You need a recent one (at least 2.8 I believe) to work correctly. If <strong class="program">mono</strong> is not supported on your platform, you can install it using the procedure for Mac OS X.</p>
-<p>On Mac OS X, you need 64 bit support. Thus you need to build <strong class="program">mono</strong> by hand. Copy the <strong class="program">mono</strong> archive <a class="reference external" href="http://download.mono-project.com/sources/mono/mono-2.10.8.1.tar.gz">http://download.mono-project.com/sources/mono/mono-2.10.8.1.tar.gz</a> to <tt class="docutils literal"><span class="pre">dependencies/archives</span></tt>. You can use <tt class="docutils literal"><span class="pre">dependencies/install/bin/gmcs</span></tt> to compile <tt class="docutils literal"><span class="pre">C#</span></tt> files and <tt class="docutils literal"><span class="pre">dependencies/install/bin/mono</span></tt> to run resulting <tt class="docutils literal"><span class="pre">.exe</span></tt> files.</p>
-<p>run:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make third_party
-make install_python_modules
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="cleaning">
+<h3>2.2.1.3. Cleaning</h3>
+<p>To delete all generated files:</p>
+<div class="highlight-bash"><div class="highlight"><pre>make local_clean
 </pre></div>
 </div>
-<p>If you are on <tt class="docutils literal"><span class="pre">opensuse</span></tt> and maybe <tt class="docutils literal"><span class="pre">redhat</span></tt>, the <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install_python_module</span></tt> will fail. One workaround is described on this page <a class="reference external" href="http://stackoverflow.com/questions/4495120/combine-user-with-prefix-error-with-setup-py-install">http://stackoverflow.com/questions/4495120/combine-user-with-prefix-error-with-setup-py-install</a>.</p>
-<p>If you have root privilieges, you can replace the last line and install the python modules for all users with the following command:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd </span>dependencies/sources/google-apputils
-sudo python2.7 setup.py install
-</pre></div>
-</div>
-<p>It should create the <tt class="docutils literal"><span class="pre">Makefile.local</span></tt> automatically.</p>
-<p>Please note that the command:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make clean_third_party
-</pre></div>
-</div>
-<p>will clean all downloaded sources, all compiled dependencies, and <tt class="docutils literal"><span class="pre">Makefile.local</span></tt>. It is useful to get a clean state, or if you have added an archive in dependencies.archives.</p>
-</div>
-<div class="section" id="installation-on-windows">
-<span id="first-steps-install-windows"></span><h2>2.1.4. Installation on Windows</h2>
-<p>Create the or-tools svn copy where you want to work.</p>
-<p>Install <strong class="program">python</strong> from <a class="reference external" href="http://www.python.org/download/releases/2.7/">http://www.python.org/download/releases/2.7/</a></p>
-<p>Install <strong class="program">java JDK</strong> from <a class="reference external" href="http://www.oracle.com/technetwork/java/javase/downloads/jdk-7u2-download-1377129.html">http://www.oracle.com/technetwork/java/javase/downloads/jdk-7u2-download-1377129.html</a></p>
-<p>You need to install <strong class="program">python-setuptools</strong> for <tt class="docutils literal"><span class="pre">windows</span></tt>. Please fetch it from <a class="reference external" href="http://pypi.python.org/pypi/setuptools#files">http://pypi.python.org/pypi/setuptools#files</a> .</p>
-<p>If you wish to use <strong class="program">glpk</strong>, please download <strong class="program">glpk</strong> from <a class="reference external" href="http://ftp.gnu.org/gnu/glpk/glpk-4.47.tar.gz">http://ftp.gnu.org/gnu/glpk/glpk-4.47.tar.gz</a> and put the archive in <tt class="docutils literal"><span class="pre">or-tools/dependencies/archives</span></tt>.</p>
-<p>Then you can download all dependencies and build them using:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make third_party
-</pre></div>
-</div>
-<p>then edit <tt class="docutils literal"><span class="pre">Makefile.local</span></tt> to point to the correct <strong class="program">python</strong> and <strong class="program">java</strong> installation. Afterwards, to use <strong class="program">python</strong>, you need to install <strong class="program">google-apputils</strong>:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd </span>dependencies/sources/google-apputils
-c:<span class="se">\p</span>ython27<span class="se">\p</span>ython.exe setup.py install
-</pre></div>
-</div>
-<p>Please note that the command:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make clean_third_party
-</pre></div>
-</div>
-<p>will clean all downloaded sources, all compiled dependencies, and <tt class="docutils literal"><span class="pre">Makefile.local</span></tt>. It is useful to get a clean state, or if you have added an archive in dependencies.archives.</p>
-</div>
-<div class="section" id="running-tests">
-<span id="first-steps-running-tests"></span><h2>2.1.5. Running tests</h2>
-<p>You can check that everything is running correctly by running:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make <span class="nb">test</span>
-</pre></div>
-</div>
-<p>If everything is OK, it will run a selection of examples from all technologies in <tt class="docutils literal"><span class="pre">C++</span></tt>, <tt class="docutils literal"><span class="pre">python</span></tt>, <tt class="docutils literal"><span class="pre">java</span></tt>, and <tt class="docutils literal"><span class="pre">C#</span></tt>.</p>
-</div>
-<div class="section" id="compiling-libraries-and-running-examples">
-<span id="first-steps-compiling-running-examples"></span><h2>2.1.6. Compiling libraries and running examples</h2>
-<div class="section" id="compiling-libraries">
-<h3>2.1.6.1. Compiling libraries</h3>
-<p>All build rules use make (gnu make), even on windows. A make.exe binary is provided in the tools sub-directory.</p>
-<p>You can query the list of targets just by typing</p>
-<div class="highlight-bash"><div class="highlight"><pre>make
-</pre></div>
-</div>
-<p>You can then compile the library, examples and <tt class="docutils literal"><span class="pre">python</span></tt>, <tt class="docutils literal"><span class="pre">java</span></tt>, and <tt class="docutils literal"><span class="pre">.NET</span></tt> wrappings for the constraint solver, the linear solver wrappers, and the algorithms:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make all
-</pre></div>
-</div>
-<p>To compile in debug mode, please use</p>
-<div class="highlight-bash"><div class="highlight"><pre>make <span class="nv">DEBUG</span><span class="o">=</span>-g all
-</pre></div>
-</div>
-<p>or</p>
-<div class="highlight-bash"><div class="highlight"><pre>make <span class="nv">DEBUG</span><span class="o">=</span><span class="s2">&quot;/Od /Zi&quot;</span> all
-</pre></div>
-</div>
-<p>under windows.</p>
-<p>You can clean everything using:</p>
+<p>Don&#8217;t use</p>
 <div class="highlight-bash"><div class="highlight"><pre>make clean
 </pre></div>
 </div>
-<p>When everything is compiled, you will find under or-tools/bin and or-tools/lib:</p>
-<ul class="simple">
-<li>Some static libraries (libcp.a, libutil.a and libbase.a, and more)</li>
-<li>One binary per C++ example (e.g. nqueens)</li>
-<li>C++ wrapping libraries (pywrapcp.so, linjniwrapconstraint_solver.so)</li>
-<li>Java jars (com.google.ortools.constraintsolver.jar...)</li>
-<li>C# assemblies</li>
-</ul>
-</div>
-<div class="section" id="c-examples">
-<h3>2.1.6.2. C++ examples</h3>
-<p>You can execute C++ examples just by running then:</p>
-<div class="highlight-bash"><div class="highlight"><pre>./bin/magic_square
-</pre></div>
-</div>
-</div>
-<div class="section" id="python-examples">
-<h3>2.1.6.3. Python examples</h3>
-<p>For the python examples, as we have not installed the constraint_solver module, we need to use the following command:</p>
-<p>on windows:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">set </span><span class="nv">PYTHONPATH</span><span class="o">=</span>%PYTHONPATH%;&lt;path to or-tools&gt;<span class="se">\s</span>rc,
-</pre></div>
-</div>
-<p>then</p>
-<div class="highlight-bash"><div class="highlight"><pre>c:<span class="se">\P</span>ython27<span class="se">\p</span>ython.exe python/sample.py.
-</pre></div>
-</div>
-<p>On unix:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nv">PYTHONPATH</span><span class="o">=</span>src &lt;python_binary&gt; python/&lt;sample.py&gt;
-</pre></div>
-</div>
-<p>As in</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nv">PYTHONPATH</span><span class="o">=</span>src python2.6 python/golomb8.py
-</pre></div>
-</div>
-<p>There is a special target in the makefile to run python examples. The above example can be run with</p>
-<div class="highlight-bash"><div class="highlight"><pre>make rpy <span class="nv">EX</span><span class="o">=</span>golomb8
-</pre></div>
-</div>
-</div>
-<div class="section" id="java-examples">
-<h3>2.1.6.4. Java examples</h3>
-<p>You can run java examples with the run_&lt;name&gt; makefile target as in:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make run_RabbitsPheasants
-</pre></div>
-</div>
-<p>There is a special target in the makefile to run java examples. The above example can be run with</p>
-<div class="highlight-bash"><div class="highlight"><pre>make rjava <span class="nv">EX</span><span class="o">=</span>RabbitsPheasants
-</pre></div>
-</div>
-</div>
-<div class="section" id="net-examples">
-<h3>2.1.6.5. .NET examples</h3>
-<p>If you have .NET support compiled in, you can build .NET libraries with the command: make csharp.</p>
-<p>You can compile C# examples typing:</p>
-<div class="highlight-bash"><div class="highlight"><pre>make csharpexe.
-</pre></div>
-</div>
-<p>To run a C# example, on windows, just type the name</p>
-<div class="highlight-bash"><div class="highlight"><pre>bin<span class="se">\c</span>sflow.exe
-</pre></div>
-</div>
-<p>On unix, use the mono interpreter:</p>
-<div class="highlight-bash"><div class="highlight"><pre>mono bin/csflow.exe
-</pre></div>
-</div>
-<p>There is a special target in the makefile to run C# examples. The above example can be run with</p>
-<div class="highlight-bash"><div class="highlight"><pre>make rcs <span class="nv">EX</span><span class="o">=</span>csflow
-</pre></div>
+<p>as you will erase the generated files for the whole library!</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Don&#8217;t use <tt class="docutils literal"><span class="pre">make</span> <span class="pre">clean</span></tt> to delete the tutorial examples!</p>
 </div>
 </div>
 </div>
@@ -397,21 +214,15 @@ Search:
                         title="previous chapter">2. First steps with or-tools: cryptarithmetic puzzles</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="cryptarithmetic.html"
-                        title="next chapter">2.2. The cryptarithmetic puzzle problem and a first model</a></p>
+                        title="next chapter">2.3. The cryptarithmetic puzzle problem and a first model</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">2.1. Getting started</a><ul>
-<li><a class="reference internal" href="#getting-the-source">2.1.1. Getting the source</a></li>
-<li><a class="reference internal" href="#content-of-the-archive">2.1.2. Content of the Archive</a></li>
-<li><a class="reference internal" href="#installation-on-unix-platforms">2.1.3. Installation on unix platforms</a></li>
-<li><a class="reference internal" href="#installation-on-windows">2.1.4. Installation on Windows</a></li>
-<li><a class="reference internal" href="#running-tests">2.1.5. Running tests</a></li>
-<li><a class="reference internal" href="#compiling-libraries-and-running-examples">2.1.6. Compiling libraries and running examples</a><ul>
-<li><a class="reference internal" href="#compiling-libraries">2.1.6.1. Compiling libraries</a></li>
-<li><a class="reference internal" href="#c-examples">2.1.6.2. C++ examples</a></li>
-<li><a class="reference internal" href="#python-examples">2.1.6.3. Python examples</a></li>
-<li><a class="reference internal" href="#java-examples">2.1.6.4. Java examples</a></li>
-<li><a class="reference internal" href="#net-examples">2.1.6.5. .NET examples</a></li>
+<li><a class="reference internal" href="#">2.1. Getting started</a></li>
+<li><a class="reference internal" href="#running-the-tutorial-examples">2.2. Running the tutorial examples</a><ul>
+<li><a class="reference internal" href="#c-examples">2.2.1. C++ examples</a><ul>
+<li><a class="reference internal" href="#compiling-and-linking">2.2.1.1. Compiling and linking</a></li>
+<li><a class="reference internal" href="#executing">2.2.1.2. Executing</a></li>
+<li><a class="reference internal" href="#cleaning">2.2.1.3. Cleaning</a></li>
 </ul>
 </li>
 </ul>
@@ -429,7 +240,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="cryptarithmetic.html" title="2.2. The cryptarithmetic puzzle problem and a first model"
+          <a href="cryptarithmetic.html" title="2.3. The cryptarithmetic puzzle problem and a first model"
              >next</a> |</li>
         <li class="right" >
           <a href="../first_steps.html" title="2. First steps with or-tools: cryptarithmetic puzzles"

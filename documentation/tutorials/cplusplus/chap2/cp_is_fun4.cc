@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//
 // Cryptoarithmetic puzzle
 //
 // First attempt to solve equation CP + IS + FUN = TRUE
@@ -23,7 +22,6 @@
 // Use of Solve().
 // Use of gflags to choose the base.
 // Change the time limit of the solver.
-// Use of ExportProfilingOverview().
 
 #include <vector>
 
@@ -123,9 +121,9 @@ void CPIsFun() {
   CHECK_GE(kBase, letters.size());
 
   // Constraints
-  solver.AddConstraint(solver.MakeAllDifferent(letters));
+  solver.AddConstraint(solver.MakeAllDifferent(letters, false));
 
-  // CP + IS + FUN = TRUE
+  // CP + IS + FUN = FUN
   IntVar* const term1 = MakeBaseLine2(&solver, c, p, kBase);
   IntVar* const term2 = MakeBaseLine2(&solver, i, s, kBase);
   IntVar* const term3 = MakeBaseLine3(&solver, f, u, n, kBase);

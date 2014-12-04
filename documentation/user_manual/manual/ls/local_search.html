@@ -326,31 +326,23 @@ for the best.</p>
 <li>a guarantee that isn&#8217;t very expensive to compute but that is close to being useless.</li>
 </ul>
 </div></blockquote>
-<p>In either cases, it is not worth computing this guarantee<a class="footnote-reference" href="#not-every-problem-has-a-guarantee" id="id11">[13]</a>.</p>
+<p>In either cases, it is not worth computing this guarantee<a class="footnote-reference" href="#not-every-problem-has-a-guarantee" id="id11">[12]</a>.</p>
 <p>Not having a theoretical guarantee on the quality of a solution doesn&#8217;t mean that the solution found is not a good solution
 (it might even be the best solution), just that we don&#8217;t know how good (or bad) this solution is!</p>
 <div class="topic">
 <p class="topic-title first">What do we mean by a <em>guarantee</em> on the solution?</p>
-<p>Several concepts of <em>guarantee</em> have been developed. We will not go into details<a class="footnote-reference" href="#details-guarantee-sol-quality" id="id12">[11]</a>
+<p>Several concepts of <em>guarantee</em> have been developed. We will not go into details
 about the concept of
 <em>guarantee</em> but let&#8217;s give an example. In a now famous report <a class="reference internal" href="#christofides1976">[Christofides1976]</a>, Christofides proposed and analyzed a
-heuristic that is guaranteed to solve the metric Travelling Salesman Problem<a class="footnote-reference" href="#metrictsp" id="id14">[12]</a> within a 3/2 factor, i.e.
+heuristic that is guaranteed to solve the metric Travelling Salesman Problem<a class="footnote-reference" href="#metrictsp" id="id13">[11]</a> within a 3/2 factor, i.e.
 no matter the instance, this heuristic will always return a solution whose cost is at most 3/2 times
 the cost of the optimal solution. This means that in the worst case, the returned solution costs
 3/2 times the cost of the optimal solution. This <strong>is</strong> guaranteed!</p>
 <p>See <a class="reference external" href="http://en.wikipedia.org/wiki/Approximation_algorithm">Wikipedia Approximation Algorithm</a>.</p>
-<table class="docutils footnote" frame="void" id="details-guarantee-sol-quality" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id12">[11]</a></td><td>If theory doesn&#8217;t scare you, have a look at
-the subsection <em class="xref std std-ref">approximation_complexity</em> for more
-about approximation theory and quality guarantees.</td></tr>
-</tbody>
-</table>
 <table class="docutils footnote" frame="void" id="metrictsp" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id14">[12]</a></td><td>The <strong>metric</strong> TSP is the classical TSP but on graphs that respect the triangle inequality,
+<tr><td class="label"><a class="fn-backref" href="#id13">[11]</a></td><td>The <strong>metric</strong> TSP is the classical TSP but on graphs that respect the triangle inequality,
 i.e. <img class="math" src="../../_images/math/9b589dd4cba3d7dd3a6cdf1588a14dce8a2493aa.png" alt="d(a,c) \leqslant d(a,b) + d(b,c)" style="vertical-align: -4px"/> where <img class="math" src="../../_images/math/3834f0cef2a1f4d8524aa5bc8e3faca298550862.png" alt="a, b" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/3372c1cb6d68cf97c2d231acc0b47b95a9ed04cc.png" alt="c" style="vertical-align: 0px"/> are nodes of the graph
 and <img class="math" src="../../_images/math/4a4574161dcb6a88a83c663a29eb0bd7a80b288a.png" alt="d()" style="vertical-align: -4px"/> a distance function.
 The classical TSP itself cannot be approximated within any constant
@@ -361,21 +353,21 @@ factor (unless <img class="math" src="../../_images/math/6cf7ad4dffbf76c56644d09
 <table class="docutils citation" frame="void" id="christofides1976" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id13">[Christofides1976]</a></td><td>Christofides, Nicos. <em>Worst-case analysis of a new heuristic for the travelling
+<tr><td class="label"><a class="fn-backref" href="#id12">[Christofides1976]</a></td><td>Christofides, Nicos. <em>Worst-case analysis of a new heuristic for the travelling
 salesman problem</em>, Technical Report, Carnegie Mellon University, 388, 1976.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="not-every-problem-has-a-guarantee" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id11">[13]</a></td><td>Not to mention that some classes of problems are mathematically
+<tr><td class="label"><a class="fn-backref" href="#id11">[12]</a></td><td>Not to mention that some classes of problems are mathematically
 proven to have no possible guarantee on their solution at all! (or only if <img class="math" src="../../_images/math/6cf7ad4dffbf76c56644d092bb4db00e81f8006e.png" alt="\text{P} = \text{NP}" style="vertical-align: -1px"/>).</td></tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="global-optimization-methods-and-local-search">
 <span id="global-optimization-methods"></span><h2>6.4.4. Global optimization methods and local search</h2>
-<p>Meta-heuristics and heuristics can also work globally<a class="footnote-reference" href="#local-global-heuristics" id="id15">[14]</a>.
+<p>Meta-heuristics and heuristics can also work globally<a class="footnote-reference" href="#local-global-heuristics" id="id14">[13]</a>.
 The challenge with global methods is that very often the global search space for real industrial instances
 is huge and contains lots of dimensions
 (sometimes millions or even more!). More often than not, global exact optimization algorithms take prohibitive times
@@ -384,14 +376,14 @@ to solve such instances. Global (meta-)heuristics cannot dredge the search space
 (very) efficient local methods that (hopefully) lead to local optima. Could we have the best of these two worlds?</p>
 <p>You&#8217;ve guessed it: we use global methods to find portions of the search space that might contain good or even optimal
 solutions and we try to find those with local search methods. As always, there is a tradeoff between the two.</p>
-<p>To take again an analogy<a class="footnote-reference" href="#analogy-limits" id="id16">[15]</a>, looking for a good solution this way is a bit like trying to find
+<p>To take again an analogy<a class="footnote-reference" href="#analogy-limits" id="id15">[14]</a>, looking for a good solution this way is a bit like trying to find
 crude oil (or nowadays tar sands and the like): you send engineers, geologists, etc. to some places on earth to prospect
 (global method).
 If they find a promising spot, you send a team to drill and find out (local method).</p>
 <table class="docutils footnote" frame="void" id="local-global-heuristics" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id15">[14]</a></td><td>Tabu search, simulated annealing, guided local search and the like
+<tr><td class="label"><a class="fn-backref" href="#id14">[13]</a></td><td>Tabu search, simulated annealing, guided local search and the like
 were designed to overcome some shortcomings of local search methods. Depending on the problem and how they are
 implemented, these methods can also be seen as global search methods.</td></tr>
 </tbody>
@@ -399,7 +391,7 @@ implemented, these methods can also be seen as global search methods.</td></tr>
 <table class="docutils footnote" frame="void" id="analogy-limits" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id16">[15]</a></td><td>As all analogies, this one has certainly its limits!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id15">[14]</a></td><td>As all analogies, this one has certainly its limits!</td></tr>
 </tbody>
 </table>
 </div>

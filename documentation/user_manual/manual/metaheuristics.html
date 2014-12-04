@@ -54,51 +54,7 @@
             
   <div class="section" id="meta-heuristics-several-previous-problems">
 <span id="chapter-metaheuristics"></span><h1>7. Meta-heuristics: several previous problems</h1>
-<p>Lots of
-meta-heuristics are based on local search: they start with an initial solution and improve it
-little by little. Among them, we present three well-known meta-heurisitics:</p>
-<ul class="simple">
-<li><strong>Tabu Search</strong>: one of the most efficient meta-heuristic on the market!</li>
-<li><strong>Simulated Annealing</strong>: one of the first available meta-heuristic.</li>
-<li><strong>Guided Local Search</strong>: well suited for some problems like routing problems.</li>
-</ul>
-<p>We don&#8217;t want to enter a war about what meta-heuristic is best and who invented it. Let&#8217;s say that meta-heuristics</p>
-<ul class="simple">
-<li>are quite new: the first ones date from the 1960s;</li>
-<li>are not very well understood: why are some efficient for some problems and not for others?;</li>
-<li>are somehow all related to each others: you can express one meta-heuristic with another;</li>
-<li>have their efficiency strongly related to the quality of the code and the knowledge of the problem:
-a good or bad implementations of the same algorithm can give suprisingly completely different behaviours and
-the more knowledge about the problem you can use to (cleverly) adapt the meta-heuristic, the better;</li>
-<li>are often based on very simple ideas.</li>
-</ul>
-<p>One could write books on meta-heuristics and indeed lots of books, articles, reports have been written. There are
-even scientific communities that only sware by this or this meta-heuristic and each meta-heuristic comes with its
-own vocabulary<a class="footnote-reference" href="#funny-metaheuristic-names" id="id1">[1]</a>. In this manual, we only can
-scratch the surface of this fascinating subject.</p>
-<table class="docutils footnote" frame="void" id="funny-metaheuristic-names" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>In order to &#8220;sell&#8221; your (meta-)heuristic to the scientific community,
-it is also good to give it a <em>snappy</em> name.
-We don&#8217;t resist to name a few: <em>artificial bee colony algorithm</em>, <em>honey-bee mating optimization</em>,
-<em>intelligent water drops</em>, <em>firefly algorithm</em>, <em>monkey search</em>,
-<em>league championship algorithm</em>, <em>cuckoo search</em>, <em>virus optimization algorithm</em>,
-<em>galaxy-based search algorithm</em>, ... and our favorite: the <em>imperialist competitive algorithm</em>.</td></tr>
-</tbody>
-</table>
-<p>In <em>or-tools</em>, we implement meta-heuristics with <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
-(see the section <a class="reference internal" href="under_the_hood/metaheuristics.html#hood-metaheuristics"><em>Meta-heuristics and SearchMonitors</em></a>)
-and <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s. This is quite &#8220;natural&#8221; as <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s allow to... <em>monitor</em> the
-search.</p>
-<p>Basic versions of <em>Tabu Search</em>, <em>Simulated Annealing</em> and <em>Guided Local Search</em>
-are implemented by specialized <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s: <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt>s.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class only deals with <tt class="docutils literal"><span class="pre">IntVar</span></tt>s!</p>
-</div>
 <p class="rubric">Overview:</p>
-<p>We start by describing</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
@@ -114,18 +70,6 @@ are implemented by specialized <tt class="docutils literal"><span class="pre">Se
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap7</span></tt>.</p>
 <p>The files inside this directory are:</p>
-<ul class="simple">
-<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
-<li><tt class="file docutils literal"><span class="pre">dummy_lns.cc</span></tt>: The basic example solved with large neighborhood search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_lns.h</span></tt>: a basic <tt class="docutils literal"><span class="pre">SequenceLns</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> to solve the job-shop problem with local neighborhood search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_lns.cc</span></tt>: A basic implementation of Large Neighborhood Search with the <tt class="docutils literal"><span class="pre">SequenceLns</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> to solve the job-shop problem.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_heuristic.cc</span></tt>: We use all the previous ingredients to solve approximately the job-shop problem.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_tabu.cc</span></tt>: The job-shop problem solved by Tabu Search.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_SA.cc</span></tt>: The job-shop problem solved by Simulated Annealing.</li>
-<li><tt class="file docutils literal"><span class="pre">jobshop_GLS.cc</span></tt>: The job-shop problem solved by Guided Local Search.</li>
-</ul>
-<p>The files of this chapter are <strong>NOT</strong> the same as the ones in the <tt class="file docutils literal"><span class="pre">example</span></tt> directory even if there were inspired
-by them. In particular, job-shop instances with only one task per job are accepted (not that this is extremely useful but...).</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
@@ -176,7 +120,8 @@ by them. In particular, job-shop instances with only one task per job are accept
 <li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics_summary.html">7.10. Summary</a></li>
 </ul>
 </div>
-</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
           </div>

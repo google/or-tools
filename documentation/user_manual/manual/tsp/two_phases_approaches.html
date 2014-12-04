@@ -71,233 +71,46 @@
   </li>
 
 </ol></div>
-<p>The default solving algorithm to solve node routing problems is a basic Local Search. Several common <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s
-are already implemented and the <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class itself contains several helper functions to easily define new
-<tt class="docutils literal"><span class="pre">PathOperator</span></tt>s. We will cover them all in details but before we need a feasible initial solution to start the Local
-Search. The RL proposes several heuristic to construct this initial solution.</p>
 <div class="section" id="the-initial-solution">
 <h2>9.7.1. The initial solution</h2>
-<p>We have seen in the chapter <a class="reference internal" href="../LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a> how to construct an initial solution. We even used Local Search
-itself to find an initial solution. Several basic heuristics exist and some are implemented in the RL. The <tt class="docutils literal"><span class="pre">RoutingStrategy</span></tt>
-<tt class="docutils literal"><span class="pre">enum</span></tt> let you choose among</p>
-<p>[TO BE REWRITTEN AND ILLUSTRATED!!! + TIMING]</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">ROUTING_DEFAULT_STRATEGY</span></tt>: Select the first node with an unbound successor and connect it to the
-first available node. This is equivalent to the <tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt> strategy combined with
-<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt> and as its name implied, it is the default strategy.</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_GLOBAL_CHEAPEST_ARC</span></tt>: Iteratively connect two nodes with the cheapest arc.</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_LOCAL_CHEAPEST_ARC</span></tt>: Select the first node with an unbound successor and connect it to the
-node which produces the cheapest route segment.</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_PATH_CHEAPEST_ARC</span></tt>: Starting from a route &#8220;start&#8221; node, connect it to the node which produces
-the cheapest route segment, then extend the route by iterating on the
-last node added to the route.</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_EVALUATOR_STRATEGY</span></tt>: Same as <tt class="docutils literal"><span class="pre">ROUTING_PATH_CHEAPEST_ARC</span></tt>, except that arc costs are evaluated
-using the function passed to <tt class="docutils literal"><span class="pre">RoutingModel::SetFirstSolutionEvaluator()</span></tt>.</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_ALL_UNPERFORMED</span></tt>: Make all node inactive. Only finds a solution if nodes are optional (are
-element of a disjunction constraint with a finite penalty cost).</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_BEST_INSERTION</span></tt>: Iteratively build a solution by inserting nodes at their cheapest (best)
-position. As of 2/2012, only works on models with optional nodes
-(with finite penalty costs).</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_SAVINGS</span></tt>: Savings algorithm (Clarke &amp; Wright).
-Reference: Clarke, G. &amp; Wright, J.W.:
-&#8220;Scheduling of Vehicles from a Central Depot to a Number of
-Delivery Points&#8221;, Operations Research, Vol. 12, 1964, pp. 568-581</li>
-<li><tt class="docutils literal"><span class="pre">ROUTING_SWEEP</span></tt>: Sweep algorithm (Wren &amp; Holliday).
-Reference: Anthony Wren &amp; Alan Holliday: Computer Scheduling of Vehicles
-from One or More Depots to a Number of Delivery Points
-Operational Research Quarterly (1970-1977),
-Vol. 23, No. 3 (Sep., 1972), pp. 333-344</li>
-</ul>
-<p>You can choose the heuristic to construct the first solution by using the <tt class="docutils literal"><span class="pre">set_first_solution_strategy()</span></tt> method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">set_first_solution_strategy</span><span class="p">(</span><span class="n">RoutingStrategy</span> <span class="n">strategy</span><span class="p">);</span>
-</pre></div>
-</div>
-<p>and you can query which heuristic has been chosen with:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">RoutingStrategy</span> <span class="n">first_solution_strategy</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-</pre></div>
-</div>
-<p>This first solution strategy can be selected by using the <tt class="docutils literal"><span class="pre">routing_first_solution</span></tt> flag. Use a string corresponding to
-the <tt class="docutils literal"><span class="pre">enum</span></tt> without the word <tt class="docutils literal"><span class="pre">ROUTING</span></tt> and  in <em>Pascal Case</em>, i.e. all the words capitalized and concatenated like this:</p>
-<div class="highlight-bash"><div class="highlight"><pre>./my_beautiful_node_routing_program --routing_first_solution<span class="o">=</span>PathCheapestArc
-</pre></div>
-</div>
-<p>while the corresponding <tt class="docutils literal"><span class="pre">enum</span></tt> is <tt class="docutils literal"><span class="pre">ROUTING_PATH_CHEAPEST_ARC</span></tt>.</p>
 </div>
 <div class="section" id="the-pathoperator-class">
 <h2>9.7.2. The <tt class="docutils literal"><span class="pre">PathOperator</span></tt> class</h2>
 <div class="section" id="the-twoopt-pathoperator">
 <h3>9.7.2.1. The <tt class="docutils literal"><span class="pre">TwoOpt</span></tt> <tt class="docutils literal"><span class="pre">PathOperator</span></tt></h3>
-<p>Let&#8217;s implement a basic <tt class="docutils literal"><span class="pre">TwoOpt</span></tt> <tt class="docutils literal"><span class="pre">PathOperator</span></tt>.</p>
-<p>balbal</p>
-<p>This <tt class="docutils literal"><span class="pre">PathOperator</span></tt> is already implemented in the <em>or-tools</em>, so no need to use our own version.</p>
 </div>
 </div>
 <div class="section" id="local-search-pathoperators">
 <span id="id1"></span><h2>9.7.3. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</h2>
-<p>Several specialized but common <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s for paths are implemented in <em>or-tools</em>.
-They are defined in the <tt class="docutils literal"><span class="pre">LocalSearchOperators</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt> in the header <tt class="file docutils literal"><span class="pre">constraint_solver.h</span></tt> and can be switched
-on and off with <strong class="program">gflags</strong>:</p>
-<dl class="docutils">
-<dt>DEFINE_bool(routing_no_relocate, false,</dt>
-<dd>&#8220;Routing: forbids use of Relocate neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_exchange, false,</dt>
-<dd>&#8220;Routing: forbids use of Exchange neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_cross, false,</dt>
-<dd>&#8220;Routing: forbids use of Cross neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_2opt, false,</dt>
-<dd>&#8220;Routing: forbids use of 2Opt neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_oropt, false,</dt>
-<dd>&#8220;Routing: forbids use of OrOpt neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_make_active, false,</dt>
-<dd>&#8220;Routing: forbids use of MakeActive/SwapActive/MakeInactive &#8221;
-&#8220;neighborhoods.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_lkh, false,</dt>
-<dd>&#8220;Routing: forbids use of LKH neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_tsp, true,</dt>
-<dd>&#8220;Routing: forbids use of TSPOpt neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_no_tsplns, true,</dt>
-<dd>&#8220;Routing: forbids use of TSPLNS neighborhood.&#8221;);</dd>
-<dt>DEFINE_bool(routing_use_extended_swap_active, false,</dt>
-<dd>&#8220;Routing: use extended version of SwapActive neighborhood.&#8221;);</dd>
-</dl>
 <div class="section" id="twoopt">
 <h3>9.7.3.1. <tt class="docutils literal"><span class="pre">TwoOpt</span></tt></h3>
-<p>// Operator which reverves a sub-chain of a path. It is called TwoOpt
-// because it breaks two arcs on the path; resulting paths are called
-// two-optimal.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
-// (where (1, 5) are first and last nodes of the path and can therefore not
-// be moved):
-//   1 -&gt; [3 -&gt; 2] -&gt; 4  -&gt; 5
-//   1 -&gt; [4 -&gt; 3  -&gt; 2] -&gt; 5
-//   1 -&gt;  2 -&gt; [4 -&gt; 3] -&gt; 5
-TWOOPT,</p>
 </div>
 <div class="section" id="relocate">
 <h3>9.7.3.2. <tt class="docutils literal"><span class="pre">Relocate</span></tt></h3>
-<p>// Relocate: OROPT and RELOCATE.
-// Operator which moves a sub-chain of a path to another position; the
-// specified chain length is the fixed length of the chains being moved.
-// When this length is 1, the operator simply moves a node to another
-// position.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5, for a chain length
-// of 2 (where (1, 5) are first and last nodes of the path and can
-// therefore not be moved):
-//   1 -&gt;  4 -&gt; [2 -&gt; 3] -&gt; 5
-//   1 -&gt; [3 -&gt; 4] -&gt; 2  -&gt; 5</p>
 </div>
 <div class="section" id="oropt">
 <h3>9.7.3.3. <tt class="docutils literal"><span class="pre">OrOpt</span></tt></h3>
-<p>// Using Relocate with chain lengths of 1, 2 and 3 together is equivalent to
-// the OrOpt operator on a path. The OrOpt operator is a limited version of
-// 3Opt (breaks 3 arcs on a path).
-OROPT,</p>
-<p>// Relocate neighborhood with length of 1 (see OROPT comment).
-RELOCATE,</p>
 </div>
 <div class="section" id="exchange">
 <h3>9.7.3.4. <tt class="docutils literal"><span class="pre">Exchange</span></tt></h3>
-<p>// Operator which exchanges the positions of two nodes.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5
-// (where (1, 5) are first and last nodes of the path and can therefore not
-// be moved):
-//   1 -&gt; [3] -&gt; [2] -&gt;  4  -&gt; 5
-//   1 -&gt; [4] -&gt;  3  -&gt; [2] -&gt; 5
-//   1 -&gt;  2  -&gt; [4] -&gt; [3] -&gt; 5
-EXCHANGE,</p>
 </div>
 <div class="section" id="cross">
 <h3>9.7.3.5. <tt class="docutils literal"><span class="pre">Cross</span></tt></h3>
-<p>// Operator which cross exchanges the starting chains of 2 paths, including
-// exchanging the whole paths.
-// First and last nodes are not moved.
-// Possible neighbors for the paths 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 and 6 -&gt; 7 -&gt; 8
-// (where (1, 5) and (6, 8) are first and last nodes of the paths and can
-// therefore not be moved):
-//   1 -&gt; [7] -&gt; 3 -&gt; 4 -&gt; 5  6 -&gt; [2] -&gt; 8
-//   1 -&gt; [7] -&gt; 4 -&gt; 5       6 -&gt; [2 -&gt; 3] -&gt; 8
-//   1 -&gt; [7] -&gt; 5            6 -&gt; [2 -&gt; 3 -&gt; 4] -&gt; 8
-CROSS,</p>
 </div>
 <div class="section" id="inactive">
 <h3>9.7.3.6. <tt class="docutils literal"><span class="pre">Inactive</span></tt></h3>
-<p>// Operator which inserts an inactive node into a path.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
-// (where 1 and 4 are first and last nodes of the path) are:
-//   1 -&gt; [5] -&gt;  2  -&gt;  3  -&gt; 4
-//   1 -&gt;  2  -&gt; [5] -&gt;  3  -&gt; 4
-//   1 -&gt;  2  -&gt;  3  -&gt; [5] -&gt; 4
-MAKEACTIVE,</p>
-<p>// Operator which makes path nodes inactive.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 (where 1 and 4 are first
-// and last nodes of the path) are:
-//   1 -&gt; 3 -&gt; 4 with 2 inactive
-//   1 -&gt; 2 -&gt; 4 with 3 inactive
-MAKEINACTIVE,</p>
 </div>
 <div class="section" id="swapactive">
 <h3>9.7.3.7. <tt class="docutils literal"><span class="pre">SwapActive</span></tt></h3>
-<p>// Operator which replaces an active node by an inactive one.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
-// (where 1 and 4 are first and last nodes of the path) are:
-//   1 -&gt; [5] -&gt;  3  -&gt; 4 with 2 inactive
-//   1 -&gt;  2  -&gt; [5] -&gt; 4 with 3 inactive
-SWAPACTIVE,</p>
 </div>
 <div class="section" id="extendedswapactive">
 <h3>9.7.3.8. <tt class="docutils literal"><span class="pre">ExtendedSwapActive</span></tt></h3>
-<p>// Operator which makes an inactive node active and an active one inactive.
-// It is similar to SwapActiveOperator excepts that it tries to insert the
-// inactive node in all possible positions instead of just the position of
-// the node made inactive.
-// Possible neighbors for the path 1 -&gt; 2 -&gt; 3 -&gt; 4 with 5 inactive
-// (where 1 and 4 are first and last nodes of the path) are:
-//   1 -&gt; [5] -&gt;  3  -&gt; 4 with 2 inactive
-//   1 -&gt;  3  -&gt; [5] -&gt; 4 with 2 inactive
-//   1 -&gt; [5] -&gt;  2  -&gt; 4 with 3 inactive
-//   1 -&gt;  2  -&gt; [5] -&gt; 4 with 3 inactive
-EXTENDEDSWAPACTIVE,</p>
 </div>
 <div class="section" id="pathlns">
 <h3>9.7.3.9. <tt class="docutils literal"><span class="pre">PathLNS</span></tt></h3>
-<p>// Operator which relaxes two sub-chains of three consecutive arcs each.
-// Each sub-chain is defined by a start node and the next three arcs. Those
-// six arcs are relaxed to build a new neighbor.
-// PATHLNS explores all possible pairs of starting nodes and so defines
-// n^2 neighbors, n being the number of nodes.
-// Note that the two sub-chains can be part of the same path; they even may
-// overlap.
-PATHLNS,</p>
 </div>
 <div class="section" id="unactivelns">
 <h3>9.7.3.10. <tt class="docutils literal"><span class="pre">UnActiveLNS</span></tt></h3>
-<p>// Operator which relaxes all inactive nodes and one sub-chain of six
-// consecutive arcs. That way the path can be improve by inserting inactive
-// nodes or swaping arcs.
-UNACTIVELNS,</p>
-<p>// This enum is used in Solver::MakeOperator associated with an evaluator
-// to specify the neighborhood to create.
-enum EvaluatorLocalSearchOperators {
-// Lin–Kernighan local search.
-// While the accumulated local gain is positive, perform a 2opt or a 3opt
-// move followed by a series of 2opt moves. Return a neighbor for which the
-// global gain is positive.
-LK,</p>
-<p>// Sliding TSP operator.
-// Uses an exact dynamic programming algorithm to solve the TSP
-// corresponding to path sub-chains.
-// For a subchain 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 -&gt; 6, solves the TSP on
-// nodes A, 2, 3, 4, 5, where A is a merger of nodes 1 and 6 such that
-// cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
-TSPOPT,</p>
-<p>// TSP-base LNS.
-// Randomly merge consecutive nodes until n &#8220;meta&#8221;-nodes remain and solve
-// the corresponding TSP.
-// This is an &#8220;unlimited&#8221; neighborhood which must be stopped by search
-// limits. To force diversification, the operator iteratively forces each
-// node to serve as base of a meta-node.
-TSPLNS
-};</p>
 </div>
 <div class="section" id="how-can-i-change-the-order-of-the-localsearchoperators">
 <h3>9.7.3.11. How can I change the order of the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s?</h3>
@@ -305,12 +118,11 @@ TSPLNS
 </div>
 <div class="section" id="filters">
 <h2>9.7.4. Filters</h2>
-<p>sds</p>
 </div>
 <div class="section" id="a-local-search-heuristic-for-the-tsp">
 <h2>9.7.5. A Local Search heuristic for the TSP</h2>
-<p>Let&#8217;s use all these <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s to implement a basic Local Search heuristic.</p>
-</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
 
 

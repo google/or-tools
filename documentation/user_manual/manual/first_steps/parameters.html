@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.5. Parameters &mdash; or-tools User&#39;s Manual</title>
+    <title>2.6. Parameters &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
-    <link rel="next" title="2.6. Other supported languages" href="supported_languages.html" />
-    <link rel="prev" title="2.4. SolutionCollectors and Assignments to collect solutions" href="monitors.html" /> 
+    <link rel="next" title="2.7. Other supported languages" href="supported_languages.html" />
+    <link rel="prev" title="2.5. SolutionCollectors and Assignments to collect solutions" href="monitors.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="supported_languages.html" title="2.6. Other supported languages"
+          <a href="supported_languages.html" title="2.7. Other supported languages"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
+          <a href="monitors.html" title="2.5. SolutionCollectors and Assignments to collect solutions"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
@@ -55,11 +55,19 @@
           <div class="body">
             
   <div class="section" id="parameters">
-<span id="id1"></span><h1>2.5. Parameters</h1>
+<span id="id1"></span><h1>2.6. Parameters</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>This section is divided in two parts. First, we show you how to use Google&#8217;s
 command line flag library. Second, we explain how to pass parameters to the CP solver.</p>
 <div class="section" id="google-s-gflags">
-<span id="index-0"></span><h2>2.5.1. Google&#8217;s gflags</h2>
+<span id="index-0"></span><h2>2.6.1. Google&#8217;s gflags</h2>
 <p>The <a class="reference external" href="http://code.google.com/p/gflags/">Google&#8217;s flags library</a> is quite similar to other command flags libraries with the noticeable
 difference that the flag definitions may be scattered in different files.</p>
 <p id="index-1">To define a flag, we use the corresponding macro. Google&#8217;s flags library supports six types:</p>
@@ -97,7 +105,7 @@ a help string.</p>
 </pre></div>
 </div>
 <p>To change the base with a command line argument:</p>
-<div class="highlight-bash"><div class="highlight"><pre>./cp_is_fun4 --base<span class="o">=</span>12
+<div class="highlight-bash"><div class="highlight"><pre>./cp_is_fun3 --base<span class="o">=</span>12
 </pre></div>
 </div>
 <span class="target" id="index-2"></span><p id="index-3">If you want to know what the purpose of a flag is, just type one of the special flags on the command line:</p>
@@ -111,11 +119,18 @@ a help string.</p>
 <a class="reference external" href="http://google-gflags.googlecode.com/svn/trunk/doc/gflags.html">gflags documentation</a>.</p>
 <span class="target" id="index-4"></span></div>
 <div class="section" id="cp-solver-s-parameters">
-<span id="index-5"></span><h2>2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</h2>
-<p>You&#8217;ll find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap2/cp_is_fun4.cc">tutorials/cplusplus/chap2/cp_is_fun4.cc</a>.</p>
+<span id="cp-solver-parameters"></span><span id="index-5"></span><h2>2.6.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>Parameters can be transferred to the solver in several ways.</p>
 <div class="section" id="the-solverparameters-struct">
-<span id="parameters-solverparameters-struct"></span><h3>2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</h3>
+<span id="parameters-solverparameters-struct"></span><h3>2.6.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</h3>
 <p>First, you can invoke
 the constructor of the <tt class="docutils literal"><span class="pre">Solver</span></tt> that takes a <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Use some profiling and change the default parameters of the solver</span>
@@ -136,7 +151,7 @@ the constructor of the <tt class="docutils literal"><span class="pre">Solver</sp
 <p>The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct mainly deals with the internal usage of memory and is for advanced users.</p>
 </div>
 <div class="section" id="searchmonitors">
-<span id="index-6"></span><h3>2.5.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h3>
+<span id="index-6"></span><h3>2.6.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h3>
 <p>Second, you can use <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. We have already seen how to use them
 to collect solutions in <a class="reference internal" href="monitors.html#monitors-solutions"><em>SolutionCollectors and Assignments to collect solutions</em></a>.</p>
 <p id="index-7">Suppose we want to limit the available time to solve a problem. To pass this parameter on the command line,
@@ -156,7 +171,7 @@ we define a <tt class="docutils literal"><span class="pre">time_limit</span></tt
 <p>The search time is now limited to <tt class="docutils literal"><span class="pre">time_limit</span></tt> milliseconds.</p>
 </div>
 <div class="section" id="the-defaultphaseparameters-struct">
-<h3>2.5.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</h3>
+<h3>2.6.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</h3>
 <p>A third way is to pass parameters through the <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct and call <tt class="docutils literal"><span class="pre">MakeDefaultPhase()</span></tt> but
 we delay the discussion of this topic until the chapter
 <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives in Constraint Programming</em></a>.</p>
@@ -240,18 +255,18 @@ Search:
                         title="previous chapter">2. First steps with or-tools: cryptarithmetic puzzles</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="monitors.html"
-                        title="previous chapter">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
+                        title="previous chapter">2.5. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="supported_languages.html"
-                        title="next chapter">2.6. Other supported languages</a></p>
+                        title="next chapter">2.7. Other supported languages</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">2.5. Parameters</a><ul>
-<li><a class="reference internal" href="#google-s-gflags">2.5.1. Google&#8217;s gflags</a></li>
-<li><a class="reference internal" href="#cp-solver-s-parameters">2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a><ul>
-<li><a class="reference internal" href="#the-solverparameters-struct">2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</a></li>
-<li><a class="reference internal" href="#searchmonitors">2.5.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
-<li><a class="reference internal" href="#the-defaultphaseparameters-struct">2.5.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</a></li>
+<li><a class="reference internal" href="#">2.6. Parameters</a><ul>
+<li><a class="reference internal" href="#google-s-gflags">2.6.1. Google&#8217;s gflags</a></li>
+<li><a class="reference internal" href="#cp-solver-s-parameters">2.6.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a><ul>
+<li><a class="reference internal" href="#the-solverparameters-struct">2.6.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</a></li>
+<li><a class="reference internal" href="#searchmonitors">2.6.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li><a class="reference internal" href="#the-defaultphaseparameters-struct">2.6.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</a></li>
 </ul>
 </li>
 </ul>
@@ -269,10 +284,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="supported_languages.html" title="2.6. Other supported languages"
+          <a href="supported_languages.html" title="2.7. Other supported languages"
              >next</a> |</li>
         <li class="right" >
-          <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
+          <a href="monitors.html" title="2.5. SolutionCollectors and Assignments to collect solutions"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 

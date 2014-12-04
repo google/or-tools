@@ -214,24 +214,12 @@ What about the last three known values? Here there are:</p>
 </table>
 <p>Quite impressive, isn&#8217;t it? It&#8217;s even more impressive when you know that these numbers were obtained by explicitly
 finding all these solutions!</p>
-<p>You can learn much more about this problem and the best available techniques<a class="footnote-reference" href="#nqueens-best-techniques" id="id6">[4]</a> from the
-current world record (<img class="math" src="../../_images/math/3345975555f69734c1f2faf43e25edcc0a55a8ff.png" alt="n = 26" style="vertical-align: 0px"/>) holder: the <tt class="docutils literal"><span class="pre">Queens&#64;TUD</span></tt> team from the
-<em>Technische Universität Dresden</em>: <a class="reference external" href="http://queens.inf.tu-dresden.de/?l=en&amp;n=0">http://queens.inf.tu-dresden.de/?l=en&amp;n=0</a>.</p>
 <div class="topic">
 <p class="topic-title first">Is the n-queens problem only a &#8220;toy&#8221; problem?</p>
 <p>While the n-queens problem is a wonderful problem to study backtracking systems and is intensively used in benchmarks to test
 these systems, there are real problems that can be modelled and solved as n-queens problems. For instance, it has been
 used for parallel memory storage schemes, VLSI testing, traffic control and deadlock prevention (see <a class="reference internal" href="#jordan2009">[Jordan2009]</a>).</p>
 </div>
-<table class="docutils footnote" frame="void" id="nqueens-best-techniques" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>This time, backtracking and thus <em>Constraint Programming</em> are among the most
-efficient techniques. However, to compute all the solutions for <img class="math" src="../../_images/math/3345975555f69734c1f2faf43e25edcc0a55a8ff.png" alt="n = 26" style="vertical-align: 0px"/>, there is no way a general purpose
-CP solver can compete with specialized bitwise representations of the problem and massively parallel specialized
-hardware!</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="how-to-solve-the-problem">
 <h2>5.1.2. How to solve the problem?</h2>

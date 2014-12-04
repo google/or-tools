@@ -56,8 +56,15 @@
             
   <div class="section" id="an-implementation-of-the-first-model">
 <span id="golomb-ruler-first-implementation"></span><h1>3.3. An implementation of the first model</h1>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../../tutorials/cplusplus/chap3/golomb1.cc">golomb1.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>In this section, we code the first model developed in <a class="reference internal" href="golomb_first_model.html#golomb-ruler-problem"><em>The Golomb ruler problem and a first model</em></a>.</p>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/cplusplus/chap3/golomb1.cc">tutorials/cplusplus/chap3/golomb1.cc</a></p>
 <p>We take the order (the number of marks) from the command line:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DEFINE_int64</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s">&quot;Number of marks.&quot;</span><span class="p">);</span>
 </pre></div>
@@ -77,14 +84,6 @@ an upper bound on the length of a Golomb ruler of order <img class="math" src=".
 <div class="math">
 <p><img src="../../_images/math/26e627f0930e19476169f5e4c5c18251e33668b3.png" alt="G(n) &lt; n^2."/></p>
 </div><p>This conjecture hasn&#8217;t been proved yet but computational evidence has shown that the conjecture holds for <img class="math" src="../../_images/math/fc53204fb8443e399c9cdd4a4d1008c574c1d87a.png" alt="n &lt; 65000" style="vertical-align: 0px"/> (see <a class="reference internal" href="#dimitromanolakis2002">[Dimitromanolakis2002]</a>).</p>
-<table class="docutils citation" frame="void" id="dimitromanolakis2002" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[Dimitromanolakis2002]</a></td><td>Apostolos Dimitromanolakis. Analysis of the Golomb Ruler and the Sidon
-Set Problems, and Determination of Large, Near-Optimal Golomb Rulers. Ph.D. Thesis, Department of Electronic and Computer Engineering,
-Technical University of Crete.</td></tr>
-</tbody>
-</table>
 <p>This is perfect for our needs:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">CHECK_LT</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">65000</span><span class="p">);</span>
 <span class="k">const</span> <span class="n">int64</span> <span class="n">max</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
@@ -129,12 +128,6 @@ Technical University of Crete.</td></tr>
 <span class="n">CHECK_EQ</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">num_vars</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="remember-tricky-sums-remark" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Remember the remark at the beginning of this chapter about the tricky sums!</td></tr>
-</tbody>
-</table>
 <p id="index-2">How do we tell the solver to optimize? Use an <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> to declare the objective function:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">OptimizeVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">length</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeMinimize</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">num_vars</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">);</span>
 </pre></div>
@@ -148,6 +141,20 @@ in</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="p">...</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeMinimize</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">num_vars</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">);</span>
 </pre></div>
 </div>
+<h4>Footnote</h4><table class="docutils footnote" frame="void" id="remember-tricky-sums-remark" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Remember the remark at the beginning of this chapter about the tricky sums!</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="dimitromanolakis2002" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Dimitromanolakis2002]</a></td><td>Apostolos Dimitromanolakis. Analysis of the Golomb Ruler and the Sidon
+Set Problems, and Determination of Large, Near-Optimal Golomb Rulers. Ph.D. Thesis, Department of Electronic and Computer Engineering,
+Technical University of Crete.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 

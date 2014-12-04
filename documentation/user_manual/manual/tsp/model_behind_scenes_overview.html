@@ -176,10 +176,6 @@ is visited or not in the solution. The way to describe a node that is not visite
 to itself. Thus, and again with an abuse of notation, we have:</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">ActiveVar(i)</span> <span class="pre">==</span> <span class="pre">(NextVar(i)</span> <span class="pre">!=</span> <span class="pre">i)</span></tt>.</div></blockquote>
-<p>We&#8217;ll discuss <tt class="docutils literal"><span class="pre">Disjunction</span></tt>s and optional nodes  in details in the
-section <em class="xref std std-ref">disjunctions</em> when we will transform
-a Cumulative Chinese Postman Problem (CCPP) into a <em>Generalized TSP</em> (GTSP). A GTSP is similar to a TSP except that you have
-clusters of nodes you want to visit, i.e. you only want to visit 1 node in each cluster.</p>
 </div>
 </div>
 <div class="section" id="dimension-variables">
@@ -483,8 +479,6 @@ nodes) and <em>non-homogenous costs</em> are not supported yet (the method retur
 these cases).</p>
 </div>
 <p>If your model is <em>linear</em>, you also can use the <em>linear relaxation</em> of your model.</p>
-<p>We will explore these and other lower bounds in the section <em class="xref std std-ref">lower_bounds</em> when we&#8217;ll try to solve the Cumulative
-Chinese Postman Problem.</p>
 </div>
 </div>
 <div class="section" id="miscellaneous">
@@ -519,7 +513,7 @@ easily be achieved by using <em>locks</em>.</p>
 <blockquote>
 <div><tt class="docutils literal"><span class="pre">NextVar(lock[i])</span> <span class="pre">==</span> <span class="pre">lock[i+1]</span></tt></div></blockquote>
 <p>is <tt class="docutils literal"><span class="pre">true</span></tt> in the current solution.</p>
-<p>We will use locks in the section <em class="xref std std-ref">partial_routes</em> when we will try to solve the Cumulative Chinese Postman
+<p>We will use locks in the section <a class="reference internal" href="../vrp/partial_routes.html#partial-routes"><em>Partial routes and Assigments</em></a> when we will try to solve the Cumulative Chinese Postman
 Problem.</p>
 </div>
 </div>

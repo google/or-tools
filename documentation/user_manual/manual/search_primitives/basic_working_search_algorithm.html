@@ -228,10 +228,10 @@ behaviour by implementing the <tt class="docutils literal"><span class="pre">AtS
 search continues, otherwise the solver ends it.</p>
 </div>
 <div class="section" id="the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">
-<span id="index-0"></span><h2>5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
+<span id="index-0"></span><span id="id4"></span><h2>5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
 <p><tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s contain a set of callbacks called on search tree events, such
 as entering/exiting search, applying/refuting decisions, failing, accepting solutions...</p>
-<p>In this section, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class<a class="footnote-reference" href="#other-callbacks-searchmonitors" id="id4">[3]</a> and show you
+<p>In this section, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class<a class="footnote-reference" href="#other-callbacks-searchmonitors" id="id5">[3]</a> and show you
 exactly when they are called in the main search algorithm:</p>
 <table border="1" class="docutils">
 <caption>Basic search algorithm callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class.</caption>
@@ -292,7 +292,7 @@ exactly when they are called in the main search algorithm:</p>
 <br><table class="docutils footnote" frame="void" id="other-callbacks-searchmonitors" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>There are a few more callbacks defined in a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>. See XXX.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id5">[3]</a></td><td>There are a few more callbacks defined in a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>. See XXX.</td></tr>
 </tbody>
 </table>
 <p>We draw again your attention to the fact that the algorithm shown here is
@@ -306,11 +306,11 @@ We find this so important that we reuse our warning box:</p>
 <p>We use exceptions in our simplified version while the actual implementation uses
 the more efficient (and cryptic) <tt class="docutils literal"><span class="pre">setjmp</span> <span class="pre">-</span> <span class="pre">longjmp</span></tt> mechanism.</p>
 <p>We describe briefly what <em>nested searches</em> are in the section <a class="reference internal" href="basic_working_phases.html#nested-searches"><em>Nested searches</em></a> but you will have to wait until
-the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a> and the section <a class="reference internal" href="../under_the_hood/search.html#under-the-hood-nested-search"><em>Nested searches</em></a> to learn the juicy details<a class="footnote-reference" href="#wait-to-read-under-the-hood-nested-search" id="id5">[4]</a>.</p>
+the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a> and the section <a class="reference internal" href="../under_the_hood/search.html#under-the-hood-nested-search"><em>Nested searches</em></a> to learn the juicy details<a class="footnote-reference" href="#wait-to-read-under-the-hood-nested-search" id="id6">[4]</a>.</p>
 <table class="docutils footnote" frame="void" id="wait-to-read-under-the-hood-nested-search" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Of course, you can have a peak right now but some more background
+<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>Of course, you can have a peak right now but some more background
 will probably help you understand this mechanism better. Beside, you don&#8217;t need to understand the inner mechanism to
 be able to use nested search!</td></tr>
 </tbody>
@@ -694,7 +694,7 @@ If a right branch exists, it is stored in the
 If there are no more right branches
 to visit, the search tree has been exhausted and the method returns <tt class="docutils literal"><span class="pre">true</span></tt>. Next, the
 corresponding <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to the current search is kept on line 41.</p>
-<p>We are now inside the main loop of the <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> method. Two Boolean variables are defined<a class="footnote-reference" href="#two-bool-variables-playing-another-roles" id="id6">[5]</a></p>
+<p>We are now inside the main loop of the <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> method. Two Boolean variables are defined<a class="footnote-reference" href="#two-bool-variables-playing-another-roles" id="id7">[5]</a></p>
 <blockquote>
 <div><ul class="simple">
 <li><tt class="docutils literal"><span class="pre">finish</span></tt>: becomes <tt class="docutils literal"><span class="pre">true</span></tt> when the search is over;</li>
@@ -708,18 +708,18 @@ variables can be changed from the <em>outside</em>.</p>
 <table class="docutils footnote" frame="void" id="two-bool-variables-playing-another-roles" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>These two variables play a role when
+<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>These two variables play a role when
 we use nested searches, restart or finish a search
 but these possibilities are not shown here.</td></tr>
 </tbody>
 </table>
 <p>This main loop starts at line 47 and ends at line 108.</p>
 <p>The <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism allows to easily explain the backtrack mechanism. Whenever we need to backtrack in the search, a
-<tt class="docutils literal"><span class="pre">FailException</span></tt> is thrown<a class="footnote-reference" href="#try-catch-not-used" id="id7">[6]</a>.</p>
+<tt class="docutils literal"><span class="pre">FailException</span></tt> is thrown<a class="footnote-reference" href="#try-catch-not-used" id="id8">[6]</a>.</p>
 <table class="docutils footnote" frame="void" id="try-catch-not-used" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production
+<tr><td class="label"><a class="fn-backref" href="#id8">[6]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production
 code? ;-)</td></tr>
 </tbody>
 </table>

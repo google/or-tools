@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
     <link rel="next" title="3.1. Objective functions and how to compare search strategies" href="objectives/objective_functions.html" />
-    <link rel="prev" title="2.7. Summary" href="first_steps/summary.html" /> 
+    <link rel="prev" title="2.8. Summary" href="first_steps/summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,7 +41,7 @@
           <a href="objectives/objective_functions.html" title="3.1. Objective functions and how to compare search strategies"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="first_steps/summary.html" title="2.7. Summary"
+          <a href="first_steps/summary.html" title="2.8. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -59,17 +59,6 @@ want the best solution! Most of the time, the search is done in two steps. First
 we find the best solution<a class="footnote-reference" href="#best-solution-what" id="id1">[1]</a>. Second, we prove that this
 solution is indeed the best (or as good as any other feasible solution in
 case there are multiple optimal solutions) by scouring (preferably implicitly) the complete search tree.</p>
-<table class="docutils footnote" frame="void" id="best-solution-what" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>How do we know we have a best solution? Only when
-we have proven it to be so! The two steps are intermingled. So why do we
-speak about two steps? Because, most of the time, it is easy to find a
-best (good) solution (heuristics, good search strategies in the
-search tree, ...). The time-consuming part of the search consist in
-disregarding/visiting the rest of the search tree.</td></tr>
-</tbody>
-</table>
 <p class="rubric">Overview:</p>
 <p>We start by stating the Golomb Ruler Problem (GRP) and showing that this problem is difficult. We implement five models and compare them two by two. To do so, we introduce some basic statistics about the search (time, failures, branches, ...). Two very useful techniques are introduced:
 adding better bounds and breaking symmetries. Finally, we say a few words about the strategies used by the solver to optimize an objective function.</p>
@@ -88,17 +77,15 @@ In fact, you can completely skip them if you wish. The basic ideas behind these 
 <p class="rubric">Classes under scrutiny:</p>
 <p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>.</p>
 <p class="rubric">Files:</p>
-<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap3</span></tt>.</p>
-<p>The files inside this directory are:</p>
+<p>The files used in this chapter are:</p>
 <ul class="simple">
-<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt>: A first implementation. We show how to tell the solver to optimize an objective function. We use the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}" style="vertical-align: -6px"/> differences as variables.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt>: Same file as <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> but with some global statistics about the search added so we can see how well or bad
-a model behave.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb3.cc</span></tt>: A second implementation. This time, we only use the marks as variables and introduce the quaternary inequality constraints.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb4.cc</span></tt>: We improve the second implementation by reintroducing the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}" style="vertical-align: -6px"/> differences variables.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb5.cc</span></tt>: In this third implementation, we replace the inequality constraints by the more powerful globlal <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb6.cc</span></tt>: The last implementation is a tightening of the model used in the third implementation. We add better upper and lower bounds and break a symmetry in the search tree.</li>
+<li><a class="reference internal" href="objectives/first_implementation.html#golomb-ruler-first-implementation"><em>golomb1.cc</em></a>: A first implementation. We show how to tell the solver to optimize an objective function. We use the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}" style="vertical-align: -6px"/> differences as variables.</li>
+<li><a class="reference internal" href="objectives/content_model.html#what-model"><em>golomb2.cc</em></a>: Same file as <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> with some global indicators about the search and the use of <tt class="docutils literal"><span class="pre">DebugString()</span></tt>.</li>
+<li><a class="reference internal" href="objectives/data_search.html#data-search"><em>golomb3.cc</em></a>: Same file as <tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt> with some global statistics and  the use of <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s.</li>
+<li><a class="reference internal" href="objectives/second_implementation.html#golomb-ruler-second-implementation"><em>golomb4.cc</em></a>: A second implementation. This time, we only use the marks as variables and introduce the quaternary inequality constraints.</li>
+<li><a class="reference internal" href="objectives/second_implementation.html#golomb-ruler-improved-verison"><em>golomb5.cc</em></a>: We improve the second implementation by reintroducing the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}" style="vertical-align: -6px"/> differences variables.</li>
+<li><a class="reference internal" href="objectives/third_implementation.html#golomb-ruler-third-implementation"><em>golomb6.cc</em></a>: In this third implementation, we replace the inequality constraints by the more powerful globlal <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint.</li>
+<li><a class="reference internal" href="objectives/tighten_model.html#golomb-ruler-tighten-model"><em>golomb7.cc</em></a>: The last implementation is a tightening of the model used in the third implementation. We add better upper and lower bounds and break a symmetry in the search tree.</li>
 </ul>
 <p>In all the codes, we use the same strategy to select the next variable to branch on (<tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt>) and the same strategy to
 assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>). The times we compare not only measure the solve process but also the time needed to construct the model.</p>
@@ -144,6 +131,17 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
 <li class="toctree-l1"><a class="reference internal" href="objectives/summary.html">3.10. Summary</a></li>
 </ul>
 </div>
+<h4>Footnote</h4><table class="docutils footnote" frame="void" id="best-solution-what" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>How do we know we have a best solution? Only when
+we have proven it to be so! The two steps are intermingled. So why do we
+speak about two steps? Because, most of the time, it is easy to find a
+best (good) solution (heuristics, good search strategies in the
+search tree, ...). The time-consuming part of the search consist in
+disregarding/visiting the rest of the search tree.</td></tr>
+</tbody>
+</table>
 </div>
 
 
@@ -266,7 +264,7 @@ Search:
           <a href="objectives/objective_functions.html" title="3.1. Objective functions and how to compare search strategies"
              >next</a> |</li>
         <li class="right" >
-          <a href="first_steps/summary.html" title="2.7. Summary"
+          <a href="first_steps/summary.html" title="2.8. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

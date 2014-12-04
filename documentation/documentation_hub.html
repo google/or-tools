@@ -81,38 +81,14 @@ Thank you very much.
 
 <p>The or-tools documentation is covered by the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
 <hr>
-<h2>What's new?</h2>
-<hr>
-<p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.2.13: (2014-10-30 00:01:40)
--------------------------------
-* chapter 1: all pages are now accessible.
-</pre>
-<p>This is the <a href="changes_list.txt">list of changes</a>.</p>
-<h5>Legend:</h5>
-<p>
-<ul>
-<li><strong>added:</strong> written for the first time;</li>
-<li><strong>rewritten:</strong> substantial changes;</li>
-<li><strong>enhanced:</strong> minor changes;</li>
-<li><strong>updated:</strong> code did change...;</li>
-<li><strong>reviewed:</strong> reread with a critical eye for the maths and the working of the library!</li>
-<li><strong>corrected:</strong> passed through the mill...;</li>
-<li><strong>published:</strong> you can read it!;</li>
-<li><strong>removed:</strong> for the better!</li>
-</ul>
-</p>
-<hr>
+
 <h2 id="user_manual">The User's Manual</h2>
 <hr>
 
 <p>This is work in progress. Pages will be modified, moved or even removed!</p>
 
-<p><font color="red">As of September 4, 2014, the manual is <b>NOT</b> up to date with the new API. The tutorial code however <b>IS</b> up to date!</font></p>
-
-
 <p>The epub version is still experimental. We strongly recommend <a href="http://calibre-ebook.com/">calibre (ebook-viewer)</a> whenever possible to view the epub version. 
-With this version, you should be able to convert the manual to the right format for your preferred hand-held device.For instance, to transform the epub version 
+With this version, you should be able to convert the manual to the right format for your preferred hand-held device. For instance, to transform the epub version 
 into a mobi version:
 <div class="code_line">
 ebook-convert   &nbsp;&nbsp;&nbsp;user_manual.v.x.y.z.epub  &nbsp;&nbsp;&nbsp; user_manual.v.x.y.z.mobi
@@ -162,8 +138,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td>Chap2: First steps with or-tools</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_green" style="width:93%;">
-    <span>93%</span>
+  <div class="progress_foreground_green" style="width:100%;">
+    <span>100%</span>
   </div>
 </div>
 </td>
@@ -172,8 +148,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td>Chap3: Using objectives</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_green" style="width:85%;">
-    <span>85%</span>
+  <div class="progress_foreground_green" style="width:100%;">
+    <span>100%</span>
   </div>
 </div>
 </td>
@@ -350,57 +326,73 @@ be more functional.
 </dl>
 </p>
 
+<hr>
 <h4 id="tutorial_C++">C++ tutorials</h4>
 <p>
-We've filled the code with <code>VLOG(x)</code>s which allow to follow in real time what the programs do. <code>x</code> varies between <code>1</code>
+We've filled most of the code with <code>VLOG(x)</code>s which allow to follow in real time what the programs do. <code>x</code> varies between <code>1</code>
 and <code>4</code>. The higher the value of <code>x</code>, the more detailed informations on screen. You can trigger these logs with the <code>log_level</code>
 gflag:</p>
 
 <div class="code_line">./my_wonderful_program -log_level=2</div>
 
-<p>We'll find a similar mechanism for the other languages soon.</p>
+<p>Makefiles are provided. We favor the use of dynamic libraries. See <a href="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/manual/first_steps/getting_started.html">Getting started</a> on how to run the tutorial examples. For more information about our makefiles, see <a href="http://code.google.com/p/or-tools/wiki/AGettingStarted#Compiling_libraries_and_running_examples" >Compiling libraries and running the examples</a>.</p> 
 
-<p>Makefiles are (finally) provided. We favor the use of dynamic libraries. 
-See <a href="http://code.google.com/p/or-tools/wiki/AGettingStarted#Compiling_libraries_and_running_examples" >Compiling libraries and running the examples</a> on how
-to use these makefiles.</p> 
 
-<h6>In short:</h6>
-
-<ol> 
-<li>You have to redefine the <code>OR_TOOLS_TOP</code> variable with the root directory of the or-tools libary:
-<div class="code_line">OR_TOOLS_TOP=/home/username/or-tools-read-only</div>
-You can also overwrite this variable when invoking make:
-<div class="code_line">make OR_TOOLS_TOP=/home/username/or-tools-read-only</div>
-</li>
-
-<li>If you want to play with the routing examples, the <code>TUTORIAL</code> variable must point to the C++ tutorial directory. By default, it is defined as:
-<div class="code_line">TUTORIAL=($OR_TOOLS_TOP)/documentation/tutorials/cplusplus</div>
-If you deploy the tutorial examples somewhere else, update this variable accordingly.
-</li>
-
-<li>If you want to compile all examples:
-<div class="code_line">make all</div>
-</li>
-<li>If you want to compile a specific example:
-<ul>
-<li>Windows:
-<div class="code_line" > make my_example.exe</div>
-</li>
-<li>MacOS and Unix:
-<div class="code_line">make my_example</div>
-</li>
-</ul>
-</li>
-<li>To delete all generated files:
-<div class="code_line">make local_clean</div>
-<font color="red">Don't use</font>
-<div class="code_line">make clean</div>
-<font color="red">as you will erase the generated files for the whole library!</font>
-</li>
-</ol>
 
 <p>Last but not least, you might wonder why we don't use (or rather minimize the use of) <code>streams</code> in our examples. This is an internal requirement.</p>
 
+<h4>Files</h4>
+
+<table style="width:100%">
+  <tr>
+    <td>Chap2:</td>
+    <td>First steps with or-tools: cryptarithmetic puzzles</td>
+    <td><a href="xxx">chap2.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap3:</td>
+    <td>Using objectives in constraint programming: the Golomb ruler problem</td>
+    <td><a href="xxx">chap3.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap4:</td>
+    <td>Reification</td>
+    <td></td> 
+  </tr>
+  <tr>
+    <td>Chap5:</td>
+    <td>Defining search primitives: the n-Queens Problem</td>
+    <td><a href="xxx">chap5.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap6:</td>
+    <td>Local search: the job-shop problem</td>
+    <td><a href="xxx">chap6.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap7:</td>
+    <td>Meta-heuristics: several previous problems</td>
+    <td><a href="xxx">chap7.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap8:</td>
+    <td>Custom constraints: the alldifferent_except_0 constraint</td>
+    <td><a href="xxx">chap8.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap9:</td>
+    <td>Travelling Salesman Problems with constraints: the TSP with time windows</td>
+    <td><a href="xxx">chap9.zip</a></td> 
+  </tr>
+  <tr>
+    <td>Chap10:</td>
+    <td>Vehicule Routing Problems with constraints: the capacitated vehicle routing problem</td>
+    <td><a href="xxx">chap10.zip</a></td> 
+  </tr>
+</table>
+
+
+<hr>
 <h4 id="tutorial_Python">Python tutorials</h4>
 
 
