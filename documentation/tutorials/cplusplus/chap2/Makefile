@@ -11,7 +11,7 @@ include $(OR_TOOLS_TOP)/Makefile
 
 .PHONY: tutorial local_clean
 
-tutorial: $(EXE)
+tutorials: $(EXE)
 
 cp_is_fun1.$O: cp_is_fun1.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c cp_is_fun1.cc -o cp_is_fun1.$O
