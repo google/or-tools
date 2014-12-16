@@ -16,12 +16,12 @@
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 
 #include "base/logging.h"
-#include "glop/lp_types.h"
 #include "glop/lu_factorization.h"
 #include "glop/parameters.pb.h"
-#include "glop/sparse.h"
-#include "glop/status.h"
 #include "glop/rank_one_update.h"
+#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -277,6 +277,10 @@ class BasisFactorization {
   }
   void ResetStats() { stats_.Reset(); }
 
+  // The deterministic time used by this class. It is incremented for each
+  // solve and each factorization.
+  double DeterministicTime() const;
+
  private:
   // Return true if the submatrix of matrix_ given by basis_ is exactly the
   // identity (without permutation).
@@ -287,6 +291,10 @@ class BasisFactorization {
   // simplex method", 28 january 2013, Technical Report ERGO-13-0001
   Status MiddleProductFormUpdate(ColIndex entering_col,
                                  RowIndex leaving_variable_row) MUST_USE_RESULT;
+
+  // Increases the deterministic time for a solve operation with a vector having
+  // this number of non-zero entries (it can be an approximation).
+  void BumpDeterministicTimeForSolve(int num_entries) const;
 
   // Stats about this class.
   struct Stats : public StatsGroup {
@@ -330,6 +338,9 @@ class BasisFactorization {
   int num_updates_;
   EtaFactorization eta_factorization_;
   LuFactorization lu_factorization_;
+
+  // mutable because the Solve() functions are const but need to update this.
+  mutable double deterministic_time_;
 
   DISALLOW_COPY_AND_ASSIGN(BasisFactorization);
 };

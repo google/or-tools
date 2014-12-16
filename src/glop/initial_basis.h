@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_GLOP_INITIAL_BASIS_H_
 #define OR_TOOLS_GLOP_INITIAL_BASIS_H_
 
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
-#include "glop/sparse.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {

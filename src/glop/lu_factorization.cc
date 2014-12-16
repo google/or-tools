@@ -13,7 +13,7 @@
 
 
 #include "glop/lu_factorization.h"
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -418,6 +418,11 @@ double LuFactorization::GetFillInPercentage(const MatrixView& matrix) const {
   if (is_identity_factorization_ || initial_num_entries == 0) return 1.0;
   return static_cast<double>(lu_num_entries) /
          static_cast<double>(initial_num_entries);
+}
+
+EntryIndex LuFactorization::NumberOfEntries() const {
+  return is_identity_factorization_ ? EntryIndex(0) : lower_.num_entries() +
+                                                          upper_.num_entries();
 }
 
 Fractional LuFactorization::ComputeDeterminant() const {

@@ -132,15 +132,16 @@ message MPModelRequest {
   // program?).
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
-    GLOP_LINEAR_PROGRAMMING = 2;           // Recommended default for LP models.
+    GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
-    GUROBI_LINEAR_PROGRAMMING = 6;         // Commercial, needs a valid license.
+    GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
 
-    SCIP_MIXED_INTEGER_PROGRAMMING = 3;   // Recommended default for MIP models.
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
+
   }
   optional SolverType solver_type = 2;
 
@@ -185,6 +186,13 @@ message MPSolutionResponse {
   // account the source "objective_offset" and "objective_coefficient".
   // This is set iff 'status' is OPTIMAL or FEASIBLE.
   optional double objective_value = 2;
+
+  // This field is only filled for MIP problems. For a minimization problem,
+  // this is a lower bound on the optimal objective value. For a maximization
+  // problem, it is an upper bound. It is only filled if the status is OPTIMAL
+  // or FEASIBLE. In the former case, best_objective_bound should be equal to
+  // objective_value (modulo numerical errors).
+  optional double best_objective_bound = 5;
 
   // Variable values in the same order as the MPModelProto::variable field.
   // This is a dense representation. These are set iff 'status' is OPTIMAL or

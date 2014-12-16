@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_GLOP_VARIABLES_INFO_H_
 #define OR_TOOLS_GLOP_VARIABLES_INFO_H_
 
-#include "glop/lp_types.h"
-#include "glop/sparse.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {

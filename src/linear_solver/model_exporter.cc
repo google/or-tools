@@ -34,6 +34,9 @@ DEFINE_int32(lp_max_line_length, 10000,
              "Maximum line length in exported .lp files. The default was chosen"
              " so that SCIP can read the files.");
 
+DEFINE_bool(lp_log_invalid_name, false,
+            "Whether to log invalid variable and contraint names.");
+
 namespace operations_research {
 
 using new_proto::MPConstraintProto;
@@ -56,30 +59,32 @@ MPModelProtoExporter::MPModelProtoExporter(const MPModelProto& proto)
 // Note(user): This method is static. It is also used by MPSolver.
 bool MPModelProtoExporter::CheckNameValidity(const std::string& name) {
   if (name.empty()) {
-    LOG(WARNING) << "CheckNameValidity() should not be passed an empty name.";
+    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
+        << "CheckNameValidity() should not be passed an empty name.";
     return false;
   }
   // Allow names that conform to the LP and MPS format.
   const int kMaxNameLength = 255;
   if (name.size() > kMaxNameLength) {
-    LOG(WARNING) << "Invalid name " << name << ": length > " << kMaxNameLength
-                 << "."
-                 << " Will be unable to write model to file.";
+    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
+        << "Invalid name " << name << ": length > " << kMaxNameLength << "."
+        << " Will be unable to write model to file.";
     return false;
   }
   const std::string kForbiddenChars = " +-*/<>=:\\";
   if (name.find_first_of(kForbiddenChars) != std::string::npos) {
-    LOG(WARNING) << "Invalid name " << name
-                 << " contains forbidden character: " << kForbiddenChars
-                 << " or space."
-                 << " Will be unable to write model to file.";
+    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
+        << "Invalid name " << name
+        << " contains forbidden character: " << kForbiddenChars << " or space."
+        << " Will be unable to write model to file.";
     return false;
   }
   const std::string kForbiddenFirstChars = "$.0123456789";
   if (kForbiddenFirstChars.find(name[0]) != std::string::npos) {
-    LOG(WARNING) << "Invalid name " << name
-                 << ". First character is one of: " << kForbiddenFirstChars
-                 << " Will be unable to write model to file.";
+    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
+        << "Invalid name " << name
+        << ". First character is one of: " << kForbiddenFirstChars
+        << " Will be unable to write model to file.";
     return false;
   }
   return true;

@@ -15,8 +15,8 @@
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 
 #include "glop/basis_representation.h"
-#include "glop/lp_types.h"
 #include "glop/variables_info.h"
+#include "lp_data/lp_types.h"
 #include "util/stats.h"
 
 namespace operations_research {

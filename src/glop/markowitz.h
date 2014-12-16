@@ -76,10 +76,10 @@
 #include <queue>
 
 #include "base/logging.h"
-#include "glop/lp_types.h"
-#include "glop/sparse.h"
-#include "glop/status.h"
 #include "glop/parameters.pb.h"
+#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse.h"
 #include "util/stats.h"
 
 namespace operations_research {

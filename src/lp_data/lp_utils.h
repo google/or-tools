@@ -14,12 +14,12 @@
 
 // Basic utility functions on Fractional or row/column of Fractional.
 
-#ifndef OR_TOOLS_GLOP_LP_UTILS_H_
-#define OR_TOOLS_GLOP_LP_UTILS_H_
+#ifndef OR_TOOLS_LP_DATA_LP_UTILS_H_
+#define OR_TOOLS_LP_DATA_LP_UTILS_H_
 
 #include "base/accurate_sum.h"
-#include "glop/lp_types.h"
-#include "glop/sparse_column.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {
@@ -315,4 +315,4 @@ typedef SumWithOneMissing<false> SumWithNegativeInfiniteAndOneMissing;
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_LP_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_LP_UTILS_H_

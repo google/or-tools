@@ -14,8 +14,8 @@
 
 // Common types and constants used by the Linear Programming solver.
 
-#ifndef OR_TOOLS_GLOP_LP_TYPES_H_
-#define OR_TOOLS_GLOP_LP_TYPES_H_
+#ifndef OR_TOOLS_LP_DATA_LP_TYPES_H_
+#define OR_TOOLS_LP_DATA_LP_TYPES_H_
 
 #include <math.h>
 #include <limits>
@@ -367,7 +367,15 @@ struct ScatteredColumnReference {
   static const double kDenseThresholdForPreciseSum;
 };
 
+// This is used during the deterministic time computation to convert a given
+// number of floating-point operations to something in the same order of
+// magnitude as a second (on a 2014 desktop).
+static inline double DeterministicTimeForFpOperations(int64 n) {
+  const double kConvertionFactor = 2e-9;
+  return kConvertionFactor * static_cast<double>(n);
+}
+
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_LP_TYPES_H_
+#endif  // OR_TOOLS_LP_DATA_LP_TYPES_H_

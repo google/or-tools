@@ -27,11 +27,11 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "base/strutil.h"
-#include "glop/lp_print_utils.h"
 #include "glop/lp_solver.h"
-#include "glop/mps_reader.h"
 #include "glop/parameters.pb.h"
 #include "glop/proto_utils.h"
+#include "lp_data/lp_print_utils.h"
+#include "lp_data/mps_reader.h"
 #include "linear_solver/proto_tools.h"
 #include "base/status.h"
 

@@ -13,7 +13,7 @@
 
 #include "glop/variable_values.h"
 
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 #include "util/iterators.h"
 
 namespace operations_research {

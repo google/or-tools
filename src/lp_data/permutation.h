@@ -12,11 +12,11 @@
 // limitations under the License.
 
 
-#ifndef OR_TOOLS_GLOP_PERMUTATION_H_
-#define OR_TOOLS_GLOP_PERMUTATION_H_
+#ifndef OR_TOOLS_LP_DATA_PERMUTATION_H_
+#define OR_TOOLS_LP_DATA_PERMUTATION_H_
 
-#include "glop/lp_types.h"
-#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "util/return_macros.h"
 
 namespace operations_research {
 namespace glop {
@@ -220,4 +220,4 @@ void ApplyInversePermutation(const Permutation<IndexType>& perm,
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_PERMUTATION_H_
+#endif  // OR_TOOLS_LP_DATA_PERMUTATION_H_

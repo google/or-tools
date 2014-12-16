@@ -15,9 +15,9 @@
 #define OR_TOOLS_GLOP_UPDATE_ROW_H_
 
 #include "glop/basis_representation.h"
-#include "glop/lp_types.h"
 #include "glop/parameters.pb.h"
 #include "glop/variables_info.h"
+#include "lp_data/lp_types.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -83,6 +83,11 @@ class UpdateRow {
   void ComputeUpdateRowForBenchmark(const DenseRow& lhs,
                                     const std::string& algorithm);
 
+  // Deterministic time used by the scalar product computation of this class.
+  double DeterministicTime() const {
+    return DeterministicTimeForFpOperations(num_operations_);
+  }
+
  private:
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_ and unit_row_left_inverse_non_zeros_.
@@ -128,6 +133,10 @@ class UpdateRow {
     DoubleDistribution unit_row_left_inverse_accuracy;
     RatioDistribution update_row_density;
   };
+
+  // Track the number of basic floating point multiplication.
+  // Used by DeterministicTime().
+  int64 num_operations_;
 
   // Glop standard classes.
   GlopParameters parameters_;

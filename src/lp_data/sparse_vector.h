@@ -25,18 +25,18 @@
 //
 // Both books also contain a wealth of references.
 
-#ifndef OR_TOOLS_GLOP_SPARSE_VECTOR_H_
-#define OR_TOOLS_GLOP_SPARSE_VECTOR_H_
+#ifndef OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
+#define OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
 
 #include <algorithm>
 #include <string>
 
 #include "base/logging.h"  // for CHECK*
 #include "base/integral_types.h"
-#include "glop/lp_types.h"
-#include "glop/permutation.h"
-#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/permutation.h"
 #include "util/iterators.h"
+#include "util/return_macros.h"
 
 namespace operations_research {
 namespace glop {
@@ -796,4 +796,4 @@ std::string SparseVector<IndexType>::DebugString() const {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_SPARSE_VECTOR_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_

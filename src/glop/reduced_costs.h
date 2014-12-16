@@ -15,13 +15,13 @@
 #define OR_TOOLS_GLOP_REDUCED_COSTS_H_
 
 #include "glop/basis_representation.h"
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
 #include "glop/parameters.pb.h"
 #include "glop/primal_edge_norms.h"
 #include "glop/status.h"
 #include "glop/update_row.h"
 #include "glop/variables_info.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
 #include "util/stats.h"
 
 namespace operations_research {

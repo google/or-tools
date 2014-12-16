@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "glop/lp_types.h"
+#include "lp_data/lp_types.h"
 
 namespace operations_research {
 namespace glop {

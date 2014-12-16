@@ -886,29 +886,66 @@ $(LIB_DIR)/$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX): $(BASE_LIB_OBJS)
 	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX) $(BASE_LIB_OBJS)
 endif
 
-GLOP_LIB_OBJS= \
-  $(OBJ_DIR)/glop/parameters.pb.$O \
-  $(OBJ_DIR)/glop/entering_variable.$O \
+# Glop library.
+
+LP_DATA_OBJS= \
+  $(OBJ_DIR)/lp_data/lp_data.$O \
+  $(OBJ_DIR)/lp_data/lp_print_utils.$O \
+  $(OBJ_DIR)/lp_data/lp_types.$O \
+  $(OBJ_DIR)/lp_data/lp_utils.$O \
+  $(OBJ_DIR)/lp_data/matrix_scaler.$O \
+  $(OBJ_DIR)/lp_data/matrix_utils.$O \
+  $(OBJ_DIR)/lp_data/mps_reader.$O \
+  $(OBJ_DIR)/lp_data/sparse.$O \
+  $(OBJ_DIR)/lp_data/sparse_column.$O \
+
+$(OBJ_DIR)/lp_data/lp_data.$O:$(SRC_DIR)/lp_data/lp_data.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Slp_data.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_data.$O
+
+$(OBJ_DIR)/lp_data/lp_print_utils.$O:$(SRC_DIR)/lp_data/lp_print_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Slp_print_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_print_utils.$O
+
+$(OBJ_DIR)/lp_data/lp_types.$O:$(SRC_DIR)/lp_data/lp_types.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Slp_types.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_types.$O
+
+$(OBJ_DIR)/lp_data/lp_utils.$O:$(SRC_DIR)/lp_data/lp_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Slp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_utils.$O
+
+$(OBJ_DIR)/lp_data/matrix_scaler.$O:$(SRC_DIR)/lp_data/matrix_scaler.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Smatrix_scaler.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smatrix_scaler.$O
+
+$(OBJ_DIR)/lp_data/matrix_utils.$O:$(SRC_DIR)/lp_data/matrix_utils.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Smatrix_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smatrix_utils.$O
+
+$(OBJ_DIR)/lp_data/mps_reader.$O:$(SRC_DIR)/lp_data/mps_reader.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
+
+$(OBJ_DIR)/lp_data/mps_to_png.$O:$(SRC_DIR)/lp_data/mps_to_png.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Smps_to_png.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_to_png.$O
+
+$(OBJ_DIR)/lp_data/png_dump.$O:$(SRC_DIR)/lp_data/png_dump.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Spng_dump.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Spng_dump.$O
+
+$(OBJ_DIR)/lp_data/sparse.$O:$(SRC_DIR)/lp_data/sparse.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Ssparse.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Ssparse.$O
+
+$(OBJ_DIR)/lp_data/sparse_column.$O:$(SRC_DIR)/lp_data/sparse_column.cc
+	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Ssparse_column.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Ssparse_column.$O
+
+GLOP_LIB_OBJS= $(LP_DATA_OBJS) \
   $(OBJ_DIR)/glop/basis_representation.$O \
   $(OBJ_DIR)/glop/dual_edge_norms.$O \
+  $(OBJ_DIR)/glop/entering_variable.$O \
   $(OBJ_DIR)/glop/initial_basis.$O \
-  $(OBJ_DIR)/glop/lp_data.$O \
-  $(OBJ_DIR)/glop/lp_print_utils.$O \
   $(OBJ_DIR)/glop/lp_solver.$O \
-  $(OBJ_DIR)/glop/lp_types.$O \
-  $(OBJ_DIR)/glop/lp_utils.$O \
   $(OBJ_DIR)/glop/lu_factorization.$O \
   $(OBJ_DIR)/glop/markowitz.$O \
-  $(OBJ_DIR)/glop/matrix_scaler.$O \
-  $(OBJ_DIR)/glop/matrix_utils.$O \
-  $(OBJ_DIR)/glop/mps_reader.$O \
+  $(OBJ_DIR)/glop/parameters.pb.$O \
   $(OBJ_DIR)/glop/preprocessor.$O \
   $(OBJ_DIR)/glop/primal_edge_norms.$O \
   $(OBJ_DIR)/glop/proto_utils.$O \
   $(OBJ_DIR)/glop/reduced_costs.$O \
   $(OBJ_DIR)/glop/revised_simplex.$O \
-  $(OBJ_DIR)/glop/sparse.$O \
-  $(OBJ_DIR)/glop/sparse_column.$O \
   $(OBJ_DIR)/glop/status.$O \
   $(OBJ_DIR)/glop/update_row.$O \
   $(OBJ_DIR)/glop/variables_info.$O \
@@ -934,41 +971,14 @@ $(OBJ_DIR)/glop/entering_variable.$O:$(SRC_DIR)/glop/entering_variable.cc
 $(OBJ_DIR)/glop/initial_basis.$O:$(SRC_DIR)/glop/initial_basis.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sinitial_basis.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sinitial_basis.$O
 
-$(OBJ_DIR)/glop/lp_data.$O:$(SRC_DIR)/glop/lp_data.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_data.$O
-
-$(OBJ_DIR)/glop/lp_print_utils.$O:$(SRC_DIR)/glop/lp_print_utils.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_print_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_print_utils.$O
-
-$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h
+$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
-
-$(OBJ_DIR)/glop/lp_utils.$O:$(SRC_DIR)/glop/lp_utils.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_utils.$O
-
-$(OBJ_DIR)/glop/lp_types.$O:$(SRC_DIR)/glop/lp_types.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_types.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_types.$O
 
 $(OBJ_DIR)/glop/lu_factorization.$O:$(SRC_DIR)/glop/lu_factorization.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slu_factorization.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slu_factorization.$O
 
 $(OBJ_DIR)/glop/markowitz.$O:$(SRC_DIR)/glop/markowitz.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smarkowitz.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smarkowitz.$O
-
-$(OBJ_DIR)/glop/matrix_scaler.$O:$(SRC_DIR)/glop/matrix_scaler.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smatrix_scaler.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smatrix_scaler.$O
-
-$(OBJ_DIR)/glop/matrix_utils.$O:$(SRC_DIR)/glop/matrix_utils.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smatrix_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smatrix_utils.$O
-
-$(OBJ_DIR)/glop/mps_reader.$O:$(SRC_DIR)/glop/mps_reader.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_reader.$O
-
-$(OBJ_DIR)/glop/mps_to_png.$O:$(SRC_DIR)/glop/mps_to_png.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Smps_to_png.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_to_png.$O
-
-$(OBJ_DIR)/glop/png_dump.$O:$(SRC_DIR)/glop/png_dump.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Spng_dump.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Spng_dump.$O
 
 $(OBJ_DIR)/glop/preprocessor.$O:$(SRC_DIR)/glop/preprocessor.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Spreprocessor.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Spreprocessor.$O
@@ -990,12 +1000,6 @@ $(OBJ_DIR)/glop/reduced_costs.$O:$(SRC_DIR)/glop/reduced_costs.cc
 
 $(OBJ_DIR)/glop/revised_simplex.$O:$(SRC_DIR)/glop/revised_simplex.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Srevised_simplex.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Srevised_simplex.$O
-
-$(OBJ_DIR)/glop/sparse.$O:$(SRC_DIR)/glop/sparse.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Ssparse.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssparse.$O
-
-$(OBJ_DIR)/glop/sparse_column.$O:$(SRC_DIR)/glop/sparse_column.cc
-	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Ssparse_column.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssparse_column.$O
 
 $(OBJ_DIR)/glop/status.$O:$(SRC_DIR)/glop/status.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sstatus.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sstatus.$O

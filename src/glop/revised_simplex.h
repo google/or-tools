@@ -102,11 +102,6 @@
 #include "base/macros.h"
 #include "glop/basis_representation.h"
 #include "glop/dual_edge_norms.h"
-#include "glop/lp_data.h"
-#include "glop/lp_print_utils.h"
-#include "glop/lp_types.h"
-#include "glop/matrix_scaler.h"
-#include "glop/mps_reader.h"
 #include "glop/parameters.pb.h"
 #include "glop/primal_edge_norms.h"
 #include "glop/entering_variable.h"
@@ -115,6 +110,10 @@
 #include "glop/update_row.h"
 #include "glop/variables_info.h"
 #include "glop/variable_values.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_print_utils.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/matrix_scaler.h"
 #include "base/random.h"
 #include "util/time_limit.h"
 
@@ -190,6 +189,7 @@ class RevisedSimplex {
   VariableStatus GetVariableStatus(ColIndex col) const;
   ConstraintStatus GetConstraintStatus(RowIndex row) const;
   const BasisState& GetState() const;
+  double DeterministicTime() const;
 
   // If the problem status is PRIMAL_UNBOUNDED (respectively DUAL_UNBOUNDED),
   // then the solver has a corresponding primal (respectively dual) ray to show
@@ -531,7 +531,7 @@ class RevisedSimplex {
   ColIndex first_slack_col_;
 
   // We're using vectors after profiling and looking at the generated assembly
-  // it's as fast as std::unique_ptr as long as the size is properly reserved
+  // it's as fast as scoped_ptr as long as the size is properly reserved
   // beforehand.
 
   // Temporary view of the matrix given to Solve() with extra slack columns.
@@ -730,6 +730,7 @@ class RevisedSimplex {
 
   // A random number generator.
   MTRandom random_;
+
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplex);
 };
 

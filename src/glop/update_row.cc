@@ -17,7 +17,7 @@
 #include <omp.h>
 #endif
 
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -37,6 +37,7 @@ UpdateRow::UpdateRow(const CompactSparseMatrix& matrix,
       non_zero_position_set_(),
       coefficient_(),
       compute_update_row_(true),
+      num_operations_(0),
       parameters_(),
       stats_() {}
 
@@ -96,14 +97,22 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     if (lhs < 0.5 * static_cast<double>(num_col_wise_entries.value())) {
       if (lhs < 1.1 * static_cast<double>(matrix_.num_cols().value())) {
         ComputeUpdatesRowWiseHypersparse();
+        num_operations_ += num_row_wise_entries.value();
       } else {
         ComputeUpdatesRowWise();
+        num_operations_ +=
+            num_row_wise_entries.value() + matrix_.num_rows().value();
       }
     } else {
       ComputeUpdatesColumnWise();
+      num_operations_ +=
+          num_col_wise_entries.value() + matrix_.num_cols().value();
     }
   } else {
     ComputeUpdatesColumnWise();
+    num_operations_ +=
+        variables_info_.GetNumEntriesInRelevantColumns().value() +
+        matrix_.num_cols().value();
   }
   IF_STATS_ENABLED(stats_.update_row_density.Add(
       static_cast<double>(non_zero_position_list_.size()) /

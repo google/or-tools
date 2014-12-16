@@ -100,6 +100,7 @@ void MakeAllLiteralsPositive(LinearBooleanProblem* problem);
 void FindLinearBooleanProblemSymmetries(
     const LinearBooleanProblem& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators);
+
 // Maps all the literals of the problem. Note that this converts the cost of a
 // variable correctly, that is if a variable with cost is mapped to another, the
 // cost of the later is updated.

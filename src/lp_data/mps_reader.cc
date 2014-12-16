@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "glop/mps_reader.h"
+#include "lp_data/mps_reader.h"
 
 #include <math.h>
 #include <algorithm>
@@ -30,7 +30,8 @@
 #include "base/numbers.h"    // for safe_strtod
 #include "base/split.h"
 #include "base/strutil.h"
-#include "glop/lp_print_utils.h"
+#include "lp_data/lp_print_utils.h"
+#include "base/status.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
 DEFINE_bool(mps_stop_after_first_error, true, "Stop after the first error.");

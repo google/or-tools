@@ -20,8 +20,8 @@
 //   - bounds for each variable,
 //   - bounds for each constraint.
 
-#ifndef OR_TOOLS_GLOP_LP_DATA_H_
-#define OR_TOOLS_GLOP_LP_DATA_H_
+#ifndef OR_TOOLS_LP_DATA_LP_DATA_H_
+#define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
 #include <map>
@@ -34,9 +34,9 @@
 #include "base/int_type.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
-#include "glop/lp_types.h"
-#include "glop/matrix_scaler.h"
-#include "glop/sparse.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/matrix_scaler.h"
+#include "lp_data/sparse.h"
 #include "util/fp_utils.h"
 
 namespace operations_research {
@@ -451,4 +451,4 @@ inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_LP_DATA_H_
+#endif  // OR_TOOLS_LP_DATA_LP_DATA_H_

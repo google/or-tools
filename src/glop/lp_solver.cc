@@ -23,12 +23,12 @@
 
 #include "base/join.h"
 #include "base/strutil.h"
-#include "glop/lp_types.h"
-#include "glop/lp_utils.h"
 #include "glop/preprocessor.h"
 #include "glop/proto_utils.h"
 #include "glop/status.h"
 #include "linear_solver/proto_tools.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/lp_utils.h"
 #include "util/fp_utils.h"
 
 DEFINE_bool(lp_solver_enable_fp_exceptions, true,
@@ -126,7 +126,7 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   ScopedFloatingPointEnv scoped_fenv;
   if (FLAGS_lp_solver_enable_fp_exceptions) {
 #ifdef _MSC_VER
-    scoped_fenv.EnableExceptions(_EM_INVALID | _EM_ZERODIVIDE);
+    scoped_fenv.EnableExceptions(_EM_INVALID | EM_ZERODIVIDE);
 #else
     scoped_fenv.EnableExceptions(FE_DIVBYZERO | FE_INVALID);
 #endif
@@ -174,7 +174,6 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   constraint_statuses_ = solution.constraint_statuses;
   status_ = solution.status;
 
-  // Verify solution.
   if (status_ == ProblemStatus::OPTIMAL &&
       parameters_.provide_strong_optimal_guarantee()) {
     MovePrimalValuesWithinBounds(lp);
@@ -182,30 +181,48 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   }
 
   ComputeReducedCosts(lp);
-  ComputeConstraintActivities(lp);
 
-  max_absolute_primal_infeasibility_ = 0.0;
-  max_absolute_dual_infeasibility_ = 0.0;
-  ComputeColumnInfeasibilities(lp);
-  ComputeRowInfeasibilities(lp);
-  ComputeObjective(lp);
-  ComputeDualObjective(lp);
-
+  // Note that this needs primal_values_ and reduced_costs_ to be up to date.
   if (status_ == ProblemStatus::OPTIMAL &&
       parameters_.provide_strong_optimal_guarantee()) {
-    // Note that this call may modify the solution values.
     Fractional cost_perturbation =
         GetMaxCostPerturbationToEnforceOptimality(lp);
-    VLOG(1) << "Cost perturbation = " << cost_perturbation
-            << " (Difference with dual infeasibility = "
-            << cost_perturbation - max_absolute_dual_infeasibility_ << ")";
+    VLOG(1) << "Cost perturbation = " << cost_perturbation;
     if (cost_perturbation > parameters_.solution_feasibility_tolerance()) {
       VLOG(1) << "The needed cost perturbation is too high !!";
       status_ = ProblemStatus::IMPRECISE;
     }
-    VLOG(1) << "Rhs perturbation = " << max_absolute_primal_infeasibility_
-            << " (Same as primal infeasibility)";
   }
+
+  ComputeConstraintActivities(lp);
+
+  const double primal_infeasibility = ComputePrimalValueInfeasibility(lp);
+  const double dual_infeasibility = ComputeDualValueInfeasibility(lp);
+  const double primal_residual = ComputeActivityInfeasibility(lp);
+  const double dual_residual = ComputeReducedCostInfeasibility(lp);
+
+  const double objective_value = ComputeObjective(lp);
+  const double dual_objective_value = ComputeDualObjective(lp);
+  objective_value_with_offset_ = objective_value + lp.objective_offset();
+
+  // If the primal/dual values were moved to the bounds, then the primal/dual
+  // infeasibilities should be exactly zero (but not the residuals).
+  if (status_ == ProblemStatus::OPTIMAL &&
+      parameters_.provide_strong_optimal_guarantee()) {
+    if (primal_infeasibility != 0.0 || dual_infeasibility != 0.0) {
+      VLOG(1) << "If you see this, there is a bug in "
+                 "MovePrimalValuesWithinBounds() or in "
+                 "MoveDualValuesWithinBounds().";
+    }
+  }
+
+  // TODO(user): the name is not really consistent since in practice those are
+  // the "residual" since the primal/dual infeasibility are zero when
+  // parameters_.provide_strong_optimal_guarantee() is true.
+  max_absolute_primal_infeasibility_ =
+      std::max(primal_infeasibility, primal_residual);
+  max_absolute_dual_infeasibility_ =
+      std::max(dual_infeasibility, dual_residual);
 
   // Check precision and optimality of the result. See Chvatal pp. 61-62.
   //
@@ -223,7 +240,8 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   VLOG(1) << "Max. primal infeasibility = "
           << max_absolute_primal_infeasibility_;
   VLOG(1) << "Max. dual infeasibility = " << max_absolute_dual_infeasibility_;
-  VLOG(1) << "Gap = " << objective_value_ - dual_objective_value_;
+  VLOG(1) << "Objective (with offset) = " << objective_value_with_offset_;
+  VLOG(1) << "Objective gap = " << objective_value - dual_objective_value;
 
   if ((status_ == ProblemStatus::OPTIMAL ||
        status_ == ProblemStatus::PRIMAL_FEASIBLE) &&
@@ -241,7 +259,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   }
   if (status_ == ProblemStatus::OPTIMAL) {
     if (!AreWithinAbsoluteOrRelativeTolerances(
-            objective_value_, dual_objective_value_,
+            objective_value, dual_objective_value,
             parameters_.solution_objective_gap_tolerance(),
             parameters_.solution_objective_gap_tolerance())) {
       VLOG(1) << "The final solution objective gap is too high !!";
@@ -309,6 +327,11 @@ bool LPSolver::MayHaveMultipleOptimalSolutions() const {
 
 int LPSolver::GetNumberOfSimplexIterations() const {
   return num_revised_simplex_iterations_;
+}
+
+double LPSolver::DeterministicTime() const {
+  return revised_simplex_ == nullptr ? 0.0
+                                     : revised_simplex_->DeterministicTime();
 }
 
 void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram& lp) {
@@ -636,12 +659,12 @@ Fractional LPSolver::GetMaxCostPerturbationToEnforceOptimality(
     DCHECK_LE(variable_value, upper_bound);
 
     // We correct the reduced cost, so we have a minimization problem and
-    // thus the dual_objective_value_ will be a lower bound of the primal
+    // thus the dual objective value will be a lower bound of the primal
     // objective.
     const Fractional reduced_cost = optimization_sign * reduced_costs_[col];
 
     // Perturbation needed to move the cost to 0.0
-    const Fractional cost_delta = fabs(reduced_cost);
+    const Fractional cost_delta = std::abs(reduced_cost);
 
     // We are enforcing the complementary slackness conditions, see the comment
     // in ComputeDualObjective() for more explanations. By default, we move the
@@ -710,18 +733,17 @@ void LPSolver::ComputeReducedCosts(const LinearProgram& lp) {
   }
 }
 
-void LPSolver::ComputeObjective(const LinearProgram& lp) {
+double LPSolver::ComputeObjective(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_cols, primal_values_.size());
   KahanSum sum;
   for (ColIndex col(0); col < num_cols; ++col) {
     sum.Add(lp.objective_coefficients()[col] * primal_values_[col]);
   }
-  objective_value_ = sum.Value();
-  objective_value_with_offset_ = objective_value_ + lp.objective_offset();
+  return sum.Value();
 }
 
-void LPSolver::ComputeDualObjective(const LinearProgram& lp) {
+double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
   // By the duality theorem, the dual objective is a bound on the primal
   // objective obtained by taking the linear combinaison of the constraints
   // given by dual_values_.
@@ -794,36 +816,53 @@ void LPSolver::ComputeDualObjective(const LinearProgram& lp) {
     // We now need to apply the correction in the good direction!
     dual_objective.Add(optimization_sign * correction);
   }
-  dual_objective_value_ = dual_objective.Value();
+  return dual_objective.Value();
 }
 
-void LPSolver::UpdateMaxPrimalInfeasibility(Fractional update) {
-  max_absolute_primal_infeasibility_ =
-      std::max(max_absolute_primal_infeasibility_, update);
+double LPSolver::ComputePrimalValueInfeasibility(const LinearProgram& lp) {
+  double infeasibility = 0.0;
+  const ColIndex num_cols = lp.num_variables();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    const Fractional lower_bound = lp.variable_lower_bounds()[col];
+    const Fractional upper_bound = lp.variable_upper_bounds()[col];
+    DCHECK(IsFinite(primal_values_[col]));
+
+    if (lower_bound == upper_bound) {
+      infeasibility =
+          std::max(infeasibility, std::abs(primal_values_[col] - upper_bound));
+      continue;
+    }
+    if (primal_values_[col] > upper_bound) {
+      infeasibility =
+          std::max(infeasibility, primal_values_[col] - upper_bound);
+    }
+    if (primal_values_[col] < lower_bound) {
+      infeasibility =
+          std::max(infeasibility, lower_bound - primal_values_[col]);
+    }
+  }
+  return infeasibility;
 }
 
-void LPSolver::UpdateMaxDualInfeasibility(Fractional update) {
-  max_absolute_dual_infeasibility_ =
-      std::max(max_absolute_dual_infeasibility_, update);
-}
-
-void LPSolver::ComputeRowInfeasibilities(const LinearProgram& lp) {
-  RowIndex num_problematic_rows(0);
+double LPSolver::ComputeActivityInfeasibility(const LinearProgram& lp) {
+  double infeasibility = 0.0;
+  int num_problematic_rows(0);
   const RowIndex num_rows = lp.num_constraints();
-  const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
   for (RowIndex row(0); row < num_rows; ++row) {
     const Fractional activity = constraint_activities_[row];
     const Fractional lower_bound = lp.constraint_lower_bounds()[row];
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
     const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    DCHECK(IsFinite(activity));
+
     if (lower_bound == upper_bound) {
-      if (fabs(activity - upper_bound) > tolerance) {
+      if (std::abs(activity - upper_bound) > tolerance) {
         VLOG(2) << "Row " << row.value() << " has activity " << activity
                 << " which is different from " << upper_bound << " by "
                 << activity - upper_bound;
         ++num_problematic_rows;
       }
-      UpdateMaxPrimalInfeasibility(fabs(activity - upper_bound));
+      infeasibility = std::max(infeasibility, std::abs(activity - upper_bound));
       continue;
     }
     if (activity > upper_bound) {
@@ -834,7 +873,7 @@ void LPSolver::ComputeRowInfeasibilities(const LinearProgram& lp) {
                 << row_excess;
         ++num_problematic_rows;
       }
-      UpdateMaxPrimalInfeasibility(row_excess);
+      infeasibility = std::max(infeasibility, row_excess);
     }
     if (activity < lower_bound) {
       const Fractional row_deficit = lower_bound - activity;
@@ -844,53 +883,52 @@ void LPSolver::ComputeRowInfeasibilities(const LinearProgram& lp) {
                 << row_deficit;
         ++num_problematic_rows;
       }
-      UpdateMaxPrimalInfeasibility(row_deficit);
-    }
-
-    // For a minimization problem, we want a lower bound.
-    const Fractional minimization_dual_value =
-        optimization_sign * dual_values_[row];
-    if (lower_bound == -kInfinity) {
-      UpdateMaxDualInfeasibility(minimization_dual_value);
-    }
-    if (upper_bound == kInfinity) {
-      UpdateMaxDualInfeasibility(-minimization_dual_value);
+      infeasibility = std::max(infeasibility, row_deficit);
     }
   }
-  VLOG(1) << "Number of problematic rows " << num_problematic_rows.value();
+  VLOG(1) << "Number of problematic rows: " << num_problematic_rows;
+  return infeasibility;
 }
 
-void LPSolver::ComputeColumnInfeasibilities(const LinearProgram& lp) {
-  const ColIndex num_cols = lp.num_variables();
+double LPSolver::ComputeDualValueInfeasibility(const LinearProgram& lp) {
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
-  for (ColIndex col(0); col < num_cols; ++col) {
-    const Fractional lower_bound = lp.variable_lower_bounds()[col];
-    const Fractional upper_bound = lp.variable_upper_bounds()[col];
-    DCHECK(IsFinite(primal_values_[col]));
-    DCHECK(IsFinite(reduced_costs_[col]));
-
-    // Compute the infeasibility on the bound.
-    if (lower_bound == upper_bound) {
-      UpdateMaxPrimalInfeasibility(fabs(primal_values_[col] - upper_bound));
-      continue;
-    }
-    if (primal_values_[col] > upper_bound) {
-      UpdateMaxPrimalInfeasibility(primal_values_[col] - upper_bound);
-    }
-    if (primal_values_[col] < lower_bound) {
-      UpdateMaxPrimalInfeasibility(lower_bound - primal_values_[col]);
-    }
-
-    // For a minimization problem, we want a lower bound.
-    const Fractional minimization_reduced_cost =
-        optimization_sign * reduced_costs_[col];
+  double infeasibility = 0.0;
+  const RowIndex num_rows = lp.num_constraints();
+  for (RowIndex row(0); row < num_rows; ++row) {
+    const Fractional dual_value = dual_values_[row];
+    const Fractional lower_bound = lp.constraint_lower_bounds()[row];
+    const Fractional upper_bound = lp.constraint_upper_bounds()[row];
+    DCHECK(IsFinite(dual_value));
+    const Fractional minimization_dual_value = optimization_sign * dual_value;
     if (lower_bound == -kInfinity) {
-      UpdateMaxDualInfeasibility(minimization_reduced_cost);
+      infeasibility = std::max(infeasibility, minimization_dual_value);
     }
     if (upper_bound == kInfinity) {
-      UpdateMaxDualInfeasibility(-minimization_reduced_cost);
+      infeasibility = std::max(infeasibility, -minimization_dual_value);
     }
   }
+  return infeasibility;
+}
+
+double LPSolver::ComputeReducedCostInfeasibility(const LinearProgram& lp) {
+  const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
+  double infeasibility = 0.0;
+  const ColIndex num_cols = lp.num_variables();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    const Fractional reduced_cost = reduced_costs_[col];
+    const Fractional lower_bound = lp.variable_lower_bounds()[col];
+    const Fractional upper_bound = lp.variable_upper_bounds()[col];
+    DCHECK(IsFinite(reduced_cost));
+    const Fractional minimization_reduced_cost =
+        optimization_sign * reduced_cost;
+    if (lower_bound == -kInfinity) {
+      infeasibility = std::max(infeasibility, minimization_reduced_cost);
+    }
+    if (upper_bound == kInfinity) {
+      infeasibility = std::max(infeasibility, -minimization_reduced_cost);
+    }
+  }
+  return infeasibility;
 }
 
 }  // namespace glop

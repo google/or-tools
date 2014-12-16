@@ -12,13 +12,13 @@
 // limitations under the License.
 
 
-#include "glop/png_dump.h"
+#include "lp_data/png_dump.h"
 
 #include "image/base/rawimage.h"
 #include "image/codec/pngencoder.h"
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
-#include "glop/sparse.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {

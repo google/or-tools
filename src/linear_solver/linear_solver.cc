@@ -503,6 +503,7 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
     const new_proto::MPConstraintProto& ct_proto = input_model.constraint(i);
     MPConstraint* const ct = MakeRowConstraint(
         ct_proto.lower_bound(), ct_proto.upper_bound(), ct_proto.name());
+    ct->set_is_lazy(ct_proto.is_lazy());
     if (ct_proto.var_index_size() != ct_proto.coefficient_size()) {
       LOG(ERROR) << "In constraint #" << i << " (name: '" << ct_proto.name()
                  << "'):"
@@ -561,6 +562,10 @@ void MPSolver::FillSolutionResponseProto(
     response->set_objective_value(Objective().Value());
     for (int i = 0; i < variables_.size(); ++i) {
       response->add_variable_value(variables_[i]->solution_value());
+    }
+
+    if (interface_->IsMIP()) {
+      response->set_best_objective_bound(interface_->best_objective_bound());
     }
   }
 }
@@ -726,6 +731,8 @@ void MPSolver::Reset() { interface_->Reset(); }
 void MPSolver::EnableOutput() { interface_->set_quiet(false); }
 
 void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
+
+bool MPSolver::InterruptSolve() { return interface_->InterruptSolve(); }
 
 MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
                               const std::string& name) {
@@ -1219,8 +1226,11 @@ double MPSolverInterface::ComputeExactConditionNumber() const {
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
+// TODO(user): Overhaul the code that sets parameters to enable changing
+// GLOP parameters without issuing warnings.
 // By default, we let GLOP keep its own default tolerance, much more accurate
 // than for the rest of the solvers.
+//
 #if defined(USE_GLOP)
   if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
 #endif
@@ -1241,7 +1251,14 @@ void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
 }
 
 void MPSolverInterface::SetMIPParameters(const MPSolverParameters& param) {
-  SetRelativeMipGap(param.GetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP));
+#if defined(USE_GLOP)
+  if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
+#endif
+    SetRelativeMipGap(param.GetDoubleParam(
+        MPSolverParameters::RELATIVE_MIP_GAP));
+#if defined(USE_GLOP)
+  }
+#endif
 }
 
 void MPSolverInterface::SetUnsupportedDoubleParam(

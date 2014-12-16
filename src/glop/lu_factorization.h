@@ -11,14 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "glop/markowitz.h"
-#include "glop/parameters.pb.h"
-#include "glop/sparse.h"
-#include "glop/status.h"
-#include "util/stats.h"
-
 #ifndef OR_TOOLS_GLOP_LU_FACTORIZATION_H_
 #define OR_TOOLS_GLOP_LU_FACTORIZATION_H_
+
+#include "glop/markowitz.h"
+#include "glop/parameters.pb.h"
+#include "glop/status.h"
+#include "lp_data/sparse.h"
+#include "util/stats.h"
 
 namespace operations_research {
 namespace glop {
@@ -153,6 +153,10 @@ class LuFactorization {
   // This returns the number of entries in lower + upper as the percentage of
   // the number of entries in B.
   double GetFillInPercentage(const MatrixView& matrix) const;
+
+  // Returns the number of entries in L + U.
+  // If the factorization is the identity, this returns 0.
+  EntryIndex NumberOfEntries() const;
 
   // Computes the determinant of the input matrix B.
   // Since P.B.Q^{-1} = L.U, det(P) * det(B) * det(Q^{-1}) = det(L) * det(U).

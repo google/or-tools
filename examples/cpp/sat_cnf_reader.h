@@ -127,11 +127,6 @@ class SatCnfReader {
         if (words_[1] == "wcnf") {
           is_wcnf_ = true;
           hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
-          problem->set_type(LinearBooleanProblem::MINIMIZATION);
-        } else {
-          problem->set_type(interpret_cnf_as_max_sat_
-                                ? LinearBooleanProblem::MINIMIZATION
-                                : LinearBooleanProblem::SATISFIABILITY);
         }
       } else {
         LOG(FATAL) << "Unknow file type: " << words_[1];

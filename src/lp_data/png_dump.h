@@ -12,12 +12,12 @@
 // limitations under the License.
 
 
-#ifndef OR_TOOLS_GLOP_PNG_DUMP_H_
-#define OR_TOOLS_GLOP_PNG_DUMP_H_
+#ifndef OR_TOOLS_LP_DATA_PNG_DUMP_H_
+#define OR_TOOLS_LP_DATA_PNG_DUMP_H_
 
 #include <string>
 
-#include "glop/lp_data.h"
+#include "lp_data/lp_data.h"
 
 namespace operations_research {
 namespace glop {
@@ -28,4 +28,4 @@ std::string DumpConstraintMatrixToPng(const LinearProgram& linear_program);
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_PNG_DUMP_H_
+#endif  // OR_TOOLS_LP_DATA_PNG_DUMP_H_

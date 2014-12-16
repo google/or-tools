@@ -25,11 +25,11 @@
 #include "base/file.h"
 #include "google/protobuf/text_format.h"
 #include "base/hash.h"
-#include "glop/lp_data.h"
 #include "glop/lp_solver.h"
-#include "glop/lp_types.h"
 #include "glop/parameters.pb.h"
 #include "linear_solver/linear_solver.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
 
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);
@@ -189,7 +189,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     parameters_.set_max_time_in_seconds(
-        1000.0 * static_cast<double>(solver_->time_limit()));
+        static_cast<double>(solver_->time_limit()) / 1000.0);
   }
 
   solver_->SetSolverSpecificParametersAsString(

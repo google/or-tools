@@ -15,10 +15,10 @@
 #include "glop/preprocessor.h"
 
 #include "base/stringprintf.h"
-#include "glop/lp_utils.h"
-#include "glop/matrix_utils.h"
 #include "glop/revised_simplex.h"
 #include "glop/status.h"
+#include "lp_data/lp_utils.h"
+#include "lp_data/matrix_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -1817,11 +1817,9 @@ void EmptyConstraintPreprocessor::StoreSolution(
 // --------------------------------------------------------
 
 SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
-                             const SparseColumn& sparse_column_or_row,
                              MatrixEntry e, ConstraintStatus status)
     : type_(type),
       is_maximization_(lp.IsMaximizationProblem()),
-      sparse_column_or_row_(sparse_column_or_row),
       e_(e),
       cost_(lp.objective_coefficients()[e.col]),
       variable_lower_bound_(lp.variable_lower_bounds()[e.col]),
@@ -1830,16 +1828,18 @@ SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
       constraint_upper_bound_(lp.constraint_upper_bounds()[e.row]),
       constraint_status_(status) {}
 
-void SingletonUndo::Undo(ProblemSolution* solution) const {
+void SingletonUndo::Undo(const SparseMatrix& deleted_columns,
+                         const SparseMatrix& deleted_rows,
+                         ProblemSolution* solution) const {
   switch (type_) {
     case SINGLETON_ROW:
-      SingletonRowUndo(solution);
+      SingletonRowUndo(deleted_columns, solution);
       break;
     case ZERO_COST_SINGLETON_COLUMN:
-      ZeroCostSingletonColumnUndo(solution);
+      ZeroCostSingletonColumnUndo(deleted_rows, solution);
       break;
     case SINGLETON_COLUMN_IN_EQUALITY:
-      SingletonColumnInEqualityUndo(solution);
+      SingletonColumnInEqualityUndo(deleted_rows, solution);
       break;
     case MAKE_CONSTRAINT_AN_EQUALITY:
       MakeConstraintAnEqualityUndo(solution);
@@ -1878,14 +1878,18 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     DCHECK_EQ(new_lower_bound, new_upper_bound);
   }
   row_deletion_helper_.MarkRowForDeletion(e.row);
-  undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp,
-                                      lp->GetSparseColumn(e.col), e,
+  undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,
                                       ConstraintStatus::FREE));
+  if (deleted_columns_.column(e.col).IsEmpty()) {
+    deleted_columns_.mutable_column(e.col)
+        ->PopulateFromSparseVector(lp->GetSparseColumn(e.col));
+  }
   lp->SetVariableBounds(e.col, new_lower_bound, new_upper_bound);
 }
 
 // The dual value of the row needs to be corrected to stay at the optimal.
-void SingletonUndo::SingletonRowUndo(ProblemSolution* solution) const {
+void SingletonUndo::SingletonRowUndo(const SparseMatrix& deleted_columns,
+                                     ProblemSolution* solution) const {
   DCHECK_EQ(0, solution->dual_values[e_.row]);
 
   // If the variable is basic or free, we can just keep the constraint
@@ -1910,7 +1914,8 @@ void SingletonUndo::SingletonRowUndo(ProblemSolution* solution) const {
   // This is the reduced cost of the variable before the singleton constraint is
   // added back.
   const Fractional reduced_cost =
-      cost_ - ScalarProduct(solution->dual_values, sparse_column_or_row_);
+      cost_ -
+      ScalarProduct(solution->dual_values, deleted_columns.column(e_.col));
   const Fractional reduced_cost_for_minimization =
       is_maximization_ ? -reduced_cost : reduced_cost;
 
@@ -1964,16 +1969,21 @@ void SingletonPreprocessor::UpdateConstraintBoundsWithVariableBounds(
 
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
-  undo_stack_.push_back(SingletonUndo(
-      SingletonUndo::ZERO_COST_SINGLETON_COLUMN, *lp,
-      transpose.column(RowToColIndex(e.row)), e, ConstraintStatus::FREE));
+  const ColIndex transpose_col = RowToColIndex(e.row);
+  const SparseColumn& column = transpose.column(transpose_col);
+  undo_stack_.push_back(SingletonUndo(SingletonUndo::ZERO_COST_SINGLETON_COLUMN,
+                                      *lp, e, ConstraintStatus::FREE));
+  if (deleted_rows_.column(transpose_col).IsEmpty()) {
+    deleted_rows_.mutable_column(transpose_col)
+        ->PopulateFromSparseVector(column);
+  }
   UpdateConstraintBoundsWithVariableBounds(e, lp);
   column_deletion_helper_.MarkColumnForDeletion(e.col);
 }
 
 // We need to restore the variable value in order to satisfy the constraint.
 void SingletonUndo::ZeroCostSingletonColumnUndo(
-    ProblemSolution* solution) const {
+    const SparseMatrix& deleted_rows, ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
   // possible case if the current constraint status is FIXED.
   if (variable_upper_bound_ == variable_lower_bound_) {
@@ -2004,8 +2014,9 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
 
   // This is the activity of the constraint before the singleton variable is
   // added back to it.
+  const ColIndex row_as_col = RowToColIndex(e_.row);
   const Fractional activity =
-      ScalarProduct(solution->primal_values, sparse_column_or_row_);
+      ScalarProduct(solution->primal_values, deleted_rows.column(row_as_col));
 
   // TODO(user): use parameters_ here (it needs to be passed to SingletonUndo)
   const Fractional tolerance = 1e-10;
@@ -2080,12 +2091,13 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
 void SingletonPreprocessor::DeleteSingletonColumnInEquality(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
   // Save information for the undo.
-  // TODO(user): This can be shared between the singleton columns on the same
-  // row.
-  const SparseColumn& column = transpose.column(RowToColIndex(e.row));
+  const ColIndex transpose_col = RowToColIndex(e.row);
+  const SparseColumn& row_as_column = transpose.column(transpose_col);
   undo_stack_.push_back(
-      SingletonUndo(SingletonUndo::SINGLETON_COLUMN_IN_EQUALITY, *lp, column, e,
+      SingletonUndo(SingletonUndo::SINGLETON_COLUMN_IN_EQUALITY, *lp, e,
                     ConstraintStatus::FREE));
+  deleted_rows_.mutable_column(transpose_col)
+      ->PopulateFromSparseVector(row_as_column);
 
   // Update the objective function using the equality constraint. We have
   //     v_col*coeff + expression = rhs,
@@ -2096,7 +2108,7 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
   const Fractional cost = lp->objective_coefficients()[e.col];
   const Fractional multiplier = cost / e.coeff;
   lp->SetObjectiveOffset(lp->objective_offset() + rhs * multiplier);
-  for (const SparseColumn::Entry e : column) {
+  for (const SparseColumn::Entry e : row_as_column) {
     const ColIndex col = RowToColIndex(e.row());
     if (!column_deletion_helper_.IsColumnMarked(col)) {
       Fractional new_cost =
@@ -2121,9 +2133,9 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
 }
 
 void SingletonUndo::SingletonColumnInEqualityUndo(
-    ProblemSolution* solution) const {
+    const SparseMatrix& deleted_rows, ProblemSolution* solution) const {
   // First do the same as a zero-cost singleton column.
-  ZeroCostSingletonColumnUndo(solution);
+  ZeroCostSingletonColumnUndo(deleted_rows, solution);
 
   // Then, restore the dual optimal value taking into account the cost
   // modification.
@@ -2253,10 +2265,8 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
 
   if (lp->constraint_lower_bounds()[e.row] ==
       lp->constraint_upper_bounds()[e.row]) {
-    SparseColumn unused;
-    undo_stack_.push_back(
-        SingletonUndo(SingletonUndo::MAKE_CONSTRAINT_AN_EQUALITY, *lp, unused,
-                      e, relaxed_status));
+    undo_stack_.push_back(SingletonUndo(
+        SingletonUndo::MAKE_CONSTRAINT_AN_EQUALITY, *lp, e, relaxed_status));
     return true;
   }
   return false;
@@ -2269,6 +2279,10 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
 
   // Initialize column_to_process with the current singleton columns.
   ColIndex num_cols(matrix.num_cols());
+  RowIndex num_rows(matrix.num_rows());
+  deleted_columns_.PopulateFromZero(num_rows, num_cols);
+  deleted_rows_.PopulateFromZero(ColToRowIndex(num_cols),
+                                 RowToColIndex(num_rows));
   StrictITIVector<ColIndex, EntryIndex> column_degree(num_cols, EntryIndex(0));
   std::vector<ColIndex> column_to_process;
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -2279,7 +2293,6 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
   }
 
   // Initialize row_to_process with the current singleton rows.
-  RowIndex num_rows(matrix.num_rows());
   StrictITIVector<RowIndex, EntryIndex> row_degree(num_rows, EntryIndex(0));
   std::vector<RowIndex> row_to_process;
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -2347,7 +2360,7 @@ void SingletonPreprocessor::StoreSolution(ProblemSolution* solution) const {
   // It is important to indo the operations in the correct order, i.e. in the
   // reverse order in which they were done.
   for (int i = undo_stack_.size() - 1; i >= 0; --i) {
-    undo_stack_[i].Undo(solution);
+    undo_stack_[i].Undo(deleted_columns_, deleted_rows_, solution);
   }
 }
 

@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "glop/lp_data.h"
+#include "lp_data/lp_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -23,9 +23,8 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/join.h"
-#include "glop/lp_print_utils.h"
-#include "glop/lp_utils.h"
-#include "glop/status.h"
+#include "lp_data/lp_print_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {

@@ -20,8 +20,8 @@
 // standard. We have developed this reader to be able to read benchmark data
 // files. Using the MPS file format for new models is discouraged.
 
-#ifndef OR_TOOLS_GLOP_MPS_READER_H_
-#define OR_TOOLS_GLOP_MPS_READER_H_
+#ifndef OR_TOOLS_LP_DATA_MPS_READER_H_
+#define OR_TOOLS_LP_DATA_MPS_READER_H_
 
 #include <algorithm>  // for max
 #include <map>
@@ -35,8 +35,8 @@
 #include "base/int_type_indexed_vector.h"
 #include "base/map_util.h"  // for FindOrNull, FindWithDefault
 #include "base/hash.h"
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
 
 namespace operations_research {
 namespace glop {
@@ -239,4 +239,4 @@ class MPSReader {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_MPS_READER_H_
+#endif  // OR_TOOLS_LP_DATA_MPS_READER_H_

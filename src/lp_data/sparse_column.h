@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GLOP_SPARSE_COLUMN_H_
-#define OR_TOOLS_GLOP_SPARSE_COLUMN_H_
+#ifndef OR_TOOLS_LP_DATA_SPARSE_COLUMN_H_
+#define OR_TOOLS_LP_DATA_SPARSE_COLUMN_H_
 
-#include "glop/sparse_vector.h"
+#include "lp_data/sparse_vector.h"
 
 namespace operations_research {
 namespace glop {
@@ -134,4 +134,4 @@ class RandomAccessSparseColumn {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_SPARSE_COLUMN_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_COLUMN_H_

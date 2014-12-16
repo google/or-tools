@@ -341,6 +341,13 @@ class MPSolver {
   // everything was reconstructed from scratch.
   void Reset();
 
+  // Interrupts the Solve() execution to terminate processing early if possible.
+  // If the underlying interface supports interruption; it does that and returns
+  // true regardless of whether there's an ongoing Solve() or not. The Solve()
+  // call may still linger for a while depending on the conditions.  If
+  // interruption is not supported; returns false and does nothing.
+  bool InterruptSolve();
+
   // ----- Methods using protocol buffers -----
 
   // The status of loading the problem from a protocol buffer.
@@ -1181,6 +1188,8 @@ class MPSolverInterface {
   // Computes exact condition number. Only available for continuous
   // problems and only implemented in GLPK.
   virtual double ComputeExactConditionNumber() const;
+
+  virtual bool InterruptSolve() { return false; }
 
   friend class MPSolver;
 

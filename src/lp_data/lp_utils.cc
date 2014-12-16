@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {

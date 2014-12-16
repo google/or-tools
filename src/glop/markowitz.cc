@@ -15,7 +15,7 @@
 
 #include <limits>
 #include "base/stringprintf.h"
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {

@@ -15,10 +15,10 @@
 #define OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
 
 #include "base/logging.h"
-#include "glop/lp_types.h"
-#include "glop/lp_utils.h"
-#include "glop/sparse.h"
 #include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/lp_utils.h"
+#include "lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {
@@ -87,6 +87,11 @@ class RankOneUpdateElementaryMatrix {
                                              reinterpret_cast<DenseColumn*>(y));
   }
 
+  EntryIndex num_entries() const {
+    return storage_->column(u_index_).num_entries() +
+           storage_->column(v_index_).num_entries();
+  }
+
  private:
   // This is only used in debug mode.
   Fractional ComputeUScalarV() const {
@@ -110,11 +115,15 @@ class RankOneUpdateFactorization {
   RankOneUpdateFactorization() : elementary_matrices_() {}
 
   // Deletes all elementary matrices of this factorization.
-  void Clear() { elementary_matrices_.clear(); }
+  void Clear() {
+    elementary_matrices_.clear();
+    num_entries_ = 0;
+  }
 
   // Updates the factorization.
   void Update(const RankOneUpdateElementaryMatrix& update_matrix) {
     elementary_matrices_.push_back(update_matrix);
+    num_entries_ += update_matrix.num_entries();
   }
 
   // Left-solves all systems from right to left, i.e. y_i = y_{i+1}.(T_i)^{-1}
@@ -134,7 +143,10 @@ class RankOneUpdateFactorization {
     }
   }
 
+  EntryIndex num_entries() const { return num_entries_; }
+
  private:
+  EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;
   DISALLOW_COPY_AND_ASSIGN(RankOneUpdateFactorization);
 };

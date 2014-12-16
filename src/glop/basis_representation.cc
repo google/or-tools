@@ -15,8 +15,8 @@
 #include "glop/basis_representation.h"
 
 #include "base/stl_util.h"
-#include "glop/lp_utils.h"
 #include "glop/status.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -184,7 +184,8 @@ BasisFactorization::BasisFactorization(const MatrixView& matrix,
       max_num_updates_(0),
       num_updates_(0),
       eta_factorization_(),
-      lu_factorization_() {}
+      lu_factorization_(),
+      deterministic_time_(0.0) {}
 
 BasisFactorization::~BasisFactorization() {}
 
@@ -222,7 +223,13 @@ Status BasisFactorization::ForceRefactorization() {
   Clear();
   MatrixView basis_matrix;
   basis_matrix.PopulateFromBasis(matrix_, basis_);
-  return lu_factorization_.ComputeFactorization(basis_matrix);
+  const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
+
+  const double kLuComplexityFactor = 10;
+  deterministic_time_ +=
+      kLuComplexityFactor * DeterministicTimeForFpOperations(
+                                lu_factorization_.NumberOfEntries().value());
+  return status;
 }
 
 // This update formula can be derived by:
@@ -296,6 +303,7 @@ Status BasisFactorization::Update(ColIndex entering_col,
 void BasisFactorization::LeftSolve(DenseRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
+  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     lu_factorization_.LeftSolveU(y);
     rank_one_factorization_.LeftSolve(y);
@@ -310,6 +318,7 @@ void BasisFactorization::LeftSolveWithNonZeros(
     DenseRow* y, ColIndexVector* non_zeros) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
+  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     lu_factorization_.LeftSolveU(y);
     rank_one_factorization_.LeftSolve(y);
@@ -324,6 +333,7 @@ void BasisFactorization::LeftSolveWithNonZeros(
 void BasisFactorization::RightSolve(DenseColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
+  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     lu_factorization_.RightSolveL(d);
     rank_one_factorization_.RightSolve(d);
@@ -338,6 +348,7 @@ void BasisFactorization::RightSolveWithNonZeros(
     DenseColumn* d, std::vector<RowIndex>* non_zeros) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
+  BumpDeterministicTimeForSolve(non_zeros->size());
   if (use_middle_product_form_update_) {
     lu_factorization_.RightSolveL(d);
     rank_one_factorization_.RightSolve(d);
@@ -353,6 +364,7 @@ void BasisFactorization::RightSolveWithNonZeros(
 DenseColumn* BasisFactorization::RightSolveForTau(ScatteredColumnReference a)
     const {
   SCOPED_TIME_STAT(&stats_);
+  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     lu_factorization_.RightSolveLWithPermutedInput(a.dense_column, &tau_);
     rank_one_factorization_.RightSolve(&tau_);
@@ -369,6 +381,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
                                              ColIndexVector* non_zeros) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
+  BumpDeterministicTimeForSolve(1);
   ClearAndResizeVectorWithNonZeros(RowToColIndex(matrix_.num_rows()), y,
                                    non_zeros);
 
@@ -414,6 +427,7 @@ void BasisFactorization::RightSolveForProblemColumn(
     ColIndex col, DenseColumn* d, std::vector<RowIndex>* non_zeros) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
+  BumpDeterministicTimeForSolve(matrix_.column(col).num_entries().value());
   if (!use_middle_product_form_update_) {
     lu_factorization_.SparseRightSolve(matrix_.column(col), matrix_.num_rows(),
                                        d);
@@ -435,12 +449,14 @@ Fractional BasisFactorization::RightSolveSquaredNorm(const SparseColumn& a)
     const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
+  BumpDeterministicTimeForSolve(a.num_entries().value());
   return lu_factorization_.RightSolveSquaredNorm(a);
 }
 
 Fractional BasisFactorization::DualEdgeSquaredNorm(RowIndex row) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
+  BumpDeterministicTimeForSolve(1);
   return lu_factorization_.DualEdgeSquaredNorm(row);
 }
 
@@ -525,6 +541,22 @@ Fractional BasisFactorization::ComputeOneNormConditionNumber() const {
 Fractional BasisFactorization::ComputeInfinityNormConditionNumber() const {
   if (IsIdentityBasis()) return 1.0;
   return ComputeInfinityNorm() * ComputeInverseInfinityNorm();
+}
+
+double BasisFactorization::DeterministicTime() const {
+  return deterministic_time_;
+}
+
+void BasisFactorization::BumpDeterministicTimeForSolve(int num_entries) const {
+  // TODO(user): Spend more time finding a good approximation here.
+  if (matrix_.num_rows().value() == 0) return;
+  const double density = static_cast<double>(num_entries) /
+                         static_cast<double>(matrix_.num_rows().value());
+  deterministic_time_ +=
+      (1.0 + density) * DeterministicTimeForFpOperations(
+                            lu_factorization_.NumberOfEntries().value()) +
+      DeterministicTimeForFpOperations(
+          rank_one_factorization_.num_entries().value());
 }
 
 }  // namespace glop

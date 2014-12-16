@@ -22,9 +22,9 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/file.h"
-#include "glop/mps_reader.h"
-#include "glop/lp_data.h"
-#include "glop/png_dump.h"
+#include "lp_data/mps_reader.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/png_dump.h"
 #include "base/status.h"
 
 DEFINE_string(mps_file, "", "MPS input file.");

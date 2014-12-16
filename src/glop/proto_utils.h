@@ -15,7 +15,7 @@
 #define OR_TOOLS_GLOP_PROTO_UTILS_H_
 
 #include "linear_solver/linear_solver2.pb.h"
-#include "glop/lp_data.h"
+#include "lp_data/lp_data.h"
 
 namespace operations_research {
 namespace glop {

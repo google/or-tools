@@ -16,10 +16,10 @@
 
 #include "base/unique_ptr.h"
 
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
 #include "glop/parameters.pb.h"
 #include "glop/preprocessor.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
 #include "util/time_limit.h"
 
 namespace operations_research {
@@ -113,6 +113,16 @@ class LPSolver {
   // Returns the number of simplex iterations used by the last Solve().
   int GetNumberOfSimplexIterations() const;
 
+  // Returns the "deterministic time" since the creation of the solver. Note
+  // That this time is only increased when some operations take place in this
+  // class.
+  //
+  // TODO(user): Currently, this is only modified when the simplex code is
+  // executed.
+  //
+  // TODO(user): Improve the correlation with the running time.
+  double DeterministicTime() const;
+
  private:
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will
@@ -175,20 +185,21 @@ class LPSolver {
   Fractional GetMaxCostPerturbationToEnforceOptimality(const LinearProgram& lp);
 
   // Computes derived quantities from the solution.
-  void ComputeObjective(const LinearProgram& lp);
-  void ComputeDualObjective(const LinearProgram& lp);
   void ComputeReducedCosts(const LinearProgram& lp);
   void ComputeConstraintActivities(const LinearProgram& lp);
 
-  // Shortcuts that just take the max of the current value and the given update.
-  // Since the initial infeasibility value is 0.0, a negative update is
-  // not considered an infeasibility.
-  void UpdateMaxPrimalInfeasibility(Fractional update);
-  void UpdateMaxDualInfeasibility(Fractional update);
+  // Computes the primal/dual objectives (without the offset). Note that the
+  // dual objective needs the reduced costs in addition to the dual values.
+  double ComputeObjective(const LinearProgram& lp);
+  double ComputeDualObjective(const LinearProgram& lp);
 
-  // Compute the primal/dual infeasibilities.
-  void ComputeRowInfeasibilities(const LinearProgram& lp);
-  void ComputeColumnInfeasibilities(const LinearProgram& lp);
+  // Computes the maximum of the infeasibilities associated with each values.
+  // The returned infeasibilities are the maximum of the "absolute" errors of
+  // each vector coefficients.
+  double ComputePrimalValueInfeasibility(const LinearProgram& lp);
+  double ComputeActivityInfeasibility(const LinearProgram& lp);
+  double ComputeDualValueInfeasibility(const LinearProgram& lp);
+  double ComputeReducedCostInfeasibility(const LinearProgram& lp);
 
   // Dimension of the linear program given to the last Solve().
   // This is used for displaying purpose only.
@@ -221,9 +232,7 @@ class LPSolver {
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
-  Fractional objective_value_;
   Fractional objective_value_with_offset_;
-  Fractional dual_objective_value_;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;

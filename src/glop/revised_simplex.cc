@@ -27,11 +27,11 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "glop/initial_basis.h"
-#include "glop/lp_data.h"
-#include "glop/lp_print_utils.h"
-#include "glop/lp_utils.h"
-#include "glop/matrix_utils.h"
 #include "glop/parameters.pb.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_print_utils.h"
+#include "lp_data/lp_utils.h"
+#include "lp_data/matrix_utils.h"
 #include "util/fp_utils.h"
 
 DEFINE_bool(simplex_display_numbers_as_fractions, false,
@@ -336,6 +336,14 @@ std::string RevisedSimplex::GetPrettySolverStats() const {
       num_iterations_, feasibility_time_, num_feasibility_iterations_,
       optimization_time_, num_optimization_iterations_,
       FLAGS_simplex_stop_after_first_basis);
+}
+
+double RevisedSimplex::DeterministicTime() const {
+  // TODO(user): Also take into account the dual edge norms and the reduced cost
+  // updates.
+  return basis_factorization_.DeterministicTime() +
+         update_row_.DeterministicTime() +
+         primal_edge_norms_.DeterministicTime();
 }
 
 void RevisedSimplex::SetVariableNames() {
@@ -2106,7 +2114,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     // ProblemStatus::PRIMAL_FEASIBLE if it is the case at the beginning of the
     // algorithm.
     if (num_iterations_ == parameters_.max_number_of_iterations() ||
-        time_limit->LimitReached()) {
+        time_limit->LimitReached() ||
+        DeterministicTime() > parameters_.max_deterministic_time()) {
       break;
     }
 

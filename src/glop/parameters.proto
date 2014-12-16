@@ -224,6 +224,13 @@ message GlopParameters {
   // Maximum time allowed in seconds to solve a problem.
   optional double max_time_in_seconds = 26 [default = inf];
 
+  // Maximum deterministic time allowed to solve a problem. The deterministic
+  // time is more or less correlated to the running time, and its unit should
+  // be around the second (at least on a Xeon(R) CPU E5-1650 v2 @ 3.50GHz).
+  //
+  // TODO(user): Improve the correlation.
+  optional double max_deterministic_time = 45 [default = inf];
+
   // Maximum number of simplex iterations to solve a problem.
   // A value of -1 means no limit.
   optional int64 max_number_of_iterations = 27 [default = -1];

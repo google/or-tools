@@ -223,7 +223,7 @@ int Run() {
           problem, !FLAGS_lower_bound.empty(),
           Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
           Coefficient(atoi64(FLAGS_upper_bound)), solver.get())) {
-    LOG(FATAL) << "Issue when setting the objective bounds.";
+    LOG(INFO) << "UNSAT when setting the objective constraint.";
   }
 
   // Symmetries!

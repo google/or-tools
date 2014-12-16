@@ -121,6 +121,11 @@ class SCIPInterface : public MPSolverInterface {
                         SCIPlpiGetSolverName());
   }
 
+  bool InterruptSolve() override {
+    if (scip_ != NULL) SCIPinterruptSolve(scip_);
+    return true;
+  }
+
   virtual void* underlying_solver() { return reinterpret_cast<void*>(scip_); }
 
  private:
@@ -163,6 +168,10 @@ void SCIPInterface::Reset() {
 void SCIPInterface::CreateSCIP() {
   ORTOOLS_SCIP_CALL(SCIPcreate(&scip_));
   ORTOOLS_SCIP_CALL(SCIPincludeDefaultPlugins(scip_));
+  // Default clock type (1: CPU user seconds, 2: wall clock time). We use
+  // wall clock time because getting CPU user seconds involves calling
+  // times() which is very expensive.
+  ORTOOLS_SCIP_CALL(SCIPsetIntParam(scip_, "timing/clocktype", 2));
   ORTOOLS_SCIP_CALL(SCIPcreateProb(scip_, solver_->name_.c_str(), NULL, NULL,
                                    NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPsetObjsense(
@@ -481,7 +490,9 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
   // Solve.
   timer.Restart();
-  ORTOOLS_SCIP_CALL(SCIPsolve(scip_));
+  if (SCIPsolve(scip_) != SCIP_OKAY) {
+    return MPSolver::ABNORMAL;
+  }
   VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
 
   // Get the results.

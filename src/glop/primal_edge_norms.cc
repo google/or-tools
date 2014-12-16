@@ -18,7 +18,7 @@
 #endif
 
 #include "base/timer.h"
-#include "glop/lp_utils.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -37,7 +37,8 @@ PrimalEdgeNorms::PrimalEdgeNorms(const MatrixView& matrix,
       edge_squared_norms_(),
       matrix_column_norms_(),
       devex_weights_(),
-      direction_left_inverse_() {}
+      direction_left_inverse_(),
+      num_operations_(0) {}
 
 void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
@@ -121,6 +122,7 @@ void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
   matrix_column_norms_.resize(matrix_.num_cols(), 0.0);
   for (ColIndex col(0); col < matrix_.num_cols(); ++col) {
     matrix_column_norms_[col] = sqrt(SquaredNorm(matrix_.column(col)));
+    num_operations_ += matrix_.column(col).num_entries().value();
   }
 }
 
@@ -217,6 +219,7 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
       const Fractional coeff = update_row.GetCoefficient(col);
       const Fractional scalar_product =
           compact_matrix_.ColumnScalarProduct(col, direction_left_inverse_);
+      num_operations_ += compact_matrix_.column(col).num_entries().value();
 
       // Update the edge squared norm of this column. Note that the update
       // formula used is important to maximize the precision. See an explanation
@@ -241,6 +244,8 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
 #ifdef OMP
     // In the multi-threaded case, perform the same computation as in the
     // single-threaded case above.
+    //
+    // TODO(user): also update num_operations_.
     std::vector<int> thread_local_stat_lower_bounded_norms(num_omp_threads, 0);
     const std::vector<ColIndex>& relevant_rows = update_row.GetNonZeroPositions();
     const int parallel_loop_size = relevant_rows.size();

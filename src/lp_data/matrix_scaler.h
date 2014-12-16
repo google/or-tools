@@ -58,15 +58,15 @@
 // and:
 //   A'.x' = R.A.C.C^-1.x = R.A.x = R.b = b'.
 
-#ifndef OR_TOOLS_GLOP_MATRIX_SCALER_H_
-#define OR_TOOLS_GLOP_MATRIX_SCALER_H_
+#ifndef OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
+#define OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
 
 #include <vector>
 
 #include "base/integral_types.h"
 #include "base/macros.h"
 #include "base/int_type_indexed_vector.h"
-#include "glop/lp_types.h"
+#include "lp_data/lp_types.h"
 
 namespace operations_research {
 namespace glop {
@@ -159,4 +159,4 @@ class SparseMatrixScaler {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_MATRIX_SCALER_H_
+#endif  // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_

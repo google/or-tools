@@ -39,7 +39,6 @@ class OpbReader {
   bool Load(const std::string& filename, LinearBooleanProblem* problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
-    problem->set_type(LinearBooleanProblem::SATISFIABILITY);
 
     num_variables_ = 0;
     int num_lines = 0;
@@ -72,7 +71,6 @@ class OpbReader {
     }
 
     if (words[0] == "min:") {
-      problem->set_type(LinearBooleanProblem::MINIMIZATION);
       LinearObjective* objective = problem->mutable_objective();
       for (int i = 1; i < words.size(); ++i) {
         const std::string& word = words[i];

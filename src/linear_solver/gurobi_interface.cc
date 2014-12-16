@@ -36,6 +36,8 @@ extern "C" {
 
 #define CHECKED_GUROBI_CALL(x) CHECK_EQ(0, x)
 
+DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
+
 namespace operations_research {
 
 class GurobiInterface : public MPSolverInterface {
@@ -174,6 +176,9 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
                                   NULL));  // varnanes
   CHECKED_GUROBI_CALL(
       GRBsetintattr(model_, GRB_INT_ATTR_MODELSENSE, maximize_ ? -1 : 1));
+
+  CHECKED_GUROBI_CALL(
+      GRBsetintparam(env_, GRB_INT_PAR_THREADS, FLAGS_num_gurobi_threads));
 }
 
 GurobiInterface::~GurobiInterface() {

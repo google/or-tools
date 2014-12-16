@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "glop/matrix_scaler.h"
+#include "lp_data/matrix_scaler.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,9 +20,8 @@
 
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "glop/lp_utils.h"
-#include "glop/sparse.h"
-#include "glop/status.h"
+#include "lp_data/lp_utils.h"
+#include "lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {

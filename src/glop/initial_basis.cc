@@ -15,8 +15,8 @@
 #include <queue>
 
 #include "glop/initial_basis.h"
-#include "glop/lp_utils.h"
 #include "glop/markowitz.h"
+#include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {

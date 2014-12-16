@@ -24,16 +24,16 @@
 //
 // Both books also contain a wealth of references.
 
-#ifndef OR_TOOLS_GLOP_SPARSE_H_
-#define OR_TOOLS_GLOP_SPARSE_H_
+#ifndef OR_TOOLS_LP_DATA_SPARSE_H_
+#define OR_TOOLS_LP_DATA_SPARSE_H_
 
 #include <string>
 
 #include "base/integral_types.h"
-#include "glop/lp_types.h"
-#include "glop/permutation.h"
-#include "glop/sparse_column.h"
-#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/permutation.h"
+#include "lp_data/sparse_column.h"
+#include "util/return_macros.h"
 
 namespace operations_research {
 namespace glop {
@@ -360,9 +360,13 @@ class CompactSparseMatrix {
   };
 
   ColumnView column(ColIndex col) const {
+    DCHECK_LT(col, num_cols_);
+
+    // Note that the start may be equals to row.size() if the last columns
+    // are empty, it is why we don't use &row[start].
     const EntryIndex start = starts_[col];
-    return ColumnView(starts_[col + 1] - start, &(rows_[start]),
-                      &(coefficients_[start]));
+    return ColumnView(starts_[col + 1] - start, rows_.data() + start.value(),
+                      coefficients_.data() + start.value());
   }
 
   // Returns true if the given column is empty. Note that for triangular matrix
@@ -723,4 +727,4 @@ class TriangularMatrix : private CompactSparseMatrix {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_SPARSE_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_H_

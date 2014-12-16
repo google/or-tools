@@ -45,6 +45,8 @@ struct Status {
     return StrCat("ERROR #", error_code_, ": '", error_message_, "'");
   }
 
+  std::string error_message() const { return error_message_; }
+
   void IgnoreError() const {}
 
  private:

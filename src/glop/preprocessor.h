@@ -21,10 +21,11 @@
 #ifndef OR_TOOLS_GLOP_PREPROCESSOR_H_
 #define OR_TOOLS_GLOP_PREPROCESSOR_H_
 
-#include "glop/lp_types.h"
-#include "glop/matrix_scaler.h"
 #include "glop/parameters.pb.h"
 #include "glop/revised_simplex.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/matrix_scaler.h"
+
 
 namespace operations_research {
 namespace glop {
@@ -328,29 +329,34 @@ class SingletonUndo {
     MAKE_CONSTRAINT_AN_EQUALITY,
   } OperationType;
 
-  // Stores all the information needed to undo an operation with the given type.
-  // All the arguments must refer to the linear program BEFORE the operation is
-  // applied.
+  // Stores the information, which together with the field deleted_columns_ and
+  // deleted_rows_ of SingletonPreprocessor, are needed to undo an operation
+  // with the given type. Note that all the arguments must refer to the linear
+  // program BEFORE the operation is applied.
   SingletonUndo(OperationType type, const LinearProgram& linear_program,
-                const SparseColumn& sparse_column_or_row, MatrixEntry e,
-                ConstraintStatus status);
+                MatrixEntry e, ConstraintStatus status);
 
-  // Undo the operation saved in this class. Note that the operations must be
-  // undone in the reverse order of the one in which they were applied.
-  void Undo(ProblemSolution* solution) const;
+  // Undo the operation saved in this class, taking into account the deleted
+  // columns and rows passed by the calling instance of SingletonPreprocessor.
+  // Note that the operations must be undone in the reverse order of the one
+  // in which they were applied.
+  void Undo(const SparseMatrix& deleted_columns,
+            const SparseMatrix& deleted_rows, ProblemSolution* solution) const;
 
  private:
   // Actual undo functions for each OperationType.
   // Undo() just calls the correct one.
-  void SingletonRowUndo(ProblemSolution* solution) const;
-  void ZeroCostSingletonColumnUndo(ProblemSolution* solution) const;
-  void SingletonColumnInEqualityUndo(ProblemSolution* solution) const;
+  void SingletonRowUndo(const SparseMatrix& deleted_columns,
+                        ProblemSolution* solution) const;
+  void ZeroCostSingletonColumnUndo(const SparseMatrix& deleted_rows,
+                                   ProblemSolution* solution) const;
+  void SingletonColumnInEqualityUndo(const SparseMatrix& deleted_rows,
+                                     ProblemSolution* solution) const;
   void MakeConstraintAnEqualityUndo(ProblemSolution* solution) const;
 
   // All the information needed during undo.
   OperationType type_;
   bool is_maximization_;
-  SparseColumn sparse_column_or_row_;
   MatrixEntry e_;
   Fractional cost_;
 
@@ -428,6 +434,12 @@ class SingletonPreprocessor : public Preprocessor {
   ColumnDeletionHelper column_deletion_helper_;
   RowDeletionHelper row_deletion_helper_;
   std::vector<SingletonUndo> undo_stack_;
+
+  // The columns that are deleted by this preprocessor.
+  SparseMatrix deleted_columns_;
+  // The transpose of the rows that are deleted by this preprocessor.
+  // TODO(user): implement a RowMajorSparseMatrix class to simplify the code.
+  SparseMatrix deleted_rows_;
 
   DISALLOW_COPY_AND_ASSIGN(SingletonPreprocessor);
 };

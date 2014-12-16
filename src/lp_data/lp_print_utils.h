@@ -14,14 +14,14 @@
 
 // Utilities to display linear expression in a human-readable way.
 
-#ifndef OR_TOOLS_GLOP_LP_PRINT_UTILS_H_
-#define OR_TOOLS_GLOP_LP_PRINT_UTILS_H_
+#ifndef OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#define OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
 
 #include <string>
 
 #include "base/integral_types.h"
 #include "base/stringprintf.h"
-#include "glop/lp_types.h"
+#include "lp_data/lp_types.h"
 
 namespace operations_research {
 namespace glop {
@@ -56,4 +56,4 @@ std::string StringifyMonomial(const Fractional a, const std::string& x, bool fra
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_LP_PRINT_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_

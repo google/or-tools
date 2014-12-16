@@ -15,11 +15,11 @@
 #define OR_TOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
 
 #include "glop/basis_representation.h"
-#include "glop/lp_data.h"
-#include "glop/lp_types.h"
 #include "glop/parameters.pb.h"
 #include "glop/update_row.h"
 #include "glop/variables_info.h"
+#include "lp_data/lp_data.h"
+#include "lp_data/lp_types.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -114,6 +114,11 @@ class PrimalEdgeNorms {
   // Returns a std::string with statistics about this class.
   std::string StatString() const { return stats_.StatString(); }
 
+  // Deterministic time used by the scalar product computation of this class.
+  double DeterministicTime() const {
+    return DeterministicTimeForFpOperations(num_operations_);
+  }
+
  private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
@@ -192,6 +197,9 @@ class PrimalEdgeNorms {
   // 'a'.
   DenseRow direction_left_inverse_;
   ColIndexVector direction_left_inverse_non_zeros_;
+
+  // Used by DeterministicTime().
+  int64 num_operations_;
 
   DISALLOW_COPY_AND_ASSIGN(PrimalEdgeNorms);
 };

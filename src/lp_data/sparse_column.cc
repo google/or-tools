@@ -14,9 +14,8 @@
 #include <algorithm>
 
 #include "base/stringprintf.h"
-#include "glop/lp_types.h"
-#include "glop/sparse_column.h"
-#include "glop/status.h"
+#include "lp_data/lp_types.h"
+#include "lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {
