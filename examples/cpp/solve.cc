@@ -22,7 +22,7 @@
 #include "base/file.h"
 #include "base/timer.h"
 #include "base/strutil.h"
-#include "glop/mps_reader.h"
+#include "lp_data/mps_reader.h"
 #include "glop/proto_utils.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver.h"
