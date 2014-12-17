@@ -69,8 +69,16 @@ available <strong>after</strong> the search is done.</p>
 <p>Please find all necessary information and tools at:</p>
 <p><a class="reference external" href="http://sourceforge.net/projects/cpviz/">http://sourceforge.net/projects/cpviz/</a></p>
 <div class="section" id="treemonitors-to-provide-the-cpviz-input">
-<h2>5.4.1. <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>s to provide the <strong class="program">cpviz</strong> input</h2>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/nqueens3.cc">tutorials/cplusplus/chap5/nqueens3.cc</a></p>
+<span id="treemonitors-to-provide-cpviz-input"></span><h2>5.4.1. <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>s to provide the <strong class="program">cpviz</strong> input</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens3.cc">nqueens3.cc</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <p>To monitor the search, we use <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. To produce the files needed by <strong class="program">cpviz</strong> to visualize the search,
 we use a specialized <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>: the <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> class. <strong class="program">cpviz</strong> needs two files as input:
 <tt class="file docutils literal"><span class="pre">tree.xml</span></tt> and <tt class="file docutils literal"><span class="pre">visualization.xml</span></tt>.</p>
@@ -97,7 +105,7 @@ we use a specialized <tt class="docutils literal"><span class="pre">SearchMonito
 </div>
 <p>Basically, it tells <strong class="program">cpviz</strong> to produce the graphic files for the
 search tree (<tt class="docutils literal"><span class="pre">show=&quot;tree&quot;</span></tt>) and the variables (<tt class="docutils literal"><span class="pre">show=&quot;viz&quot;</span></tt>)
-in the directory <tt class="file docutils literal"><span class="pre">/tmp</span></tt>.</p>
+in the directory <tt class="file docutils literal"><span class="pre">/tmp</span></tt><a class="footnote-reference" href="#tmp-directory-in-linux" id="id1">[1]</a>.</p>
 <p>If you are really lazy, we even provide a factory method which
 generates automatically a default configuration file:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchMonitor</span><span class="o">*</span> <span class="k">const</span> <span class="n">cpviz</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeTreeMonitor</span><span class="p">(</span><span class="n">vars</span><span class="p">,</span>
@@ -106,8 +114,8 @@ generates automatically a default configuration file:</p>
                                                <span class="s">&quot;visualization.xml&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>After your search is finished AND you have called (implicitley or explicitly)
-<tt class="docutils literal"><span class="pre">EndSearch()</span></tt><a class="footnote-reference" href="#cpviz-xml-files-generated-exitsearch-callback" id="id1">[1]</a>,
+<p>After your search is finished <strong>and</strong> you have called (implicitly or explicitly)
+<tt class="docutils literal"><span class="pre">EndSearch()</span></tt><a class="footnote-reference" href="#cpviz-xml-files-generated-exitsearch-callback" id="id2">[2]</a>,
 you can run <strong class="program">cpviz</strong> to digest the XML files representing your search by entering the <tt class="file docutils literal"><span class="pre">viz/bin</span></tt>
 directory and
 typing:</p>
@@ -117,16 +125,9 @@ typing:</p>
 <p>on a command line into a terminal near you. This will produce the following picture of the search tree:</p>
 <img alt="alternate text" class="align-center" src="../../_images/tree8.png" style="width: 350px;" />
 <p><strong class="program">cpviz</strong> produces the construction of the search tree, step by step. In our case we try to solve the
-n-queens problem with <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4" style="vertical-align: -1px"/> and <strong class="program">cpviz</strong>
+n-Queens Problem with <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4" style="vertical-align: -1px"/> and <strong class="program">cpviz</strong>
 generates 8 files.</p>
 <p>You can find an animated version of the search tree produced by <strong class="program">cpviz</strong> <a class="reference download internal" href="../../_downloads/animated_tree.gif"><tt class="xref download docutils literal"><span class="pre">here</span></tt></a>.</p>
-<table class="docutils footnote" frame="void" id="cpviz-xml-files-generated-exitsearch-callback" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><tt class="file docutils literal"><span class="pre">tree.xml</span></tt> and <tt class="file docutils literal"><span class="pre">visualization.xml</span></tt> are generated
-in the <tt class="docutils literal"><span class="pre">ExitSearch()</span></tt> callback of the <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> class.</td></tr>
-</tbody>
-</table>
 <p>This is probably not what you expected. First of all, this is not a binary tree and there seems to be an extra dummy root node.
 A binary tree &#8212; which is what is exactly constructed during the search &#8212; is not really suited for a graphical representation as it can
 quickly become very big (compare the tree above with the actual search tree that is represented below). To avoid huge trees, we have reduced their
@@ -143,8 +144,15 @@ taken. Nodes coloured in</p>
 </ul>
 </div>
 <div class="section" id="interpreting-the-graphical-results">
-<h2>5.4.2. Interpreting the graphical results</h2>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/nqueens4.cc">tutorials/cplusplus/chap5/nqueens4.cc</a></p>
+<span id="cpviz-interpreting-the-graphical-results"></span><h2>5.4.2. Interpreting the graphical results</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens4.cc">nqueens4.cc</a></li>
+    </ol>
+  </li>
+</ol></div>
 <p>To better understand the output of <strong class="program">cpviz</strong> and to follow the search with precision,
 let&#8217;s trace the search and the propagation of our program <tt class="docutils literal"><span class="pre">nqueens4</span></tt>:</p>
 <div class="highlight-bash"><div class="highlight"><pre>./nqueens4 --size<span class="o">=</span>4 --cp_trace_search --cp_trace_propagation 2&gt;
@@ -157,7 +165,7 @@ a cleaned version of this file <a class="reference download internal" href="../.
 in a more graphical way. Pay attention to the order in which the variables and
 the constraints are processed.</p>
 <p>Recall that we are solving the problem of finding all distinct solutions
-of the n-queens problem with <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> queens. Our search strategy is to
+of the n-Queens Problem with <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> queens. Our search strategy is to
 choose the first variable with a non empty domain with a least two elements (<tt class="docutils literal"><span class="pre">Solver::CHOOSE_FIRST_UNBOUND</span></tt>).
 Once this variable is chosen, we give it the smallest possible value contained in its domain (<tt class="docutils literal"><span class="pre">Solver::ASSIGN_MIN_VALUE</span></tt>).
 We have <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4" style="vertical-align: -1px"/> variables <img class="math" src="../../_images/math/efc7bad5b5a3502ca8c432fb85cad75f637161a1.png" alt="x_0, x_1, x_2" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/ee60922c5fc5ee1941df04f838cdae71fbc29d6f.png" alt="x_3" style="vertical-align: -3px"/> introduced in that order. The <img class="math" src="../../_images/math/7cde695f2e4542fd01f860a89189f47a27143b66.png" alt="3" style="vertical-align: 0px"/> constraints
@@ -209,16 +217,9 @@ The method <tt class="docutils literal"><span class="pre">failures()</span></tt>
 <p>The two last statistics are more difficult to understand by only looking at the search tree.</p>
 <dl class="docutils">
 <dt>Backtracks (9):</dt>
-<dd><p class="first">Because of the way the search is coded, the <tt class="docutils literal"><span class="pre">fail_stamp</span></tt> counter starts already at <img class="math" src="../../_images/math/41c544263a265ff15498ee45f7392c5f86c6d151.png" alt="2" style="vertical-align: 0px"/> before any top level search.
+<dd>Because of the way the search is coded, the <tt class="docutils literal"><span class="pre">fail_stamp</span></tt> counter starts already at <img class="math" src="../../_images/math/41c544263a265ff15498ee45f7392c5f86c6d151.png" alt="2" style="vertical-align: 0px"/> before any top level search.
 There are <img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6" style="vertical-align: 0px"/> failures (one for each node, see Failures above) and this brings the counter to <img class="math" src="../../_images/math/8455f3b5cb3b4880b8c9d782a5c1f0334db819eb.png" alt="8" style="vertical-align: 0px"/>. To end the search,
-a last backtrack<a class="footnote-reference" href="#real-last-backtrack" id="id2">[2]</a> is necessary to reach the root node and undo the search which brings the counter to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9" style="vertical-align: 0px"/>.</p>
-<table class="last docutils footnote" frame="void" id="real-last-backtrack" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Actually, the very last backtrack happens when the solver is deleted.</td></tr>
-</tbody>
-</table>
-</dd>
+a last backtrack<a class="footnote-reference" href="#real-last-backtrack" id="id3">[3]</a> is necessary to reach the root node and undo the search which brings the counter to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9" style="vertical-align: 0px"/>.</dd>
 <dt>Stamps (29):</dt>
 <dd>This statistic is more an internal statistic than a real indicator of the search. It is related to the
 queue actions during the search. The queue is responsible for the propagation which occurs when one or more variables domains
@@ -509,13 +510,11 @@ and we have found <img class="math" src="../../_images/math/41c544263a265ff15498
 <p>For each step in the construction of the tree in our <strong class="program">cpviz</strong> output corresponds a visualization of the propagation and
 the states of the variables. Of course, as we try to limit the number of nodes in the tree, we are constrained to display
 very little information about the propagation process. In short, if we find</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li>a try node, we display the final propagation at this node;</li>
 <li>a solution, we display the solution;</li>
 <li>a failure, we display the first failure encountered and the values of the assigned variables.</li>
 </ul>
-</div></blockquote>
 <p>We also display what variable we focus on next.</p>
 <p>Let&#8217;s go again through the 9 steps. We display in the left column our <strong class="program">cpviz</strong> tree output, in the middle column the
 actual search tree and in the right column our <strong class="program">cpviz</strong> output of the propagation.</p>
@@ -584,6 +583,25 @@ was <img class="math" src="../../_images/math/ccada11db7b2b90693e2fac4f887a57fce
 <img alt="../../_images/real_tree8.png" src="../../_images/real_tree8.png" style="height: 200pt;" />
 <img alt="../../_images/transparent.png" src="../../_images/transparent.png" style="height: 50pt;" />
 <img height="200pt" src="../../_images/viz8.svg" /></div><p>Failure. The first failure was when <img class="math" src="../../_images/math/a3dc3ecf2fcb08b3ca53e2f8a39760158a8a63a3.png" alt="x_1 = 0" style="vertical-align: -4px"/>.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="tmp-directory-in-linux" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><cite>/tmp</cite> is a temporary directory in linux. Change this directory accordingly in you are working under another OS.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="cpviz-xml-files-generated-exitsearch-callback" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="file docutils literal"><span class="pre">tree.xml</span></tt> and <tt class="file docutils literal"><span class="pre">visualization.xml</span></tt> are generated
+in the <tt class="docutils literal"><span class="pre">ExitSearch()</span></tt> callback of the <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> class.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="real-last-backtrack" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Actually, the very last backtrack happens when the solver is deleted.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>

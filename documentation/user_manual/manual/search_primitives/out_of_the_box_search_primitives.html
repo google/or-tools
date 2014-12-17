@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-Queens Problem" href="../search_primitives.html" />
-    <link rel="next" title="5.7. Customized search primitives" href="customized_search_primitives.html" />
+    <link rel="next" title="5.7. Customized search primitives: DecisionBuilders and Decisions" href="customized_search_primitives.html" />
     <link rel="prev" title="5.5. Basic working of the solver: the phases" href="basic_working_phases.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives: DecisionBuilders and Decisions"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="basic_working_phases.html" title="5.5. Basic working of the solver: the phases"
@@ -186,14 +186,56 @@ The center is defined as <tt class="docutils literal"><span class="pre">(min</sp
 </dl>
 </div>
 <div class="section" id="results">
-<h2>5.6.3. Results</h2>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/phases1.cc">tutorials/cplusplus/chap5/phases1.cc</a>
-and <a class="reference external" href="../../../tutorials/cplusplus/chap5/solver_benchmark.h">tutorials/cplusplus/chap5/solver_benchmark.h</a></p>
+<span id="out-of-the-box-primitives-results"></span><h2>5.6.3. Results</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/solver_benchmark.h">solver_benchmark.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap5/phases1.cc">phases1.cc</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <p>Just for fun, we have developed a <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to test different search strategies. Statistics
-are recorded thanks to <tt class="docutils literal"><span class="pre">SolverBenchmarkStats</span></tt>. You can find both classes in the <tt class="file docutils literal"><span class="pre">solver_benchmark.h</span></tt> header.</p>
+are recorded thanks to the <tt class="docutils literal"><span class="pre">SolverBenchmarkStats</span></tt> class. You can find both classes in the <tt class="file docutils literal"><span class="pre">solver_benchmark.h</span></tt> header.</p>
 <p>In <tt class="file docutils literal"><span class="pre">phases1.cc</span></tt>, we test different combinations of the above strategies to find the variables and the values
-to branch on. You can try it for yourself and see that basically no predefined strategy outperforms any other.</p>
-<p>The most fun (and most efficient) way to use <em>or-tools</em> is to define your own selection strategies
+to branch on. You can try it for yourself and see that basically no predefined strategy really outperforms any other.</p>
+<p>The program writes a report text file with the best statistics about the search of the CP Solver to solve the n-Queens Problem given a specified size. The text files have <tt class="docutils literal"><span class="pre">report_n.txt</span></tt>
+as name with <tt class="docutils literal"><span class="pre">n</span></tt> the size considered.</p>
+<p>We summarize the results when we run the program with sizes <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5" style="vertical-align: 0px"/>, <img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6" style="vertical-align: 0px"/>, <img class="math" src="../../_images/math/8455f3b5cb3b4880b8c9d782a5c1f0334db819eb.png" alt="8" style="vertical-align: 0px"/> and <img class="math" src="../../_images/math/fc606f7f1e530731ab4f1cc364c01dc64a4455ee.png" alt="10" style="vertical-align: -1px"/> in the following table:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="42%" />
+<col width="39%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/></th>
+<th class="head">Best wall time:</th>
+<th class="head">Best branches:</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5" style="vertical-align: 0px"/></td>
+<td><tt class="docutils literal"><span class="pre">ChooseFirstUnbound</span></tt> - <tt class="docutils literal"><span class="pre">AssignMin</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RandomSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignCenter</span></tt></td>
+</tr>
+<tr class="row-odd"><td><img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6" style="vertical-align: 0px"/></td>
+<td><tt class="docutils literal"><span class="pre">ChooseFirstUnbound</span></tt> - <tt class="docutils literal"><span class="pre">AssignMin</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">MinSizeLowestMinSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignMin</span></tt></td>
+</tr>
+<tr class="row-even"><td><img class="math" src="../../_images/math/8455f3b5cb3b4880b8c9d782a5c1f0334db819eb.png" alt="8" style="vertical-align: 0px"/></td>
+<td><tt class="docutils literal"><span class="pre">MinSizeHighestMinSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignCenter</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">MinSizeHighestMinSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignMin</span></tt></td>
+</tr>
+<tr class="row-odd"><td><img class="math" src="../../_images/math/fc606f7f1e530731ab4f1cc364c01dc64a4455ee.png" alt="10" style="vertical-align: -1px"/></td>
+<td><tt class="docutils literal"><span class="pre">MinSizeHighestMaxSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignCenter</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">MinSizeLowestMinSelector</span></tt> - <tt class="docutils literal"><span class="pre">AssignMin</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>The most fun (and most efficient) way to use <strong>or-tools</strong> is to define your own selection strategies
 and search primitives. This is the subject of the next section.</p>
 </div>
 </div>
@@ -277,7 +319,7 @@ Search:
                         title="previous chapter">5.5. Basic working of the solver: the phases</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="customized_search_primitives.html"
-                        title="next chapter">5.7. Customized search primitives</a></p>
+                        title="next chapter">5.7. Customized search primitives: <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">5.6. Out of the box variables and values selection primitives</a><ul>
@@ -299,7 +341,7 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives: DecisionBuilders and Decisions"
              >next</a> |</li>
         <li class="right" >
           <a href="basic_working_phases.html" title="5.5. Basic working of the solver: the phases"

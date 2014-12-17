@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5.2. Implementation of the basic model &mdash; or-tools User&#39;s Manual</title>
+    <title>5.2. Implementation of a basic model &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-Queens Problem" href="../search_primitives.html" />
     <link rel="next" title="5.3. Basic working of the solver: the search algorithm" href="basic_working_search_algorithm.html" />
-    <link rel="prev" title="5.1. The n-queens problem" href="nqueens.html" /> 
+    <link rel="prev" title="5.1. The n-Queens Problem" href="nqueens.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="basic_working_search_algorithm.html" title="5.3. Basic working of the solver: the search algorithm"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="nqueens.html" title="5.1. The n-queens problem"
+          <a href="nqueens.html" title="5.1. The n-Queens Problem"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" accesskey="U">5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 
@@ -54,76 +54,20 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="implementation-of-the-basic-model">
-<span id="nqueen-implementation-basic-model"></span><h1>5.2. Implementation of the basic model</h1>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/nqueens1.cc">tutorials/cplusplus/chap5/nqueens1.cc</a></p>
+  <div class="section" id="implementation-of-a-basic-model">
+<span id="nqueen-implementation-basic-model"></span><h1>5.2. Implementation of a basic model</h1>
 <div class="files-sidebar container">
 <ol>
   <li>C++ code:
     <ol>
-      <li><a href="../../../tutorials/cplusplus/chap6/jobshop.h">jobshop.h</a></li>
-      <li><a href="../../../tutorials/cplusplus/chap6/report_jobshopdata.cc">report_jobshopdata.cc</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens1.cc">nqueens1.cc</a></li>
     </ol>
   </li>
-    <li>Data files:
-        <ol>
-           <li><a href="../../../tutorials/cplusplus/chap6/abz9">abz9</a></li>
-           <li><a href="../../../tutorials/cplusplus/chap6/20_5_01_ta001.txt">20_5_01_ta001.txt</a></li>
-           <li><a href="../../../tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a></li>
-        </ol>
-     </li>
+
 </ol></div>
-<p>After the needed headers from the or-tools library:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &quot;base/commandlineflags.h&quot;</span>
-<span class="cp">#include &quot;base/logging.h&quot;</span>
-<span class="cp">#include &quot;base/stringprintf.h&quot;</span>
-<span class="cp">#include &quot;constraint_solver/constraint_solver.h&quot;</span>
-</pre></div>
-</div>
-<p>we add our header:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &quot;./nqueens_utilities.h&quot;</span>
-</pre></div>
-</div>
-<p>The header <tt class="docutils literal"><span class="pre">nqueens_utilities.h</span></tt> contains some helper functions (see the subsection <a class="reference internal" href="#nqueens-helper-functions"><em>The helper functions</em></a> below):
-among other <tt class="docutils literal"><span class="pre">CheckNumberOfSolutions()</span></tt> to check the known number of solutions
-(unique or distinct) of the n-queens problem and several functions to print the solutions recorded by a <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>.</p>
-<p>To be able to collect only
-unique solutions (up to a symmetry), we will use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s
-in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>.</p>
-<p>A boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> allows or disallows the use of <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. This flag is defined
-in the header <tt class="docutils literal"><span class="pre">./nqueens_utilities.h</span></tt> and to be able to use it in our main file, we need to <em>declare</em> it:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">DECLARE_bool</span><span class="p">(</span><span class="n">use_symmetry</span><span class="p">);</span>
-</pre></div>
-</div>
-<p>For the moment we don&#8217;t implement any symmetry related mechanism and abort
-in the <tt class="docutils literal"><span class="pre">main</span></tt> function if <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_use_symmetry</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">LOG</span><span class="p">(</span><span class="n">FATAL</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Symmetries not yet implemented!&quot;</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">operations_research</span><span class="o">::</span><span class="n">NQueens</span><span class="p">(</span><span class="n">FLAGS_size</span><span class="p">);</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">;</span> <span class="o">++</span><span class="n">n</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">operations_research</span><span class="o">::</span><span class="n">NQueens</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>We offer the possibility to print the first solution (flag <tt class="docutils literal"><span class="pre">print</span></tt> set to <tt class="docutils literal"><span class="pre">true</span></tt>) or
-all solutions (flag <tt class="docutils literal"><span class="pre">print_all</span></tt> set to <tt class="docutils literal"><span class="pre">true</span></tt>)<a class="footnote-reference" href="#print-all-code-not-shown" id="id1">[1]</a>. By default, the program
-doesn&#8217;t output any solution.</p>
-<table class="docutils footnote" frame="void" id="print-all-code-not-shown" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The code to print all the solutions is not shown here.</td></tr>
-</tbody>
-</table>
-<div class="section" id="the-model">
-<h2>5.2.1. The model</h2>
+<p>We have introduced the ideas of a basic model in the previous section. We complete this model and implement it in this section.</p>
+<div class="section" id="the-model-completed">
+<h2>5.2.1. The model completed</h2>
 <p>The model is defined in the <tt class="docutils literal"><span class="pre">NQueens()</span></tt> function. The beginning of the
 function shouldn&#8217;t surprise you:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">NQueens</span><span class="p">(</span><span class="kt">int</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
@@ -169,13 +113,7 @@ Now, here comes the trick. If you add <img class="math" src="../../_images/math/
 you get</p>
 <div class="math" id="equation-nqueens_diagonals_positive_slope_5">
 <p><span class="eqno">(5)</span><img src="../../_images/math/a196c403c997b227e91e26d580a0789a23bfa3b2.png" alt="x_1 + 1 \neq x_2 + 2,\ x_1 + 1 \neq x_3 + 3,\ x_1 + 1 \neq x_4 + 4,~\ldots"/></p>
-</div><p>and more generally <img class="math" src="../../_images/math/b1adba20f99ee0738390a1896e1475493b5852e0.png" alt="x_i \neq x_j + j - i" style="vertical-align: -6px"/> becomes simply <img class="math" src="../../_images/math/3a28624ac593c99d405e76e2dd51cbcc4a9af15e.png" alt="x_i + i \neq x_j + j \qquad \forall \, j : j &gt; i" style="vertical-align: -6px"/><a class="footnote-reference" href="#univeral-quantificator" id="id2">[2]</a>.</p>
-<table class="docutils footnote" frame="void" id="univeral-quantificator" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><img class="math" src="../../_images/math/921f42f62ac80eb792d269155fb6f750e4dd8a2d.png" alt="\forall \, j : j &gt; i" style="vertical-align: -4px"/> simply means that we consider all <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> greater than <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/>.</td></tr>
-</tbody>
-</table>
+</div><p>and more generally <img class="math" src="../../_images/math/b1adba20f99ee0738390a1896e1475493b5852e0.png" alt="x_i \neq x_j + j - i" style="vertical-align: -6px"/> becomes simply <img class="math" src="../../_images/math/3a28624ac593c99d405e76e2dd51cbcc4a9af15e.png" alt="x_i + i \neq x_j + j \qquad \forall \, j : j &gt; i" style="vertical-align: -6px"/><a class="footnote-reference" href="#univeral-quantificator" id="id1">[1]</a>.</p>
 <p>This means that we can restrict ourselves to inequalities only involving <img class="math" src="../../_images/math/e8e40cdbe2085d77fa1ed9d2247050098a64895d.png" alt="x_i + i" style="vertical-align: -3px"/> terms. Each of these
 terms must be different from all others. Doesn&#8217;t this ring a bell? Yep, this is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt>
 constraint:</p>
@@ -209,7 +147,7 @@ constraint:</p>
 <span class="n">monitors</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">collector</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>We keeps our basic search strategy:</p>
+<p>We keep our basic search strategy:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakePhase</span><span class="p">(</span><span class="n">queens</span><span class="p">,</span>
                                     <span class="n">Solver</span><span class="o">::</span><span class="n">CHOOSE_FIRST_UNBOUND</span><span class="p">,</span>
                                     <span class="n">Solver</span><span class="o">::</span><span class="n">ASSIGN_MIN_VALUE</span><span class="p">);</span>
@@ -217,10 +155,26 @@ constraint:</p>
 <span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">monitors</span><span class="p">);</span>  <span class="c1">// go!</span>
 </pre></div>
 </div>
-<p>In the next sections, we will test different <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s.</p>
+<p>In the next sections, we will test different <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s. To help us print and test solutions for the n-Queens Problem, we will
+use two helper functions defined next.</p>
 </div>
 <div class="section" id="the-helper-functions">
 <span id="nqueens-helper-functions"></span><h2>5.2.2. The helper functions</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens_utilities.h">nqueens_utilities.h</a></li>
+    </ol>
+  </li>
+
+</ol></div>
+<p>The header <tt class="docutils literal"><span class="pre">nqueens_utilities.h</span></tt> contains some helper functions:
+among other <tt class="docutils literal"><span class="pre">CheckNumberOfSolutions()</span></tt> to check the known number of solutions
+(unique or distinct) of the n-Queens Problem and several functions to print the solutions recorded by a <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>.</p>
+<p>To be able to collect only
+unique solutions (up to a symmetry), we will use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s
+in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>.</p>
 <p>To test our model (and the solver!), we use the function <tt class="docutils literal"><span class="pre">CheckNumberOfSolutions()</span></tt>
 to check the number of known solutions, unique up to a symmetry when we use
 <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s and otherwise distinct:</p>
@@ -278,8 +232,58 @@ a unique solution up to a symmetry (see the section <a class="reference internal
 <p>You might wonder why we cast the return value of <tt class="docutils literal"><span class="pre">collector-&gt;Value()</span></tt>
 into an <tt class="docutils literal"><span class="pre">int</span></tt>? The <tt class="docutils literal"><span class="pre">value()</span></tt> method returns an <tt class="docutils literal"><span class="pre">int64</span></tt>.</p>
 </div>
+<div class="section" id="the-whole-program-bundled">
+<h2>5.2.3. The whole program bundled</h2>
+<p>To compile our <tt class="docutils literal"><span class="pre">NQueens()</span></tt> function, we need some headers.</p>
+<p>After the needed headers from the <strong>or-tools</strong> library:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &quot;base/commandlineflags.h&quot;</span>
+<span class="cp">#include &quot;base/logging.h&quot;</span>
+<span class="cp">#include &quot;base/stringprintf.h&quot;</span>
+<span class="cp">#include &quot;constraint_solver/constraint_solver.h&quot;</span>
+</pre></div>
+</div>
+<p>we add our header:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &quot;nqueens_utilities.h&quot;</span>
+</pre></div>
+</div>
+<p>A boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> allows or disallows the use of <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. This flag is defined
+in the header <tt class="docutils literal"><span class="pre">nqueens_utilities.h</span></tt>. To be able to use it in our main file, we need to <em>declare</em> it:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">DECLARE_bool</span><span class="p">(</span><span class="n">use_symmetry</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>For the moment we don&#8217;t implement any symmetry related mechanism and abort
+in the <tt class="docutils literal"><span class="pre">main</span></tt> function if <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">google</span><span class="o">::</span><span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_use_symmetry</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">LOG</span><span class="p">(</span><span class="n">FATAL</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Symmetry breaking methods not yet implemented!&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">FLAGS_size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">operations_research</span><span class="o">::</span><span class="n">NQueens</span><span class="p">(</span><span class="n">FLAGS_size</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">;</span> <span class="o">++</span><span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">operations_research</span><span class="o">::</span><span class="n">NQueens</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>We offer the possibility to print the first solution (flag <tt class="docutils literal"><span class="pre">print</span></tt> set to <tt class="docutils literal"><span class="pre">true</span></tt>) or
+all solutions (flag <tt class="docutils literal"><span class="pre">print_all</span></tt> set to <tt class="docutils literal"><span class="pre">true</span></tt>). By default, the program
+doesn&#8217;t output any solution.</p>
+</div>
 <div class="section" id="first-results">
-<h2>5.2.3. First results</h2>
+<span id="nqueens-first-results"></span><h2>5.2.4. First results</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens2.cc">nqueens2.cc</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <p>Because finding all solutions is hard, we expect the solver to face more and more
 difficulties as the size <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> grows but
 what about the easy problem of finding only one solution?</p>
@@ -364,6 +368,31 @@ perfectly normal because we didn&#8217;t use a specific search strategy. In the
 rest of this chapter, we will try other search strategies and compare them.
 We will also customize our strategies, i.e. define strategies of our own but before
 we do so, we need to learn a little bit about the basic working of the solver.</p>
+<p><tt class="docutils literal"><span class="pre">Wikipedia</span></tt><a class="footnote-reference" href="#wikipedia-animation-of-the-recursive-solution" id="id2">[2]</a> has a very nice animation of our search strategy (<tt class="docutils literal"><span class="pre">CHOOSE_FIRST_UNBOUND</span></tt> and
+<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VALUE</span></tt>) to find the first feasible solution:</p>
+<div align="center">
+<a href="https://en.wikipedia.org/wiki/Eight_queens_puzzle#Animation_of_the_recursive_solution" >
+<img src="../../_static/Eight-queens-animation.gif"  alt="Beautiful animation of a backtracking for the 8-queens problem"/></a>
+</div><p>Compare the output of:</p>
+<div class="highlight-bash"><div class="highlight"><pre>./nqueens1 -size<span class="o">=</span>8 -print
+</pre></div>
+</div>
+with the solution of the animation:
+
+<div align="center"><img alt="../../_images/output_nqueens1_8.png" src="../../_images/output_nqueens1_8.png" style="height: 159pt;" />
+<img alt="../../_images/Eight-queens-animation.gif" src="../../_images/Eight-queens-animation.gif" style="height: 159pt;" />
+</div><h4>Footnotes</h4><table class="docutils footnote" frame="void" id="univeral-quantificator" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><img class="math" src="../../_images/math/921f42f62ac80eb792d269155fb6f750e4dd8a2d.png" alt="\forall \, j : j &gt; i" style="vertical-align: -4px"/> simply means that we consider all <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> greater than <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="wikipedia-animation-of-the-recursive-solution" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><a class="reference external" href="https://en.wikipedia.org/wiki/Eight_queens_puzzle#Animation_of_the_recursive_solution">https://en.wikipedia.org/wiki/Eight_queens_puzzle#Animation_of_the_recursive_solution</a></td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -443,16 +472,17 @@ Search:
                         title="previous chapter">5. Defining search primitives: the n-Queens Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="nqueens.html"
-                        title="previous chapter">5.1. The n-queens problem</a></p>
+                        title="previous chapter">5.1. The n-Queens Problem</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="basic_working_search_algorithm.html"
                         title="next chapter">5.3. Basic working of the solver: the search algorithm</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">5.2. Implementation of the basic model</a><ul>
-<li><a class="reference internal" href="#the-model">5.2.1. The model</a></li>
+<li><a class="reference internal" href="#">5.2. Implementation of a basic model</a><ul>
+<li><a class="reference internal" href="#the-model-completed">5.2.1. The model completed</a></li>
 <li><a class="reference internal" href="#the-helper-functions">5.2.2. The helper functions</a></li>
-<li><a class="reference internal" href="#first-results">5.2.3. First results</a></li>
+<li><a class="reference internal" href="#the-whole-program-bundled">5.2.3. The whole program bundled</a></li>
+<li><a class="reference internal" href="#first-results">5.2.4. First results</a></li>
 </ul>
 </li>
 </ul>
@@ -471,7 +501,7 @@ Search:
           <a href="basic_working_search_algorithm.html" title="5.3. Basic working of the solver: the search algorithm"
              >next</a> |</li>
         <li class="right" >
-          <a href="nqueens.html" title="5.1. The n-queens problem"
+          <a href="nqueens.html" title="5.1. The n-Queens Problem"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" >5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 

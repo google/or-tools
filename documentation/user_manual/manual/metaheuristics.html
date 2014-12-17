@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="7.1. Meta-heuristics in or-tools" href="metaheuristics/metaheuristics.html" />
+    <link rel="next" title="7.1. Search limits and SearchLimits" href="metaheuristics/search_limits.html" />
     <link rel="prev" title="6.9. Summary" href="ls/ls_summary.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="metaheuristics/metaheuristics.html" title="7.1. Meta-heuristics in or-tools"
+          <a href="metaheuristics/search_limits.html" title="7.1. Search limits and SearchLimits"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="ls/ls_summary.html" title="6.9. Summary"
@@ -67,31 +67,38 @@
 <ul class="simple">
 <li>For the section <a class="reference internal" href="metaheuristics/jobshop_lns.html#large-neighborhood-search"><em>Large neighborhood search (LNS): the job-shop problem</em></a>: the chapter <a class="reference internal" href="LS.html#chapter-local-search"><em>Local search: the job-shop problem</em></a> about local search and the job-shop problem.</li>
 </ul>
+<p class="rubric">Classes under scrutiny:</p>
+<p><tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt>, <tt class="docutils literal"><span class="pre">TabuSearch</span></tt>, <tt class="docutils literal"><span class="pre">SimulatedAnnealing</span></tt>, <tt class="docutils literal"><span class="pre">GuidedLocalSearch</span></tt>.</p>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap7</span></tt>.</p>
 <p>The files inside this directory are:</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics.html">7.1. Meta-heuristics in <em>or-tools</em></a></li>
-<li class="toctree-l1"><a class="reference internal" href="metaheuristics/search_limits.html">7.2. Search limits and <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/search_limits.html#an-example-of-a-custom-searchlimit">7.2.1. An example of a custom <tt class="docutils literal"><span class="pre">Searchlimit</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/search_limits.html">7.1. Search limits and <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/search_limits.html#an-example-of-a-custom-searchlimit">7.1.1. An example of a custom <tt class="docutils literal"><span class="pre">Searchlimit</span></tt></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="metaheuristics/jobshop_lns.html">7.3. Large neighborhood search (LNS): the job-shop problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#what-is-large-neighborhood-search">7.3.1. What is Large Neighborhood Search?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#large-neighborhood-search-in-or-tools">7.3.2. Large Neighborhood Search in <em>or-tools</em></a></li>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#interesting-lns-operators">7.3.3. Interesting LNS operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#an-heuristic-to-solve-the-job-shop-problem">7.3.4. An heuristic to solve the job-shop problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/jobshop_lns.html">7.2. Large neighborhood search (LNS): the job-shop problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#what-is-large-neighborhood-search">7.2.1. What is Large Neighborhood Search?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#large-neighborhood-search-in-or-tools">7.2.2. Large Neighborhood Search in <em>or-tools</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#interesting-lns-operators">7.2.3. Interesting LNS operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/jobshop_lns.html#an-heuristic-to-solve-the-job-shop-problem">7.2.4. An heuristic to solve the job-shop problem</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="metaheuristics/restart.html">7.4. Restarting the search</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/restart.html#luby">7.4.1. Luby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/restart.html">7.3. Restarting the search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/restart.html#luby">7.3.1. Luby</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics.html">7.4. Meta-heuristics in <em>or-tools</em></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/metaheuristics.html#the-metaheuristic-class-in-full">7.4.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class in full</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/metaheuristics.html#interesting-callbacks-from-the-searchmonitor-class">7.4.2. Interesting callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/metaheuristics.html#implemented-meta-heuristics-in-or-tools">7.4.3. Implemented meta-heuristics in <strong>or-tools</strong></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metaheuristics/tabu.html">7.5. Tabu search (TS)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#the-basic-idea">7.5.1. The basic idea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#the-implementation">7.5.2. The implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#our-implementation">7.5.2. Our implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="metaheuristics/tabu.html#first-results">7.5.3. First results</a></li>
 </ul>
 </li>
@@ -115,6 +122,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metaheuristics/default_search.html">7.9. Default search</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="metaheuristics/default_search.html#impact-based-search-strategies">7.9.1. Impact based search strategies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metaheuristics/default_search.html#defaultphaseparameters">7.9.2. DefaultPhaseParameters</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metaheuristics/metaheuristics_summary.html">7.10. Summary</a></li>
@@ -240,7 +248,7 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="metaheuristics/metaheuristics.html" title="7.1. Meta-heuristics in or-tools"
+          <a href="metaheuristics/search_limits.html" title="7.1. Search limits and SearchLimits"
              >next</a> |</li>
         <li class="right" >
           <a href="ls/ls_summary.html" title="6.9. Summary"

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7.1. Meta-heuristics in or-tools &mdash; or-tools User&#39;s Manual</title>
+    <title>7.4. Meta-heuristics in or-tools &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="7. Meta-heuristics: several previous problems" href="../metaheuristics.html" />
-    <link rel="next" title="7.2. Search limits and SearchLimits" href="search_limits.html" />
-    <link rel="prev" title="7. Meta-heuristics: several previous problems" href="../metaheuristics.html" /> 
+    <link rel="next" title="7.5. Tabu search (TS)" href="tabu.html" />
+    <link rel="prev" title="7.3. Restarting the search" href="restart.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="search_limits.html" title="7.2. Search limits and SearchLimits"
+          <a href="tabu.html" title="7.5. Tabu search (TS)"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../metaheuristics.html" title="7. Meta-heuristics: several previous problems"
+          <a href="restart.html" title="7.3. Restarting the search"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../metaheuristics.html" accesskey="U">7. Meta-heuristics: several previous problems</a> &raquo;</li> 
@@ -55,9 +55,36 @@
           <div class="body">
             
   <div class="section" id="meta-heuristics-in-or-tools">
-<span id="metaheurisitc-implementation"></span><h1>7.1. Meta-heuristics in <em>or-tools</em></h1>
+<span id="metaheurisitc-implementation"></span><h1>7.4. Meta-heuristics in <em>or-tools</em></h1>
+<div class="section" id="the-metaheuristic-class-in-full">
+<h2>7.4.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class in full</h2>
+<div class="section" id="entersearch">
+<h3>7.4.1.1. <tt class="docutils literal"><span class="pre">EnterSearch</span></tt></h3>
+</div>
+<div class="section" id="atsolution">
+<h3>7.4.1.2. <tt class="docutils literal"><span class="pre">AtSolution</span></tt></h3>
+</div>
+<div class="section" id="refutedecision">
+<h3>7.4.1.3. <tt class="docutils literal"><span class="pre">RefuteDecision</span></tt></h3>
+</div>
+</div>
+<div class="section" id="interesting-callbacks-from-the-searchmonitor-class">
+<h2>7.4.2. Interesting callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class</h2>
+<div class="section" id="applydecision">
+<h3>7.4.2.1. <tt class="docutils literal"><span class="pre">ApplyDecision</span></tt></h3>
+</div>
+<div class="section" id="localoptimum">
+<h3>7.4.2.2. <tt class="docutils literal"><span class="pre">LocalOptimum</span></tt></h3>
+</div>
+<div class="section" id="acceptneighbor">
+<h3>7.4.2.3. <tt class="docutils literal"><span class="pre">AcceptNeighbor</span></tt></h3>
+</div>
+</div>
+<div class="section" id="implemented-meta-heuristics-in-or-tools">
+<h2>7.4.3. Implemented meta-heuristics in <strong>or-tools</strong></h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 
 
           </div>
@@ -134,11 +161,31 @@ Search:
   <p class="topless"><a href="../metaheuristics.html"
                         title="previous chapter">7. Meta-heuristics: several previous problems</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="../metaheuristics.html"
-                        title="previous chapter">7. Meta-heuristics: several previous problems</a></p>
+  <p class="topless"><a href="restart.html"
+                        title="previous chapter">7.3. Restarting the search</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="search_limits.html"
-                        title="next chapter">7.2. Search limits and <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</a></p>
+  <p class="topless"><a href="tabu.html"
+                        title="next chapter">7.5. Tabu search (TS)</a></p>
+  <h3>Current section</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7.4. Meta-heuristics in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#the-metaheuristic-class-in-full">7.4.1. The <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class in full</a><ul>
+<li><a class="reference internal" href="#entersearch">7.4.1.1. <tt class="docutils literal"><span class="pre">EnterSearch</span></tt></a></li>
+<li><a class="reference internal" href="#atsolution">7.4.1.2. <tt class="docutils literal"><span class="pre">AtSolution</span></tt></a></li>
+<li><a class="reference internal" href="#refutedecision">7.4.1.3. <tt class="docutils literal"><span class="pre">RefuteDecision</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#interesting-callbacks-from-the-searchmonitor-class">7.4.2. Interesting callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class</a><ul>
+<li><a class="reference internal" href="#applydecision">7.4.2.1. <tt class="docutils literal"><span class="pre">ApplyDecision</span></tt></a></li>
+<li><a class="reference internal" href="#localoptimum">7.4.2.2. <tt class="docutils literal"><span class="pre">LocalOptimum</span></tt></a></li>
+<li><a class="reference internal" href="#acceptneighbor">7.4.2.3. <tt class="docutils literal"><span class="pre">AcceptNeighbor</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implemented-meta-heuristics-in-or-tools">7.4.3. Implemented meta-heuristics in <strong>or-tools</strong></a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -150,10 +197,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="search_limits.html" title="7.2. Search limits and SearchLimits"
+          <a href="tabu.html" title="7.5. Tabu search (TS)"
              >next</a> |</li>
         <li class="right" >
-          <a href="../metaheuristics.html" title="7. Meta-heuristics: several previous problems"
+          <a href="restart.html" title="7.3. Restarting the search"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../metaheuristics.html" >7. Meta-heuristics: several previous problems</a> &raquo;</li> 

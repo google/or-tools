@@ -80,9 +80,9 @@ can capture each other. To limit the number of queens to 4, we can add the follo
 <p><img src="../../_images/math/05dee08de9db5789c7308033f57702c49e1f204f.png" alt="\sum_{(i,j) \in \, \textrm{squares}} x_{ij} = 4."/></p>
 </div><p>This constraint ensures that we place 4 queens on the chessboard. In general, constraints only permit possible combinations of values
 of variables corresponding to real solutions<a class="footnote-reference" href="#model-more-complicated-than-that" id="id2">[2]</a>.</p>
-<p>In the next section, we will see how the or-tools&#8217; CP solver tries to solve this problem. More precisely,
-how the solver will try to solve the model we will develop and explain in the sections <a class="reference internal" href="../search_primitives/nqueens.html#nqueen-problem"><em>The n-queens problem</em></a> and
-<a class="reference internal" href="../search_primitives/basic_model_implementation.html#nqueen-implementation-basic-model"><em>Implementation of the basic model</em></a><a class="footnote-reference" href="#dont-need-to-know-model" id="id3">[3]</a>.</p>
+<p>In the next section, we will see how the <strong>or-tools</strong>&#8216; CP solver tries to solve this problem. More precisely,
+how the solver will try to solve the model we will develop and explain in the sections <a class="reference internal" href="../search_primitives/nqueens.html#nqueen-problem"><em>The n-Queens Problem</em></a> and
+<a class="reference internal" href="../search_primitives/basic_model_implementation.html#nqueen-implementation-basic-model"><em>Implementation of a basic model</em></a><a class="footnote-reference" href="#dont-need-to-know-model" id="id3">[3]</a>.</p>
 </div>
 <div class="section" id="propagation-and-search">
 <h2>1.1.3. Propagation and search</h2>
@@ -160,7 +160,7 @@ to backtrack and try to place the first queen in the first column third row.</p>
 <h4>Footnotes</h4><table class="docutils footnote" frame="void" id="see-what-n-queens-problem-really-is" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">See the section <a class="reference internal" href="../search_primitives/nqueens.html#nqueen-problem"><em>The n-queens problem</em></a>   for a more precise definition of this problem.</p>
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">See the section <a class="reference internal" href="../search_primitives/nqueens.html#nqueen-problem"><em>The n-Queens Problem</em></a>   for a more precise definition of this problem.</p>
 </td></tr>
 </tbody>
 </table>
@@ -194,7 +194,7 @@ there are many more!</td></tr>
 <table class="docutils footnote" frame="void" id="real-process-details" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[6]</a></td><td><p class="first">You can find this search process detailed in the sections <a class="reference internal" href="../search_primitives/basic_model_implementation.html#nqueen-implementation-basic-model"><em>Implementation of the basic model</em></a> and
+<tr><td class="label"><a class="fn-backref" href="#id6">[6]</a></td><td><p class="first">You can find this search process detailed in the sections <a class="reference internal" href="../search_primitives/basic_model_implementation.html#nqueen-implementation-basic-model"><em>Implementation of a basic model</em></a> and
 <a class="reference internal" href="../search_primitives/cpviz.html#cpviz"><em>cpviz: how to visualize the search</em></a>.</p>
 </td></tr>
 </tbody>

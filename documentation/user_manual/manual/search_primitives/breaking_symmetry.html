@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-Queens Problem" href="../search_primitives.html" />
     <link rel="next" title="5.9. Summary" href="summary.html" />
-    <link rel="prev" title="5.7. Customized search primitives" href="customized_search_primitives.html" /> 
+    <link rel="prev" title="5.7. Customized search primitives: DecisionBuilders and Decisions" href="customized_search_primitives.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="summary.html" title="5.9. Summary"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives: DecisionBuilders and Decisions"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" accesskey="U">5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 
@@ -57,7 +57,7 @@
   <div class="section" id="breaking-symmetries-with-symmetrybreakers">
 <span id="search-primitives-breaking-symmetry"></span><h1>5.8. Breaking symmetries with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</h1>
 <p>Now that we have seen the <tt class="docutils literal"><span class="pre">Decision</span></tt> and <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt> classes in details
-and that we are trying to solve the n-queens problem, how could we resist to introduce
+and that we are trying to solve the n-Queens Problem, how could we resist to introduce
 <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s?</p>
 <p>Breaking symmetries of a model or a problem is a very effective technique to reduce the
 size of the search tree and, most of the time, it also permits to reduce - sometimes spectacularly - the
@@ -70,7 +70,7 @@ process,
 <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s add them automatically when required <em>during the search</em>, i.e. on the fly.</p>
 <div class="section" id="the-basic-idea">
 <h2>5.8.1. The basic idea</h2>
-<div align="center"><p>The basic idea is quite simple. Consider again the 4-queens problem. The following figures represent
+<div align="center"><p>The basic idea is quite simple. Consider again the 4-Queens Problem. The following figures represent
 two symmetric solutions.</p>
 <img alt="../../_images/sol_4x4_a.png" src="../../_images/sol_4x4_a.png" style="width: 159pt;" />
 <img alt="../../_images/sol_4x4_b1.png" src="../../_images/sol_4x4_b1.png" style="width: 159pt;" />
@@ -89,8 +89,16 @@ forbid the symmetrical exploration of the search tree. As you might have guessed
 and <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s are <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s.</p>
 </div>
 <div class="section" id="symmetrybreakers">
-<h2>5.8.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</h2>
-<p><strong>C++ code</strong>: <a class="reference external" href="../../../tutorials/cplusplus/chap5/nqueens7.cc">tutorials/cplusplus/chap5/nqueens7.cc</a></p>
+<span id="symmetry-breakers"></span><h2>5.8.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</h2>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap5/nqueens7.cc">nqueens7.cc</a></li>
+    </ol>
+  </li>
+
+</ol></div>
 <p>Let&#8217;s create a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the vertical axial symmetry. Because the square has lots of symmetries,
 we introduce a helper
 method to find the symmetric indices of the variables and the symmetric values for a given variable:</p>
@@ -112,7 +120,7 @@ returns the index of the variable corresponding to <tt class="docutils literal">
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><tt class="docutils literal"><span class="pre">FindWithDefault()</span></tt> is defined in the header <tt class="file docutils literal"><span class="pre">base/map-util.h</span></tt>. Given an <tt class="docutils literal"><span class="pre">std::map&lt;IntVar*,</span> <span class="pre">int&gt;</span></tt>
+<p><tt class="docutils literal"><span class="pre">FindWithDefault()</span></tt> is defined in the header <tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solveri.h</span></tt>. Given an <tt class="docutils literal"><span class="pre">std::map&lt;IntVar*,</span> <span class="pre">int&gt;</span></tt>
 like <tt class="docutils literal"><span class="pre">indices_</span></tt>, it returns the corresponding <tt class="docutils literal"><span class="pre">int</span></tt> if it finds the <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span></tt>. If it doesn&#8217;t find the <tt class="docutils literal"><span class="pre">IntVar</span> <span class="pre">*</span></tt>,
 it returns the default argument given, <img class="math" src="../../_images/math/bae5aba07d37ff6ff813107e76260fb31ad5794e.png" alt="-1" style="vertical-align: -1px"/> in this case.</p>
 <p>To do the converse translation, we use the <tt class="docutils literal"><span class="pre">Var()</span></tt> method:</p>
@@ -122,7 +130,7 @@ it returns the default argument given, <img class="math" src="../../_images/math
 </pre></div>
 </div>
 <p>where <tt class="docutils literal"><span class="pre">vars_</span></tt> is the <tt class="docutils literal"><span class="pre">private</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span></tt> with the variables of our model.</p>
-<p>We create a base <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the n-queens problem:</p>
+<p>We create a base <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> for the n-Queens Problem:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NQueenSymmetry</span> <span class="o">:</span> <span class="k">public</span> <span class="n">SymmetryBreaker</span> <span class="p">{</span>
  <span class="nl">public:</span>
   <span class="n">NQueenSymmetry</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="k">const</span> <span class="n">s</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;&amp;</span> <span class="n">vars</span><span class="p">)</span>
@@ -153,8 +161,8 @@ it returns the default argument given, <img class="math" src="../../_images/math
 </pre></div>
 </div>
 <p>Now, we can specialize it for each symmetry we want to break.</p>
-<p>How do we tell a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> to notify the <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> to add a corresponding constraint upon refutation of
-a given <tt class="docutils literal"><span class="pre">Decision</span></tt>? For the n-queens problem, we can use the <tt class="docutils literal"><span class="pre">AddIntegerVariableEqualValueClause()</span></tt>
+<p id="index-0">How do we tell a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> to notify the <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt> to add a corresponding constraint upon refutation of
+a given <tt class="docutils literal"><span class="pre">Decision</span></tt>? For the n-Queens Problem, we can use the <tt class="docutils literal"><span class="pre">AddIntegerVariableEqualValueClause()</span></tt>
 method of the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> class.
 Given the assignation of a value to an <tt class="docutils literal"><span class="pre">IntVar</span></tt>, give this method the corresponding symmetric assignation. We call this
 corresponding assignment a <em>clause</em>.
@@ -194,35 +202,9 @@ be applied if a <tt class="docutils literal"><span class="pre">Decision</span></
 within a <tt class="docutils literal"><span class="pre">VisitSplitVariableDomain()</span></tt>
 call for instance.</p>
 </div>
-<div class="section" id="revalloc">
-<span id="rev-alloc"></span><h2>5.8.3. <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></h2>
-<p>Whenever you define your own subclass of <tt class="docutils literal"><span class="pre">BaseObject</span></tt> (and a <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt> is a <tt class="docutils literal"><span class="pre">BaseObject</span></tt>),
-it is good practice
-to register the given object as being reversible to the solver. That is, the solver will take ownership
-of the object and delete it
-when it backtracks out of the current state. To register an object as reversible, you invoke the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method
-of the solver:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">Solver</span> <span class="nf">s</span><span class="p">(</span><span class="s">&quot;nqueens&quot;</span><span class="p">);</span>
-<span class="p">...</span>
-<span class="n">NQueenSymmetry</span><span class="o">*</span> <span class="k">const</span> <span class="n">sy</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SY</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">queens</span><span class="p">));</span>
-</pre></div>
-</div>
-<p><tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> returns a pointer to the newly created and registered object. You can thus invoke this method with
-arguments
-in the constructor of the constructed object without having to keep a pointer to this object.</p>
-<p>The solver will now take care of your object. If you have an array of objects that are
-subclasses of <tt class="docutils literal"><span class="pre">BaseObject</span></tt>, <tt class="docutils literal"><span class="pre">IntVar</span></tt>,
-<tt class="docutils literal"><span class="pre">IntExpr</span></tt> and <tt class="docutils literal"><span class="pre">Constraint</span></tt>, you can register your array with <tt class="docutils literal"><span class="pre">RevAllocArray()</span></tt>. This method is also
-valid for arrays of <tt class="docutils literal"><span class="pre">int</span></tt>s,
-<tt class="docutils literal"><span class="pre">int64</span></tt>, <tt class="docutils literal"><span class="pre">uint64</span></tt> and <tt class="docutils literal"><span class="pre">bool</span></tt>. The array must have been allocated with the <tt class="docutils literal"><span class="pre">new[]</span></tt>
-operator.</p>
-<p>If you take a look at the source code, you will see that the factories
-methods call <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> to
-pass ownership of their objects to the solver.</p>
-</div>
 <div class="section" id="the-symmetrymanager">
-<h2>5.8.4. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></h2>
-<p>Because the n-queens problem is defined on a square, we have a lots of symmetries we can avoid:</p>
+<h2>5.8.3. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></h2>
+<p>Because the n-Queens Problem is defined on a square, we have a lots of symmetries we can avoid:</p>
 <ul class="simple">
 <li>Vertical axis symmetry: we already defined the <tt class="docutils literal"><span class="pre">SY</span></tt> class;</li>
 <li>Horizontal axis symmetry: class <tt class="docutils literal"><span class="pre">SX</span></tt>;</li>
@@ -269,9 +251,92 @@ pass ownership of their objects to the solver.</p>
 they force the solver to find only unique solutions up to a symmetry.</p>
 </div>
 <div class="section" id="results">
-<h2>5.8.5. Results</h2>
-<p>Let&#8217;s compare the time and the search trees again.</p>
-<p>[TO BE DONE]</p>
+<h2>5.8.4. Results</h2>
+<p>Let&#8217;s compare<a class="footnote-reference" href="#dont-forget-the-use-symmetry-flag" id="id1">[1]</a> some statistics of this algorithm with our best try from previous section:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="16%" />
+<col width="34%" />
+<col width="34%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/></th>
+<th class="head">Statistics</th>
+<th class="head">Second try</th>
+<th class="head">With <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>7</td>
+<td>Failures</td>
+<td>92</td>
+<td>24</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>82</td>
+<td>44</td>
+</tr>
+<tr class="row-even"><td>8</td>
+<td>Failures</td>
+<td>328</td>
+<td>71</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>654</td>
+<td>139</td>
+</tr>
+<tr class="row-even"><td>9</td>
+<td>Failures</td>
+<td>1216</td>
+<td>272</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>2430</td>
+<td>541</td>
+</tr>
+<tr class="row-even"><td>10</td>
+<td>Failures</td>
+<td>4500</td>
+<td>1074</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>8998</td>
+<td>2142</td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td>Failures</td>
+<td>17847</td>
+<td>4845</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>35692</td>
+<td>9686</td>
+</tr>
+<tr class="row-even"><td>12</td>
+<td>Failures</td>
+<td>86102</td>
+<td>23159</td>
+</tr>
+<tr class="row-odd"><td></td>
+<td>Branches</td>
+<td>172202</td>
+<td>46312</td>
+</tr>
+</tbody>
+</table>
+<p>Of course, the comparison is a little biased as in the case of the <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s we don&#8217;t try to count or reproduce <strong>all</strong> the solutions. We are only looking at unique solution up to a symmetry. With a little bit more work, you could retrieve all the solutions and the work to do so is minimal compared to the traversal of the search tree. So our method would still be efficient.</p>
+<h4>Footnote</h4><table class="docutils footnote" frame="void" id="dont-forget-the-use-symmetry-flag" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Don&#8217;t forget to use the <tt class="docutils literal"><span class="pre">use_symmetry</span></tt> flag!</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -351,7 +416,7 @@ Search:
                         title="previous chapter">5. Defining search primitives: the n-Queens Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="customized_search_primitives.html"
-                        title="previous chapter">5.7. Customized search primitives</a></p>
+                        title="previous chapter">5.7. Customized search primitives: <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="summary.html"
                         title="next chapter">5.9. Summary</a></p>
@@ -360,9 +425,8 @@ Search:
 <li><a class="reference internal" href="#">5.8. Breaking symmetries with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul>
 <li><a class="reference internal" href="#the-basic-idea">5.8.1. The basic idea</a></li>
 <li><a class="reference internal" href="#symmetrybreakers">5.8.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a></li>
-<li><a class="reference internal" href="#revalloc">5.8.3. <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></a></li>
-<li><a class="reference internal" href="#the-symmetrymanager">5.8.4. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></a></li>
-<li><a class="reference internal" href="#results">5.8.5. Results</a></li>
+<li><a class="reference internal" href="#the-symmetrymanager">5.8.3. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></a></li>
+<li><a class="reference internal" href="#results">5.8.4. Results</a></li>
 </ul>
 </li>
 </ul>
@@ -381,7 +445,7 @@ Search:
           <a href="summary.html" title="5.9. Summary"
              >next</a> |</li>
         <li class="right" >
-          <a href="customized_search_primitives.html" title="5.7. Customized search primitives"
+          <a href="customized_search_primitives.html" title="5.7. Customized search primitives: DecisionBuilders and Decisions"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" >5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 

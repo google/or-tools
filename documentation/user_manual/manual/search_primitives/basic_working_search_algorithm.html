@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="5. Defining search primitives: the n-Queens Problem" href="../search_primitives.html" />
     <link rel="next" title="5.4. cpviz: how to visualize the search" href="cpviz.html" />
-    <link rel="prev" title="5.2. Implementation of the basic model" href="basic_model_implementation.html" /> 
+    <link rel="prev" title="5.2. Implementation of a basic model" href="basic_model_implementation.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="cpviz.html" title="5.4. cpviz: how to visualize the search"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="basic_model_implementation.html" title="5.2. Implementation of the basic model"
+          <a href="basic_model_implementation.html" title="5.2. Implementation of a basic model"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" accesskey="U">5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 
@@ -92,14 +92,8 @@ and a valid index <img class="math" src="../../_images/math/34857b3ba74ce5cd8607
 know that a subspace doesn&#8217;t contain a feasible solution or if we find all feasible solutions of a subtree.
 The first node is called the root node and represent the complete search space.</p>
 <p>When we divide the search space by applying a decision (<img class="math" src="../../_images/math/1fb5e597525d6008ac2d935abb8d146f3ddc02f2.png" alt="x[i] = 2" style="vertical-align: -5px"/>) in one branch and by refuting this
-decision  (<img class="math" src="../../_images/math/4937591eda0b24f172fddd70dec6839a7f7e2761.png" alt="x[i] \neq 2" style="vertical-align: -5px"/>) in another, we obtain a binary search trees<a class="footnote-reference" href="#id2" id="id1">[1]</a>.
+decision  (<img class="math" src="../../_images/math/4937591eda0b24f172fddd70dec6839a7f7e2761.png" alt="x[i] \neq 2" style="vertical-align: -5px"/>) in another, we obtain a binary search trees<a class="footnote-reference" href="#search-tree-not-bst" id="id1">[1]</a>.
 This way of dividing the search tree in two is basically the algorithm used by the CP solver to explore a search tree.</p>
-<table class="docutils footnote" frame="void" id="id2" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Not to be confused with a binary search tree (BST) used to store ordered sets.</td></tr>
-</tbody>
-</table>
 <p>The divide mechanism can be more complex. For instance by dividing a subspace in more than two subspaces. The subspaces don&#8217;t
 need to be mutually exclusive, you can have different numbers of them at each node, etc.</p>
 <div class="topic">
@@ -116,8 +110,8 @@ context.</p>
 that is passed as an argument to another code. This is a very common and handy way to pass high level code to low level code. For
 example, the search algorithm is low level code. You don&#8217;t want to change this code but you would like to change the behaviour of the
 search algorithm to your liking. How do you do this? Callbacks are to the rescue! At some places in the low level code,
-some functions are called and you can redefine those functions. There are several techniques available. In this section, we redefine
-some virtual functions of an abstract class. In section XXX, we will see another similar mechanism.</p>
+some functions are called and you can redefine those functions. There are several techniques available<a class="footnote-reference" href="#template-method-design-pattern" id="id2">[2]</a>. In this section, we redefine
+some virtual functions of an abstract class.</p>
 <p>An example will clarify this mechanism. Take a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class. If you want to implement your own search monitor, you
 inherit from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> and you redefine the methods you need:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MySearchMonitor</span><span class="o">:</span> <span class="k">public</span> <span class="n">SearchMonitor</span> <span class="p">{</span>
@@ -140,7 +134,7 @@ inherit from <tt class="docutils literal"><span class="pre">SearchMonitor</span>
 <p>At the beginning of a search, the solver calls the virtual method <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> i.e.
 <em>your</em> <tt class="docutils literal"><span class="pre">EnterSearch()</span></tt> method. Don&#8217;t forget to delete your <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> after use.
 You can also use a smart pointer or even better, let the solver take ownership of the object with
-the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method (see the subsection <a class="reference internal" href="breaking_symmetry.html#rev-alloc"><em>RevAlloc</em></a>).</p>
+the <tt class="docutils literal"><span class="pre">RevAlloc()</span></tt> method (see the subsection <a class="reference internal" href="customized_search_primitives.html#rev-alloc"><em>BaseObject and RevAlloc</em></a>).</p>
 </div>
 <div class="section" id="phases">
 <h3>5.3.1.3. Phases</h3>
@@ -153,7 +147,7 @@ are in a new <em>phase</em>. This is where the name <tt class="docutils literal"
 </div>
 <div class="section" id="the-basic-idea">
 <h2>5.3.2. The basic idea</h2>
-<p>The basic idea<a class="footnote-reference" href="#basic-idea-search-algo-without-details" id="id3">[2]</a> is very simple yet effective.
+<p>The basic idea<a class="footnote-reference" href="#basic-idea-search-algo-without-details" id="id3">[3]</a> is very simple yet effective.
 A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is responsible to return a <tt class="docutils literal"><span class="pre">Decision</span></tt> at a node. A decision would be for instance, <img class="math" src="../../_images/math/dd9673e99b7dc9f400135bfffcaffadc4752d5ac.png" alt="x[4] = 3" style="vertical-align: -5px"/>.
 We divide the sub search
 tree at this node by applying this decision (left branch: <img class="math" src="../../_images/math/dd9673e99b7dc9f400135bfffcaffadc4752d5ac.png" alt="x[4] = 3" style="vertical-align: -5px"/>) and by refuting this decision (right branch:
@@ -168,15 +162,7 @@ going left (<tt class="docutils literal"><span class="pre">Apply()</span></tt>) 
 <p>From the root node, we follow the left branch whenever possible and backtrack
 to the first available right branch when needed. When you see a search tree
 produced by the CP solver, you can easily track the search by following
-a <em>preorder</em> traversal (see the box <em>What is a pre-order traversal of a binary tree?</em>)
-of the binary search tree.</p>
-<table class="docutils footnote" frame="void" id="basic-idea-search-algo-without-details" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>The real code deals with a lots of subtleties
-to implement different variants of the search algorithm.</td></tr>
-</tbody>
-</table>
+a <em>preorder</em> traversal of the binary search tree.</p>
 <div class="topic">
 <p class="topic-title first">What is a pre-order traversal of a binary tree?</p>
 <p>The search tree depicted on the Figure <a class="reference internal" href="cpviz.html#search-tree-of-nqueens-with-n-equal-to-4"><em>The actual search tree of our search</em></a> has
@@ -231,7 +217,7 @@ search continues, otherwise the solver ends it.</p>
 <span id="index-0"></span><span id="id4"></span><h2>5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
 <p><tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s contain a set of callbacks called on search tree events, such
 as entering/exiting search, applying/refuting decisions, failing, accepting solutions...</p>
-<p>In this section, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class<a class="footnote-reference" href="#other-callbacks-searchmonitors" id="id5">[3]</a> and show you
+<p>In this section, we present the following callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class<a class="footnote-reference" href="#other-callbacks-searchmonitors" id="id5">[4]</a> and show you
 exactly when they are called in the main search algorithm:</p>
 <table border="1" class="docutils">
 <caption>Basic search algorithm callbacks from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class.</caption>
@@ -279,23 +265,17 @@ exactly when they are called in the main search algorithm:</p>
 <td>After the initial propagation.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">AcceptSolution()</span></tt></td>
-<td>This method is called when a solution is found. It asserts if the solution is valid. A value of false indicates that the solution should be discarded.</td>
+<td>This method is called when a solution is found. It asserts if the solution is valid. A value of <tt class="docutils literal"><span class="pre">false</span></tt> indicates that the solution should be discarded.</td>
 </tr>
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">AtSolution()</span></tt></td>
-<td>This method is called when a valid solution is found. If the return value is true, then search will resume. If the result is false, then search will stop there.</td>
+<td>This method is called when a valid solution is found. If the return value is <tt class="docutils literal"><span class="pre">true</span></tt>, then the search will resume, otherwise the search will stop there.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">NoMoreSolutions()</span></tt></td>
 <td>When the search tree has been visited.</td>
 </tr>
 </tbody>
 </table>
-<br><table class="docutils footnote" frame="void" id="other-callbacks-searchmonitors" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[3]</a></td><td>There are a few more callbacks defined in a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>. See XXX.</td></tr>
-</tbody>
-</table>
-<p>We draw again your attention to the fact that the algorithm shown here is
+<br><p>We draw again your attention to the fact that the algorithm shown here is
 a simplified version of the search algorithm. In particular, we don&#8217;t show
 how the nested searches and the restart of a search are implemented.
 We find this so important that we reuse our warning box:</p>
@@ -306,15 +286,7 @@ We find this so important that we reuse our warning box:</p>
 <p>We use exceptions in our simplified version while the actual implementation uses
 the more efficient (and cryptic) <tt class="docutils literal"><span class="pre">setjmp</span> <span class="pre">-</span> <span class="pre">longjmp</span></tt> mechanism.</p>
 <p>We describe briefly what <em>nested searches</em> are in the section <a class="reference internal" href="basic_working_phases.html#nested-searches"><em>Nested searches</em></a> but you will have to wait until
-the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a> and the section <a class="reference internal" href="../under_the_hood/search.html#under-the-hood-nested-search"><em>Nested searches</em></a> to learn the juicy details<a class="footnote-reference" href="#wait-to-read-under-the-hood-nested-search" id="id6">[4]</a>.</p>
-<table class="docutils footnote" frame="void" id="wait-to-read-under-the-hood-nested-search" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>Of course, you can have a peak right now but some more background
-will probably help you understand this mechanism better. Beside, you don&#8217;t need to understand the inner mechanism to
-be able to use nested search!</td></tr>
-</tbody>
-</table>
+the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a> and the section <a class="reference internal" href="../under_the_hood/search.html#under-the-hood-nested-search"><em>Nested searches</em></a> to learn the juicy details<a class="footnote-reference" href="#wait-to-read-under-the-hood-nested-search" id="id6">[5]</a>.</p>
 <p>To follow the main search algorithm, it is best to know in what states the solver
 can be. The <tt class="docutils literal"><span class="pre">enum</span></tt> <tt class="docutils literal"><span class="pre">SolverState</span></tt> enumerates the possibilities in the following table:</p>
 <table border="1" class="docutils">
@@ -694,7 +666,7 @@ If a right branch exists, it is stored in the
 If there are no more right branches
 to visit, the search tree has been exhausted and the method returns <tt class="docutils literal"><span class="pre">true</span></tt>. Next, the
 corresponding <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to the current search is kept on line 41.</p>
-<p>We are now inside the main loop of the <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> method. Two Boolean variables are defined<a class="footnote-reference" href="#two-bool-variables-playing-another-roles" id="id7">[5]</a></p>
+<p>We are now inside the main loop of the <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> method. Two Boolean variables are defined<a class="footnote-reference" href="#two-bool-variables-playing-another-roles" id="id7">[6]</a></p>
 <blockquote>
 <div><ul class="simple">
 <li><tt class="docutils literal"><span class="pre">finish</span></tt>: becomes <tt class="docutils literal"><span class="pre">true</span></tt> when the search is over;</li>
@@ -705,24 +677,9 @@ corresponding <tt class="docutils literal"><span class="pre">DecisionBuilder</sp
 otherwise the compiler
 might optimize certain portions of code away. Basically, it tells the compiler that these
 variables can be changed from the <em>outside</em>.</p>
-<table class="docutils footnote" frame="void" id="two-bool-variables-playing-another-roles" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>These two variables play a role when
-we use nested searches, restart or finish a search
-but these possibilities are not shown here.</td></tr>
-</tbody>
-</table>
 <p>This main loop starts at line 47 and ends at line 108.</p>
 <p>The <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism allows to easily explain the backtrack mechanism. Whenever we need to backtrack in the search, a
-<tt class="docutils literal"><span class="pre">FailException</span></tt> is thrown<a class="footnote-reference" href="#try-catch-not-used" id="id8">[6]</a>.</p>
-<table class="docutils footnote" frame="void" id="try-catch-not-used" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id8">[6]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production
-code? ;-)</td></tr>
-</tbody>
-</table>
+<tt class="docutils literal"><span class="pre">FailException</span></tt> is thrown<a class="footnote-reference" href="#try-catch-not-used" id="id8">[7]</a>.</p>
 <p>If the <tt class="docutils literal"><span class="pre">Decision</span></tt> pointer <tt class="docutils literal"><span class="pre">fd</span></tt> is not <tt class="docutils literal"><span class="pre">NULL</span></tt>, this means that we have backtracked to the first available (non visited)
 right branch in the search tree. This corresponds to refuting the decision (lines 50-57).</p>
 <p>The solver now tries to explore as much as possible left branches and this is done in the <tt class="docutils literal"><span class="pre">while</span></tt> loop (line 62-81).</p>
@@ -801,6 +758,55 @@ algorithm.</p>
 <span class="p">}</span>
 </pre></div>
 </td></tr></table></div>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="search-tree-not-bst" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Not to be confused with a binary search tree (BST) used to store ordered sets.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="template-method-design-pattern" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In design pattern jargon, we talk about the <em>Template method</em> design pattern. See <a class="reference external" href="http://en.wikipedia.org/wiki/Template_method_pattern">http://en.wikipedia.org/wiki/Template_method_pattern</a> for more. And by the way,
+the name <em>template</em> has <strong>nothing</strong> to do with <tt class="docutils literal"><span class="pre">C++</span></tt> <tt class="docutils literal"><span class="pre">template</span></tt>s.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="basic-idea-search-algo-without-details" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>The real code deals with a lots of subtleties
+to implement different variants of the search algorithm.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="other-callbacks-searchmonitors" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>There are a few more callbacks defined in a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>. See sub-section <a class="reference internal" href="../under_the_hood/search_monitors.html#list-of-callbacks-for-search-monitors"><em>List of callbacks</em></a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="wait-to-read-under-the-hood-nested-search" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Of course, you can have a peak right now but some more background
+will probably help you understand this mechanism better. Beside, you don&#8217;t need to understand the inner mechanism to
+be able to use nested search!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="two-bool-variables-playing-another-roles" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>These two variables play a role when
+we use nested searches, restart or finish a search
+but these possibilities are not shown here.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="try-catch-not-used" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id8">[7]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production
+code? ;-)</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -881,7 +887,7 @@ Search:
                         title="previous chapter">5. Defining search primitives: the n-Queens Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="basic_model_implementation.html"
-                        title="previous chapter">5.2. Implementation of the basic model</a></p>
+                        title="previous chapter">5.2. Implementation of a basic model</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="cpviz.html"
                         title="next chapter">5.4. <strong class="program">cpviz</strong>: how to visualize the search</a></p>
@@ -919,7 +925,7 @@ Search:
           <a href="cpviz.html" title="5.4. cpviz: how to visualize the search"
              >next</a> |</li>
         <li class="right" >
-          <a href="basic_model_implementation.html" title="5.2. Implementation of the basic model"
+          <a href="basic_model_implementation.html" title="5.2. Implementation of a basic model"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../search_primitives.html" >5. Defining search primitives: the n-Queens Problem</a> &raquo;</li> 

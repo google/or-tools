@@ -58,25 +58,12 @@
 <span id="basic-working-phases"></span><h1>5.5. Basic working of the solver: the phases</h1>
 <p>A <strong>phase</strong> corresponds to a type of (sub)search in the search tree<a class="footnote-reference" href="#phase-not-really-search" id="id1">[1]</a>. You can have several phases/searches in your quest
 to find a feasible or optimal solution. In <em>or-tools</em>, a phase is constructed by and corresponds to a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>.</p>
-<table class="docutils footnote" frame="void" id="phase-not-really-search" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Well, sort of. Read on!</td></tr>
-</tbody>
-</table>
 <p>We postpone the discussion on the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling until the
 dedicated subsection
 <a class="reference internal" href="../ls/scheduling_or_tools.html#scheduling-decisionbuilders-decision"><em>DecisionBuilders and Decisions for scheduling</em></a> in the next chapter.</p>
 <p>To better understand how phases and <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s work, we will implement our own <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
-and <tt class="docutils literal"><span class="pre">Decision</span></tt> classes in the section <a class="reference internal" href="customized_search_primitives.html#customized-search-primitives"><em>Customized search primitives</em></a>.
+and <tt class="docutils literal"><span class="pre">Decision</span></tt> classes in the section <a class="reference internal" href="customized_search_primitives.html#customized-search-primitives"><em>Customized search primitives: DecisionBuilders and Decisions</em></a>.
 In this section, we show you how to use these primitives and some very basic examples<a class="footnote-reference" href="#all-decision-builders-hidden" id="id2">[2]</a>.</p>
-<table class="docutils footnote" frame="void" id="all-decision-builders-hidden" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s are used internally and
-you cannot access them directly. To use them, invoke the corresponding factory methods.</td></tr>
-</tbody>
-</table>
 <div class="section" id="decisionbuilders-and-phases">
 <span id="decision-builders-and-phases"></span><h2>5.5.1. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and phases</h2>
 <p><tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
@@ -93,14 +80,6 @@ pass the control to the next available <tt class="docutils literal"><span class=
 <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s left to deal with it.</p>
 <p>We use <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 in two scenarios<a class="footnote-reference" href="#decision-builders-two-scenarios" id="id3">[3]</a>:</p>
-<table class="docutils footnote" frame="void" id="decision-builders-two-scenarios" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>One could argue that these two scenarios are not really mutually exclusive.
-Indeed, we divide the scenarios in two cases depending on whether the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> returns a <tt class="docutils literal"><span class="pre">Decision</span></tt>
-or not. Some <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s delegate the creation process of <tt class="docutils literal"><span class="pre">Decision</span></tt>s to other <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s.</td></tr>
-</tbody>
-</table>
 <ol class="arabic">
 <li><p class="first">The basic scenario is to
 divide the search sub-tree in two (preferably non overlapping) search sub-trees. To do so, the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
@@ -215,14 +194,6 @@ a value to a variable in the left branch and forbids this assignment in the righ
 <h3>5.5.2.3. <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s</h3>
 <p><tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>s are attached to <tt class="docutils literal"><span class="pre">Decision</span></tt>s. The corresponding methods of the <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>
 are triggered just before a <tt class="docutils literal"><span class="pre">Decision</span></tt> is applied<a class="footnote-reference" href="#decision-visitor-triggered" id="id5">[4]</a>.</p>
-<table class="docutils footnote" frame="void" id="decision-visitor-triggered" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>In this case, the methods are triggered when <tt class="docutils literal"><span class="pre">Decision</span></tt> objects
-are created and these objects are created just before their <tt class="docutils literal"><span class="pre">Apply()</span></tt> method is called.
-See the subsection <a class="reference internal" href="../under_the_hood/conventions.html#idiom-visitors"><em>Visitors</em></a> for more.</td></tr>
-</tbody>
-</table>
 <p>When dealing with <tt class="docutils literal"><span class="pre">IntVar</span></tt>s, two possibilities can be audited:</p>
 <ul>
 <li><p class="first">when a variable will be assigned a value, implement the</p>
@@ -380,24 +351,17 @@ the next variable to branch on and <tt class="docutils literal"><span class="pre
 to find the next value to assign to this variable. We detail the different available strategies in the next section.</p>
 </div>
 <div class="section" id="callbacks-to-the-rescue">
-<h3>5.5.5.2. Callbacks to the rescue</h3>
+<span id="make-phase-callback-to-the-rescue"></span><h3>5.5.5.2. Callbacks to the rescue</h3>
 <p>What if you want to use your own strategies? One way to do this is to develop your own <tt class="docutils literal"><span class="pre">Decision</span></tt>s and
 <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s. Another way is to provide callbacks to the <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method. These callbacks evaluate
 different variables and values you can assign to a chosen variable. The best choice is each time the one that
 minimizes the values returned (through the <tt class="docutils literal"><span class="pre">Run()</span></tt> method) by the callbacks.</p>
-<p>We will explore both ways in the section <a class="reference internal" href="customized_search_primitives.html#customized-search-primitives"><em>Customized search primitives</em></a>.</p>
+<p>We will explore both ways in the section <a class="reference internal" href="customized_search_primitives.html#customized-search-primitives"><em>Customized search primitives: DecisionBuilders and Decisions</em></a>.</p>
 <p>There are two types of callbacks<a class="footnote-reference" href="#callbacks-want-to-know-more" id="id7">[5]</a> accepted by <tt class="docutils literal"><span class="pre">MakePhase()</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">typedef</span> <span class="n">ResultCallback1</span><span class="o">&lt;</span><span class="n">int64</span><span class="p">,</span> <span class="n">int64</span><span class="o">&gt;</span> <span class="n">IndexEvaluator1</span><span class="p">;</span>
 <span class="k">typedef</span> <span class="n">ResultCallback2</span><span class="o">&lt;</span><span class="n">int64</span><span class="p">,</span> <span class="n">int64</span><span class="p">,</span> <span class="n">int64</span><span class="o">&gt;</span> <span class="n">IndexEvaluator2</span><span class="p">;</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="callbacks-want-to-know-more" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>If you want to know more about callbacks, see the section
-<a class="reference internal" href="../under_the_hood/conventions.html#idiom-callbacks"><em>Callbacks</em></a> in the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a>.</td></tr>
-</tbody>
-</table>
 <p><tt class="docutils literal"><span class="pre">IndexEvaluator1</span></tt> allows to evaluate the next variable to branch on by giving the index of this variable in the
 <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span></tt> for unbounded variables. <tt class="docutils literal"><span class="pre">IndexEvaluator2</span></tt> allows to evaluate the available values
 (second index) for the chosen variable (first index). In each case, the variable and the value chosen will
@@ -468,6 +432,42 @@ are relevant and evaluation is accurate.
 This strategy runs in <img class="math" src="../../_images/math/8723ff4aa2be2ed47d9df95372afa7fe94b5cc1b.png" alt="O(\text{number-of-pairs})" style="vertical-align: -4px"/> at each variable selection,
 versus <img class="math" src="../../_images/math/62d0effd6477f4244d585fc25f46a645378a4ceb.png" alt="O(1)" style="vertical-align: -4px"/> in the static version.</li>
 </ul>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="phase-not-really-search" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Well, sort of. Read on!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="all-decision-builders-hidden" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s are used internally and
+you cannot access them directly. To use them, invoke the corresponding factory methods.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="decision-builders-two-scenarios" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>One could argue that these two scenarios are not really mutually exclusive.
+Indeed, we divide the scenarios in two cases depending on whether the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> returns a <tt class="docutils literal"><span class="pre">Decision</span></tt>
+or not. Some <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s delegate the creation process of <tt class="docutils literal"><span class="pre">Decision</span></tt>s to other <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="decision-visitor-triggered" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>In this case, the methods are triggered when <tt class="docutils literal"><span class="pre">Decision</span></tt> objects
+are created and these objects are created just before their <tt class="docutils literal"><span class="pre">Apply()</span></tt> method is called.
+See the subsection <a class="reference internal" href="../under_the_hood/conventions.html#idiom-visitors"><em>Visitors</em></a> for more.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="callbacks-want-to-know-more" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>If you want to know more about callbacks, see the section
+<a class="reference internal" href="../under_the_hood/conventions.html#idiom-callbacks"><em>Callbacks</em></a> in the chapter <a class="reference internal" href="../under_the_hood.html#chapter-under-the-hood"><em>Under the hood</em></a>.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>

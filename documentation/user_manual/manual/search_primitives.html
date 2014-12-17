@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="5.1. The n-queens problem" href="search_primitives/nqueens.html" />
+    <link rel="next" title="5.1. The n-Queens Problem" href="search_primitives/nqueens.html" />
     <link rel="prev" title="4.1. What is reification?" href="reification/reification.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="search_primitives/nqueens.html" title="5.1. The n-queens problem"
+          <a href="search_primitives/nqueens.html" title="5.1. The n-Queens Problem"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="reification/reification.html" title="4.1. What is reification?"
@@ -61,61 +61,62 @@ How to use nested searches, i.e. searches in subtrees? And so on.</p>
 (<tt class="docutils literal"><span class="pre">Decision</span></tt>s, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s, ...) that we call <em>search primitives</em>.
 Some are predefined and can be used right out of the box while others can be
 customized thanks to callbacks. You can also combine different search
-strategies.</p>
+strategies. If needed, you can define your own search primitive classes by inheriting from base classes.</p>
 <p>To efficiently use your tools, you need to know them a little and this
 chapter introduces you in a gentle manner to the inner working of the solver.
 The covered material is enough for you to understand how you can customize your search primitives without
 being drowned in the often tedious details of the implementation<a class="footnote-reference" href="#tedious-but-necessary-implementation-details" id="id1">[1]</a>.</p>
-<table class="docutils footnote" frame="void" id="tedious-but-necessary-implementation-details" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If you take a look at the source code, we hope you will enjoy
-the clarity (?) of our code. We believe that the most efficient code should remain
-simple and allow for more complicated but more efficient specializations when needed.</td></tr>
-</tbody>
-</table>
-<p>To illustrate the customization of the search, we try to solve the n-queen problem we have already met
+<p>To illustrate the customization of the search, we try to solve the n-Queen Problem that we have introduced
 in the chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>.</p>
+<p class="rubric">Overview:</p>
+<p>We first discuss the n-Queen Problem and present a basic model to solve it. To go one step further and
+devise a search algorithm to solve this problem, we present a little bit the inner working of the solver.
+Specifically, we show how it traverses and constructs the search tree. We even can visualize the search thanks
+to the wonderful <strong class="program">cpviz</strong> framework that we introduce next. Equipped with this knowledge and visualization
+capacity, we can better understand <em>out of the box</em> and <em>customized</em> primitives and apply them to solve the
+n-Queen Problem. We end this chapter with a relatively advanced feature:
+<tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s that allow to break symmetries during the search (on the fly).</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Basic knowledge of C++.</li>
-<li>Basic knowledge of Constraint Programming and the n-queens problem (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of Constraint Programming and the n-Queens Problem (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
 <li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
 <li>The willingness to roll up your sleeves and be prepared to look under the hood.</li>
 </ul>
 <p class="rubric">Classes under scrutiny:</p>
 <p><tt class="docutils literal"><span class="pre">Decision</span></tt>, <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>, <tt class="docutils literal"><span class="pre">DecisionVisitor</span></tt>, <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>.</p>
 <p class="rubric">Files:</p>
-<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap5</span></tt>.</p>
-<p>The files inside this directory are:</p>
+<p>The files used in this chapter are:</p>
 <ul class="simple">
-<li><tt class="file docutils literal"><span class="pre">Makefile</span></tt>.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueens_utilities.h</span></tt>: Contains two helper functions to test the number of solutions found and to print a solution.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt>: A first implementation of our basic model to find all solutions.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt> but this time to find only one solution.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt> but this time we use a <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> to visualize the
-search with cpviz.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen4.cc</span></tt>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt> but with some added statistics.</li>
-<li><tt class="file docutils literal"><span class="pre">cpviz_nqueens4_basic.txt</span></tt>: cleaned output of <tt class="docutils literal"><span class="pre">./nqueens4</span> <span class="pre">--size=4</span> <span class="pre">--cp_trace_search</span> <span class="pre">--cp_trace_propagation</span></tt>.</li>
-<li><tt class="file docutils literal"><span class="pre">solver_benchmark.h</span></tt>: a basic <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to benchmark different search strategies.</li>
-<li><tt class="file docutils literal"><span class="pre">phases1.cc</span></tt>: we use the <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to test different search strategies to find the next variables and
+<li><a class="reference internal" href="search_primitives/basic_model_implementation.html#nqueens-helper-functions"><em>nqueens_utilities.h</em></a>: Contains helper functions to test the number of solutions found and to print a solution.</li>
+<li><a class="reference internal" href="search_primitives/basic_model_implementation.html#nqueen-implementation-basic-model"><em>nqueens1.cc</em></a>: A first implementation of our basic model to find all solutions.</li>
+<li><a class="reference internal" href="search_primitives/basic_model_implementation.html#nqueens-first-results"><em>nqueens2.cc</em></a>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen1.cc</span></tt> but this time to find only one solution.</li>
+<li><a class="reference internal" href="search_primitives/cpviz.html#treemonitors-to-provide-cpviz-input"><em>nqueens3.cc</em></a>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen2.cc</span></tt> but this time we use a <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt> to visualize the
+search with the program <strong class="program">cpviz</strong>.</li>
+<li><a class="reference internal" href="search_primitives/cpviz.html#cpviz-interpreting-the-graphical-results"><em>nqueens4.cc</em></a>: The same implementation as in <tt class="file docutils literal"><span class="pre">nqueen3.cc</span></tt> but with some added statistics.</li>
+<li><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#out-of-the-box-primitives-results"><em>solver_benchmark.h</em></a>: a basic <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to benchmark different search strategies.</li>
+<li><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#out-of-the-box-primitives-results"><em>phases1.cc</em></a>: we use the <tt class="docutils literal"><span class="pre">SolverBenchmark</span></tt> class to test different search strategies to find the next variables and
 values to branch on among the predefined choices in the <tt class="docutils literal"><span class="pre">IntVarStrategy</span></tt> and  <tt class="docutils literal"><span class="pre">IntValueStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>s.</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen5.cc</span></tt>:</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen6.cc</span></tt>:</li>
-<li><tt class="file docutils literal"><span class="pre">nqueen7.cc</span></tt>:</li>
+<li><a class="reference internal" href="search_primitives/customized_search_primitives.html#nqueens-phases-callbacks"><em>nqueens5.cc</em></a>: we create our own customized search strategies to find the next variables and
+values to branch on with the help of <strong>callbacks</strong>.</li>
+<li><a class="reference internal" href="search_primitives/customized_search_primitives.html#nqueens-phases-decision-builder-decision"><em>nqueens6.cc</em></a>: We create our own customized search strategies to find the next variables and
+values to branch on by defining our own <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class.</li>
+<li><a class="reference internal" href="search_primitives/breaking_symmetry.html#symmetry-breakers"><em>nqueens7.cc</em></a>: We use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s to speed up the search.</li>
+<li><a class="reference internal" href="search_primitives/summary.html#search-primitives-combining-both-approches"><em>nqueens8.cc</em></a>: We combine both approaches from <tt class="file docutils literal"><span class="pre">nqueens6.cc</span></tt> and <tt class="file docutils literal"><span class="pre">nqueens7.cc</span></tt>.</li>
 </ul>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/nqueens.html">5.1. The n-queens problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#the-n-queen-problem-in-more-details">5.1.1. The n-queen problem in more details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/nqueens.html">5.1. The n-Queens Problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#the-n-queens-problem-in-more-details">5.1.1. The n-Queens Problem in more details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#how-to-solve-the-problem">5.1.2. How to solve the problem?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_model_implementation.html">5.2. Implementation of the basic model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-model">5.2.1. The model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_model_implementation.html">5.2. Implementation of a basic model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-model-completed">5.2.1. The model completed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-helper-functions">5.2.2. The helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#first-results">5.2.3. First results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-whole-program-bundled">5.2.3. The whole program bundled</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#first-results">5.2.4. First results</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working_search_algorithm.html">5.3. Basic working of the solver: the search algorithm</a><ul>
@@ -143,24 +144,35 @@ values to branch on among the predefined choices in the <tt class="docutils lite
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#results">5.6.3. Results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">5.7. Customized search primitives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#the-basic-search-strategy-visualized">5.7.1. The basic search strategy visualized</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#first-try-start-from-the-center">5.7.2. First try: start from the center</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#second-try-dynamic-variable-selection">5.7.3. Second try: dynamic variable selection</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#decisionbuilders-and-decisions-more-in-details">5.7.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s more in details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">5.7. Customized search primitives: <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#baseobject-and-revalloc">5.7.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt> and <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#the-basic-search-strategy-visualized">5.7.2. The basic search strategy visualized</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#first-try-start-from-the-center-and-use-callbacks">5.7.3. First try: start from the center (and use callbacks)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#second-try-dynamic-variable-selection-and-define-our-own-decisionbuilder-class">5.7.4. Second try: dynamic variable selection (and define our own <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#how-to-customize-search-primitives">5.7.5. How to customize search primitives?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="search_primitives/breaking_symmetry.html">5.8. Breaking symmetries with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#the-basic-idea">5.8.1. The basic idea</a></li>
 <li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#symmetrybreakers">5.8.2. <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#revalloc">5.8.3. <tt class="docutils literal"><span class="pre">RevAlloc</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#the-symmetrymanager">5.8.4. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#results">5.8.5. Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#the-symmetrymanager">5.8.3. The <tt class="docutils literal"><span class="pre">SymmetryManager</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/breaking_symmetry.html#results">5.8.4. Results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">5.9. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">5.9. Summary</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/summary.html#combining-both-approaches">5.9.1. Combining both approaches</a></li>
+</ul>
+</li>
 </ul>
 </div>
+<h4>Footnote</h4><table class="docutils footnote" frame="void" id="tedious-but-necessary-implementation-details" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>If you take a look at the source code, we hope you will enjoy
+the clarity (?) of our code. We believe that the most efficient code should remain
+simple and allow for more complicated but more efficient specializations when needed.</td></tr>
+</tbody>
+</table>
 </div>
 
 
@@ -280,7 +292,7 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="search_primitives/nqueens.html" title="5.1. The n-queens problem"
+          <a href="search_primitives/nqueens.html" title="5.1. The n-Queens Problem"
              >next</a> |</li>
         <li class="right" >
           <a href="reification/reification.html" title="4.1. What is reification?"

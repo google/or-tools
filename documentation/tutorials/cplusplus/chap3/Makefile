@@ -9,7 +9,7 @@ EXE=$(SOURCES:.cc=)
 
 include $(OR_TOOLS_TOP)/Makefile
 
-.PHONY: all local_clean
+.PHONY: all tutorials local_clean
 
 tutorials: $(EXE)
 
