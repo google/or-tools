@@ -44,8 +44,8 @@ public class CsFlow
                         ", expected = " + expectedTotalFlow);
       for (int i = 0; i < numArcs; ++i)
       {
-        Console.WriteLine("Arc " + i + " (" + maxFlow.Head(i) + " -> " +
-                          maxFlow.Tail(i) + "), capacity = " +
+        Console.WriteLine("Arc " + i + " (" + maxFlow.Tail(i) + " -> " +
+                          maxFlow.Head(i) + "), capacity = " +
                           maxFlow.Capacity(i) + ") computed = " +
                           maxFlow.Flow(i) + ", expected = " + expectedFlows[i]);
       }
