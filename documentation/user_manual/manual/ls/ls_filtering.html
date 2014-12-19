@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="6.9. Summary" href="ls_summary.html" />
-    <link rel="prev" title="6.7. The jobshop problem: and now with local search!" href="jobshop_ls.html" /> 
+    <link rel="prev" title="6.7. The Job-Shop Problem: and now with Local Search!" href="jobshop_ls.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,10 +42,10 @@
           <a href="ls_summary.html" title="6.9. Summary"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
+          <a href="jobshop_ls.html" title="6.7. The Job-Shop Problem: and now with Local Search!"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -77,14 +77,6 @@ declaration and definition in the header <tt class="file docutils literal"><span
 <span class="k">virtual</span> <span class="kt">void</span> <span class="n">Synchronize</span><span class="p">(</span><span class="k">const</span> <span class="n">Assignment</span><span class="o">*</span> <span class="n">assignment</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="local-search-filter-intvar-onsyncronize" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>For <tt class="docutils literal"><span class="pre">IntVar</span></tt>, the specialized <tt class="docutils literal"><span class="pre">IntVarLocalSearchFilter</span></tt>
-offers convenient methods and you should rather implement the <tt class="docutils literal"><span class="pre">OnSynchronize()</span></tt> method that is called
-at the end of the <tt class="docutils literal"><span class="pre">Synchronize()</span></tt> method.</td></tr>
-</tbody>
-</table>
 <p>As you can see, these two methods are pure virtual methods and thus <strong>must</strong> be implemented.
 The <tt class="docutils literal"><span class="pre">Accept()</span></tt> method returns <tt class="docutils literal"><span class="pre">true</span></tt> if you accept the current candidate solution to be tested by the
 CP solver and <tt class="docutils literal"><span class="pre">false</span></tt> if you know you can skip this candidate solution. The candidate solution is given
@@ -105,7 +97,7 @@ the file <tt class="file docutils literal"><span class="pre">dummy_ls_filtering.
 <p>Because we use an <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, we know that each time a feasible solution is found, the
 CP solver gladly adds a new constraint to prevent other solutions with the same objective value from being feasible.
 Thus, candidate solutions with the same or higher objective value will be rejected by the CP solver. Let&#8217;s help
-the poor solver and tell him right away to discard such candidate solutions.</p>
+the busy solver and tell him right away to discard such candidate solutions.</p>
 <p>We are using <tt class="docutils literal"><span class="pre">IntVar</span></tt>s and thus we&#8217;ll inherit from <tt class="docutils literal"><span class="pre">IntVarLocalSearchFilter</span></tt>
 and instead of implementing the <tt class="docutils literal"><span class="pre">Synchronize()</span></tt> method, we&#8217;ll implement the specialized <tt class="docutils literal"><span class="pre">OnSynchronize()</span></tt>
 method.</p>
@@ -222,24 +214,16 @@ accepted <span class="nv">neighbors</span> <span class="o">=</span> 9, ...
 </pre></div>
 </div>
 <p>Of course, we could have improved our <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> so that it doesn&#8217;t produce such infeasible solutions!</p>
-<table class="docutils footnote" frame="void" id="infeasibleneighborfilter-really-general" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>To be fair, this solution is not as general as it should be. We didn&#8217;t
-take into account the fact that some <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables can be non active but for <tt class="docutils literal"><span class="pre">IntVar</span></tt>s and
-<tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s it works well.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="interesting-localsearchfilters">
 <h2>6.8.3. Interesting <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s</h2>
-<p>Two <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s have already been implemented in <em>or-tools</em>. There exist a general version of the
-two <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s: <tt class="docutils literal"><span class="pre">ObjectiveFilter</span></tt> (and some sub-classes)
+<p>There exist some general <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s in <strong>or-tools</strong>: <tt class="docutils literal"><span class="pre">ObjectiveFilter</span></tt> (and some sub-classes)
 and <tt class="docutils literal"><span class="pre">VariableDomainFilter</span></tt>.</p>
 <p>It is easy to add a <tt class="docutils literal"><span class="pre">VariableDomainFilter</span></tt>, simply use</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">LocalSearchFilter</span><span class="o">*</span> <span class="n">Solver</span><span class="o">::</span><span class="n">MakeVariableDomainFilter</span><span class="p">();</span>
 </pre></div>
 </div>
+<p>As its name implies, it rejects assignments to values outside the domain of the variables.</p>
 <p>The <tt class="docutils literal"><span class="pre">ObjectiveFilter</span></tt> is more interesting and exists in different flavors depending on:</p>
 <ul>
 <li><p class="first">the type of move that is accepted based on the current objective value:</p>
@@ -266,6 +250,22 @@ for more details about different available callbacks.</p>
 </ul>
 <p>For all these versions, the factory method is <tt class="docutils literal"><span class="pre">MakeLocalSearchObjectiveFilter()</span></tt>. Again, we refer the reader to the
 code to see all available refinements.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="local-search-filter-intvar-onsyncronize" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>For <tt class="docutils literal"><span class="pre">IntVar</span></tt>, the specialized <tt class="docutils literal"><span class="pre">IntVarLocalSearchFilter</span></tt>
+offers convenient methods and you should rather implement the <tt class="docutils literal"><span class="pre">OnSynchronize()</span></tt> method that is called
+at the end of the <tt class="docutils literal"><span class="pre">Synchronize()</span></tt> method.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="infeasibleneighborfilter-really-general" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>To be fair, this solution is not as general as it should be. We didn&#8217;t
+take into account the fact that some <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables can be non active but for <tt class="docutils literal"><span class="pre">IntVar</span></tt>s and
+<tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s it works well.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -342,10 +342,10 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="jobshop_ls.html"
-                        title="previous chapter">6.7. The jobshop problem: and now with local search!</a></p>
+                        title="previous chapter">6.7. The Job-Shop Problem: and now with Local Search!</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="ls_summary.html"
                         title="next chapter">6.9. Summary</a></p>
@@ -373,10 +373,10 @@ Search:
           <a href="ls_summary.html" title="6.9. Summary"
              >next</a> |</li>
         <li class="right" >
-          <a href="jobshop_ls.html" title="6.7. The jobshop problem: and now with local search!"
+          <a href="jobshop_ls.html" title="6.7. The Job-Shop Problem: and now with Local Search!"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

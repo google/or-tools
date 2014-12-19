@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="6.6. Local Search Operators" href="ls_operators.html" />
-    <link rel="prev" title="6.4. What is local search (LS)?" href="local_search.html" /> 
+    <link rel="prev" title="6.4. What is Local Search (LS)?" href="local_search.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,10 +42,10 @@
           <a href="ls_operators.html" title="6.6. Local Search Operators"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="local_search.html" title="6.4. What is local search (LS)?"
+          <a href="local_search.html" title="6.4. What is Local Search (LS)?"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,15 +56,15 @@
             
   <div class="section" id="basic-working-of-the-solver-local-search">
 <span id="basic-working-local-search"></span><h1>6.5. Basic working of the solver: Local Search</h1>
-<p>In this section, we present the implementation of Local Search in <em>or-tools</em>. First, we sketch the main basic idea
+<p>In this section, we present the implementation of Local Search in <strong>or-tools</strong>. First, we sketch the main basic idea
 and then we list the main actors (aka classes) that participate in the Local Search. It&#8217;s good to keep them in memory
 for the rest of this section. We then overview the implementation
 and describe some of its main components. Finally, we detail the inner workings of the Local Search algorithm and
 indicate where the callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s are called.</p>
-<p>We present a simplified version of the local search algorithm. Yes, this is well worth a warning box!</p>
+<p>We present a simplified version of the Local Search algorithm. Yes, this is well worth a warning box!</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">We describe a simplified version of the local search algorithm.</p>
+<p class="last">We describe a simplified version of the Local Search algorithm.</p>
 </div>
 <div class="section" id="the-basic-idea">
 <h2>6.5.1. The basic idea</h2>
@@ -86,7 +86,7 @@ from a given solution.</p>
 tree very quickly becomes completely unbalanced if we only keep finding solutions in the left branches. We&#8217;ll see a balancing
 mechanism that involves one <tt class="docutils literal"><span class="pre">BalancingDecision</span></tt> at the end of this section.</p>
 <p>Speaking about <em>candidate</em> solutions, let&#8217;s agree on some wordings. The next figure presents the beginning of a Local Search.
-<img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> is the initial solution. In <em>or-tools</em>, this solution is given by an <tt class="docutils literal"><span class="pre">Assignment</span></tt> or a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that
+<img class="math" src="../../_images/math/17f1249ad95b7682b8316ad21de8ce4ee9fdcf93.png" alt="x_0" style="vertical-align: -3px"/> is the initial solution. In <strong>or-tools</strong>, this solution is given by an <tt class="docutils literal"><span class="pre">Assignment</span></tt> or a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that
 the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> class uses to construct this initial solution. <img class="math" src="../../_images/math/c3ea81f00b5d17fe09a364fafffd82aec51d2c4a.png" alt="x_0, x_1, x_2, \ldots" style="vertical-align: -4px"/> are <em>solutions</em>. As we have seen,
 the Local Search algorithm moves from one solution to another. It takes a starting solution <img class="math" src="../../_images/math/67bc6daa9d6b964201d6cef60cbeb1ac5fd26ead.png" alt="x_i" style="vertical-align: -3px"/> and visit the
 neighborhood defined around <img class="math" src="../../_images/math/67bc6daa9d6b964201d6cef60cbeb1ac5fd26ead.png" alt="x_i" style="vertical-align: -3px"/> to find the next solution <img class="math" src="../../_images/math/b5c170dc53fce7452e6f7df461222672d913e34e.png" alt="x_{i+1}" style="vertical-align: -4px"/>. By <em>visiting</em> the neighborhood, we mean
@@ -106,10 +106,10 @@ that this <em>neighbor</em> solution is in fact a feasible solution that the CP 
 </div>
 <div class="section" id="the-main-actors">
 <h3>6.5.1.1. The main actors</h3>
-<p>The main classes involved in the local search algorithm are:</p>
+<p>The main classes involved in the Local Search algorithm are:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">LocalSearch</span></tt>: This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> controls the local search algorithm.</li>
-<li><tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt>: This class gathers the components to define the current local search.</li>
+<li><tt class="docutils literal"><span class="pre">LocalSearch</span></tt>: This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> controls the Local Search algorithm.</li>
+<li><tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt>: This class gathers the components to define the current Local Search.</li>
 <li><tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: This class is responsible of constructing the candidate solutions.</li>
 <li><tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt>: This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> filters the candidate solutions given by the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>
 and only constructs <em>filtered</em> and <em>accepted</em> (solutions accepted by the CP solver as feasible solutions) solutions.</li>
@@ -124,49 +124,23 @@ by <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> to
 </div>
 <div class="section" id="overview-of-the-local-search-mechanism-in-or-tools">
 <span id="local-search-mechanism"></span><h2>6.5.2. Overview of the Local Search Mechanism in <em>or-tools</em></h2>
-<p>The next figure illustrates the basic mechanism of local search in <em>or-tools</em>:</p>
+<p>The next figure illustrates the basic mechanism of Local Search in <strong>or-tools</strong>:</p>
 <img alt="../../_images/lsn_mechanism.png" class="align-center" src="../../_images/lsn_mechanism.png" style="width: 500pt;" />
 <p>We start with an initial feasible solution. The <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> callback method
-from the local search operator(s)<a class="footnote-reference" href="#local-search-operator-singular" id="id1">[1]</a>
+from the Local Search operator(s)<a class="footnote-reference" href="#local-search-operator-singular" id="id1">[1]</a>
 constructs candidate solutions one by one<a class="footnote-reference" href="#makeoneneighbor-convenience-fct" id="id2">[2]</a>. These solutions are checked by the CP solver and completed if needed.
 The &#8220;best&#8221; solution
 is chosen and the process is repeated starting with this new improved
 solution<a class="footnote-reference" href="#local-search-default-best-solution-update" id="id3">[3]</a>.</p>
-<table class="docutils footnote" frame="void" id="local-search-operator-singular" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>In the code, you are only allowed to use <strong>one</strong> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> but
-you can combine several <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s in one <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>. This is a common pattern in the code.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="makeoneneighbor-convenience-fct" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> is a convenient method. The real method to create a new
-candidate is <tt class="docutils literal"><span class="pre">MakeNextNeighbor(Assignment*</span> <span class="pre">delta,</span> <span class="pre">Assignment*</span> <span class="pre">deltadelta)</span></tt> but you have to deal with the low
-level <tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt>. We discuss these details in the
-section <a class="reference internal" href="jobshop_ls.html#local-search-operators-the-real-thing"><em>LocalSearchOperators: the real thing!</em></a>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="local-search-default-best-solution-update" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>By default, the solver accepts the
-first feasible solution and repeats the search starting with
-this new solution. The idea is that if you combine the local search with an <tt class="docutils literal"><span class="pre">ObjectiveVar</span></tt>,
-the next feasible solution will be a solution that beats the current best solution.
-You can change this behaviour with a <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>. See below.</td></tr>
-</tbody>
-</table>
 <p>The whole search process stops
 whenever a stopping criterion is reached or the CP solver cannot improve anymore the current best solution.</p>
-<p>Let&#8217;s describe some pieces of the <em>or-tools</em> mechanism for local search:</p>
+<p>Let&#8217;s describe some pieces of the <strong>or-tools</strong> mechanism for Local Search:</p>
 <blockquote>
 <div><ul class="simple">
 <li><strong>initial solution</strong>: we need a <strong>feasible</strong> solution to start with. You can either pass an <tt class="docutils literal"><span class="pre">Assignment</span></tt> or
 a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt>&#8216;s constructor.</li>
 <li><strong>LocalSearchPhaseParameters</strong>: the <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter holds the actual definition
-of the local search phase:<ul>
+of the Local Search phase:<ul>
 <li>a <strong>SolutionPool</strong> that keep solution(s);</li>
 <li>a <strong>LocalSearchOperator</strong> used to explore the neighborhood of the current solution. You can combine
 several <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s into one <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>;</li>
@@ -176,7 +150,7 @@ by the initial <tt class="docutils literal"><span class="pre">DecisionBuilder</s
 <li>a <strong>Searchlimit</strong> specifying the stopping criteria each time we start searching a new neighborhood;</li>
 <li>an <tt class="docutils literal"><span class="pre">std::vector</span></tt> of <strong>LocalSearchFilter</strong>s used to speed up the search by pruning
 unfeasible (or undesirable) candidate solutions: instead of letting the solver find out if a candidate solution is feasible or not, you
-can help it by bypassing its checking mechanism and telling it right away if a candidate solution is not feasible.</li>
+can help it by bypassing its checking mechanism and telling it right away if a candidate solution is not feasible (or not desirable).</li>
 </ul>
 </li>
 </ul>
@@ -185,8 +159,18 @@ can help it by bypassing its checking mechanism and telling it right away if a c
 the section <a class="reference internal" href="ls_filtering.html#local-search-filtering"><em>Filtering</em></a>.</p>
 <p>We now detail these two basics ingredients that are the initial solution and the <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter.</p>
 <div class="section" id="the-initial-solution">
-<h3>6.5.2.1. The initial solution</h3>
-<p>To start the local search, we need an initial <em>feasible</em> solution. We can either give a starting
+<span id="ls-initial-solution"></span><h3>6.5.2.1. The initial solution</h3>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap6/dummy_ls.cc">dummy_ls.cc</a></li>
+    </ol>
+  </li>
+
+
+</ol></div>
+<p>To start the Local Search, we need an initial <em>feasible</em> solution. We can either give a starting
 solution or we can ask the CP solver to find one for us. To let the solver find a solution for us,
 we pass to it a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. The <strong>first</strong> solution discovered by this <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> will be taken
 as the initial solution.</p>
@@ -203,15 +187,15 @@ as the initial solution.</p>
 <p>In the file <tt class="file docutils literal"><span class="pre">dummy_ls.cc</span></tt>, we use a <strong class="program">gflags</strong> flag <tt class="docutils literal"><span class="pre">FLAG_initial_phase</span></tt>
 to switch between these two possibilities.</p>
 <div class="topic">
-<p class="topic-title first">What are the variables involved in the local search procedure?</p>
-<p>The local search <strong>only</strong> applies to the variables contained either in the <tt class="docutils literal"><span class="pre">Assignment</span></tt>
+<p class="topic-title first">What are the variables involved in the Local Search procedure?</p>
+<p>The Local Search <strong>only</strong> applies to the variables contained either in the <tt class="docutils literal"><span class="pre">Assignment</span></tt>
 or the <tt class="docutils literal"><span class="pre">std::vector&lt;IntVar*&gt;</span></tt> of variables given to <tt class="docutils literal"><span class="pre">MakeLocalSearchPhase()</span></tt>.</p>
 </div>
 </div>
 <div class="section" id="the-localsearchphaseparameters-parameter">
 <span id="local-search-parameters"></span><h3>6.5.2.2. The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter</h3>
 <p>The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter holds the actual definition
-of the local search phase.</p>
+of the Local Search phase.</p>
 <p>It basically consists in:</p>
 <ul>
 <li><p class="first">a <tt class="docutils literal"><span class="pre">SolutionPool</span></tt>: as its name implies, this class is a pool of solutions. As usual, <tt class="docutils literal"><span class="pre">SolutionPool</span></tt> is a pure virtual
@@ -224,8 +208,8 @@ be implemented:</p>
 <li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">Initialize(Assignment*</span> <span class="pre">const</span> <span class="pre">assignment)</span></tt>: This method is called to initialize the
 <tt class="docutils literal"><span class="pre">SolutionPool</span></tt> with the initial <tt class="docutils literal"><span class="pre">Assignment</span></tt>.</li>
 <li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">RegisterNewSolution(Assignment*</span> <span class="pre">const</span> <span class="pre">assignment)</span></tt>: This method is called when a new
-solution has been accepted by the local search algorithm.</li>
-<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">GetNextSolution(Assignment*</span> <span class="pre">const</span> <span class="pre">assignment)</span></tt>: This method is called when the local search algorithm
+solution has been accepted by the Local Search algorithm.</li>
+<li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">GetNextSolution(Assignment*</span> <span class="pre">const</span> <span class="pre">assignment)</span></tt>: This method is called when the Local Search algorithm
 starts a new neighborhood. <tt class="docutils literal"><span class="pre">assigment</span></tt> is the solution to start the new neighborhood search.</li>
 <li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">SyncNeeded(Assignment*</span> <span class="pre">const</span> <span class="pre">local_assignment)</span></tt>: This method checks if the current solution needs to
 be updated, i.e. the pool can oblige the solver to start a new neighborhood search with the next
@@ -234,14 +218,6 @@ the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <
 </ul>
 <p>A <tt class="docutils literal"><span class="pre">SolutionPool</span></tt> gives you complete control on the starting solution(s). Note that the <tt class="docutils literal"><span class="pre">SolutionPool</span></tt>
 <strong>must</strong> take ownership of the <tt class="docutils literal"><span class="pre">Assignment</span></tt>s it keeps<a class="footnote-reference" href="#solution-pool-takes-ownership-of-solutions-or-else" id="id4">[4]</a>.</p>
-<table class="docutils footnote" frame="void" id="solution-pool-takes-ownership-of-solutions-or-else" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td><p class="first last">Well, you could devise another way to keep track of the solutions
-and take care of their existence but anyhow, you are responsible for these solutions.</p>
-</td></tr>
-</tbody>
-</table>
 </li>
 <li><p class="first">a <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>: a <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> or a combination of <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s explore the
 neighborhood of the current solution. We detail them in the next section.</p>
@@ -295,7 +271,7 @@ At least you need to declare a <tt class="docutils literal"><span class="pre">Lo
 <p>The <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> will find candidate solutions while the <tt class="docutils literal"><span class="pre">complementary_decision_builder</span></tt>
 <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> will complete
 the candidate solutions if some of the variables are not assigned.</p>
-<p>A handy way to create a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to assist the local search operator(s) is to limit one
+<p>A handy way to create a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to assist the Local Search operator(s) is to limit one
 with <tt class="docutils literal"><span class="pre">MakeSolveOnce()</span></tt>. <tt class="docutils literal"><span class="pre">MakeSolveOnce</span></tt> is a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that takes another <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt>
 and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="p">...</span>
@@ -314,8 +290,8 @@ solutions, you don&#8217;t have to provide a <tt class="docutils literal"><span 
 for the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> pointer.</p>
 </div>
 </div>
-<div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">
-<span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <img class="math" src="../../_images/math/3c25d09394c6358cf833abe028213dac4633bdc5.png" alt="\scriptscriptstyle\bigstar" style="vertical-align: -2px"/> <img class="math" src="../../_images/math/3c25d09394c6358cf833abe028213dac4633bdc5.png" alt="\scriptscriptstyle\bigstar" style="vertical-align: -2px"/></h2>
+<div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">
+<span id="basic-local-search-algorithm-and-the-callback-hooks"></span><h2>6.5.3. The basic Local Search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
 <p>We feel compelled to use our warning box again:</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -344,14 +320,14 @@ exactly when they are called in the Local Search algorithm:</p>
 <td>When the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> has produced the next candidate solution given in the form of <tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt>. You can accept or reject this new candidate solution.</td>
 </tr>
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">AcceptNeighbor()</span></tt></td>
-<td>After accepting a candidate solution during local search.</td>
+<td>After accepting a candidate solution during Local Search.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">PeriodicCheck()</span></tt></td>
 <td>Periodic call to check limits in long running procedures, like Local Search.</td>
 </tr>
 </tbody>
 </table>
-<br><p>To ensure the communication between the local search and the global search, three utility functions are defined.
+<br><p>To ensure the communication between the Local Search and the Global Search, three utility functions are defined.
 These functions simply call their <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>&#8216;s counterparts, i.e. they call the corresponding methods of the
 involved <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
 <ul class="simple">
@@ -359,11 +335,11 @@ involved <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt
 <li><tt class="docutils literal"><span class="pre">bool</span> <span class="pre">AcceptDelta()</span></tt>: <tt class="docutils literal"><span class="pre">TrueExceptIfOneFalse</span></tt>.</li>
 <li><tt class="docutils literal"><span class="pre">void</span> <span class="pre">AcceptNeighbor()</span></tt>: Notification.</li>
 </ul>
-<p>Before we delve into the core of the local search algorithm and the implementation of the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>&#8216;s
+<p>Before we delve into the core of the Local Search algorithm and the implementation of the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>&#8216;s
 <tt class="docutils literal"><span class="pre">Next()</span></tt> method, we first discuss the inner workings of the <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> whose job is to find
 the next filtered and accepted candidate solution. This <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is used inside a <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> that we study next.
 This <tt class="docutils literal"><span class="pre">Decision</span></tt> is returned by the <tt class="docutils literal"><span class="pre">Next()</span></tt> method of
-the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> in the main loop of the local search algorithm. Finally, we address the
+the <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> in the main loop of the Local Search algorithm. Finally, we address the
 <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class. In particular, we study its initializing phase and its <tt class="docutils literal"><span class="pre">Next()</span></tt> method.
 We consider the case where an initial <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> constructs the initial solution.</p>
 <p>SearchMonitor‘s callbacks are indicated in the code by the comment:</p>
@@ -587,7 +563,7 @@ line 66.</p>
 </div>
 <p>If the <tt class="docutils literal"><span class="pre">if</span></tt> test on line 36 and 37 fails, we enter the <tt class="docutils literal"><span class="pre">else</span></tt> part of the statement on line 55. This means that
 either one <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> was reached or that the neighborhood is exhausted. If a solution (stored in <tt class="docutils literal"><span class="pre">assignment_</span></tt>)
-was found during the local search, we register it and synchronize the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s and <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s
+was found during the Local Search, we register it and synchronize the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s and <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s
 with a new solution provided by the solution pool <tt class="docutils literal"><span class="pre">pool_</span></tt> on lines 58-60. We also notify the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s
 on line 57. If no solution was found, we simply <tt class="docutils literal"><span class="pre">break</span></tt> out of the
 <tt class="docutils literal"><span class="pre">while()</span></tt> loop on line 62 and make the CP solver fail on line 66.</p>
@@ -617,7 +593,7 @@ in its left branch (in its <tt class="docutils literal"><span class="pre">Apply(
 failed.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">DECISION_PENDING</span></tt></td>
-<td>The nested search hasn&#8217;t been called yet. The local search is in this
+<td>The nested search hasn&#8217;t been called yet. The Local Search is in this
 state when it balances the search tree.</td>
 </tr>
 <tr class="row-even"><td><tt class="docutils literal"><span class="pre">DECISION_FOUND</span></tt></td>
@@ -628,7 +604,7 @@ or <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> s
 </table>
 <p>The three states are defined in the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">StateType</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>.</p>
 <p>We are now ready to assemble all the pieces of the puzzle together to understand the (simplified)
-local search algorithm in <em>or-tools</em>.</p>
+Local Search algorithm in <em>or-tools</em>.</p>
 </div>
 <div class="section" id="the-localsearch-decisionbuilder">
 <h3>6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
@@ -652,7 +628,7 @@ construct the initial solution:</p>
 the candidate solutions found by the <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> <tt class="docutils literal"><span class="pre">ls_operator</span></tt>. Our initial solution will be constructed
 by the <tt class="docutils literal"><span class="pre">initial_solution</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> (and completed by the <tt class="docutils literal"><span class="pre">complementary_decision_builder</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>
 if needed). Remember, that the solution chosen by the CP solver is the <strong>first</strong>
-solution found by this <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. We are now ready to create the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> for the local search:</p>
+solution found by this <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>. We are now ready to create the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> for the Local Search:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">initial_solution</span> <span class="o">=</span> <span class="p">...</span>
 <span class="p">...</span>
 <span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ls</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeLocalSearchPhase</span><span class="p">(</span><span class="n">vars</span><span class="p">,</span>
@@ -696,7 +672,7 @@ is used in a nested search:</p>
 <p>where:</p>
 <blockquote>
 <div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">limit</span></tt> is the <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> given to the local search algorithm;</li>
+<li><tt class="docutils literal"><span class="pre">limit</span></tt> is the <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> given to the Local Search algorithm;</li>
 <li>the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> constructor&#8217;s arguments are respectively:<ul>
 <li>a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to construct the next solution;</li>
 <li>a <tt class="docutils literal"><span class="pre">bool</span></tt> to indicate if we restore the last solution in case we cannot
@@ -855,6 +831,39 @@ at the current node and nothing needs to be done.</li>
 <p>This topic is so important that the whole section <a class="reference internal" href="../modeling_tricks/solving_options.html#solving-options"><em>What are my solving options?</em></a> is devoted to it.
 You already can jump and read this section if you&#8217;re curious.</p>
 </div>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="local-search-operator-singular" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>In the code, you are only allowed to use <strong>one</strong> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> but
+you can combine several <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s in one <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>. This is a common pattern in the code.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="makeoneneighbor-convenience-fct" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> is a convenient method. The real method to create a new
+candidate is <tt class="docutils literal"><span class="pre">MakeNextNeighbor(Assignment*</span> <span class="pre">delta,</span> <span class="pre">Assignment*</span> <span class="pre">deltadelta)</span></tt> but you have to deal with the low
+level <tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt>. We discuss these details in the
+section <a class="reference internal" href="jobshop_ls.html#local-search-operators-the-real-thing"><em>LocalSearchOperators: the real thing!</em></a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="local-search-default-best-solution-update" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>By default, the solver accepts the
+first feasible solution and repeats the search starting with
+this new solution. The idea is that if you combine the Local Search with an <tt class="docutils literal"><span class="pre">ObjectiveVar</span></tt>,
+the next feasible solution will be a solution that beats the current best solution.
+You can change this behaviour with a <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>. Read on.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="solution-pool-takes-ownership-of-solutions-or-else" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>Well, you could devise another way to keep track of the solutions
+and take care of their existence but anyhow, you are responsible for these solutions.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -932,10 +941,10 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="local_search.html"
-                        title="previous chapter">6.4. What is local search (LS)?</a></p>
+                        title="previous chapter">6.4. What is Local Search (LS)?</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="ls_operators.html"
                         title="next chapter">6.6. Local Search Operators</a></p>
@@ -951,7 +960,7 @@ Search:
 <li><a class="reference internal" href="#the-localsearchphaseparameters-parameter">6.5.2.2. The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors-difficulty-difficulty">6.5.3. The basic local search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s <img class="math" src="../../_images/math/3c25d09394c6358cf833abe028213dac4633bdc5.png" alt="\scriptscriptstyle\bigstar" style="vertical-align: -2px"/> <img class="math" src="../../_images/math/3c25d09394c6358cf833abe028213dac4633bdc5.png" alt="\scriptscriptstyle\bigstar" style="vertical-align: -2px"/></a><ul>
+<li><a class="reference internal" href="#the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">6.5.3. The basic Local Search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
 <li><a class="reference internal" href="#the-findoneneighbor-decisionbuilder">6.5.3.1. The <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></a></li>
 <li><a class="reference internal" href="#the-nestedsolvedecision-decision">6.5.3.2. The <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt></a></li>
 <li><a class="reference internal" href="#the-localsearch-decisionbuilder">6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></a></li>
@@ -975,10 +984,10 @@ Search:
           <a href="ls_operators.html" title="6.6. Local Search Operators"
              >next</a> |</li>
         <li class="right" >
-          <a href="local_search.html" title="6.4. What is local search (LS)?"
+          <a href="local_search.html" title="6.4. What is Local Search (LS)?"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

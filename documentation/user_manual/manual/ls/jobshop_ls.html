@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.7. The jobshop problem: and now with local search! &mdash; or-tools User&#39;s Manual</title>
+    <title>6.7. The Job-Shop Problem: and now with Local Search! &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="6.8. Filtering" href="ls_filtering.html" />
     <link rel="prev" title="6.6. Local Search Operators" href="ls_operators.html" /> 
   </head>
@@ -45,7 +45,7 @@
           <a href="ls_operators.html" title="6.6. Local Search Operators"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="the-jobshop-problem-and-now-with-local-search">
-<span id="jobshop-ls"></span><h1>6.7. The jobshop problem: and now with local search!</h1>
+  <div class="section" id="the-job-shop-problem-and-now-with-local-search">
+<span id="jobshop-ls"></span><h1>6.7. The Job-Shop Problem: and now with Local Search!</h1>
 <div class="files-sidebar container">
 <ol>
   <li>C++ code:
@@ -74,16 +74,16 @@
   </li>
 
 </ol></div>
-<p>We have seen in the previous section how to implement local search on our dummy example. This time, we apply
-local search on a real problem and present the real thing: the <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> method, the
-<tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>s and how to implement <em>incremental</em> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s.</p>
-<p>To solve the job-shop problem, we&#8217;ll define two basic <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. First, we&#8217;ll apply them separately
-and then we&#8217;ll combine them to get better results. In doing so, we will discover that local search
+<p>We have seen in the previous section how to implement Local Search on our dummy example. This time, we apply
+Local Search on a real problem and present the real thing: the <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> method, the
+<tt class="docutils literal"><span class="pre">delta</span></tt> and <tt class="docutils literal"><span class="pre">deltadelta</span></tt> <tt class="docutils literal"><span class="pre">Assignment</span></tt>s<a class="footnote-reference" href="#not-how-to-implement-an-incremental-local-search-operator" id="id1">[1]</a>.</p>
+<p>To solve the Job-Shop Problem, we&#8217;ll define two basic <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. First, we&#8217;ll apply them separately
+and then we&#8217;ll combine them to get better results. In doing so, we will discover that Local Search
 is very sensitive to the initial solution used to start it and that the search is path-dependent.</p>
 <div class="section" id="localsearchoperators-the-real-thing">
 <span id="local-search-operators-the-real-thing"></span><h2>6.7.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: the real thing!</h2>
-<p>Until now, we only have redefined the <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> method of a <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> but as we have seen
-in the sub-section <a class="reference internal" href="basic_working_local_search.html#basic-local-search-algorithm-and-the-callback-hooks"><em>The basic local search algorithm and the callback hooks for the SearchMonitors  </em></a> , the <em>real</em> method
+<p>Until now, we only have redefined the <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt><a class="footnote-reference" href="#the-real-thing-make-neighbor-remark-again" id="id2">[2]</a> method of a <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> but as we have seen
+in the sub-section <a class="reference internal" href="basic_working_local_search.html#basic-local-search-algorithm-and-the-callback-hooks"><em>The basic Local Search algorithm and the callback hooks for the SearchMonitors</em></a> , the <em>real</em> method
 called by the <tt class="docutils literal"><span class="pre">MakeOneNeighbor</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt>.</p>
 <p>Before we dissect <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt>, we quickly explain again what the <tt class="docutils literal"><span class="pre">delta</span></tt>s are.</p>
 <div class="section" id="deltas-and-deltadeltas">
@@ -134,7 +134,7 @@ by calling the <tt class="docutils literal"><span class="pre">ApplyChanges()</sp
   <span class="n">CHECK_NOTNULL</span><span class="p">(</span><span class="n">delta</span><span class="p">);</span>
   <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">RevertChanges</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">NEIGHBORHOOD</span> <span class="n">EXHAUSTED</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">NEIGHBORHOOD</span> <span class="n">EXHAUSTED</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// CONDITION TO BE DEFINED</span>
       <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
 
@@ -176,10 +176,6 @@ then you might have to revert the changes, hence the <tt class="docutils literal
 other methods than the ones that are provided to construct your candidate solution.
 In this case, you have no other choice than to reimplement the <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> method.</p>
 </div>
-</div>
-<div class="section" id="incrementality">
-<h3>6.7.1.3. Incrementality</h3>
-<p>[TO BE WRITTEN]</p>
 </div>
 </div>
 <div class="section" id="the-initial-solution">
@@ -299,12 +295,11 @@ and <tt class="docutils literal"><span class="pre">current_second_</span></tt> a
 </div>
 <p>If <tt class="docutils literal"><span class="pre">Increment()</span></tt> returns <tt class="docutils literal"><span class="pre">false</span></tt>, we have exhausted the neighborhood and <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt> must return
 <tt class="docutils literal"><span class="pre">false</span></tt>. <tt class="docutils literal"><span class="pre">Sequence()</span></tt> and <tt class="docutils literal"><span class="pre">SetForwardSequence()</span></tt> are two helper methods from the <tt class="docutils literal"><span class="pre">SequenceVarLocalSearchOperator</span></tt>
-class that allow us to use the <tt class="docutils literal"><span class="pre">ApplyChanges()``&nbsp;method</span> <span class="pre">to</span> <span class="pre">construct</span> <span class="pre">the</span> <span class="pre">``delta</span></tt>s.</p>
+class that allow us to use the <tt class="docutils literal"><span class="pre">ApplyChanges()</span></tt> method to construct the <tt class="docutils literal"><span class="pre">delta</span></tt>s.</p>
 <p>And that&#8217;s it! Our <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> operator is completed. Let&#8217;s test it!</p>
 <p>First, we need our <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">LocalSearchOperator</span><span class="o">*</span> <span class="k">const</span> <span class="n">swap_operator</span> <span class="o">=</span>
-<span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SwapIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
-                                  <span class="n">all_sequences</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
+<span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SwapIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">));</span>
 </pre></div>
 </div>
 <p>Then we need a complementary <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to construct <em>feasible</em> candidate solutions. We don&#8217;t want to
@@ -397,23 +392,14 @@ An example will clarify this jargon:</p>
 <p>We have generated the permutations of <tt class="docutils literal"><span class="pre">0,1,2</span></tt> with <tt class="docutils literal"><span class="pre">std::next_permutation()</span></tt>.
 There are <tt class="docutils literal"><span class="pre">3!</span> <span class="pre">=</span> <span class="pre">6</span></tt> permutations (the first permutation is given to <tt class="docutils literal"><span class="pre">std::next_permutation()</span></tt>
 and is not generated by it) and you can see that the permutations are ordered by <em>value</em>, i.e.
-<tt class="docutils literal"><span class="pre">0</span> <span class="pre">1</span> <span class="pre">2</span></tt> is smaller than <tt class="docutils literal"><span class="pre">0</span> <span class="pre">2</span> <span class="pre">1</span></tt> that itself is smaller than <tt class="docutils literal"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">2</span></tt>, etc<a class="footnote-reference" href="#next-permutation-explanation" id="id1">[1]</a>.</p>
-<table class="docutils footnote" frame="void" id="next-permutation-explanation" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>This explanation is not rigorous but it is simple and you can fill the gaps. What
-happens if you start with <tt class="docutils literal"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">2</span></tt>? The <tt class="docutils literal"><span class="pre">std::next_permutation()</span></tt> function simply &#8220;returns&#8221; <tt class="docutils literal"><span class="pre">1</span> <span class="pre">2</span> <span class="pre">0</span></tt> (oops,
-there goes our rigour again!). If you give it <tt class="docutils literal"><span class="pre">2</span> <span class="pre">1</span> <span class="pre">0</span></tt>, this function returns <tt class="docutils literal"><span class="pre">false</span></tt> but there is a side effect as
-the array will be ordered! Thus in our case, we&#8217;ll get <tt class="docutils literal"><span class="pre">0</span> <span class="pre">1</span> <span class="pre">2</span></tt>!</td></tr>
-</tbody>
-</table>
+<tt class="docutils literal"><span class="pre">0</span> <span class="pre">1</span> <span class="pre">2</span></tt> is smaller than <tt class="docutils literal"><span class="pre">0</span> <span class="pre">2</span> <span class="pre">1</span></tt> that itself is smaller than <tt class="docutils literal"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">2</span></tt>, etc<a class="footnote-reference" href="#next-permutation-explanation" id="id3">[3]</a>.</p>
 <p>As usual with the <tt class="docutils literal"><span class="pre">std</span></tt>, the <tt class="docutils literal"><span class="pre">last</span></tt> element is not involved in the permutation. There is only one more detail
 we have to pay attention to. We ask the user to provide the length of the permutation with the <strong class="program">gflags</strong>
 flag <tt class="docutils literal"><span class="pre">FLAGS_shuffle_length</span></tt>. First, we have to test if this length makes sense but we also have to adapt it to
 each <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable.</p>
 <p>Without delay, we present the constructor of the <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">ShuffleIntervals</span><span class="p">(</span><span class="k">const</span> <span class="n">SequenceVar</span><span class="o">*</span> <span class="k">const</span><span class="o">*</span> <span class="n">vars</span><span class="p">,</span>
-                 <span class="kt">int</span> <span class="n">size</span><span class="p">,</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">ShuffleIntervals</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">operations_research</span><span class="o">::</span><span class="n">SequenceVar</span><span class="o">*&gt;&amp;</span> \
+                 <span class="n">vars</span><span class="p">,</span>
                  <span class="kt">int</span> <span class="n">max_length</span><span class="p">)</span> <span class="o">:</span>
   <span class="n">SequenceVarLocalSearchOperator</span><span class="p">(</span><span class="n">vars</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span>
   <span class="n">max_length_</span><span class="p">(</span><span class="n">max_length</span><span class="p">),</span>
@@ -422,7 +408,7 @@ each <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> vari
   <span class="n">current_length_</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{}</span>
 </pre></div>
 </div>
-<p><tt class="docutils literal"><span class="pre">vars</span></tt> and <tt class="docutils literal"><span class="pre">size</span></tt> are just the array of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s and its size. <tt class="docutils literal"><span class="pre">max_length</span></tt> is the length of the
+<p><tt class="docutils literal"><span class="pre">vars</span></tt> is the array of <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s. <tt class="docutils literal"><span class="pre">max_length</span></tt> is the length of the
 sequence of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s to shuffle. Because you can have less <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s for a given <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>,
 we have named it <tt class="docutils literal"><span class="pre">max_length</span></tt>.</p>
 <p>The indices are very similar to the ones of the <tt class="docutils literal"><span class="pre">SwapIntervals</span></tt> operator:</p>
@@ -557,7 +543,7 @@ for the <tt class="docutils literal"><span class="pre">suffle_length</span></tt>
 </tr>
 </tbody>
 </table>
-<p>These results are typical for a local search operator. There certainly are several lessons to be drawn from these results,
+<p>These results are typical for a Local Search operator. There certainly are several lessons to be drawn from these results,
 but let&#8217;s focus on one of the most basic and important ones. The path taken to find the
 local optimum is crucial.  Even if the neighborhoods (theoretically) constructed with <tt class="docutils literal"><span class="pre">suffle_length</span></tt> set
 to <tt class="docutils literal"><span class="pre">2</span></tt> are all contained in the neighborhoods constructed with <tt class="docutils literal"><span class="pre">suffle_length</span></tt> set to <tt class="docutils literal"><span class="pre">3</span></tt>, we don&#8217;t reach the
@@ -574,10 +560,10 @@ solution quicker with <tt class="docutils literal"><span class="pre">shuffle_len
 <p>You should know by now that whenever we ask this question in this manual, the answer is <em>yes</em>. To find a better solution, we&#8217;ll first
 investigate how important the initial solution is and then we&#8217;ll enlarge our definition of a neighborhood by combining
 our two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s.</p>
-<div class="section" id="id2">
+<div class="section" id="id4">
 <h3>6.7.5.1. The initial solution</h3>
 <p>Local search is strongly dependent on the initial solution. Investing time in finding a good solution is a good idea.
-We&#8217;ll use... local search to find an initial solution to get the real local search started!
+We&#8217;ll use... Local Search to find an initial solution to get the real Local Search started!
 The idea is that maybe we can
 find an even better
 solution in the vicinity of this initial solution. We don&#8217;t want to spend too much time to find it though and we&#8217;ll limit
@@ -627,11 +613,11 @@ ourselves to a custom-made <tt class="docutils literal"><span class="pre">Search
 if our limit has been reached and <tt class="docutils literal"><span class="pre">false</span></tt> otherwise. The time limit in ms is given by <tt class="docutils literal"><span class="pre">global_time_limit</span></tt>.
 <strong>If</strong> the <tt class="docutils literal"><span class="pre">Search</span></tt> is still producing a certain amount <tt class="docutils literal"><span class="pre">solution_nbr_tolerance</span></tt> of solutions, we
 let the search continue.</p>
-<p>To initialize our first local search that finds our initial
+<p>To initialize our first Local Search that finds our initial
 solution, we use the same code as in the file <tt class="file docutils literal"><span class="pre">jobshop_ls2.cc</span></tt> (we call this first solution <tt class="docutils literal"><span class="pre">first_solution</span></tt>).</p>
-<p>To find an initial solution, we use local search and start form the <tt class="docutils literal"><span class="pre">first_solution</span></tt> found.
-We only use a <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> operator with a shuffle length of <tt class="docutils literal"><span class="pre">2</span></tt>. This time, we limit this local
-search with our custom limit:</p>
+<p>To find an initial solution, we use Local Search and start form the <tt class="docutils literal"><span class="pre">first_solution</span></tt> found.
+We only use a <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> operator with a shuffle length of <tt class="docutils literal"><span class="pre">2</span></tt>. This time, we limit this Local
+Search with our custom limit:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SearchLimit</span> <span class="o">*</span> <span class="n">initial_search_limit</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeCustomLimit</span><span class="p">(</span>
               <span class="k">new</span> <span class="n">LSInitialSolLimit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">solver</span><span class="p">,</span>
                                     <span class="n">FLAGS_initial_time_limit_in_ms</span><span class="p">,</span>
@@ -640,8 +626,8 @@ search with our custom limit:</p>
 </div>
 <p><tt class="docutils literal"><span class="pre">FLAGS_initial_time_limit_in_ms</span></tt> and <tt class="docutils literal"><span class="pre">FLAGS_solutions_nbr_tolerance</span></tt> are the two <strong class="program">gflags</strong> flags
 we use in the constructor of the callback <tt class="docutils literal"><span class="pre">LSInitialSolLimit</span></tt> described above to limit the search.</p>
-<p>The initial solution is stored in an <tt class="docutils literal"><span class="pre">Assigment</span></tt> <tt class="docutils literal"><span class="pre">initial_solution</span></tt>.</p>
-<p>Now, we are ready to prepare the local search with our two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s combined.</p>
+<p>The initial solution is stored in an <tt class="docutils literal"><span class="pre">Assignment</span></tt> <tt class="docutils literal"><span class="pre">initial_solution</span></tt>.</p>
+<p>Now, we are ready to prepare the Local Search with our two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s combined.</p>
 </div>
 <div class="section" id="combining-the-two-localsearchoperators">
 <h3>6.7.5.2. Combining the two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</h3>
@@ -650,13 +636,11 @@ of a neighborhood is an art and is really difficult. One way to diversify a neig
 basic <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. Here, we combine <tt class="docutils literal"><span class="pre">SwapIntervals</span></tt> and <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">LocalSearchOperator</span><span class="o">*&gt;</span> <span class="n">operators</span><span class="p">;</span>
 <span class="n">LocalSearchOperator</span><span class="o">*</span> <span class="k">const</span> <span class="n">swap_operator</span> <span class="o">=</span>
-          <span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SwapIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
-                                            <span class="n">all_sequences</span><span class="p">.</span><span class="n">size</span><span class="p">()));</span>
+          <span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">SwapIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">));</span>
 <span class="n">operators</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">swap_operator</span><span class="p">);</span>
 
 <span class="n">LocalSearchOperator</span><span class="o">*</span> <span class="k">const</span> <span class="n">shuffle_operator</span> <span class="o">=</span>
-        <span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">ShuffleIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
-                                             <span class="n">all_sequences</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+        <span class="n">solver</span><span class="p">.</span><span class="n">RevAlloc</span><span class="p">(</span><span class="k">new</span> <span class="n">ShuffleIntervals</span><span class="p">(</span><span class="n">all_sequences</span><span class="p">,</span>
                                              <span class="n">FLAGS_shuffle_length</span><span class="p">));</span>
 <span class="n">operators</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">shuffle_operator</span><span class="p">);</span>
 
@@ -677,12 +661,12 @@ the optimal solution. No surprise here. What about the <tt class="file docutils 
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">time_limit_in_ms</span> <span class="pre">=</span> <span class="pre">0</span></tt>, thus no time limit;</li>
 <li><tt class="docutils literal"><span class="pre">shuffle_length</span> <span class="pre">=</span> <span class="pre">4</span></tt>;</li>
-<li><tt class="docutils literal"><span class="pre">initial_time_limit_in_ms</span> <span class="pre">=</span> <span class="pre">20000</span></tt>, thus a time of <tt class="docutils literal"><span class="pre">20</span></tt> seconds to find an initial solution with local search
+<li><tt class="docutils literal"><span class="pre">initial_time_limit_in_ms</span> <span class="pre">=</span> <span class="pre">20000</span></tt>, thus a time of <tt class="docutils literal"><span class="pre">20</span></tt> seconds to find an initial solution with Local Search
 and the <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> operator with a shuffle length of <tt class="docutils literal"><span class="pre">2</span></tt> and;</li>
 <li><tt class="docutils literal"><span class="pre">solutions_nbr_tolerance</span> <span class="pre">=</span> <span class="pre">1</span></tt>,</li>
 </ul>
 <p>we are not able to improve our best solution so far!</p>
-<p>As we said, local search is very sensitive to the initial solution chosen. In the next table, we start with different
+<p>As we said, Local Search is very sensitive to the initial solution chosen. In the next table, we start with different
 initial solutions:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -771,17 +755,39 @@ initial solutions:</p>
 <p>The first column lists the times allowed to find the initial solution with the <tt class="docutils literal"><span class="pre">ShuffleIntervals</span></tt> operator (with its
 shuffle length set to <tt class="docutils literal"><span class="pre">2</span></tt>) and the second column collects the objective values of this initial solution.
 The more time given to
-the first local search, the better the objective values. The next four columns are the same as before.</p>
+the first Local Search, the better the objective values. The next four columns are the same as before.</p>
 <p>You might think that starting from a better solution would give better results but it is no necessarily the case. Our best
 result, <tt class="docutils literal"><span class="pre">931</span></tt> is obtained when we start from solutions with an average objective value. When we start with better solutions,
 like the one with an objective value of <tt class="docutils literal"><span class="pre">1016</span></tt>, we completely miss the <tt class="docutils literal"><span class="pre">931</span></tt> solution!</p>
-<p>This <tt class="docutils literal"><span class="pre">931</span></tt> solution seems to be a local optimum for our local search and it seems we can not escape it. In the chapter
+<p>This <tt class="docutils literal"><span class="pre">931</span></tt> solution seems to be a local optimum for our Local Search and it seems we can not escape it. In the chapter
 <a class="reference internal" href="../metaheuristics.html#chapter-metaheuristics"><em>Meta-heuristics: several previous problems</em></a>, we&#8217;ll see how some meta-heuristics escape this local minimum. For now, we turn our attention
 to another preoccupation: if you read the <em>Candidates</em> column and compare it with the <em>Solutions</em> column, you can see
 that our algorithm produces lots of candidates and very few solutions. This is normal. Remember that every time
 a candidate (a neighbor) is produced, the CP solver takes the time to verify if this candidate is a feasible solution.
 This is costly. In the next section, we&#8217;ll see a mechanism to shortcut this verification and command the solver to
 disregard some candidates without the need for the solver to test them explicitly.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="not-how-to-implement-an-incremental-local-search-operator" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>But not how to implement <em>incremental</em> <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s. This is a very advanced feature.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="the-real-thing-make-neighbor-remark-again" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Remember our footnote about the <tt class="docutils literal"><span class="pre">PathOperator</span></tt> classes? They use a special customized <tt class="docutils literal"><span class="pre">MakeNeighbor()</span></tt> method instead of the
+<tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> method.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="next-permutation-explanation" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>This explanation is not rigorous but it is simple and you can fill the gaps. What
+happens if you start with <tt class="docutils literal"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">2</span></tt>? The <tt class="docutils literal"><span class="pre">std::next_permutation()</span></tt> function simply &#8220;returns&#8221; <tt class="docutils literal"><span class="pre">1</span> <span class="pre">2</span> <span class="pre">0</span></tt> (oops,
+there goes our rigour again!). If you give it <tt class="docutils literal"><span class="pre">2</span> <span class="pre">1</span> <span class="pre">0</span></tt>, this function returns <tt class="docutils literal"><span class="pre">false</span></tt> but there is a side effect as
+the array will be ordered! Thus in our case, we&#8217;ll get <tt class="docutils literal"><span class="pre">0</span> <span class="pre">1</span> <span class="pre">2</span></tt>!</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -859,7 +865,7 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="ls_operators.html"
                         title="previous chapter">6.6. Local Search Operators</a></p>
@@ -868,18 +874,17 @@ Search:
                         title="next chapter">6.8. Filtering</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.7. The jobshop problem: and now with local search!</a><ul>
+<li><a class="reference internal" href="#">6.7. The Job-Shop Problem: and now with Local Search!</a><ul>
 <li><a class="reference internal" href="#localsearchoperators-the-real-thing">6.7.1. <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s: the real thing!</a><ul>
 <li><a class="reference internal" href="#deltas-and-deltadeltas">6.7.1.1. <tt class="docutils literal"><span class="pre">Delta</span></tt>s and <tt class="docutils literal"><span class="pre">DeltaDelta</span></tt>s</a></li>
 <li><a class="reference internal" href="#makenextneighbor">6.7.1.2. <tt class="docutils literal"><span class="pre">MakeNextNeighbor()</span></tt></a></li>
-<li><a class="reference internal" href="#incrementality">6.7.1.3. Incrementality</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#the-initial-solution">6.7.2. The initial solution</a></li>
 <li><a class="reference internal" href="#exchanging-two-intervalvars-on-a-sequencevar">6.7.3. Exchanging two <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
 <li><a class="reference internal" href="#exchanging-an-arbitrary-number-of-contiguous-intervalvars-on-a-sequencevar">6.7.4. Exchanging an arbitrary number of contiguous <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s on a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt></a></li>
 <li><a class="reference internal" href="#can-we-do-better">6.7.5. Can we do better?</a><ul>
-<li><a class="reference internal" href="#id2">6.7.5.1. The initial solution</a></li>
+<li><a class="reference internal" href="#id4">6.7.5.1. The initial solution</a></li>
 <li><a class="reference internal" href="#combining-the-two-localsearchoperators">6.7.5.2. Combining the two <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s</a></li>
 <li><a class="reference internal" href="#results">6.7.5.3. Results</a></li>
 </ul>
@@ -905,7 +910,7 @@ Search:
           <a href="ls_operators.html" title="6.6. Local Search Operators"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

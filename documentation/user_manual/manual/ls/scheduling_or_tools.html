@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.4. What is local search (LS)?" href="local_search.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
+    <link rel="next" title="6.4. What is Local Search (LS)?" href="local_search.html" />
     <link rel="prev" title="6.2. An implementation of the disjunctive model" href="jobshop_implementation.html" /> 
   </head>
   <body>
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="local_search.html" title="6.4. What is local search (LS)?"
+          <a href="local_search.html" title="6.4. What is Local Search (LS)?"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="jobshop_implementation.html" title="6.2. An implementation of the disjunctive model"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,17 +54,17 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="scheduling-in-or-tools">
-<span id="scheduling-or-tools"></span><h1>6.3. Scheduling in <em>or-tools</em></h1>
+  <div class="section" id="scheduling-in-ortools">
+<span id="scheduling-or-tools"></span><h1>6.3. Scheduling in <strong>or-tools</strong></h1>
 <p>Scheduling problems deal with the allocation of resources and the sequencing of
-tasks to produce goods and services. The job-shop problem is a good example of such problems.</p>
-<p>Constraint programming has been proved successful in solving some scheduling problems
-with dedicated variables and strategies [ref]. In <em>or-tools</em>, the CP solver offers some
+tasks to produce goods and services. The Job-Shop problem is a good example of such problems.</p>
+<p>Constraint programming has been proved successful in solving some Scheduling Problems
+with dedicated variables and strategies <a class="reference internal" href="#philippe2001">[Philippe2001]</a>. In <strong>or-tools</strong>, the CP solver offers some
 variable types (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s
 and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s) and roughly one specialized search strategy with some variants.
 This part of the CP solver is not quite as developed as the rest of the library and
 expect more to come. We summarize most of the
-<em>or-tools</em> features dealing with scheduling in this section.</p>
+<strong>or-tools</strong> features dealing with scheduling in this section.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This part of the CP Solver is not quite settled yet. In case of doubt, check the code.</p>
@@ -94,7 +94,7 @@ retrieve these expressions with the following methods:</p>
 </ul>
 <p>If the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable is <em>unperformed</em> (see next
 sub-section), you cannot use these methods. Well, if you do, nothing bad will happen but you will get gibberish
-as the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is no longer updated. These methods have corresponding &#8220;safe&#8221; versions if you need them.</p>
+as the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is no longer updated. These methods have corresponding &#8220;safe&#8221; versions if you need them (see next sub-section).</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p>Don&#8217;t use</p>
@@ -105,15 +105,8 @@ as the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is
 </ul>
 <p class="last">if the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable is <em>unperformed</em>!</p>
 </div>
-<p>The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can be virtually conceptualized<a class="footnote-reference" href="#intervalvar-virtually-conceptualized" id="id1">[1]</a> as
+<p>The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can be virtually conceptualized<a class="footnote-reference" href="#intervalvar-virtually-conceptualized" id="id2">[1]</a> as
 in the next figure:</p>
-<table class="docutils footnote" frame="void" id="intervalvar-virtually-conceptualized" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The implementation optimizes different cases and
-thus doesn&#8217;t necessarily correspond to the figure. Read on.</td></tr>
-</tbody>
-</table>
 <img alt="../../_images/intervalvar.png" class="align-center" src="../../_images/intervalvar.png" style="width: 700px;" />
 <p>and you have the following setters and getters:</p>
 <ul class="simple">
@@ -170,7 +163,7 @@ their position in the array (<img class="math" src="../../_images/math/bc1f9d9bf
 </div>
 <div class="section" id="variables-that-perform-or-not">
 <h3>6.3.1.2. Variables that perform... or not</h3>
-<p>An important aspect of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s is optionality. An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can be <em>performed</em> or not. If
+<p>An important aspect of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s is <em>optionality</em>. An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can be <em>performed</em> or not. If
 <em>unperformed</em>, then it simply does not exist (and its characteristics are meaningless).
 An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is automatically marked
 as <em>unperformed</em> when it is not consistent anymore (starting time greater
@@ -190,16 +183,10 @@ encapsulated in an <tt class="docutils literal"><span class="pre">IntExpr</span>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntExpr</span><span class="o">*</span> <span class="nf">PerformedExpr</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>The corresponding <tt class="docutils literal"><span class="pre">IntExpr</span></tt> acts like a <img class="math" src="../../_images/math/016f10daec11b69c18d2bf68896ecd98339fe426.png" alt="0-1" style="vertical-align: -1px"/> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt><a class="footnote-reference" href="#performed-intexpr-is-intervalvar" id="id2">[2]</a>.
+<p>The corresponding <tt class="docutils literal"><span class="pre">IntExpr</span></tt> acts like a <img class="math" src="../../_images/math/016f10daec11b69c18d2bf68896ecd98339fe426.png" alt="0-1" style="vertical-align: -1px"/> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt><a class="footnote-reference" href="#performed-intexpr-is-intervalvar" id="id3">[2]</a>.
 If its minimum value is <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables must be performed. If its
 maximal value is <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is unperformed and if <img class="math" src="../../_images/math/ce4b0697810792acb7da44ab5ef5c62c45917f4f.png" alt="\text{min} = 0" style="vertical-align: -1px"/>
 and <img class="math" src="../../_images/math/c3c8f330093ec775717da39692935b7d17af3d62.png" alt="\text{max} = 1" style="vertical-align: -1px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> might be performed.</p>
-<table class="docutils footnote" frame="void" id="performed-intexpr-is-intervalvar" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Actually, it is an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>!</td></tr>
-</tbody>
-</table>
 <p>The use of an <tt class="docutils literal"><span class="pre">IntExpr</span></tt> allows expressiveness and the use of sophisticated constraints.</p>
 <p>As we have seen, if the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is <em>unperformed</em>, we cannot use <tt class="docutils literal"><span class="pre">StartExpr()</span></tt>, <tt class="docutils literal"><span class="pre">DurationExpr()</span></tt>
 and <tt class="docutils literal"><span class="pre">EndExpr()</span></tt>. You can however call their <em>safe</em> versions:</p>
@@ -223,26 +210,18 @@ and <tt class="docutils literal"><span class="pre">-1</span></tt> if the variabl
 <p>A <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable is a variable which domain is a set of possible
 orderings of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables. Because it allows the ordering of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> (tasks),
 it is often used in scheduling. And for once it is <strong>not</strong> an abstract class! This is because these variables
-are among the less refined variables in <em>or-tools</em>. They also have the least number of methods.</p>
+are among the less refined variables in <strong>or-tools</strong>. They also have the least number of methods.</p>
 <p>Basically, this class contains an array of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and a precedence matrix indicating how the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s
-are ranked. You can conceptualize<a class="footnote-reference" href="#sequencevar-virtually-conceptualized" id="id3">[3]</a> this class as depicted in the following figure:</p>
+are ranked. You can conceptualize<a class="footnote-reference" href="#sequencevar-virtually-conceptualized" id="id4">[3]</a> this class as depicted in the following figure:</p>
 <img alt="../../_images/sequencevar.png" class="align-center" src="../../_images/sequencevar.png" style="width: 700px;" />
 <p>where the precedence matrix <tt class="docutils literal"><span class="pre">mat</span></tt> is such that <tt class="docutils literal"><span class="pre">mat(i,j)</span> <span class="pre">=</span> <span class="pre">1</span></tt> if <tt class="docutils literal"><span class="pre">i</span></tt> is ranked before <tt class="docutils literal"><span class="pre">j</span></tt>.</p>
 <p>The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> are often given by their indices in the array of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s.</p>
-<table class="docutils footnote" frame="void" id="sequencevar-virtually-conceptualized" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>This looks very much like the actual implementation. The array is a
-<tt class="docutils literal"><span class="pre">scoped_array&lt;IntervalVar*&gt;</span></tt> and the precedence matrix is given by a <tt class="docutils literal"><span class="pre">scoped_ptr&lt;RevBitMatrix&gt;</span></tt>. The actual class
-contains some more data structures to facilitate and optimize the propagation.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="ranked-intervalvars">
 <h3>6.3.1.4. Ranked <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
 <p><em>Ranked</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s are exactly that: already ranked variables in the sequence. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s can be ranked
 at the beginning or at the end of the sequence in the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable. <em>unperformed</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> can not
-be ranked<a class="footnote-reference" href="#unranked-and-three-state" id="id4">[4]</a>. The next figure illustrates this:</p>
+be ranked<a class="footnote-reference" href="#unranked-and-three-state" id="id5">[4]</a>. The next figure illustrates this:</p>
 <img alt="../../_images/sequencevar_ranked.png" class="align-center" src="../../_images/sequencevar_ranked.png" style="width: 700px;" />
 <p><tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables <tt class="docutils literal"><span class="pre">1</span></tt> and <tt class="docutils literal"><span class="pre">2</span></tt> are ranked (and <em>performed</em>) while <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable <tt class="docutils literal"><span class="pre">0</span></tt>
 may be <em>performed</em> but
@@ -256,13 +235,6 @@ variables and</li>
 <li>to <em>rank last</em> an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variable means that this variable will be ranked after <strong>all unranked</strong>
 variables.</li>
 </ul>
-<table class="docutils footnote" frame="void" id="unranked-and-three-state" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>Thus, <em>unranked</em> variables are variables that <em>may</em> be <em>performed</em>. Yeah, three-states
-situations that evolves with time are nastier than a good old Manichean one.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="public-methods">
 <h3>6.3.1.5. Public methods</h3>
@@ -485,7 +457,7 @@ as <em>performed</em>.</p>
 </div>
 <div class="section" id="temporaldisjunction-constraints">
 <h3>6.3.2.3. <tt class="docutils literal"><span class="pre">TemporalDisjunction</span></tt> constraints</h3>
-<p><tt class="docutils literal"><span class="pre">TemporalDisjunction</span></tt> constraints ensure that two <cite>ÌntervalVar`</cite> variables are temporally disjoint, i.e.
+<p><tt class="docutils literal"><span class="pre">TemporalDisjunction</span></tt> constraints ensure that two <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables are temporally disjoint, i.e.
 they cannot be processed at the same time.</p>
 <p>To create such a constraint, use:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span> <span class="o">=</span> <span class="p">...</span>
@@ -523,7 +495,7 @@ constraint is a <tt class="docutils literal"><span class="pre">FullDisjunctiveCo
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">virtual</span> <span class="n">SequenceVar</span><span class="o">*</span> <span class="n">MakeSequenceVar</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>This method creates a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> containing the &#8220;rankable&#8221;<a class="footnote-reference" href="#what-rankable" id="id5">[5]</a> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s given in
+<p>This method creates a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> containing the &#8220;rankable&#8221;<a class="footnote-reference" href="#what-rankable" id="id6">[5]</a> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s given in
 the <tt class="docutils literal"><span class="pre">intervals</span></tt> <tt class="docutils literal"><span class="pre">std::vector&lt;IntervalVar</span> <span class="pre">*&gt;</span></tt>.</p>
 <p><tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables are so closely tied to a sequence of <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s that obeys a <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>
 constraint that it is quite natural to find such a method. In the current implementation, it is the <strong>only</strong>
@@ -534,13 +506,6 @@ a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variabl
 <p class="last">The use of the <tt class="docutils literal"><span class="pre">MakeSequenceVar()</span></tt> method of a <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>  constraint is the only
 way to create a <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable in the current implementation. This might change in the future.</p>
 </div>
-<table class="docutils footnote" frame="void" id="what-rankable" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[5]</a></td><td>You remember that <em>unperformed</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s are &#8220;non existing&#8221;, don&#8217;t you? And yes, we know
-that the adjective &#8220;rankable&#8221; doesn&#8217;t exist...</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="cumulativeconstraint-constraints">
 <h3>6.3.2.5. <tt class="docutils literal"><span class="pre">CumulativeConstraint</span></tt> constraints</h3>
@@ -578,32 +543,44 @@ to satisfy the <tt class="docutils literal"><span class="pre">CumulativeConstrai
 <span id="scheduling-decisionbuilders-decision"></span><h2>6.3.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling</h2>
 <p>This sub-section is going to be very brief. Indeed, even if room has been made
 in the code to welcome several alternative strategies, at the moment of writing
-(<a class="reference external" href="http://code.google.com/p/or-tools/source/detail?r=2502">revision r2502</a>,
-January 11 <sup>th</sup> 2013) there is &#8220;only one real&#8221; strategy implemented to deal with
+(<a class="reference external" href="http://code.google.com/p/or-tools/source/detail?r=3804">revision r3804</a>,
+December 18 <sup>th</sup> 2014) there is &#8220;only one real&#8221; strategy implemented to deal with
 <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s. The <tt class="docutils literal"><span class="pre">RankFirstIntervalVars</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> for <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s
 and the <tt class="docutils literal"><span class="pre">SetTimesForward</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> for <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s both
 try to rank the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s
 one after the other starting with the first &#8220;available&#8221; ones.</p>
-<p>When we&#8217;ll implement different strategies, we will update the manual. If you&#8217;re curious about the implementation
+<p>If you&#8217;re curious about the implementation
 details, we refer you to the code (mainly to the file <tt class="file docutils literal"><span class="pre">constraint_solver/sched_search.cc</span></tt>).</p>
 <p>If you need specialized <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s, you now know the inner working of the CP solver
 well enough to construct ones to suit your needs. Although nothing prevents you from creating tools that mix <tt class="docutils literal"><span class="pre">IntVar</span></tt>s,
 <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s, we strongly advice you to keep
 different types of variables separated and combine different phases together instead.</p>
-<div class="section" id="id6">
+<div class="section" id="id7">
 <h3>6.3.4.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</h3>
-<p>For <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables, there is only one strategy implemented even if there are three entries
+<p>For <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables, there are two strategies implemented even if there are four entries
 in the <tt class="docutils literal"><span class="pre">IntervalStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>:</p>
-<dl class="docutils">
+<ul>
+<li><dl class="first docutils">
 <dt><tt class="docutils literal"><span class="pre">INTERVAL_DEFAULT</span></tt> <tt class="docutils literal"><span class="pre">=</span></tt> <tt class="docutils literal"><span class="pre">INTERVAL_SIMPLE</span></tt> <tt class="docutils literal"><span class="pre">=</span></tt> <tt class="docutils literal"><span class="pre">INTERVAL_SET_TIMES_FORWARD</span></tt>:</dt>
-<dd>The CP solver simply schedules the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the lowest starting time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>) and
-in case of a tie, the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the lowest ending time (<tt class="docutils literal"><span class="pre">StartMax()</span></tt>).</dd>
+<dd><p class="first last">The CP solver simply schedules the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the lowest starting time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>) and
+in case of a tie, the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the lowest ending time (<tt class="docutils literal"><span class="pre">StartMax()</span></tt>).</p>
+</dd>
 </dl>
-<p>The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class is the <tt class="docutils literal"><span class="pre">SetTimesForward</span></tt> class. It returns a <tt class="docutils literal"><span class="pre">ScheduleOrPostpone</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt> in its
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">INTERVAL_SET_TIMES_BACKWARD</span></tt>:</dt>
+<dd><p class="first last">The CP Solver simply schedules the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the highest ending time (<tt class="docutils literal"><span class="pre">EndMax()</span></tt>) and in
+case of a tie, the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the highest starting time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>).</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>For the first strategy, the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class is the <tt class="docutils literal"><span class="pre">SetTimesForward</span></tt> class. It returns a <tt class="docutils literal"><span class="pre">ScheduleOrPostpone</span></tt> <tt class="docutils literal"><span class="pre">Decision</span></tt> in its
 <tt class="docutils literal"><span class="pre">Next()</span></tt> method. This <tt class="docutils literal"><span class="pre">Decision</span></tt> fixes the starting time of the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> to its minimum starting
 time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>)
 in its <tt class="docutils literal"><span class="pre">Apply()</span></tt> method and, in its <tt class="docutils literal"><span class="pre">Refute()</span></tt> method, delays the execution of the corresponding task by <tt class="docutils literal"><span class="pre">1</span></tt> unit
 of time, i.e. the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> cannot be scheduled before <tt class="docutils literal"><span class="pre">StartMin()</span> <span class="pre">+</span> <span class="pre">1</span></tt>.</p>
+<p>The second strategy is quite similar and the equivalent <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> class is the <tt class="docutils literal"><span class="pre">SetTimesBackward</span></tt> class.</p>
 <p>You create the corresponding phase with the good old <tt class="docutils literal"><span class="pre">MakePhase</span></tt> factory method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="nf">MakePhase</span> <span class="p">(</span>
                     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">IntervalVar</span> <span class="o">*</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">intervals</span><span class="p">,</span>
@@ -611,11 +588,12 @@ of time, i.e. the <tt class="docutils literal"><span class="pre">IntervalVar</sp
 </pre></div>
 </div>
 </div>
-<div class="section" id="id7">
+<div class="section" id="id8">
 <h3>6.3.4.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</h3>
 <p>For <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables, there are basically two ways of choosing the next <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> to rank its
 <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s:</p>
-<dl class="docutils">
+<ul>
+<li><dl class="first docutils">
 <dt><tt class="docutils literal"><span class="pre">SEQUENCE_DEFAULT</span></tt> <tt class="docutils literal"><span class="pre">=</span></tt> <tt class="docutils literal"><span class="pre">SEQUENCE_SIMPLE</span></tt> <tt class="docutils literal"><span class="pre">=</span></tt> <tt class="docutils literal"><span class="pre">CHOOSE_MIN_SLACK_RANK_FORWARD</span></tt>:</dt>
 <dd><p class="first">The CP solver chooses the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> which has the fewest opportunities of manoeuvre, i.e.
 the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> for which the <em>horizon range</em> (<tt class="docutils literal"><span class="pre">hmax</span> <span class="pre">-</span> <span class="pre">hmin</span></tt>, see the <tt class="docutils literal"><span class="pre">HorizonRange()</span></tt> method above)
@@ -628,11 +606,17 @@ with the smallest active horizon range (see <tt class="docutils literal"><span c
 <p class="last">Once the best <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variable is chosen, the CP solver takes the rankable <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> with the
 minimum starting time (<tt class="docutils literal"><span class="pre">StartMin()</span></tt>) and ranks it first.</p>
 </dd>
-<dt><tt class="docutils literal"><span class="pre">CHOOSE_RANDOM_RANK_FORWARD</span></tt>:</dt>
-<dd>Among the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s for which there are still <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s to rank, the CP solver chooses
-one randomly. Then it randomly
-chooses  a rankable <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and ranks it first.</dd>
 </dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">CHOOSE_RANDOM_RANK_FORWARD</span></tt>:</dt>
+<dd><p class="first last">Among the <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s for which there are still <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s to rank, the CP solver chooses
+one randomly. Then it randomly
+chooses  a rankable <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and ranks it first.</p>
+</dd>
+</dl>
+</li>
+</ul>
 <p><tt class="docutils literal"><span class="pre">SEQUENCE_DEFAULT</span></tt>, <tt class="docutils literal"><span class="pre">SEQUENCE_SIMPLE</span></tt>, <tt class="docutils literal"><span class="pre">CHOOSE_MIN_SLACK_RANK_FORWARD</span></tt> and <tt class="docutils literal"><span class="pre">CHOOSE_RANDOM_RANK_FORWARD</span></tt>
 are given in the <tt class="docutils literal"><span class="pre">SequenceStrategy</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>.</p>
 <p>To create these search strategies, use the following factory method:</p>
@@ -707,6 +691,50 @@ Machine_2: Job 1 (2,3)  Job 2 (7,10)  Job 0 (10,12)
 </ul>
 <p>The <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt> and the <tt class="docutils literal"><span class="pre">DependencyGraphNode</span></tt> classes are declared in the
 <tt class="file docutils literal"><span class="pre">constraint_solver/constraint_solveri.h</span></tt> header.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="intervalvar-virtually-conceptualized" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The implementation optimizes different cases and
+thus doesn&#8217;t necessarily correspond to the figure. Read on.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="performed-intexpr-is-intervalvar" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Actually, it is an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="sequencevar-virtually-conceptualized" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>This looks very much like the actual implementation. The array is a
+<tt class="docutils literal"><span class="pre">scoped_array&lt;IntervalVar*&gt;</span></tt> and the precedence matrix is given by a <tt class="docutils literal"><span class="pre">scoped_ptr&lt;RevBitMatrix&gt;</span></tt>. The actual class
+contains some more data structures to facilitate and optimize the propagation.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="unranked-and-three-state" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Thus, <em>unranked</em> variables are variables that <em>may</em> be <em>performed</em>. Yeah, three-states
+situations that evolves with time are nastier than a good old Manichean one.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="what-rankable" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>You remember that <em>unperformed</em> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s are &#8220;non existing&#8221;, don&#8217;t you? And yes, we know
+that the adjective &#8220;rankable&#8221; doesn&#8217;t exist...</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="philippe2001" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Philippe2001]</a></td><td><ol class="first last upperalpha simple" start="2">
+<li>Philippe, C. Le Pape, and W. Nuijten. <em>Constraint-based scheduling: applying constraint programming to scheduling problems</em>. Vol. 39. Springer, 2001.</li>
+</ol>
+</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -783,16 +811,16 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="jobshop_implementation.html"
                         title="previous chapter">6.2. An implementation of the disjunctive model</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="local_search.html"
-                        title="next chapter">6.4. What is local search (LS)?</a></p>
+                        title="next chapter">6.4. What is Local Search (LS)?</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.3. Scheduling in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#">6.3. Scheduling in <strong>or-tools</strong></a><ul>
 <li><a class="reference internal" href="#variables">6.3.1. Variables</a><ul>
 <li><a class="reference internal" href="#intervalvars">6.3.1.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
 <li><a class="reference internal" href="#variables-that-perform-or-not">6.3.1.2. Variables that perform... or not</a></li>
@@ -811,8 +839,8 @@ Search:
 </li>
 <li><a class="reference internal" href="#constraints-on-sequencevars">6.3.3. Constraints on <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
 <li><a class="reference internal" href="#decisionbuilders-and-decisions-for-scheduling">6.3.4. <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s and <tt class="docutils literal"><span class="pre">Decision</span></tt>s for scheduling</a><ul>
-<li><a class="reference internal" href="#id6">6.3.4.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
-<li><a class="reference internal" href="#id7">6.3.4.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#id7">6.3.4.1. <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s</a></li>
+<li><a class="reference internal" href="#id8">6.3.4.2. <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#dependencygraph">6.3.5. <tt class="docutils literal"><span class="pre">DependencyGraph</span></tt></a></li>
@@ -831,13 +859,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="local_search.html" title="6.4. What is local search (LS)?"
+          <a href="local_search.html" title="6.4. What is Local Search (LS)?"
              >next</a> |</li>
         <li class="right" >
           <a href="jobshop_implementation.html" title="6.2. An implementation of the disjunctive model"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.1. The job-shop problem, the disjunctive model and benchmark data &mdash; or-tools User&#39;s Manual</title>
+    <title>6.1. The Job-Shop Problem, the disjunctive model and benchmark data &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="6.2. An implementation of the disjunctive model" href="jobshop_implementation.html" />
-    <link rel="prev" title="6. Local search: the job-shop problem" href="../LS.html" /> 
+    <link rel="prev" title="6. Local Search: the Job-Shop Problem" href="../LS.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,10 +42,10 @@
           <a href="jobshop_implementation.html" title="6.2. An implementation of the disjunctive model"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="../LS.html" title="6. Local Search: the Job-Shop Problem"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,65 +55,22 @@
           <div class="body">
             
   <div class="section" id="the-job-shop-problem-the-disjunctive-model-and-benchmark-data">
-<span id="jobshop-def"></span><h1>6.1. The job-shop problem, the disjunctive model and benchmark data</h1>
-<div class="files-sidebar container">
-<ol>
-  <li>C++ code:
-    <ol>
-      <li><a href="../../../tutorials/cplusplus/chap6/jobshop.h">jobshop.h</a></li>
-      <li><a href="../../../tutorials/cplusplus/chap6/report_jobshopdata.cc">report_jobshopdata.cc</a></li>
-    </ol>
-  </li>
-    <li>Data files:
-        <ol>
-           <li><a href="../../../tutorials/cplusplus/chap6/abz9">abz9</a></li>
-           <li><a href="../../../tutorials/cplusplus/chap6/20_5_01_ta001.txt">20_5_01_ta001.txt</a></li>
-           <li><a href="../../../tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a></li>
-        </ol>
-     </li>
-</ol></div>
-<p>We describe the job-shop problem, a first model and the benchmark data. The job-shop problem belongs to the
+<span id="jobshop-def"></span><h1>6.1. The Job-Shop Problem, the disjunctive model and benchmark data</h1>
+<p>We describe the Job-Shop Problem, a first model and the benchmark data. The Job-Shop Problem belongs to the
 intractable problems (<img class="math" src="../../_images/math/134004c561e4c0cca193dbf5122e5ca963dd5b7f.png" alt="\in" style="vertical-align: -1px"/> NP). Only few very special cases can be solved in
 polynomial time (see <a class="reference internal" href="#garey1976">[Garey1976]</a> and <a class="reference internal" href="#kis2002">[Kis2002]</a>). The definition of this fascinating problem is not that complicated but you
 probably will need some extra attention if this is your first encounter with it. Once you grasp its
 definition, the next subsections should flow easily.</p>
-<table class="docutils citation" frame="void" id="garey1976" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[Garey1976]</a></td><td>Garey, M. R., Johnson, D. S. and Sethi, R., <em>The complexity of flowshop and jobshop scheduling</em>,
-Mathematics of Operations Research, volume 1, pp 117-129, 1976.</td></tr>
-</tbody>
-</table>
-<table class="docutils citation" frame="void" id="kis2002" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[Kis2002]</a></td><td>Kis, T., <em>On the complexity of non-preemptive shop scheduling with two jobs</em>, Computing, volume 69, nbr 1, pp 37-49,
-2002.</td></tr>
-</tbody>
-</table>
 <div class="section" id="description-of-the-problem">
 <h2>6.1.1. Description of the problem</h2>
-<p>In the classical job-shop problem there are <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> jobs that must be processed on <img class="math" src="../../_images/math/f5047d1e0cbb50ec208923a22cd517c55100fa7b.png" alt="m" style="vertical-align: 0px"/> machines.
+<p>In the classical Job-Shop Problem there are <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> jobs that must be processed on <img class="math" src="../../_images/math/f5047d1e0cbb50ec208923a22cd517c55100fa7b.png" alt="m" style="vertical-align: 0px"/> machines.
 Each job consists of a sequence of different tasks<a class="footnote-reference" href="#tasks-operations" id="id3">[1]</a>. Each task needs to be processed during an
-uninterrupted period of time on a given machine.</p>
-<table class="docutils footnote" frame="void" id="tasks-operations" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>Tasks are also called <em>operations</em>.</td></tr>
-</tbody>
-</table>
+<em>uninterrupted</em> period of time on a given machine.</p>
 <p>We use<a class="footnote-reference" href="#job-shop-pedagogical-notation" id="id4">[2]</a> <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/> to denote the <img class="math" src="../../_images/math/7b6d7c48a0a6493c375ac297fa9a72b13824e769.png" alt="i^\textrm{th}" style="vertical-align: 0px"/> task of job <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/>.</p>
 <p>Given a  set <img class="math" src="../../_images/math/abb5588023cfa1ac14643e9778699f03eecc57a3.png" alt="J" style="vertical-align: 0px"/> of jobs, a set <img class="math" src="../../_images/math/5d1e4485dc90c450e8c76826516c1b2ccb8fce16.png" alt="M" style="vertical-align: 0px"/> of machines and a set <img class="math" src="../../_images/math/2554b6496c3b678897e9b060ef00aa9f0a7d7ece.png" alt="T" style="vertical-align: 0px"/> of tasks, we denote
 by <img class="math" src="../../_images/math/fb04f80cff6dfa1d4b53a39754e76cb62dffbe38.png" alt="\tau_j" style="vertical-align: -6px"/> the number of tasks for a given job <img class="math" src="../../_images/math/f8b98fc0e4ae244df859cd5e9212606cb5940a4b.png" alt="j \in J" style="vertical-align: -4px"/>. To each task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/> corresponds
-an ordered pair <img class="math" src="../../_images/math/14d3b1c2f73b6a25532bf1ed289181c2f2f746af.png" alt="(m_{ij}, p_{ij})" style="vertical-align: -6px"/>: the task <img class="math" src="../../_images/math/8cd358382208efd43bb074dc2f8cfd04520e4dc4.png" alt="m_{ij}" style="vertical-align: -6px"/> needs to be processed on machine <img class="math" src="../../_images/math/7e27702b1a859e29c69ce04be80afeae02a88d59.png" alt="m_{ij} \in M" style="vertical-align: -6px"/>
+an ordered pair <img class="math" src="../../_images/math/14d3b1c2f73b6a25532bf1ed289181c2f2f746af.png" alt="(m_{ij}, p_{ij})" style="vertical-align: -6px"/>: the task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/> needs to be processed on machine <img class="math" src="../../_images/math/7e27702b1a859e29c69ce04be80afeae02a88d59.png" alt="m_{ij} \in M" style="vertical-align: -6px"/>
 for a period of <img class="math" src="../../_images/math/79220e9b9f82ca92de037d2a8a6bc00ac0f9a0e0.png" alt="p_{ij}" style="vertical-align: -6px"/> units of time.</p>
-<table class="docutils footnote" frame="void" id="job-shop-pedagogical-notation" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[2]</a></td><td>We use a slightly different and we hope easier notation than the ones used by the
-scheduling community.</td></tr>
-</tbody>
-</table>
 <p>Here is an example with <img class="math" src="../../_images/math/904f27995d33e0d39f43ec959e7cb100516e9396.png" alt="m=3" style="vertical-align: 0px"/> machines and <img class="math" src="../../_images/math/5635737307f5f0651cced8ee2e6558a426fd27b5.png" alt="n=3" style="vertical-align: 0px"/> jobs. We count jobs, machines and tasks starting from 0.</p>
 <blockquote>
 <div><ul class="simple">
@@ -123,9 +80,9 @@ scheduling community.</td></tr>
 </ul>
 </div></blockquote>
 <p>In this example, job 2 consists of  <img class="math" src="../../_images/math/cae09dc08f7890c9267591a5aa9a7957faf1ccaf.png" alt="\tau_2 = 2" style="vertical-align: -3px"/> tasks: task <img class="math" src="../../_images/math/8e0103248c27f634d689f01c5a43a8f6d566e35c.png" alt="a_{02}" style="vertical-align: -3px"/> which must be processed on machine <img class="math" src="../../_images/math/823b14db3d18948303f2e309f856607a2f248af8.png" alt="m_{02} = 1" style="vertical-align: -3px"/>
-during <img class="math" src="../../_images/math/3a29c359189e5b0fb5056ae0666b9c950ee4b306.png" alt="p_{02} = 4" style="vertical-align: -4px"/> units of time and task <img class="math" src="../../_images/math/3f6bfb1f0a208187bed5a389462b7e45bb2a04c9.png" alt="a_{12}" style="vertical-align: -4px"/> which must be processed on machine <img class="math" src="../../_images/math/e364356bbd29150dc188fe2733f14a0f856bb155.png" alt="m_{02} = 2" style="vertical-align: -3px"/>
-during <img class="math" src="../../_images/math/3a9fe4cd5b42bb62f2e538c3b56258b404b8ca0d.png" alt="p_{02} = 3" style="vertical-align: -4px"/> units of time.</p>
-<p>To have a <strong>job-shop problem</strong>, the tasks must be processed in the order given by the sequence:
+during <img class="math" src="../../_images/math/3a29c359189e5b0fb5056ae0666b9c950ee4b306.png" alt="p_{02} = 4" style="vertical-align: -4px"/> units of time and task <img class="math" src="../../_images/math/3f6bfb1f0a208187bed5a389462b7e45bb2a04c9.png" alt="a_{12}" style="vertical-align: -4px"/> which must be processed on machine <img class="math" src="../../_images/math/5d36d0eaadb7b26e71308b68851aa71955e8f4e6.png" alt="m_{12} = 2" style="vertical-align: -4px"/>
+during <img class="math" src="../../_images/math/f0f2979cbe76b3170839d026311c34c86d285ce3.png" alt="p_{12} = 3" style="vertical-align: -4px"/> units of time.</p>
+<p>To have a <strong>Job-Shop Problem</strong>, the tasks must be processed in the order given by the sequence:
 for job 0 this means that task <img class="math" src="../../_images/math/ab62108ec7cf1dc7ed3791cf82090eef2c7de191.png" alt="a_{00}" style="vertical-align: -3px"/>
 on machine 0 must be processed before task <img class="math" src="../../_images/math/f659be762622558799a9119468b5008cb1b27f78.png" alt="a_{10}" style="vertical-align: -4px"/> on machine 1 that itself must be processed before task <img class="math" src="../../_images/math/7e41f502f53d36016fb3cb8696ff305aa8dfbbd2.png" alt="a_{20}" style="vertical-align: -3px"/>
 on machine 2. It is not mandatory but most of the literature and benchmark data are concerned by problems where each job
@@ -134,6 +91,7 @@ processed exactly once on each machine.</p>
 <p>We seek a <strong>schedule</strong> (solution) that minimizes the <strong>makespan</strong> (duration) of the whole process.</p>
 <p>The <em>makespan</em> is the duration between the start of the first task (across all machines) and the completion of the last task
 (again across all machines). The classical notation for the makespan is <img class="math" src="../../_images/math/e76362985318d941a0a38a70c798b2fc8dd82f00.png" alt="C_{\textrm{max}}" style="vertical-align: -4px"/>.</p>
+<p>Let&#8217;s define <img class="math" src="../../_images/math/9d9454be3db1a8cbe0b9f0a7926a43da92cb0785.png" alt="t_{ij}" style="vertical-align: -6px"/> as the starting time of the processing of task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/>.</p>
 <p>The makespan can be defined as</p>
 <div class="math">
 <p><img src="../../_images/math/7033fe187bd7afdfd1ea67dc15c0be884717bc34.png" alt="C_{\textrm{max}} = \max_{t_{ij}} \{t_{ij} + p_{ij}\}"/></p>
@@ -142,8 +100,8 @@ denotes the number of tasks for job <img class="math" src="../../_images/math/81
 the starting time of the last task of job <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> and we have</p>
 <div class="math">
 <p><img src="../../_images/math/c6662a49b52df1265fc66777f62ac3697cff2343.png" alt="C_{\textrm{max}} = \max_{t_{\tau_j-1,j}} \{t_{\tau_j-1,j} + p_{\tau_j-1,j}\}"/></p>
-</div><p>Let&#8217;s try to find a schedule for our example. Suppose you want to favour job 1 because not only did you see that
-it is the longest job to process but its last task takes 4 units of time. Here is the <em>Gantt chart</em> of a possible
+</div><p>Let&#8217;s try to find a schedule for our example. Suppose you want to favour job 1 because you did see that
+all jobs have the same processing time (7) and that job 1 has its last task requiring 4 units of time. Here is the <em>Gantt chart</em> of a possible
 schedule:</p>
 <img alt="../../_images/schedule1.png" class="align-center" src="../../_images/schedule1.png" style="width: 500pt;" />
 <p>This is a feasible schedule since tasks within every job are processed one after the other in the right sequence and
@@ -151,24 +109,11 @@ each task is processed on the right machine. The makespan
 is 12 units of time. Can we do better? Focusing on one job is probably not the best strategy. Here is an optimal solution:</p>
 <img alt="../../_images/schedule2.png" class="align-center" src="../../_images/schedule2.png" style="width: 500pt;" />
 <p>Its makespan is 11 units of time.</p>
-<p>How can we simply describe a schedule? Let us define <img class="math" src="../../_images/math/9d9454be3db1a8cbe0b9f0a7926a43da92cb0785.png" alt="t_{ij}" style="vertical-align: -6px"/> as the starting time of task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/>. A feasible
+<p>How can we simply describe a schedule? We defined <img class="math" src="../../_images/math/9d9454be3db1a8cbe0b9f0a7926a43da92cb0785.png" alt="t_{ij}" style="vertical-align: -6px"/> as the starting time of task <img class="math" src="../../_images/math/d6b159fdba4b71ff0eb9caee9a10fb34ebfcaad8.png" alt="a_{ij}" style="vertical-align: -6px"/>. A feasible
 <em>schedule</em> can then be defined as a set<a class="footnote-reference" href="#set-and-a-correspondence-rule" id="id5">[3]</a> of non negative integers <img class="math" src="../../_images/math/e58a84f399d89acb26b4718c4dcdccea6ea15762.png" alt="\{t_{ij}\}" style="vertical-align: -6px"/>
-such that the definition of a job-shop problem is respected.
+such that the definition of a Job-Shop Problem is respected.
 If we only consider schedules where all tasks are completely left shifted on the Gantt chart<a class="footnote-reference" href="#left-shifted-schedules" id="id6">[4]</a>, we can define
 a feasible schedule by giving the sequence of jobs processed on each machine.</p>
-<table class="docutils footnote" frame="void" id="set-and-a-correspondence-rule" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[3]</a></td><td>And a correspondence rule between those integers and the tasks.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="left-shifted-schedules" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>A rigorous definition of <em>schedules where all tasks are completely left shifted on the Gantt chart</em>
-is beyond the scope of this manual. In scheduling jargon, such schedules are called <em>semi-active</em> schedules.</td></tr>
-</tbody>
-</table>
 <p>The first schedule can be described by:</p>
 <blockquote>
 <div><ul class="simple">
@@ -187,14 +132,8 @@ is beyond the scope of this manual. In scheduling jargon, such schedules are cal
 </div></blockquote>
 <p>The Gantt chart offers a nice visualization of schedules but it doesn&#8217;t really give any insight into the
 problem<a class="footnote-reference" href="#except-if-you-see-disjunctive-graphs" id="id7">[5]</a>.
-The disjunctive graph
+The <em>disjunctive graph</em>
 allows a better understanding of the structure of the problem.</p>
-<table class="docutils footnote" frame="void" id="except-if-you-see-disjunctive-graphs" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>Except if you see the disjunctive graph in the Gantt chart!</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="the-disjunctive-graph">
 <h2>6.1.2. The disjunctive graph</h2>
@@ -220,13 +159,6 @@ These arcs are plain in the figure.</dd>
 </div></blockquote>
 <p>To determine a schedule we have to define an ordering of all tasks processed on each machine. This can be done by orienting
 all dotted or dashed edges such that each clique corresponding to a machine becomes acyclic<a class="footnote-reference" href="#acyclic-machine-clique" id="id8">[6]</a>.</p>
-<table class="docutils footnote" frame="void" id="acyclic-machine-clique" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id8">[6]</a></td><td>An acyclic graph is a graph without cycle. It can be shown that a complete directed acyclic graph induces
-a total order on its vertices, i.e. a complete directed acyclic graph lets you order all its vertices unequivocally.</td></tr>
-</tbody>
-</table>
 <p>Our first schedule is represented in the next figure.</p>
 <img alt="../../_images/disjunctive_graph2.png" class="align-center" src="../../_images/disjunctive_graph2.png" style="width: 400pt;" />
 <p>We also want to avoid cycles between disjunctive and conjunctive arcs because they lead to infeasible schedules.
@@ -236,14 +168,14 @@ of the edges in <img class="math" src="../../_images/math/9ffb448918db29f2a72f8f
 is called the <em>critical path</em>.</p>
 <img alt="../../_images/disjunctive_graph3.png" class="align-center" src="../../_images/disjunctive_graph3.png" style="width: 400pt;" />
 <p>Its length is <img class="math" src="../../_images/math/b81fd03335422b410055cdc7d94a398b26cd71da.png" alt="0+4+4+2+2+0=12" style="vertical-align: -1px"/>.</p>
-<p>We can now define the job-shop problem as a graph problem: find a complete
+<p>We can now define the Job-Shop Problem as a graph problem: find a complete
 orientation of the edges of a disjunctive graph such that the resulting directed graph is acyclic and the longest weighted path
-from <img class="math" src="../../_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s" style="vertical-align: 0px"/> to <img class="math" src="../../_images/math/e0d2bf360290fd61d1c1557e763f2622363b3d35.png" alt="t" style="vertical-align: 0px"/> is minimized. We will use this representation of the problem to design our first model.</p>
+from <img class="math" src="../../_images/math/f37bba504894945c07a32f5496d74299a37aa51c.png" alt="s" style="vertical-align: 0px"/> to <img class="math" src="../../_images/math/e0d2bf360290fd61d1c1557e763f2622363b3d35.png" alt="t" style="vertical-align: 0px"/> is minimized. We will use this representation of the problem to design our model.</p>
 </div>
 <div class="section" id="the-disjunctive-model">
 <h2>6.1.3. The disjunctive model</h2>
-<p>This model is a straightforward translation of the definition of a job-shop problem and
-its disjunctive graph reprensentation.</p>
+<p>This model is a straightforward translation of the definition of a Job-Shop Problem and
+its disjunctive graph representation.</p>
 <p>We again rely on the <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method: describe, model and solve</em></a>. What are the decision <strong>variables</strong>?
 We use the variables <img class="math" src="../../_images/math/9d9454be3db1a8cbe0b9f0a7926a43da92cb0785.png" alt="t_{ij}" style="vertical-align: -6px"/> to store
 the starting time of task <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> of job <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/>. We could use two fictive variables corresponding to the fictive
@@ -253,31 +185,20 @@ of the disjunctive graph. We use the same simplified notation for the processing
 <p>What are the <strong>constraints</strong>? In the disjunctive graph, we have two kind of edges to model a feasible schedule:</p>
 <blockquote>
 <div><ul>
-<li><p class="first">conjunctive arcs modelling the order in which each task of a job has to be processed:</p>
+<li><p class="first"><strong>conjunctive arcs</strong> modelling the order in which each task of a job has to be processed:</p>
 <div class="math">
 <p><img src="../../_images/math/8135ef4bf4f5393ed0a91cf2dfeb2da9136be058.png" alt="\forall (k,l) \in C \text{ such that } k \neq s \text{ and } l \neq t:\\
 
 t_k + p_k \leqslant t_l"/></p>
 </div><p>These constraints are called <em>conjunctive constraints</em>.</p>
 </li>
-<li><p class="first">disjunctive edges modelling the order in which tasks have to be processed on a single machine:</p>
+<li><p class="first"><strong>disjunctive edges</strong> modelling the order in which tasks have to be processed on a single machine:</p>
 <div class="math">
 <p><img src="../../_images/math/439a2469ee23026aafafa35dc65b057b0a95c4bb.png" alt="\forall (k,l) \in D \text{ such that } m_k = m_l\\
 
 t_k + p_k \leqslant t_l \text{ or } t_l + p_l \leqslant t_k"/></p>
 </div><p>These constraints are called <em>disjunctive constraints</em>. They forbid
 cycles in a clique corresponding to a machine<a class="footnote-reference" href="#cycle-and-disjunctive-constraint" id="id9">[7]</a>.</p>
-<table class="docutils footnote" frame="void" id="cycle-and-disjunctive-constraint" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id9">[7]</a></td><td><p class="first">Here is why. Consider the following situation</p>
-<img alt="../../_images/no_cycle.png" class="align-center" src="../../_images/no_cycle.png" style="width: 100pt;" />
-<p class="last">We have <img class="math" src="../../_images/math/2a0d4aca2ede03ed690aa6b8156cf1365c2092c4.png" alt="t_1 + p_1 \leqslant t_2" style="vertical-align: -4px"/>, <img class="math" src="../../_images/math/0aba1ad3e71e836ae6be0c10d98009225cc7d536.png" alt="t_2 + p_2 \leqslant t_3" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/f8a3ac00f959fceb468597db76b05b631793553f.png" alt="t_3 + p_3 \leqslant t_1" style="vertical-align: -4px"/>. Add
-these three inequalities and you obtain <img class="math" src="../../_images/math/ae74ef04a3cb82e2385581b032b5eaca8261783b.png" alt="p_1 + p_2 + p_3 \leqslant 0" style="vertical-align: -4px"/>. This is impossible if one of the
-<img class="math" src="../../_images/math/245a5501248a6ea24f520f76d4140cedf08e1674.png" alt="p_i" style="vertical-align: -4px"/> is greater than 0 as every <img class="math" src="../../_images/math/c4142f7b4dd824daf7e343ac3673560bcc04c2ed.png" alt="p_i \geqslant 0" style="vertical-align: -4px"/>.</p>
-</td></tr>
-</tbody>
-</table>
 </li>
 </ul>
 </div></blockquote>
@@ -301,31 +222,16 @@ C_{\textrm{max}} \geqslant t_k + p_k."/></p>
 &amp; t_k + p_k \leqslant t_l \text{ or } t_l + p_l \leqslant t_k &amp; \forall \, (k,l) \in D: m_k = m_l\\
 &amp; t_k \geqslant 0 &amp; \forall \, k \in V \setminus \{s,t\}
 \end{array}"/></p>
-</div><table class="docutils footnote" frame="void" id="jobshop-model-exact" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id10">[8]</a></td><td>It is not obvious that this model produces optimal solutions that are feasible schedules but it can
-be shown that it does.</td></tr>
-</tbody>
-</table>
-<p>We will implement and solve this model in the next section but first we need to read and process the data representing
-instances of job-shop problems.</p>
+</div><p>We will implement and solve this model in the next section but first we need to read and process the data representing
+instances of Job-Shop Problems.</p>
 </div>
 <div class="section" id="the-data-and-file-formats">
 <h2>6.1.4. The data and file formats</h2>
 <p>To collect the data, we use two different file formats: <strong>JSSP</strong> and professor <strong>Taillard&#8217;s</strong> format.
-In the directory <tt class="file docutils literal"><span class="pre">data/jobshop</span></tt>, you can find data files for the job-shop problem<a class="footnote-reference" href="#jobshop-data-files-copied" id="id11">[9]</a>.
+In the directory <tt class="file docutils literal"><span class="pre">data/jobshop</span></tt>, you can find data files for the Job-Shop Problem<a class="footnote-reference" href="#jobshop-data-files-copied" id="id11">[9]</a>.
 The file <tt class="file docutils literal"><span class="pre">jobshop.h</span></tt> lets you read both formats and store the data into a <tt class="docutils literal"><span class="pre">JobshopData</span></tt> class.
 We will use this class throughout this chapter.</p>
-<table class="docutils footnote" frame="void" id="jobshop-data-files-copied" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id11">[9]</a></td><td>We copied the files <tt class="file docutils literal"><span class="pre">abz9</span></tt>
-and <tt class="file docutils literal"><span class="pre">20_5_01_ta001.txt</span></tt> in the directory <tt class="file docutils literal"><span class="pre">manual/tutorials/cplusplus/chap6</span></tt> for your convenience.</td></tr>
-</tbody>
-</table>
-<div class="section" id="jssp-format">
-<h3>6.1.4.1. JSSP format</h3>
+<hr class="docutils" />
 <p><em>JSSP</em> stands for <em>Job Shop Scheduling Problem</em>. Let&#8217;s consider the beginning of file <tt class="file docutils literal"><span class="pre">abz9</span></tt>:</p>
 <div class="highlight-text"><div class="highlight"><pre>+++++++++++++++++++++++++++++
 
@@ -354,9 +260,8 @@ For this first job, the first task needs 14 units of time on machine 6, the seco
 on machine 5 and so on.</p>
 <p>As is often the case,
 there is a one to one correspondence between the tasks and the machines.</p>
-</div>
 <div class="section" id="taillard-s-format">
-<h3>6.1.4.2. Taillard&#8217;s format</h3>
+<h3>6.1.4.1. Taillard&#8217;s format</h3>
 <p>Let&#8217;s consider the beginning of file <tt class="file docutils literal"><span class="pre">20_5_01_ta001.txt</span></tt>:</p>
 <div class="highlight-text"><div class="highlight"><pre>20
 5
@@ -392,16 +297,25 @@ actually</p>
 <p><img src="../../_images/math/7b12ec61702503b7f01013a26b6af63aacc6136b.png" alt="[(0,54), (1,79), (2,16), (3,66), (4,58)]"/></p>
 </div><p>Because of this trick, one can not easily define our problem instance above in this format and we don&#8217;t attempt to do it.</p>
 <p>You can find anything you ever wanted to know and more about this format in <a class="reference internal" href="#taillard1993">[Taillard1993]</a>.</p>
-<table class="docutils citation" frame="void" id="taillard1993" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id12">[Taillard1993]</a></td><td>Taillard, E., 1993. <em>Benchmarks for basic scheduling problems</em>,
-European Journal of Operational Research, Elsevier, vol. 64(2), pages 278-285, January.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="jobshopdata">
-<h3>6.1.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></h3>
+<span id="jobshopdata-class"></span><h3>6.1.4.2. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></h3>
+<div class="files-sidebar container">
+<ol>
+  <li>C++ code:
+    <ol>
+      <li><a href="../../../tutorials/cplusplus/chap6/jobshop.h">jobshop.h</a></li>
+      <li><a href="../../../tutorials/cplusplus/chap6/report_jobshopdata.cc">report_jobshopdata.cc</a></li>
+    </ol>
+  </li>
+    <li>Data files:
+        <ol>
+           <li><a href="../../../tutorials/cplusplus/chap6/abz9">abz9</a></li>
+           <li><a href="../../../tutorials/cplusplus/chap6/20_5_01_ta001.txt">20_5_01_ta001.txt</a></li>
+           <li><a href="../../../tutorials/cplusplus/chap6/first_example_jssp.txt">first_example_jssp.txt</a></li>
+        </ol>
+     </li>
+</ol></div>
 <p>The <tt class="docutils literal"><span class="pre">JobshopData</span></tt> class is a simple container for job-shop problem instances. It is defined in the file <tt class="file docutils literal"><span class="pre">jobshop.h</span></tt>.
 Basically, it wraps an <tt class="docutils literal"><span class="pre">std::vector&lt;std::vector&lt;Task&gt;</span> <span class="pre">&gt;</span></tt> container where <tt class="docutils literal"><span class="pre">Task</span></tt> is a <tt class="docutils literal"><span class="pre">struct</span></tt> defined as follows:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">struct</span> <span class="n">Task</span> <span class="p">{</span>
@@ -479,7 +393,92 @@ Job: 2
 (1,4) (2,3)
 </pre></div>
 </div>
-<p>The file <tt class="file docutils literal"><span class="pre">report_jobshopdata.cc</span></tt> contains a simple program to test the content of data files for the job-shop problem.</p>
+<p>The file <tt class="file docutils literal"><span class="pre">report_jobshopdata.cc</span></tt> contains a simple program to test the content of data files for the Job-Shop Problem.</p>
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="tasks-operations" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>Tasks are also called <em>operations</em>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="job-shop-pedagogical-notation" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[2]</a></td><td>We use a slightly different and we hope easier notation than the ones used by the
+scheduling community.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="set-and-a-correspondence-rule" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[3]</a></td><td>And a correspondence rule between those integers and the tasks.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="left-shifted-schedules" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>A rigorous definition of <em>schedules where all tasks are completely left shifted on the Gantt chart</em>
+is beyond the scope of this manual. In scheduling jargon, such schedules are called <em>semi-active</em> schedules.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="except-if-you-see-disjunctive-graphs" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[5]</a></td><td>Except if you see the disjunctive graph in the Gantt chart!</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="acyclic-machine-clique" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id8">[6]</a></td><td>An acyclic graph is a graph without cycle. It can be shown that a complete directed acyclic graph induces
+a total order on its vertices, i.e. a complete directed acyclic graph lets you order all its vertices unequivocally.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="cycle-and-disjunctive-constraint" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id9">[7]</a></td><td><p class="first">Here is why. Consider the following situation</p>
+<img alt="../../_images/no_cycle.png" class="align-center" src="../../_images/no_cycle.png" style="width: 100pt;" />
+<p class="last">We have <img class="math" src="../../_images/math/2a0d4aca2ede03ed690aa6b8156cf1365c2092c4.png" alt="t_1 + p_1 \leqslant t_2" style="vertical-align: -4px"/>, <img class="math" src="../../_images/math/0aba1ad3e71e836ae6be0c10d98009225cc7d536.png" alt="t_2 + p_2 \leqslant t_3" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/f8a3ac00f959fceb468597db76b05b631793553f.png" alt="t_3 + p_3 \leqslant t_1" style="vertical-align: -4px"/>. Add
+these three inequalities and you obtain <img class="math" src="../../_images/math/ae74ef04a3cb82e2385581b032b5eaca8261783b.png" alt="p_1 + p_2 + p_3 \leqslant 0" style="vertical-align: -4px"/>. This is impossible if one of the
+<img class="math" src="../../_images/math/245a5501248a6ea24f520f76d4140cedf08e1674.png" alt="p_i" style="vertical-align: -4px"/> is greater than 0 as every <img class="math" src="../../_images/math/c4142f7b4dd824daf7e343ac3673560bcc04c2ed.png" alt="p_i \geqslant 0" style="vertical-align: -4px"/>.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="jobshop-model-exact" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id10">[8]</a></td><td>It is not obvious that this model produces optimal solutions that are feasible schedules but it can
+be shown that it does.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="jobshop-data-files-copied" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id11">[9]</a></td><td>We copied the files <tt class="file docutils literal"><span class="pre">abz9</span></tt>
+and <tt class="file docutils literal"><span class="pre">20_5_01_ta001.txt</span></tt> in the directory <tt class="file docutils literal"><span class="pre">manual/tutorials/cplusplus/chap6</span></tt> for your convenience.</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="garey1976" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Garey1976]</a></td><td>Garey, M. R., Johnson, D. S. and Sethi, R., <em>The complexity of flowshop and jobshop scheduling</em>,
+Mathematics of Operations Research, volume 1, pp 117-129, 1976.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="kis2002" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Kis2002]</a></td><td>Kis, T., <em>On the complexity of non-preemptive shop scheduling with two jobs</em>, Computing, volume 69, nbr 1, pp 37-49,
+2002.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="taillard1993" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id12">[Taillard1993]</a></td><td>Taillard, E., 1993. <em>Benchmarks for basic scheduling problems</em>,
+European Journal of Operational Research, Elsevier, vol. 64(2), pages 278-285, January.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
@@ -557,23 +556,22 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="jobshop_implementation.html"
                         title="next chapter">6.2. An implementation of the disjunctive model</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.1. The job-shop problem, the disjunctive model and benchmark data</a><ul>
+<li><a class="reference internal" href="#">6.1. The Job-Shop Problem, the disjunctive model and benchmark data</a><ul>
 <li><a class="reference internal" href="#description-of-the-problem">6.1.1. Description of the problem</a></li>
 <li><a class="reference internal" href="#the-disjunctive-graph">6.1.2. The disjunctive graph</a></li>
 <li><a class="reference internal" href="#the-disjunctive-model">6.1.3. The disjunctive model</a></li>
 <li><a class="reference internal" href="#the-data-and-file-formats">6.1.4. The data and file formats</a><ul>
-<li><a class="reference internal" href="#jssp-format">6.1.4.1. JSSP format</a></li>
-<li><a class="reference internal" href="#taillard-s-format">6.1.4.2. Taillard&#8217;s format</a></li>
-<li><a class="reference internal" href="#jobshopdata">6.1.4.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></a></li>
+<li><a class="reference internal" href="#taillard-s-format">6.1.4.1. Taillard&#8217;s format</a></li>
+<li><a class="reference internal" href="#jobshopdata">6.1.4.2. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></a></li>
 </ul>
 </li>
 </ul>
@@ -594,10 +592,10 @@ Search:
           <a href="jobshop_implementation.html" title="6.2. An implementation of the disjunctive model"
              >next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="../LS.html" title="6. Local Search: the Job-Shop Problem"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

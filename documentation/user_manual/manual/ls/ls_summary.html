@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="7. Meta-heuristics: several previous problems" href="../metaheuristics.html" />
     <link rel="prev" title="6.8. Filtering" href="ls_filtering.html" /> 
   </head>
@@ -45,7 +45,7 @@
           <a href="ls_filtering.html" title="6.8. Filtering"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,16 +56,18 @@
             
   <div class="section" id="summary">
 <span id="ls-summary"></span><h1>6.9. Summary</h1>
-<div class="section" id="what-is-missing">
-<h2>6.9.1. What is missing?</h2>
-</div>
-<div class="section" id="to-go-further">
-<h2>6.9.2. To go further:</h2>
-<p class="rubric">Examples:</p>
-<p class="rubric">Lab:</p>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<p>Again, another dense chapter. In this chapter, we saw basically 4 things:</p>
+<ul class="simple">
+<li>what Local Search is and how it behaves practically;</li>
+<li>how Local Search is implemented in <strong>or-tools</strong>;</li>
+<li>what kind of customized classes are used to tackle Scheduling Problems in <strong>or-tools</strong>;</li>
+<li>the Job-Shop Problem as an illustrative example.</li>
+</ul>
+<p>More precisely, we saw a description of the Job-Shop Problem and how to model it with the disjunctive model. This allowed us to introduce the <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>s and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>s variables that
+are typically used in Scheduling. We also combined two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s in a top-down fashion. After describing general features of Local Search, we have seen its general implementation in <strong>or-tools</strong> and in particular
+where the callbacks of the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s are called in the Local Search algorithm. Finally, we saw how by implementing <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt>s and <tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s we can define our neighborhoods for the Local Search algorithm.</p>
+<p>There are some interesting examples in the directory <tt class="file docutils literal"><span class="pre">examples/cpp</span></tt> and the reader is encouraged to read them carefully.</p>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
-</div>
 
 
           </div>
@@ -140,22 +142,13 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="ls_filtering.html"
                         title="previous chapter">6.8. Filtering</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="../metaheuristics.html"
                         title="next chapter">7. Meta-heuristics: several previous problems</a></p>
-  <h3>Current section</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">6.9. Summary</a><ul>
-<li><a class="reference internal" href="#what-is-missing">6.9.1. What is missing?</a></li>
-<li><a class="reference internal" href="#to-go-further">6.9.2. To go further:</a></li>
-</ul>
-</li>
-</ul>
-
         </div>
       </div>
       <div class="clearer"></div>
@@ -173,7 +166,7 @@ Search:
           <a href="ls_filtering.html" title="6.8. Filtering"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

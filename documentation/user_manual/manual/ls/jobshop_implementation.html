@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
+    <link rel="up" title="6. Local Search: the Job-Shop Problem" href="../LS.html" />
     <link rel="next" title="6.3. Scheduling in or-tools" href="scheduling_or_tools.html" />
-    <link rel="prev" title="6.1. The job-shop problem, the disjunctive model and benchmark data" href="jobshop_def_data.html" /> 
+    <link rel="prev" title="6.1. The Job-Shop Problem, the disjunctive model and benchmark data" href="jobshop_def_data.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,10 +42,10 @@
           <a href="scheduling_or_tools.html" title="6.3. Scheduling in or-tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="jobshop_def_data.html" title="6.1. The job-shop problem, the disjunctive model and benchmark data"
+          <a href="jobshop_def_data.html" title="6.1. The Job-Shop Problem, the disjunctive model and benchmark data"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -78,12 +78,6 @@ we will implement the disjunctive model with dedicated variables (<tt class="doc
 <tt class="docutils literal"><span class="pre">SequenceVar</span></tt>) and constraints (<tt class="docutils literal"><span class="pre">IntervalBinaryRelation</span></tt> and <tt class="docutils literal"><span class="pre">DisjunctiveConstraint</span></tt>).</p>
 <p>Last but not least, we will see our first real example of combining two <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 in a top-down fashion.</p>
-<table class="docutils footnote" frame="void" id="scheduling-or-tools-explained-in-details-next-section" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The next section is entirely dedicated to scheduling in <em>or-tools</em>.</td></tr>
-</tbody>
-</table>
 <div class="section" id="the-intervalvar-variables">
 <h2>6.2.1. The <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables</h2>
 <p>We create one <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> for each task.
@@ -97,8 +91,8 @@ Remember the <tt class="docutils literal"><span class="pre">Task</span></tt> <tt
 </pre></div>
 </div>
 <p>An <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> represents one
-integer interval and is often used in scheduling. Its main characteristics are its starting time,
-its duration and its ending time.</p>
+integer interval and is often used in scheduling. Its main characteristics are its <em>starting time</em>,
+its <em>duration</em> and its <em>ending time</em>.</p>
 <p>The CP solver has the factory method <tt class="docutils literal"><span class="pre">MakeFixedDurationIntervalVar()</span></tt> for fixed duration intervals:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="n">StringPrintf</span><span class="p">(</span><span class="s">&quot;J%dM%dI%dD%d&quot;</span><span class="p">,</span>
                                       <span class="n">task</span><span class="p">.</span><span class="n">job_id</span><span class="p">,</span>
@@ -179,13 +173,6 @@ class:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<table class="docutils footnote" frame="void" id="one-way-to-create-sequence-vars" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The factory method <tt class="docutils literal"><span class="pre">Solver::MakeSequenceVar(...)</span></tt>
-has been removed from the API.</td></tr>
-</tbody>
-</table>
 </div>
 <div class="section" id="the-objective-function">
 <h2>6.2.4. The objective function</h2>
@@ -220,7 +207,7 @@ You can also query the start time and duration:</p>
 <p>The solving process is done in two sequential phases: first we rank the tasks for each machine, then
 we schedule each task at its earliest start time. This is done with <em>two</em> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s
 that are combined in a top-down fashion, i.e. one <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is applied and then when we reach
-a leaf in the search tree, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> kicks in. Since this chapter is about local search,
+a leaf in its search tree, the second <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> kicks in. Since this chapter is about local search,
 we will use default search strategies for both phases.</p>
 <p>First, we define the phase to rank the tasks on all machines:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">sequence_phase</span> <span class="o">=</span>
@@ -364,9 +351,22 @@ The result for our instance is:</p>
 finds its 107 <sup>th</sup> solution with an objective value of 986. This is quite far from the optimal
 value of... 679 <a class="reference internal" href="#adams1988">[Adams1988]</a>.
 An exact procedure to solve the job-shop problem is possible but only for small instances and with specialized algorithms.</p>
-<p>We prefer to quickly find (hopefully) good solutions (see the section <a class="reference internal" href="jobshop_ls.html#jobshop-ls"><em>The jobshop problem: and now with local search!</em></a>).</p>
+<p>We prefer to quickly find (hopefully) good solutions (see the section <a class="reference internal" href="jobshop_ls.html#jobshop-ls"><em>The Job-Shop Problem: and now with Local Search!</em></a>).</p>
 <p>We will discover next what specialized tools are available in our library to handle scheduling problems.</p>
-<table class="docutils citation" frame="void" id="adams1988" rules="none">
+<h4>Footnotes</h4><table class="docutils footnote" frame="void" id="scheduling-or-tools-explained-in-details-next-section" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The next section is entirely dedicated to scheduling in <strong>or-tools</strong>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="one-way-to-create-sequence-vars" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The factory method <tt class="docutils literal"><span class="pre">Solver::MakeSequenceVar(...)</span></tt>
+has been removed from the API.</td></tr>
+</tbody>
+</table>
+<h4>Bibliography</h4><table class="docutils citation" frame="void" id="adams1988" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id3">[Adams1988]</a></td><td>J. Adams, E. Balas, D. Zawack, <em>The shifting bottleneck
@@ -449,13 +449,13 @@ Search:
 
   <h3>Current chapter</h3>
   <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+                        title="previous chapter">6. Local Search: the Job-Shop Problem</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="jobshop_def_data.html"
-                        title="previous chapter">6.1. The job-shop problem, the disjunctive model and benchmark data</a></p>
+                        title="previous chapter">6.1. The Job-Shop Problem, the disjunctive model and benchmark data</a></p>
   <h3>Next section</h3>
   <p class="topless"><a href="scheduling_or_tools.html"
-                        title="next chapter">6.3. Scheduling in <em>or-tools</em></a></p>
+                        title="next chapter">6.3. Scheduling in <strong>or-tools</strong></a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">6.2. An implementation of the disjunctive model</a><ul>
@@ -483,10 +483,10 @@ Search:
           <a href="scheduling_or_tools.html" title="6.3. Scheduling in or-tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="jobshop_def_data.html" title="6.1. The job-shop problem, the disjunctive model and benchmark data"
+          <a href="jobshop_def_data.html" title="6.1. The Job-Shop Problem, the disjunctive model and benchmark data"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local Search: the Job-Shop Problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
