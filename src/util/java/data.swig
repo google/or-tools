@@ -31,13 +31,12 @@
 %typemap(javain) const std::vector<CType>& "$javainput"
 %typemap(in) const std::vector<CType>& %{
   if($input) {
-    $1 = new std::vector<CType>;
     const int size = jenv->GetArrayLength($input);
-    $1->reserve(size);
+    $1 = new std::vector<CType>(size);
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
       JavaType value = values[i];
-      $1->emplace_back(value);
+      (*$1)[i] = value;
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }

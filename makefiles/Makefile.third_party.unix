@@ -8,7 +8,7 @@ PROTOBUF_TAG = 512
 GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
-CBC_TAG = 2.8.9
+CBC_TAG = 2.8.12
 # SWIG 2.0.12
 SWIG_TAG = 18238
 # SWIG 3.0.3
@@ -30,8 +30,8 @@ LIBTOOL_TAG = 2.4.2
 # Build extra dependencies (GLPK, SCIP) from archive only if the
 # archive is present.
 #
-# The GLPK archive should be glpk-4.53.tar.gz
-GLPK_TAG = 4.53
+# The GLPK archive should be glpk-4.55.tar.gz
+GLPK_TAG = 4.55
 # The SCIP archive should be scipoptsuite-3.1.0.tgz
 SCIP_TAG = 3.1.0
 
