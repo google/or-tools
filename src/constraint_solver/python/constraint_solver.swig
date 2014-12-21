@@ -192,6 +192,116 @@ PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
+// Create input mapping for Solver::IndexEvaluator1
+%{
+static int64 PyCallbackIndexEvaluator1(
+    PyObject* pyfunc,
+    int64 i) {
+  int64 result = 0;
+  // Cast to int needed, no int64 support
+  PyObject* arglist = Py_BuildValue("l", i);
+  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+  Py_DECREF(arglist);
+  if (pyresult) {
+    result = PyInt_AsLong(pyresult);
+  }
+  Py_XDECREF(pyresult);
+  return result;
+}
+%}
+%typemap(in) operations_research::Solver::IndexEvaluator1* {
+  if (!PyCallable_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator1, $input);
+}
+// Create conversion of vectors of Solver::IndexEvaluator1
+%{
+template<>
+bool PyObjAs(PyObject* py_obj,
+             operations_research::Solver::IndexEvaluator1** b) {
+  if (!PyCallable_Check(py_obj)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    return false;
+  }
+  *b = NewPermanentCallback(&PyCallbackIndexEvaluator1, py_obj);
+  return true;
+}
+%}
+
+// Create input mapping for Solver::IndexEvaluator2
+%{
+static int64 PyCallbackIndexEvaluator2(PyObject* pyfunc, int64 i, int64 j) {
+  int64 result = 0;
+  // Cast to int needed, no int64 support
+  PyObject* arglist = Py_BuildValue("ll", i, j);
+  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+  Py_DECREF(arglist);
+  if (pyresult) {
+    result = PyInt_AsLong(pyresult);
+  }
+  Py_XDECREF(pyresult);
+  return result;
+}
+%}
+%typemap(in) operations_research::Solver::IndexEvaluator2* {
+  if (!PyCallable_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator2, $input);
+}
+// Create conversion of vectors of Solver::IndexEvaluator2
+%{
+template<>
+bool PyObjAs(PyObject* py_obj,
+             operations_research::Solver::IndexEvaluator2** b) {
+  if (!PyCallable_Check(py_obj)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    return false;
+  }
+  *b = NewPermanentCallback(&PyCallbackIndexEvaluator2, py_obj);
+  return true;
+}
+%}
+
+// Create input mapping for Solver::IndexEvaluator2
+%{
+static int64 PyCallbackIndexEvaluator3(PyObject* pyfunc, int64 i, int64 j,
+                                       int64 k) {
+  int64 result = 0;
+  // Cast to int needed, no int64 support
+  PyObject* arglist = Py_BuildValue("lll", i, j, k);
+  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
+  Py_DECREF(arglist);
+  if (pyresult) {
+    result = PyInt_AsLong(pyresult);
+  }
+  Py_XDECREF(pyresult);
+  return result;
+}
+%}
+%typemap(in) operations_research::Solver::IndexEvaluator3* {
+  if (!PyCallable_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator3, $input);
+}
+// Create conversion of vectors of Solver::IndexEvaluator3
+%{
+template<>
+bool PyObjAs(PyObject* py_obj,
+             operations_research::Solver::IndexEvaluator3** b) {
+  if (!PyCallable_Check(py_obj)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    return false;
+  }
+  *b = NewPermanentCallback(&PyCallbackIndexEvaluator3, py_obj);
+  return true;
+}
+%}
 
 // ============= Extensions ==============
 
@@ -2217,4 +2327,3 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
-
