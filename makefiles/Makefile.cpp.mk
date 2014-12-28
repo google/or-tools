@@ -366,7 +366,9 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sflatzinc*
-	-$(DEL) $(GEN_DIR)$Sflatzinc$Sparser*
+	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sparser*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.*
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
