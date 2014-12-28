@@ -354,6 +354,7 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$Sold_fz$E
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sfz2$E
+	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
