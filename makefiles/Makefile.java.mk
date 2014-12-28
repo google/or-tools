@@ -7,6 +7,7 @@ clean_java:
 	-$(DEL) $(LIB_DIR)$S*.jar
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*java_wrap*
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*-e
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.java
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
@@ -22,6 +23,8 @@ clean_java:
 	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Ssamples$S*.class
 	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Ssamples$S*.class
 	-$(DEL) $(OBJ_DIR)$Sswig$S*java_wrap.$O
+	-$(DELREC) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver
+	-$(DELREC) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver
 
 # ---------- Java support using SWIG ----------
 
