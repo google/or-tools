@@ -42,7 +42,7 @@ csharp: csharportools csharpexe
 
 # Clean target.
 clean_csharp:
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.$(DYNAMIC_SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.$(DYNAMIC_SWIG_LIB_SUFFIX)
 	-$(DEL) $(BIN_DIR)$SGoogle.OrTools*.dll
 	-$(DEL) $(BIN_DIR)$SGoogle.OrTools*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools*.lib
