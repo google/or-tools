@@ -326,6 +326,7 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)base.$(STATIC_LIB_SUFFIX)
@@ -346,6 +347,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sold_flatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
