@@ -2268,9 +2268,6 @@ class PyDecisionBuilder(object):
     try:
       return self.Next(solver)
     except Exception as e:
-      # TODO(user): use a custom Exception class in PROTECT_FROM_FAILURE,
-      # instead of PyExc_Exception, and catch it here. Also fix all other
-      # occurrences (see below).
       if 'CP Solver fail' in str(e):
         return solver.FailDecision()
       else:

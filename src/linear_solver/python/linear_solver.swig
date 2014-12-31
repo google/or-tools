@@ -146,8 +146,8 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   }  // %pythoncode
 }
 
-# See ../python/linear_programming.py for example on how to use the nice
-# extended python API provided below.
+// See ../python/linear_programming.py for example on how to use the nice
+// extended python API provided below.
 %extend MPSolver {
   std::string ExportModelAsLpFormat(bool obfuscated) {
     std::string output;
@@ -177,7 +177,6 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     result = SumArray(expr_array)
     return result
 
-  # Compatibility
   def RowConstraint(self, *args):
     return self.Constraint(*args)
 
