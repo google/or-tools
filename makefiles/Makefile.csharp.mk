@@ -93,7 +93,7 @@ $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/googl
 	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools 1.0.0.$(SVNVERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
 $(GEN_DIR)/com/google/ortools/SvnVersion$(SVNVERSION_SIMPLE).txt:
-	echo $(SVNVERSION_SIMPLE) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(SVNVERSION_SIMPLE).txt
+	@echo $(SVNVERSION_SIMPLE) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(SVNVERSION_SIMPLE).txt
 
 # csharportools
 
