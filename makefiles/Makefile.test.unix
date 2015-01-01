@@ -21,18 +21,18 @@ test_python: python
 test_java: java run_RabbitsPheasants run_FlowExample run_Tsp run_LinearProgramming run_IntegerProgramming run_Knapsack
 
 # csharp test
-test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp.exe $(BIN_DIR)/testcp.exe
-	$(MONO) $(BIN_DIR)/cslinearprogramming.exe
-	$(MONO) $(BIN_DIR)/csintegerprogramming.exe
-	$(MONO) $(BIN_DIR)/csrabbitspheasants.exe
-	$(MONO) $(BIN_DIR)/csflow.exe
-	$(MONO) $(BIN_DIR)/csknapsack.exe
-	$(MONO) $(BIN_DIR)/furniture_moving_intervals.exe
-	$(MONO) $(BIN_DIR)/organize_day_intervals.exe
-	$(MONO) $(BIN_DIR)/furniture_moving_intervals.exe
-	$(MONO) $(BIN_DIR)/techtalk_scheduling.exe
-	$(MONO) $(BIN_DIR)/csls_api.exe
-	$(MONO) $(BIN_DIR)/cstsp.exe
-	$(MONO) $(BIN_DIR)/cscvrptw.exe
-	$(MONO) $(BIN_DIR)/testlp.exe
-	$(MONO) $(BIN_DIR)/testcp.exe
+test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/cslinearprogramming$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/csrabbitspheasants$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/csflow$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/csknapsack$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/furniture_moving_intervals$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/organize_day_intervals$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/furniture_moving_intervals$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/csls_api$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/cstsp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/cscvrptw$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
