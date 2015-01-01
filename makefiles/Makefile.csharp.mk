@@ -35,12 +35,14 @@ CLR_DLL_NAME?=Google.OrTools
 # [DllImport] attributes which contain the name of the DLL. Executables will
 # be suffixed _x64 in 64-bit builds, no suffix in 32-bit builds.
 
-ifdef CLR_PER_PLATFORM_ASSEMBLY_NAMING
-  ifeq ($(NETPLATFORM),x64)
-    CLR_DLL_NAME:=$(CLR_DLL_NAME).x64
-    CLR_EXE_SUFFIX?=_x64
-  else
-    CLR_DLL_NAME:=$(CLR_DLL_NAME).x86
+ifeq ($(SYSTEM),win)
+  ifdef CLR_PER_PLATFORM_ASSEMBLY_NAMING
+    ifeq ($(NETPLATFORM),x64)
+      CLR_DLL_NAME:=$(CLR_DLL_NAME).x64
+      CLR_EXE_SUFFIX?=_x64
+    else
+      CLR_DLL_NAME:=$(CLR_DLL_NAME).x86
+    endif
   endif
 endif
 
@@ -65,7 +67,6 @@ csharp: csharportools csharpexe
 # Clean target.
 clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).*.$(DYNAMIC_SWIG_LIB_SUFFIX)
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.dll
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME)*.lib
