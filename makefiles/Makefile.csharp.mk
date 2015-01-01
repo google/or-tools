@@ -34,6 +34,7 @@ CLR_DLL_NAME?=Google.OrTools
 # the platform. Note that the name is signigicant due to SWIG-generated
 # [DllImport] attributes which contain the name of the DLL. Executables will
 # be suffixed _x64 in 64-bit builds, no suffix in 32-bit builds.
+# This is only available on windows.
 
 ifeq ($(SYSTEM),win)
   ifdef CLR_PER_PLATFORM_ASSEMBLY_NAMING
