@@ -88,7 +88,14 @@ clean_csharp:
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
 $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(SVNVERSION_SIMPLE).txt
-	@echo "[assembly: System.Reflection.AssemblyVersion( \"1.0.0.$(SVNVERSION_SIMPLE)\" )]" > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyTitle( \"OR-Tools Assembly\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyDescription( \".NET Assembly for the OR-Tools project\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyConfiguration( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyCompany( \"Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyVersion( \"1.0.0.$(SVNVERSION_SIMPLE)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: System.Reflection.AssemblyFileVersion( \"1.0.0.$(SVNVERSION_SIMPLE)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools 1.0.0.$(SVNVERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
