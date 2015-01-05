@@ -111,7 +111,7 @@ ifdef UNIX_CLP_DIR
 endif
 
 ifeq ($(PLATFORM),LINUX)
-  CCC = g++ -fPIC -std=c++0x
+  CCC = g++ -fPIC -std=c++0x -fwrapv
   DYNAMIC_LD = g++ -shared
   STATIC_LD = ar rv
   ifeq ($(PTRLENGTH),64)
