@@ -31,7 +31,8 @@
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",
               "The solver to use: "
-              "cbc, clp, glop, glpk, glpk_mip, gurobi, gurobi_mip, scip.");
+              "cbc, clp, cplex, cplex_mip, glop, glpk, glpk_mip, "
+	            "gurobi, gurobi_mip, scip.");
 DEFINE_string(params, "", "Solver specific parameters");
 DEFINE_string(forced_mps_format, "",
               "Set to force the mps format to use: free, fixed");
@@ -59,6 +60,10 @@ void Run() {
   } else if (FLAGS_solver == "clp") {
     type = MPSolver::CLP_LINEAR_PROGRAMMING;
 #endif
+#if defined(USE_CPLEX)
+  } else if (FLAGS_solver == "cplex") {
+    type = MPSolver::CPLEX_LINEAR_PROGRAMMING;
+#endif
 #if defined(USE_GUROBI)
   } else if (FLAGS_solver == "gurobi") {
     type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
@@ -74,6 +79,10 @@ void Run() {
 #if defined(USE_GLPK)
   } else if (FLAGS_solver == "glpk_mip") {
     type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_CPLEX)
+  } else if (FLAGS_solver == "cplex_mip") {
+    type = MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 #endif
 #if defined(USE_GUROBI)
   } else if (FLAGS_solver == "gurobi_mip") {
