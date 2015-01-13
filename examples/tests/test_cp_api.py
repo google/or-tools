@@ -50,18 +50,22 @@ def test_export():
 class SearchMonitorTest(pywrapcp.SearchMonitor):
 
   def __init__(self, solver, nexts):
+    print 'Build'
     pywrapcp.SearchMonitor.__init__(self, solver)
     self._nexts = nexts
 
   def BeginInitialPropagation(self):
+    print 'In BeginInitialPropagation'
     print self._nexts
 
   def EndInitialPropagation(self):
+    print 'In EndInitialPropagation'
     print self._nexts
 
 
 def test_search_monitor():
-  solver = pywrapcp.Solver('test export')
+  print 'test_search_monitor'
+  solver = pywrapcp.Solver('test search monitor')
   x = solver.IntVar(1, 10, 'x')
   ct = (x == 3)
   solver.Add(ct)
@@ -82,6 +86,7 @@ class DemonTest(pywrapcp.PyDemon):
 
 
 def test_demon():
+  print 'test_demon'
   solver = pywrapcp.Solver('test export')
   x = solver.IntVar(1, 10, 'x')
   demon = DemonTest(x)

@@ -1489,46 +1489,30 @@ namespace operations_research {
 // - ProgressPercent()
 // - Accept()
 // - Install()
+%feature("director") SearchMonitor;
 %unignore SearchMonitor;
 %unignore SearchMonitor::SearchMonitor;
 %unignore SearchMonitor::~SearchMonitor;
 %unignore SearchMonitor::EnterSearch;
-%feature("director") SearchMonitor::EnterSearch;
 %unignore SearchMonitor::RestartSearch;
-%feature("director") SearchMonitor::RestartSearch;
 %unignore SearchMonitor::ExitSearch;
-%feature("director") SearchMonitor::ExitSearch;
 %unignore SearchMonitor::BeginNextDecision;
-%feature("director") SearchMonitor::BeginNextDecision;
 %unignore SearchMonitor::EndNextDecision;
-%feature("director") SearchMonitor::EndNextDecision;
 %unignore SearchMonitor::ApplyDecision;
-%feature("director") SearchMonitor::ApplyDecision;
 %unignore SearchMonitor::RefuteDecision;
-%feature("director") SearchMonitor::RefuteDecision;
 %unignore SearchMonitor::AfterDecision;
-%feature("director") SearchMonitor::AfterDecision;
 %unignore SearchMonitor::BeginFail;
-%feature("director") SearchMonitor::BeginFail;
 %unignore SearchMonitor::EndFail;
-%feature("director") SearchMonitor::EndFail;
 %unignore SearchMonitor::BeginInitialPropagation;
-%feature("director") SearchMonitor::BeginInitialPropagation;
 %unignore SearchMonitor::EndInitialPropagation;
-%feature("director") SearchMonitor::EndInitialPropagation;
 %unignore SearchMonitor::AcceptSolution;
-%feature("director") SearchMonitor::AcceptSolution;
 %unignore SearchMonitor::AtSolution;
-%feature("director") SearchMonitor::AtSolution;
 %unignore SearchMonitor::NoMoreSolutions;
-%feature("director") SearchMonitor::NoMoreSolutions;
 %unignore SearchMonitor::LocalOptimum;
-%feature("director") SearchMonitor::LocalOptimum;
 %unignore SearchMonitor::AcceptDelta;
-%feature("director") SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
-%feature("director") SearchMonitor::AcceptNeighbor;
 %rename (solver) SearchMonitor::solver;
+%feature("nodirector") SearchMonitor::solver;
 
 
 // Rev<>
