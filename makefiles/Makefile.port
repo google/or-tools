@@ -128,7 +128,7 @@ SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | sed -n -r -e "s/([0-9]+).*/\1/p
 SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | sed -n -E -e "s/([0-9]+).*/\1/p")
   endif
 else
-SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | tools\\sed.exe -n -r -e 's/([0-9]+).*/\1/p')
+SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | tools\\sed.exe -n -r -e "s/([0-9]+).*/\1/p")
 endif
 
 printport:

@@ -89,6 +89,23 @@ clean_csharp:
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
 $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(SVNVERSION_SIMPLE).txt
+ifeq ("$(SYSTEM)","win")
+	@echo using System.Reflection; > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo using System.Runtime.CompilerServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo using System.Runtime.InteropServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyTitle( "OR-Tools Assembly" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyDescription( ".NET Assembly for the OR-Tools project" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyConfiguration( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyCompany( "Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2015 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyVersion( "1.0.$(SVNVERSION_SIMPLE).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyFileVersion( "1.0.$(SVNVERSION_SIMPLE).0" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyInformationalVersion( "OR-Tools 1.0.$(SVNVERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: ComVisible(false)] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: Guid("0a227c4c-8bb3-4db0-808f-55dae227d8c5")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+else
 	@echo "using System.Reflection;" > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "using System.Runtime.CompilerServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "using System.Runtime.InteropServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
@@ -104,6 +121,7 @@ $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/googl
 	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools 1.0.$(SVNVERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+endif
 
 $(GEN_DIR)/com/google/ortools/SvnVersion$(SVNVERSION_SIMPLE).txt:
 	@echo $(SVNVERSION_SIMPLE) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(SVNVERSION_SIMPLE).txt
@@ -181,7 +199,7 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
 	$(STATIC_ALL_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
@@ -286,6 +304,39 @@ rcs: ccs
 	$(MONO) $(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
 
 # Build archive.
+
+nuget_upload:
+	-$(DELREC) temp
+ifeq ("$(SYSTEM)","win")
+	tools\mkdir temp
+	tools\mkdir temp\or-tools
+	tools\mkdir temp\or-tools\bin
+	tools\mkdir temp\or-tools\examples
+	tools\mkdir temp\or-tools\examples\solution
+	tools\mkdir temp\or-tools\examples\solution\Properties
+	tools\mkdir temp\or-tools\data
+	tools\mkdir temp\or-tools\data\discrete_tomography
+	tools\mkdir temp\or-tools\data\fill_a_pix
+	tools\mkdir temp\or-tools\data\minesweeper
+	tools\mkdir temp\or-tools\data\rogo
+	tools\mkdir temp\or-tools\data\survo_puzzle
+	tools\mkdir temp\or-tools\data\quasigroup_completion
+	copy LICENSE-2.0.txt temp$Sor-tools
+	copy tools\README.dotnet temp\or-tools\README
+	copy bin\$(CLR_DLL_NAME).dll temp\or-tools\bin
+	copy examples\csharp\*.cs temp\or-tools\examples
+	copy examples\csharp\*.sln temp\or-tools\examples
+	copy examples\csharp\solution\*.csproj temp\or-tools\examples\solution
+	copy examples\csharp\solution\Properties\*.cs temp\or-tools\examples\solution\Properties
+	copy data\discrete_tomography\* temp\or-tools\data\discrete_tomography
+	copy data\fill_a_pix\* temp\or-tools\data\fill_a_pix
+	copy data\minesweeper\* temp\or-tools\data\minesweeper
+	copy data\rogo\* temp\or-tools\data\rogo
+	copy data\survo_puzzle\* temp\or-tools\data\survo_puzzle
+	copy data\quasigroup_completion\* temp\or-tools\data\quasigroup_completion
+	copy tools\or-tools.nuspec temp\or-tools
+	$(SED) -i -e "s/VVVV/$(SVNVERSION_SIMPLE)/g" temp\or-tools\or-tools.nuspec
+endif
 
 dotnet_archive: csharp
 	-$(DELREC) temp
