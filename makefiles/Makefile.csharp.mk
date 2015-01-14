@@ -336,6 +336,9 @@ ifeq ("$(SYSTEM)","win")
 	copy data\quasigroup_completion\* temp\or-tools\data\quasigroup_completion
 	copy tools\or-tools.nuspec temp\or-tools
 	$(SED) -i -e "s/VVVV/$(SVNVERSION_SIMPLE)/g" temp\or-tools\or-tools.nuspec
+	cd temp\or-tools
+	nuget pack or-tools.nuspec
+	nuget push Google.OrTools.1.0.$(SVNVERSION_SIMPLE).nupkg
 endif
 
 dotnet_archive: csharp
