@@ -654,7 +654,7 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface
 $(OBJ_DIR)/linear_solver/clp_interface.$O:$(SRC_DIR)/linear_solver/clp_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/clp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
 
-$(OBJ_DIR)/linear_solver/bop_interface.$O:$(SRC_DIR)/linear_solver/bop_interface.cc $(GEN_DIR)/bop/bop_parameters.pb.h
+$(OBJ_DIR)/linear_solver/bop_interface.$O:$(SRC_DIR)/linear_solver/bop_interface.cc $(GEN_DIR)/bop/bop_parameters.pb.h $(GEN_DIR)/sat/sat_parameters.pb.h $(GEN_DIR)/sat/boolean_problem.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sbop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sbop_interface.$O
 
 $(OBJ_DIR)/linear_solver/cplex_interface.$O:$(SRC_DIR)/linear_solver/cplex_interface.cc
@@ -669,7 +669,7 @@ $(OBJ_DIR)/linear_solver/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interfa
 $(OBJ_DIR)/linear_solver/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sgurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
-$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/bop/bop_parameters.pb.h
+$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Slinear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
 
 $(OBJ_DIR)/linear_solver/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
