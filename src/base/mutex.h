@@ -64,5 +64,9 @@ class CondVar {
 // Checking macros.
 #define EXCLUSIVE_LOCK_FUNCTION(x)
 #define UNLOCK_FUNCTION(x)
+#define LOCKS_EXCLUDED(x)
+#define EXCLUSIVE_LOCKS_REQUIRED(x)
+#define NO_THREAD_SAFETY_ANALYSIS
+#define GUARDED_BY(x)
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_MUTEX_H_

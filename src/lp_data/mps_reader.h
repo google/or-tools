@@ -220,6 +220,10 @@ class MPSReader {
   // The current line in the file being parsed.
   std::string line_;
 
+  // A row of Booleans. is_binary_by_default_[col] is true if col
+  // appeared within a scope started by INTORG and ended with INTEND markers.
+  DenseBooleanRow is_binary_by_default_;
+
   // True if the problem contains lazy constraints (LAZYCONS).
   bool has_lazy_constraints_;
 

@@ -208,6 +208,9 @@ class MPSolver {
     #if defined(USE_CPLEX)
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
     #endif
+ #if defined(USE_BOP)
+    BOP_INTEGER_PROGRAMMING = 12,
+    #endif
   };
 
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
@@ -532,6 +535,7 @@ class MPSolver {
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
+  friend class BopInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
@@ -662,6 +666,7 @@ class MPObjective {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class GLOPInterface;
+  friend class BopInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -735,6 +740,7 @@ class MPVariable {
   friend class CplexInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
+  friend class BopInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -835,6 +841,7 @@ class MPConstraint {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class GLOPInterface;
+  friend class BopInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong

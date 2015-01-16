@@ -346,10 +346,14 @@ void MPSReader::ProcessColumnsSection() {
   const std::string& row1_name = GetField(start_index, 1);
   const std::string& row1_value = GetField(start_index, 2);
   const ColIndex col = data_->FindOrCreateVariable(column_name);
+  is_binary_by_default_.resize(col + 1, false);
   if (in_integer_section_) {
     data_->SetVariableIntegrality(col, true);
     // The default bounds for integer variables are [0, 1].
     data_->SetVariableBounds(col, 0.0, 1.0);
+    is_binary_by_default_[col] = true;
+  } else {
+    data_->SetVariableBounds(col, 0.0, kInfinity);
   }
   StoreCoefficient(col, row1_name, row1_value);
   if (fields_.size() - start_index >= 4) {
@@ -482,15 +486,25 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
   if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
     data_->SetVariableIntegrality(col, true);
   }
-  Fractional lower_bound(-kInfinity);
-  Fractional upper_bound(kInfinity);
+  // Resize the is_binary_by_default_ in case it is the first time this column
+  // is encountered.
+  is_binary_by_default_.resize(col + 1, false);
+  // Check that "binary by default" implies "integer".
+  DCHECK(!is_binary_by_default_[col] || data_->is_variable_integer()[col]);
+  Fractional lower_bound = data_->variable_lower_bounds()[col];
+  Fractional upper_bound = data_->variable_upper_bounds()[col];
+  // If a variable is binary by default, its status is reset if any bound
+  // is set on it. We take care to restore the default bounds for general
+  // integer variables.
+  if (is_binary_by_default_[col]) {
+    lower_bound = Fractional(0.0);
+    upper_bound = kInfinity;
+  }
   switch (bound_type_id) {
     case LOWER_BOUND:
       lower_bound = Fractional(GetDoubleFromString(bound_value));
-      upper_bound = data_->variable_upper_bounds()[col];
       break;
     case UPPER_BOUND:
-      lower_bound = data_->variable_lower_bounds()[col];
       upper_bound = Fractional(GetDoubleFromString(bound_value));
       break;
     case FIXED_VARIABLE: {
@@ -500,13 +514,16 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
       break;
     }
     case FREE_VARIABLE:
-      // No constraint to add.
+      lower_bound = -kInfinity;
+      upper_bound = +kInfinity;
       break;
     case NEGATIVE:
+      lower_bound = -kInfinity;
       upper_bound = Fractional(0.0);
       break;
     case POSITIVE:
       lower_bound = Fractional(0.0);
+      upper_bound = +kInfinity;
       break;
     case BINARY:
       lower_bound = Fractional(0.0);
@@ -520,6 +537,7 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
                  << ". (Line contents: " << line_ << ").";
       parse_success_ = false;
   }
+  is_binary_by_default_[col] = false;
   data_->SetVariableBounds(col, lower_bound, upper_bound);
 }
 

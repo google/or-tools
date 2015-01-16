@@ -52,6 +52,10 @@ class ACMRandom {
 
   double RandDouble() { return RndDouble(); }
 
+  double UniformDouble(double x) {
+    return RandDouble() * x;
+  }
+
   // Returns a double in [a, b). The distribution is uniform.
   double UniformDouble(double a, double b) { return a + (b - a) * RndDouble(); }
 

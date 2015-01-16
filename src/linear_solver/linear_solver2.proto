@@ -143,6 +143,7 @@ message MPModelRequest {
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license.
+    BOP_INTEGER_PROGRAMMING = 12;
 
   }
   optional SolverType solver_type = 2;

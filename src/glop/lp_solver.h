@@ -45,10 +45,10 @@ class LPSolver {
   // Incrementality: From one Solve() call to the next, the internal state is
   // not cleared and the solver may take advantage of its current state if the
   // given lp is only slightly modified. If the modification is too important,
-  // or if the solver do not see how to reuse the previous state efficiently, it
-  // will just solve the problem from scrath. On the other hand, if the lp is
-  // the same, calling Solve() again should basically resume the solve from the
-  // last position. To disable this behavior, simply call Clear() before.
+  // or if the solver does not see how to reuse the previous state efficiently,
+  // it will just solve the problem from scratch. On the other hand, if the lp
+  // is the same, calling Solve() again should basically resume the solve from
+  // the last position. To disable this behavior, simply call Clear() before.
   ProblemStatus Solve(const LinearProgram& lp) MUST_USE_RESULT;
 
   // Puts the solver in a clean state.

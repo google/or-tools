@@ -43,6 +43,9 @@
 
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);
+DEFINE_bool(scip_feasibility_emphasis, false,
+            "When true, emphasize search towards feasibility. This may or"
+            " may not result in speedups in some problems.");
 
 namespace operations_research {
 
@@ -168,6 +171,12 @@ void SCIPInterface::Reset() {
 void SCIPInterface::CreateSCIP() {
   ORTOOLS_SCIP_CALL(SCIPcreate(&scip_));
   ORTOOLS_SCIP_CALL(SCIPincludeDefaultPlugins(scip_));
+  // Set the emphasis to enum SCIP_PARAMEMPHASIS_FEASIBILITY. Do not print
+  // the new parameter (quiet = true).
+  if (FLAGS_scip_feasibility_emphasis) {
+    ORTOOLS_SCIP_CALL(SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_FEASIBILITY,
+                                      /*quiet = */ true));
+  }
   // Default clock type (1: CPU user seconds, 2: wall clock time). We use
   // wall clock time because getting CPU user seconds involves calling
   // times() which is very expensive.

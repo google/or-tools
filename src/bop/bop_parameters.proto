@@ -1,0 +1,223 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package operations_research.bop;
+
+// Method used to optimize a solution in Bop and its associated initial score.
+message BopOptimizerMethod {
+  enum OptimizerType {
+    SAT_CORE_BASED = 0;
+    LINEAR_RELAXATION = 1;
+    LOCAL_SEARCH = 2;
+    RANDOM_FIRST_SOLUTION = 3;
+    RANDOM_CONSTRAINT_LNS = 4;
+    RANDOM_LNS_PROPAGATION = 5;
+    RANDOM_LNS_SAT = 6;
+    COMPLETE_LNS = 7;
+    LP_FIRST_SOLUTION = 8;
+    OBJECTIVE_FIRST_SOLUTION = 9;
+  }
+  optional OptimizerType type = 1;
+
+  // The score is used as an initial input to the adaptative optimizer selector
+  // (see PortfolioOptimizer).
+  optional double initial_score = 2 [default = 0.1];
+
+  // The ratio is used to compute the max time the method might spend to look
+  // for a solution. For instance, with a ratio of 0.05 and a time limit of
+  // 300 seconds, the method can spend up to 15 seconds.
+  // Note that this is only used by *_FIRST_SOLUTION optimizers in the
+  // current implementation.
+  optional double time_limit_ratio = 3 [default = 0.05];
+}
+
+// Set of optimizer methods to be run by an instance of the portfolio optimizer.
+// Note that in the current implementation, all the methods specified in the
+// repeated field methods will run on the same solver / thread.
+message BopSolverOptimizerSet {
+  repeated BopOptimizerMethod methods = 1;
+}
+
+// Contains the definitions for all the bop algorithm parameters and their
+// default values.
+//
+// NEXT TAG: 30
+message BopParameters {
+  // Maximum time allowed in seconds to solve a problem.
+  // The counter will starts as soon as Solve() is called.
+  optional double max_time_in_seconds = 1 [default = inf];
+
+  // Maximum time allowed in deterministic time to solve a problem.
+  // The deterministic time should be correlated with the real time used by the
+  // solver, the time unit being roughly the order of magnitude of a second.
+  // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
+  // is called.
+  optional double max_deterministic_time = 27 [default = inf];
+
+  // Limit used to stop the optimization as soon as the relative gap is smaller
+  // than the given value.
+  // The relative gap is defined as:
+  //   abs(solution_cost - best_bound)
+  //        / max(abs(solution_cost), abs(best_bound)).
+  optional double relative_gap_limit = 28 [default = 1e-4];
+
+  // Maximum number of cascading decisions the solver might use to repair the
+  // current solution in the LS.
+  optional int32 max_num_decisions = 2 [default = 4];
+
+  // Compute estimated impact at each iteration when true; only once when false.
+  optional bool compute_estimated_impact = 3 [default = true];
+
+  // Avoid exploring both branches (b, a, ...) and (a, b, ...).
+  optional bool prune_search_tree = 4 [default = false];
+
+  // Sort constraints by increasing total number of terms instead of number of
+  // contributing terms.
+  optional bool sort_constraints_by_num_terms = 5 [default = false];
+
+  // Use the random Large Neighborhood Search instead of the exhaustive one.
+  optional bool use_random_lns = 6 [default = true];
+
+  // The seed used to initialize the random generator.
+  optional int32 random_seed = 7 [default = 0];
+
+  // Number of variables to relax in the exhaustive Large Neighborhood Search.
+  optional int32 num_relaxed_vars = 8 [default = 10];
+
+  // The number of conflicts the SAT solver has to solve a random LNS
+  // subproblem.
+  optional int32 max_number_of_conflicts_in_random_lns = 9 [default = 2500];
+
+  // Number of tries in the random lns before calling the SAT solver on the
+  // full problem.
+  optional int32 num_random_lns_tries = 10 [default = 1];
+
+  // Maximum number of backtracks times the number of variables in Local Search,
+  // ie. max num backtracks == max_number_of_backtracks_in_ls / num variables.
+  optional int64 max_number_of_backtracks_in_ls = 11 [default = 100000000];
+
+  // Use Large Neighborhood Search based on the LP relaxation.
+  optional bool use_lp_lns = 12 [default = true];
+
+
+  // Whether we use sat propagation to choose the lns neighbourhood.
+  optional bool use_sat_to_choose_lns_neighbourhood = 15 [default = true];
+
+  // The number of conflicts the SAT solver has to solve a random LNS
+  // subproblem for the quick check of infeasibility.
+  optional int32 max_number_of_conflicts_for_quick_check = 16 [default = 10];
+
+  // If true, find and exploit the eventual symmetries of the problem.
+  //
+  // TODO(user): turn this on by default once the symmetry finder becomes fast
+  // enough to be negligeable for most problem. Or at least support a time
+  // limit.
+  optional bool use_symmetry = 17 [default = false];
+
+  // The number of conflicts the SAT solver has to generate a random solution.
+  optional int32 max_number_of_conflicts_in_random_solution_generation = 20
+      [default = 500];
+
+  // The maximum number of assignments the Local Search iterates on during one
+  // try. Note that if the Local Search is called again on the same solution
+  // it will not restart from scratch but will iterate on the next
+  // max_number_of_explored_assignments_per_try_in_ls assignments.
+  optional int64 max_number_of_explored_assignments_per_try_in_ls = 21
+      [default = 2500];
+
+  // Whether we use an hash set during the LS to avoid exploring more than once
+  // the "same" state. Note that because the underlying SAT solver may learn
+  // information in the middle of the LS, this may make the LS slightly less
+  // "complete", but it should be faster.
+  optional bool use_transposition_table_in_ls = 22 [default = true];
+
+  // Whether we use the learned binary clauses in the Linear Relaxation.
+  optional bool use_learned_binary_clauses_in_lp = 23 [default = true];
+
+  // The number of solvers used to run Bop. Note that one thread will be created
+  // per solver. The type of communication between solvers is specified by the
+  // synchronization_type parameter.
+  optional int32 number_of_solvers = 24 [default = 1];
+
+  // Defines how the different solvers are synchronized during the search.
+  // Note that the synchronization (if any) occurs before each call to an
+  // optimizer (the smallest granularity of the solver in a parallel context).
+  enum ThreadSynchronizationType {
+    // No synchronization. The solvers run independently until the time limit
+    // is reached; Then learned information from each solver are aggregated.
+    // The final solution is the best of all found solutions.
+    // Pros: - No need to wait for another solver to complete its task,
+    //       - Adding a new solver always improves the final solution (In the
+    //         current implementation it still depends on the machine load and
+    //         the time limit).
+    // Cons: - No learning between solvers.
+    NO_SYNCHRONIZATION = 0;
+
+    // Synchronize all solvers. Each solver waits for all other solvers to
+    // complete the previous optimizer run, before running again.
+    // The final solution is the best of all found solutions.
+    // Pros: - Full learning between solvers.
+    // Cons: - A lot of waiting time when solvers don't run at the exact same
+    //         speed,
+    //       - The quality of the final solution depends on the number of
+    //         solvers, adding one more solver might lead to poorer results
+    //         because the search goes on a different path.
+    SYNCHRONIZE_ALL = 1;
+
+    // Solver i synchronizes with solvers 0..i-1.
+    // This is a good tradeoff between NO_SYNCHRONIZATION and SYNCHRONIZE_ALL:
+    // communication while keeping a relative determinism on the result even
+    // when the number of solvers increases.
+    // The final solution is the best of all found solutions.
+    // Pros: - Solver i learns from i different solvers,
+    //       - Adding a new solver always improves the final solution (In the
+    //         current implementation it still depends on the machine load and
+    //         the time limit).
+    // Cons: - No full learning,
+    //       - Some solvers need to wait for synchronization.
+    SYNCHRONIZE_ON_RIGHT = 2;
+  }
+  optional ThreadSynchronizationType synchronization_type = 25
+      [default = NO_SYNCHRONIZATION];
+
+  // List of set of optimizers to be run by the solvers.
+  // Note that the i_th solver will run the
+  // min(i, solver_optimizer_sets_size())_th optimizer set.
+  // The default is (only one set):
+  //   {
+  //     type:LINEAR_RELAXATION initial_score:1.0 time_limit_ratio:0.15
+  //     type:LP_FIRST_SOLUTION               initial_score:0.1
+  //     type:OBJECTIVE_FIRST_SOLUTION        initial_score:0.1
+  //     type:RANDOM_FIRST_SOLUTION           initial_score:0.1
+  //     type:SAT_CORE_BASED                  initial_score:1.0
+  //     type:LOCAL_SEARCH                    initial_score:2.0
+  //     type:RANDOM_CONSTRAINT_LNS           initial_score:0.1
+  //     type:RANDOM_LNS_PROPAGATION          initial_score:1.0
+  //     type:RANDOM_LNS_SAT                  initial_score:1.0
+  //     type:COMPLETE_LNS                    initial_score:0.1
+  //   }
+  repeated BopSolverOptimizerSet solver_optimizer_sets = 26;
+
+  // Use strong branching in the linear relaxation optimizer.
+  // The strong branching is a what-if analysis on each variable v, i.e.
+  // compute the best bound when v is assigned to true, compute the best bound
+  // when v is assigned to false, and then use those best bounds to improve the
+  // overall best bound.
+  // This is useful to improve the best_bound, but also to fix some variables
+  // during search.
+  // Note that using probing might be time consuming as it runs
+  // 2 * num_variables times the LP solver.
+  optional bool use_lp_strong_branching = 29 [default = false];
+}

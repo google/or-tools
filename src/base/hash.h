@@ -178,6 +178,27 @@ template <>
 struct hash<std::string> {
   size_t operator()(const std::string& x) const { return hash<const std::string>()(x); }
 };
+
+template <class T, std::size_t N>
+struct hash<std::array<T, N>> {
+ public:
+  size_t operator()(const std::array<T, N>& t) const {
+    uint64 current = 71;
+    for (int index = 0; index < N; ++index) {
+      const T& elem = t[index];
+      const uint64 new_hash = hash<T>()(elem);
+      current = operations_research::Hash64NumWithSeed(current, new_hash);
+    }
+    return current;
+  }
+  // Less than operator for MSVC.
+  bool operator()(const std::array<T, N>& a,
+                  const std::array<T, N>& b) const {
+    return a < b;
+  }
+  static const size_t bucket_size = 4;  // These are required by MSVC
+  static const size_t min_buckets = 8;  // 4 and 8 are defaults.
+};
 #endif  // STLPORT
 }  // namespace HASH_NAMESPACE
 
@@ -328,6 +349,27 @@ class PairPointerIntTypeHasher : public stdext::hash_compare<std::pair<T*, U> > 
   }
 };
 #endif
+
+template <class T, std::size_t N>
+struct StdArrayHasher : public stdext::hash_compare<std::array<T, N>> {
+ public:
+  size_t operator()(const std::array<T, N>& t) const {
+    uint64 current = 71;
+    for (int index = 0; index < N; ++index) {
+      const T& elem = t[index];
+      const uint64 new_hash = hash<T>()(elem);
+      current = operations_research::Hash64NumWithSeed(current, new_hash);
+    }
+    return current;
+  }
+  // Less than operator for MSVC.
+  bool operator()(const std::array<T, N>& a,
+                  const std::array<T, N>& b) const {
+    return a < b;
+  }
+  static const size_t bucket_size = 4;  // These are required by MSVC
+  static const size_t min_buckets = 8;  // 4 and 8 are defaults.
+};
 
 using std::hash;
 using stdext::hash_map;
