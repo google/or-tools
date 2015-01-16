@@ -27,6 +27,8 @@
 #ifndef OR_TOOLS_BOP_BOP_LS_H_
 #define OR_TOOLS_BOP_BOP_LS_H_
 
+#include <array>
+
 #include "base/hash.h"
 
 #include "base/hash.h"
