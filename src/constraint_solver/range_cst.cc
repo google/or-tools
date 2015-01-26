@@ -265,6 +265,8 @@ class DiffVar : public Constraint {
   virtual void InitialPropagate();
   virtual std::string DebugString() const;
   virtual IntVar* Var() { return solver()->MakeIsDifferentVar(left_, right_); }
+  void LeftBound();
+  void RightBound();
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
@@ -283,26 +285,37 @@ DiffVar::DiffVar(Solver* const s, IntVar* const l, IntVar* const r)
     : Constraint(s), left_(l), right_(r) {}
 
 void DiffVar::Post() {
-  Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenBound(d);
-  right_->WhenBound(d);
+  Demon* const left_demon =
+      MakeConstraintDemon0(solver(), this, &DiffVar::LeftBound, "LeftBound");
+  Demon* const right_demon =
+      MakeConstraintDemon0(solver(), this, &DiffVar::RightBound, "RightBound");
+  left_->WhenBound(left_demon);
+  right_->WhenBound(right_demon);
   // TODO(user) : improve me, separated demons, actually to test
+}
+
+void DiffVar::LeftBound() {
+  if (right_->Size() < 0xFFFFFF) {
+    right_->RemoveValue(left_->Min());  // we use min instead of value
+  } else {
+    solver()->AddConstraint(solver()->MakeNonEquality(right_, left_->Min()));
+  }
+}
+
+void DiffVar::RightBound() {
+  if (left_->Size() < 0xFFFFFF) {
+    left_->RemoveValue(right_->Min());  // see above
+  } else {
+    solver()->AddConstraint(solver()->MakeNonEquality(left_, right_->Min()));
+  }
 }
 
 void DiffVar::InitialPropagate() {
   if (left_->Bound()) {
-    if (right_->Size() < 0xFFFFFF) {
-      right_->RemoveValue(left_->Min());  // we use min instead of value
-    } else {
-      solver()->AddConstraint(solver()->MakeNonEquality(right_, left_->Min()));
-    }
+    LeftBound();
   }
   if (right_->Bound()) {
-    if (left_->Size() < 0xFFFFFF) {
-      left_->RemoveValue(right_->Min());  // see above
-    } else {
-      solver()->AddConstraint(solver()->MakeNonEquality(left_, right_->Min()));
-    }
+    RightBound();
   }
 }
 
