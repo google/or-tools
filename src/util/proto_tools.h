@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_TOOLS_H_
-#define OR_TOOLS_LINEAR_SOLVER_PROTO_TOOLS_H_
+#ifndef OR_TOOLS_UTIL_PROTO_TOOLS_H_
+#define OR_TOOLS_UTIL_PROTO_TOOLS_H_
 
 #include <string>
 #include "google/protobuf/message.h"
@@ -20,14 +20,12 @@
 namespace operations_research {
 
 // Exactly like file::ReadFileToProto() but also supports GZipped files.
-// TODO(user): move this to ../util ?
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto);
 
 // Like file::WriteProtoToFile() or file::WriteProtoToASCIIFile(), but also
 // supports GZipped output.
 // If 'binary'is true, ".bin" is appended to file_name.
 // If 'gzipped'is true, ".gz" is appended to file_name.
-// TODO(user): move this to ../util ?
 bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Message& proto,
                       bool binary, bool gzipped);
 
@@ -38,4 +36,4 @@ std::string FullProtocolMessageAsString(const google::protobuf::Message& message
                                    int indent_level);
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_TOOLS_H_
+#endif  // OR_TOOLS_UTIL_PROTO_TOOLS_H_

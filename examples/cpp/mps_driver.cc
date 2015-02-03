@@ -32,7 +32,7 @@
 #include "glop/proto_utils.h"
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/mps_reader.h"
-#include "linear_solver/proto_tools.h"
+#include "util/proto_tools.h"
 #include "base/status.h"
 
 DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");

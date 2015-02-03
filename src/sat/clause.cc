@@ -379,6 +379,54 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   RemoveRedundantLiterals(conflict);
 }
 
+// Same as MinimizeConflictFirst() but take advantage of this reachability
+// computation to remove redundant implication in the implication list of the
+// first UIP conflict.
+void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
+    const Trail& trail, std::vector<Literal>* conflict,
+    SparseBitset<VariableIndex>* marked, RandomBase* random) {
+  SCOPED_TIME_STAT(&stats_);
+  const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
+  is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+  is_marked_.Set(root_literal_index);
+
+  int new_size = 0;
+  auto& direct_implications = implications_[root_literal_index];
+
+  // The randomization allow to find more redundant implication since to find
+  // a => b and remove b, a must be before b in direct_implications. Note that
+  // a std::reverse() could work too. But randomization seems to work better.
+  // Probably because it has other impact on the search tree.
+  std::random_shuffle(direct_implications.begin(), direct_implications.end(),
+                      *random);
+  dfs_stack_.clear();
+  for (const Literal l : direct_implications) {
+    if (is_marked_[l.Index()]) {
+      // The literal is already marked! so it must be implied by one of the
+      // previous literal in the direct_implications list. We can safely remove
+      // it.
+      continue;
+    }
+    direct_implications[new_size++] = l;
+    dfs_stack_.push_back(l);
+    while (!dfs_stack_.empty()) {
+      const LiteralIndex index = dfs_stack_.back().Index();
+      dfs_stack_.pop_back();
+      if (!is_marked_[index]) {
+        is_marked_.Set(index);
+        for (Literal implied : implications_[index]) {
+          if (!is_marked_[implied.Index()]) dfs_stack_.push_back(implied);
+        }
+      }
+    }
+  }
+  if (new_size < direct_implications.size()) {
+    num_redundant_implications_ += direct_implications.size() - new_size;
+    direct_implications.resize(new_size);
+  }
+  RemoveRedundantLiterals(conflict);
+}
+
 void BinaryImplicationGraph::RemoveRedundantLiterals(
     std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
@@ -447,26 +495,27 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 }
 
 void BinaryImplicationGraph::RemoveFixedVariables(
-    const VariablesAssignment& assigment) {
+    int first_unprocessed_trail_index, const Trail& trail) {
+  const VariablesAssignment& assigment = trail.Assignment();
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
-  for (LiteralIndex i(0); i < implications_.size(); ++i) {
-    if (assigment.IsLiteralTrue(Literal(i))) {
-      // If b is true and a -> b then because not b -> not a, all the
-      // implications list that contains b will be marked by this process.
-      for (Literal lit : implications_[Literal(i).NegatedIndex()]) {
-        is_marked_.Set(lit.NegatedIndex());
-      }
-      STLClearObject(&(implications_[i]));
-      STLClearObject(&(implications_[Literal(i).NegatedIndex()]));
+  for (int i = first_unprocessed_trail_index; i < trail.Index(); ++i) {
+    const Literal true_literal = trail[i];
+    // If b is true and a -> b then because not b -> not a, all the
+    // implications list that contains b will be marked by this process.
+    //
+    // TODO(user): This doesn't seems true if we remove implication by
+    // transitive reduction.
+    for (Literal lit : implications_[true_literal.NegatedIndex()]) {
+      is_marked_.Set(lit.NegatedIndex());
     }
+    STLClearObject(&(implications_[true_literal.Index()]));
+    STLClearObject(&(implications_[true_literal.NegatedIndex()]));
   }
-  for (LiteralIndex i(0); i < implications_.size(); ++i) {
-    if (is_marked_[i]) {
-      RemoveIf(&implications_[i],
-               std::bind1st(std::mem_fun(&VariablesAssignment::IsLiteralTrue),
-                            &assigment));
-    }
+  for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
+    RemoveIf(&implications_[i],
+             std::bind1st(std::mem_fun(&VariablesAssignment::IsLiteralTrue),
+                          &assigment));
   }
 }
 
@@ -486,7 +535,9 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redun
   clause->is_attached_ = false;
   clause->activity_ = 0.0;
   clause->lbd_ = 0;
+#ifdef SAT_ENABLE_RESOLUTION
   clause->resolution_node_ = node;
+#endif  // SAT_ENABLE_RESOLUTION
   return clause;
 }
 

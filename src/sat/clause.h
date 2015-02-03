@@ -30,6 +30,7 @@
 #include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
 #include "base/hash.h"
+#include "base/random.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
 #include "util/bitset.h"
@@ -140,8 +141,13 @@ class SatClause {
 
   // Returns the node of the resolution DAG associated to this clause.
   // This will always be nullptr if the parameter unsat_proof() is false.
+#ifdef SAT_ENABLE_RESOLUTION
   ResolutionNode* ResolutionNodePointer() const { return resolution_node_; }
   void ChangeResolutionNode(ResolutionNode* node) { resolution_node_ = node; }
+#else   // SAT_ENABLE_RESOLUTION
+  ResolutionNode* ResolutionNodePointer() const { return nullptr; }
+  void ChangeResolutionNode(ResolutionNode* node) {}
+#endif  // SAT_ENABLE_RESOLUTION
 
   std::string DebugString() const;
 
@@ -156,11 +162,14 @@ class SatClause {
   int size_ : 32;
   double activity_;
 
+#ifdef SAT_ENABLE_RESOLUTION
   // This is only needed when the parameter unsat_proof() is true.
+  //
   // TODO(user): It is possible to use less memory when this is not the case
   // by some tweaks in Create() and in the way we access it. Note that not
   // storing this seems to gain about 2% in speed overall.
   ResolutionNode* resolution_node_;
+#endif  // SAT_ENABLE_RESOLUTION
 
   // This class store the literals inline, and literals_ mark the starts of the
   // variable length portion.
@@ -369,12 +378,16 @@ class BinaryImplicationGraph {
   void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<VariableIndex>* marked);
+  void MinimizeConflictFirstWithTransitiveReduction(
+      const Trail& trail, std::vector<Literal>* c,
+      SparseBitset<VariableIndex>* marked, RandomBase* random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:
   // - Removes the variable at true from the implications lists.
   // - Frees the propagation list of the assigned literals.
-  void RemoveFixedVariables(const VariablesAssignment& assigment);
+  void RemoveFixedVariables(int first_unprocessed_trail_index,
+                            const Trail& trail);
 
   // Number of literal propagated by this class (including conflicts).
   int64 num_propagations() const { return num_propagations_; }
@@ -385,6 +398,11 @@ class BinaryImplicationGraph {
   // MinimizeClause() stats.
   int64 num_minimization() const { return num_minimization_; }
   int64 num_literals_removed() const { return num_literals_removed_; }
+
+  // Number of implications removed by transitive reduction.
+  int64 num_redundant_implications() const {
+    return num_redundant_implications_;
+  }
 
   // Returns the number of current implications.
   int64 NumberOfImplications() const { return num_implications_; }

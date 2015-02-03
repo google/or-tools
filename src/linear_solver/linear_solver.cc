@@ -36,8 +36,8 @@
 #include "base/accurate_sum.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/model_exporter.h"
-#include "linear_solver/proto_tools.h"
 #include "util/fp_utils.h"
+#include "util/proto_tools.h"
 
 
 DEFINE_bool(verify_solution, false,
@@ -1468,4 +1468,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-

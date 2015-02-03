@@ -688,11 +688,17 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
     // MinimizeConflict() can take advantage of that. Because of this, the
     // LBD of the learned conflict can change.
     DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-    if (binary_implication_graph_.NumberOfImplications() != 0 &&
-        parameters_.binary_minimization_algorithm() ==
-            SatParameters::BINARY_MINIMIZATION_FIRST) {
-      binary_implication_graph_.MinimizeConflictFirst(
-          trail_, &learned_conflict_, &is_marked_);
+    if (binary_implication_graph_.NumberOfImplications() != 0) {
+      if (parameters_.binary_minimization_algorithm() ==
+          SatParameters::BINARY_MINIMIZATION_FIRST) {
+        binary_implication_graph_.MinimizeConflictFirst(
+            trail_, &learned_conflict_, &is_marked_);
+      } else if (parameters_.binary_minimization_algorithm() ==
+                 SatParameters::
+                     BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
+        binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
+            trail_, &learned_conflict_, &is_marked_, &random_);
+      }
       DCHECK(IsConflictValid(learned_conflict_));
     }
 
@@ -708,6 +714,8 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
         case SatParameters::NO_BINARY_MINIMIZATION:
           FALLTHROUGH_INTENDED;
         case SatParameters::BINARY_MINIMIZATION_FIRST:
+          FALLTHROUGH_INTENDED;
+        case SatParameters::BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION:
           break;
         case SatParameters::BINARY_MINIMIZATION_WITH_REACHABILITY:
           binary_implication_graph_.MinimizeConflictWithReachability(
@@ -1283,6 +1291,9 @@ std::string SatSolver::StatusString(Status status) const {
                       binary_implication_graph_.num_propagations()) +
          StringPrintf("  num binary inspections: %" GG_LL_FORMAT "d\n",
                       binary_implication_graph_.num_inspections()) +
+         StringPrintf("  num binary redundant implications: %" GG_LL_FORMAT
+                      "d\n",
+                      binary_implication_graph_.num_redundant_implications()) +
          StringPrintf("  num classic minimizations: %" GG_LL_FORMAT
                       "d"
                       "  (literals removed: %" GG_LL_FORMAT "d)\n",
@@ -1417,7 +1428,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
   }
 
   // We also clean the binary implication graph.
-  binary_implication_graph_.RemoveFixedVariables(trail_.Assignment());
+  binary_implication_graph_.RemoveFixedVariables(num_processed_fixed_variables_,
+                                                 trail_);
   num_processed_fixed_variables_ = trail_.Index();
 }
 
@@ -2497,7 +2509,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
     }
   }
   std::sort(variables_sorted_by_level.begin(), variables_sorted_by_level.end(),
-       VariableWithLargerWeightFirst());
+            VariableWithLargerWeightFirst());
 
   // Then process the reason of the variable with highest level first.
   std::vector<VariableIndex> to_remove;

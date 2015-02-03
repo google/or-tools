@@ -11,22 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "linear_solver/proto_tools.h"
+#include "util/proto_tools.h"
 
-#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/file.h"
-#include "base/file.h"
-#include "google/protobuf/io/zero_copy_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/io/gzip_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "base/join.h"
-#include "base/map_util.h"
-#include "base/hash.h"
-#include "base/strutil.h"
-#include "base/status.h"
 
 using google::protobuf::Descriptor;
 using google::protobuf::FieldDescriptor;

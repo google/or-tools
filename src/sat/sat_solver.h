@@ -141,7 +141,7 @@ class SatSolver {
   // will also be the unique index associated to the next constraint that will
   // be added. This unique index is used by UnsatCore() to indicates what
   // constraints are part of the core.
-  int NumAddedConstraints() const { return num_constraints_; }
+  int NumAddedConstraints() { return num_constraints_; }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
@@ -748,6 +748,10 @@ class SatSolver {
 
     int heap_index;
     VariableIndex variable;
+
+    // TODO(user): Experiment with float. In the rest of the code, we use
+    // double, but maybe we don't need that much precision. Using float here may
+    // save memory and make the PQ operations faster.
     double weight;
     double tie_breaker;
   };

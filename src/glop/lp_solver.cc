@@ -26,7 +26,7 @@
 #include "glop/preprocessor.h"
 #include "glop/proto_utils.h"
 #include "glop/status.h"
-#include "linear_solver/proto_tools.h"
+#include "util/proto_tools.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/lp_utils.h"
 #include "util/fp_utils.h"

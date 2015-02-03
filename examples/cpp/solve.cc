@@ -26,7 +26,7 @@
 #include "glop/proto_utils.h"
 #include "linear_solver/linear_solver2.pb.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/proto_tools.h"
+#include "util/proto_tools.h"
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",

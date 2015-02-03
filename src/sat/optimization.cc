@@ -188,7 +188,7 @@ class FuMalikSymmetryBreaker {
 
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   std::vector<Literal> temp = *core;
-  reverse(temp.begin(), temp.end());
+  std::reverse(temp.begin(), temp.end());
   solver->Backtrack(0);
 
   // Note that this Solve() is really fast, since the solver should detect that

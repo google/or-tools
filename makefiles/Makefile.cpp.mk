@@ -645,7 +645,6 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O \
 	$(OBJ_DIR)/linear_solver/model_exporter.$O \
-#        $(OBJ_DIR)/linear_solver/proto_tools.$O \
 	$(OBJ_DIR)/linear_solver/scip_interface.$O \
 	$(OBJ_DIR)/linear_solver/sulum_interface.$O
 
@@ -685,9 +684,6 @@ $(GEN_DIR)/linear_solver/linear_solver2.pb.h:$(GEN_DIR)/linear_solver/linear_sol
 $(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Smodel_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
 
-$(OBJ_DIR)/linear_solver/proto_tools.$O:$(SRC_DIR)/linear_solver/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sproto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sproto_tools.$O
-
 $(OBJ_DIR)/linear_solver/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sscip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
 
@@ -710,11 +706,11 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/fp_utils.$O \
 	$(OBJ_DIR)/util/graph_export.$O \
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
+	$(OBJ_DIR)/util/proto_tools.$O \
 	$(OBJ_DIR)/util/rational_approximation.$O \
 	$(OBJ_DIR)/util/stats.$O \
 	$(OBJ_DIR)/util/time_limit.$O \
-	$(OBJ_DIR)/util/xml_helper.$O \
-        $(OBJ_DIR)/linear_solver/proto_tools.$O \
+	$(OBJ_DIR)/util/xml_helper.$O
 
 $(OBJ_DIR)/util/bitset.$O:$(SRC_DIR)/util/bitset.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/bitset.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sbitset.$O
@@ -730,6 +726,9 @@ $(OBJ_DIR)/util/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 
 $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Spiecewise_linear_function.$O
+
+$(OBJ_DIR)/util/proto_tools.$O:$(SRC_DIR)/util/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sutil$Sproto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sproto_tools.$O
 
 $(OBJ_DIR)/util/rational_approximation.$O:$(SRC_DIR)/util/rational_approximation.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rational_approximation.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srational_approximation.$O
@@ -1537,7 +1536,7 @@ satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 $(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/encoding.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
-$(OBJ_DIR)/sat/lp_utils.$O: $(SRC_DIR)/sat/lp_utils.cc $(SRC_DIR)/sat/lp_utils.h $(SRC_DIR)/sat/sat_solver.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat/lp_utils.$O: $(SRC_DIR)/sat/lp_utils.cc $(SRC_DIR)/sat/lp_utils.h $(SRC_DIR)/sat/sat_solver.h $(GEN_DIR)/sat/sat_parameters.pb.h $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/lp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slp_utils.$O
 
 $(OBJ_DIR)/sat/simplification.$O: $(SRC_DIR)/sat/simplification.cc  $(SRC_DIR)/sat/simplification.h $(SRC_DIR)/sat/sat_base.h $(GEN_DIR)/sat/sat_parameters.pb.h
