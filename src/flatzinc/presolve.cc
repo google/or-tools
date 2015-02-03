@@ -1894,6 +1894,24 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
         ct->RemoveTargetVariable();
       }
     }
+    if (id == "int_lin_eq" && ct->target_variable != nullptr) {
+      FzIntegerVariable* const var = ct->target_variable;
+      for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+        if (ct->Arg(1).variables[i] == var) {
+          if (ct->Arg(0).values[i] == -1) {
+            break;
+          } else if (ct->Arg(0).values[i] == 1) {
+          FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
+            ct->MutableArg(2)->values[0] *= -1;
+            for (int j = 0; j < ct->Arg(0).values.size(); ++j) {
+              ct->MutableArg(0)->values[j] *= -1;
+            }
+            break;
+          }
+        }
+      }
+
+    }
     // Remove target variables from constraints passed to SAT.
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
