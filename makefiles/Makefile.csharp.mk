@@ -369,7 +369,7 @@ ifeq ("$(SYSTEM)","win")
 	copy data\rogo\* temp\or-tools.$(PORT)\data\rogo
 	copy data\survo_puzzle\* temp\or-tools.$(PORT)\data\survo_puzzle
 	copy data\quasigroup_completion\* temp\or-tools.$(PORT)\data\quasigroup_completion
-	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(PORT).$(SVNVERSION_SIMPLE).zip or-tools.$(PORT)
 else
 	mkdir temp
 	mkdir temp/or-tools.$(PORT)
@@ -393,6 +393,6 @@ else
 	cp data/rogo/* temp/or-tools.$(PORT)/data/rogo
 	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
 	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
-	cd temp && tar cvzf ../$(CLR_DLL_NAME).NET.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../$(CLR_DLL_NAME).NET.$(PORT).$(SVNVERSION_SIMPLE).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp

@@ -208,7 +208,7 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools.$(PORT)/setup.py
 	-del temp\or-tools.$(PORT)\setup.py-e
 	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION_SIMPLE).zip or-tools.$(PORT)
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
@@ -217,7 +217,7 @@ else
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
 	-rm temp/or-tools.$(PORT)/setup.py-e
 	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION_SIMPLE).tar.gz or-tools.$(PORT)
 endif
 
 python_examples_archive:
@@ -234,10 +234,10 @@ python_examples_archive:
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(SVNVERSION).zip ortools_examples
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(SVNVERSION_SIMPLE).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.python.examples.$(SVNVERSION).tar.gz ortools_examples
+	cd temp && tar cvzf ../Google.OrTools.python.examples.$(SVNVERSION_SIMPLE).tar.gz ortools_examples
 endif
 
 pypi_archive: python $(PATCHELF)

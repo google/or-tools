@@ -381,7 +381,7 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT).$(SVNVERSION_SIMPLE).zip or-tools.$(PORT)
 else
 	mkdir temp/or-tools.$(PORT)/examples
 	mkdir temp/or-tools.$(PORT)/examples/com
@@ -410,6 +410,6 @@ else
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(SVNVERSION_SIMPLE).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp
