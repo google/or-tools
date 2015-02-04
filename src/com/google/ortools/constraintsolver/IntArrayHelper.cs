@@ -68,4 +68,78 @@ public partial class CpIntVector: IDisposable, System.Collections.IEnumerable
     return outVal;
   }
 }
+
+public partial class CpIntVectorVector : IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IEnumerable<CpIntVector>
+#endif
+ {
+  // cast from C# int matrix
+  public static implicit operator CpIntVectorVector(int[,] inVal) {
+    int x_size = inVal.GetLength(0);
+    int y_size = inVal.GetLength(1);
+    CpIntVectorVector outVal = new CpIntVectorVector();
+    for (int i = 0; i < x_size; ++i)
+    {
+      outVal.Add(new CpIntVector());
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i].Add(inVal[i, j]);
+      }
+    }
+    return outVal;
+  }
+
+  // cast to C# int matrix
+  public static implicit operator int[,](CpIntVectorVector inVal) {
+    int x_size = inVal.Count;
+    int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
+    var outVal= new int[x_size, y_size];
+    for (int i = 0; i < x_size; ++i)
+    {
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i, j] = inVal[i][j];
+      }
+    }
+    return outVal;
+  }
+}
+
+public partial class CpInt64VectorVector : IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IEnumerable<CpInt64Vector>
+#endif
+ {
+  // cast from C# long matrix
+  public static implicit operator CpInt64VectorVector(long[,] inVal) {
+    int x_size = inVal.GetLength(0);
+    int y_size = inVal.GetLength(1);
+    CpInt64VectorVector outVal = new CpInt64VectorVector();
+    for (int i = 0; i < x_size; ++i)
+    {
+      outVal.Add(new CpInt64Vector());
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i].Add(inVal[i, j]);
+      }
+    }
+    return outVal;
+  }
+
+  // cast to C# long matrix
+  public static implicit operator long[,](CpInt64VectorVector inVal) {
+    int x_size = inVal.Count;
+    int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
+    var outVal= new long[x_size, y_size];
+    for (int i = 0; i < x_size; ++i)
+    {
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i, j] = inVal[i][j];
+      }
+    }
+    return outVal;
+  }
+}
 }  // namespace Google.OrTools.ConstraintSolver

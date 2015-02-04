@@ -195,6 +195,8 @@ class LongResultCallback3 {
 // vector template differently.
 %template(CpIntVector) std::vector<int>;
 %template(CpInt64Vector) std::vector<int64>;
+%template(CpIntVectorVector) std::vector<std::vector<int> >;
+%template(CpInt64VectorVector) std::vector<std::vector<int64> >;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);
