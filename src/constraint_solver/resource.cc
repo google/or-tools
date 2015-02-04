@@ -24,6 +24,7 @@
 #include <algorithm>
 #include "base/hash.h"
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -132,7 +133,7 @@ struct CumulativeTask {
 // A VariableCumulativeTask is a non-preemptive task sharing a
 // cumulative resource.  That is, it corresponds to an interval and a
 // demand. The sum of demands of all cumulative tasks
-// VariableCumulativeTasks sharing a resource of capacity c those
+// VariableCumulativeTasks sharing a resource of capacity c whose
 // intervals contain any integer t cannot exceed c.  It is indexed,
 // that is it is aware of its position in a reference array.
 struct VariableCumulativeTask {
@@ -154,8 +155,8 @@ struct VariableCumulativeTask {
                         demand->DebugString().c_str());
   }
 
-  IntervalVar* interval;
-  IntVar* demand;
+  IntervalVar* const interval;
+  IntVar* const demand;
   int index;
 };
 
@@ -474,11 +475,12 @@ NotLast::NotLast(Solver* const solver, const std::vector<IntervalVar*>& interval
 bool NotLast::Propagate() {
   // ---- Init ----
   std::sort(by_start_max_.begin(), by_start_max_.end(),
-       StartMaxLessThan<DisjunctiveTask>);
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+            StartMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   // Update start min positions
   std::sort(by_start_min_.begin(), by_start_min_.end(),
-       StartMinLessThan<DisjunctiveTask>);
+            StartMinLessThan<DisjunctiveTask>);
   for (int i = 0; i < by_start_min_.size(); ++i) {
     by_start_min_[i]->index = i;
   }
@@ -589,7 +591,7 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
 
 void EdgeFinderAndDetectablePrecedences::UpdateEst() {
   std::sort(by_start_min_.begin(), by_start_min_.end(),
-       StartMinLessThan<DisjunctiveTask>);
+            StartMinLessThan<DisjunctiveTask>);
   for (int i = 0; i < size(); ++i) {
     by_start_min_[i]->index = i;
   }
@@ -598,7 +600,8 @@ void EdgeFinderAndDetectablePrecedences::UpdateEst() {
 void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
   // Initialization.
   UpdateEst();
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
 
   for (DisjunctiveTask* const task : by_end_max_) {
@@ -615,9 +618,10 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   new_est_.assign(size(), kint64min);
 
   // Propagate in one direction
-  std::sort(by_end_min_.begin(), by_end_min_.end(), EndMinLessThan<DisjunctiveTask>);
+  std::sort(by_end_min_.begin(), by_end_min_.end(),
+            EndMinLessThan<DisjunctiveTask>);
   std::sort(by_start_max_.begin(), by_start_max_.end(),
-       StartMaxLessThan<DisjunctiveTask>);
+            StartMaxLessThan<DisjunctiveTask>);
   theta_tree_.Clear();
   int j = 0;
   for (DisjunctiveTask* const task_i : by_end_min_) {
@@ -665,7 +669,8 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   }
 
   // Push in one direction.
-  std::sort(by_end_max_.begin(), by_end_max_.end(), EndMaxLessThan<DisjunctiveTask>);
+  std::sort(by_end_max_.begin(), by_end_max_.end(),
+            EndMaxLessThan<DisjunctiveTask>);
   lt_tree_.Clear();
   for (int i = 0; i < size(); ++i) {
     lt_tree_.Insert(*by_start_min_[i]);
@@ -1214,7 +1219,7 @@ class DualCapacityThetaTree
  public:
   static const int64 kNotInitialized;
 
-  DualCapacityThetaTree(int size)
+  explicit DualCapacityThetaTree(int size)
       : MonoidOperationTree<DualCapacityThetaNode>(size),
         capacity_max_(-1),
         residual_capacity_(-1) {}
@@ -1338,9 +1343,7 @@ class UpdatesForADemand {
   explicit UpdatesForADemand(int size)
       : updates_(size, 0), up_to_date_(false) {}
 
-  const int64 Update(int index) {
-    return updates_[index];
-  }
+  const int64 Update(int index) { return updates_[index]; }
   void Reset() { up_to_date_ = false; }
   void SetUpdate(int index, int64 update) {
     DCHECK(!up_to_date_);
@@ -1424,7 +1427,8 @@ class EdgeFinder : public Constraint {
     // Clear the update stack
     start_min_update_.clear();
     // sort y start min.
-    std::sort(by_start_min_.begin(), by_start_min_.end(), StartMinLessThan<Task>);
+    std::sort(by_start_min_.begin(), by_start_min_.end(),
+              StartMinLessThan<Task>);
     for (int i = 0; i < by_start_min_.size(); ++i) {
       by_start_min_[i]->index = i;
     }
@@ -1444,8 +1448,8 @@ class EdgeFinder : public Constraint {
   // these values in update_map_[demand].
   // Runs in O(n log n).
   // This corresponds to lines 2--13 in algorithm 1.3 in Petr Vilim's paper.
-  void ComputeConditionalStartMins(
-      UpdatesForADemand* updates, int64 demand_min) {
+  void ComputeConditionalStartMins(UpdatesForADemand* updates,
+                                   int64 demand_min) {
     DCHECK_GT(demand_min, 0);
     DCHECK(updates != nullptr);
     const int64 capacity_max = capacity_->Max();
@@ -1668,6 +1672,8 @@ class CumulativeTimeTable : public Constraint {
   virtual void InitialPropagate() {
     BuildProfile();
     PushTasks();
+    // TODO(user): When a task has a fixed part, we could propagate
+    // max_demand from its current location.
   }
 
   virtual void Post() {
@@ -1698,49 +1704,54 @@ class CumulativeTimeTable : public Constraint {
       if (interval->MustBePerformed() && start_max < end_min) {
         const int64 demand_min = task->DemandMin();
         if (demand_min > 0) {
-          profile_non_unique_time_.emplace_back(
-              ProfileDelta(start_max, +demand_min));
-          profile_non_unique_time_.emplace_back(
-              ProfileDelta(end_min, -demand_min));
+          profile_non_unique_time_.emplace_back(start_max, +demand_min);
+          profile_non_unique_time_.emplace_back(end_min, -demand_min);
         }
       }
     }
     // Sort
     std::sort(profile_non_unique_time_.begin(), profile_non_unique_time_.end(),
-         TimeLessThan);
+              TimeLessThan);
     // Build profile with unique times
     profile_unique_time_.clear();
-    profile_unique_time_.emplace_back(ProfileDelta(kint64min, 0));
-    int64 max_usage = 0;
+    profile_unique_time_.emplace_back(kint64min, 0);
     int64 usage = 0;
-    for (int i = 0; i < profile_non_unique_time_.size(); ++i) {
-      const ProfileDelta& profile_delta = profile_non_unique_time_[i];
-      if (profile_delta.time == profile_unique_time_.back().time) {
-        profile_unique_time_.back().delta += profile_delta.delta;
+    for (const ProfileDelta& step : profile_non_unique_time_) {
+      if (step.time == profile_unique_time_.back().time) {
+        profile_unique_time_.back().delta += step.delta;
       } else {
-        // Check max usage w.r.t. capacity, set new min usage if possible.
-        usage += profile_unique_time_.back().delta;
-        if (usage > max_usage) {
-          max_usage = usage;
-          capacity_->SetMin(usage);
-        }
-        profile_unique_time_.emplace_back(profile_delta);
+        profile_unique_time_.push_back(step);
       }
+      // Update usage.
+      usage += step.delta;
     }
     // Check final usage to be 0.
     DCHECK_EQ(0, usage);
-    profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
+    // Scan to find max usage.
+    int64 max_usage = 0;
+    for (const ProfileDelta& step : profile_unique_time_) {
+      usage += step.delta;
+      if (usage > max_usage) {
+        max_usage = usage;
+      }
+    }
+    DCHECK_EQ(0, usage);
+    capacity_->SetMin(max_usage);
+    // Add a sentinel.
+    profile_unique_time_.emplace_back(kint64max, 0);
   }
 
   // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
   void PushTasks() {
-    std::sort(by_start_min_.begin(), by_start_min_.end(), StartMinLessThan<Task>);
+    std::sort(by_start_min_.begin(), by_start_min_.end(),
+              StartMinLessThan<Task>);
     int64 usage = 0;
     int profile_index = 0;
     for (const Task* const task : by_start_min_) {
       const IntervalVar* const interval = task->interval;
       if (interval->StartMin() == interval->StartMax() &&
-          interval->EndMin() == interval->EndMax()) continue;
+          interval->EndMin() == interval->EndMax())
+        continue;
       while (interval->StartMin() > profile_unique_time_[profile_index].time) {
         DCHECK(profile_index < profile_unique_time_.size());
         ++profile_index;
@@ -2106,7 +2117,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
       if (high_demand_intervals.size() >= 2) {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
-        std::string seq_name = StrCat(name(), "-HighDemandSequence");
+        const std::string seq_name = StrCat(name(), "-HighDemandSequence");
         constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals,
                                                          seq_name);
       }
@@ -2116,7 +2127,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     }
   }
 
-  // Populate the given vector with useful tasks, meaning the ones on which
+  // Populates the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
   void PopulateVectorUsefulTasks(
       bool mirror, std::vector<VariableCumulativeTask*>* const useful_tasks) {
@@ -2143,7 +2154,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     }
   }
 
-  // Makes and return an edge-finder or a time table, or nullptr if it is not
+  // Makes and returns an edge-finder or a time table, or nullptr if it is not
   // necessary.
   Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
     std::vector<VariableCumulativeTask*> useful_tasks;

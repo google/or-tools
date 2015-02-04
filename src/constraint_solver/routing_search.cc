@@ -1419,11 +1419,11 @@ void CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
   while (!model()->IsEnd(insert_after)) {
     const int64 insert_before =
         (insert_after == start) ? next_after_start : Value(insert_after);
-    valued_positions->push_back(
-        std::make_pair(evaluator_->Run(insert_after, node_to_insert, vehicle) +
-                      evaluator_->Run(node_to_insert, insert_before, vehicle) -
-                      evaluator_->Run(insert_after, insert_before, vehicle),
-                  insert_after));
+    valued_positions->push_back(std::make_pair(
+        evaluator_->Run(insert_after, node_to_insert, vehicle) +
+            evaluator_->Run(node_to_insert, insert_before, vehicle) -
+            evaluator_->Run(insert_after, insert_before, vehicle),
+        insert_after));
     insert_after = insert_before;
   }
 }
@@ -1690,7 +1690,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
               std::make_pair(
                   valued_pickup_position.first + valued_delivery_position.first,
                   vehicle),
-              std::make_pair(pickup_position, valued_delivery_position.second)));
+              std::make_pair(pickup_position,
+                             valued_delivery_position.second)));
         }
       }
     }
@@ -1738,8 +1739,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
     } else {
       existing_insertions.insert(
           std::make_pair(std::make_pair(pair_entry->pickup_to_insert(),
-                              pair_entry->delivery_to_insert()),
-                    pair_entry->delivery_insert_after()));
+                                        pair_entry->delivery_to_insert()),
+                         pair_entry->delivery_insert_after()));
     }
   }
   for (PairEntry* const pair_entry : to_remove) {
@@ -1756,8 +1757,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
     if (!Contains(pickup) && !Contains(delivery)) {
       int64 delivery_insert_after = pickup;
       while (!model()->IsEnd(delivery_insert_after)) {
-        const std::pair<RoutingModel::NodePair, int64> insertion =
-            std::make_pair(std::make_pair(pickup, delivery), delivery_insert_after);
+        const std::pair<RoutingModel::NodePair, int64> insertion = std::make_pair(
+            std::make_pair(pickup, delivery), delivery_insert_after);
         if (!ContainsKey(existing_insertions, insertion)) {
           PairEntry* const entry =
               new PairEntry(pickup, pickup_insert_after, delivery,
@@ -1836,8 +1837,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
     } else {
       existing_insertions.insert(
           std::make_pair(std::make_pair(pair_entry->pickup_to_insert(),
-                              pair_entry->delivery_to_insert()),
-                    pair_entry->pickup_insert_after()));
+                                        pair_entry->delivery_to_insert()),
+                         pair_entry->pickup_insert_after()));
     }
   }
   for (PairEntry* const pair_entry : to_remove) {
@@ -1854,8 +1855,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
     if (!Contains(pickup) && !Contains(delivery)) {
       int64 pickup_insert_after = model()->Start(vehicle);
       while (pickup_insert_after != delivery_insert_after) {
-        std::pair<RoutingModel::NodePair, int64> insertion =
-            std::make_pair(std::make_pair(pickup, delivery), pickup_insert_after);
+        std::pair<RoutingModel::NodePair, int64> insertion = std::make_pair(
+            std::make_pair(pickup, delivery), pickup_insert_after);
         if (!ContainsKey(existing_insertions, insertion)) {
           PairEntry* const entry =
               new PairEntry(pickup, pickup_insert_after, delivery,
@@ -2146,7 +2147,7 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
     sorted_vehicles[vehicle] = vehicle;
   }
   std::sort(sorted_vehicles.begin(), sorted_vehicles.end(),
-       PartialRoutesAndLargeVehicleIndicesFirst(*this));
+            PartialRoutesAndLargeVehicleIndicesFirst(*this));
   // Neighbors of the node currently being extended.
   std::vector<int64> neighbors;
   for (const int vehicle : sorted_vehicles) {
@@ -2416,15 +2417,15 @@ SavingsFilteredDecisionBuilder::ComputeSavings() const {
             if (after_node != before_node && !Contains(after_node) &&
                 !model()->IsEnd(after_node) && !model()->IsStart(after_node)) {
               costed_after_nodes.push_back(
-                  std::make_pair(model()->GetArcCostForClass(before_node, after_node,
-                                                        cost_class),
-                            after_node));
+                  std::make_pair(model()->GetArcCostForClass(
+                                     before_node, after_node, cost_class),
+                                 after_node));
             }
           }
           if (saving_neighbors < size) {
-            nth_element(costed_after_nodes.begin(),
-                        costed_after_nodes.begin() + saving_neighbors,
-                        costed_after_nodes.end());
+            std::nth_element(costed_after_nodes.begin(),
+                             costed_after_nodes.begin() + saving_neighbors,
+                             costed_after_nodes.end());
             costed_after_nodes.resize(saving_neighbors);
           }
           for (const auto& after_node : costed_after_nodes) {

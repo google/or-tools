@@ -310,27 +310,25 @@ BopOptimizerBase::Status SolveLNSProblemWithSatPropagator(
 SatPropagator::SatPropagator(const LinearBooleanProblem& problem)
     : problem_(problem),
       sat_solver_(),
-      problem_loaded_(false),
-      propagated_by_(problem.num_variables()) {}
-
-bool SatPropagator::LoadBooleanProblem() {
-  if (problem_loaded_) return true;
-
-  problem_loaded_ = true;
-  if (!sat::LoadBooleanProblem(problem_, &sat_solver_)) {
-    return false;
-  }
-  UseObjectiveForSatAssignmentPreference(problem_, &sat_solver_);
-  return true;
-}
+      solution_cost_(kint64max),
+      symmetries_generators_(),
+      propagated_by_(problem_.num_variables()) {}
 
 bool SatPropagator::OverConstrainObjective(
     const BopSolution& current_solution) {
-  if (sat_solver_.CurrentDecisionLevel() > 0) {
-    sat_solver_.Backtrack(0);
+  if (!sat_solver_) {
+    // Save the solution cost to use it as an upper bound when the SAT solver
+    // is created.
+    solution_cost_ = current_solution.GetCost();
+    return true;
+  }
+
+  if (sat_solver_->CurrentDecisionLevel() > 0) {
+    sat_solver_->Backtrack(0);
   }
   return AddObjectiveUpperBound(
-      problem_, sat::Coefficient(current_solution.GetCost() - 1), &sat_solver_);
+      problem_, sat::Coefficient(current_solution.GetCost() - 1),
+      sat_solver_.get());
 }
 
 void SatPropagator::AddPropagationRelation(sat::Literal decision_literal,
@@ -346,34 +344,72 @@ void SatPropagator::AddPropagationRelation(sat::Literal decision_literal,
   }
 }
 
+void SatPropagator::AddSymmetries(
+    std::vector<std::unique_ptr<SparsePermutation>>* generators) {
+  if (!sat_solver_) {
+    // Delay the symmetries assignment.
+    std::move(generators->begin(), generators->end(),
+              std::back_inserter(symmetries_generators_));
+  } else {
+    sat_solver_->AddSymmetries(generators);
+  }
+}
+
+sat::SatSolver* SatPropagator::GetSatSolver() {
+  if (!sat_solver_) {
+    sat_solver_.reset(new sat::SatSolver());
+    sat::LoadBooleanProblem(problem_, sat_solver_.get());
+    UseObjectiveForSatAssignmentPreference(problem_, sat_solver_.get());
+    if (solution_cost_ != kint64max) {
+      AddObjectiveUpperBound(problem_, sat::Coefficient(solution_cost_ - 1),
+                             sat_solver_.get());
+    }
+    if (!symmetries_generators_.empty()) {
+      sat_solver_->AddSymmetries(&symmetries_generators_);
+      symmetries_generators_.clear();
+    }
+  }
+  return sat_solver_.get();
+}
+
 //------------------------------------------------------------------------------
 // BopCompleteLNSOptimizer
 //------------------------------------------------------------------------------
 BopCompleteLNSOptimizer::BopCompleteLNSOptimizer(
-    const std::string& name, const BopConstraintTerms& objective_terms,
-    sat::SatSolver* sat_solver)
+    const std::string& name, const BopConstraintTerms& objective_terms)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       problem_(),
       initial_solution_(),
-      sat_solver_(sat_solver),
       objective_terms_(objective_terms) {}
 
 BopCompleteLNSOptimizer::~BopCompleteLNSOptimizer() {}
 
-BopOptimizerBase::Status BopCompleteLNSOptimizer::Synchronize(
+BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
+
   problem_ = problem_state.original_problem();
   initial_solution_.reset(new BopSolution(problem_state.solution()));
   return BopOptimizerBase::CONTINUE;
 }
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   LinearBooleanConstraint* constraint = problem_.add_constraints();
   for (BopConstraintTerm term : objective_terms_) {
@@ -404,6 +440,7 @@ BopRandomLNSOptimizer::BopRandomLNSOptimizer(
     int random_seed, bool use_sat_to_choose_lns_neighbourhood,
     SatPropagator* sat_propagator)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       problem_(nullptr),
       initial_solution_(),
       use_sat_to_choose_lns_neighbourhood_(use_sat_to_choose_lns_neighbourhood),
@@ -417,8 +454,13 @@ BopRandomLNSOptimizer::BopRandomLNSOptimizer(
 
 BopRandomLNSOptimizer::~BopRandomLNSOptimizer() {}
 
-BopOptimizerBase::Status BopRandomLNSOptimizer::Synchronize(
+BopOptimizerBase::Status BopRandomLNSOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
+
   problem_ = &problem_state.original_problem();
   initial_solution_.reset(new BopSolution(problem_state.solution()));
 
@@ -441,7 +483,7 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblemUsingSat(
     const BopSolution& initial_solution, double target_difficulty,
     TimeLimit* time_limit, BopParameters* parameters, BopSolution* solution,
     std::vector<sat::Literal>* fixed_variables) {
-  sat::SatSolver* sat_solver = sat_propagator_->sat_solver();
+  sat::SatSolver* sat_solver = sat_propagator_->GetSatSolver();
   const DifficultyType type = ComputeVariablesToFixFromSat(
       is_in_literals_, literals_, target_difficulty, sat_solver,
       fixed_variables);
@@ -452,19 +494,21 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblemUsingSat(
       // Our adaptative parameters strategy resulted in an LNS problem where
       // nothing is fixed. Better to abort the LNS and use the full SAT solver
       // with no conflicts limit.
-      LOG(INFO) << "Aborting LNS.";
+      VLOG(1) << "Aborting LNS.";
       return BopOptimizerBase::ABORT;
     case DifficultyType::EVERYTHING_FIXED:
       // We can't solve anything. In this case we double the base number of
       // conflicts. This heuristic allows to solve "protfold.mps" to optimality.
       if (adaptive_difficulty_.BoostLuby()) {
-        LOG(INFO) << "Aborting LNS (boost too high).";
+        VLOG(1) << "Aborting LNS (boost too high).";
         return BopOptimizerBase::ABORT;
       }
       return BopOptimizerBase::CONTINUE;
     case DifficultyType::UNSAT:
-      LOG(INFO) << "Aborting LNS (the current problem has been proved UNSAT).";
-      return BopOptimizerBase::INFEASIBLE;
+      VLOG(1) << "Aborting LNS (the current problem has been proved UNSAT).";
+      return initial_solution.IsFeasible()
+                 ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
+                 : BopOptimizerBase::INFEASIBLE;
     case DifficultyType::OK:
       // Since everything is already set-up, we try the sat_solver with
       // a really low conflict limit. This allow to quickly skip over UNSAT
@@ -486,11 +530,11 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblem(
     TimeLimit* time_limit, std::vector<sat::Literal>* fixed_variables) {
   const int target_parameter = round(target_difficulty * literals_.size());
   if (target_parameter == literals_.size()) {
-    LOG(INFO) << "Aborting LNS.";
+    VLOG(1) << "Aborting LNS.";
     return BopOptimizerBase::ABORT;
   } else if (target_parameter == 0) {
     if (adaptive_difficulty_.BoostLuby()) {
-      LOG(INFO) << "Aborting LNS (boost too high).";
+      VLOG(1) << "Aborting LNS (boost too high).";
       return BopOptimizerBase::ABORT;
     }
     return BopOptimizerBase::CONTINUE;
@@ -506,12 +550,18 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblem(
 }
 
 BopOptimizerBase::Status BopRandomLNSOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   // For the SAT conflicts limit of each LNS, we follow a luby sequence times
   // the base number of conflicts (num_conflicts_). Note that the numbers of the
@@ -524,7 +574,7 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::Optimize(
   BopParameters local_parameters = parameters;
   const int default_num_conflicts =
       parameters.max_number_of_conflicts_in_random_lns();
-  sat::SatSolver* const sat_solver = sat_propagator_->sat_solver();
+  sat::SatSolver* const sat_solver = sat_propagator_->GetSatSolver();
   int num_tries = 0;
   while (!time_limit->LimitReached() &&
          num_tries < local_parameters.num_random_lns_tries()) {
@@ -603,6 +653,7 @@ BopRandomConstraintLNSOptimizer::BopRandomConstraintLNSOptimizer(
     const std::string& name, const BopConstraintTerms& objective_terms,
     int random_seed)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       problem_(nullptr),
       initial_solution_(),
       objective_terms_(objective_terms),
@@ -611,20 +662,31 @@ BopRandomConstraintLNSOptimizer::BopRandomConstraintLNSOptimizer(
 
 BopRandomConstraintLNSOptimizer::~BopRandomConstraintLNSOptimizer() {}
 
-BopOptimizerBase::Status BopRandomConstraintLNSOptimizer::Synchronize(
+BopOptimizerBase::Status BopRandomConstraintLNSOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
+
   problem_ = &problem_state.original_problem();
   initial_solution_.reset(new BopSolution(problem_state.solution()));
   return BopOptimizerBase::CONTINUE;
 }
 
 BopOptimizerBase::Status BopRandomConstraintLNSOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   std::vector<int> ct_ids(problem_->constraints_size(), 0);
   for (int ct_id = 0; ct_id < problem_->constraints_size(); ++ct_id) {

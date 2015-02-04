@@ -328,6 +328,9 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
+#if defined(USE_BOP)
+extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
+#endif
 #if defined(USE_GLOP)
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
@@ -351,6 +354,10 @@ namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != NULL);
   switch (solver->ProblemType()) {
+#if defined(USE_BOP)
+    case MPSolver::BOP_INTEGER_PROGRAMMING:
+      return BuildBopInterface(solver);
+#endif
 #if defined(USE_GLOP)
     case MPSolver::GLOP_LINEAR_PROGRAMMING:
       return BuildGLOPInterface(solver);
@@ -433,34 +440,33 @@ MPSolver::~MPSolver() { Clear(); }
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CLP
-  if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_GLPK
-  if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_GLOP
-  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-  #endif
-  #if defined(USE_SLM)
-  if (problem_type == SULUM_LINEAR_PROGRAMMING) return true;
-  if (problem_type == SULUM_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_GUROBI
-  if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_CPLEX
-  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
-  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_SCIP
-  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  #ifdef USE_CBC
-  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
-  #endif
-  return false;
+    if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_GLPK
+    if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
+    if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_BOP
+    if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_GLOP
+    if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+    #endif
+    #if defined(USE_SLM)
+    if (problem_type == SULUM_LINEAR_PROGRAMMING) return true;
+    if (problem_type == SULUM_MIXED_INTEGER_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_GUROBI
+    if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
+    if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_SCIP
+    if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
+    #endif
+    #ifdef USE_CBC
+    if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+    #endif
+    return false;
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
@@ -1468,3 +1474,4 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
+

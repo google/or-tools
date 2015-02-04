@@ -131,6 +131,7 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
+#include <functional>
 #include "base/hash.h"
 #include "base/hash.h"
 #include <limits>

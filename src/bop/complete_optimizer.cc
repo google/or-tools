@@ -22,13 +22,18 @@ namespace bop {
 
 SatLinearScanOptimizer::SatLinearScanOptimizer(const std::string& name)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       initial_solution_cost_(kint64max) {}
 
 SatLinearScanOptimizer::~SatLinearScanOptimizer() {}
 
-BopOptimizerBase::Status SatLinearScanOptimizer::Synchronize(
+BopOptimizerBase::Status SatLinearScanOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
   SCOPED_TIME_STAT(&stats_);
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
 
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, &solver_);
@@ -46,12 +51,18 @@ BopOptimizerBase::Status SatLinearScanOptimizer::Synchronize(
 }
 
 BopOptimizerBase::Status SatLinearScanOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   sat::SatParameters sat_params = solver_.parameters();
   sat_params.set_max_number_of_conflicts(
@@ -75,6 +86,7 @@ BopOptimizerBase::Status SatLinearScanOptimizer::Optimize(
 
 SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string& name)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       initialized_(false),
       initial_solution_(),
       assumptions_already_added_(false) {
@@ -85,8 +97,13 @@ SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string& name)
 
 SatCoreBasedOptimizer::~SatCoreBasedOptimizer() {}
 
-BopOptimizerBase::Status SatCoreBasedOptimizer::Synchronize(
+BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
+
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, &solver_);
   if (status != BopOptimizerBase::CONTINUE) return status;
@@ -142,12 +159,18 @@ sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
 }
 
 BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   int64 conflict_limit = parameters.max_number_of_conflicts_in_random_lns();
   double deterministic_time_at_last_sync = solver_.deterministic_time();

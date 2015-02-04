@@ -47,36 +47,41 @@ class SatPropagator {
   void AddPropagationRelation(sat::Literal decision_literal,
                               VariableIndex var_id);
 
-  sat::SatSolver* sat_solver() { return &sat_solver_; }
+  void AddSymmetries(std::vector<std::unique_ptr<SparsePermutation>>* generators);
+  sat::SatSolver* GetSatSolver();
+
   const std::vector<sat::Literal>& propagated_by(VariableIndex var_id) const {
     return propagated_by_[var_id];
   }
 
  private:
   const LinearBooleanProblem& problem_;
-  sat::SatSolver sat_solver_;
-  bool problem_loaded_;
+  std::unique_ptr<sat::SatSolver> sat_solver_;
+  int64 solution_cost_;
+  std::vector<std::unique_ptr<SparsePermutation>> symmetries_generators_;
   ITIVector<VariableIndex, std::vector<sat::Literal> > propagated_by_;
 };
 
 class BopCompleteLNSOptimizer : public BopOptimizerBase {
  public:
   explicit BopCompleteLNSOptimizer(const std::string& name,
-                                   const BopConstraintTerms& objective_terms,
-                                   sat::SatSolver* sat_solver);
+                                   const BopConstraintTerms& objective_terms);
 
   virtual ~BopCompleteLNSOptimizer();
 
  protected:
   virtual bool RunOncePerSolution() const { return true; }
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   LinearBooleanProblem problem_;
   std::unique_ptr<BopSolution> initial_solution_;
-  sat::SatSolver* const sat_solver_;
   const BopConstraintTerms& objective_terms_;
 };
 
@@ -92,8 +97,8 @@ class BopRandomLNSOptimizer : public BopOptimizerBase {
  private:
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
   Status GenerateProblemUsingSat(const BopSolution& initial_solution,
                                  double target_difficulty,
@@ -107,6 +112,10 @@ class BopRandomLNSOptimizer : public BopOptimizerBase {
 
   void RelaxVariable(VariableIndex var_id, const BopSolution& solution);
 
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   const LinearBooleanProblem* problem_;
   std::unique_ptr<BopSolution> initial_solution_;
   const bool use_sat_to_choose_lns_neighbourhood_;
@@ -132,10 +141,14 @@ class BopRandomConstraintLNSOptimizer : public BopOptimizerBase {
  private:
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   const LinearBooleanProblem* problem_;
   std::unique_ptr<BopSolution> initial_solution_;
   const BopConstraintTerms& objective_terms_;

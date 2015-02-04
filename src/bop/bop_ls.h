@@ -15,11 +15,11 @@
 // Bop.
 // Local Search is a technique used to locally improve an existing solution by
 // flipping a limited number of variables. To be successful the produced
-// solution have to satisfy all constraints of the problem and improve the
+// solution has to satisfy all constraints of the problem and improve the
 // objective cost.
 //
 // The class BopLocalSearchOptimizer is the only public interface for Local
-// Search in Bop. For unit-testing purpose this file also contains the four
+// Search in Bop. For unit-testing purposes this file also contains the four
 // internal classes AssignmentAndConstraintFeasibilityMaintainer,
 // OneFlipConstraintRepairer, SatWrapper and LocalSearchAssignmentIterator.
 // They are implementation details and should not be used outside of bop_ls.
@@ -59,21 +59,26 @@ class LocalSearchOptimizer : public BopOptimizerBase {
   explicit LocalSearchOptimizer(const std::string& name, int max_num_decisions);
   virtual ~LocalSearchOptimizer();
 
- protected:
+ private:
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
+
   // Maximum number of decisions the Local Search can take.
-  // Note that there are no limit on the number of changed variables due to
+  // Note that there is no limit on the number of changed variables due to
   // propagation.
   const int max_num_decisions_;
 
   // Iterator on all reachable assignments.
-  // Note that this iterator is only reseted when Synchronize() is called, i.e.
-  // the iterator continue its iteration of the next assignments each time
+  // Note that this iterator is only reset when Synchronize() is called, i.e.
+  // the iterator continues its iteration of the next assignments each time
   // Optimize() is called until everything is explored or a solution is found.
   std::unique_ptr<LocalSearchAssignmentIterator> assignment_iterator_;
 };

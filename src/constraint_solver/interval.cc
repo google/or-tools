@@ -48,11 +48,7 @@ const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
 const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
 
 namespace {
-enum IntervalField {
-  START,
-  DURATION,
-  END
-};
+enum IntervalField { START, DURATION, END };
 
 IntervalVar* NullInterval() { return nullptr; }
 // ----- MirrorIntervalVar -----
@@ -1497,12 +1493,12 @@ void StartVarIntervalVar::SetDurationRange(int64 mi, int64 ma) {
 
 int64 StartVarIntervalVar::EndMin() const {
   DCHECK_EQ(performed_->Max(), 1);
-  return CapAdd(std::max(start_->Min(), start_min_.Value()), duration_);
+  return CapAdd(StartMin(), duration_);
 }
 
 int64 StartVarIntervalVar::EndMax() const {
   DCHECK_EQ(performed_->Max(), 1);
-  return CapAdd(std::min(start_->Max(), start_max_.Value()), duration_);
+  return CapAdd(StartMax(), duration_);
 }
 
 void StartVarIntervalVar::SetEndMin(int64 m) {
@@ -1565,7 +1561,7 @@ class LinkStartVarIntervalVar : public Constraint {
         start_(start),
         performed_(performed) {}
 
-  ~LinkStartVarIntervalVar() {}
+  virtual ~LinkStartVarIntervalVar() {}
 
   virtual void Post() {
     Demon* const demon = MakeConstraintDemon0(
@@ -2333,8 +2329,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    const std::vector<int>& durations,
+    const std::vector<IntVar*>& start_variables, const std::vector<int>& durations,
     const std::vector<IntVar*>& performed_variables, const std::string& name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
@@ -2347,8 +2342,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    const std::vector<int64>& durations,
+    const std::vector<IntVar*>& start_variables, const std::vector<int64>& durations,
     const std::vector<IntVar*>& performed_variables, const std::string& name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);

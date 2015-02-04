@@ -26,10 +26,10 @@
 #include "glop/preprocessor.h"
 #include "glop/proto_utils.h"
 #include "glop/status.h"
-#include "util/proto_tools.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/lp_utils.h"
 #include "util/fp_utils.h"
+#include "util/proto_tools.h"
 
 DEFINE_bool(lp_solver_enable_fp_exceptions, true,
             "NaNs and division / zero produce errors. "

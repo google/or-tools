@@ -43,11 +43,15 @@ class SatLinearScanOptimizer : public BopOptimizerBase {
   virtual bool RunOncePerSolution() const { return false; }
   // TODO(user): The scan optimizer doesn't need a solution.
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   int64 initial_solution_cost_;
   sat::SatSolver solver_;
 };
@@ -62,11 +66,15 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
   virtual bool RunOncePerSolution() const { return false; }
   // TODO(user): The core based optimizer doesn't need a solution.
   virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   bool initialized_;
   std::unique_ptr<BopSolution> initial_solution_;
   sat::SatSolver::Status SolveWithAssumptions();

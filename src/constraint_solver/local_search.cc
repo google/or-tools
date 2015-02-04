@@ -1725,7 +1725,8 @@ void CompoundOperator::Start(const Assignment* assignment) {
   started_.ClearAll();
   if (size_ > 0) {
     OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
-    std::sort(operator_indices_.get(), operator_indices_.get() + size_, comparator);
+    std::sort(operator_indices_.get(), operator_indices_.get() + size_,
+              comparator);
     index_ = 0;
   }
 }

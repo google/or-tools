@@ -53,7 +53,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 30
+// NEXT TAG: 31
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -220,4 +220,8 @@ message BopParameters {
   // Note that using probing might be time consuming as it runs
   // 2 * num_variables times the LP solver.
   optional bool use_lp_strong_branching = 29 [default = false];
+
+  // Only try to decompose the problem when the number of variables is greater
+  // than the threshold.
+  optional int32 decomposer_num_variables_threshold = 30 [default = 50];
 }

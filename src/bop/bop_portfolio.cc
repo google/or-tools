@@ -27,7 +27,8 @@ void BuildObjectiveTerms(const LinearBooleanProblem& problem,
                          BopConstraintTerms* objective_terms) {
   CHECK(objective_terms != nullptr);
 
-  objective_terms->clear();
+  if (!objective_terms->empty()) return;
+
   const LinearObjective& objective = problem.objective();
   const size_t num_objective_terms = objective.literals_size();
   CHECK_EQ(num_objective_terms, objective.coefficients_size());
@@ -49,7 +50,7 @@ PortfolioOptimizer::PortfolioOptimizer(
     const ProblemState& problem_state, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set, const std::string& name)
     : BopOptimizerBase(name),
-      random_(parameters.random_seed()),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       objective_terms_(),
       selector_(),
       optimizers_(),
@@ -58,16 +59,17 @@ PortfolioOptimizer::PortfolioOptimizer(
       feasible_solution_(false),
       lower_bound_(-glop::kInfinity),
       upper_bound_(glop::kInfinity) {
-  CreateOptimizers(problem_state, parameters, optimizer_set);
+  CreateOptimizers(problem_state.original_problem(), parameters, optimizer_set);
 }
 
 PortfolioOptimizer::~PortfolioOptimizer() {}
 
-BopOptimizerBase::Status PortfolioOptimizer::Synchronize(
+BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
-  if (!sat_propagator_.LoadBooleanProblem()) {
-    return BopOptimizerBase::INFEASIBLE;
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
   }
+  state_update_stamp_ = problem_state.update_stamp();
 
   // Set a new constraint on the objective cost to only look for better
   // solutions.
@@ -75,18 +77,6 @@ BopOptimizerBase::Status PortfolioOptimizer::Synchronize(
       !sat_propagator_.OverConstrainObjective(problem_state.solution())) {
     // Stop optimization as SAT proved optimality.
     return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
-  }
-
-  for (const std::unique_ptr<BopOptimizerBase>& optimizer : optimizers_) {
-    if (problem_state.solution().IsFeasible() ||
-        !optimizer->NeedAFeasibleSolution()) {
-      const BopOptimizerBase::Status sync_status =
-          optimizer->Synchronize(problem_state);
-      if (sync_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND ||
-          sync_status == BopOptimizerBase::INFEASIBLE) {
-        return sync_status;
-      }
-    }
   }
 
   feasible_solution_ = problem_state.solution().IsFeasible();
@@ -97,12 +87,17 @@ BopOptimizerBase::Status PortfolioOptimizer::Synchronize(
 }
 
 BopOptimizerBase::Status PortfolioOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
-
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   if (!feasible_solution_) {
     // Mark optimizers that can't run because they need an initial solution.
@@ -120,12 +115,19 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   const int selected_optimizer_id = selector_->selected_item_id();
   const std::unique_ptr<BopOptimizerBase>& selected_optimizer =
       optimizers_[selected_optimizer_id];
-  LOG(INFO) << "      " << lower_bound_ << " .. " << upper_bound_ << " "
-            << name() << " - " << selected_optimizer->name()
-            << ". Time limit: " << time_limit->GetTimeLeft() << " -- "
-            << time_limit->GetDeterministicTimeLeft();
+  VLOG(1) << "      " << lower_bound_ << " .. " << upper_bound_ << " " << name()
+          << " - " << selected_optimizer->name()
+          << ". Time limit: " << time_limit->GetTimeLeft() << " -- "
+          << time_limit->GetDeterministicTimeLeft();
   const BopOptimizerBase::Status optimization_status =
-      selected_optimizer->Optimize(parameters, learned_info, time_limit);
+      selected_optimizer->Optimize(parameters, problem_state, learned_info,
+                                   time_limit);
+
+  if (optimization_status == BopOptimizerBase::INFEASIBLE ||
+      optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND) {
+    return optimization_status;
+  }
+
   selector_->UpdateSelectedItem(
       optimization_status == BopOptimizerBase::SOLUTION_FOUND,
       !selected_optimizer->RunOncePerSolution() &&
@@ -139,7 +141,7 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
 }
 
 void PortfolioOptimizer::AddOptimizer(
-    const BopParameters& parameters,
+    const LinearBooleanProblem& problem, const BopParameters& parameters,
     const BopOptimizerMethod& optimizer_method) {
   switch (optimizer_method.type()) {
     case BopOptimizerMethod::SAT_CORE_BASED:
@@ -165,22 +167,26 @@ void PortfolioOptimizer::AddOptimizer(
           optimizer_method.time_limit_ratio()));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS:
+      BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.emplace_back(new BopRandomConstraintLNSOptimizer(
           "Random_Constraint_LNS", objective_terms_, parameters.random_seed()));
       break;
     case BopOptimizerMethod::RANDOM_LNS_PROPAGATION:
+      BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.emplace_back(new BopRandomLNSOptimizer(
           "Random_LNS_Using_Variables_Connections", objective_terms_,
           parameters.random_seed(), false, &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_LNS_SAT:
+      BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.emplace_back(new BopRandomLNSOptimizer(
           "Random_LNS_Using_SAT", objective_terms_, parameters.random_seed(),
           true, &sat_propagator_));
       break;
     case BopOptimizerMethod::COMPLETE_LNS:
-      optimizers_.emplace_back(new BopCompleteLNSOptimizer(
-          "LNS", objective_terms_, sat_propagator_.sat_solver()));
+      BuildObjectiveTerms(problem, &objective_terms_);
+      optimizers_.emplace_back(
+          new BopCompleteLNSOptimizer("LNS", objective_terms_));
       break;
     case BopOptimizerMethod::LP_FIRST_SOLUTION:
       optimizers_.emplace_back(new BopSatLpFirstSolutionGenerator(
@@ -200,20 +206,21 @@ void PortfolioOptimizer::AddOptimizer(
 }
 
 void PortfolioOptimizer::CreateOptimizers(
-    const ProblemState& problem_state, const BopParameters& parameters,
+    const LinearBooleanProblem& problem, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set) {
-  BuildObjectiveTerms(problem_state.original_problem(), &objective_terms_);
-
   if (parameters.use_symmetry()) {
-    LOG(INFO) << "Finding symmetries of the problem.";
+    VLOG(1) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
-    sat::FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
-                                            &generators);
-    sat_propagator_.sat_solver()->AddSymmetries(&generators);
+    sat::FindLinearBooleanProblemSymmetries(problem, &generators);
+    sat_propagator_.AddSymmetries(&generators);
   }
 
+  const int max_num_optimizers =
+      optimizer_set.methods_size() + parameters.max_num_decisions() - 1;
+  optimizers_.reserve(max_num_optimizers);
+  optimizer_initial_scores_.reserve(max_num_optimizers);
   for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
-    AddOptimizer(parameters, optimizer_method);
+    AddOptimizer(problem, parameters, optimizer_method);
   }
   selector_.reset(new AdaptativeItemSelector(parameters.random_seed(),
                                              optimizer_initial_scores_));
@@ -226,6 +233,7 @@ void PortfolioOptimizer::CreateOptimizers(
 AdaptativeItemSelector::AdaptativeItemSelector(
     int random_seed, const std::vector<double>& initial_scores)
     : random_(random_seed), selected_item_id_(kNoSelection), items_() {
+  items_.reserve(initial_scores.size());
   for (const double score : initial_scores) {
     items_.push_back(Item(score));
   }

@@ -85,6 +85,8 @@ class BopSolver {
 
  private:
   void UpdateParameters();
+  BopSolveStatus InternalMonothreadSolver();
+  BopSolveStatus InternalMultithreadSolver();
 
   const LinearBooleanProblem& problem_;
   ProblemState problem_state_;

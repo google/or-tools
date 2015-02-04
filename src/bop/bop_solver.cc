@@ -171,9 +171,9 @@ void SolverSynchronizer::SynchronizeSolverInfos(SolverTimeStamp stamp,
       *stop_solver = true;
       return;
     }
-    *problem_changed =
-        GetMutableProblemState()->MergeLearnedInfo(learned_info_) ||
-        *problem_changed;
+    *problem_changed = GetMutableProblemState()->MergeLearnedInfo(
+                           learned_info_, BopOptimizerBase::CONTINUE) ||
+                       *problem_changed;
   }
 }
 
@@ -198,8 +198,8 @@ void RunOptimizer(const std::string& name, SolverSynchronizer* solver_sync) {
   ProblemState* const problem_state = solver_sync->GetMutableProblemState();
   TimeLimit time_limit(parameters.max_time_in_seconds(),
                        parameters.max_deterministic_time());
-  LOG(INFO) << "limit: " << parameters.max_time_in_seconds() << " -- "
-            << parameters.max_deterministic_time();
+  VLOG(1) << "limit: " << parameters.max_time_in_seconds() << " -- "
+          << parameters.max_deterministic_time();
   const int solver_index = solver_sync->solver_index();
 
   CHECK_LT(0, parameters.solver_optimizer_sets_size());
@@ -210,18 +210,13 @@ void RunOptimizer(const std::string& name, SolverSynchronizer* solver_sync) {
                 parameters.solver_optimizer_sets_size() - 1)
           : parameters.solver_optimizer_sets(solver_index);
   PortfolioOptimizer optimizer(*problem_state, parameters,
-                               solver_optimizer_sets,
-                               StringPrintf("Portfolio_%d", solver_index));
-  const BopOptimizerBase::Status sync_status =
-      optimizer.Synchronize(*problem_state);
-  if (UpdateProblemStateBasedOnStatus(sync_status, problem_state)) return;
+                               solver_optimizer_sets, "Portfolio_" + name);
 
   LearnedInfo learned_info(problem_state->original_problem());
   SolverTimeStamp stamp(0);
   while (!time_limit.LimitReached()) {
-    const BopOptimizerBase::Status optimization_status =
-        optimizer.Optimize(parameters, &learned_info, &time_limit);
-
+    const BopOptimizerBase::Status optimization_status = optimizer.Optimize(
+        parameters, *problem_state, &learned_info, &time_limit);
     solver_sync->AddLearnedInfo(stamp, learned_info);
     bool problem_changed = false;
     bool stop_solver = false;
@@ -233,16 +228,8 @@ void RunOptimizer(const std::string& name, SolverSynchronizer* solver_sync) {
 
     if (optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
       CHECK(problem_state->solution().IsFeasible());
-      LOG(INFO) << problem_state->solution().GetScaledCost()
-                << "  New solution! " << name;
-    }
-
-    if (problem_changed) {
-      // The problem has changed, re-synchronize the optimizer.
-      const BopOptimizerBase::Status sync_status =
-          optimizer.Synchronize(*problem_state);
-      if (UpdateProblemStateBasedOnStatus(sync_status, problem_state)) return;
-      problem_state->SynchronizationDone();
+      VLOG(1) << problem_state->solution().GetScaledCost() << "  New solution! "
+              << name;
     }
 
     if (optimization_status == BopOptimizerBase::ABORT) {
@@ -270,22 +257,68 @@ BopSolver::BopSolver(const LinearBooleanProblem& problem)
   CHECK(sat::ValidateBooleanProblem(problem).ok());
 }
 
-BopSolver::~BopSolver() { IF_STATS_ENABLED(LOG(INFO) << stats_.StatString()); }
+BopSolver::~BopSolver() { IF_STATS_ENABLED(VLOG(1) << stats_.StatString()); }
 
 BopSolveStatus BopSolver::Solve() {
   SCOPED_TIME_STAT(&stats_);
 
   UpdateParameters();
 
+  return parameters_.number_of_solvers() > 1 ? InternalMultithreadSolver()
+                                             : InternalMonothreadSolver();
+}
+
+BopSolveStatus BopSolver::InternalMonothreadSolver() {
+  TimeLimit time_limit(parameters_.max_time_in_seconds(),
+                       parameters_.max_deterministic_time());
+  VLOG(1) << "limit: " << parameters_.max_time_in_seconds() << " -- "
+          << parameters_.max_deterministic_time();
+  LearnedInfo learned_info(problem_state_.original_problem());
+  PortfolioOptimizer optimizer(problem_state_, parameters_,
+                               parameters_.solver_optimizer_sets(0),
+                               "Portfolio");
+  while (!time_limit.LimitReached()) {
+    const BopOptimizerBase::Status optimization_status = optimizer.Optimize(
+        parameters_, problem_state_, &learned_info, &time_limit);
+    problem_state_.MergeLearnedInfo(learned_info, optimization_status);
+
+    if (optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
+      CHECK(problem_state_.solution().IsFeasible());
+      VLOG(1) << problem_state_.solution().GetScaledCost()
+              << "  New solution! ";
+    }
+
+    if (problem_state_.IsOptimal()) {
+      CHECK(problem_state_.solution().IsFeasible());
+      return BopSolveStatus::OPTIMAL_SOLUTION_FOUND;
+    } else if (problem_state_.IsInfeasible()) {
+      return BopSolveStatus::INFEASIBLE_PROBLEM;
+    }
+
+    if (optimization_status == BopOptimizerBase::ABORT) {
+      break;
+    }
+    learned_info.Clear();
+  }
+
+  return problem_state_.solution().IsFeasible()
+             ? BopSolveStatus::FEASIBLE_SOLUTION_FOUND
+             : BopSolveStatus::NO_SOLUTION_FOUND;
+}
+
+BopSolveStatus BopSolver::InternalMultithreadSolver() {
   // Create parameters, learned info and problem states for each solver.
   const int num_solvers = parameters_.number_of_solvers();
+  CHECK_GT(num_solvers, 1);
+
   LearnedInfo learned_info = problem_state_.GetLearnedInfo();
   std::vector<std::unique_ptr<SolverSynchronizer::Info>> all_infos;
   for (int index = 0; index < num_solvers; ++index) {
     all_infos.emplace_back(new SolverSynchronizer::Info(parameters_, problem_));
     all_infos.back()->parameters.set_random_seed(parameters_.random_seed() +
                                                  index);
-    all_infos.back()->problem_state.MergeLearnedInfo(learned_info);
+    all_infos.back()->problem_state.MergeLearnedInfo(
+        learned_info, BopOptimizerBase::CONTINUE);
   }
 
   // Build dedicated synchronizers to forbid unsafe access to the memory of the
@@ -316,12 +349,12 @@ BopSolveStatus BopSolver::Solve() {
 
   // Synchronize the BopSolver::problem_state_ from the solvers' problem states.
   for (int index = 0; index < num_solvers; ++index) {
-    LOG(INFO) << "Solution of solver " << index << ": "
-              << all_infos[index]->problem_state.solution().GetScaledCost();
+    VLOG(1) << "Solution of solver " << index << ": "
+            << all_infos[index]->problem_state.solution().GetScaledCost();
     learned_info.Clear();
     learned_info.solution = all_infos[index]->problem_state.solution();
     learned_info.lower_bound = all_infos[index]->problem_state.lower_bound();
-    problem_state_.MergeLearnedInfo(learned_info);
+    problem_state_.MergeLearnedInfo(learned_info, BopOptimizerBase::CONTINUE);
     if (all_infos[index]->problem_state.IsInfeasible()) {
       problem_state_.MarkAsInfeasible();
     }
@@ -342,7 +375,8 @@ BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
 
   LearnedInfo learned_info(problem_);
   learned_info.solution = first_solution;
-  if (problem_state_.MergeLearnedInfo(learned_info) &&
+  if (problem_state_.MergeLearnedInfo(learned_info,
+                                      BopOptimizerBase::CONTINUE) &&
       problem_state_.IsOptimal()) {
     return BopSolveStatus::OPTIMAL_SOLUTION_FOUND;
   }

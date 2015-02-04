@@ -272,7 +272,8 @@ PiecewiseLinearFunction::PiecewiseLinearFunction(
   CHECK_NOTNULL(segments);
 
   // Sort the segments in ascending order of start.
-  std::sort(segments->begin(), segments->end(), PiecewiseSegment::SortComparator);
+  std::sort(segments->begin(), segments->end(),
+            PiecewiseSegment::SortComparator);
   // Check for overlapping segments.
   for (int i = 0; i < segments->size() - 1; ++i) {
     if (segments->at(i).end_x() > segments->at(i + 1).start_x()) {

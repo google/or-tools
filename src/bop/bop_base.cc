@@ -25,9 +25,12 @@ namespace bop {
 //------------------------------------------------------------------------------
 // ProblemState
 //------------------------------------------------------------------------------
+const int64 ProblemState::kInitialStampValue(0);
+
 ProblemState::ProblemState(const LinearBooleanProblem& problem)
     : original_problem_(problem),
       parameters_(),
+      update_stamp_(kInitialStampValue + 1),
       is_fixed_(problem.num_variables(), false),
       fixed_values_(problem.num_variables(), false),
       lp_values_(),
@@ -44,7 +47,9 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
   upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
 }
 
-bool ProblemState::MergeLearnedInfo(const LearnedInfo& learned_info) {
+bool ProblemState::MergeLearnedInfo(
+    const LearnedInfo& learned_info,
+    BopOptimizerBase::Status optimization_status) {
   const std::string kIndent(25, ' ');
 
   bool new_lp_values = false;
@@ -52,7 +57,7 @@ bool ProblemState::MergeLearnedInfo(const LearnedInfo& learned_info) {
     if (lp_values_ != learned_info.lp_values) {
       lp_values_ = learned_info.lp_values;
       new_lp_values = true;
-      LOG(INFO) << kIndent + "New LP values.";
+      VLOG(1) << kIndent + "New LP values.";
     }
   }
 
@@ -67,8 +72,8 @@ bool ProblemState::MergeLearnedInfo(const LearnedInfo& learned_info) {
     }
     if (binary_clause_manager_.NumClauses() > old_num) {
       new_binary_clauses = true;
-      LOG(INFO) << kIndent + "Num binary clauses: "
-                << binary_clause_manager_.NumClauses();
+      VLOG(1) << kIndent + "Num binary clauses: "
+              << binary_clause_manager_.NumClauses();
     }
   }
 
@@ -78,14 +83,14 @@ bool ProblemState::MergeLearnedInfo(const LearnedInfo& learned_info) {
        learned_info.solution.GetCost() < solution_.GetCost())) {
     solution_ = learned_info.solution;
     new_solution = true;
-    LOG(INFO) << kIndent + "New solution.";
+    VLOG(1) << kIndent + "New solution.";
   }
 
   bool new_lower_bound = false;
   if (learned_info.lower_bound > lower_bound()) {
     lower_bound_ = learned_info.lower_bound;
     new_lower_bound = true;
-    LOG(INFO) << kIndent + "New lower bound.";
+    VLOG(1) << kIndent + "New lower bound.";
   }
 
   if (solution_.IsFeasible()) {
@@ -128,17 +133,29 @@ bool ProblemState::MergeLearnedInfo(const LearnedInfo& learned_info) {
         ++num_fixed_variables;
       }
     }
-    LOG(INFO) << kIndent << num_newly_fixed_variables
-              << " newly fixed variables (" << num_fixed_variables << " / "
-              << is_fixed_.size() << ").";
+    VLOG(1) << kIndent << num_newly_fixed_variables
+            << " newly fixed variables (" << num_fixed_variables << " / "
+            << is_fixed_.size() << ").";
     if (num_fixed_variables == is_fixed_.size() && solution_.IsFeasible()) {
       MarkAsOptimal();
-      LOG(INFO) << kIndent << "Optimal";
+      VLOG(1) << kIndent << "Optimal";
     }
   }
 
-  return new_lp_values || new_binary_clauses || new_solution ||
-         new_lower_bound || num_newly_fixed_variables > 0;
+  bool known_status = false;
+  if (optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND) {
+    MarkAsOptimal();
+    known_status = true;
+  } else if (optimization_status == BopOptimizerBase::INFEASIBLE) {
+    MarkAsInfeasible();
+    known_status = true;
+  }
+
+  const bool updated = new_lp_values || new_binary_clauses || new_solution ||
+                       new_lower_bound || num_newly_fixed_variables > 0 ||
+                       known_status;
+  if (updated) ++update_stamp_;
+  return updated;
 }
 
 LearnedInfo ProblemState::GetLearnedInfo() const {
@@ -160,6 +177,7 @@ LearnedInfo ProblemState::GetLearnedInfo() const {
 void ProblemState::MarkAsOptimal() {
   CHECK(solution_.IsFeasible());
   lower_bound_ = upper_bound();
+  ++update_stamp_;
 }
 
 void ProblemState::MarkAsInfeasible() {
@@ -171,6 +189,7 @@ void ProblemState::MarkAsInfeasible() {
   } else {
     lower_bound_ = upper_bound_ - 1;
   }
+  ++update_stamp_;
 }
 
 const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses() const {
@@ -255,7 +274,7 @@ BopOptimizerBase::BopOptimizerBase(const std::string& name)
 }
 
 BopOptimizerBase::~BopOptimizerBase() {
-  IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
+  IF_STATS_ENABLED(VLOG(1) << stats_.StatString());
 }
 
 std::string BopOptimizerBase::GetStatusString(Status status) {

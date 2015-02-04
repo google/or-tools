@@ -32,6 +32,60 @@ namespace bop {
 
 // Forward declaration.
 struct LearnedInfo;
+class ProblemState;
+
+// Base class used to optimize a ProblemState.
+// Optimizers implementing this class are used in a sort of portfolio and
+// are run sequentially or concurrently. See for instance BopRandomLNSOptimizer.
+class BopOptimizerBase {
+ public:
+  explicit BopOptimizerBase(const std::string& name);
+  virtual ~BopOptimizerBase();
+
+  // Returns true if it's useless to run the optimizer several times on the
+  // same solution.
+  virtual bool RunOncePerSolution() const = 0;
+
+  // Returns true if the optimizer needs a feasible solution to run.
+  virtual bool NeedAFeasibleSolution() const = 0;
+
+  // TODO(user): To redesign, some are not needed anymore thanks to the
+  //              problem state, e.g. IsOptimal().
+  enum Status {
+    OPTIMAL_SOLUTION_FOUND,
+    SOLUTION_FOUND,
+    INFEASIBLE,
+    LIMIT_REACHED,
+    CONTINUE,
+    ABORT
+  };
+
+  // Tries to infer more information about the problem state, i.e. reduces the
+  // gap by increasing the lower bound or finding a better solution.
+  // Returns SOLUTION_FOUND when a new solution with a better objective cost is
+  // found before a time limit.
+  // The learned information is cleared and the filled with any new information
+  // about the problem, e.g. a new lower bound.
+  virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
+                          LearnedInfo* learned_info, TimeLimit* time_limit) = 0;
+
+  std::string name() const { return name_; }
+
+  // Returns a std::string describing the status.
+  static std::string GetStatusString(Status status);
+
+ protected:
+  const std::string name_;
+
+  mutable StatsGroup stats_;
+};
+
+inline std::ostream& operator<<(std::ostream& os,
+                                BopOptimizerBase::Status status) {
+  os << BopOptimizerBase::GetStatusString(status);
+  return os;
+}
 
 // This class represents the current state of the problem with all the
 // information that the solver learned about it at a given time.
@@ -51,7 +105,8 @@ class ProblemState {
   // Note that the LP values contained in the learned information (if any)
   // will replace the LP values of the problem state, whatever the cost is.
   // Returns true when the merge has changed the problem state.
-  bool MergeLearnedInfo(const LearnedInfo& learned_info);
+  bool MergeLearnedInfo(const LearnedInfo& learned_info,
+                        BopOptimizerBase::Status optimization_status);
 
   // Returns all the information learned so far.
   // TODO(user): In the current implementation the learned information only
@@ -59,6 +114,13 @@ class ProblemState {
   //              SynchronizationDone().
   //              Add an iterator on the sat::BinaryClauseManager.
   LearnedInfo GetLearnedInfo() const;
+
+  // The stamp represents an upper bound on the number of times the problem
+  // state has been updated. If the stamp changed since last time one has
+  // checked the state, it's worth trying again as it might have changed
+  // (no guarantee).
+  static const int64 kInitialStampValue;
+  int64 update_stamp() const { return update_stamp_; }
 
   // Marks the problem state as optimal.
   void MarkAsOptimal();
@@ -128,6 +190,7 @@ class ProblemState {
  private:
   const LinearBooleanProblem& original_problem_;
   BopParameters parameters_;
+  int64 update_stamp_;
   ITIVector<VariableIndex, bool> is_fixed_;
   ITIVector<VariableIndex, bool> fixed_values_;
   glop::DenseRow lp_values_;
@@ -233,68 +296,6 @@ class StampedLearnedInfo {
   // TODO(user): Use ReadMutex and WriteMutex?
   mutable Mutex mutex_;
 };
-
-// Base class used to optimize a ProblemState.
-// Optimizers implementing this class are used in a sort of portfolio and
-// are run sequentially or concurrently. See for instance BopRandomLNSOptimizer.
-class BopOptimizerBase {
- public:
-  explicit BopOptimizerBase(const std::string& name);
-  virtual ~BopOptimizerBase();
-
-  // Returns true if it's useless to run the optimizer several times on the
-  // same solution.
-  virtual bool RunOncePerSolution() const = 0;
-
-  // Returns true if the optimizer needs a feasible solution to run.
-  virtual bool NeedAFeasibleSolution() const = 0;
-
-  // TODO(user): To redesign, some are not needed anymore thanks to the
-  //              problem state, e.g. IsOptimal().
-  enum Status {
-    OPTIMAL_SOLUTION_FOUND,
-    SOLUTION_FOUND,
-    INFEASIBLE,
-    LIMIT_REACHED,
-    CONTINUE,
-    ABORT
-  };
-
-  // Resets all internal structures to start a new round of Optimize() calls
-  // with a new problem state.
-  // Returns the status of the optimizer for the current problem state, e.g.
-  // returns INFEASIBLE when the problem is proved UNSAT, ABORT when the
-  // optimizer already knows it can't optimize the problem state...
-  // Note that the underlying problem state object might change during search;
-  // If possible copy needed objects, keep a pointer on them only with great
-  // caution.
-  virtual Status Synchronize(const ProblemState& problem_state) = 0;
-
-  // Tries to infer more information about the problem state, i.e. reduces the
-  // gap by increasing the lower bound or finding a better solution.
-  // Returns SOLUTION_FOUND when a new solution with a better objective cost is
-  // found before a time limit.
-  // The learned information is cleared and the filled with any new information
-  // about the problem, e.g. a new lower bound.
-  virtual Status Optimize(const BopParameters& parameters,
-                          LearnedInfo* learned_info, TimeLimit* time_limit) = 0;
-
-  std::string name() const { return name_; }
-
-  // Returns a std::string describing the status.
-  static std::string GetStatusString(Status status);
-
- protected:
-  const std::string name_;
-
-  mutable StatsGroup stats_;
-};
-
-inline std::ostream& operator<<(std::ostream& os,
-                                BopOptimizerBase::Status status) {
-  os << BopOptimizerBase::GetStatusString(status);
-  return os;
-}
 
 }  // namespace bop
 }  // namespace operations_research

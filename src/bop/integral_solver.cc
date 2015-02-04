@@ -33,10 +33,111 @@ using operations_research::glop::RowIndex;
 using operations_research::glop::kInfinity;
 
 namespace {
-// TODO(user): Use the one in MIP or move this one to util.
+// TODO(user): Use an existing one or move it to util.
 bool IsIntegerWithinTolerance(Fractional x) {
   const double kTolerance = 1e-10;
   return std::abs(x - round(x)) <= kTolerance;
+}
+
+// Returns true when all the variables of the problem are boolean, and all the
+// constraints have integer coefficients.
+// TODO(user): Move to SAT util.
+bool BooleanProblemWithIntegralConstraints(
+    const LinearProgram& linear_problem) {
+  const glop::SparseMatrix& matrix = linear_problem.GetSparseMatrix();
+
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    const Fractional lower_bound = linear_problem.variable_lower_bounds()[col];
+    const Fractional upper_bound = linear_problem.variable_upper_bounds()[col];
+
+    if (lower_bound <= -1.0 || upper_bound >= 2.0) {
+      // Integral variable.
+      return false;
+    }
+
+    for (const SparseColumn::Entry e : matrix.column(col)) {
+      if (!IsIntegerWithinTolerance(e.coefficient())) {
+        // Floating coefficient.
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Builds a LinearBooleanProblem based on a LinearProgram with all the variables
+// being booleans and all the constraints having only integral coefficients.
+// TODO(user): Move to SAT util.
+void BuildBooleanProblemWithIntegralConstraints(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
+  CHECK(boolean_problem != nullptr);
+  boolean_problem->Clear();
+
+  const glop::SparseMatrix& matrix = linear_problem.GetSparseMatrix();
+  // Create boolean variables.
+  for (ColIndex col(0); col < matrix.num_cols(); ++col) {
+    boolean_problem->add_var_names(linear_problem.GetVariableName(col));
+  }
+  boolean_problem->set_num_variables(matrix.num_cols().value());
+  boolean_problem->set_name(linear_problem.name());
+
+  // Create constraints.
+  for (RowIndex row(0); row < matrix.num_rows(); ++row) {
+    LinearBooleanConstraint* const constraint =
+        boolean_problem->add_constraints();
+    constraint->set_name(linear_problem.GetConstraintName(row));
+    if (linear_problem.constraint_lower_bounds()[row] != -kInfinity) {
+      constraint->set_lower_bound(
+          linear_problem.constraint_lower_bounds()[row]);
+    }
+    if (linear_problem.constraint_upper_bounds()[row] != kInfinity) {
+      constraint->set_upper_bound(
+          linear_problem.constraint_upper_bounds()[row]);
+    }
+  }
+
+  // Store the constraint coefficients.
+  for (ColIndex col(0); col < matrix.num_cols(); ++col) {
+    for (const SparseColumn::Entry e : matrix.column(col)) {
+      LinearBooleanConstraint* const constraint =
+          boolean_problem->mutable_constraints(e.row().value());
+      constraint->add_literals(col.value() + 1);
+      constraint->add_coefficients(e.coefficient());
+    }
+  }
+
+  // Create the minimization objective.
+  std::vector<double> coefficients;
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    const Fractional coeff = linear_problem.objective_coefficients()[col];
+    if (coeff != 0.0) coefficients.push_back(coeff);
+  }
+  double scaling_factor = 0.0;
+  double relative_error = 0.0;
+  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                 &relative_error);
+  const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+  LinearObjective* const objective = boolean_problem->mutable_objective();
+  objective->set_offset(linear_problem.objective_offset() * scaling_factor /
+                        gcd);
+
+  // Note that here we set the scaling factor for the inverse operation of
+  // getting the "true" objective value from the scaled one. Hence the inverse.
+  objective->set_scaling_factor(1.0 / scaling_factor * gcd);
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    const Fractional coeff = linear_problem.objective_coefficients()[col];
+    const int64 value = static_cast<int64>(round(coeff * scaling_factor)) / gcd;
+    if (value != 0) {
+      objective->add_literals(col.value() + 1);
+      objective->add_coefficients(value);
+    }
+  }
+
+  // If the problem was a maximization one, we need to modify the objective.
+  if (linear_problem.IsMaximizationProblem()) {
+    sat::ChangeOptimizationDirection(boolean_problem);
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -155,44 +256,49 @@ std::string IntegralVariable::DebugString() const {
 // coefficients, and integral variables, i.e. no continuous variables.
 class IntegralProblemConverter {
  public:
-  explicit IntegralProblemConverter(const LinearProgram& linear_problem);
+  IntegralProblemConverter();
 
   // Converts the LinearProgram into a LinearBooleanProblem.
   // Returns false when the conversion fails.
-  bool ConvertToBooleanProblem();
+  bool ConvertToBooleanProblem(const LinearProgram& linear_problem,
+                               LinearBooleanProblem* boolean_problem);
 
   // Returns the value of the integral variable based on the boolean conversion
   // and the boolean solution to the problem.
   int64 GetSolutionValue(ColIndex col, const BopSolution& solution) const;
 
-  const LinearBooleanProblem& problem() const { return problem_; }
-
  private:
   // Returns true when the linear_problem_ can be converted into a boolean
   // problem. Note that floating weigths and continuous variables are not
   // supported.
-  bool CheckProblem() const;
+  bool CheckProblem(const LinearProgram& linear_problem) const;
 
   // Initializes the type of each variable of the linear_problem_.
-  void InitVariableTypes();
+  void InitVariableTypes(const LinearProgram& linear_problem,
+                         LinearBooleanProblem* boolean_problem);
 
   // Converts all variables of the problem.
-  void ConvertAllVariables();
+  void ConvertAllVariables(const LinearProgram& linear_problem,
+                           LinearBooleanProblem* boolean_problem);
 
   // Adds all variables constraints, i.e. lower and upper bounds of variables.
-  void AddVariableConstraints();
+  void AddVariableConstraints(const LinearProgram& linear_problem,
+                              LinearBooleanProblem* boolean_problem);
 
   // Converts all constraints from LinearProgram to boolean problem.
-  void ConvertAllConstraints();
+  void ConvertAllConstraints(const LinearProgram& linear_problem,
+                             LinearBooleanProblem* boolean_problem);
 
   // Converts the objective from LinearProgram to boolean problem.
-  void ConvertObjective();
+  void ConvertObjective(const LinearProgram& linear_problem,
+                        LinearBooleanProblem* boolean_problem);
 
   // Converts the integral variable represented by col in the linear_problem_
   // into an IntegralVariable using existing boolean variables.
   // Returns false when existing boolean variables are not enough to model
   // the integral variable.
-  bool ConvertUsingExistingBooleans(ColIndex col,
+  bool ConvertUsingExistingBooleans(const LinearProgram& linear_problem,
+                                    ColIndex col,
                                     IntegralVariable* integral_var);
 
   // Creates the integral_var using the given linear_problem_ constraint.
@@ -204,7 +310,8 @@ class IntegralProblemConverter {
   //    integral_var == (bound + sum(-w_i * b_i)) / w
   // Note that all divisions by w have to be integral as Bop only deals with
   // integral coefficients.
-  bool CreateVariableUsingConstraint(RowIndex constraint,
+  bool CreateVariableUsingConstraint(const LinearProgram& linear_problem,
+                                     RowIndex constraint,
                                      IntegralVariable* integral_var);
 
   // Adds weighted integral variable represented by col to the current dense
@@ -227,8 +334,7 @@ class IntegralProblemConverter {
   bool HasNonZeroWeigths(
       const ITIVector<VariableIndex, Fractional>& dense_weights) const;
 
-  const LinearProgram& linear_problem_;
-  LinearBooleanProblem problem_;
+  bool boolean_with_int_constraints_;
 
   // boolean_variables_[i] represents the boolean variable index in Bop; when
   // negative -boolean_variables_[i] - 1 represents the index of the
@@ -242,59 +348,69 @@ class IntegralProblemConverter {
   ITIVector<glop::ColIndex, VariableType> variable_types_;
 };
 
-IntegralProblemConverter::IntegralProblemConverter(
-    const LinearProgram& linear_problem)
-    : linear_problem_(linear_problem),
-      problem_(),
-      boolean_variables_(linear_problem.num_variables().value(), 0),
+IntegralProblemConverter::IntegralProblemConverter()
+    : boolean_variables_(),
       integral_variables_(),
       integral_indices_(),
       num_boolean_variables_(0),
-      variable_types_(linear_problem.num_variables().value(), INTEGRAL) {
-  InitVariableTypes();
-}
+      variable_types_() {}
 
-bool IntegralProblemConverter::ConvertToBooleanProblem() {
-  if (!CheckProblem()) {
+bool IntegralProblemConverter::ConvertToBooleanProblem(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
+  if (!CheckProblem(linear_problem)) {
     return false;
   }
 
-  ConvertAllVariables();
-  problem_.set_num_variables(num_boolean_variables_);
-  problem_.set_name(linear_problem_.name());
+  boolean_with_int_constraints_ =
+      BooleanProblemWithIntegralConstraints(linear_problem);
+  if (boolean_with_int_constraints_) {
+    BuildBooleanProblemWithIntegralConstraints(linear_problem, boolean_problem);
+    return true;
+  }
 
-  AddVariableConstraints();
-  ConvertAllConstraints();
-  ConvertObjective();
+  InitVariableTypes(linear_problem, boolean_problem);
+  ConvertAllVariables(linear_problem, boolean_problem);
+  boolean_problem->set_num_variables(num_boolean_variables_);
+  boolean_problem->set_name(linear_problem.name());
+
+  AddVariableConstraints(linear_problem, boolean_problem);
+  ConvertAllConstraints(linear_problem, boolean_problem);
+  ConvertObjective(linear_problem, boolean_problem);
 
   // A BooleanLinearProblem is always in the minimization form.
-  if (linear_problem_.IsMaximizationProblem()) {
-    sat::ChangeOptimizationDirection(&problem_);
+  if (linear_problem.IsMaximizationProblem()) {
+    sat::ChangeOptimizationDirection(boolean_problem);
   }
   return true;
 }
 
 int64 IntegralProblemConverter::GetSolutionValue(
     ColIndex col, const BopSolution& solution) const {
+  if (boolean_with_int_constraints_) {
+    return solution.Value(VariableIndex(col.value()));
+  }
+
   const int pos = boolean_variables_[col];
   return pos >= 0 ? solution.Value(VariableIndex(pos))
                   : integral_variables_[-pos - 1].GetSolutionValue(solution);
 }
 
-bool IntegralProblemConverter::CheckProblem() const {
-  for (ColIndex col(0); col < linear_problem_.num_variables(); ++col) {
-    if (!linear_problem_.is_variable_integer()[col]) {
-      LOG(ERROR) << "Variable " << linear_problem_.GetVariableName(col)
+bool IntegralProblemConverter::CheckProblem(
+    const LinearProgram& linear_problem) const {
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    if (!linear_problem.is_variable_integer()[col]) {
+      LOG(ERROR) << "Variable " << linear_problem.GetVariableName(col)
                  << " is continuous. This is not supported by BOP.";
       return false;
     }
-    if (linear_problem_.variable_lower_bounds()[col] == -kInfinity) {
-      LOG(ERROR) << "Variable " << linear_problem_.GetVariableName(col)
+    if (linear_problem.variable_lower_bounds()[col] == -kInfinity) {
+      LOG(ERROR) << "Variable " << linear_problem.GetVariableName(col)
                  << " has no lower bound. This is not supported by BOP.";
       return false;
     }
-    if (linear_problem_.variable_upper_bounds()[col] == kInfinity) {
-      LOG(ERROR) << "Variable " << linear_problem_.GetVariableName(col)
+    if (linear_problem.variable_upper_bounds()[col] == kInfinity) {
+      LOG(ERROR) << "Variable " << linear_problem.GetVariableName(col)
                  << " has no upper bound. This is not supported by BOP.";
       return false;
     }
@@ -302,17 +418,21 @@ bool IntegralProblemConverter::CheckProblem() const {
   return true;
 }
 
-void IntegralProblemConverter::InitVariableTypes() {
-  for (ColIndex col(0); col < linear_problem_.num_variables(); ++col) {
-    const Fractional lower_bound = linear_problem_.variable_lower_bounds()[col];
-    const Fractional upper_bound = linear_problem_.variable_upper_bounds()[col];
+void IntegralProblemConverter::InitVariableTypes(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
+  boolean_variables_.assign(linear_problem.num_variables().value(), 0);
+  variable_types_.assign(linear_problem.num_variables().value(), INTEGRAL);
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    const Fractional lower_bound = linear_problem.variable_lower_bounds()[col];
+    const Fractional upper_bound = linear_problem.variable_upper_bounds()[col];
 
     if (lower_bound > -1.0 && upper_bound < 2.0) {
       // Boolean variable.
       variable_types_[col] = BOOLEAN;
       boolean_variables_[col] = num_boolean_variables_;
       ++num_boolean_variables_;
-      problem_.add_var_names(linear_problem_.GetVariableName(col));
+      boolean_problem->add_var_names(linear_problem.GetVariableName(col));
     } else {
       // Integral variable.
       variable_types_[col] = INTEGRAL;
@@ -321,21 +441,23 @@ void IntegralProblemConverter::InitVariableTypes() {
   }
 }
 
-void IntegralProblemConverter::ConvertAllVariables() {
+void IntegralProblemConverter::ConvertAllVariables(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
   for (const ColIndex col : integral_indices_) {
     CHECK_EQ(INTEGRAL, variable_types_[col]);
     IntegralVariable integral_var;
-    if (!ConvertUsingExistingBooleans(col, &integral_var)) {
+    if (!ConvertUsingExistingBooleans(linear_problem, col, &integral_var)) {
       const Fractional lower_bound =
-          linear_problem_.variable_lower_bounds()[col];
+          linear_problem.variable_lower_bounds()[col];
       const Fractional upper_bound =
-          linear_problem_.variable_upper_bounds()[col];
+          linear_problem.variable_upper_bounds()[col];
       integral_var.BuildFromRange(num_boolean_variables_, lower_bound,
                                   upper_bound);
       num_boolean_variables_ += integral_var.GetNumberOfBooleanVariables();
-      const std::string var_name = linear_problem_.GetVariableName(col);
+      const std::string var_name = linear_problem.GetVariableName(col);
       for (int i = 0; i < integral_var.bits().size(); ++i) {
-        problem_.add_var_names(var_name + StringPrintf("_%d", i));
+        boolean_problem->add_var_names(var_name + StringPrintf("_%d", i));
       }
     }
     integral_variables_.push_back(integral_var);
@@ -344,11 +466,13 @@ void IntegralProblemConverter::ConvertAllVariables() {
   }
 }
 
-void IntegralProblemConverter::ConvertAllConstraints() {
+void IntegralProblemConverter::ConvertAllConstraints(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
   // TODO(user): This is the way it's done in glop/proto_utils.cc but having
   //              to transpose looks unnecessary costly.
   glop::SparseMatrix transpose;
-  transpose.PopulateFromTranspose(linear_problem_.GetSparseMatrix());
+  transpose.PopulateFromTranspose(linear_problem.GetSparseMatrix());
 
   double max_relative_error = 0.0;
   double max_bound_error = 0.0;
@@ -356,7 +480,7 @@ void IntegralProblemConverter::ConvertAllConstraints() {
   double relative_error = 0.0;
   double scaling_factor = 0.0;
   std::vector<double> coefficients;
-  for (RowIndex row(0); row < linear_problem_.num_constraints(); ++row) {
+  for (RowIndex row(0); row < linear_problem.num_constraints(); ++row) {
     Fractional offset = 0.0;
     ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                        0.0);
@@ -382,14 +506,14 @@ void IntegralProblemConverter::ConvertAllConstraints() {
     max_relative_error = std::max(relative_error, max_relative_error);
     max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
 
-    LinearBooleanConstraint* constraint = problem_.add_constraints();
-    constraint->set_name(linear_problem_.GetConstraintName(row));
+    LinearBooleanConstraint* constraint = boolean_problem->add_constraints();
+    constraint->set_name(linear_problem.GetConstraintName(row));
     const double bound_error =
         ScaleAndSparsifyWeights(scaling_factor, gcd, dense_weights, constraint);
     max_bound_error = std::max(max_bound_error, bound_error);
 
     const Fractional lower_bound =
-        linear_problem_.constraint_lower_bounds()[row];
+        linear_problem.constraint_lower_bounds()[row];
     if (lower_bound != -kInfinity) {
       const Fractional offset_lower_bound = lower_bound - offset;
       if (offset_lower_bound * scaling_factor >
@@ -407,7 +531,7 @@ void IntegralProblemConverter::ConvertAllConstraints() {
       }
     }
     const Fractional upper_bound =
-        linear_problem_.constraint_upper_bounds()[row];
+        linear_problem.constraint_upper_bounds()[row];
     if (upper_bound != kInfinity) {
       const Fractional offset_upper_bound = upper_bound - offset;
       if (offset_upper_bound * scaling_factor <
@@ -427,15 +551,17 @@ void IntegralProblemConverter::ConvertAllConstraints() {
   }
 }
 
-void IntegralProblemConverter::ConvertObjective() {
-  LinearObjective* objective = problem_.mutable_objective();
+void IntegralProblemConverter::ConvertObjective(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
+  LinearObjective* objective = boolean_problem->mutable_objective();
   Fractional offset = 0.0;
   ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                      0.0);
   // Compute the objective weights for the binary variable model.
-  for (ColIndex col(0); col < linear_problem_.num_variables(); ++col) {
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
     offset += AddWeightedIntegralVariable(
-        col, linear_problem_.objective_coefficients()[col], &dense_weights);
+        col, linear_problem.objective_coefficients()[col], &dense_weights);
   }
 
   // Compute the scaling for non-integral weights.
@@ -452,22 +578,24 @@ void IntegralProblemConverter::ConvertObjective() {
                                  &relative_error);
   const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_error = std::max(relative_error, max_relative_error);
-  LOG(INFO) << "objective relative error: " << relative_error;
-  LOG(INFO) << "objective scaling factor: " << scaling_factor / gcd;
+  VLOG(1) << "objective relative error: " << relative_error;
+  VLOG(1) << "objective scaling factor: " << scaling_factor / gcd;
 
   ScaleAndSparsifyWeights(scaling_factor, gcd, dense_weights, objective);
 
   // Note that here we set the scaling factor for the inverse operation of
   // getting the "true" objective value from the scaled one. Hence the inverse.
   objective->set_scaling_factor(1.0 / scaling_factor * gcd);
-  objective->set_offset((linear_problem_.objective_offset() + offset) *
+  objective->set_offset((linear_problem.objective_offset() + offset) *
                         scaling_factor / gcd);
 }
 
-void IntegralProblemConverter::AddVariableConstraints() {
-  for (ColIndex col(0); col < linear_problem_.num_variables(); ++col) {
-    const Fractional lower_bound = linear_problem_.variable_lower_bounds()[col];
-    const Fractional upper_bound = linear_problem_.variable_upper_bounds()[col];
+void IntegralProblemConverter::AddVariableConstraints(
+    const LinearProgram& linear_problem,
+    LinearBooleanProblem* boolean_problem) {
+  for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
+    const Fractional lower_bound = linear_problem.variable_lower_bounds()[col];
+    const Fractional upper_bound = linear_problem.variable_upper_bounds()[col];
     const int pos = boolean_variables_[col];
     if (pos >= 0) {
       // Boolean variable.
@@ -477,7 +605,8 @@ void IntegralProblemConverter::AddVariableConstraints() {
       if (is_fixed) {
         // Set the variable.
         const int fixed_value = lower_bound > -1.0 && upper_bound < 1.0 ? 0 : 1;
-        LinearBooleanConstraint* constraint = problem_.add_constraints();
+        LinearBooleanConstraint* constraint =
+            boolean_problem->add_constraints();
         constraint->set_lower_bound(fixed_value);
         constraint->set_upper_bound(fixed_value);
         constraint->add_literals(pos + 1);
@@ -488,7 +617,8 @@ void IntegralProblemConverter::AddVariableConstraints() {
       // Integral variable.
       if (lower_bound != -kInfinity || upper_bound != kInfinity) {
         const IntegralVariable& integral_var = integral_variables_[-pos - 1];
-        LinearBooleanConstraint* constraint = problem_.add_constraints();
+        LinearBooleanConstraint* constraint =
+            boolean_problem->add_constraints();
         for (int i = 0; i < integral_var.bits().size(); ++i) {
           constraint->add_literals(integral_var.bits()[i].value() + 1);
           constraint->add_coefficients(integral_var.weights()[i]);
@@ -507,16 +637,17 @@ void IntegralProblemConverter::AddVariableConstraints() {
 }
 
 bool IntegralProblemConverter::ConvertUsingExistingBooleans(
-    ColIndex col, IntegralVariable* integral_var) {
+    const LinearProgram& linear_problem, ColIndex col,
+    IntegralVariable* integral_var) {
   CHECK(nullptr != integral_var);
   CHECK_EQ(INTEGRAL, variable_types_[col]);
 
-  const SparseMatrix& matrix = linear_problem_.GetSparseMatrix();
-  const SparseMatrix& transpose = linear_problem_.GetTransposeSparseMatrix();
+  const SparseMatrix& matrix = linear_problem.GetSparseMatrix();
+  const SparseMatrix& transpose = linear_problem.GetTransposeSparseMatrix();
   for (const SparseColumn::Entry var_entry : matrix.column(col)) {
     const RowIndex constraint = var_entry.row();
-    const Fractional lb = linear_problem_.constraint_lower_bounds()[constraint];
-    const Fractional ub = linear_problem_.constraint_upper_bounds()[constraint];
+    const Fractional lb = linear_problem.constraint_lower_bounds()[constraint];
+    const Fractional ub = linear_problem.constraint_upper_bounds()[constraint];
     if (lb != ub) {
       // To replace an integral variable by a weighted sum of boolean variables,
       // the constraint has to be an equality.
@@ -533,7 +664,8 @@ bool IntegralProblemConverter::ConvertUsingExistingBooleans(
       }
     }
     if (only_one_integral_variable &&
-        CreateVariableUsingConstraint(constraint, integral_var)) {
+        CreateVariableUsingConstraint(linear_problem, constraint,
+                                      integral_var)) {
       return true;
     }
   }
@@ -543,11 +675,12 @@ bool IntegralProblemConverter::ConvertUsingExistingBooleans(
 }
 
 bool IntegralProblemConverter::CreateVariableUsingConstraint(
-    RowIndex constraint, IntegralVariable* integral_var) {
+    const LinearProgram& linear_problem, RowIndex constraint,
+    IntegralVariable* integral_var) {
   CHECK(nullptr != integral_var);
   integral_var->Clear();
 
-  const SparseMatrix& transpose = linear_problem_.GetTransposeSparseMatrix();
+  const SparseMatrix& transpose = linear_problem.GetTransposeSparseMatrix();
   ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                      0.0);
   Fractional scale = 1.0;
@@ -577,7 +710,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
   }
 
   // Rescale using the weight of the integral variable.
-  const Fractional lb = linear_problem_.constraint_lower_bounds()[constraint];
+  const Fractional lb = linear_problem.constraint_lower_bounds()[constraint];
   const Fractional offset = (lb + variable_offset) / scale;
   if (!IsIntegerWithinTolerance(offset)) {
     return false;
@@ -691,7 +824,8 @@ IntegralSolver::IntegralSolver()
 
 // TODO(user): Parallelize the solve of sub-problems.
 BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem) {
-  {  // Limited scope to release the decomposer memory when not used.
+  if (linear_problem.num_variables() >=
+      parameters_.decomposer_num_variables_threshold()) {
     LPDecomposer decomposer;
     decomposer.Decompose(&linear_problem);
     const int num_sub_problems = decomposer.GetNumberOfProblems();
@@ -760,12 +894,13 @@ BopSolveStatus IntegralSolver::InternalSolve(
   // anything.
   variable_values->resize(linear_problem.num_variables(), 0);
 
-  IntegralProblemConverter converter(linear_problem);
-  if (!converter.ConvertToBooleanProblem()) {
+  LinearBooleanProblem boolean_problem;
+  IntegralProblemConverter converter;
+  if (!converter.ConvertToBooleanProblem(linear_problem, &boolean_problem)) {
     return BopSolveStatus::INVALID_PROBLEM;
   }
 
-  BopSolver bop_solver(converter.problem());
+  BopSolver bop_solver(boolean_problem);
   bop_solver.SetParameters(parameters);
   const BopSolveStatus status = bop_solver.Solve();
   if (status == BopSolveStatus::OPTIMAL_SOLUTION_FOUND ||

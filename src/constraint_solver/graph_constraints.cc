@@ -906,14 +906,15 @@ class DelayedPathCumul : public Constraint {
       chain_starts_[i] = i;
       chain_ends_[i] = i;
     }
-    path_demon_ = solver->RegisterDemon(MakeDelayedConstraintDemon0(
-        solver, this, &DelayedPathCumul::PropagatePaths, "PropagatePaths"));
+    path_demon_ = MakeDelayedConstraintDemon0(
+        solver, this, &DelayedPathCumul::PropagatePaths, "PropagatePaths");
     for (int i = 0; i < nexts_.size(); ++i) {
       supports_[i] = -1;
     }
   }
   virtual ~DelayedPathCumul() {}
   virtual void Post() {
+    solver()->RegisterDemon(path_demon_);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (!nexts_[i]->Bound()) {
         Demon* const demon =

@@ -26,13 +26,19 @@ namespace bop {
 LocalSearchOptimizer::LocalSearchOptimizer(const std::string& name,
                                            int max_num_decisions)
     : BopOptimizerBase(name),
+      state_update_stamp_(ProblemState::kInitialStampValue),
       max_num_decisions_(max_num_decisions),
       assignment_iterator_() {}
 
 LocalSearchOptimizer::~LocalSearchOptimizer() {}
 
-BopOptimizerBase::Status LocalSearchOptimizer::Synchronize(
+BopOptimizerBase::Status LocalSearchOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
+  if (state_update_stamp_ == problem_state.update_stamp()) {
+    return BopOptimizerBase::CONTINUE;
+  }
+  state_update_stamp_ = problem_state.update_stamp();
+
   if (assignment_iterator_ == nullptr) {
     assignment_iterator_.reset(
         new LocalSearchAssignmentIterator(problem_state, max_num_decisions_));
@@ -46,11 +52,17 @@ BopOptimizerBase::Status LocalSearchOptimizer::Synchronize(
 }
 
 BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
-    const BopParameters& parameters, LearnedInfo* learned_info,
-    TimeLimit* time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  const BopOptimizerBase::Status sync_status =
+      SynchronizeIfNeeded(problem_state);
+  if (sync_status != BopOptimizerBase::CONTINUE) {
+    return sync_status;
+  }
 
   double prev_deterministic_time = assignment_iterator_->deterministic_time();
   assignment_iterator_->UseTranspositionTable(
@@ -625,10 +637,10 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
 
   // All nodes have been explored.
   if (search_nodes_.empty()) {
-    LOG(INFO) << std::string(25, ' ') + "LS finished."
-              << " #explored:" << num_nodes_
-              << " #stored:" << transposition_table_.size()
-              << " #skipped:" << num_skipped_nodes_;
+    VLOG(1) << std::string(25, ' ') + "LS finished."
+            << " #explored:" << num_nodes_
+            << " #stored:" << transposition_table_.size()
+            << " #skipped:" << num_skipped_nodes_;
     return false;
   }
 

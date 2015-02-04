@@ -42,14 +42,18 @@ class BopSatObjectiveFirstSolutionGenerator : public BopOptimizerBase {
 
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   double time_limit_ratio_;
   bool first_solve_;
-  sat::SatSolver sat_solver_;
+  std::unique_ptr<sat::SatSolver> sat_solver_;
   int64 lower_bound_;
   int64 upper_bound_;
   bool problem_already_solved_;
@@ -62,14 +66,18 @@ class BopSatLpFirstSolutionGenerator : public BopOptimizerBase {
 
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   double time_limit_ratio_;
   bool first_solve_;
-  sat::SatSolver sat_solver_;
+  std::unique_ptr<sat::SatSolver> sat_solver_;
   int64 lower_bound_;
   int64 upper_bound_;
   glop::DenseRow lp_values_;
@@ -90,17 +98,22 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
 
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
+  int64 state_update_stamp_;
   double time_limit_ratio_;
   const LinearBooleanProblem* problem_;
   std::unique_ptr<BopSolution> initial_solution_;
   glop::DenseRow lp_values_;
-  MTRandom random_;
-  sat::SatSolver sat_solver_;
+  int random_seed_;
+  std::unique_ptr<MTRandom> random_;
+  std::unique_ptr<sat::SatSolver> sat_solver_;
   uint32 sat_seed_;
   bool first_solve_;
 };
@@ -117,11 +130,14 @@ class LinearRelaxation : public BopOptimizerBase {
 
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+
   // Runs Glop to solve the current lp_model_.
   // Updates the time limit and returns the status of the solve.
   // Note that when the solve is incremental, the preprocessor is deactivated,
@@ -142,6 +158,7 @@ class LinearRelaxation : public BopOptimizerBase {
 
   const BopParameters parameters_;
   const double time_limit_ratio_;
+  int64 state_update_stamp_;
   bool lp_model_loaded_;
   glop::LinearProgram lp_model_;
   glop::LPSolver lp_solver_;

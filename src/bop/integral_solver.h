@@ -28,7 +28,7 @@ namespace bop {
 // This class implements an Integer Programming solver, i.e. the solver solves
 // problems with both integral and boolean variables, linear constraint and
 // linear objective function.
-// Note that the current implementation is limited to integral coefficient.
+// Note that the current implementation is limited to integral coefficients.
 // TODO(user): Add scaling to deal with any coefficient.
 class IntegralSolver {
  public:

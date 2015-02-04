@@ -1228,8 +1228,9 @@ void RoutingModel::ComputeCostClasses() {
       cost_class.dimension_transit_evaluator_and_cost_coefficient.push_back(
           std::make_pair(dimension->transit_evaluator(vehicle), coeff));
     }
-    std::sort(cost_class.dimension_transit_evaluator_and_cost_coefficient.begin(),
-         cost_class.dimension_transit_evaluator_and_cost_coefficient.end());
+    std::sort(
+        cost_class.dimension_transit_evaluator_and_cost_coefficient.begin(),
+        cost_class.dimension_transit_evaluator_and_cost_coefficient.end());
 
     // Try inserting the CostClass, if it's not already present.
     const CostClassIndex num_cost_classes(cost_classes_.size());
@@ -2182,7 +2183,7 @@ void GetVehicleClasses(const RoutingModel& model,
                      model.GetCostClassIndexOfVehicle(vehicle)));
   }
   std::sort(vehicle_classes->begin(), vehicle_classes->end(),
-       &VehicleClass::LessThan);
+            &VehicleClass::LessThan);
   vehicle_classes->erase(
       std::unique(vehicle_classes->begin(), vehicle_classes->end(),
                   &VehicleClass::Equals),
@@ -2279,13 +2280,14 @@ class SavingsBuilder : public DecisionBuilder {
             const double saving =
                 costs_[node][start_depot] + costs_[end_depot][neighbor] -
                 route_shape_parameter_ * costs_[node][neighbor];
-            Link link(std::make_pair(node, neighbor), saving, vehicle_class_index,
-                      start_depot, end_depot);
+            Link link(std::make_pair(node, neighbor), saving,
+                      vehicle_class_index, start_depot, end_depot);
             savings_list_.push_back(link);
           }
         }
       }
-      std::stable_sort(savings_list_.begin(), savings_list_.end(), LinkComparator);
+      std::stable_sort(savings_list_.begin(), savings_list_.end(),
+                       LinkComparator);
     }
   }
 
@@ -2356,7 +2358,8 @@ void SweepArranger::ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes) {
     SweepNode sweep_node(node, angle, square_distance);
     sweep_nodes.push_back(sweep_node);
   }
-  std::sort(sweep_nodes.begin(), sweep_nodes.end(), SweepNodeDistanceComparator);
+  std::sort(sweep_nodes.begin(), sweep_nodes.end(),
+            SweepNodeDistanceComparator);
 
   const int size = static_cast<int>(sweep_nodes.size()) / sectors_;
   for (int sector = 0; sector < sectors_; ++sector) {
@@ -2415,7 +2418,8 @@ class SweepBuilder : public DecisionBuilder {
         const int64 first_index = model_->NodeToIndex(first);
         const int64 second_index = model_->NodeToIndex(second);
         if (first_index != depot_ && second_index != depot_) {
-          Link link(std::make_pair(first_index, second_index), 0, 0, depot_, depot_);
+          Link link(std::make_pair(first_index, second_index), 0, 0, depot_,
+                    depot_);
           links_.push_back(link);
         }
       }

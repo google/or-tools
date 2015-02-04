@@ -52,18 +52,21 @@ class PortfolioOptimizer : public BopOptimizerBase {
 
   virtual bool RunOncePerSolution() const { return false; }
   virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Synchronize(const ProblemState& problem_state);
   virtual Status Optimize(const BopParameters& parameters,
+                          const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit);
 
  private:
-  void AddOptimizer(const BopParameters& parameters,
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState& problem_state);
+  void AddOptimizer(const LinearBooleanProblem& problem,
+                    const BopParameters& parameters,
                     const BopOptimizerMethod& optimizer_method);
-  void CreateOptimizers(const ProblemState& problem_state,
+  void CreateOptimizers(const LinearBooleanProblem& problem,
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 
-  MTRandom random_;
+  int64 state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<AdaptativeItemSelector> selector_;
   std::vector<std::unique_ptr<BopOptimizerBase>> optimizers_;

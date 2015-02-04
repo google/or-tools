@@ -116,4 +116,10 @@ int BooleanVariableManager::RegisterIntVar(IntVar* int_var) {
   return reg_index;
 }
 
+Constraint* BuildSatTableConstraint(Solver* solver,
+                                    const std::vector<IntVar*>& vars,
+                                    const IntTupleSet& tuples) {
+  return solver->RevAlloc(new SatTableConstraint(solver, vars, tuples));
+}
+
 }  // namespace operations_research
