@@ -26,6 +26,7 @@ using namespace __gnu_cxx;  // NOLINT
 #include <hash_set>
 #endif
 
+#include <array>
 #include <string>
 #include <utility>
 
