@@ -24,6 +24,11 @@
 DECLARE_int32(log_level);
 DECLARE_bool(log_prefix);
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4722)
+#endif
+
+
 // Always-on checking
 #define CHECK(x)                                           \
   if (!(x))                                                \
