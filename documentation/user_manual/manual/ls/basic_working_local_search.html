@@ -122,8 +122,8 @@ by <tt class="docutils literal"><span class="pre">FindOneNeighbor</span></tt> to
 <p>We will not discuss the filtering mechanism here (see the dedicated section <a class="reference internal" href="ls_filtering.html#local-search-filtering"><em>Filtering</em></a>).</p>
 </div>
 </div>
-<div class="section" id="overview-of-the-local-search-mechanism-in-or-tools">
-<span id="local-search-mechanism"></span><h2>6.5.2. Overview of the Local Search Mechanism in <em>or-tools</em></h2>
+<div class="section" id="overview-of-the-local-search-mechanism-in-ortools">
+<span id="local-search-mechanism"></span><h2>6.5.2. Overview of the Local Search Mechanism in <strong>or-tools</strong></h2>
 <p>The next figure illustrates the basic mechanism of Local Search in <strong>or-tools</strong>:</p>
 <img alt="../../_images/lsn_mechanism.png" class="align-center" src="../../_images/lsn_mechanism.png" style="width: 500pt;" />
 <p>We start with an initial feasible solution. The <tt class="docutils literal"><span class="pre">MakeOneNeighbor()</span></tt> callback method
@@ -240,7 +240,7 @@ By default, the CP solver stops the neighborhood search as soon as it finds a fi
 If you add an <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> to your model, once the solver finds this good candidate solution, it changes the model
 to exclude solutions with the same objective value. The second solution found can only be better than the first one.
 See the section <a class="reference internal" href="../objectives/optimization_how.html#golomb-ruler-optimization-how"><em>How does the solver optimize?</em></a>
-to refresh your memory if needed. When the solver
+to refresh your memory if needed. In our example, when the solver
 finds 2 solutions (or when the whole neighborhood is explored), it stops and starts over again with the best solution.</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">LocalSearchFilter</span></tt>s: these filters speed up the search by bypassing the solver checking mechanism if you know that the
@@ -272,7 +272,7 @@ At least you need to declare a <tt class="docutils literal"><span class="pre">Lo
 <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> will complete
 the candidate solutions if some of the variables are not assigned.</p>
 <p>A handy way to create a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to assist the Local Search operator(s) is to limit one
-with <tt class="docutils literal"><span class="pre">MakeSolveOnce()</span></tt>. <tt class="docutils literal"><span class="pre">MakeSolveOnce</span></tt> is a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that takes another <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt>
+with <tt class="docutils literal"><span class="pre">MakeSolveOnce()</span></tt>. <tt class="docutils literal"><span class="pre">MakeSolveOnce</span></tt> returns a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> that takes another <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> <tt class="docutils literal"><span class="pre">db</span></tt>
 and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span> <span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="p">...</span>
 <span class="n">SearchLimit</span><span class="o">*</span> <span class="k">const</span> <span class="n">limit</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeLimit</span><span class="p">(...);</span>
@@ -285,9 +285,6 @@ and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s:</
 the first solution is found.
 If there are no solutions in this nested tree, then (the <tt class="docutils literal"><span class="pre">Next()</span></tt> method of) <tt class="docutils literal"><span class="pre">SolveOnce</span></tt> will
 fail.</p>
-<p>If you know for sure that your <tt class="docutils literal"><span class="pre">LocalSearchOperator</span></tt> will return feasible
-solutions, you don&#8217;t have to provide a <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> to assist: just submit <tt class="docutils literal"><span class="pre">NULL</span></tt> as argument
-for the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> pointer.</p>
 </div>
 </div>
 <div class="section" id="the-basic-local-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">
@@ -542,7 +539,7 @@ you must take care of <em>applying</em> and <em>reverting</em> the <tt class="do
 <p>Once we enter the <tt class="docutils literal"><span class="pre">if</span></tt> statement on line 38, we have a new candidate solution and we update the candidate
 solution counter accordingly.
 It is now time to test this new candidate solution. The <strong>first test</strong> comes from the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s in their
-<tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt> methods. If only one <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> rejects this solution, it is rejected. In <em>or-tools</em>, we
+<tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt> methods. If only one <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> rejects this solution, it is rejected. In <strong>or-tools</strong>, we
 implement (meta-)heuristics with <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. See the chapter <a class="reference internal" href="../metaheuristics.html#chapter-metaheuristics"><em>Meta-heuristics: several previous problems</em></a> for more.</p>
 <p>The <tt class="docutils literal"><span class="pre">AcceptDelta()</span></tt> function is the global utility function we mentioned above.
 We&#8217;ll meet <tt class="docutils literal"><span class="pre">LocalOptimumReached()</span></tt> and <tt class="docutils literal"><span class="pre">AcceptNeighbor()</span></tt> a few lines below.</p>
@@ -604,7 +601,7 @@ or <tt class="docutils literal"><span class="pre">SolveAndCommit()</span></tt> s
 </table>
 <p>The three states are defined in the <tt class="docutils literal"><span class="pre">NestedSolveDecision</span></tt> <tt class="docutils literal"><span class="pre">StateType</span></tt> <tt class="docutils literal"><span class="pre">enum</span></tt>.</p>
 <p>We are now ready to assemble all the pieces of the puzzle together to understand the (simplified)
-Local Search algorithm in <em>or-tools</em>.</p>
+Local Search algorithm in <strong>or-tools</strong>.</p>
 </div>
 <div class="section" id="the-localsearch-decisionbuilder">
 <h3>6.5.3.3. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt></h3>
@@ -771,7 +768,7 @@ first and discuss it next:</p>
   <span class="k">const</span> <span class="kt">int</span> <span class="n">state</span> <span class="o">=</span> <span class="n">decision</span><span class="o">-&gt;</span><span class="n">state</span><span class="p">();</span>
   <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">case</span> <span class="n">NestedSolveDecision</span>:<span class="o">:</span><span class="n">DECISION_FAILED</span><span class="o">:</span> <span class="p">{</span>
-                                          <span class="c1">// SEARCHMONITOR CALLBACK</span>
+                          <span class="c1">// SEARCHMONITOR CALLBACK: LocalOptimum()</span>
       <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">LocalOptimumReached</span><span class="p">(</span><span class="n">solver</span><span class="o">-&gt;</span><span class="n">ActiveSearch</span><span class="p">()))</span> <span class="p">{</span>
         <span class="c1">// Stop the current search</span>
         <span class="p">...</span>
@@ -854,7 +851,8 @@ section <a class="reference internal" href="jobshop_ls.html#local-search-operato
 first feasible solution and repeats the search starting with
 this new solution. The idea is that if you combine the Local Search with an <tt class="docutils literal"><span class="pre">ObjectiveVar</span></tt>,
 the next feasible solution will be a solution that beats the current best solution.
-You can change this behaviour with a <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>. Read on.</td></tr>
+You can change this behaviour with a <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>. Read on. The <tt class="docutils literal"><span class="pre">LocalSearch</span></tt> class is also deeply coupled to the <tt class="docutils literal"><span class="pre">Metaheuristic</span></tt> class or more generally to a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>. This is the subject
+of next chapter.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="solution-pool-takes-ownership-of-solutions-or-else" rules="none">
@@ -955,7 +953,7 @@ Search:
 <li><a class="reference internal" href="#the-main-actors">6.5.1.1. The main actors</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overview-of-the-local-search-mechanism-in-or-tools">6.5.2. Overview of the Local Search Mechanism in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#overview-of-the-local-search-mechanism-in-ortools">6.5.2. Overview of the Local Search Mechanism in <strong>or-tools</strong></a><ul>
 <li><a class="reference internal" href="#the-initial-solution">6.5.2.1. The initial solution</a></li>
 <li><a class="reference internal" href="#the-localsearchphaseparameters-parameter">6.5.2.2. The <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt> parameter</a></li>
 </ul>
@@ -991,7 +989,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012-2014, Google.
+        &copy; Copyright 2012-2015, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
