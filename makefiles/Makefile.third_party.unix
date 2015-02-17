@@ -9,17 +9,14 @@ GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
 CBC_TAG = 2.8.12
-# SWIG 2.0.12
-# SWIG_TAG = 18238
-# SWIG 3.0.3
-SWIG_TAG = 20773
+SWIG_TAG = 3.0.5
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
 MONO_TAG = 3.10.0
 # BISON, FLEX
-BISON_TAG = 3.0.2
-FLEX_TAG = 2.5.37
+BISON_TAG = 3.0.4
+FLEX_TAG = 2.5.39
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
@@ -186,8 +183,11 @@ dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG
 dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
-	svn co https://github.com/swig/swig/trunk -r $(SWIG_TAG) dependencies/sources/swig-$(SWIG_TAG)
+dependencies/sources/swig-$(SWIG_TAG)/autogen.sh: dependencies/archives/swig-$(SWIG_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
+
+dependencies/archives/swig-$(SWIG_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/swig/swig-$(SWIG_TAG).tar.gz
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
@@ -258,11 +258,11 @@ dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(
 dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
 	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/flex-$(FLEX_TAG).tar.gz
+dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.bz2
+	cd dependencies/sources && tar xvjmf ../archives/flex-$(FLEX_TAG).tar.bz2
 
-dependencies/archives/flex-$(FLEX_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/flex/flex-$(FLEX_TAG).tar.gz
+dependencies/archives/flex-$(FLEX_TAG).tar.bz2:
+	cd dependencies/archives && curl -OL http://sourceforge.net/projects/flex/files/flex-$(FLEX_TAG).tar.bz2
 
 # Install help2man
 dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile
