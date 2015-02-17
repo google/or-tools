@@ -812,6 +812,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
 
   // Special case if this is the first constraint.
   if (constraints_.empty()) {
+    to_update_.resize(trail_->NumVariables() << 1);
     propagation_trail_index_ = trail_->Index();
   }
 

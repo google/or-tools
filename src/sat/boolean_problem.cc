@@ -142,7 +142,6 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   // preprocessing step to remove duplicates variable in the constraints.
   const util::Status status = ValidateBooleanProblem(problem);
   if (!status.ok()) {
-    // LOG(WARNING) << "The given problem is invalid! " << status.error_message();
     LOG(WARNING) << "The given problem is invalid! ";
   }
 
@@ -169,6 +168,52 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
     }
     ++num_constraints;
   }
+  if (solver->parameters().log_search_progress()) {
+    LOG(INFO) << "The problem contains " << num_terms << " terms.";
+  }
+  return true;
+}
+
+bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
+                                  SatSolver* solver) {
+  const util::Status status = ValidateBooleanProblem(*problem);
+  if (!status.ok()) {
+    LOG(WARNING) << "The given problem is invalid! " << status.error_message();
+  }
+  if (solver->parameters().log_search_progress()) {
+    LOG(INFO) << "LinearBooleanProblem memory: " << problem->SpaceUsed();
+    LOG(INFO) << "Loading problem '" << problem->name() << "', "
+              << problem->num_variables() << " variables, "
+              << problem->constraints_size() << " constraints.";
+  }
+  solver->SetNumVariables(problem->num_variables());
+  std::vector<LiteralWithCoeff> cst;
+  int64 num_terms = 0;
+  int num_constraints = 0;
+
+  // We will process the constraints backward so we can free the memory used by
+  // each constraint just after processing it. Because of that, we initially
+  // reverse all the constraints to add them in the same order.
+  std::reverse(problem->mutable_constraints()->begin(),
+               problem->mutable_constraints()->end());
+  for (int i = problem->constraints_size() - 1; i >= 0; --i) {
+    const LinearBooleanConstraint& constraint = problem->constraints(i);
+    num_terms += constraint.literals_size();
+    cst = ConvertLinearExpression(constraint);
+    if (!solver->AddLinearConstraint(
+            constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
+            constraint.has_upper_bound(), Coefficient(constraint.upper_bound()),
+            &cst)) {
+      LOG(INFO) << "Problem detected to be UNSAT when "
+                << "adding the constraint #" << num_constraints
+                << " with name '" << constraint.name() << "'";
+      return false;
+    }
+    delete problem->mutable_constraints()->ReleaseLast();
+    ++num_constraints;
+  }
+  LinearBooleanProblem empty_problem;
+  problem->mutable_constraints()->Swap(empty_problem.mutable_constraints());
   if (solver->parameters().log_search_progress()) {
     LOG(INFO) << "The problem contains " << num_terms << " terms.";
   }

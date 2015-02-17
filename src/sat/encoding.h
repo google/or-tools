@@ -107,19 +107,25 @@ class EncodingNode {
   int depth_;
   int lb_;
   int ub_;
+  VariableIndex for_sorting_;
+
   Coefficient weight_;
   EncodingNode* child_a_;
   EncodingNode* child_b_;
 
   // The literals of this node in order.
   std::vector<Literal> literals_;
-  VariableIndex for_sorting_;
 };
+
+// Note that we use <= because on 32 bits architecture, the size will actually
+// be smaller than 64 bytes.
+COMPILE_ASSERT(sizeof(EncodingNode) <= 64,
+               ERROR_EncodingNode_is_not_well_compacted);
 
 // Merges the two given EncodingNode by creating a new node that corresponds to
 // the sum of the two given ones. Only the left-most binary variable is created
 // for the parent node, the other ones will be created later when needed.
-EncodingNode* LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver);
+EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver);
 
 // Increases the size of the given node by one. To keep all the needed relations
 // with its children, we also need to increase their size by one, and so on
@@ -130,20 +136,21 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver);
 // Merges the two given EncodingNode by creating a new node that corresponds to
 // the sum of the two given ones. The given upper_bound is interpreted as a
 // bound on this sum, and allows to create less binary variables.
-EncodingNode* FullMerge(Coefficient upper_bound, EncodingNode* a,
-                        EncodingNode* b, SatSolver* solver);
+EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
+                       EncodingNode* b, SatSolver* solver);
 
 // Merges all the given nodes two by two until there is only one left. Returns
 // the final node which encode the sum of all the given nodes.
-EncodingNode* MergeAllNodesWithDeque(
-    Coefficient upper_bound, const std::vector<EncodingNode*>& nodes,
-    SatSolver* solver, std::vector<std::unique_ptr<EncodingNode>>* repository);
+EncodingNode* MergeAllNodesWithDeque(Coefficient upper_bound,
+                                     const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository);
 
 // Same as MergeAllNodesWithDeque() but use a priority queue to merge in
 // priority nodes with smaller sizes.
-EncodingNode* LazyMergeAllNodeWithPQ(
-    const std::vector<EncodingNode*>& nodes, SatSolver* solver,
-    std::vector<std::unique_ptr<EncodingNode>>* repository);
+EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository);
 
 // Returns a vector with one new EncodingNode by variable in the given
 // objective.
@@ -151,7 +158,7 @@ EncodingNode* LazyMergeAllNodeWithPQ(
 // Also returns in offset the number of negative variables.
 std::vector<EncodingNode*> CreateInitialEncodingNodes(
     const LinearObjective& objective_proto, Coefficient* offset,
-    std::vector<std::unique_ptr<EncodingNode>>* repository);
+    std::deque<EncodingNode>* repository);
 
 }  // namespace sat
 }  // namespace operations_research

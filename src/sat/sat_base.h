@@ -257,8 +257,6 @@ class Trail {
     assignment_.Resize(num_variables);
     info_.resize(num_variables);
     trail_.resize(num_variables);
-    cached_reasons_.resize(num_variables);
-    old_type_.resize(num_variables);
   }
 
   // Enqueues the assignment that make the given literal true on the trail. This
@@ -323,6 +321,12 @@ class Trail {
   // do anything on "untrail", the CACHED_REASON type will be overwritten when
   // the same variable is assigned again.
   std::vector<Literal>* CacheReasonAtReturnedAddress(VariableIndex var) {
+    if (cached_reasons_.size() != NumVariables()) {
+      // We lazily resize these vector because in many cases they are never used
+      // (for instance on pure sat problem with no symmetry breaking).
+      cached_reasons_.resize(NumVariables());
+      old_type_.resize(NumVariables());
+    }
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentInfo::CACHED_REASON;
     return &(cached_reasons_[var]);
@@ -377,6 +381,7 @@ class Trail {
   void SetNeedFixedLiteralsInReason(bool value) { need_level_zero_ = value; }
 
   // Getters.
+  int NumVariables() const { return trail_.size(); }
   int64 NumberOfEnqueues() const { return num_enqueues_; }
   int Index() const { return trail_index_; }
   const Literal operator[](int index) const { return trail_[index]; }

@@ -856,7 +856,7 @@ SatSolver::Status SolveWithCardinalityEncoding(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution) {
   Logger logger(log);
-  std::vector<std::unique_ptr<EncodingNode>> repository;
+  std::deque<EncodingNode> repository;
 
   // Create one initial node per variables with cost.
   Coefficient offset(0);
@@ -939,7 +939,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     std::vector<bool>* solution) {
   Logger logger(log);
   SatParameters parameters = solver->parameters();
-  std::vector<std::unique_ptr<EncodingNode>> repository;
+  std::deque<EncodingNode> repository;
 
   // Create one initial nodes per variables with cost.
   Coefficient offset(0);
