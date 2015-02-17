@@ -361,7 +361,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Special way to set the relative MIP gap parameter as it cannot be set
   // through callCbc.
   model.setAllowableFractionGap(relative_mip_gap_);
-  int return_status = callCbc("-solve", model);
+  // NOTE: Trailing space is required to avoid buffer overflow in cbc.
+  int return_status = callCbc("-solve ", model);
   const int kBadReturnStatus = 777;
   CHECK_NE(kBadReturnStatus, return_status);  // Should never happen according
                                               // to the CBC source

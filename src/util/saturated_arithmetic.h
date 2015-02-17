@@ -90,7 +90,8 @@ inline int64 CapAddFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapAdd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
+    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapAddFast(x, y);
 #else
   return CapAddGeneric(x, y);
@@ -130,7 +131,8 @@ inline int64 CapSubFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapSub(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
+    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapSubFast(x, y);
 #else
   return CapSubGeneric(x, y);
@@ -210,7 +212,8 @@ inline int64 CapProdFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapProd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
+    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
   return CapProdFast(x, y);
 #else
   return CapProdUsingDoubles(x, y);

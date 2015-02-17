@@ -26,9 +26,13 @@ namespace glop {
 // LPDecomposer
 //------------------------------------------------------------------------------
 LPDecomposer::LPDecomposer()
-    : original_problem_(nullptr), clusters_(), local_to_global_vars_() {}
+    : original_problem_(nullptr),
+      clusters_(),
+      local_to_global_vars_(),
+      mutex_() {}
 
 void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
+  MutexLock mutex_lock(&mutex_);
   original_problem_ = linear_problem;
   clusters_.clear();
   local_to_global_vars_.clear();
@@ -61,6 +65,16 @@ void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
     std::sort(clusters_[i].begin(), clusters_[i].end());
   }
   local_to_global_vars_.resize(clusters_.size());
+}
+
+int LPDecomposer::GetNumberOfProblems() const {
+  MutexLock mutex_lock(&mutex_);
+  return clusters_.size();
+}
+
+const LinearProgram& LPDecomposer::original_problem() const {
+  MutexLock mutex_lock(&mutex_);
+  return *original_problem_;
 }
 
 void LPDecomposer::BuildProblem(int problem_index, LinearProgram* lp) {
@@ -125,12 +139,15 @@ void LPDecomposer::BuildProblem(int problem_index, LinearProgram* lp) {
     }
   }
 
+  MutexLock mutex_lock(&mutex_);
   local_to_global_vars_[problem_index] = local_to_global;
 }
 
 DenseRow LPDecomposer::AggregateAssignments(
     const std::vector<DenseRow>& assignments) const {
   CHECK_EQ(assignments.size(), local_to_global_vars_.size());
+
+  MutexLock mutex_lock(&mutex_);
   DenseRow values(original_problem_->num_variables(), Fractional(0.0));
   for (int problem = 0; problem < assignments.size(); ++problem) {
     const DenseRow& assignment = assignments[problem];

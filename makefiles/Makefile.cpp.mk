@@ -757,6 +757,7 @@ GRAPH_LIB_OBJS=\
 	$(OBJ_DIR)/graph/linear_assignment.$O \
 	$(OBJ_DIR)/graph/cliques.$O \
 	$(OBJ_DIR)/graph/connectivity.$O \
+	$(OBJ_DIR)/graph/flow_problem.pb.$O \
 	$(OBJ_DIR)/graph/max_flow.$O \
 	$(OBJ_DIR)/graph/min_cost_flow.$O
 
@@ -772,10 +773,20 @@ $(OBJ_DIR)/graph/cliques.$O:$(SRC_DIR)/graph/cliques.cc
 $(OBJ_DIR)/graph/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sconnectivity.$O
 
-$(OBJ_DIR)/graph/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h
+$(GEN_DIR)/graph/flow_problem.pb.cc:$(SRC_DIR)/graph/flow_problem.proto
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
+
+$(GEN_DIR)/graph/flow_problem.pb.h:$(GEN_DIR)/graph/flow_problem.pb.cc
+
+$(OBJ_DIR)/graph/flow_problem.pb.$O:$(GEN_DIR)/graph/flow_problem.pb.cc
+	 $(CCC) $(CFLAGS) -c $(GEN_DIR)$Sgraph$Sflow_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sflow_problem.pb.$O
+
+$(OBJ_DIR)/graph/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h $(GEN_DIR)/graph/flow_problem.pb.h
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/max_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smax_flow.$O
 
-$(OBJ_DIR)/graph/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
+$(OBJ_DIR)/graph/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc $(GEN_DIR)/graph/flow_problem.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/min_cost_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smin_cost_flow.$O
 
 $(LIB_DIR)/$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX): $(GRAPH_LIB_OBJS)
