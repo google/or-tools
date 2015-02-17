@@ -87,7 +87,7 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
       return BAD_RESULT;
     case GenericMaxFlow<Graph>::OPTIMAL:
       return OPTIMAL;
-    case GenericMaxFlow<Graph>::POSSIBLE_OVERFLOW:
+    case GenericMaxFlow<Graph>::INT_OVERFLOW:
       return POSSIBLE_OVERFLOW;
     case GenericMaxFlow<Graph>::BAD_INPUT:
       return BAD_INPUT;
@@ -109,6 +109,11 @@ void SimpleMaxFlow::GetSourceSideMinCut(std::vector<NodeIndex>* result) {
 void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
   if (underlying_max_flow_.get() == NULL) return;
   underlying_max_flow_->GetSinkSideMinCut(result);
+}
+
+FlowModel SimpleMaxFlow::CreateFlowModelOfLastSolve() {
+  if (underlying_max_flow_.get() == NULL) return FlowModel();
+  return underlying_max_flow_->CreateFlowModel();
 }
 
 template <typename Graph>
@@ -264,6 +269,34 @@ bool GenericMaxFlow<Graph>::CheckResult() const {
 }
 
 template <typename Graph>
+bool GenericMaxFlow<Graph>::AugmentingPathExists() const {
+  SCOPED_TIME_STAT(&stats_);
+
+  // We simply compute the reachability from the source in the residual graph.
+  const NodeIndex num_nodes = graph_->num_nodes();
+  std::vector<bool> is_reached(num_nodes, false);
+  std::vector<NodeIndex> to_process;
+
+  to_process.push_back(source_);
+  is_reached[source_] = true;
+  while (!to_process.empty()) {
+    const NodeIndex node = to_process.back();
+    to_process.pop_back();
+    for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+      const ArcIndex arc = it.Index();
+      if (residual_arc_capacity_[arc] > 0) {
+        const NodeIndex head = graph_->Head(arc);
+        if (!is_reached[head]) {
+          is_reached[head] = true;
+          to_process.push_back(head);
+        }
+      }
+    }
+  }
+  return is_reached[sink_];
+}
+
+template <typename Graph>
 bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
   DCHECK(IsActive(node));
   for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
@@ -313,16 +346,22 @@ bool GenericMaxFlow<Graph>::Solve() {
   } else {
     Refine();
   }
-  if (check_result_ && !CheckResult()) {
-    status_ = BAD_RESULT;
-    return false;
+  if (check_result_) {
+    if (!CheckResult()) {
+      status_ = BAD_RESULT;
+      return false;
+    }
+    if (GetOptimalFlow() < kMaxFlowQuantity && AugmentingPathExists()) {
+      LOG(ERROR) << "The algorithm terminated, but the flow is not maximal!";
+      status_ = BAD_RESULT;
+      return false;
+    }
   }
   DCHECK_EQ(node_excess_[sink_], -node_excess_[source_]);
-  if (GetOptimalFlow() == kMaxFlowQuantity) {
-    // In this case, we are not sure we are at the optimal.
-    status_ = POSSIBLE_OVERFLOW;
-  } else {
-    status_ = OPTIMAL;
+  status_ = OPTIMAL;
+  if (GetOptimalFlow() == kMaxFlowQuantity && AugmentingPathExists()) {
+    // In this case, we are sure that the flow is > kMaxFlowQuantity.
+    status_ = INT_OVERFLOW;
   }
   IF_STATS_ENABLED(VLOG(1) << stats_.StatString());
   return true;
@@ -355,6 +394,10 @@ void GenericMaxFlow<Graph>::InitializePreflow() {
   }
 }
 
+// Note(user): Calling this function will break the property on the node
+// potentials because of the way we cancel flow on cycle. However, we only call
+// that at the end of the algorithm, or just before a GlobalUpdate() that will
+// restore the precondition on the node potentials.
 template <typename Graph>
 void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
   SCOPED_TIME_STAT(&stats_);
@@ -557,7 +600,14 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
         // function running time, which is the bottleneck on many instances.
         const ArcIndex opposite_arc = Opposite(arc);
         if (residual_arc_capacity_[opposite_arc] > 0) {
-          DCHECK_GE(candidate_distance, node_potential_[head]);
+          // Note(user): We used to have a DCHECK_GE(candidate_distance,
+          // node_potential_[head]); which is always true except in the case
+          // where we can push more than kMaxFlowQuantity out of the source. The
+          // problem comes from the fact that in this case, we call
+          // PushFlowExcessBackToSource() in the middle of the algorithm. The
+          // later call will break the properties of the node potential. Note
+          // however, that this function will recompute a good node potential
+          // for all the nodes and thus fix the issue.
 
           // If head is active, we can steal some or all of its excess.
           // This brings a huge gain on some problems.
@@ -707,6 +757,15 @@ void GenericMaxFlow<Graph>::Refine() {
   // in the algorithm, initially putting an excess of kMaxFlowQuantity on it,
   // and making the source active like any other node with positive excess. To
   // investigate.
+  //
+  // TODO(user): The code below is buggy when more than kMaxFlowQuantity can be
+  // pushed out of the source (i.e. when we loop more than once in the while()).
+  // This is not critical, since this code is not used in the default algorithm
+  // computation. The issue is twofold:
+  // - InitializeActiveNodeContainer() doesn't push the nodes in
+  //   the correct order.
+  // - PushFlowExcessBackToSource() may break the node potential properties, and
+  //   we will need a call to GlobalUpdate() to fix that.
   while (SaturateOutgoingArcsFromSource()) {
     DCHECK(IsEmptyActiveNodeContainer());
     InitializeActiveNodeContainer();
@@ -888,6 +947,25 @@ void GenericMaxFlow<Graph>::ComputeReachableNodes(NodeIndex start,
     }
   }
   *result = bfs_queue_;
+}
+
+template <typename Graph>
+FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
+  FlowModel model;
+  model.set_problem_type(FlowModel::MAX_FLOW);
+  for (int n = 0; n < graph_->num_nodes(); ++n) {
+    Node* node = model.add_node();
+    node->set_id(n);
+    if (n == source_) node->set_supply(1);
+    if (n == sink_) node->set_supply(-1);
+  }
+  for (int a = 0; a < graph_->num_arcs(); ++a) {
+    Arc* arc = model.add_arc();
+    arc->set_tail_node_id(graph_->Tail(a));
+    arc->set_head_node_id(graph_->Head(a));
+    arc->set_capacity(Capacity(a));
+  }
+  return model;
 }
 
 // Explicit instanciations that can be used by a client.

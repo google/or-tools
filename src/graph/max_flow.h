@@ -126,6 +126,7 @@
 #include "graph/graph.h"
 #include "util/stats.h"
 #include "util/zvector.h"
+#include "graph/flow_problem.pb.h"
 
 namespace operations_research {
 
@@ -172,7 +173,12 @@ class SimpleMaxFlow {
     // Solve() was called and found an optimal solution. Note that OptimalFlow()
     // may be 0 which means that the sink is not reachable from the source.
     OPTIMAL,
-    // There is a flow >= std::numeric_limits<FlowQuantity>::max().
+    // There is a flow > std::numeric_limits<FlowQuantity>::max(). Note that in
+    // this case, the class will contain a solution with a flow reaching that
+    // bound.
+    //
+    // TODO(user): rename POSSIBLE_OVERFLOW to INT_OVERFLOW and modify our
+    // clients.
     POSSIBLE_OVERFLOW,
     // The input is inconsistent (bad tail/head/capacity values).
     BAD_INPUT,
@@ -203,6 +209,10 @@ class SimpleMaxFlow {
   // complement set of GetNodeReachableFromSource(), then the min-cut is unique.
   // This works only if Solve() returned OPTIMAL.
   void GetSinkSideMinCut(std::vector<NodeIndex>* result);
+
+  // Creates the protocol buffer representation of the problem used by the last
+  // Solve() call. This is mainly useful for debugging.
+  FlowModel CreateFlowModelOfLastSolve();
 
  private:
   NodeIndex num_nodes_;
@@ -276,11 +286,11 @@ class PriorityQueueWithRestrictedPush {
 class MaxFlowStatusClass {
  public:
   enum Status {
-    NOT_SOLVED,         // The problem was not solved, or its data were edited.
-    OPTIMAL,            // Solve() was called and found an optimal solution.
-    POSSIBLE_OVERFLOW,  // There is a feasible flow >= max possible flow.
-    BAD_INPUT,          // The input is inconsistent.
-    BAD_RESULT          // There was an error.
+    NOT_SOLVED,    // The problem was not solved, or its data were edited.
+    OPTIMAL,       // Solve() was called and found an optimal solution.
+    INT_OVERFLOW,  // There is a feasible flow > max possible flow.
+    BAD_INPUT,     // The input is inconsistent.
+    BAD_RESULT     // There was an error.
   };
 };
 
@@ -378,6 +388,12 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // or zero.
   bool CheckResult() const;
 
+  // Returns true if there exists a path from the source to the sink with
+  // remaining capacity. This allows us to easily check at the end that the flow
+  // we computed is indeed optimal (provided that all the conditions tested by
+  // CheckResult() also hold).
+  bool AugmentingPathExists() const;
+
   // Sets the different algorithm options. All default to true.
   // See the corresponding variable declaration below for more details.
   void SetUseGlobalUpdate(bool value) {
@@ -390,6 +406,9 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   void ProcessNodeByHeight(bool value) {
     process_node_by_height_ = value && use_global_update_;
   }
+
+  // Returns the protocol buffer representation of the current problem.
+  FlowModel CreateFlowModel();
 
  protected:
   // Returns true if arc is admissible.
@@ -420,10 +439,10 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   std::string DebugString(const std::string& context, ArcIndex arc) const;
 
   // Initializes the container active_nodes_.
-  virtual void InitializeActiveNodeContainer();
+  void InitializeActiveNodeContainer();
 
   // Get the first element from the active node container.
-  virtual NodeIndex GetAndRemoveFirstActiveNode() {
+  NodeIndex GetAndRemoveFirstActiveNode() {
     if (process_node_by_height_) return active_node_by_height_.Pop();
     const NodeIndex node = active_nodes_.back();
     active_nodes_.pop_back();
@@ -431,7 +450,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   }
 
   // Push element to the active node container.
-  virtual void PushActiveNode(const NodeIndex& node) {
+  void PushActiveNode(const NodeIndex& node) {
     if (process_node_by_height_) {
       active_node_by_height_.Push(node, node_potential_[node]);
     } else {
@@ -440,7 +459,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   }
 
   // Check the emptiness of the container.
-  virtual bool IsEmptyActiveNodeContainer() {
+  bool IsEmptyActiveNodeContainer() {
     if (process_node_by_height_) {
       return active_node_by_height_.IsEmpty();
     } else {
@@ -454,7 +473,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Discharges an active node node by saturating its admissible adjacent arcs,
   // if any, and by relabelling it when it becomes inactive.
-  virtual void Discharge(NodeIndex node);
+  void Discharge(NodeIndex node);
 
   // Initializes the preflow to a state that enables to run Refine.
   void InitializePreflow();
@@ -576,9 +595,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   std::vector<bool> node_in_bfs_queue_;
   std::vector<NodeIndex> bfs_queue_;
 
-  // Whether or not to use GlobalUpdate(), we need this because UniformMaxFlow
-  // in contentads/gfp/imf/lightning/controller/uniform_max_flow.h subclasses
-  // MaxFlow. TODO(user): Fix this.
+  // Whether or not to use GlobalUpdate().
   bool use_global_update_;
 
   // Whether or not we use a two-phase algorithm:
@@ -615,8 +632,8 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 #if !SWIG
 
 // Default instance MaxFlow that use StarGraph. Note that we cannot just use a
-// typedef because of dependent code extending the MaxFlow class and relying on
-// the name MaxFlow for the constructor.
+// typedef because of dependent code expecting MaxFlow to be a real class.
+// TODO(user): Modify these codes and remove this.
 class MaxFlow : public GenericMaxFlow<StarGraph> {
  public:
   MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target)
