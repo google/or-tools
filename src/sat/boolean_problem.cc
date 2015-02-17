@@ -142,7 +142,7 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   // preprocessing step to remove duplicates variable in the constraints.
   const util::Status status = ValidateBooleanProblem(problem);
   if (!status.ok()) {
-    LOG(WARNING) << "The given problem is invalid! ";
+    LOG(WARNING) << "The given problem is invalid!";
   }
 
   if (solver->parameters().log_search_progress()) {

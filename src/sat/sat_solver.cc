@@ -35,6 +35,7 @@ SatSolver::SatSolver()
       symmetry_propagator_(&trail_),
       track_binary_clauses_(false),
       current_decision_level_(0),
+      last_decision_or_backtrack_trail_index_(0),
       assumption_level_(0),
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
@@ -482,287 +483,269 @@ bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(propagation_trail_index_, trail_.Index());
-
   if (is_model_unsat_) return kUnsatTrailIndex;
+  EnqueueNewDecision(true_literal);
+  while (!PropagateAndStopAfterOneConflictResolution()) {
+    if (is_model_unsat_) return kUnsatTrailIndex;
+  }
+  return last_decision_or_backtrack_trail_index_;
+}
 
-  // We are back at level 0. This can happen because of a restart, or because
-  // we proved that some variables must take a given value in any satisfiable
-  // assignment. Trigger a simplification of the clauses if there is new fixed
-  // variables.
-  //
-  // TODO(user): Do not trigger it all the time if it takes too much time.
-  // TODO(user): Do more advanced preprocessing?
-  if (CurrentDecisionLevel() == 0) {
-    if (num_processed_fixed_variables_ < trail_.Index()) {
-      ProcessNewlyFixedVariableResolutionNodes();
-      ProcessNewlyFixedVariables();
+bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
+  SCOPED_TIME_STAT(&stats_);
+  if (Propagate()) return true;
+
+  ++counters_.num_failures;
+  dl_running_average_.Add(current_decision_level_);
+  trail_size_running_average_.Add(trail_.Index());
+
+  // Block the restart.
+  // Note(user): glucose only activate this after 10000 conflicts.
+  if (parameters_.use_blocking_restart()) {
+    if (lbd_running_average_.IsWindowFull() &&
+        dl_running_average_.IsWindowFull() &&
+        trail_size_running_average_.IsWindowFull() &&
+        trail_.Index() > parameters_.blocking_restart_multiplier() *
+                             trail_size_running_average_.WindowAverage()) {
+      dl_running_average_.ClearWindow();
+      lbd_running_average_.ClearWindow();
     }
   }
 
-  int first_propagation_index = trail_.Index();
-  NewDecision(true_literal);
-  while (!Propagate()) {
-    ++counters_.num_failures;
-    dl_running_average_.Add(current_decision_level_);
-    trail_size_running_average_.Add(trail_.Index());
+  const int max_trail_index = ComputeMaxTrailIndex(trail_.FailingClause());
 
-    // Block the restart.
-    // Note(user): glucose only activate this after 10000 conflicts.
-    if (parameters_.use_blocking_restart()) {
-      if (lbd_running_average_.IsWindowFull() &&
-          dl_running_average_.IsWindowFull() &&
-          trail_size_running_average_.IsWindowFull() &&
-          trail_.Index() > parameters_.blocking_restart_multiplier() *
-                               trail_size_running_average_.WindowAverage()) {
-        dl_running_average_.ClearWindow();
-        lbd_running_average_.ClearWindow();
+  // Optimization. All the activity of the variables assigned after the trail
+  // index below will not change, so there is no need to update them. This is
+  // also slightly better cache-wise, since we just enqueued these literals.
+  UntrailWithoutPQUpdate(
+      std::max(max_trail_index + 1, last_decision_or_backtrack_trail_index_));
+
+  // A conflict occured, compute a nice reason for this failure.
+  same_reason_identifier_.Clear();
+  ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
+                          &reason_used_to_infer_the_conflict_,
+                          &subsumed_clauses_);
+
+  // An empty conflict means that the problem is UNSAT.
+  if (learned_conflict_.empty()) return SetModelUnsat();
+  DCHECK(IsConflictValid(learned_conflict_));
+  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+
+  // Update the activity of all the variables in the first UIP clause.
+  // Also update the activity of the last level variables expanded (and
+  // thus discarded) during the first UIP computation. Note that both
+  // sets are disjoint.
+  const int lbd_limit = parameters_.use_glucose_bump_again_strategy()
+                            ? ComputeLbd(learned_conflict_)
+                            : 0;
+  BumpVariableActivities(learned_conflict_, lbd_limit);
+  BumpVariableActivities(reason_used_to_infer_the_conflict_, lbd_limit);
+
+  // Bump the clause activities.
+  // Note that the activity of the learned clause will be bumped too
+  // by AddLearnedClauseAndEnqueueUnitPropagation().
+  if (trail_.FailingSatClause() != nullptr) {
+    BumpClauseActivity(trail_.FailingSatClause());
+  }
+  BumpReasonActivities(reason_used_to_infer_the_conflict_);
+
+  // Decay the activities.
+  UpdateVariableActivityIncrement();
+  UpdateClauseActivityIncrement();
+  pb_constraints_.UpdateActivityIncrement();
+
+  // Decrement the restart counter if needed.
+  if (conflicts_until_next_restart_ > 0) {
+    --conflicts_until_next_restart_;
+  }
+
+  // Hack from Glucose that seems to perform well.
+  const int period = parameters_.glucose_decay_increment_period();
+  const double max_decay = parameters_.glucose_max_decay();
+  if (counters_.num_failures % period == 0 &&
+      parameters_.variable_activity_decay() < max_decay) {
+    parameters_.set_variable_activity_decay(
+        parameters_.variable_activity_decay() +
+        parameters_.glucose_decay_increment());
+  }
+
+  // PB resolution.
+  // There is no point using this if the conflict and all the reasons involved
+  // in its resolution where clauses.
+  bool compute_pb_conflict = false;
+  if (parameters_.use_pb_resolution()) {
+    compute_pb_conflict = (pb_constraints_.ConflictingConstraint() != nullptr);
+    if (!compute_pb_conflict) {
+      for (Literal lit : reason_used_to_infer_the_conflict_) {
+        if (PBReasonOrNull(lit.Variable(), trail_) != nullptr) {
+          compute_pb_conflict = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // TODO(user): Note that we use the clause above to update the variable
+  // activites and not the pb conflict. Experiment.
+  if (compute_pb_conflict) {
+    pb_conflict_.ClearAndResize(num_variables_.value());
+    Coefficient initial_slack(-1);
+    if (pb_constraints_.ConflictingConstraint() == nullptr) {
+      // Generic clause case.
+      Coefficient num_literals(0);
+      for (Literal literal : trail_.FailingClause()) {
+        pb_conflict_.AddTerm(literal.Negated(), Coefficient(1.0));
+        ++num_literals;
+      }
+      pb_conflict_.AddToRhs(num_literals - 1);
+    } else {
+      // We have a pseudo-Boolean conflict, so we start from there.
+      pb_constraints_.ConflictingConstraint()->AddToConflict(&pb_conflict_);
+      pb_constraints_.ClearConflictingConstraint();
+      initial_slack =
+          pb_conflict_.ComputeSlackForTrailPrefix(trail_, max_trail_index + 1);
+    }
+
+    int pb_backjump_level;
+    ComputePBConflict(max_trail_index, initial_slack, &pb_conflict_,
+                      &pb_backjump_level);
+    if (pb_backjump_level == -1) return SetModelUnsat();
+
+    // Convert the conflict into the std::vector<LiteralWithCoeff> form.
+    std::vector<LiteralWithCoeff> cst;
+    pb_conflict_.CopyIntoVector(&cst);
+    DCHECK(PBConstraintIsValidUnderDebugAssignment(cst, pb_conflict_.Rhs()));
+
+    // Check if the learned PB conflict is just a clause:
+    // all its coefficient must be 1, and the rhs must be its size minus 1.
+    bool conflict_is_a_clause = (pb_conflict_.Rhs() == cst.size() - 1);
+    if (conflict_is_a_clause) {
+      for (LiteralWithCoeff term : cst) {
+        if (term.coefficient != Coefficient(1)) {
+          conflict_is_a_clause = false;
+          break;
+        }
       }
     }
 
-    const int max_trail_index = ComputeMaxTrailIndex(trail_.FailingClause());
+    if (!conflict_is_a_clause) {
+      // Use the PB conflict.
+      CHECK_LT(pb_backjump_level, CurrentDecisionLevel());
+      Backtrack(pb_backjump_level);
+      CHECK(pb_constraints_.AddLearnedConstraint(cst, pb_conflict_.Rhs(),
+                                                 nullptr));
+      CHECK_GT(trail_.Index(), last_decision_or_backtrack_trail_index_);
+      counters_.num_learned_pb_literals_ += cst.size();
+      return false;
+    }
 
-    // Optimization. All the activity of the variables assigned after the trail
-    // index below will not change, so there is no need to update them. This is
-    // also slightly better cache-wise, since we just enqueued these literals.
-    UntrailWithoutPQUpdate(std::max(max_trail_index + 1, first_propagation_index));
+    // Continue with the normal clause flow, but use the PB conflict clause
+    // if it has a lower backjump level.
+    if (pb_backjump_level < ComputeBacktrackLevel(learned_conflict_)) {
+      subsumed_clauses_.clear();  // Because the conflict changes.
+      learned_conflict_.clear();
+      is_marked_.ClearAndResize(num_variables_);
+      int max_level = 0;
+      int max_index = 0;
+      for (LiteralWithCoeff term : cst) {
+        DCHECK(Assignment().IsLiteralTrue(term.literal));
+        DCHECK_EQ(term.coefficient, 1);
+        const int level = trail_.Info(term.literal.Variable()).level;
+        if (level == 0) continue;
+        if (level > max_level) {
+          max_level = level;
+          max_index = learned_conflict_.size();
+        }
+        learned_conflict_.push_back(term.literal.Negated());
 
-    // A conflict occured, compute a nice reason for this failure.
-    same_reason_identifier_.Clear();
-    ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
-                            &reason_used_to_infer_the_conflict_,
-                            &subsumed_clauses_);
+        // The minimization functions below expect the conflict to be marked!
+        // TODO(user): This is error prone, find a better way?
+        is_marked_.Set(term.literal.Variable());
+      }
+      CHECK(!learned_conflict_.empty());
+      std::swap(learned_conflict_.front(), learned_conflict_[max_index]);
+      DCHECK(IsConflictValid(learned_conflict_));
+    }
+  }
 
-    // An empty conflict means that the problem is UNSAT.
-    if (learned_conflict_.empty()) {
-      is_model_unsat_ = true;
-      return kUnsatTrailIndex;
+  // Minimizing the conflict with binary clauses first has two advantages.
+  // First, there is no need to compute a reason for the variables eliminated
+  // this way. Second, more variables may be marked (in is_marked_) and
+  // MinimizeConflict() can take advantage of that. Because of this, the
+  // LBD of the learned conflict can change.
+  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+  if (binary_implication_graph_.NumberOfImplications() != 0) {
+    if (parameters_.binary_minimization_algorithm() ==
+        SatParameters::BINARY_MINIMIZATION_FIRST) {
+      binary_implication_graph_.MinimizeConflictFirst(
+          trail_, &learned_conflict_, &is_marked_);
+    } else if (parameters_.binary_minimization_algorithm() ==
+               SatParameters::
+                   BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
+      binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
+          trail_, &learned_conflict_, &is_marked_, &random_);
     }
     DCHECK(IsConflictValid(learned_conflict_));
-    DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-
-    // Update the activity of all the variables in the first UIP clause.
-    // Also update the activity of the last level variables expanded (and
-    // thus discarded) during the first UIP computation. Note that both
-    // sets are disjoint.
-    const int lbd_limit = parameters_.use_glucose_bump_again_strategy()
-                              ? ComputeLbd(learned_conflict_)
-                              : 0;
-    BumpVariableActivities(learned_conflict_, lbd_limit);
-    BumpVariableActivities(reason_used_to_infer_the_conflict_, lbd_limit);
-
-    // Bump the clause activities.
-    // Note that the activity of the learned clause will be bumped too
-    // by AddLearnedClauseAndEnqueueUnitPropagation().
-    if (trail_.FailingSatClause() != nullptr) {
-      BumpClauseActivity(trail_.FailingSatClause());
-    }
-    BumpReasonActivities(reason_used_to_infer_the_conflict_);
-
-    // Decay the activities.
-    UpdateVariableActivityIncrement();
-    UpdateClauseActivityIncrement();
-    pb_constraints_.UpdateActivityIncrement();
-
-    // Decrement the restart counter if needed.
-    if (conflicts_until_next_restart_ > 0) {
-      --conflicts_until_next_restart_;
-    }
-
-    // Hack from Glucose that seems to perform well.
-    const int period = parameters_.glucose_decay_increment_period();
-    const double max_decay = parameters_.glucose_max_decay();
-    if (counters_.num_failures % period == 0 &&
-        parameters_.variable_activity_decay() < max_decay) {
-      parameters_.set_variable_activity_decay(
-          parameters_.variable_activity_decay() +
-          parameters_.glucose_decay_increment());
-    }
-
-    // PB resolution.
-    // There is no point using this if the conflict and all the reasons involved
-    // in its resolution where clauses.
-    bool compute_pb_conflict = false;
-    if (parameters_.use_pb_resolution()) {
-      compute_pb_conflict =
-          (pb_constraints_.ConflictingConstraint() != nullptr);
-      if (!compute_pb_conflict) {
-        for (Literal lit : reason_used_to_infer_the_conflict_) {
-          if (PBReasonOrNull(lit.Variable(), trail_) != nullptr) {
-            compute_pb_conflict = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // TODO(user): Note that we use the clause above to update the variable
-    // activites and not the pb conflict. Experiment.
-    if (compute_pb_conflict) {
-      pb_conflict_.ClearAndResize(num_variables_.value());
-      Coefficient initial_slack(-1);
-      if (pb_constraints_.ConflictingConstraint() == nullptr) {
-        // Generic clause case.
-        Coefficient num_literals(0);
-        for (Literal literal : trail_.FailingClause()) {
-          pb_conflict_.AddTerm(literal.Negated(), Coefficient(1.0));
-          ++num_literals;
-        }
-        pb_conflict_.AddToRhs(num_literals - 1);
-      } else {
-        // We have a pseudo-Boolean conflict, so we start from there.
-        pb_constraints_.ConflictingConstraint()->AddToConflict(&pb_conflict_);
-        pb_constraints_.ClearConflictingConstraint();
-        initial_slack = pb_conflict_.ComputeSlackForTrailPrefix(
-            trail_, max_trail_index + 1);
-      }
-
-      int pb_backjump_level;
-      ComputePBConflict(max_trail_index, initial_slack, &pb_conflict_,
-                        &pb_backjump_level);
-      if (pb_backjump_level == -1) {
-        is_model_unsat_ = true;
-        return kUnsatTrailIndex;
-      }
-
-      // Convert the conflict into the std::vector<LiteralWithCoeff> form.
-      std::vector<LiteralWithCoeff> cst;
-      pb_conflict_.CopyIntoVector(&cst);
-      DCHECK(PBConstraintIsValidUnderDebugAssignment(cst, pb_conflict_.Rhs()));
-
-      // Check if the learned PB conflict is just a clause:
-      // all its coefficient must be 1, and the rhs must be its size minus 1.
-      bool conflict_is_a_clause = (pb_conflict_.Rhs() == cst.size() - 1);
-      if (conflict_is_a_clause) {
-        for (LiteralWithCoeff term : cst) {
-          if (term.coefficient != Coefficient(1)) {
-            conflict_is_a_clause = false;
-            break;
-          }
-        }
-      }
-
-      if (!conflict_is_a_clause) {
-        // Use the PB conflict.
-        CHECK_LT(pb_backjump_level, CurrentDecisionLevel());
-        Backtrack(pb_backjump_level);
-        first_propagation_index = trail_.Index();
-        CHECK(pb_constraints_.AddLearnedConstraint(cst, pb_conflict_.Rhs(),
-                                                   nullptr));
-        CHECK_GT(trail_.Index(), first_propagation_index);
-        counters_.num_learned_pb_literals_ += cst.size();
-        continue;
-      }
-
-      // Continue with the normal clause flow, but use the PB conflict clause
-      // if it has a lower backjump level.
-      if (pb_backjump_level < ComputeBacktrackLevel(learned_conflict_)) {
-        subsumed_clauses_.clear();  // Because the conflict changes.
-        learned_conflict_.clear();
-        is_marked_.ClearAndResize(num_variables_);
-        int max_level = 0;
-        int max_index = 0;
-        for (LiteralWithCoeff term : cst) {
-          DCHECK(Assignment().IsLiteralTrue(term.literal));
-          DCHECK_EQ(term.coefficient, 1);
-          const int level = trail_.Info(term.literal.Variable()).level;
-          if (level == 0) continue;
-          if (level > max_level) {
-            max_level = level;
-            max_index = learned_conflict_.size();
-          }
-          learned_conflict_.push_back(term.literal.Negated());
-
-          // The minimization functions below expect the conflict to be marked!
-          // TODO(user): This is error prone, find a better way?
-          is_marked_.Set(term.literal.Variable());
-        }
-        CHECK(!learned_conflict_.empty());
-        std::swap(learned_conflict_.front(), learned_conflict_[max_index]);
-        DCHECK(IsConflictValid(learned_conflict_));
-      }
-    }
-
-    // Minimizing the conflict with binary clauses first has two advantages.
-    // First, there is no need to compute a reason for the variables eliminated
-    // this way. Second, more variables may be marked (in is_marked_) and
-    // MinimizeConflict() can take advantage of that. Because of this, the
-    // LBD of the learned conflict can change.
-    DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-    if (binary_implication_graph_.NumberOfImplications() != 0) {
-      if (parameters_.binary_minimization_algorithm() ==
-          SatParameters::BINARY_MINIMIZATION_FIRST) {
-        binary_implication_graph_.MinimizeConflictFirst(
-            trail_, &learned_conflict_, &is_marked_);
-      } else if (parameters_.binary_minimization_algorithm() ==
-                 SatParameters::
-                     BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
-        binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
-            trail_, &learned_conflict_, &is_marked_, &random_);
-      }
-      DCHECK(IsConflictValid(learned_conflict_));
-    }
-
-    // Minimize the learned conflict.
-    MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
-
-    // Minimize it further with binary clauses?
-    if (binary_implication_graph_.NumberOfImplications() != 0) {
-      // Note that on the contrary to the MinimizeConflict() above that
-      // just uses the reason graph, this minimization can change the
-      // clause LBD and even the backtracking level.
-      switch (parameters_.binary_minimization_algorithm()) {
-        case SatParameters::NO_BINARY_MINIMIZATION:
-          FALLTHROUGH_INTENDED;
-        case SatParameters::BINARY_MINIMIZATION_FIRST:
-          FALLTHROUGH_INTENDED;
-        case SatParameters::BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION:
-          break;
-        case SatParameters::BINARY_MINIMIZATION_WITH_REACHABILITY:
-          binary_implication_graph_.MinimizeConflictWithReachability(
-              &learned_conflict_);
-          break;
-        case SatParameters::EXPERIMENTAL_BINARY_MINIMIZATION:
-          binary_implication_graph_.MinimizeConflictExperimental(
-              trail_, &learned_conflict_);
-          break;
-      }
-      DCHECK(IsConflictValid(learned_conflict_));
-    }
-
-    // Compute the resolution node if needed.
-    // TODO(user): This is wrong if the clause comes from PB resolution.
-    ResolutionNode* node =
-        parameters_.unsat_proof()
-            ? CreateResolutionNode(
-                  trail_.FailingResolutionNode(),
-                  ClauseRef(reason_used_to_infer_the_conflict_))
-            : nullptr;
-
-    // Backtrack and add the reason to the set of learned clause.
-    counters_.num_literals_learned += learned_conflict_.size();
-    Backtrack(ComputeBacktrackLevel(learned_conflict_));
-    first_propagation_index = trail_.Index();
-    DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-
-    // Detach any subsumed clause. They will actually be deleted on the next
-    // clause cleanup phase.
-    bool is_redundant = true;
-    if (!subsumed_clauses_.empty() &&
-        parameters_.subsumption_during_conflict_analysis()) {
-      for (SatClause* clause : subsumed_clauses_) {
-        DCHECK(ClauseSubsumption(learned_conflict_, clause));
-        watched_clauses_.LazyDetach(clause);
-        if (!clause->IsRedundant()) is_redundant = false;
-      }
-      watched_clauses_.CleanUpWatchers();
-      counters_.num_subsumed_clauses += subsumed_clauses_.size();
-    }
-
-    // Create and attach the new learned clause.
-    AddLearnedClauseAndEnqueueUnitPropagation(learned_conflict_, is_redundant,
-                                              node);
   }
-  return first_propagation_index;
+
+  // Minimize the learned conflict.
+  MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
+
+  // Minimize it further with binary clauses?
+  if (binary_implication_graph_.NumberOfImplications() != 0) {
+    // Note that on the contrary to the MinimizeConflict() above that
+    // just uses the reason graph, this minimization can change the
+    // clause LBD and even the backtracking level.
+    switch (parameters_.binary_minimization_algorithm()) {
+      case SatParameters::NO_BINARY_MINIMIZATION:
+        FALLTHROUGH_INTENDED;
+      case SatParameters::BINARY_MINIMIZATION_FIRST:
+        FALLTHROUGH_INTENDED;
+      case SatParameters::BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION:
+        break;
+      case SatParameters::BINARY_MINIMIZATION_WITH_REACHABILITY:
+        binary_implication_graph_.MinimizeConflictWithReachability(
+            &learned_conflict_);
+        break;
+      case SatParameters::EXPERIMENTAL_BINARY_MINIMIZATION:
+        binary_implication_graph_.MinimizeConflictExperimental(
+            trail_, &learned_conflict_);
+        break;
+    }
+    DCHECK(IsConflictValid(learned_conflict_));
+  }
+
+  // Compute the resolution node if needed.
+  // TODO(user): This is wrong if the clause comes from PB resolution.
+  ResolutionNode* node =
+      parameters_.unsat_proof()
+          ? CreateResolutionNode(trail_.FailingResolutionNode(),
+                                 ClauseRef(reason_used_to_infer_the_conflict_))
+          : nullptr;
+
+  // Backtrack and add the reason to the set of learned clause.
+  counters_.num_literals_learned += learned_conflict_.size();
+  Backtrack(ComputeBacktrackLevel(learned_conflict_));
+  DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
+
+  // Detach any subsumed clause. They will actually be deleted on the next
+  // clause cleanup phase.
+  bool is_redundant = true;
+  if (!subsumed_clauses_.empty() &&
+      parameters_.subsumption_during_conflict_analysis()) {
+    for (SatClause* clause : subsumed_clauses_) {
+      DCHECK(ClauseSubsumption(learned_conflict_, clause));
+      watched_clauses_.LazyDetach(clause);
+      if (!clause->IsRedundant()) is_redundant = false;
+    }
+    watched_clauses_.CleanUpWatchers();
+    counters_.num_subsumed_clauses += subsumed_clauses_.size();
+  }
+
+  // Create and attach the new learned clause.
+  AddLearnedClauseAndEnqueueUnitPropagation(learned_conflict_, is_redundant,
+                                            node);
+  return false;
 }
 
 SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
@@ -820,7 +803,7 @@ bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
 
   if (is_model_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
-  NewDecision(true_literal);
+  EnqueueNewDecision(true_literal);
   if (Propagate()) {
     return true;
   } else {
@@ -854,6 +837,7 @@ void SatSolver::Backtrack(int target_level) {
     UntrailWithoutPQUpdate(target_trail_index);
   }
   trail_.SetDecisionLevel(target_level);
+  last_decision_or_backtrack_trail_index_ = trail_.Index();
 }
 
 bool SatSolver::AddBinaryClauses(const std::vector<BinaryClause>& clauses) {
@@ -1019,61 +1003,62 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       next_display = NextMultipleOf(num_failures(), kDisplayFrequency);
     }
 
-    // We need to reapply any assumptions that are not currently applied.
-    if (CurrentDecisionLevel() < assumption_level_) {
-      int unused = 0;
-      const Status status =
-          ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
-      if (status != MODEL_SAT) return StatusWithLog(status);
-      assumption_level_ = CurrentDecisionLevel();
-    }
+    if (!PropagateAndStopAfterOneConflictResolution()) {
+      // A conflict occured, continue the loop.
+      if (is_model_unsat_) return StatusWithLog(MODEL_UNSAT);
+    } else {
+      // We need to reapply any assumptions that are not currently applied.
+      if (CurrentDecisionLevel() < assumption_level_) {
+        int unused = 0;
+        const Status status =
+            ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
+        if (status != MODEL_SAT) return StatusWithLog(status);
+        assumption_level_ = CurrentDecisionLevel();
+      }
 
-    // At a leaf?
-    if (trail_.Index() == num_variables_.value()) {
-      return StatusWithLog(MODEL_SAT);
-    }
+      // At a leaf?
+      if (trail_.Index() == num_variables_.value()) {
+        return StatusWithLog(MODEL_SAT);
+      }
 
-    // Restart?
-    bool restart = false;
-    switch (parameters_.restart_algorithm()) {
-      case SatParameters::NO_RESTART:
-        break;
-      case SatParameters::LUBY_RESTART:
-        if (conflicts_until_next_restart_ == 0) {
-          restart = true;
-          conflicts_until_next_restart_ =
-              parameters_.luby_restart_period() * SUniv(restart_count_ + 1);
-        }
-        break;
-      case SatParameters::DL_MOVING_AVERAGE_RESTART:
-        if (dl_running_average_.IsWindowFull() &&
-            dl_running_average_.GlobalAverage() <
-                parameters_.restart_average_ratio() *
-                    dl_running_average_.WindowAverage()) {
-          restart = true;
-          dl_running_average_.ClearWindow();
-        }
-        break;
-      case SatParameters::LBD_MOVING_AVERAGE_RESTART:
-        if (lbd_running_average_.IsWindowFull() &&
-            lbd_running_average_.GlobalAverage() <
-                parameters_.restart_average_ratio() *
-                    lbd_running_average_.WindowAverage()) {
-          restart = true;
-          lbd_running_average_.ClearWindow();
-        }
-        break;
-    }
-    if (restart) {
-      restart_count_++;
-      Backtrack(assumption_level_);
-    }
+      // Restart?
+      bool restart = false;
+      switch (parameters_.restart_algorithm()) {
+        case SatParameters::NO_RESTART:
+          break;
+        case SatParameters::LUBY_RESTART:
+          if (conflicts_until_next_restart_ == 0) {
+            restart = true;
+            conflicts_until_next_restart_ =
+                parameters_.luby_restart_period() * SUniv(restart_count_ + 1);
+          }
+          break;
+        case SatParameters::DL_MOVING_AVERAGE_RESTART:
+          if (dl_running_average_.IsWindowFull() &&
+              dl_running_average_.GlobalAverage() <
+                  parameters_.restart_average_ratio() *
+                      dl_running_average_.WindowAverage()) {
+            restart = true;
+            dl_running_average_.ClearWindow();
+          }
+          break;
+        case SatParameters::LBD_MOVING_AVERAGE_RESTART:
+          if (lbd_running_average_.IsWindowFull() &&
+              lbd_running_average_.GlobalAverage() <
+                  parameters_.restart_average_ratio() *
+                      lbd_running_average_.WindowAverage()) {
+            restart = true;
+            lbd_running_average_.ClearWindow();
+          }
+          break;
+      }
+      if (restart) {
+        restart_count_++;
+        Backtrack(assumption_level_);
+      }
 
-    // Choose the next decision variable.
-    DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
-    const Literal next_branch = NextBranch();
-    if (EnqueueDecisionAndBackjumpOnConflict(next_branch) == -1) {
-      return StatusWithLog(MODEL_UNSAT);
+      DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
+      EnqueueNewDecision(NextBranch());
     }
   }
 }
@@ -1607,10 +1592,26 @@ bool SatSolver::ResolvePBConflict(VariableIndex var,
   return true;
 }
 
-void SatSolver::NewDecision(Literal literal) {
+void SatSolver::EnqueueNewDecision(Literal literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(!Assignment().IsVariableAssigned(literal.Variable()));
+
+  // We are back at level 0. This can happen because of a restart, or because
+  // we proved that some variables must take a given value in any satisfiable
+  // assignment. Trigger a simplification of the clauses if there is new fixed
+  // variables.
+  //
+  // TODO(user): Do not trigger it all the time if it takes too much time.
+  // TODO(user): Do more advanced preprocessing?
+  if (CurrentDecisionLevel() == 0) {
+    if (num_processed_fixed_variables_ < trail_.Index()) {
+      ProcessNewlyFixedVariableResolutionNodes();
+      ProcessNewlyFixedVariables();
+    }
+  }
+
   counters_.num_branches++;
+  last_decision_or_backtrack_trail_index_ = trail_.Index();
   decisions_[current_decision_level_] = Decision(trail_.Index(), literal);
   ++current_decision_level_;
   trail_.SetDecisionLevel(current_decision_level_);

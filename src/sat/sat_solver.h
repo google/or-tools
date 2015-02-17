@@ -340,6 +340,11 @@ class SatSolver {
   void SaveDebugAssignment();
 
  private:
+  // Calls Propagate() and returns true if no conflict occured. Otherwise,
+  // learns the conflict, backtracks, enqueues the consequence of the learned
+  // conflict and returns false.
+  bool PropagateAndStopAfterOneConflictResolution();
+
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit);
 
@@ -459,7 +464,7 @@ class SatSolver {
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
-  void NewDecision(Literal literal);
+  void EnqueueNewDecision(Literal literal);
 
   // Performs propagation of the recently enqueued elements.
   bool Propagate();
@@ -659,6 +664,10 @@ class SatSolver {
   // need to remember the previously taken decisions after a backtrack.
   int current_decision_level_;
   std::vector<Decision> decisions_;
+
+  // The trail index after the last Backtrack() call or before the last
+  // EnqueueNewDecision() call.
+  int last_decision_or_backtrack_trail_index_;
 
   // The assumption level. See SolveWithAssumptions().
   int assumption_level_;
