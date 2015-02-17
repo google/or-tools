@@ -6,8 +6,8 @@ SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.8.12
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
-SWIG_TAG = 3.0.3
-BISON_FLEX_TAG = 2.5.2
+SWIG_TAG = 3.0.5
+BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.53.tar.gz
