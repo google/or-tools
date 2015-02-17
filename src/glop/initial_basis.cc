@@ -96,18 +96,18 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   }
 }
 
-void InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
+bool InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
                                                  RowToColMapping* basis) {
-  CompleteTriangularBasis<false>(num_cols, basis);
+  return CompleteTriangularBasis<false>(num_cols, basis);
 }
 
-void InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
+bool InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
                                                RowToColMapping* basis) {
-  CompleteTriangularBasis<true>(num_cols, basis);
+  return CompleteTriangularBasis<true>(num_cols, basis);
 }
 
 template <bool only_allow_zero_cost_column>
-void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
+bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
                                            RowToColMapping* basis) {
   // Initialize can_be_replaced.
   const RowIndex num_rows = matrix_.num_rows();
@@ -150,6 +150,14 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
       queue(residual_singleton_column.begin(), residual_singleton_column.end(),
             triangular_column_comparator_);
 
+  // If the the product magnitude of the diagonal coefficients become smaller
+  // than a given threshold, we will assume that this method returns an instable
+  // first basis. The threshold is somewhat arbitrary and is mainly here to
+  // avoid an infinite inverse product which will trigger floating point
+  // exceptions in other part of the code.
+  const double kMinimumProductMagnitude = 1e-100;
+  double partial_diagonal_product = 1.0;
+
   // Process the residual singleton columns by priority and add them to the
   // basis if their "diagonal" coefficient is not too small.
   while (!queue.empty()) {
@@ -174,6 +182,14 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
     if (fabs(coeff) < kStabilityThreshold * max_magnitude) continue;
     DCHECK_NE(kInvalidRow, row);
 
+    partial_diagonal_product *= coeff;
+    if (fabs(partial_diagonal_product) < kMinimumProductMagnitude) {
+      LOG(WARNING) << "Numerical difficulties detected. Product of "
+                   << "diagonal coefficients is currently equals to "
+                   << partial_diagonal_product;
+      break;
+    }
+
     // Use this candidate column in the basis.
     (*basis)[row] = candidate;
     can_be_replaced[row] = false;
@@ -186,6 +202,8 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
       }
     }
   }
+
+  return fabs(partial_diagonal_product) >= kMinimumProductMagnitude;
 }
 
 void InitialBasis::ComputeCandidates(ColIndex num_cols,

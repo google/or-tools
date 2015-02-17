@@ -832,7 +832,14 @@ Status RevisedSimplex::CreateInitialBasis() {
       } else if (parameters_.initial_basis() == GlopParameters::TRIANGULAR) {
         // Note the use of num_cols_ here because this algorithm
         // benefits from treating fixed slack columns like any other column.
-        initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis);
+        RowToColMapping basis_copy = basis;
+        if (!initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis)) {
+          LOG(WARNING) << "Reverting to Bixby's initial basis algorithm.";
+          basis = basis_copy;
+          if (parameters_.use_scaling()) {
+            initial_basis.CompleteBixbyBasis(first_slack_col_, &basis);
+          }
+        }
       } else {
         LOG(WARNING) << "Unsupported initial_basis parameters: "
                      << parameters_.initial_basis();
