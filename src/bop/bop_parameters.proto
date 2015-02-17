@@ -53,7 +53,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 31
+// NEXT TAG: 33
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -224,4 +224,10 @@ message BopParameters {
   // Only try to decompose the problem when the number of variables is greater
   // than the threshold.
   optional int32 decomposer_num_variables_threshold = 30 [default = 50];
+
+  // The number of BopSolver created (thread pool workers) used by the integral
+  // solver to solve a decomposed problem.
+  // TODO(user): Merge this with the number_of_solvers parameter.
+  optional int32 num_bop_solvers_used_by_decomposition = 31 [default = 1];
+
 }

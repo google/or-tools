@@ -56,13 +56,6 @@ class IntegralSolver {
   const glop::DenseRow& variable_values() const { return variable_values_; }
 
  private:
-  // Solves the given linear program and returns the solve status.
-  BopSolveStatus InternalSolve(const glop::LinearProgram& linear_problem,
-                               const BopParameters& parameters,
-                               glop::DenseRow* variable_values,
-                               glop::Fractional* objective_value,
-                               glop::Fractional* best_bound) MUST_USE_RESULT;
-
   BopParameters parameters_;
   glop::DenseRow variable_values_;
   glop::Fractional objective_value_;

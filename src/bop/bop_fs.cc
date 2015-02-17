@@ -318,6 +318,11 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
+  // Only run the RandomFirstSolution when there is an objective to minimize.
+  if (problem_state.original_problem().objective().literals_size() == 0) {
+    return BopOptimizerBase::ABORT;
+  }
+
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state);
   if (sync_status != BopOptimizerBase::CONTINUE) {
@@ -511,6 +516,11 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
+
+  // Only run the LP solver when there is an objective to minimize.
+  if (problem_state.original_problem().objective().literals_size() == 0) {
+    return BopOptimizerBase::ABORT;
+  }
 
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state);
