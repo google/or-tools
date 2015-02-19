@@ -3,7 +3,7 @@ GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 512 # version 2.5.0 + fix
 GOOGLE_APPUTILS_TAG = 14 # 0.4.0
 SPARSEHASH_TAG = 116 # 2.0.2
-CBC_TAG = 2.8.12
+CBC_TAG = 2.9.2
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
 SWIG_TAG = 3.0.5
@@ -56,7 +56,7 @@ download_third_party: \
 	dependencies/sources/sparsehash/autogen.sh \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
 	dependencies/sources/google-apputils/README \
-	dependencies/sources/coin-cbc/configure
+	dependencies/sources/cbc-$(CBC_TAG)/configure
 
 # Directories:
 .PHONY: install_directories
@@ -212,49 +212,49 @@ dependencies\sources\sparsehash\autogen.sh:
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
 
-dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
-	copy dependencies\sources\coin-cbc\Cbc\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Clp\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\CoinUtils\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cgl\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Osi\src\Osi\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cbc\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Clp\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\CoinUtils\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cgl\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Osi\src\Osi\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
+dependencies\install\bin\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.hpp dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.h dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.h dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.h dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.h dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.h dependencies\install\include\coin
+	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
-dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\coin-cbc\configure
+dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\configure
 ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\coin-cbc\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
+	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
 endif
 ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\coin-cbc\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
+	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
 endif
-	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
+	cd dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
-dependencies\sources\coin-cbc\configure:
-	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	tools\sed -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\coin-cbc\CoinUtils\src\CoinHelperFunctions.hpp
+dependencies\sources\cbc-$(CBC_TAG)\configure:
+	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
+	tools\sed -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\CoinHelperFunctions.hpp
 
 
 # Install SWIG.
@@ -325,7 +325,7 @@ dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DELREC) dependencies\install
-	-$(DELREC) dependencies\sources\coin-cbc*
+	-$(DELREC) dependencies\sources\cbc-*
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glpk*
 	-$(DELREC) dependencies\sources\google*
