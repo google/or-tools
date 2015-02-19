@@ -16,7 +16,7 @@ PCRE_TAG = 1336
 MONO_TAG = 3.10.0
 # BISON, FLEX
 BISON_TAG = 3.0.4
-FLEX_TAG = 2.5.39
+FLEX_TAG = 2.5.37
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
