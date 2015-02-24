@@ -1,39 +1,38 @@
-This file describes how to install the or-tools libraries.
 These libraries have been tested under:
-  - ubuntu 10.04 and up (32 and 64 bit).
-  - Mac OS X Snow Leopard with xcode 3.2.x and 4.x (64 bit)
-  - Mac OS X Lion with xcode 4.x (64 bit).
-  - Microsoft Windows with Visual Studio 2010 express C++ and
-    Visual studio 2010 (32 and 64 bit).
+  - Ubuntu 10.04 and up (32 and 64 bit).
+  - Mac OS X Snow Leopard with Xcode 3.2.x and 4.x (64 bit)
+  - Mac OS X Lion with Xcode 4.x (64 bit).
+  - Microsoft Windows with Visual Studio 2010 Express C++ and
+    Visual Studio 2010 (32 and 64 bit).
 
-Upon checking out the svn repository, you will get the following structure:
+Upon checking out the repository, you will get the following structure:
 
 or-tools/
-  LICENSE-2.0.txt    <- Apache License
-  Makefile           <- Main makefile.
-  README             <- This file
-  bin/               <- Directory where all binaries will be compiled.
-  com/               <- Directory that contains all java code.
-  dependencies/      <- Directory that will contain built dependencies.
-  examples/          <- Root directory of all examples.
-  examples/com/      <- Directory that contains all java examples.
-  examples/cpp/      <- C++ examples.
-  examples/csharp/   <- Directory that contains all C# examples.
-  examples/python/   <- Python examples
-  examples/tests/    <- C# unit tests and bug reports.
-  lib/               <- Directory where all libraries and jar files will go.
-  makefiles/         <- Directory that contains sub-makefiles.
-  objs/              <- Where C++ objs files will be stored
-  src/               <- Root directory of all libraries sources.
-  src/algorithms/    <- Directory containing basic algorithms.
-  src/base/          <- Directory containing basic utilities.
-  src/constraint_solver/ <- The main directory for the constraint library.
-  src/gen/           <- Directory that will contain generated files.
-  src/graph/         <- Graph algorithms.
-  src/linear_solver/ <- Linear solver wrapper.
-  src/util/          <- More utilities needed by the constraint solver
-  tools/             <- Contains windows binaries.
+  LICENSE-2.0.txt        <- Apache license
+  Makefile               <- Top-level Makefile
+  README                 <- This file
+  bin/                   <- Compiled binaries
+  com/                   <- All Java code
+  dependencies/          <- Built dependencies
+  examples/              <- Root directory for all examples
+  examples/com/          <- Java examples
+  examples/cpp/          <- C++ examples
+  examples/csharp/       <- C# examples
+  examples/python/       <- Python examples
+  examples/tests/        <- C# unit tests and bug reports
+  lib/                   <- Libraries and jar files
+  makefiles/             <- Subsidiary makefiles
+  objs/                  <- C++ object files
+  src/                   <- Source code
+  src/algorithms/        <- Basic algorithms
+  src/base/              <- Basic utilities
+  src/constraint_solver/ <- Constraint solver
+  src/gen/               <- Generated files
+  src/graph/             <- Graph algorithms
+  src/linear_solver/     <- Linear solver wrapper
+  src/util/              <- Utilities needed by the constraint solver
+  tools/                 <- Windows binaries
 
-For installation instructions, visit 
-https://developers.google.com/optimization/installing
+For installation instructions (both source and binary), visit 
+https://developers.google.com/optimization/installing.
 
