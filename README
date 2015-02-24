@@ -10,6 +10,7 @@ Upon checking out the repository, you will get the following structure:
 or-tools/
   LICENSE-2.0.txt        <- Apache license
   Makefile               <- Top-level Makefile
+  CONTRIBUTING           <- Contribution guidelines
   README                 <- This file
   bin/                   <- Compiled binaries
   com/                   <- All Java code
