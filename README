@@ -34,7 +34,6 @@ or-tools/
   src/util/          <- More utilities needed by the constraint solver
   tools/             <- Contains windows binaries.
 
-For installation, please refer to the following web page:
-
-http://code.google.com/p/or-tools/wiki/AGettingStarted
+For installation instructions, visit 
+https://developers.google.com/optimization/installing
 
