@@ -238,6 +238,11 @@ dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GF
 	make -j 4 && \
 	make install
 	$(TOUCH) dependencies/install/bin/gflags_completions.sh
+ifeq ($(PLATFORM),MACOSX)
+	install_name_tool -id $(OR_TOOLS_TOP)/dependencies/install/lib/libgflags.dylib \
+                          dependencies/install/lib/libgflags.dylib
+endif
+
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
