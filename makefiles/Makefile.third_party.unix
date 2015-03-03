@@ -243,7 +243,6 @@ ifeq ($(PLATFORM),MACOSX)
                           dependencies/install/lib/libgflags.dylib
 endif
 
-
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
 
