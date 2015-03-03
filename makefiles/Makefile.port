@@ -117,18 +117,10 @@ ifeq ("$(SYSTEM)","win")
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
 endif
 
-# Get svn version
-SVNVERSION = $(shell svnversion .)
-# svnversion can produce a simple number like 1234, or other forms like 1234:1254, 1234M, 1234S, 1234P. For assembly version use,
-# take the first numeric part.
 ifeq ("$(SYSTEM)","unix")
-  ifeq ("$(OS)","Linux")
-SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | sed -n -r -e "s/([0-9]+).*/\1/p")
-  else
-SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | sed -n -E -e "s/([0-9]+).*/\1/p")
-  endif
+GIT_REVISION:= $(shell git log --oneline | wc -l)
 else
-SVNVERSION_SIMPLE:= $(shell echo $(SVNVERSION) | tools\\sed.exe -n -r -e "s/([0-9]+).*/\1/p")
+GIT_REVISION:= $(shell echo $(GIT_REVISION) | tools\\sed.exe -n -r -e "s/([0-9]+).*/\1/p")
 endif
 
 printport:
@@ -139,6 +131,5 @@ printport:
 	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
-	@echo SVNVERSION = $(SVNVERSION)
-	@echo SVNVERSION_SIMPLE = $(SVNVERSION_SIMPLE)
+	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo PORT = $(PORT)

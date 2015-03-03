@@ -1730,7 +1730,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(SVNVERSION_SIMPLE).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
 	-$(DELREC) temp
 else
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
@@ -1779,7 +1779,7 @@ endif
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(SVNVERSION_SIMPLE).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
 
