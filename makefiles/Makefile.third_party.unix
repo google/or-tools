@@ -1,9 +1,7 @@
 # SVN tags of dependencies to checkout.
 
-# version 2.0
-GFLAGS_TAG = 76
-# version 2.5.0 + fix
-PROTOBUF_TAG = 512
+GFLAGS_TAG = 2.1.1
+PROTOBUF_TAG = 2.6.0
 # 0.4.0
 GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
@@ -94,20 +92,26 @@ install_third_party: \
 	install_bison \
 	install_flex
 
-# Install gflags.
+# Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) make install
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && make -j 4 && make install
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS-TAG)/INSTALL.txt
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
+		 -D BUILD_STATIC_LIBS=ON \
+	         -D CMAKE_INSTALL_PREFIX=../install \
+	         -D GFLAGS_NAMESPACE=google \
+	         .
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/configure: dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./autogen.sh
+dependencies/sources/gflags-$(GFLAGS-TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh:
-	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags-$(GFLAGS_TAG)
+dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz:
+	cd dependencies/archives && curl -OL https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).tar.gz
+	cd dependencies/archives && mv v$(GFLAGS_TAG).tar.gz gflags-$(GFLAGS_TAG).tar.gz
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
@@ -121,8 +125,11 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/pro
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
-	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf-$(PROTOBUF_TAG)
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh: dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/protobuf-$(PROTOBUF_TAG).tar.gz
+
+dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz:
+	cd dependencies/archives && curl -OL https://protobuf.googlecode.com/svn/rc/protobuf-$(PROTOBUF_TAG).tar.gz
 
 # Intall Google Apputils Python.
 install_google_apputils: dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README
