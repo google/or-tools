@@ -93,7 +93,7 @@ void TestTable(int arity, int num_tuples, int upper, bool use_ac4r_table) {
 
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (!FLAGS_ac4) {
     operations_research::TestTable(FLAGS_arity,
                                    FLAGS_tuples,

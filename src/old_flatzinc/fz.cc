@@ -169,7 +169,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = logging_param;
     }
   }
-  google::ParseCommandLineFlags( argc, argv, true);
+  gflags::ParseCommandLineFlags( argc, argv, true);
 }
 }  // namespace operations_research
 

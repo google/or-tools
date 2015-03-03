@@ -323,8 +323,8 @@ static const char kUsage[] =
     "This program runs a multi-dimensional knapsack problem.";
 
 int main(int argc, char** argv) {
-  google::SetUsageMessage(kUsage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
     LOG(FATAL) << "Please supply a data file with --datafile=";
   }

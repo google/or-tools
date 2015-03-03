@@ -750,7 +750,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = FLAGS_symbols_per_card;

@@ -203,7 +203,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
 }
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
   // VRP of size FLAGS_vrp_size.

@@ -188,8 +188,8 @@ int main(int argc, char* argv[]) {
   } else {
     usage = StringPrintf(kUsageTemplate, argv[0]);
   }
-  google::SetUsageMessage(usage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(usage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   if (argc < 2) {
     LOG(FATAL) << usage;

@@ -157,7 +157,7 @@ void Run() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, /*remove_flags=*/true);
+  gflags::ParseCommandLineFlags( &argc, &argv, /*remove_flags=*/true);
   CHECK(!FLAGS_input.empty()) << "--input is required";
   operations_research::Run();
 }

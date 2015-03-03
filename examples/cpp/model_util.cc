@@ -391,7 +391,7 @@ int Run() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Filename not specified";
   }

@@ -79,7 +79,44 @@ SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 .PHONY: third_party build_third_party makefile_third_party
 third_party: install_third_party makefile_third_party
 
+# Create missing directories
+
+MISSING_DIRECTORIES = \
+	bin \
+	lib \
+	objs/algorithms \
+	objs/base \
+	objs/bop \
+	objs/com/google/ortools \
+	objs/constraint_solver \
+	objs/flatzinc \
+	objs/glop \
+	objs/graph \
+	objs/linear_solver \
+	objs/lp_data \
+	objs/sat \
+	objs/swig \
+	objs/util \
+	src/gen/algorithms \
+	src/gen/bop \
+	src/gen/com/google/ortools/algorithms \
+	src/gen/com/google/ortools/constraintsolver \
+	src/gen/com/google/ortools/graph \
+	src/gen/com/google/ortools/linearsolver \
+	src/gen/constraint_solver \
+	src/gen/flatzinc \
+	src/gen/glop \
+	src/gen/graph \
+	src/gen/linear_solver \
+	src/gen/ortools \
+	src/gen/ortools/algorithms \
+	src/gen/ortools/constraint_solver \
+	src/gen/ortools/graph \
+	src/gen/ortools/linear_solver \
+	src/gen/sat
+
 install_third_party: \
+	missing_directories \
 	install_gflags \
 	install_protobuf \
 	install_google_apputils \
@@ -92,21 +129,146 @@ install_third_party: \
 	install_bison \
 	install_flex
 
+.PHONY: missing_directories
+
+missing_directories: $(MISSING_DIRECTORIES)
+
+bin:
+	$(MKDIR) bin
+
+lib:
+	$(MKDIR) lib
+
+objs:
+	$(MKDIR) objs
+
+objs/algorithms: objs
+	$(MKDIR) objs$Salgorithms
+
+objs/base: objs
+	$(MKDIR) objs$Sbase
+
+objs/bop: objs
+	$(MKDIR) objs$Sbop
+
+objs/com: objs
+	$(MKDIR) objs$Scom
+
+objs/com/google: objs/com
+	$(MKDIR) objs$Scom$Sgoogle
+
+objs/com/google/ortools: objs/com/google
+	$(MKDIR) objs$Scom$Sgoogle$Sortools
+
+objs/constraint_solver: objs
+	$(MKDIR) objs$Sconstraint_solver
+
+objs/flatzinc: objs
+	$(MKDIR) objs$Sflatzinc
+
+objs/glop: objs
+	$(MKDIR) objs$Sglop
+
+objs/graph: objs
+	$(MKDIR) objs$Sgraph
+
+objs/linear_solver: objs
+	$(MKDIR) objs$Slinear_solver
+
+objs/lp_data: objs
+	$(MKDIR) objs$Slp_data
+
+objs/sat: objs
+	$(MKDIR) objs$Ssat
+
+objs/swig: objs
+	$(MKDIR) objs$Sswig
+
+objs/util: objs
+	$(MKDIR) objs$Sutil
+
+src/gen:
+	$(MKDIR) src$Sgen
+
+src/gen/algorithms: src/gen
+	$(MKDIR) src$Sgen$Salgorithms
+
+src/gen/bop: src/gen
+	$(MKDIR) src$Sgen$Sbop
+
+src/gen/com: src/gen
+	$(MKDIR) src$Sgen$Scom
+
+src/gen/com/google: src/gen/com
+	$(MKDIR) src$Sgen$Scom$Sgoogle
+
+src/gen/com/google/ortools: src/gen/com/google
+	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools
+
+src/gen/com/google/ortools/algorithms: src/gen/com/google/ortools
+	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+
+src/gen/com/google/ortools/constraintsolver: src/gen/com/google/ortools
+	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+
+src/gen/com/google/ortools/graph: src/gen/com/google/ortools
+	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
+
+src/gen/com/google/ortools/linearsolver: src/gen/com/google/ortools
+	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+
+src/gen/constraint_solver: src/gen
+	$(MKDIR) src$Sgen$Sconstraint_solver
+
+src/gen/flatzinc: src/gen
+	$(MKDIR) src$Sgen$Sflatzinc
+
+src/gen/glop: src/gen
+	$(MKDIR) src$Sgen$Sglop
+
+src/gen/graph: src/gen
+	$(MKDIR) src$Sgen$Sgraph
+
+src/gen/linear_solver: src/gen
+	$(MKDIR) src$Sgen$Slinear_solver
+
+src/gen/ortools: src/gen
+	$(MKDIR) src$Sgen$Sortools
+
+src/gen/ortools/algorithms: src/gen/ortools
+	$(MKDIR) src$Sgen$Sortools$Salgorithms
+
+src/gen/ortools/constraint_solver: src/gen/ortools
+	$(MKDIR) src$Sgen$Sortools$Sconstraint_solver
+
+src/gen/ortools/graph: src/gen/ortools
+	$(MKDIR) src$Sgen$Sortools$Sgraph
+
+src/gen/ortools/linear_solver: src/gen/ortools
+	$(MKDIR) src$Sgen$Sortools$Slinear_solver
+
+src/gen/sat: src/gen
+	$(MKDIR) src$Sgen$Ssat
+
+
+
+
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && make -j 4 && make install
-
-dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS-TAG)/INSTALL.txt
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
-	         -D CMAKE_INSTALL_PREFIX=../install \
-	         -D GFLAGS_NAMESPACE=google \
+	         -D CMAKE_INSTALL_PREFIX=../../install \
+		 -D CMAKE_CXX_FLAGS=-fPIC \
 	         .
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	make -j 4 && \
+	make install
+	$(TOUCH) dependencies/install/bin/gflags_completions.sh
 
-dependencies/sources/gflags-$(GFLAGS-TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
 
 dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz:

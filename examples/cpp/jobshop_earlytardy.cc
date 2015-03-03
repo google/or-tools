@@ -415,8 +415,8 @@ static const char kUsage[] =
 
 int main(int argc, char **argv) {
   FLAGS_log_prefix = false;
-  google::SetUsageMessage(kUsage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::EtJobShopData data;
   if (!FLAGS_jet_file.empty()) {
     data.LoadJetFile(FLAGS_jet_file);

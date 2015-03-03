@@ -424,7 +424,7 @@ void CostasHard(const int dim) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   int min = 1;
   int max = 10;
 

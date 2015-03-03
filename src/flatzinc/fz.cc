@@ -182,7 +182,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = debug_param;
     }
   }
-  google::ParseCommandLineFlags(argc, argv, true);
+  gflags::ParseCommandLineFlags(argc, argv, true);
   // Fix the number of solutions.
   if (FLAGS_num_solutions == 0) {  // not specified
     FLAGS_num_solutions = FLAGS_all ? kint32max : 1;
