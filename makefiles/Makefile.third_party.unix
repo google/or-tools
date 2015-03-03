@@ -76,7 +76,7 @@ ACLOCAL_TARGET = \
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 
 # Main target.
-.PHONY: third_party build_third_party makefile_third_party
+.PHONY: third_party build_third_party makefile_third_party missing_directories
 third_party: install_third_party makefile_third_party
 
 # Create missing directories
@@ -108,12 +108,13 @@ MISSING_DIRECTORIES = \
 	src/gen/glop \
 	src/gen/graph \
 	src/gen/linear_solver \
-	src/gen/ortools \
 	src/gen/ortools/algorithms \
 	src/gen/ortools/constraint_solver \
 	src/gen/ortools/graph \
 	src/gen/ortools/linear_solver \
 	src/gen/sat
+
+missing_directories: $(MISSING_DIRECTORIES)
 
 install_third_party: \
 	missing_directories \
@@ -129,129 +130,99 @@ install_third_party: \
 	install_bison \
 	install_flex
 
-.PHONY: missing_directories
-
-missing_directories: $(MISSING_DIRECTORIES)
 
 bin:
-	$(MKDIR) bin
+	$(MKDIR_P) bin
 
 lib:
-	$(MKDIR) lib
+	$(MKDIR_P) lib
 
-objs:
-	$(MKDIR) objs
+objs/algorithms:
+	$(MKDIR_P) objs$Salgorithms
 
-objs/algorithms: objs
-	$(MKDIR) objs$Salgorithms
+objs/base:
+	$(MKDIR_P) objs$Sbase
 
-objs/base: objs
-	$(MKDIR) objs$Sbase
+objs/bop:
+	$(MKDIR_P) objs$Sbop
 
-objs/bop: objs
-	$(MKDIR) objs$Sbop
+objs/com/google/ortools:
+	$(MKDIR_P) objs$Scom$Sgoogle$Sortools
 
-objs/com: objs
-	$(MKDIR) objs$Scom
+objs/constraint_solver:
+	$(MKDIR_P) objs$Sconstraint_solver
 
-objs/com/google: objs/com
-	$(MKDIR) objs$Scom$Sgoogle
+objs/flatzinc:
+	$(MKDIR_P) objs$Sflatzinc
 
-objs/com/google/ortools: objs/com/google
-	$(MKDIR) objs$Scom$Sgoogle$Sortools
+objs/glop:
+	$(MKDIR_P) objs$Sglop
 
-objs/constraint_solver: objs
-	$(MKDIR) objs$Sconstraint_solver
+objs/graph:
+	$(MKDIR_P) objs$Sgraph
 
-objs/flatzinc: objs
-	$(MKDIR) objs$Sflatzinc
+objs/linear_solver:
+	$(MKDIR_P) objs$Slinear_solver
 
-objs/glop: objs
-	$(MKDIR) objs$Sglop
+objs/lp_data:
+	$(MKDIR_P) objs$Slp_data
 
-objs/graph: objs
-	$(MKDIR) objs$Sgraph
+objs/sat:
+	$(MKDIR_P) objs$Ssat
 
-objs/linear_solver: objs
-	$(MKDIR) objs$Slinear_solver
+objs/swig:
+	$(MKDIR_P) objs$Sswig
 
-objs/lp_data: objs
-	$(MKDIR) objs$Slp_data
+objs/util:
+	$(MKDIR_P) objs$Sutil
 
-objs/sat: objs
-	$(MKDIR) objs$Ssat
+src/gen/algorithms:
+	$(MKDIR_P) src$Sgen$Salgorithms
 
-objs/swig: objs
-	$(MKDIR) objs$Sswig
+src/gen/bop:
+	$(MKDIR_P) src$Sgen$Sbop
 
-objs/util: objs
-	$(MKDIR) objs$Sutil
+src/gen/com/google/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
 
-src/gen:
-	$(MKDIR) src$Sgen
+src/gen/com/google/ortools/constraintsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
 
-src/gen/algorithms: src/gen
-	$(MKDIR) src$Sgen$Salgorithms
+src/gen/com/google/ortools/graph:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
 
-src/gen/bop: src/gen
-	$(MKDIR) src$Sgen$Sbop
+src/gen/com/google/ortools/linearsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
 
-src/gen/com: src/gen
-	$(MKDIR) src$Sgen$Scom
+src/gen/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sconstraint_solver
 
-src/gen/com/google: src/gen/com
-	$(MKDIR) src$Sgen$Scom$Sgoogle
+src/gen/flatzinc:
+	$(MKDIR_P) src$Sgen$Sflatzinc
 
-src/gen/com/google/ortools: src/gen/com/google
-	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools
+src/gen/glop:
+	$(MKDIR_P) src$Sgen$Sglop
 
-src/gen/com/google/ortools/algorithms: src/gen/com/google/ortools
-	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+src/gen/graph:
+	$(MKDIR_P) src$Sgen$Sgraph
 
-src/gen/com/google/ortools/constraintsolver: src/gen/com/google/ortools
-	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+src/gen/linear_solver:
+	$(MKDIR_P) src$Sgen$Slinear_solver
 
-src/gen/com/google/ortools/graph: src/gen/com/google/ortools
-	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
+src/gen/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Sortools$Salgorithms
 
-src/gen/com/google/ortools/linearsolver: src/gen/com/google/ortools
-	$(MKDIR) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+src/gen/ortools/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Sconstraint_solver
 
-src/gen/constraint_solver: src/gen
-	$(MKDIR) src$Sgen$Sconstraint_solver
+src/gen/ortools/graph:
+	$(MKDIR_P) src$Sgen$Sortools$Sgraph
 
-src/gen/flatzinc: src/gen
-	$(MKDIR) src$Sgen$Sflatzinc
+src/gen/ortools/linear_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Slinear_solver
 
-src/gen/glop: src/gen
-	$(MKDIR) src$Sgen$Sglop
-
-src/gen/graph: src/gen
-	$(MKDIR) src$Sgen$Sgraph
-
-src/gen/linear_solver: src/gen
-	$(MKDIR) src$Sgen$Slinear_solver
-
-src/gen/ortools: src/gen
-	$(MKDIR) src$Sgen$Sortools
-
-src/gen/ortools/algorithms: src/gen/ortools
-	$(MKDIR) src$Sgen$Sortools$Salgorithms
-
-src/gen/ortools/constraint_solver: src/gen/ortools
-	$(MKDIR) src$Sgen$Sortools$Sconstraint_solver
-
-src/gen/ortools/graph: src/gen/ortools
-	$(MKDIR) src$Sgen$Sortools$Sgraph
-
-src/gen/ortools/linear_solver: src/gen/ortools
-	$(MKDIR) src$Sgen$Sortools$Slinear_solver
-
-src/gen/sat: src/gen
-	$(MKDIR) src$Sgen$Ssat
-
-
-
+src/gen/sat:
+	$(MKDIR_P) src$Sgen$Ssat
 
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
