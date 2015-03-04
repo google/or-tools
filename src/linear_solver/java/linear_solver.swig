@@ -165,6 +165,7 @@ import java.lang.reflect.*;
 %rename (suppressOutput) operations_research::MPSolver::SuppressOutput;  // no test
 %rename (lookupConstraintOrNull) operations_research::MPSolver::LookupConstraintOrNull;  // no test
 %rename (lookupVariableOrNull) operations_research::MPSolver::LookupVariableOrNull;  // no test
+%rename (solverVersion) operations_research::MPSolver::SolverVersion;  // no test
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %rename (computeExactConditionNumber) operations_research::MPSolver::ComputeExactConditionNumber;
