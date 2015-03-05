@@ -1,6 +1,6 @@
 These libraries have been tested under:
   - Ubuntu 10.04 and up (32 and 64 bit).
-  - Mac OS X Maverics and up with Xcode 5.x (64 bit).
+  - Mac OS X Mavericks and up with Xcode 5.x (64 bit).
   - Microsoft Windows with Visual Studio 2013
 
 Upon checking out the repository, you will get the following structure:
