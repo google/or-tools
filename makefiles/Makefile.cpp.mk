@@ -323,7 +323,6 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
@@ -339,14 +338,12 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(STATIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)old_fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sold_flatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
@@ -356,7 +353,6 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
-	-$(DEL) $(BIN_DIR)$Sold_fz$E
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sfz2$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
@@ -367,15 +363,11 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sbop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sflatzinc*
-	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sparser*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.*
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DEL) $(SRC_DIR)$Sold_flatzinc$Slexer*
-	-$(DEL) $(SRC_DIR)$Sold_flatzinc$Sparser.tab.*
 	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc2
 	-$(DELREC) $(OR_ROOT)objs$Sflatzinc2
 
