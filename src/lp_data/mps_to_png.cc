@@ -34,7 +34,7 @@ using operations_research::glop::MPSReader;
 using operations_research::glop::LinearProgram;
 
 int main(int argc, char* argv[]) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   LinearProgram linear_program;
   MPSReader mps_reader;
   CHECK(!FLAGS_mps_file.empty());

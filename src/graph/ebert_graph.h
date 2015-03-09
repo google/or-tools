@@ -717,9 +717,10 @@ class ForwardStaticGraph
       if (client_cycle_handler != NULL) {
         for (NodeIndexType node = 0; node < num_nodes; ++node) {
           ArcIndexType end = first_incident_arc_[node + 1];
-          std::sort(&arc_permutation[begin], &arc_permutation[end],
-               PermutationIndexComparisonByArcHead<NodeIndexType, ArcIndexType>(
-                   head_));
+          std::sort(
+              &arc_permutation[begin], &arc_permutation[end],
+              PermutationIndexComparisonByArcHead<NodeIndexType, ArcIndexType>(
+                  head_));
           begin = end;
         }
       } else {
@@ -734,7 +735,7 @@ class ForwardStaticGraph
           ArcIndexType end_index = (end > 0 ? end - 1 : end);
           ArcIndexType end_offset = (end > 0 ? 1 : 0);
           std::sort(&head_[begin_index] + begin_offset,
-               &head_[end_index] + end_offset);
+                    &head_[end_index] + end_offset);
           begin = end;
         }
       }
@@ -1030,7 +1031,7 @@ class EbertGraphBase
       arc_permutation[i] = i;
     }
     std::sort(&arc_permutation[kFirstArc], &arc_permutation[end_arc_index()],
-         compare);
+              compare);
 
     // Now we actually permute the head_ array and the
     // scaled_arc_cost_ array according to the sorting permutation.

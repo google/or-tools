@@ -101,7 +101,7 @@ class RandomMatrix {
 };
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   if (FLAGS_tsp_size > 0) {
     // TSP of size FLAGS_tsp_size.
     // Second argument = 1 to build a single tour (it's a TSP).

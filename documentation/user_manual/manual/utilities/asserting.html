@@ -56,66 +56,6 @@
             
   <div class="section" id="asserting">
 <span id="id1"></span><h1>11.2. Asserting</h1>
-<p>We provide several assert-like macros in the header <tt class="file docutils literal"><span class="pre">base/logging.h</span></tt>.</p>
-<p>Remember that the variable <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> (&#8220;<tt class="docutils literal"><span class="pre">NO</span> <span class="pre">DEBUG</span></tt>&#8221;) is defined by the standard. By default,
-the assert debugging mechanism defined in <tt class="file docutils literal"><span class="pre">assert.h</span></tt> or the <tt class="docutils literal"><span class="pre">C++</span></tt> equivalent <tt class="file docutils literal"><span class="pre">cassert</span></tt> is on. You have
-to explicitly turn it off by defining the variable <tt class="docutils literal"><span class="pre">NDEBUG</span></tt>.</p>
-<p>Two types of assert-like macros are provided:</p>
-<ul class="simple">
-<li><em>Debug-only</em> checking and</li>
-<li><em>Always-on</em> checking.</li>
-</ul>
-<p><em>Debug-only</em> macros are only triggered in <tt class="docutils literal"><span class="pre">DEBUG</span></tt> mode (i.e. when the variable <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> is not defined) and start with the letter
-<tt class="docutils literal"><span class="pre">D</span></tt>. In <tt class="docutils literal"><span class="pre">NON</span> <span class="pre">DEBUG</span></tt> mode (the variable <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> is defined), the code inside <em>Debug-only</em> macros vanishes. <em>Always-on</em> macros
-are always on duty. For instance, <tt class="docutils literal"><span class="pre">DCHECK(x)</span></tt> is <em>Debug-only</em> while <tt class="docutils literal"><span class="pre">CHECK()</span></tt> is <em>Always-on</em>.</p>
-<p>Here are the macros listed:</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="59%" />
-<col width="41%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Name</th>
-<th class="head">Tests if</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">(D)CHECK(x)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span></tt></td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">(D)CHECK_GE(x,y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">&gt;=</span> <span class="pre">(y)</span></tt></td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">(D)CHECK_LT(x,</span> <span class="pre">y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">&lt;</span> <span class="pre">(y)</span></tt></td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">(D)CHECK_GT(x,</span> <span class="pre">y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">&gt;</span> <span class="pre">(y)</span></tt></td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">(D)CHECK_LE(x,</span> <span class="pre">y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">&lt;=</span> <span class="pre">(y)</span></tt></td>
-</tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">(D)CHECK_EQ(x,</span> <span class="pre">y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">==</span> <span class="pre">(y)</span></tt></td>
-</tr>
-<tr class="row-even"><td><tt class="docutils literal"><span class="pre">(D)CHECK_NE(x,</span> <span class="pre">y)</span></tt></td>
-<td><tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">!=</span> <span class="pre">(y)</span></tt></td>
-</tr>
-</tbody>
-</table>
-<p>There is also the <em>Always-on</em> <tt class="docutils literal"><span class="pre">CHECK_NOTNULL(x)</span></tt> macro that tests if <tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">!=</span> <span class="pre">NULL</span></tt>.</p>
-<blockquote>
-<div>are also defined. Note that these macros are always functional. If you
-prefer to use safeguards that vanish in the release code, use their
-equivalent<a class="footnote-reference" href="#one" id="id2">[1]</a> starting with a <tt class="docutils literal"><span class="pre">D</span></tt>: <tt class="docutils literal"><span class="pre">DCHECK_LT(x,</span> <span class="pre">y)</span></tt>, etc. and
-compile with the <tt class="docutils literal"><span class="pre">NDEBUG</span></tt> variable set to 1.</div></blockquote>
-<table class="docutils footnote" frame="void" id="one" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>There is no equivalent for <tt class="docutils literal"><span class="pre">CHECK_NOTNULL(x)</span></tt>.</td></tr>
-</tbody>
-</table>
-<p>These macros are defined in the header <tt class="docutils literal"><span class="pre">logging.h</span></tt>:</p>
 </div>
 
 
@@ -219,7 +159,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012-2014, Google.
+        &copy; Copyright 2012-2015, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

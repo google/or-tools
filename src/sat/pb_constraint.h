@@ -502,7 +502,12 @@ class PbConstraints {
   }
 
   // Changes the number of variables.
-  void Resize(int num_variables) { to_update_.resize(num_variables << 1); }
+  void Resize(int num_variables) {
+    // Note that we avoid using up memory in the common case where there is no
+    // pb constraints at all. If there is 10 million variables, this vector
+    // alone will take 480 MB!
+    if (!constraints_.empty()) to_update_.resize(num_variables << 1);
+  }
 
   // Parameters management.
   void SetParameters(const SatParameters& parameters) {

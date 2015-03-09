@@ -16,6 +16,7 @@
 #include <math.h>
 #include <vector>
 
+#include "base/threadpool.h"
 #include "bop/bop_solver.h"
 #include "lp_data/lp_decomposer.h"
 
@@ -817,74 +818,13 @@ bool CheckSolution(const LinearProgram& linear_problem,
 
   return true;
 }
-}  // anonymous namespace
 
-IntegralSolver::IntegralSolver()
-    : parameters_(), variable_values_(), objective_value_(0.0) {}
-
-// TODO(user): Parallelize the solve of sub-problems.
-BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem) {
-  if (linear_problem.num_variables() >=
-      parameters_.decomposer_num_variables_threshold()) {
-    LPDecomposer decomposer;
-    decomposer.Decompose(&linear_problem);
-    const int num_sub_problems = decomposer.GetNumberOfProblems();
-    if (num_sub_problems > 1) {
-      // The problem can be decomposed. Solve each sub-problem and aggregate the
-      // result.
-      BopSolveStatus status = BopSolveStatus::OPTIMAL_SOLUTION_FOUND;
-      LinearProgram sub_problem;
-      std::vector<DenseRow> local_variable_values(num_sub_problems);
-      // TODO(user): Investigate a better approximation of the time needed to
-      //              solve the problem than just the number of variables.
-      const double total_num_variables =
-          std::max(1.0, static_cast<double>(linear_problem.num_variables().value()));
-      const double time_per_variable =
-          parameters_.max_time_in_seconds() / total_num_variables;
-      const double deterministic_time_per_variable =
-          parameters_.max_deterministic_time() / total_num_variables;
-      objective_value_ = linear_problem.objective_offset();
-      best_bound_ = 0.0;
-      for (int i = 0; i < num_sub_problems; ++i) {
-        decomposer.BuildProblem(i, &sub_problem);
-        Fractional local_objective_value = 0.0;
-        Fractional local_best_bound = 0.0;
-        BopParameters local_parameters = parameters_;
-        const int num_variables = std::max(1, sub_problem.num_variables().value());
-        local_parameters.set_max_time_in_seconds(time_per_variable *
-                                                 num_variables);
-        local_parameters.set_max_deterministic_time(
-            deterministic_time_per_variable * num_variables);
-        const BopSolveStatus local_status = InternalSolve(
-            sub_problem, local_parameters, &(local_variable_values[i]),
-            &local_objective_value, &local_best_bound);
-        if (local_status == BopSolveStatus::NO_SOLUTION_FOUND ||
-            local_status == BopSolveStatus::INFEASIBLE_PROBLEM ||
-            local_status == BopSolveStatus::INVALID_PROBLEM) {
-          return local_status;
-        }
-        if (local_status == BopSolveStatus::FEASIBLE_SOLUTION_FOUND) {
-          status = BopSolveStatus::FEASIBLE_SOLUTION_FOUND;
-        }
-        objective_value_ += local_objective_value;
-        best_bound_ += local_best_bound;
-      }
-      variable_values_ = decomposer.AggregateAssignments(local_variable_values);
-
-      CheckSolution(linear_problem, variable_values_);
-      return status;
-    }
-  }
-
-  // The problem can't be decomposed, solve the original problem.
-  return InternalSolve(linear_problem, parameters_, &variable_values_,
-                       &objective_value_, &best_bound_);
-}
-
-BopSolveStatus IntegralSolver::InternalSolve(
-    const LinearProgram& linear_problem, const BopParameters& parameters,
-    DenseRow* variable_values, Fractional* objective_value,
-    Fractional* best_bound) {
+// Solves the given linear program and returns the solve status.
+BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
+                             const BopParameters& parameters,
+                             DenseRow* variable_values,
+                             Fractional* objective_value,
+                             Fractional* best_bound) {
   CHECK(variable_values != nullptr);
   CHECK(objective_value != nullptr);
   CHECK(best_bound != nullptr);
@@ -926,5 +866,99 @@ BopSolveStatus IntegralSolver::InternalSolve(
   }
   return status;
 }
+
+void RunOneBop(const BopParameters& parameters, int problem_index,
+               LPDecomposer* decomposer, DenseRow* variable_values,
+               Fractional* objective_value, Fractional* best_bound,
+               BopSolveStatus* status) {
+  CHECK(decomposer != nullptr);
+  CHECK(variable_values != nullptr);
+  CHECK(objective_value != nullptr);
+  CHECK(best_bound != nullptr);
+  CHECK(status != nullptr);
+
+  LinearProgram problem;
+  decomposer->BuildProblem(problem_index, &problem);
+
+  // TODO(user): Investigate a better approximation of the time needed to
+  //              solve the problem than just the number of variables.
+  const double total_num_variables =
+      std::max(1.0, static_cast<double>(
+                   decomposer->original_problem().num_variables().value()));
+  const double time_per_variable =
+      parameters.max_time_in_seconds() / total_num_variables;
+  const double deterministic_time_per_variable =
+      parameters.max_deterministic_time() / total_num_variables;
+  const int local_num_variables = std::max(1, problem.num_variables().value());
+
+  BopParameters local_parameters = parameters;
+  local_parameters.set_max_time_in_seconds(time_per_variable *
+                                           local_num_variables);
+  local_parameters.set_max_deterministic_time(deterministic_time_per_variable *
+                                              local_num_variables);
+
+  *status = InternalSolve(problem, local_parameters, variable_values,
+                          objective_value, best_bound);
+}
+}  // anonymous namespace
+
+IntegralSolver::IntegralSolver()
+    : parameters_(), variable_values_(), objective_value_(0.0) {}
+
+BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem) {
+  // Some code path requires to copy the given linear_problem. When this happen,
+  // we will simply change the target of this pointer.
+  LinearProgram const* lp = &linear_problem;
+
+
+  BopSolveStatus status;
+  if (lp->num_variables() >= parameters_.decomposer_num_variables_threshold()) {
+    LPDecomposer decomposer;
+    decomposer.Decompose(lp);
+    const int num_sub_problems = decomposer.GetNumberOfProblems();
+    if (num_sub_problems > 1) {
+      // The problem can be decomposed. Solve each sub-problem and aggregate the
+      // result.
+      std::vector<DenseRow> variable_values(num_sub_problems);
+      std::vector<Fractional> objective_values(num_sub_problems, Fractional(0.0));
+      std::vector<Fractional> best_bounds(num_sub_problems, Fractional(0.0));
+      std::vector<BopSolveStatus> statuses(num_sub_problems,
+                                      BopSolveStatus::INVALID_PROBLEM);
+        for (int i = 0; i < num_sub_problems; ++i) {
+          RunOneBop(parameters_, i, &decomposer, &(variable_values[i]),
+                    &(objective_values[i]), &(best_bounds[i]), &(statuses[i]));
+        }
+
+      // Aggregate results.
+      status = BopSolveStatus::OPTIMAL_SOLUTION_FOUND;
+      objective_value_ = lp->objective_offset();
+      best_bound_ = 0.0;
+      for (int i = 0; i < num_sub_problems; ++i) {
+        objective_value_ += objective_values[i];
+        best_bound_ += best_bounds[i];
+        if (statuses[i] == BopSolveStatus::NO_SOLUTION_FOUND ||
+            statuses[i] == BopSolveStatus::INFEASIBLE_PROBLEM ||
+            statuses[i] == BopSolveStatus::INVALID_PROBLEM) {
+          return statuses[i];
+        }
+
+        if (statuses[i] == BopSolveStatus::FEASIBLE_SOLUTION_FOUND) {
+          status = BopSolveStatus::FEASIBLE_SOLUTION_FOUND;
+        }
+      }
+      variable_values_ = decomposer.AggregateAssignments(variable_values);
+      CheckSolution(*lp, variable_values_);
+    } else {
+      status = InternalSolve(*lp, parameters_, &variable_values_,
+                             &objective_value_, &best_bound_);
+    }
+  } else {
+    status = InternalSolve(*lp, parameters_, &variable_values_,
+                           &objective_value_, &best_bound_);
+  }
+
+  return status;
+}
+
 }  // namespace bop
 }  // namespace operations_research

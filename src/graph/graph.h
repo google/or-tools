@@ -361,7 +361,7 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 //   but it needs more space during construction:
 //   + (ArcIndexType + NodeIndexType) * arc_capacity().
 // - The construction is really fast and needs no extra memory if the arcs are
-//   given ordered by ascending tail!!
+//   given ordered by ascending tail (and if Tail() is never called).
 // - The Tail() is efficient but needs an extra NodeIndexType per arc.
 template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
@@ -410,6 +410,14 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
     return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
   }
+
+  // Internal method, used either:
+  // - At the transition point when AddArc() breaks the ordering (by tail)
+  //   of arcs added so far. Complexity: O(num arcs added so far).
+  // - or when the arcs are still ordered, Build() hasn't been called yet,
+  //   and Tail() is called with an arc index greater than ever before.
+  //   Complexity: O(num arcs added since the last Tail() call).
+  void IncrementallyComputeTailsForAllAddedArcs() const;
 
   bool is_built_;
   bool arc_in_order_;
@@ -552,6 +560,7 @@ class ReverseArcStaticGraph
   BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
 
   ArcIndexType OppositeArc(ArcIndexType arc) const;
+  // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
@@ -627,6 +636,7 @@ class ReverseArcMixedGraph
   BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
 
   ArcIndexType OppositeArc(ArcIndexType arc) const;
+  // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
@@ -1208,20 +1218,15 @@ void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK(!is_built_);
   AddNode(tail > head ? tail : head);
   if (arc_in_order_) {
     if (tail >= last_tail_seen_) {
       start_[tail]++;
       last_tail_seen_ = tail;
     } else {
+      IncrementallyComputeTailsForAllAddedArcs();
       arc_in_order_ = false;
-      int sum = 0;
-      tail_.reserve(arc_capacity_);
-      for (int i = 0; i <= last_tail_seen_; ++i) {
-        sum += start_[i];
-        tail_.resize(sum, i);
-      }
-      DCHECK(sum == num_arcs_);
       tail_.push_back(tail);
     }
   } else {
@@ -1233,28 +1238,77 @@ ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::AddArc(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Head(ArcIndexType arc)
+void StaticGraph<NodeIndexType,
+                 ArcIndexType>::IncrementallyComputeTailsForAllAddedArcs()
     const {
-  DCHECK(is_built_);
+  DCHECK(arc_in_order_);
+  DCHECK(!is_built_);
+  if (tail_.capacity() < num_arcs_) tail_.reserve(arc_capacity_);
+  const int last_tail_recorded = tail_.empty() ? 0 : tail_.back();
+  // Compute the position, in the tail_ array, of the first arc with tail
+  // "last_tail_recorded".
+  int sum = 0;
+  if (last_tail_recorded <= last_tail_seen_ / 2) {
+    for (int i = 0; i < last_tail_recorded; ++i) sum += start_[i];
+  } else {
+    for (int i = last_tail_recorded; i <= last_tail_seen_; ++i) {
+      sum += start_[i];
+    }
+    sum = num_arcs_ - sum;
+  }
+  // Grow the tail_ array incrementally, for all tails in
+  // [last_tail_recorded ... last_tail_seen_].
+  for (int i = last_tail_recorded; i <= last_tail_seen_; ++i) {
+    sum += start_[i];
+    tail_.resize(sum, i);
+  }
+  DCHECK(sum == num_arcs_);
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
+NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Head(
+    ArcIndexType arc) const {
   DCHECK(IsArcValid(arc));
   return head_[arc];
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Tail(ArcIndexType arc)
-    const {
-  DCHECK(is_built_);
+NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Tail(
+    ArcIndexType arc) const {
   DCHECK(IsArcValid(arc));
 
-  // Build the full tail array if needed.
-  if (tail_.size() <= arc) {
+  // Tail() has a complex implementation because it relies on the lazy build of
+  // the tail_ vector, which differs depending on the scenarios.
+  if (tail_.size() > arc) return tail_[arc];
+
+  // Build the tail_ vector, from scratch or incrementally.
+  if (!arc_in_order_) {
+    DCHECK(is_built_);  // Otherwise, tail_[] would be complete.
+    // Scenario 1: the arcs aren't ordered, and Build() has been called:
+    // tail_ was completely cleared. We build it from scratch here.
     tail_.resize(num_arcs_);
     for (const NodeIndexType node : Base::AllNodes()) {
       for (const ArcIndexType arc : OutgoingArcs(node)) {
         tail_[arc] = node;
       }
     }
+    return tail_[arc];
   }
+  // Scenario 2: the arcs are ordered, and Build() was already called.
+  // tail_ may have been partially created by earlier Tail() calls,
+  // before Build() was called. We complete it here, once and for all (i.e. for
+  // all arcs). We can use start_[] which contains the adjacency list position.
+  if (is_built_) {
+    const int last_tail_recorded = tail_.empty() ? 0 : tail_.back();
+    const int last_node_index = num_nodes_ - 1;
+    for (int i = last_tail_recorded; i < last_node_index; ++i) {
+      tail_.resize(start_[i + 1], i);
+    }
+    tail_.resize(num_arcs_, last_node_index);
+    return tail_[arc];
+  }
+  // Scenario 3: the arcs are ordered, and Build() wasn't yet called.
+  IncrementallyComputeTailsForAllAddedArcs();
   return tail_[arc];
 }
 

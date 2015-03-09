@@ -32,13 +32,13 @@
 // }
 // if (assignment.Solve() == SimpleLinearSumAssignment::OPTIMAL) {
 //   printf("A perfect matching exists.\n");
-//   printf("The best possible cost is %d.\n", assignment.GetOptimalCost());
+//   printf("The best possible cost is %d.\n", assignment.OptimalCost());
 //   printf("An optimal assignment is:\n");
 //   for (int node = 0; node < assignment.NumNodes(); ++node) {
 //     printf("left node %d assigned to right node %d with cost %d.\n",
 //         node,
-//         assignment.GetRightMate(node),
-//         assignment.GetAssignmentCost(node));
+//         assignment.RightMate(node),
+//         assignment.AssignmentCost(node));
 //   }
 //   printf("Note that it may not be the unique optimal assignment.");
 // } else {

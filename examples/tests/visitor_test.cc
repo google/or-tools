@@ -166,7 +166,7 @@ void TestImport() {
 
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::TestVisitSumEqual();
   operations_research::TestExport();
   operations_research::TestImport();

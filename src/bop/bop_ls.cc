@@ -597,6 +597,7 @@ LocalSearchAssignmentIterator::LocalSearchAssignmentIterator(
       initial_term_index_(
           problem_state.original_problem().constraints_size() + 1,
           OneFlipConstraintRepairer::kInitTerm),
+      use_transposition_table_(false),
       num_nodes_(0),
       num_skipped_nodes_(0) {
   maintainer_.SetReferenceSolution(problem_state.solution());

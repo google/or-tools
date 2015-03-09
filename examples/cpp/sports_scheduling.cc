@@ -394,8 +394,8 @@ static const char kUsage[] =
     "There is no output besides the debug LOGs of the solver.";
 
 int main(int argc, char** argv) {
-  google::SetUsageMessage(kUsage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   CHECK_EQ(0, FLAGS_num_teams % 2) << "The number of teams must be even";
   CHECK_GE(FLAGS_num_teams, 2) << "At least 2 teams";
   CHECK_LT(FLAGS_num_teams, 16) << "The model does not scale beyond 14 teams";

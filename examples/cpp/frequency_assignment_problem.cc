@@ -500,7 +500,7 @@ int FapSolverSoft(const std::map<int, FapVariable>& data_variables,
 
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   CHECK(!FLAGS_directory.empty()) << "Requires --directory=<directory name>";
 

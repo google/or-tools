@@ -49,6 +49,13 @@ util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem);
 // Loads a BooleanProblem into a given SatSolver instance.
 bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);
 
+// Same as LoadBooleanProblem() but also free the memory used by the problem
+// during the loading. This allows to use less peak memory. Note that this
+// function clear all the constraints of the given problem (not the objective
+// though).
+bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
+                                  SatSolver* solver);
+
 // Uses the objective coefficient to drive the SAT search towards an
 // heuristically better solution.
 void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,

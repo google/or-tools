@@ -295,7 +295,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
     LOG(INFO) << "Error solving " << FLAGS_pdp_file;
   }

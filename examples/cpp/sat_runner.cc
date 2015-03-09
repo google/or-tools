@@ -449,7 +449,7 @@ static const char kUsage[] =
     "This program solves a given Boolean linear problem.";
 
 int main(int argc, char** argv) {
-  google::SetUsageMessage(kUsage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return operations_research::sat::Run();
 }

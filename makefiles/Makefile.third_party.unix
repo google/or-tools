@@ -1,24 +1,19 @@
 # SVN tags of dependencies to checkout.
 
-# version 2.0
-GFLAGS_TAG = 76
-# version 2.5.0 + fix
-PROTOBUF_TAG = 512
+GFLAGS_TAG = 2.1.1
+PROTOBUF_TAG = 2.6.0
 # 0.4.0
 GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
-CBC_TAG = 2.8.12
-# SWIG 2.0.12
-# SWIG_TAG = 18238
-# SWIG 3.0.3
-SWIG_TAG = 20773
+CBC_TAG = 2.9.2
+SWIG_TAG = 3.0.5
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
 MONO_TAG = 3.10.0
 # BISON, FLEX
-BISON_TAG = 3.0.2
+BISON_TAG = 3.0.4
 FLEX_TAG = 2.5.37
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
@@ -32,8 +27,8 @@ LIBTOOL_TAG = 2.4.2
 #
 # The GLPK archive should be glpk-4.55.tar.gz
 GLPK_TAG = 4.55
-# The SCIP archive should be scipoptsuite-3.1.0.tgz
-SCIP_TAG = 3.1.0
+# The SCIP archive should be scipoptsuite-3.1.1.tgz
+SCIP_TAG = 3.1.1
 
 # Detect if SCIP archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
@@ -81,10 +76,48 @@ ACLOCAL_TARGET = \
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 
 # Main target.
-.PHONY: third_party build_third_party makefile_third_party
+.PHONY: third_party build_third_party makefile_third_party missing_directories
 third_party: install_third_party makefile_third_party
 
+# Create missing directories
+
+MISSING_DIRECTORIES = \
+	bin \
+	lib \
+	objs/algorithms \
+	objs/base \
+	objs/bop \
+	objs/com/google/ortools \
+	objs/constraint_solver \
+	objs/flatzinc \
+	objs/glop \
+	objs/graph \
+	objs/linear_solver \
+	objs/lp_data \
+	objs/sat \
+	objs/swig \
+	objs/util \
+	src/gen/algorithms \
+	src/gen/bop \
+	src/gen/com/google/ortools/algorithms \
+	src/gen/com/google/ortools/constraintsolver \
+	src/gen/com/google/ortools/graph \
+	src/gen/com/google/ortools/linearsolver \
+	src/gen/constraint_solver \
+	src/gen/flatzinc \
+	src/gen/glop \
+	src/gen/graph \
+	src/gen/linear_solver \
+	src/gen/ortools/algorithms \
+	src/gen/ortools/constraint_solver \
+	src/gen/ortools/graph \
+	src/gen/ortools/linear_solver \
+	src/gen/sat
+
+missing_directories: $(MISSING_DIRECTORIES)
+
 install_third_party: \
+	missing_directories \
 	install_gflags \
 	install_protobuf \
 	install_google_apputils \
@@ -97,20 +130,125 @@ install_third_party: \
 	install_bison \
 	install_flex
 
-# Install gflags.
+
+bin:
+	$(MKDIR_P) bin
+
+lib:
+	$(MKDIR_P) lib
+
+objs/algorithms:
+	$(MKDIR_P) objs$Salgorithms
+
+objs/base:
+	$(MKDIR_P) objs$Sbase
+
+objs/bop:
+	$(MKDIR_P) objs$Sbop
+
+objs/com/google/ortools:
+	$(MKDIR_P) objs$Scom$Sgoogle$Sortools
+
+objs/constraint_solver:
+	$(MKDIR_P) objs$Sconstraint_solver
+
+objs/flatzinc:
+	$(MKDIR_P) objs$Sflatzinc
+
+objs/glop:
+	$(MKDIR_P) objs$Sglop
+
+objs/graph:
+	$(MKDIR_P) objs$Sgraph
+
+objs/linear_solver:
+	$(MKDIR_P) objs$Slinear_solver
+
+objs/lp_data:
+	$(MKDIR_P) objs$Slp_data
+
+objs/sat:
+	$(MKDIR_P) objs$Ssat
+
+objs/swig:
+	$(MKDIR_P) objs$Sswig
+
+objs/util:
+	$(MKDIR_P) objs$Sutil
+
+src/gen/algorithms:
+	$(MKDIR_P) src$Sgen$Salgorithms
+
+src/gen/bop:
+	$(MKDIR_P) src$Sgen$Sbop
+
+src/gen/com/google/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+
+src/gen/com/google/ortools/constraintsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+
+src/gen/com/google/ortools/graph:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
+
+src/gen/com/google/ortools/linearsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+
+src/gen/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sconstraint_solver
+
+src/gen/flatzinc:
+	$(MKDIR_P) src$Sgen$Sflatzinc
+
+src/gen/glop:
+	$(MKDIR_P) src$Sgen$Sglop
+
+src/gen/graph:
+	$(MKDIR_P) src$Sgen$Sgraph
+
+src/gen/linear_solver:
+	$(MKDIR_P) src$Sgen$Slinear_solver
+
+src/gen/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Sortools$Salgorithms
+
+src/gen/ortools/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Sconstraint_solver
+
+src/gen/ortools/graph:
+	$(MKDIR_P) src$Sgen$Sortools$Sgraph
+
+src/gen/ortools/linear_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Slinear_solver
+
+src/gen/sat:
+	$(MKDIR_P) src$Sgen$Ssat
+
+# Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) make install
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
+		 -D BUILD_STATIC_LIBS=ON \
+	         -D CMAKE_INSTALL_PREFIX=../../install \
+		 -D CMAKE_CXX_FLAGS=-fPIC \
+	         .
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	make -j 4 && \
+	make install
+	$(TOUCH) dependencies/install/bin/gflags_completions.sh
+ifeq ($(PLATFORM),MACOSX)
+	install_name_tool -id $(OR_TOOLS_TOP)/dependencies/install/lib/libgflags.dylib \
+                          dependencies/install/lib/libgflags.dylib
+endif
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/Makefile: dependencies/sources/gflags-$(GFLAGS_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/configure: dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_PATH) ./autogen.sh
-
-dependencies/sources/gflags-$(GFLAGS_TAG)/autogen.sh:
-	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags-$(GFLAGS_TAG)
+dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz:
+	cd dependencies/archives && curl -OL https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).tar.gz
+	cd dependencies/archives && mv v$(GFLAGS_TAG).tar.gz gflags-$(GFLAGS_TAG).tar.gz
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
@@ -124,8 +262,11 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/pro
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
-	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf-$(PROTOBUF_TAG)
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh: dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/protobuf-$(PROTOBUF_TAG).tar.gz
+
+dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz:
+	cd dependencies/archives && curl -OL https://protobuf.googlecode.com/svn/rc/protobuf-$(PROTOBUF_TAG).tar.gz
 
 # Intall Google Apputils Python.
 install_google_apputils: dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README
@@ -186,8 +327,11 @@ dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG
 dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
-	svn co https://github.com/swig/swig/trunk -r $(SWIG_TAG) dependencies/sources/swig-$(SWIG_TAG)
+dependencies/sources/swig-$(SWIG_TAG)/autogen.sh: dependencies/archives/swig-$(SWIG_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
+
+dependencies/archives/swig-$(SWIG_TAG).tar.gz:
+	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/swig/swig-$(SWIG_TAG).tar.gz
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
@@ -258,11 +402,11 @@ dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(
 dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
 	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/flex-$(FLEX_TAG).tar.gz
+dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.bz2
+	cd dependencies/sources && tar xvjmf ../archives/flex-$(FLEX_TAG).tar.bz2
 
-dependencies/archives/flex-$(FLEX_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/flex/flex-$(FLEX_TAG).tar.gz
+dependencies/archives/flex-$(FLEX_TAG).tar.bz2:
+	cd dependencies/archives && curl -OL http://sourceforge.net/projects/flex/files/flex-$(FLEX_TAG).tar.bz2
 
 # Install help2man
 dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile

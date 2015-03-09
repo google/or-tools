@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3. Using objectives in constraint programming: the Golomb ruler problem &mdash; or-tools User&#39;s Manual</title>
+    <title>3. Using objectives in constraint programming: the Golomb Ruler Problem &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -53,7 +53,7 @@
           <div class="body">
             
   <div class="section" id="using-objectives-in-constraint-programming-the-golomb-ruler-problem">
-<span id="chapter-using-objectives"></span><h1>3. Using objectives in constraint programming: the Golomb ruler problem</h1>
+<span id="chapter-using-objectives"></span><h1>3. Using objectives in constraint programming: the Golomb Ruler Problem</h1>
 <p id="index-0">In this chapter, we are not only looking for a feasible solution but we
 want the best solution! Most of the time, the search is done in two steps. First,
 we find the best solution<a class="footnote-reference" href="#best-solution-what" id="id1">[1]</a>. Second, we prove that this
@@ -73,6 +73,8 @@ adding better bounds and breaking symmetries. Finally, we say a few words about 
 <li>The sums used in this chapter to model the GRP are tricky but you don&#8217;t need to master them. We do all the dirty work for you.
 In fact, you can completely skip them if you wish. The basic ideas behind these sums are simple and are easy to follow.</li>
 <li>We introduce two kinds of variables in our modelizations: the <strong>marks</strong> of the ruler and the <strong>differences</strong> between the marks.</li>
+<li>When written, this chapter improved each algorithm one section after the other. Since then, the compiler has been partly rewritten and the algorithms now have different efficiencies. You can read more about
+their updated efficiencies in the section <a class="reference internal" href="metaheuristics/default_search.html#first-results-default-search"><em>First results</em></a> of the section <a class="reference internal" href="metaheuristics/default_search.html#default-search"><em>Default search</em></a>.</li>
 </ul>
 <p class="rubric">Classes under scrutiny:</p>
 <p><tt class="docutils literal"><span class="pre">AllDifferent</span></tt>, <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt>, <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>.</p>
@@ -270,7 +272,7 @@ Search:
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012-2014, Google.
+        &copy; Copyright 2012-2015, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

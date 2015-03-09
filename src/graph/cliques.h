@@ -28,11 +28,6 @@
 
 #include "base/callback.h"
 
-template <class R, class A1, class A2>
-class ResultCallback2;
-template <class R, class A1>
-class ResultCallback1;
-
 namespace operations_research {
 
 // Finds all maximal cliques, even of size 1, in the

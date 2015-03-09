@@ -185,7 +185,9 @@ BasisFactorization::BasisFactorization(const MatrixView& matrix,
       num_updates_(0),
       eta_factorization_(),
       lu_factorization_(),
-      deterministic_time_(0.0) {}
+      deterministic_time_(0.0) {
+  SetParameters(parameters_);
+}
 
 BasisFactorization::~BasisFactorization() {}
 

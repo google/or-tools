@@ -334,8 +334,8 @@ bool SatPropagator::OverConstrainObjective(
 void SatPropagator::AddPropagationRelation(sat::Literal decision_literal,
                                            VariableIndex var_id) {
   const std::vector<sat::Literal>::iterator& iter =
-      lower_bound(propagated_by_[var_id].begin(), propagated_by_[var_id].end(),
-                  decision_literal);
+      std::lower_bound(propagated_by_[var_id].begin(),
+                       propagated_by_[var_id].end(), decision_literal);
   if (iter == propagated_by_[var_id].end()) {
     // Add the variable at the end as all variables are smaller.
     propagated_by_[var_id].push_back(decision_literal);

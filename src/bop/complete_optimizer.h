@@ -23,6 +23,8 @@
 #ifndef OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
 #define OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
 
+#include <deque>
+
 #include "bop/bop_base.h"
 #include "bop/bop_solution.h"
 #include "bop/bop_types.h"
@@ -84,7 +86,7 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
   sat::Coefficient lower_bound_;
   sat::Coefficient upper_bound_;
   sat::Coefficient stratified_lower_bound_;
-  std::vector<std::unique_ptr<sat::EncodingNode>> repository_;
+  std::deque<sat::EncodingNode> repository_;
   std::vector<sat::EncodingNode*> nodes_;
 };
 

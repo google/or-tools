@@ -26,6 +26,13 @@
 namespace operations_research {
 
 namespace {
+
+// Encapsulates graph->Run() to make all nodes self-connected.
+inline bool Connects(ResultCallback2<bool, int, int>* const graph, int i,
+                     int j) {
+  return i == j || graph->Run(i, j);
+}
+
 // TODO(user) : rewrite this algorithm without the recursivity.
 void Search(ResultCallback2<bool, int, int>* const graph,
             ResultCallback1<bool, const std::vector<int>&>* const callback,
@@ -47,7 +54,7 @@ void Search(ResultCallback2<bool, int, int>* const graph,
 
     // Count disconnections.
     for (int j = input_size; j < input_candidate_size && count < index; ++j) {
-      if (!graph->Run(p, input_candidates[j])) {
+      if (!Connects(graph, p, input_candidates[j])) {
         count++;
         // Save position of potential candidate.
         position = j;
@@ -82,7 +89,7 @@ void Search(ResultCallback2<bool, int, int>* const graph,
     actual_candidate_size = 0;
 
     for (int i = 0; i < input_size; ++i) {
-      if (graph->Run(selected, input_candidates[i])) {
+      if (Connects(graph, selected, input_candidates[i])) {
         actual_candidates[actual_candidate_size++] = input_candidates[i];
       }
     }
@@ -91,7 +98,7 @@ void Search(ResultCallback2<bool, int, int>* const graph,
     actual_size = actual_candidate_size;
 
     for (int i = input_size + 1; i < input_candidate_size; ++i) {
-      if (graph->Run(selected, input_candidates[i])) {
+      if (Connects(graph, selected, input_candidates[i])) {
         actual_candidates[actual_size++] = input_candidates[i];
       }
     }
@@ -112,22 +119,22 @@ void Search(ResultCallback2<bool, int, int>* const graph,
       }
     }
 
-    // move node from MD to ND
-    // Remove from compsub
+    // Move node from MD to ND.
+    // Remove from compsub.
     actual->pop_back();
 
     // Add to "nod"
     input_size++;
 
     if (nod > 1) {
-      // Select a candidate disgraph to the fixed point
+      // Select a candidate disgraph to the fixed point.
       start = input_size;
       while (start < input_candidate_size &&
-             graph->Run(pivot, input_candidates[start])) {
+             Connects(graph, pivot, input_candidates[start])) {
         start++;
       }
     }
-    // end selection
+    // End selection.
   }
 }
 
@@ -142,7 +149,7 @@ class FindAndEliminate {
         visited_.end()) {
       return false;
     }
-    return graph_->Run(node1, node2);
+    return Connects(graph_, node1, node2);
   }
 
   bool SolutionCallback(const std::vector<int>& solution) {
@@ -151,7 +158,7 @@ class FindAndEliminate {
       for (int i = 0; i < size - 1; ++i) {
         for (int j = i + 1; j < size; ++j) {
           visited_.insert(std::make_pair(std::min(solution[i], solution[j]),
-                                    std::max(solution[i], solution[j])));
+                                         std::max(solution[i], solution[j])));
         }
       }
       callback_->Run(solution);

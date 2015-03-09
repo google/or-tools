@@ -735,7 +735,7 @@ void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
       << "To use Knapsack64ItemsSolver the number of items should be "
       << "less than " << kMaxNumberOf64Items << ". Current value: " << num_items
       << ".";
-  int64 profit_max = *max_element(profits.begin(), profits.end());
+  int64 profit_max = *std::max_element(profits.begin(), profits.end());
 
   for (int i = 0; i < num_items; ++i) {
     sorted_items_.push_back(
@@ -743,7 +743,7 @@ void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
   }
 
   std::sort(sorted_items_.begin(), sorted_items_.end(),
-       CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder);
+            CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder);
 
   int64 sum_profit = 0;
   int64 sum_weight = 0;
@@ -794,7 +794,7 @@ int64 Knapsack64ItemsSolver::Solve() {
 
 int Knapsack64ItemsSolver::GetBreakItemId(int64 capacity) const {
   std::vector<int64>::const_iterator binary_search_iterator =
-      upper_bound(sum_weights_.begin(), sum_weights_.end(), capacity);
+      std::upper_bound(sum_weights_.begin(), sum_weights_.end(), capacity);
   return static_cast<int>(binary_search_iterator - sum_weights_.begin()) - 1;
 }
 
@@ -958,8 +958,8 @@ void KnapsackDynamicProgrammingSolver::Init(
 int64 KnapsackDynamicProgrammingSolver::SolveSubProblem(int64 capacity,
                                                         int num_items) {
   const int64 capacity_plus_1 = capacity + 1;
-  fill_n(selected_item_ids_.begin(), capacity_plus_1, 0);
-  fill_n(computed_profits_.begin(), capacity_plus_1, 0LL);
+  std::fill_n(selected_item_ids_.begin(), capacity_plus_1, 0);
+  std::fill_n(computed_profits_.begin(), capacity_plus_1, 0LL);
   for (int item_id = 0; item_id < num_items; ++item_id) {
     const int64 item_weight = weights_[item_id];
     const int64 item_profit = profits_[item_id];

@@ -117,7 +117,7 @@ int64 TestGcc(int num_vars,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   const int dis = operations_research::TestGcc(FLAGS_vars,
                                                FLAGS_values,
                                                FLAGS_slack,

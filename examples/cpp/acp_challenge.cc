@@ -918,8 +918,8 @@ static const char kUsage[] =
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix = false;
-  google::SetUsageMessage(kUsage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

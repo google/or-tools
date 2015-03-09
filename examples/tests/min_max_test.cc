@@ -370,7 +370,7 @@ class MaxArrayCtTest {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::MinArrayCtTest min_test;
   min_test.TestAlternateCtor();
   min_test.TestBounds();

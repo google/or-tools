@@ -1933,7 +1933,8 @@ void Solver::NewSearch(DecisionBuilder* const db,
     }
   } else {                   // Top level search
     print_trace_ = nullptr;  // Clears it first.
-    if (FLAGS_cp_trace_propagation) {
+    if (FLAGS_cp_trace_propagation ||
+        parameters_.trace_level != SolverParameters::NO_TRACE) {
       print_trace_ = BuildPrintTrace(this);
       print_trace_->Install();
     } else if (FLAGS_cp_trace_search) {

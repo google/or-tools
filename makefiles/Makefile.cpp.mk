@@ -26,9 +26,6 @@ DYNAMIC_GRAPH_LIBS = \
 DYNAMIC_ROUTING_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 
-DYNAMIC_OLD_FLATZINC_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX)
-
 DYNAMIC_FLATZINC_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
 
@@ -73,9 +70,6 @@ DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) \
 	$(DYNAMIC_BASE_DEPS) \
 	$(DYNAMIC_CP_DEPS) \
 	$(DYNAMIC_GRAPH_DEPS)
-
-DYNAMIC_OLD_FLATZINC_DEPS = $(DYNAMIC_OLD_FLATZINC_LIBS) \
-        $(DYNAMIC_CP_DEPS)
 
 DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) \
         $(DYNAMIC_CP_DEPS)
@@ -132,10 +126,6 @@ DYNAMIC_ROUTING_LNK = \
         $(DYNAMIC_PRE_LIB)shortestpaths$(DYNAMIC_POST_LIB) \
         $(DYNAMIC_CP_LNK)
 
-DYNAMIC_OLD_FLATZINC_LNK = \
-        $(DYNAMIC_PRE_LIB)old_fz$(DYNAMIC_POST_LIB)\
-        $(DYNAMIC_CP_LNK)
-
 DYNAMIC_FLATZINC_LNK = \
         $(DYNAMIC_PRE_LIB)fz$(DYNAMIC_POST_LIB)\
         $(DYNAMIC_CP_LNK)
@@ -186,9 +176,6 @@ STATIC_GRAPH_LIBS = \
 STATIC_ROUTING_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 
-STATIC_OLD_FLATZINC_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)old_fz.$(STATIC_LIB_SUFFIX)
-
 STATIC_FLATZINC_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 
@@ -221,10 +208,6 @@ STATIC_ROUTING_DEPS = $(STATIC_ROUTING_LIBS) \
 	$(STATIC_BASE_DEPS) \
 	$(STATIC_CP_DEPS) \
 	$(STATIC_GRAPH_DEPS)
-
-STATIC_OLD_FLATZINC_DEPS = $(STATIC_OLD_FLATZINC_LIBS) \
-	$(STATIC_BASE_DEPS) \
-	$(STATIC_CP_DEPS)
 
 STATIC_FLATZINC_DEPS = $(STATIC_FLATZINC_LIBS) \
 	$(STATIC_BASE_DEPS) \
@@ -274,10 +257,6 @@ STATIC_ROUTING_LNK = \
         $(STATIC_PRE_LIB)routing$(STATIC_POST_LIB) \
         $(STATIC_PRE_LIB)graph$(STATIC_POST_LIB) \
         $(STATIC_PRE_LIB)shortestpaths$(STATIC_POST_LIB) \
-        $(STATIC_CP_LNK)
-
-STATIC_OLD_FLATZINC_LNK = \
-        $(STATIC_PRE_LIB)old_fz$(STATIC_POST_LIB)\
         $(STATIC_CP_LNK)
 
 STATIC_FLATZINC_LNK = \
@@ -344,7 +323,6 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
@@ -360,14 +338,12 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(STATIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)old_fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sold_flatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
@@ -377,7 +353,6 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
-	-$(DEL) $(BIN_DIR)$Sold_fz$E
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sfz2$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
@@ -388,15 +363,11 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sbop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sflatzinc*
-	-$(DEL) $(GEN_DIR)$Sold_flatzinc$Sparser*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.*
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DEL) $(SRC_DIR)$Sold_flatzinc$Slexer*
-	-$(DEL) $(SRC_DIR)$Sold_flatzinc$Sparser.tab.*
 	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc2
 	-$(DELREC) $(OR_ROOT)objs$Sflatzinc2
 
@@ -757,6 +728,7 @@ GRAPH_LIB_OBJS=\
 	$(OBJ_DIR)/graph/linear_assignment.$O \
 	$(OBJ_DIR)/graph/cliques.$O \
 	$(OBJ_DIR)/graph/connectivity.$O \
+	$(OBJ_DIR)/graph/flow_problem.pb.$O \
 	$(OBJ_DIR)/graph/max_flow.$O \
 	$(OBJ_DIR)/graph/min_cost_flow.$O
 
@@ -772,10 +744,20 @@ $(OBJ_DIR)/graph/cliques.$O:$(SRC_DIR)/graph/cliques.cc
 $(OBJ_DIR)/graph/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sconnectivity.$O
 
-$(OBJ_DIR)/graph/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h
+$(GEN_DIR)/graph/flow_problem.pb.cc:$(SRC_DIR)/graph/flow_problem.proto
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
+
+$(GEN_DIR)/graph/flow_problem.pb.h:$(GEN_DIR)/graph/flow_problem.pb.cc
+
+$(OBJ_DIR)/graph/flow_problem.pb.$O:$(GEN_DIR)/graph/flow_problem.pb.cc
+	 $(CCC) $(CFLAGS) -c $(GEN_DIR)$Sgraph$Sflow_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sflow_problem.pb.$O
+
+$(OBJ_DIR)/graph/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc $(SRC_DIR)/util/stats.h $(GEN_DIR)/graph/flow_problem.pb.h
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
+	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/max_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smax_flow.$O
 
-$(OBJ_DIR)/graph/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
+$(OBJ_DIR)/graph/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc $(GEN_DIR)/graph/flow_problem.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/min_cost_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smin_cost_flow.$O
 
 $(LIB_DIR)/$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX): $(GRAPH_LIB_OBJS)
@@ -1120,67 +1102,7 @@ $(OBJ_DIR)/fap_utilities.$O:$(EX_DIR)/cpp/fap_utilities.cc
 $(LIB_DIR)/$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX): $(FAP_LIB_OBJS)
 	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fap.$(DYNAMIC_LIB_SUFFIX) $(FAP_LIB_OBJS)
 
-# old Flatzinc Support
-
-OLD_FLATZINC_LIB_OBJS=\
-	$(OBJ_DIR)/old_flatzinc/booleans.$O\
-	$(OBJ_DIR)/old_flatzinc/flatzinc.$O\
-	$(OBJ_DIR)/old_flatzinc/flatzinc_constraints.$O\
-	$(OBJ_DIR)/old_flatzinc/fz_search.$O\
-	$(OBJ_DIR)/old_flatzinc/flatzinc.yy.$O\
-	$(OBJ_DIR)/old_flatzinc/flatzinc.tab.$O\
-	$(OBJ_DIR)/old_flatzinc/parser.$O\
-	$(OBJ_DIR)/old_flatzinc/registry.$O
-
-$(GEN_DIR)/old_flatzinc/flatzinc.yy.cc: $(SRC_DIR)/old_flatzinc/flatzinc.lex $(FLEX)
-	$(FLEX) -o$(GEN_DIR)/old_flatzinc/flatzinc.yy.cc $(SRC_DIR)/old_flatzinc/flatzinc.lex
-
-$(GEN_DIR)/old_flatzinc/flatzinc.tab.cc: $(SRC_DIR)/old_flatzinc/flatzinc.yy $(BISON)
-	$(BISON) -t -o $(GEN_DIR)/old_flatzinc/flatzinc.tab.cc -d $<
-
-$(GEN_DIR)/old_flatzinc/flatzinc.tab.hh: $(GEN_DIR)/old_flatzinc/flatzinc.tab.cc
-
-$(OBJ_DIR)/old_flatzinc/booleans.$O:$(SRC_DIR)/old_flatzinc/booleans.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sbooleans.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sbooleans.$O
-$(OBJ_DIR)/old_flatzinc/flatzinc.$O:$(SRC_DIR)/old_flatzinc/flatzinc.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sflatzinc.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sflatzinc.$O
-$(OBJ_DIR)/old_flatzinc/flatzinc_constraints.$O:$(SRC_DIR)/old_flatzinc/flatzinc_constraints.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sflatzinc_constraints.$O
-$(OBJ_DIR)/old_flatzinc/fz_search.$O:$(SRC_DIR)/old_flatzinc/fz_search.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sfz_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sfz_search.$O
-$(OBJ_DIR)/old_flatzinc/flatzinc.yy.$O:$(GEN_DIR)/old_flatzinc/flatzinc.yy.cc $(GEN_DIR)/old_flatzinc/flatzinc.tab.hh $(SRC_DIR)/old_flatzinc/parser.h $(SRC_DIR)/old_flatzinc/flatzinc.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sold_flatzinc$Sflatzinc.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sflatzinc.yy.$O
-$(OBJ_DIR)/old_flatzinc/parser.$O:$(SRC_DIR)/old_flatzinc/parser.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h $(GEN_DIR)/old_flatzinc/flatzinc.tab.hh
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sparser.$O
-$(OBJ_DIR)/old_flatzinc/flatzinc.tab.$O:$(GEN_DIR)/old_flatzinc/flatzinc.tab.cc $(SRC_DIR)/old_flatzinc/flatzinc.h
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sold_flatzinc$Sflatzinc.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sflatzinc.tab.$O
-$(OBJ_DIR)/old_flatzinc/registry.$O:$(SRC_DIR)/old_flatzinc/registry.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sregistry.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sregistry.$O
-
-$(LIB_DIR)/$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX): $(OLD_FLATZINC_LIB_OBJS)
-	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)old_fz.$(DYNAMIC_LIB_SUFFIX) $(OLD_FLATZINC_LIB_OBJS)
-
-ifneq ($(SYSTEM),win)
-$(LIB_DIR)/$(LIBPREFIX)old_fz.$(STATIC_LIB_SUFFIX): $(OLD_FLATZINC_LIB_OBJS)
-	$(STATIC_LINK_CMD) $(STATIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)old_fz.$(STATIC_LIB_SUFFIX) $(OLD_FLATZINC_LIB_OBJS)
-endif
-
-$(OBJ_DIR)/old_flatzinc/fz.$O:$(SRC_DIR)/old_flatzinc/fz.cc $(SRC_DIR)/old_flatzinc/flatzinc.h $(SRC_DIR)/old_flatzinc/parser.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sold_flatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sold_flatzinc$Sfz.$O
-
-old_fz: $(BIN_DIR)/old_fz$E
-
-$(BIN_DIR)/old_fz$E: $(OBJ_DIR)/old_flatzinc/fz.$O $(STATIC_OLD_FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/old_flatzinc/fz.$O $(STATIC_FZ) $(STATIC_OLD_FLATZINC_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sold_fz$E
-
-# Static archive for minizinc challenge
-
-ifeq ($(PLATFORM),LINUX)
-$(BIN_DIR)/fzn_or-tools: $(OBJ_DIR)/fz.$O $(STATIC_FLATZINC_DEPS)
-	$(CCC) -static -static-libgcc $(CFLAGS) $(OBJ_DIR)/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfzn_or-tools
-endif
-
-# Flatzinc experimental code
+# Flatzinc code
 
 FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/flatzinc/constraints.$O\
@@ -1719,7 +1641,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(SVNVERSION_SIMPLE).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
 	-$(DELREC) temp
 else
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
@@ -1768,7 +1690,7 @@ endif
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(SVNVERSION_SIMPLE).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../Google.OrTools.cc.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
 

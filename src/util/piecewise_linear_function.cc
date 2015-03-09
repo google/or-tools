@@ -38,10 +38,12 @@ int FindSegmentIndex(const std::vector<PiecewiseSegment>& segments, int64 x) {
   // of its start point which compares greater than the x value.
   std::vector<PiecewiseSegment>::const_iterator position = std::upper_bound(
       segments.begin(), segments.end(), x, PiecewiseSegment::FindComparator);
+  if (position == segments.end()) {
+    return segments.size() - 1;
+  }
   position -= position->start_x() > x ? 1 : 0;
 
-  return position == segments.end() ? segments.size() - 1
-                                    : position - segments.begin();
+  return position - segments.begin();
 }
 
 inline bool IsAtBounds(int64 value) {

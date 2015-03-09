@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="8.1. Basic working of the solver: constraints" href="custom_constraints/basic_working_constraints.html" />
-    <link rel="prev" title="7.10. Summary" href="metaheuristics/metaheuristics_summary.html" /> 
+    <link rel="next" title="8.1. The alldifferent_except_0 constraint" href="custom_constraints/all_different_except_zero_definition.html" />
+    <link rel="prev" title="7.9. Summary" href="metaheuristics/metaheuristics_summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="custom_constraints/basic_working_constraints.html" title="8.1. Basic working of the solver: constraints"
+          <a href="custom_constraints/all_different_except_zero_definition.html" title="8.1. The alldifferent_except_0 constraint"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics/metaheuristics_summary.html" title="7.10. Summary"
+          <a href="metaheuristics/metaheuristics_summary.html" title="7.9. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -53,7 +53,9 @@
           <div class="body">
             
   <div class="section" id="custom-constraints-the-alldifferent-except-0-constraint">
-<span id="chapter-custom-constraints"></span><h1>8. Custom constraints: the <em>alldifferent_except_0</em> constraint</h1>
+<span id="chapter-custom-constraints"></span><h1>8. Custom constraints: the <tt class="docutils literal"><span class="pre">alldifferent_except_0</span></tt> constraint</h1>
+<p>The global <tt class="docutils literal"><span class="pre">alldifferent_except_0</span></tt> constraint is exactly as its name says: an <tt class="docutils literal"><span class="pre">alldifferent</span></tt> constraint except for the variables that have a <tt class="docutils literal"><span class="pre">0</span></tt> value. Although this constraint
+is already implemented in <strong>or-tools</strong><a class="footnote-reference" href="#alldifferent-except-0-already-exists-in-ortools" id="id1">[1]</a>, we will spend the whole chapter dissecting this constraint and learn how to implement our own customized version.</p>
 <p class="rubric">Classes under scrutiny:</p>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/cplusplus/chap4</span></tt>.</p>
@@ -61,18 +63,49 @@
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints/basic_working_constraints.html">8.1. Basic working of the solver: constraints</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#description">8.1.1. Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html">8.1. The <tt class="docutils literal"><span class="pre">alldifferent_except_0</span></tt> constraint</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html#definition">8.1.1. Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html#the-implemented-alldifferentexcept">8.1.2. The implemented <tt class="docutils literal"><span class="pre">AllDifferentExcept</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html#use">8.1.3. Use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html#a-first-example-the-partial-latin-square-extension-problem-plse">8.1.4. A first example: The Partial Latin Square Extension Problem (PLSE)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints/consistency.html">8.2. Consistency</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints/alldifferent.html">8.3. The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints/dynamic_improvements.html">8.4. Changing dynamically the improvement step with a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt></a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints/summary.html">8.5. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/basic_working_constraints.html">8.2. Basic working of the solver: constraints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#baseobject">8.2.1. <tt class="docutils literal"><span class="pre">BaseObject</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#demons">8.2.2. <tt class="docutils literal"><span class="pre">Demon</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#the-baseobject-and-propagationbaseobject-classes">8.2.3. The <tt class="docutils literal"><span class="pre">BaseObject</span></tt> and   <tt class="docutils literal"><span class="pre">PropagationBaseObject</span></tt> classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#the-propagation-queue">8.2.4. The propagation queue</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#the-constraint-class">8.2.5. The <tt class="docutils literal"><span class="pre">Constraint</span></tt> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_working_constraints.html#propagation-in-action-the-propagationmonitor-class">8.2.6. Propagation in action: the <tt class="docutils literal"><span class="pre">PropagationMonitor</span></tt> class</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/consistency.html">8.3. Consistency in a nutshell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/basic_constraint_example.html">8.4. A basic <tt class="docutils literal"><span class="pre">Constraint</span></tt> example: the XXX <tt class="docutils literal"><span class="pre">Constraint</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/basic_constraint_example.html#the-alldifferentexcept-constraint-more-in-details">8.4.1. The <tt class="docutils literal"><span class="pre">AllDifferentExcept</span></tt> constraint more in details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/all_different_except_zero_model.html">8.5. First approach: model the constraint</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/all_different_except_zero_model.html#first-model">8.5.1. First model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/alldifferent_constraint.html">8.6. The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint in more details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/alldifferent_except_zero_constraint.html">8.7. Second approach: a custom <tt class="docutils literal"><span class="pre">Constraint</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_constraints/alldifferent_except_zero_constraint.html#well">8.7.1. Well</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints/summary.html">8.8. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h4>Footnote</h4><table class="docutils footnote" frame="void" id="alldifferent-except-0-already-exists-in-ortools" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">The implemented constraint is a little bit more general and doesn&#8217;t consider <tt class="docutils literal"><span class="pre">0</span></tt> as a special value. We&#8217;ll discuss
+this constraint in the section <a class="reference internal" href="custom_constraints/all_different_except_zero_definition.html#all-different-except-zero-definition"><em>The alldifferent_except_0 constraint</em></a>.</p>
+</td></tr>
+</tbody>
+</table>
+</div>
 
 
           </div>
@@ -191,16 +224,16 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="custom_constraints/basic_working_constraints.html" title="8.1. Basic working of the solver: constraints"
+          <a href="custom_constraints/all_different_except_zero_definition.html" title="8.1. The alldifferent_except_0 constraint"
              >next</a> |</li>
         <li class="right" >
-          <a href="metaheuristics/metaheuristics_summary.html" title="7.10. Summary"
+          <a href="metaheuristics/metaheuristics_summary.html" title="7.9. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012-2014, Google.
+        &copy; Copyright 2012-2015, Google.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
