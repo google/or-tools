@@ -32,6 +32,7 @@ CPSEP =;
 DEL = del
 DELREC = tools\rm.exe -rf
 MKDIR = md
+MKDIR_P = tools\mkdir.exe -p
 COPY = copy
 TOUCH = tools\touch.exe
 SED = tools\sed.exe
