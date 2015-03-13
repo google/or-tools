@@ -708,7 +708,7 @@ bool MPSolver::LoadSolutionFromNewProto(
     LOG(WARNING)
         << "Loaded a solution whose variables matched the solver's, but "
         << num_vars_out_of_bounds << " out of " << variables_.size()
-        << " exceed one of their bounds by more tahn the primal tolerance: "
+        << " exceed one of their bounds by more than the primal tolerance: "
         << tolerance;
   }
   // Set the objective value, if is known.
